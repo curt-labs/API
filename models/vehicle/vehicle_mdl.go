@@ -1,0 +1,5 @@
+package vehicle
+
+import (
+	"../hood"
+)
