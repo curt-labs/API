@@ -1,9 +1,9 @@
 package database
 
 import (
-	"github.com/ziutek/mymysql/autorc"
+	"../mymysql/autorc"
 	// "github.com/ziutek/mymysql/mysql"
-	_ "github.com/ziutek/mymysql/thrsafe"
+	_ "../mymysql/thrsafe"
 	"log"
 	"os"
 )

@@ -1,0 +1,39 @@
+GIT
+  remote: git@github.com:adeven/capper.git
+  revision: b1874a6862bdb642f577a9d679a978ab40e6100d
+  specs:
+    capper (1.2.0)
+      capistrano (~> 2.12.0)
+      capistrano_colors (~> 0.5.5)
+      dedent
+      erubis
+      rvm-capistrano (~> 1.2.3)
+
+GEM
+  remote: http://rubygems.org/
+  specs:
+    capistrano (2.12.0)
+      highline
+      net-scp (>= 1.0.0)
+      net-sftp (>= 2.0.0)
+      net-ssh (>= 2.0.14)
+      net-ssh-gateway (>= 1.1.0)
+    capistrano_colors (0.5.5)
+    dedent (0.0.2)
+    erubis (2.7.0)
+    highline (1.6.15)
+    net-scp (1.1.0)
+      net-ssh (>= 2.6.5)
+    net-sftp (2.1.1)
+      net-ssh (>= 2.6.5)
+    net-ssh (2.6.5)
+    net-ssh-gateway (1.2.0)
+      net-ssh (>= 2.6.5)
+    rvm-capistrano (1.2.7)
+      capistrano (>= 2.0.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  capper!

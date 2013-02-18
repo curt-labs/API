@@ -2,9 +2,9 @@ package auth
 
 import (
 	"../../plate"
-	"github.com/ziutek/mymysql/autorc"
+	"../mymysql/autorc"
 	// "github.com/ziutek/mymysql/mysql"
-	_ "github.com/ziutek/mymysql/thrsafe"
+	_ "../mymysql/thrsafe"
 	//"log"
 	"net/http"
 	//"time"
@@ -26,23 +26,24 @@ var (
 	//  stmt *autorc.Stmt
 )
 
-var AuthHandler = func(w http.ResponseWriter, r *http.Request) bool {
+var AuthHandler = func(w http.ResponseWriter, r *http.Request) {
 
 	params := r.URL.Query()
 	key := params.Get("key")
 
 	if len(key) == 0 {
-		return false
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
 	}
 
 	// First we'll try checking the session to see if we have already authenticated the key
 	session := plate.Session.Get(r)
 	if session[key] != nil {
-		return true
+		return
 	}
 
 	// check the database
 	//hd, err := hood.Open("mymysql", "dataSourceName")
 
-	return true
+	return
 }

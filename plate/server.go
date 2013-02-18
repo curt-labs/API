@@ -90,15 +90,17 @@ type Server struct {
 	Logger         *log.Logger
 	SessionHandler *SessionHandler
 	Config         *ServerConfig
+	Filters        []http.HandlerFunc
 }
 
 type Route struct {
-	method    string
-	regex     *regexp.Regexp
-	params    map[int]string
-	handler   http.HandlerFunc
-	auth      AuthHandler
-	sensitive bool
+	method     string
+	regex      *regexp.Regexp
+	params     map[int]string
+	handler    http.HandlerFunc
+	sensitive  bool
+	filters    []http.HandlerFunc
+	unfiltered bool // this will ignore all global filters on this route
 }
 
 //responseWriter is a wrapper for the http.ResponseWriter
@@ -242,20 +244,13 @@ func (this *Server) Post(pattern string, handler http.HandlerFunc) *Route {
 	return this.AddRoute(POST, pattern, handler)
 }
 
-// Secures a route using the default AuthHandler
-func (this *Route) Secure() *Route {
-	this.auth = DefaultAuthHandler
-	return this
-}
-
-// SecureFunc a route using a custom AuthHandler function
-func (this *Route) SecureFunc(handler AuthHandler) *Route {
-	this.auth = handler
-	return this
-}
-
 func (this *Route) Sensitive() *Route {
 	this.sensitive = true
+	return this
+}
+
+func (this *Route) NoFilter() *Route {
+	this.unfiltered = true
 	return this
 }
 
@@ -272,9 +267,48 @@ func (this *Server) Static(pattern string, dir string) *Route {
 	})
 }
 
+// Add middleware filter globally to server
+func (this *Server) AddFilter(filter http.HandlerFunc) {
+	this.Filters = append(this.Filters, filter)
+}
+
+// FIlterParam adds the middleware filter if the REST URL parameter exists.
+func (this *Server) FilterParam(param string, filter http.HandlerFunc) {
+	if !strings.HasPrefix(param, ":") {
+		param = ":" + param
+	}
+
+	this.AddFilter(func(w http.ResponseWriter, r *http.Request) {
+		p := r.URL.Query().Get(param)
+		if len(p) > 0 {
+			filter(w, r)
+		}
+	})
+}
+
+// Add middleware filter to specific route
+func (this *Route) AddFilter(filter http.HandlerFunc) {
+	this.filters = append(this.filters, filter)
+}
+
+func (this *Route) FilterParam(param string, filter http.HandlerFunc) {
+	if !strings.HasPrefix(param, ":") {
+		param = ":" + param
+	}
+
+	this.AddFilter(func(w http.ResponseWriter, r *http.Request) {
+		p := r.URL.Query().Get(param)
+		if len(p) > 0 {
+			filter(w, r)
+		}
+	})
+}
+
 // Required by http.Handler interface. This method is invoked by the
 // http server and will handle all page routing
 func (this *Server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+
+	requestPath := r.URL.Path
 
 	//wrap the response writer, in our custom interface
 	w := &responseWriter{writer: rw}
@@ -282,14 +316,13 @@ func (this *Server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	//find a matching Route
 	for _, route := range this.Routes {
 
-		requestPath := r.URL.Path
-
 		//if the methods don't match, skip this handler
 		//i.e if request.Method is 'PUT' Route.Method must be 'PUT'
 		if r.Method != route.method {
 			continue
 		}
 
+		// check if route is case sensitive or not
 		if route.sensitive == false {
 			str := route.regex.String()
 			reg, err := regexp.Compile(strings.ToLower(str))
@@ -313,59 +346,38 @@ func (this *Server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		//add url parameters to the query param map
-		values := r.URL.Query()
-		for i, match := range matches[1:] {
-			values.Add(route.params[i], match)
+		if len(route.params) > 0 {
+			//add url parameters to the query param map
+			values := r.URL.Query()
+			for i, match := range matches[1:] {
+				values.Add(route.params[i], match)
+			}
+
+			//reassemble query params and add to RawQuery
+			r.URL.RawQuery = url.Values(values).Encode() + "&" + r.URL.RawQuery
+			//r.URL.RawQuery = url.Values(values).Encode()
 		}
 
-		//reassemble query params and add to RawQuery
-
-		r.URL.RawQuery = url.Values(values).Encode()
-
-		authChan := make(chan error)
-
-		var auth_err error
-		//autenticate the user
-		go func(rw *responseWriter, req *http.Request, w http.ResponseWriter) {
-			//enfore security, if necessary
-			if route.auth != nil {
-				ok := route.auth(w, req)
-				log.Println(ok)
-				//if the auth handler redirected the user
-				//or already wrote a response, we can just exit
-				if rw.started || ok == true {
-					authChan <- nil
-					//return
-				} else if ok == false {
-					auth_err = errors.New("Unauthorized")
-					authChan <- errors.New("Unauthorized")
-
+		if !route.unfiltered {
+			// execute global middleware filters
+			for _, filter := range this.Filters {
+				filter(w, r)
+				if w.started {
+					return
 				}
-
-			} else {
-				authChan <- nil
-			}
-		}(w, r, rw)
-
-		handlerChan := make(chan int)
-		go func(rw *responseWriter, req *http.Request) {
-			//Invoke the request handler
-			route.handler(rw, req)
-			handlerChan <- 1
-		}(w, r)
-
-		<-authChan
-		<-handlerChan
-		if auth_err != nil {
-			if f, ok := w.writer.(http.Flusher); ok {
-				f.Flush()
-				http.Error(w, "Unauthorized", http.StatusUnauthorized)
-				//http.Redirect(w, r, "/unauthorized", http.StatusUnauthorized)
-				break
 			}
 		}
 
+		//execute middleware filters for this route
+		for _, filter := range route.filters {
+			filter(w, r)
+			if w.started {
+				return
+			}
+		}
+
+		//Invoke the request handler
+		route.handler(w, r)
 		break
 	}
 
@@ -404,21 +416,6 @@ func (this *responseWriter) WriteHeader(code int) {
 	this.status = code
 	this.started = true
 	this.writer.WriteHeader(code)
-}
-
-// ---------------------------------------------------------------------------------
-// Authentication helper functions to enable user authentication
-
-type AuthHandler func(http.ResponseWriter, *http.Request) bool
-
-// DefaultAuthHandler will be applied to any route when the Secure() function
-// is invoked, as opposed to SecureFunc(), which accepts a custom AuthHandler.
-//
-// By default, the DefaultAuthHandler will deny all requests. This value
-// should be replaced with a custom AuthHandler implementation, as this
-// is just a dummy function.
-var DefaultAuthHandler = func(w http.ResponseWriter, r *http.Request) bool {
-	return false
 }
 
 // ---------------------------------------------------------------------------------

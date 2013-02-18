@@ -9,6 +9,12 @@ import (
 
 func Index(w http.ResponseWriter, r *http.Request) {
 	var v vehicle.Vehicle
-	plate.ServeFormatted(w, r, v.GetYears())
+
+	config := vehicle.ConfigResponse{
+		ConfigOption: v.GetYears(),
+		Matched:      new(vehicle.ProductMatch),
+	}
+
+	plate.ServeFormatted(w, r, config)
 	return
 }
