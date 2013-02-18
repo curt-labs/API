@@ -323,21 +323,48 @@ func (this *Server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 		r.URL.RawQuery = url.Values(values).Encode()
 
-		//enfore security, if necessary
-		if route.auth != nil {
-			//autenticate the user
-			ok := route.auth(w, r)
-			//if the auth handler redirected the user
-			//or already wrote a response, we can just exit
-			if w.started {
-				return
-			} else if ok == false {
+		authChan := make(chan error)
+
+		var auth_err error
+		//autenticate the user
+		go func(rw *responseWriter, req *http.Request, w http.ResponseWriter) {
+			//enfore security, if necessary
+			if route.auth != nil {
+				ok := route.auth(w, req)
+				log.Println(ok)
+				//if the auth handler redirected the user
+				//or already wrote a response, we can just exit
+				if rw.started || ok == true {
+					authChan <- nil
+					//return
+				} else if ok == false {
+					auth_err = errors.New("Unauthorized")
+					authChan <- errors.New("Unauthorized")
+
+				}
+
+			} else {
+				authChan <- nil
+			}
+		}(w, r, rw)
+
+		handlerChan := make(chan int)
+		go func(rw *responseWriter, req *http.Request) {
+			//Invoke the request handler
+			route.handler(rw, req)
+			handlerChan <- 1
+		}(w, r)
+
+		<-authChan
+		<-handlerChan
+		if auth_err != nil {
+			if f, ok := w.writer.(http.Flusher); ok {
+				f.Flush()
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				//http.Redirect(w, r, "/unauthorized", http.StatusUnauthorized)
+				break
 			}
 		}
-
-		//Invoke the request handler
-		route.handler(w, r)
 
 		break
 	}
