@@ -361,7 +361,9 @@ func (this *Server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		if !route.unfiltered {
 			// execute global middleware filters
 			for _, filter := range this.Filters {
-				filter(w, r)
+				go func() {
+					filter(w, r)
+				}()
 				if w.started {
 					return
 				}
@@ -370,7 +372,9 @@ func (this *Server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 		//execute middleware filters for this route
 		for _, filter := range route.filters {
-			filter(w, r)
+			go func() {
+				filter(w, r)
+			}()
 			if w.started {
 				return
 			}
