@@ -229,14 +229,10 @@ func (vehicle *Vehicle) GetProductMatch() (match *ProductMatch) {
 	sub_parts := make([]int, 0)
 	config_parts := make([]int, 0)
 
-	baseChan := make(chan int)
 	subChan := make(chan int)
 	configChan := make(chan int)
 
-	go func() {
-		base_parts = vehicle.GetPartsByBase()
-		baseChan <- 1
-	}()
+	base_parts = vehicle.GetPartsByBase()
 
 	go func() {
 		sub_parts = vehicle.GetPartsBySubmodel()
@@ -248,7 +244,6 @@ func (vehicle *Vehicle) GetProductMatch() (match *ProductMatch) {
 		configChan <- 1
 	}()
 
-	<-baseChan
 	<-subChan
 	<-configChan
 
