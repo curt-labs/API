@@ -34,8 +34,6 @@ func main() {
 	server.Get("/vehicle/:year/:make/:model/:submodel", vehicle_ctlr.Config)
 	server.Get("/vehicle/:year/:make/:model/:submodel/:config(.+)", vehicle_ctlr.Config)
 
-	//session_key := "your key here"
-
 	http.Handle("/", server)
 	http.ListenAndServe(*listenAddr, nil)
 
