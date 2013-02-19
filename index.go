@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	listenAddr = flag.String("http", ":80", "http listen address")
+	listenAddr = flag.String("http", ":8080", "http listen address")
 )
 
 const (
@@ -30,6 +30,9 @@ func main() {
 	server.Get("/vehicle", vehicle_ctlr.Year)
 	server.Get("/vehicle/:year", vehicle_ctlr.Make)
 	server.Get("/vehicle/:year/:make", vehicle_ctlr.Model)
+	server.Get("/vehicle/:year/:make/:model", vehicle_ctlr.Submodel)
+	server.Get("/vehicle/:year/:make/:model/:submodel", vehicle_ctlr.Config)
+	server.Get("/vehicle/:year/:make/:model/:submodel/:config(.+)", vehicle_ctlr.Config)
 
 	//session_key := "your key here"
 

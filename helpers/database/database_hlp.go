@@ -11,8 +11,8 @@ import (
 const (
 	db_proto = "tcp"
 	db_addr  = "curtsql.cloudapp.net:3306"
-	db_user  = "root"
-	db_pass  = "eC0mm3rc3"
+	db_user  = "curtDuser2"
+	db_pass  = "password"
 	db_name  = "CurtDev"
 )
 
