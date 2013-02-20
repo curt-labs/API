@@ -6,9 +6,7 @@ import (
 	"../images"
 	"../packages"
 	"../reviews"
-	"../vehicle"
 	"../videos"
-	"log"
 	"time"
 )
 
@@ -25,7 +23,7 @@ type Part struct {
 	DateModified, DateAdded                             time.Time
 	ShortDesc, PartClass, Drilling, Exposed             string
 	Attributes                                          []Attribute
-	VehicleAttributes                                   []vehicle.Attribute
+	VehicleAttributes                                   []Attribute
 	Content                                             []Content
 	Pricing                                             []Pricing
 	Reviews                                             []reviews.Review
@@ -66,8 +64,6 @@ func (p *Part) GetById(id int) {
 func (p *Part) Basics() error {
 	db := database.Db
 
-	log.Printf(basicsStmt, p.PartId)
-
 	row, res, err := db.QueryFirst(basicsStmt, p.PartId)
 	if database.MysqlError(err) {
 		return err
@@ -89,5 +85,4 @@ func (p *Part) Basics() error {
 	p.Status = row.Int(status)
 
 	return nil
-
 }

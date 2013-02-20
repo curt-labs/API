@@ -2,7 +2,9 @@ package vehicle
 
 import (
 	"../../helpers/database"
+	"../part"
 	"fmt"
+	// "log"
 	"sort"
 	"strings"
 )
@@ -18,7 +20,7 @@ type ConfigOption struct {
 }
 
 type ProductMatch struct {
-	Parts  []int
+	Parts  []part.Part
 	Groups []int
 }
 
@@ -28,10 +30,6 @@ type Vehicle struct {
 	Configuration         []string
 	Parts                 []interface{}
 	Groups                []interface{}
-}
-
-type Attribute struct {
-	Key, Value string
 }
 
 var (
@@ -253,8 +251,25 @@ func (vehicle *Vehicle) GetProductMatch() (match *ProductMatch) {
 
 	parts := AppendIfMissing(AppendIfMissing(base_parts, sub_parts), config_parts)
 	sort.Ints(parts)
+	c := make(chan int)
 
-	match.Parts = parts
+	var part_objs []part.Part
+	for _, id := range parts {
+		go func() {
+			p := part.Part{
+				PartId: id,
+			}
+			p.Get()
+			part_objs = append(part_objs, p)
+			c <- 1
+		}()
+	}
+
+	for _, _ = range parts {
+		<-c
+	}
+
+	match.Parts = part_objs
 	match.Groups = make([]int, 0)
 
 	return
