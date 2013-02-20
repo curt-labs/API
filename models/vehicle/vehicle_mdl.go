@@ -30,6 +30,10 @@ type Vehicle struct {
 	Groups                []interface{}
 }
 
+type Attribute struct {
+	Key, Value string
+}
+
 var (
 	db = database.Db
 

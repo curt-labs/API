@@ -1,6 +1,7 @@
 package main
 
 import (
+	"./controllers/part"
 	"./controllers/vehicle"
 	"./helpers/auth"
 	"./plate"
@@ -33,6 +34,8 @@ func main() {
 	server.Get("/vehicle/:year/:make/:model", vehicle_ctlr.Submodel)
 	server.Get("/vehicle/:year/:make/:model/:submodel", vehicle_ctlr.Config)
 	server.Get("/vehicle/:year/:make/:model/:submodel/:config(.+)", vehicle_ctlr.Config)
+
+	server.Get("/part/:part", part_ctlr.Get)
 
 	http.Handle("/", server)
 	http.ListenAndServe(*listenAddr, nil)
