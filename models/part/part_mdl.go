@@ -7,6 +7,9 @@ import (
 	"../packages"
 	"../reviews"
 	"../videos"
+	"errors"
+	"log"
+	"strings"
 	"time"
 )
 
@@ -15,6 +18,8 @@ var (
 				from Part as p
 				left join Class as pc on p.classID = pc.classID
 				where p.partID = %d limit 1`
+
+	partAttrStmt = `select field, value from PartAttribute where partID = %d`
 )
 
 type Part struct {
@@ -49,16 +54,62 @@ type Pricing struct {
 }
 
 func (p *Part) Get() error {
-	err := p.Basics()
-	if err != nil {
-		return err
+
+	var errs []string
+
+	basicChan := make(chan int)
+	attrChan := make(chan int)
+	go func() {
+		basicErr := p.Basics()
+		if basicErr != nil {
+			errs = append(errs, basicErr.Error())
+		}
+		basicChan <- 1
+	}()
+
+	go func() {
+		attrErr := p.GetAttributes()
+		if attrErr != nil {
+			errs = append(errs, attrErr.Error())
+		}
+		attrChan <- 1
+	}()
+
+	<-basicChan
+	<-attrChan
+
+	if len(errs) > 0 {
+		return errors.New("Error: " + strings.Join(errs, ", "))
 	}
 	return nil
 }
 
 func (p *Part) GetById(id int) {
 	p.PartId = id
+
 	p.Get()
+}
+
+func (p *Part) GetAttributes() (err error) {
+	db := database.Db
+
+	rows, _, err := db.Query(partAttrStmt, p.PartId)
+	if database.MysqlError(err) {
+		return err
+	}
+
+	var attrs []Attribute
+	for _, row := range rows {
+		attr := Attribute{
+			Key:   row.Str(0),
+			Value: row.Str(1),
+		}
+		attrs = append(attrs, attr)
+	}
+	log.Println(attrs)
+	p.Attributes = attrs
+
+	return
 }
 
 func (p *Part) Basics() error {
@@ -77,8 +128,12 @@ func (p *Part) Basics() error {
 	class := res.Map("class")
 
 	p.PartId = row.Int(partID)
-	p.DateAdded, _ = time.Parse("2006-01-02 15:04", row.Str(dateAdded))
-	p.DateModified, _ = time.Parse("2006-01-02 15:04", row.Str(dateModified))
+	date_add, _ := time.Parse("2006-01-02 15:04:01", row.Str(dateAdded))
+	p.DateAdded = date_add
+
+	date_mod, _ := time.Parse("2006-01-02 15:04:01", row.Str(dateModified))
+	p.DateModified = date_mod
+
 	p.ShortDesc = row.Str(shortDesc)
 	p.PriceCode = row.Int(priceCode)
 	p.PartClass = row.Str(class)
