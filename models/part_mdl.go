@@ -23,7 +23,7 @@ type Part struct {
 	DateModified, DateAdded                             time.Time
 	ShortDesc, PartClass, Drilling, Exposed             string
 	Attributes                                          []Attribute
-	VehicleAttributes                                   []Attribute
+	VehicleAttributes                                   []string
 	Content                                             []Content
 	Pricing                                             []Pricing
 	Reviews                                             []Review
@@ -83,6 +83,36 @@ func (p *Part) Get() error {
 	<-basicChan
 	<-attrChan
 	<-vehicleChan
+
+	if len(errs) > 0 {
+		return errors.New("Error: " + strings.Join(errs, ", "))
+	}
+	return nil
+}
+
+func (p *Part) GetWithVehicle(vehicle *Vehicle) error {
+
+	var errs []string
+
+	superChan := make(chan int)
+	noteChan := make(chan int)
+	go func() {
+		p.Get()
+		superChan <- 1
+	}()
+	go func() {
+		notes, nErr := vehicle.GetNotes(p.PartId)
+		if nErr != nil && notes != nil {
+			errs = append(errs, nErr.Error())
+			p.VehicleAttributes = []string{}
+		} else {
+			p.VehicleAttributes = notes
+		}
+		noteChan <- 1
+	}()
+
+	<-superChan
+	<-noteChan
 
 	if len(errs) > 0 {
 		return errors.New("Error: " + strings.Join(errs, ", "))

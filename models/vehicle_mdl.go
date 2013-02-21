@@ -106,7 +106,7 @@ var (
 					join vcdb_Model mo on bv.ModelID = mo.ID
 					where bv.YearID = %f and ma.MakeName = '%s'
 					and mo.ModelName = '%s' and sm.SubmodelName = '%s'
-					and ca.value not in ('%s')
+					and ca.value in ('%s')
 					order by part`
 
 	reverseLookupStmt = `select bv.YearID, ma.MakeName, mo.ModelName, sm.SubmodelName
@@ -118,6 +118,19 @@ var (
 				left join vcdb_Model mo on bv.ModelID = mo.ID
 				where vp.PartNumber = %d
 				order by bv.YearID desc, ma.MakeName, mo.ModelName`
+
+	vehicleNotesStmt = `select distinct n.note from vcdb_VehiclePart vp
+					left join Note n on vp.ID = n.vehiclePartID
+					join vcdb_Vehicle v on vp.VehicleID = v.ID
+					left join VehicleConfigAttribute vca on v.ConfigID = vca.VehicleConfigID
+					left join ConfigAttribute ca on vca.AttributeID = ca.ID
+					join BaseVehicle bv on v.BaseVehicleID = bv.ID
+					left join Submodel sm on v.SubModelID = sm.ID
+					join vcdb_Make ma on bv.MakeID = ma.ID
+					join vcdb_Model mo on bv.ModelID = mo.ID
+					where bv.YearID = %f and ma.MakeName = '%s'
+					and mo.ModelName = '%s' and (sm.SubmodelName = '%s' or sm.SubmodelName is null)
+					and (ca.value in ('%s') or ca.value is null) and vp.PartNumber = %d;`
 )
 
 func (vehicle *Vehicle) GetYears() (opt ConfigOption) {
@@ -268,7 +281,7 @@ func (vehicle *Vehicle) GetProductMatch() (match *ProductMatch) {
 			p := Part{
 				PartId: id,
 			}
-			p.Get()
+			p.GetWithVehicle(vehicle)
 			part_objs = append(part_objs, p)
 			c <- 1
 		}()
@@ -330,6 +343,16 @@ func (vehicle *Vehicle) GetGroupsBySubmodel() (groups []int) {
 }
 
 func (vehicle *Vehicle) GetGroupsByConfig() (groups []int) {
+	return
+}
+
+func (v *Vehicle) GetNotes(partId int) (notes []string, err error) {
+	db := database.Db
+
+	rows, _, err := db.Query(vehicleNotesStmt, v.Year, v.Make, v.Model, v.Submodel, strings.Join(v.Configuration, ","), partId)
+	for _, row := range rows {
+		notes = append(notes, row.Str(0))
+	}
 	return
 }
 
