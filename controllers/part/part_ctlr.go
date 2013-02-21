@@ -1,7 +1,7 @@
 package part_ctlr
 
 import (
-	"../../models/part"
+	. "../../models"
 	"../../plate"
 	"net/http"
 	"strconv"
@@ -10,7 +10,7 @@ import (
 func Get(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 	id, _ := strconv.Atoi(params.Get(":part"))
-	part := part.Part{
+	part := Part{
 		PartId: id,
 	}
 

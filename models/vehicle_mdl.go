@@ -1,8 +1,7 @@
-package vehicle
+package models
 
 import (
-	"../../helpers/database"
-	"../part"
+	"../helpers/database"
 	"fmt"
 	// "log"
 	"sort"
@@ -20,7 +19,7 @@ type ConfigOption struct {
 }
 
 type ProductMatch struct {
-	Parts  []part.Part
+	Parts  []Part
 	Groups []int
 }
 
@@ -28,7 +27,7 @@ type Vehicle struct {
 	Year                  float64
 	Make, Model, Submodel string
 	Configuration         []string
-	Parts                 []part.Part
+	Parts                 []Part
 	Groups                []interface{}
 }
 
@@ -263,10 +262,10 @@ func (vehicle *Vehicle) GetProductMatch() (match *ProductMatch) {
 	sort.Ints(parts)
 	c := make(chan int)
 
-	var part_objs []part.Part
+	var part_objs []Part
 	for _, id := range parts {
 		go func() {
-			p := part.Part{
+			p := Part{
 				PartId: id,
 			}
 			p.Get()
@@ -339,7 +338,7 @@ func ReverseLookup(partId int) (vehicles []Vehicle, err error) {
 
 	rows, res, err := db.Query(reverseLookupStmt, partId)
 	if database.MysqlError(err) {
-		return err
+		return
 	}
 
 	year := res.Map("YearID")
@@ -349,15 +348,14 @@ func ReverseLookup(partId int) (vehicles []Vehicle, err error) {
 
 	for _, row := range rows {
 
-		row, err := res.GetRow()
 		if database.MysqlError(err) {
-			return err
+			break
 		}
 		if row == nil {
 			break // end of result
 		}
 
-		v := vehicle.Vehicle{
+		v := Vehicle{
 			Year:     row.Float(year),
 			Make:     row.Str(make),
 			Model:    row.Str(model),
@@ -367,6 +365,7 @@ func ReverseLookup(partId int) (vehicles []Vehicle, err error) {
 		vehicles = append(vehicles, v)
 
 	}
+	return
 }
 
 func AppendIfMissing(existing []int, slice []int) []int {

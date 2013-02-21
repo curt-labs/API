@@ -1,13 +1,7 @@
-package part
+package models
 
 import (
-	"../../helpers/database"
-	"../categories"
-	"../images"
-	"../packages"
-	"../reviews"
-	. "../vehicle"
-	"../videos"
+	"../helpers/database"
 	"errors"
 	"log"
 	"strings"
@@ -32,12 +26,12 @@ type Part struct {
 	VehicleAttributes                                   []Attribute
 	Content                                             []Content
 	Pricing                                             []Pricing
-	Reviews                                             []reviews.Review
-	Images                                              []images.Image
+	Reviews                                             []Review
+	Images                                              []Image
 	Related                                             []Part
-	Categories                                          []categories.Category
-	Videos                                              []videos.Video
-	Packages                                            []packages.Package
+	Categories                                          []Category
+	Videos                                              []Video
+	Packages                                            []Package
 	Vehicles                                            []Vehicle
 }
 

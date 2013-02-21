@@ -1,4 +1,4 @@
-package packages
+package models
 
 type Package struct {
 	Height, Width, Length, Quantity   int

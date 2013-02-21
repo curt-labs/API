@@ -1,7 +1,7 @@
 package vehicle_ctlr
 
 import (
-	"../../models/vehicle"
+	. "../../models"
 	"../../plate"
 	"net/http"
 	"strconv"
@@ -9,11 +9,11 @@ import (
 )
 
 func Year(w http.ResponseWriter, r *http.Request) {
-	var v vehicle.Vehicle
+	var v Vehicle
 
-	config := vehicle.ConfigResponse{
+	config := ConfigResponse{
 		ConfigOption: v.GetYears(),
-		Matched:      new(vehicle.ProductMatch),
+		Matched:      new(ProductMatch),
 	}
 
 	plate.ServeFormatted(w, r, config)
@@ -23,13 +23,13 @@ func Year(w http.ResponseWriter, r *http.Request) {
 func Make(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 	year, _ := strconv.ParseFloat(params.Get(":year"), 64)
-	v := vehicle.Vehicle{
+	v := Vehicle{
 		Year: year,
 	}
 
-	config := vehicle.ConfigResponse{
+	config := ConfigResponse{
 		ConfigOption: v.GetMakes(),
-		Matched:      new(vehicle.ProductMatch),
+		Matched:      new(ProductMatch),
 	}
 
 	plate.ServeFormatted(w, r, config)
@@ -40,14 +40,14 @@ func Model(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 	year, _ := strconv.ParseFloat(params.Get(":year"), 64)
 
-	v := vehicle.Vehicle{
+	v := Vehicle{
 		Year: year,
 		Make: params.Get(":make"),
 	}
 
-	config := vehicle.ConfigResponse{
+	config := ConfigResponse{
 		ConfigOption: v.GetModels(),
-		Matched:      new(vehicle.ProductMatch),
+		Matched:      new(ProductMatch),
 	}
 
 	plate.ServeFormatted(w, r, config)
@@ -58,14 +58,14 @@ func Submodel(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 	year, _ := strconv.ParseFloat(params.Get(":year"), 64)
 
-	v := vehicle.Vehicle{
+	v := Vehicle{
 		Year:  year,
 		Make:  params.Get(":make"),
 		Model: params.Get(":model"),
 	}
 
-	var subs vehicle.ConfigOption
-	var matched *vehicle.ProductMatch
+	var subs ConfigOption
+	var matched *ProductMatch
 
 	subsChan := make(chan int)
 	matchedChan := make(chan int)
@@ -80,7 +80,7 @@ func Submodel(w http.ResponseWriter, r *http.Request) {
 	<-subsChan
 	<-matchedChan
 
-	config := vehicle.ConfigResponse{
+	config := ConfigResponse{
 		ConfigOption: subs,
 		Matched:      matched,
 	}
@@ -95,7 +95,7 @@ func Config(w http.ResponseWriter, r *http.Request) {
 
 	config_vals := strings.Split(params.Get(":config"), "/")
 
-	v := vehicle.Vehicle{
+	v := Vehicle{
 		Year:          year,
 		Make:          params.Get(":make"),
 		Model:         params.Get(":model"),
@@ -103,8 +103,8 @@ func Config(w http.ResponseWriter, r *http.Request) {
 		Configuration: config_vals,
 	}
 
-	var config_opts vehicle.ConfigOption
-	var matched *vehicle.ProductMatch
+	var config_opts ConfigOption
+	var matched *ProductMatch
 
 	configChan := make(chan int)
 	matchedChan := make(chan int)
@@ -119,7 +119,7 @@ func Config(w http.ResponseWriter, r *http.Request) {
 	<-configChan
 	<-matchedChan
 
-	config := vehicle.ConfigResponse{
+	config := ConfigResponse{
 		ConfigOption: config_opts,
 		Matched:      matched,
 	}

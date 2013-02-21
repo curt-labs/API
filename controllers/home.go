@@ -1,18 +1,18 @@
 package controllers
 
 import (
-	"../models/vehicle"
+	. "../models"
 	"../plate"
 
 	"net/http"
 )
 
 func Index(w http.ResponseWriter, r *http.Request) {
-	var v vehicle.Vehicle
+	var v Vehicle
 
-	config := vehicle.ConfigResponse{
+	config := ConfigResponse{
 		ConfigOption: v.GetYears(),
-		Matched:      new(vehicle.ProductMatch),
+		Matched:      new(ProductMatch),
 	}
 
 	plate.ServeFormatted(w, r, config)

@@ -1,4 +1,4 @@
-package videos
+package models
 
 import (
 	"net/url"

@@ -1,4 +1,4 @@
-package images
+package models
 
 import (
 	"net/url"

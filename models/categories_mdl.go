@@ -1,4 +1,4 @@
-package categories
+package models
 
 import (
 	"net/url"
