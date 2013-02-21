@@ -6,6 +6,7 @@ import (
 	"../images"
 	"../packages"
 	"../reviews"
+	. "../vehicle"
 	"../videos"
 	"errors"
 	"log"
@@ -37,7 +38,7 @@ type Part struct {
 	Categories                                          []categories.Category
 	Videos                                              []videos.Video
 	Packages                                            []packages.Package
-	Vehicles                                            []interface{}
+	Vehicles                                            []Vehicle
 }
 
 type Attribute struct {
@@ -59,6 +60,7 @@ func (p *Part) Get() error {
 
 	basicChan := make(chan int)
 	attrChan := make(chan int)
+	vehicleChan := make(chan int)
 	go func() {
 		basicErr := p.Basics()
 		if basicErr != nil {
@@ -75,8 +77,18 @@ func (p *Part) Get() error {
 		attrChan <- 1
 	}()
 
+	go func() {
+		vehicles, vErr := ReverseLookup(p.PartId)
+		if vErr != nil {
+			errs = append(errs, vErr.Error())
+		}
+		p.Vehicles = vehicles
+		vehicleChan <- 1
+	}()
+
 	<-basicChan
 	<-attrChan
+	<-vehicleChan
 
 	if len(errs) > 0 {
 		return errors.New("Error: " + strings.Join(errs, ", "))

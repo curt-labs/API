@@ -28,7 +28,7 @@ type Vehicle struct {
 	Year                  float64
 	Make, Model, Submodel string
 	Configuration         []string
-	Parts                 []interface{}
+	Parts                 []part.Part
 	Groups                []interface{}
 }
 
@@ -109,6 +109,16 @@ var (
 					and mo.ModelName = '%s' and sm.SubmodelName = '%s'
 					and ca.value not in ('%s')
 					order by part`
+
+	reverseLookupStmt = `select bv.YearID, ma.MakeName, mo.ModelName, sm.SubmodelName
+				from BaseVehicle bv
+				join vcdb_Vehicle v on bv.ID = v.BaseVehicleID
+				join vcdb_VehiclePart vp on v.ID = vp.VehicleID
+				left join Submodel sm on v.SubModelID = sm.ID
+				left join vcdb_Make ma on bv.MakeID = ma.ID
+				left join vcdb_Model mo on bv.ModelID = mo.ID
+				where vp.PartNumber = %d
+				order by bv.YearID desc, ma.MakeName, mo.ModelName`
 )
 
 func (vehicle *Vehicle) GetYears() (opt ConfigOption) {
@@ -322,6 +332,41 @@ func (vehicle *Vehicle) GetGroupsBySubmodel() (groups []int) {
 
 func (vehicle *Vehicle) GetGroupsByConfig() (groups []int) {
 	return
+}
+
+func ReverseLookup(partId int) (vehicles []Vehicle, err error) {
+	db := database.Db
+
+	rows, res, err := db.Query(reverseLookupStmt, partId)
+	if database.MysqlError(err) {
+		return err
+	}
+
+	year := res.Map("YearID")
+	make := res.Map("MakeName")
+	model := res.Map("ModelName")
+	submodel := res.Map("SubmodelName")
+
+	for _, row := range rows {
+
+		row, err := res.GetRow()
+		if database.MysqlError(err) {
+			return err
+		}
+		if row == nil {
+			break // end of result
+		}
+
+		v := vehicle.Vehicle{
+			Year:     row.Float(year),
+			Make:     row.Str(make),
+			Model:    row.Str(model),
+			Submodel: row.Str(submodel),
+		}
+
+		vehicles = append(vehicles, v)
+
+	}
 }
 
 func AppendIfMissing(existing []int, slice []int) []int {
