@@ -62,6 +62,7 @@ func (p *Part) Get() error {
 	priceChan := make(chan int)
 	reviewChan := make(chan int)
 	imageChan := make(chan int)
+	videoChan := make(chan int)
 
 	go func() {
 		basicErr := p.Basics()
@@ -103,11 +104,20 @@ func (p *Part) Get() error {
 		imageChan <- 1
 	}()
 
+	go func() {
+		vidErr := p.GetVideos()
+		if vidErr != nil {
+			errs = append(errs, vidErr.Error())
+		}
+		videoChan <- 1
+	}()
+
 	<-basicChan
 	<-attrChan
 	<-priceChan
 	<-reviewChan
 	<-imageChan
+	<-videoChan
 
 	if len(errs) > 0 {
 		return errors.New("Error: " + strings.Join(errs, ", "))
