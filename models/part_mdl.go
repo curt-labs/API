@@ -14,6 +14,11 @@ var (
 				where p.partID = %d limit 1`
 
 	partAttrStmt = `select field, value from PartAttribute where partID = %d`
+
+	partPriceStmt = `select priceType, price from Price where partID = %d`
+
+	partReviewStmt = `select rating,subject,review_text,name,email,createdDate from Review
+				where partID = %d and approved = 1 and active = 1`
 )
 
 type Part struct {
@@ -43,8 +48,9 @@ type Content struct {
 }
 
 type Pricing struct {
-	Type  string
-	Price float64
+	Type     string
+	Price    float64
+	Enforced bool
 }
 
 func (p *Part) Get() error {
@@ -53,7 +59,10 @@ func (p *Part) Get() error {
 
 	basicChan := make(chan int)
 	attrChan := make(chan int)
-	// vehicleChan := make(chan int)
+	priceChan := make(chan int)
+	reviewChan := make(chan int)
+	imageChan := make(chan int)
+
 	go func() {
 		basicErr := p.Basics()
 		if basicErr != nil {
@@ -70,18 +79,35 @@ func (p *Part) Get() error {
 		attrChan <- 1
 	}()
 
-	// go func() {
-	// 	vehicles, vErr := ReverseLookup(p.PartId)
-	// 	if vErr != nil {
-	// 		errs = append(errs, vErr.Error())
-	// 	}
-	// 	p.Vehicles = vehicles
-	// 	vehicleChan <- 1
-	// }()
+	go func() {
+		priceErr := p.GetPricing()
+		if priceErr != nil {
+			errs = append(errs, priceErr.Error())
+		}
+		priceChan <- 1
+	}()
+
+	go func() {
+		reviewErr := p.GetReviews()
+		if reviewErr != nil {
+			errs = append(errs, reviewErr.Error())
+		}
+		reviewChan <- 1
+	}()
+
+	go func() {
+		imgErr := p.GetImages()
+		if imgErr != nil {
+			errs = append(errs, imgErr.Error())
+		}
+		imageChan <- 1
+	}()
 
 	<-basicChan
 	<-attrChan
-	// <-vehicleChan
+	<-priceChan
+	<-reviewChan
+	<-imageChan
 
 	if len(errs) > 0 {
 		return errors.New("Error: " + strings.Join(errs, ", "))
@@ -172,6 +198,36 @@ func (p *Part) Basics() error {
 	p.PriceCode = row.Int(priceCode)
 	p.PartClass = row.Str(class)
 	p.Status = row.Int(status)
+
+	return nil
+}
+
+func (p *Part) GetPricing() error {
+	db := database.Db
+
+	rows, res, err := db.Query(partPriceStmt, p.PartId)
+	if database.MysqlError(err) {
+		return err
+	}
+
+	typ := res.Map("priceType")
+	price := res.Map("price")
+
+	var prices []Pricing
+	for _, row := range rows {
+		pr := Pricing{
+			row.Str(typ),
+			row.Float(price),
+			false,
+		}
+
+		if pr.Type == "Map" {
+			pr.Enforced = true
+		}
+		prices = append(prices, pr)
+	}
+
+	p.Pricing = prices
 
 	return nil
 }
