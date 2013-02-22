@@ -3,8 +3,7 @@ package models
 import (
 	"../helpers/database"
 	"fmt"
-	// "log"
-	"sort"
+	"log"
 	"strings"
 )
 
@@ -56,7 +55,7 @@ var (
 					join vcdb_Make ma on bv.MakeID = ma.ID
 					join vcdb_Vehicle v on bv.ID = v.BaseVehicleID
 					join Submodel sm on v.SubmodelID = sm.ID
-					join vcdb_VehiclePart vp on v.ID = vp.VehicleID
+					join vcdb_VehiclsePart vp on v.ID = vp.VehicleID
 					where bv.YearID = %f and ma.MakeName = '%s' 
 					and mo.ModelName = '%s'`
 
@@ -76,38 +75,26 @@ var (
 					join ConfigAttribute ca on cat.ID = ca.ConfigAttributeTypeID
 					where ca.value in ('%s'))`
 
-	partsBaseStmt = `select distinct vp.PartNumber as part from vcdb_VehiclePart vp
-				join vcdb_Vehicle v on vp.VehicleID = v.ID
-				join BaseVehicle bv on v.BaseVehicleID = bv.ID
-				join vcdb_Model mo on bv.ModelID = mo.ID
-				join vcdb_Make ma on bv.MakeID = ma.ID
-				where bv.YearID = %f and ma.MakeName = '%s'
-				and mo.ModelName = '%s'
-				order by part`
-
-	partsSubStmt = `select distinct vp.PartNumber as part from vcdb_VehiclePart vp
+	vehiclePartsStmt = `select distinct vp.PartNumber as part from vcdb_VehiclePart vp
 					join vcdb_Vehicle v on vp.VehicleID = v.ID
-					join Submodel sm on v.SubmodelID = sm.ID
+					left join VehicleConfigAttribute vca on v.ConfigID = vca.VehicleConfigID
+					left join ConfigAttribute ca on vca.AttributeID = ca.ID
+					left join ConfigAttributeType cat on ca.ConfigAttributeTypeID = cat.ID
 					join BaseVehicle bv on v.BaseVehicleID = bv.ID
-					join vcdb_Model mo on bv.ModelID = mo.ID
-					join vcdb_Make ma on bv.MakeID = ma.ID
-					where bv.YearID = %f and ma.MakeName = '%s'
-					and mo.ModelName = '%s' and sm.SubmodelName = '%s'
-					order by part`
-
-	partsConfigStmt = `select distinct vp.PartNumber as part from vcdb_VehiclePart vp
-					join vcdb_Vehicle v on vp.VehicleID = v.ID
-					join VehicleConfigAttribute vca on v.ConfigID = vca.VehicleConfigID
-					join ConfigAttribute ca on vca.AttributeID = ca.ID
-					join ConfigAttributeType cat on ca.ConfigAttributeTypeID = cat.ID
-					join BaseVehicle bv on v.BaseVehicleID = bv.ID
-					join Submodel sm on v.SubModelID = sm.ID
+					left join Submodel sm on v.SubModelID = sm.ID
 					join vcdb_Make ma on bv.MakeID = ma.ID
 					join vcdb_Model mo on bv.ModelID = mo.ID
-					where bv.YearID = %f and ma.MakeName = '%s'
+					where 
+					(bv.YearID = %f and ma.MakeName = '%s'
+					and mo.ModelName = '%s')
+					or
+					(bv.YearID = %f and ma.MakeName = '%s'
+					and mo.ModelName = '%s' and sm.SubmodelName = '%s')
+					or
+					(bv.YearID = %f and ma.MakeName = '%s'
 					and mo.ModelName = '%s' and sm.SubmodelName = '%s'
-					and ca.value in ('%s')
-					order by part`
+					and ca.value in ('%s'))
+					order by part;`
 
 	reverseLookupStmt = `select bv.YearID, ma.MakeName, mo.ModelName, sm.SubmodelName
 				from BaseVehicle bv
@@ -249,42 +236,23 @@ func (vehicle *Vehicle) GetProductMatch() (match *ProductMatch) {
 
 	match = new(ProductMatch)
 
-	base_parts := make([]int, 0)
-	sub_parts := make([]int, 0)
-	config_parts := make([]int, 0)
+	parts, err := vehicle.GetParts()
+	if err != nil {
+		return
+	}
 
-	subChan := make(chan int)
-	configChan := make(chan int)
-
-	base_parts = vehicle.GetPartsByBase()
-
-	go func() {
-		sub_parts = vehicle.GetPartsBySubmodel()
-		subChan <- 1
-	}()
-
-	go func() {
-		config_parts = vehicle.GetPartsByConfig()
-		configChan <- 1
-	}()
-
-	<-subChan
-	<-configChan
-
-	parts := AppendIfMissing(AppendIfMissing(base_parts, sub_parts), config_parts)
-	sort.Ints(parts)
 	c := make(chan int)
-
 	var part_objs []Part
 	for _, id := range parts {
-		go func() {
+		go func(pId int) {
 			p := Part{
-				PartId: id,
+				PartId: pId,
 			}
+			log.Println(p.PartId)
 			p.GetWithVehicle(vehicle)
 			part_objs = append(part_objs, p)
 			c <- 1
-		}()
+		}(id)
 	}
 
 	for _, _ = range parts {
@@ -297,40 +265,45 @@ func (vehicle *Vehicle) GetProductMatch() (match *ProductMatch) {
 	return
 }
 
-func (vehicle *Vehicle) GetPartsByBase() (parts []int) {
-
+func (v *Vehicle) GetParts() (parts []int, err error) {
 	db := database.Db
 
-	rows, _, err := db.Query(partsBaseStmt, vehicle.Year, vehicle.Make, vehicle.Model)
-	if database.MysqlError(err) {
+	log.Printf(vehiclePartsStmt,
+		v.Year,
+		v.Make,
+		v.Model,
+		v.Year,
+		v.Make,
+		v.Model,
+		v.Submodel,
+		v.Year,
+		v.Make,
+		v.Model,
+		v.Submodel,
+		strings.Join(v.Configuration, ","))
+
+	rows, _, err := db.Query(vehiclePartsStmt,
+		v.Year,
+		v.Make,
+		v.Model,
+		v.Year,
+		v.Make,
+		v.Model,
+		v.Submodel,
+		v.Year,
+		v.Make,
+		v.Model,
+		v.Submodel,
+		strings.Join(v.Configuration, ","))
+
+	if err != nil {
 		return
 	}
 
-	parts = make([]int, 0)
 	for _, row := range rows {
 		parts = append(parts, row.Int(0))
 	}
 
-	return
-}
-
-func (vehicle *Vehicle) GetPartsBySubmodel() (parts []int) {
-
-	db := database.Db
-
-	rows, _, err := db.Query(partsSubStmt, vehicle.Year, vehicle.Make, vehicle.Model, vehicle.Submodel)
-	if database.MysqlError(err) {
-		return
-	}
-
-	parts = make([]int, 0)
-	for _, row := range rows {
-		parts = append(parts, row.Int(0))
-	}
-	return
-}
-
-func (vehicle *Vehicle) GetPartsByConfig() (parts []int) {
 	return
 }
 
