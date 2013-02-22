@@ -3,7 +3,6 @@ package models
 import (
 	"../helpers/database"
 	"fmt"
-	"log"
 	"strings"
 )
 
@@ -55,7 +54,7 @@ var (
 					join vcdb_Make ma on bv.MakeID = ma.ID
 					join vcdb_Vehicle v on bv.ID = v.BaseVehicleID
 					join Submodel sm on v.SubmodelID = sm.ID
-					join vcdb_VehiclsePart vp on v.ID = vp.VehicleID
+					join vcdb_VehiclePart vp on v.ID = vp.VehicleID
 					where bv.YearID = %f and ma.MakeName = '%s' 
 					and mo.ModelName = '%s'`
 
@@ -200,7 +199,7 @@ func (vehicle *Vehicle) GetConfiguration() (opt ConfigOption) {
 
 	var nested string
 	if len(vehicle.Configuration) > 0 {
-		nested = fmt.Sprintf(nestedConfigStmt, strings.Join(vehicle.Configuration, "/"))
+		nested = fmt.Sprintf(nestedConfigStmt, strings.Join(vehicle.Configuration, ","))
 	}
 
 	rows, _, err := db.Query(configStmt,
@@ -248,7 +247,6 @@ func (vehicle *Vehicle) GetProductMatch() (match *ProductMatch) {
 			p := Part{
 				PartId: pId,
 			}
-			log.Println(p.PartId)
 			p.GetWithVehicle(vehicle)
 			part_objs = append(part_objs, p)
 			c <- 1
@@ -267,20 +265,6 @@ func (vehicle *Vehicle) GetProductMatch() (match *ProductMatch) {
 
 func (v *Vehicle) GetParts() (parts []int, err error) {
 	db := database.Db
-
-	log.Printf(vehiclePartsStmt,
-		v.Year,
-		v.Make,
-		v.Model,
-		v.Year,
-		v.Make,
-		v.Model,
-		v.Submodel,
-		v.Year,
-		v.Make,
-		v.Model,
-		v.Submodel,
-		strings.Join(v.Configuration, ","))
 
 	rows, _, err := db.Query(vehiclePartsStmt,
 		v.Year,

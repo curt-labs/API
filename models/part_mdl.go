@@ -3,7 +3,6 @@ package models
 import (
 	"../helpers/database"
 	"errors"
-	"log"
 	"strings"
 	"time"
 )
@@ -19,9 +18,9 @@ var (
 
 type Part struct {
 	PartId, CustPartId, Status, PriceCode, RelatedCount int
-	InstallTime, AverageReview                          float64
+	AverageReview                                       float64
 	DateModified, DateAdded                             time.Time
-	ShortDesc, PartClass, Drilling, Exposed             string
+	ShortDesc, PartClass                                string
 	Attributes                                          []Attribute
 	VehicleAttributes                                   []string
 	Content                                             []Content
@@ -32,7 +31,7 @@ type Part struct {
 	Categories                                          []Category
 	Videos                                              []Video
 	Packages                                            []Package
-	Vehicles                                            []Vehicle
+	//Vehicles                                            []Vehicle
 }
 
 type Attribute struct {
@@ -54,7 +53,7 @@ func (p *Part) Get() error {
 
 	basicChan := make(chan int)
 	attrChan := make(chan int)
-	vehicleChan := make(chan int)
+	// vehicleChan := make(chan int)
 	go func() {
 		basicErr := p.Basics()
 		if basicErr != nil {
@@ -71,18 +70,18 @@ func (p *Part) Get() error {
 		attrChan <- 1
 	}()
 
-	go func() {
-		vehicles, vErr := ReverseLookup(p.PartId)
-		if vErr != nil {
-			errs = append(errs, vErr.Error())
-		}
-		p.Vehicles = vehicles
-		vehicleChan <- 1
-	}()
+	// go func() {
+	// 	vehicles, vErr := ReverseLookup(p.PartId)
+	// 	if vErr != nil {
+	// 		errs = append(errs, vErr.Error())
+	// 	}
+	// 	p.Vehicles = vehicles
+	// 	vehicleChan <- 1
+	// }()
 
 	<-basicChan
 	<-attrChan
-	<-vehicleChan
+	// <-vehicleChan
 
 	if len(errs) > 0 {
 		return errors.New("Error: " + strings.Join(errs, ", "))
@@ -142,7 +141,6 @@ func (p *Part) GetAttributes() (err error) {
 		}
 		attrs = append(attrs, attr)
 	}
-	log.Println(attrs)
 	p.Attributes = attrs
 
 	return
