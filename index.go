@@ -35,7 +35,9 @@ func main() {
 	server.Get("/vehicle/:year/:make/:model/:submodel", vehicle_ctlr.Config)
 	server.Get("/vehicle/:year/:make/:model/:submodel/:config(.+)", vehicle_ctlr.Config)
 
+	server.Get("/part/:part/vehicles", part_ctlr.Vehicles)
 	server.Get("/part/:part", part_ctlr.Get)
+
 
 	http.Handle("/", server)
 	http.ListenAndServe(*listenAddr, nil)

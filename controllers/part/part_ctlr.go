@@ -21,3 +21,18 @@ func Get(w http.ResponseWriter, r *http.Request) {
 
 	plate.ServeFormatted(w, r, part)
 }
+
+func Vehicles(w http.ResponseWriter, r *http.Request) {
+	params := r.URL.Query()
+	id, err := strconv.Atoi(params.Get(":part"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusFound)
+	}
+
+	vehicles, err := ReverseLookup(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusFound)
+	}
+
+	plate.ServeFormatted(w, r, vehicles)
+}
