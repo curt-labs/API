@@ -67,12 +67,15 @@ var (
 					join vcdb_Make ma on bv.MakeID = ma.ID
 					join vcdb_Model mo on bv.ModelID = mo.ID
 					where bv.YearID = %f and ma.MakeName = '%s'
-					and mo.ModelName = '%s' and sm.SubmodelName = '%s' %s order by cat.sort`
+					and mo.ModelName = '%s' and sm.SubmodelName = '%s' %s
+					group by ca.value
+					order by cat.sort`
 
-	nestedConfigStmt = `and cat.name not in (
+	nestedConfigBegin = `and cat.name not in (
 					select cat.name from ConfigAttributeType cat
 					join ConfigAttribute ca on cat.ID = ca.ConfigAttributeTypeID
-					where ca.value in ('%s'))`
+					where ca.value in (`
+	nestedConfigEnd = `))`
 
 	vehiclePartsStmt = `select distinct vp.PartNumber as part from vcdb_VehiclePart vp
 					join vcdb_Vehicle v on vp.VehicleID = v.ID
@@ -199,7 +202,16 @@ func (vehicle *Vehicle) GetConfiguration() (opt ConfigOption) {
 
 	var nested string
 	if len(vehicle.Configuration) > 0 {
-		nested = fmt.Sprintf(nestedConfigStmt, strings.Join(vehicle.Configuration, ","))
+		nested = nestedConfigBegin
+		for i, c := range vehicle.Configuration {
+			if i != len(vehicle.Configuration)-1 {
+				nested = nested + fmt.Sprintf("'%s',", c)
+			} else {
+				nested = nested + fmt.Sprintf("'%s'", c)
+			}
+
+		}
+		nested = nested + nestedConfigEnd
 	}
 
 	rows, _, err := db.Query(configStmt,
@@ -231,7 +243,7 @@ func (vehicle *Vehicle) GetConfiguration() (opt ConfigOption) {
 	return
 }
 
-func (vehicle *Vehicle) GetProductMatch() (match *ProductMatch) {
+func (vehicle *Vehicle) GetProductMatch(key string) (match *ProductMatch) {
 
 	match = new(ProductMatch)
 
@@ -247,7 +259,7 @@ func (vehicle *Vehicle) GetProductMatch() (match *ProductMatch) {
 			p := Part{
 				PartId: pId,
 			}
-			p.GetWithVehicle(vehicle)
+			p.GetWithVehicle(vehicle, key)
 			part_objs = append(part_objs, p)
 			c <- 1
 		}(id)

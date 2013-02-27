@@ -57,6 +57,7 @@ func Model(w http.ResponseWriter, r *http.Request) {
 func Submodel(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 	year, _ := strconv.ParseFloat(params.Get(":year"), 64)
+	key := params.Get("key")
 
 	v := Vehicle{
 		Year:  year,
@@ -73,10 +74,10 @@ func Submodel(w http.ResponseWriter, r *http.Request) {
 		subs = v.GetSubmodels()
 		subsChan <- 1
 	}()
-	go func() {
-		matched = v.GetProductMatch()
+	go func(k string) {
+		matched = v.GetProductMatch(k)
 		matchedChan <- 1
-	}()
+	}(key)
 	<-subsChan
 	<-matchedChan
 
@@ -92,6 +93,7 @@ func Submodel(w http.ResponseWriter, r *http.Request) {
 func Config(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 	year, _ := strconv.ParseFloat(params.Get(":year"), 64)
+	key := params.Get("key")
 
 	config_vals := strings.Split(params.Get(":config"), "/")
 
@@ -112,10 +114,10 @@ func Config(w http.ResponseWriter, r *http.Request) {
 		config_opts = v.GetConfiguration()
 		configChan <- 1
 	}()
-	go func() {
-		matched = v.GetProductMatch()
+	go func(k string) {
+		matched = v.GetProductMatch(k)
 		matchedChan <- 1
-	}()
+	}(key)
 	<-configChan
 	<-matchedChan
 

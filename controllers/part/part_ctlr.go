@@ -10,11 +10,12 @@ import (
 func Get(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 	id, _ := strconv.Atoi(params.Get(":part"))
+	key := params.Get("key")
 	part := Part{
 		PartId: id,
 	}
 
-	err := part.Get()
+	err := part.Get(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusFound)
 	}

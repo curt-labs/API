@@ -12,6 +12,11 @@ import (
 
 var (
 	listenAddr = flag.String("http", ":8080", "http listen address")
+
+	CorsHandler = func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Access-Control-Allow-Origin", "*")
+		return
+	}
 )
 
 const (
@@ -24,6 +29,7 @@ func main() {
 	server := plate.NewServer("doughboy")
 
 	server.AddFilter(auth.AuthHandler)
+	server.AddFilter(CorsHandler)
 	server.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "http://labs.curtmfg.com/", http.StatusFound)
 	}).NoFilter()

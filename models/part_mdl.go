@@ -15,14 +15,18 @@ var (
 
 	partAttrStmt = `select field, value from PartAttribute where partID = %d`
 
-	partPriceStmt = `select priceType, price from Price where partID = %d`
+	partPriceStmt = `select priceType, price, enforced from Price where partID = %d`
 
 	partReviewStmt = `select rating,subject,review_text,name,email,createdDate from Review
 				where partID = %d and approved = 1 and active = 1`
+
+	relatedPartStmt = `select distinct relatedID from RelatedPart
+				where partID = %d
+				order by relatedID`
 )
 
 type Part struct {
-	PartId, CustPartId, Status, PriceCode, RelatedCount int
+	PartId, Status, PriceCode, RelatedCount int
 	AverageReview                                       float64
 	DateModified, DateAdded                             time.Time
 	ShortDesc, PartClass                                string
@@ -32,11 +36,16 @@ type Part struct {
 	Pricing                                             []Pricing
 	Reviews                                             []Review
 	Images                                              []Image
-	Related                                             []Part
+	Related                                             []int
 	Categories                                          []Category
 	Videos                                              []Video
 	Packages                                            []Package
-	//Vehicles                                            []Vehicle
+	Customer Customer
+}
+
+type Customer struct {
+	Price float64
+	CartReference int
 }
 
 type Attribute struct {
@@ -53,7 +62,7 @@ type Pricing struct {
 	Enforced bool
 }
 
-func (p *Part) Get() error {
+func (p *Part) Get(key string) error {
 
 	var errs []string
 
@@ -63,6 +72,8 @@ func (p *Part) Get() error {
 	reviewChan := make(chan int)
 	imageChan := make(chan int)
 	videoChan := make(chan int)
+	customerChan := make(chan int)
+	relatedChan := make(chan int)
 
 	go func() {
 		basicErr := p.Basics()
@@ -112,12 +123,30 @@ func (p *Part) Get() error {
 		videoChan <- 1
 	}()
 
+	go func(api_key string) {
+		bindErr := p.BindCustomer(api_key)
+		if bindErr != nil {
+			errs = append(errs,bindErr.Error())
+		}
+		customerChan <- 1
+	}(key)
+
+	go func() {
+		relErr := p.GetRelated()
+		if relErr != nil {
+			errs = append(errs, relErr.Error())
+		}
+		relatedChan <- 1
+	}()
+
 	<-basicChan
 	<-attrChan
 	<-priceChan
 	<-reviewChan
 	<-imageChan
 	<-videoChan
+	<-customerChan
+	<-relatedChan
 
 	if len(errs) > 0 {
 		return errors.New("Error: " + strings.Join(errs, ", "))
@@ -125,16 +154,16 @@ func (p *Part) Get() error {
 	return nil
 }
 
-func (p *Part) GetWithVehicle(vehicle *Vehicle) error {
+func (p *Part) GetWithVehicle(vehicle *Vehicle, api_key string) error {
 
 	var errs []string
 
 	superChan := make(chan int)
 	noteChan := make(chan int)
-	go func() {
-		p.Get()
+	go func(key string) {
+		p.Get(key)
 		superChan <- 1
-	}()
+	}(api_key)
 	go func() {
 		notes, nErr := vehicle.GetNotes(p.PartId)
 		if nErr != nil && notes != nil {
@@ -155,10 +184,10 @@ func (p *Part) GetWithVehicle(vehicle *Vehicle) error {
 	return nil
 }
 
-func (p *Part) GetById(id int) {
+func (p *Part) GetById(id int, key string) {
 	p.PartId = id
 
-	p.Get()
+	p.Get(key)
 }
 
 func (p *Part) GetAttributes() (err error) {
@@ -222,13 +251,14 @@ func (p *Part) GetPricing() error {
 
 	typ := res.Map("priceType")
 	price := res.Map("price")
+	enforced := res.Map("enforced")
 
 	var prices []Pricing
 	for _, row := range rows {
 		pr := Pricing{
 			row.Str(typ),
 			row.Float(price),
-			false,
+			row.ForceBool(enforced),
 		}
 
 		if pr.Type == "Map" {
@@ -239,5 +269,40 @@ func (p *Part) GetPricing() error {
 
 	p.Pricing = prices
 
+	return nil
+}
+
+func (p *Part) GetRelated() error {
+	db := database.Db
+
+	rows, _, err := db.Query(relatedPartStmt, p.PartId)
+	if database.MysqlError(err){
+		return err
+	}
+
+	var related []int
+	for _, row := range rows {
+		related = append(related, row.Int(0))
+	}
+	p.Related = related
+	return nil
+}
+
+func (p *Part) BindCustomer(key string) error {
+	price, err := GetCustomerPrice(key,p.PartId)
+	if err != nil {
+		return err
+	}
+
+	ref, err := GetCustomerCartReference(key, p.PartId)
+	if err != nil {
+		return err
+	}
+
+	cust := Customer{
+		Price: price,
+		CartReference: ref,
+	}
+	p.Customer = cust
 	return nil
 }
