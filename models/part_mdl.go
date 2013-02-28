@@ -74,6 +74,7 @@ func (p *Part) Get(key string) error {
 	videoChan := make(chan int)
 	customerChan := make(chan int)
 	relatedChan := make(chan int)
+	packageChan := make(chan int)
 
 	go func() {
 		basicErr := p.Basics()
@@ -139,6 +140,14 @@ func (p *Part) Get(key string) error {
 		relatedChan <- 1
 	}()
 
+	go func() {
+		pkgErr := p.GetPartPackaging()
+		if pkgErr != nil {
+			errs = append(errs, pkgErr.Error())
+		}
+		packageChan <- 1
+	}()
+
 	<-basicChan
 	<-attrChan
 	<-priceChan
@@ -147,6 +156,7 @@ func (p *Part) Get(key string) error {
 	<-videoChan
 	<-customerChan
 	<-relatedChan
+	<-packageChan
 
 	if len(errs) > 0 {
 		return errors.New("Error: " + strings.Join(errs, ", "))
