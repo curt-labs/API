@@ -3,6 +3,7 @@ package models
 import (
 	"../helpers/database"
 	"errors"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -23,6 +24,13 @@ var (
 	relatedPartStmt = `select distinct relatedID from RelatedPart
 				where partID = %d
 				order by relatedID`
+
+	partContentStmt = `select ct.type, con.text
+				from Content as con
+				join ContentBridge as cb on con.contentID = cb.contentID
+				join ContentType as ct on con.cTypeID = ct.cTypeID
+				where cb.partID = %d
+				order by ct.type`
 )
 
 type Part struct {
@@ -30,6 +38,7 @@ type Part struct {
 	AverageReview                           float64
 	DateModified, DateAdded                 time.Time
 	ShortDesc, PartClass                    string
+	InstallSheet                            *url.URL
 	Attributes                              []Attribute
 	VehicleAttributes                       []string
 	Content                                 []Content
@@ -76,6 +85,7 @@ func (p *Part) Get(key string) error {
 	relatedChan := make(chan int)
 	packageChan := make(chan int)
 	categoryChan := make(chan int)
+	contentChan := make(chan int)
 
 	go func() {
 		basicErr := p.Basics()
@@ -157,6 +167,14 @@ func (p *Part) Get(key string) error {
 		categoryChan <- 1
 	}()
 
+	go func() {
+		conErr := p.GetContent()
+		if conErr != nil {
+			errs = append(errs, conErr.Error())
+		}
+		contentChan <- 1
+	}()
+
 	<-basicChan
 	<-attrChan
 	<-priceChan
@@ -167,6 +185,7 @@ func (p *Part) Get(key string) error {
 	<-relatedChan
 	<-packageChan
 	<-categoryChan
+	<-contentChan
 
 	if len(errs) > 0 {
 		return errors.New("Error: " + strings.Join(errs, ", "))
@@ -305,6 +324,32 @@ func (p *Part) GetRelated() error {
 		related = append(related, row.Int(0))
 	}
 	p.Related = related
+	return nil
+}
+
+func (p *Part) GetContent() error {
+	db := database.Db
+
+	rows, _, err := db.Query(partContentStmt, p.PartId)
+	if database.MysqlError(err) {
+		return err
+	}
+
+	var content []Content
+	for _, row := range rows {
+		con := Content{
+			Key:   row.Str(0),
+			Value: row.Str(1),
+		}
+
+		if strings.Contains(strings.ToLower(con.Key), "install") {
+			sheetUrl, _ := url.Parse(con.Value)
+			p.InstallSheet = sheetUrl
+		} else {
+			content = append(content, con)
+		}
+	}
+	p.Content = content
 	return nil
 }
 
