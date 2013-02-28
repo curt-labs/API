@@ -27,24 +27,24 @@ var (
 
 type Part struct {
 	PartId, Status, PriceCode, RelatedCount int
-	AverageReview                                       float64
-	DateModified, DateAdded                             time.Time
-	ShortDesc, PartClass                                string
-	Attributes                                          []Attribute
-	VehicleAttributes                                   []string
-	Content                                             []Content
-	Pricing                                             []Pricing
-	Reviews                                             []Review
-	Images                                              []Image
-	Related                                             []int
-	Categories                                          []Category
-	Videos                                              []Video
-	Packages                                            []Package
-	Customer Customer
+	AverageReview                           float64
+	DateModified, DateAdded                 time.Time
+	ShortDesc, PartClass                    string
+	Attributes                              []Attribute
+	VehicleAttributes                       []string
+	Content                                 []Content
+	Pricing                                 []Pricing
+	Reviews                                 []Review
+	Images                                  []Image
+	Related                                 []int
+	Categories                              []Category
+	Videos                                  []Video
+	Packages                                []Package
+	Customer                                Customer
 }
 
 type Customer struct {
-	Price float64
+	Price         float64
 	CartReference int
 }
 
@@ -75,6 +75,7 @@ func (p *Part) Get(key string) error {
 	customerChan := make(chan int)
 	relatedChan := make(chan int)
 	packageChan := make(chan int)
+	categoryChan := make(chan int)
 
 	go func() {
 		basicErr := p.Basics()
@@ -127,7 +128,7 @@ func (p *Part) Get(key string) error {
 	go func(api_key string) {
 		bindErr := p.BindCustomer(api_key)
 		if bindErr != nil {
-			errs = append(errs,bindErr.Error())
+			errs = append(errs, bindErr.Error())
 		}
 		customerChan <- 1
 	}(key)
@@ -148,6 +149,14 @@ func (p *Part) Get(key string) error {
 		packageChan <- 1
 	}()
 
+	go func() {
+		catErr := p.PartBreadcrumbs()
+		if catErr != nil {
+			errs = append(errs, catErr.Error())
+		}
+		categoryChan <- 1
+	}()
+
 	<-basicChan
 	<-attrChan
 	<-priceChan
@@ -157,6 +166,7 @@ func (p *Part) Get(key string) error {
 	<-customerChan
 	<-relatedChan
 	<-packageChan
+	<-categoryChan
 
 	if len(errs) > 0 {
 		return errors.New("Error: " + strings.Join(errs, ", "))
@@ -286,7 +296,7 @@ func (p *Part) GetRelated() error {
 	db := database.Db
 
 	rows, _, err := db.Query(relatedPartStmt, p.PartId)
-	if database.MysqlError(err){
+	if database.MysqlError(err) {
 		return err
 	}
 
@@ -299,7 +309,7 @@ func (p *Part) GetRelated() error {
 }
 
 func (p *Part) BindCustomer(key string) error {
-	price, err := GetCustomerPrice(key,p.PartId)
+	price, err := GetCustomerPrice(key, p.PartId)
 	if err != nil {
 		return err
 	}
@@ -310,7 +320,7 @@ func (p *Part) BindCustomer(key string) error {
 	}
 
 	cust := Customer{
-		Price: price,
+		Price:         price,
 		CartReference: ref,
 	}
 	p.Customer = cust
