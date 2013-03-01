@@ -37,44 +37,47 @@ type Category struct {
 }
 
 func (part *Part) PartBreadcrumbs() error {
-	db := database.Db
+	//db := database.Db
 
-	row, res, err := db.QueryFirst(partCategoryStmt, part.PartId)
+	catRow, catRes, err := database.Db.QueryFirst(partCategoryStmt, part.PartId)
 	if database.MysqlError(err) {
 		return err
 	}
 
-	id := res.Map("catID")
-	parent := res.Map("parentID")
-	sort := res.Map("sort")
-	date := res.Map("dateAdded")
-	title := res.Map("catTitle")
-	sDesc := res.Map("shortDesc")
-	lDesc := res.Map("longDesc")
-	img := res.Map("image")
-	isLife := res.Map("isLifestyle")
-	vSpecific := res.Map("vehicleSpecific")
-	cCode := res.Map("code")
-	font := res.Map("font")
+	id := catRes.Map("catID")
+	parent := catRes.Map("parentID")
+	sort := catRes.Map("sort")
+	date := catRes.Map("dateAdded")
+	title := catRes.Map("catTitle")
+	sDesc := catRes.Map("shortDesc")
+	lDesc := catRes.Map("longDesc")
+	img := catRes.Map("image")
+	isLife := catRes.Map("isLifestyle")
+	vSpecific := catRes.Map("vehicleSpecific")
+	cCode := catRes.Map("code")
+	font := catRes.Map("font")
 
-	da, _ := time.Parse("2006-01-02 15:04:01", row.Str(date))
-	imgUrl, _ := url.Parse(row.Str(img))
+	da, _ := time.Parse("2006-01-02 15:04:01", catRow.Str(date))
+	imgUrl, _ := url.Parse(catRow.Str(img))
 
-	colorCode := row.Str(cCode)
-	rgbCode := "rgb(" + colorCode[0:3] + "," + colorCode[3:6] + "," + colorCode[6:9] + ")"
+	colorCode := catRow.Str(cCode)
+	rgbCode := ""
+	if len(colorCode) == 9 {
+		rgbCode = "rgb(" + colorCode[0:3] + "," + colorCode[3:6] + "," + colorCode[6:9] + ")"
+	}
 
 	initCat := Category{
-		CategoryId:      row.Int(id),
-		ParentId:        row.Int(parent),
-		Sort:            row.Int(sort),
+		CategoryId:      catRow.Int(id),
+		ParentId:        catRow.Int(parent),
+		Sort:            catRow.Int(sort),
 		DateAdded:       da,
-		Title:           row.Str(title),
-		ShortDesc:       row.Str(sDesc),
-		LongDesc:        row.Str(lDesc),
-		FontCode:        "#" + row.Str(font),
+		Title:           catRow.Str(title),
+		ShortDesc:       catRow.Str(sDesc),
+		LongDesc:        catRow.Str(lDesc),
+		FontCode:        "#" + catRow.Str(font),
 		Image:           imgUrl,
-		IsLifestyle:     row.ForceBool(isLife),
-		VehicleSpecific: row.ForceBool(vSpecific),
+		IsLifestyle:     catRow.ForceBool(isLife),
+		VehicleSpecific: catRow.ForceBool(vSpecific),
 		ColorCode:       rgbCode,
 	}
 
@@ -87,39 +90,42 @@ func (part *Part) PartBreadcrumbs() error {
 			if parent == 0 {
 				break
 			}
-			row, res, err = db.QueryFirst(parentCategoryStmt, parent)
+			catRow, catRes, err = db.QueryFirst(parentCategoryStmt, parent)
 
-			id := res.Map("catID")
-			parentID := res.Map("parentID")
-			sort := res.Map("sort")
-			date := res.Map("dateAdded")
-			title := res.Map("catTitle")
-			sDesc := res.Map("shortDesc")
-			lDesc := res.Map("longDesc")
-			img := res.Map("image")
-			isLife := res.Map("isLifestyle")
-			vSpecific := res.Map("vehicleSpecific")
-			cCode := res.Map("code")
-			font := res.Map("font")
+			id := catRes.Map("catID")
+			parentID := catRes.Map("parentID")
+			sort := catRes.Map("sort")
+			date := catRes.Map("dateAdded")
+			title := catRes.Map("catTitle")
+			sDesc := catRes.Map("shortDesc")
+			lDesc := catRes.Map("longDesc")
+			img := catRes.Map("image")
+			isLife := catRes.Map("isLifestyle")
+			vSpecific := catRes.Map("vehicleSpecific")
+			cCode := catRes.Map("code")
+			font := catRes.Map("font")
 
-			da, _ := time.Parse("2006-01-02 15:04:01", row.Str(date))
-			imgUrl, _ := url.Parse(row.Str(img))
+			da, _ := time.Parse("2006-01-02 15:04:01", catRow.Str(date))
+			imgUrl, _ := url.Parse(catRow.Str(img))
 
-			colorCode := row.Str(cCode)
-			rgbCode := "rgb(" + colorCode[0:3] + "," + colorCode[3:6] + "," + colorCode[6:9] + ")"
+			colorCode := catRow.Str(cCode)
+			rgbCode := ""
+			if len(colorCode) == 9 {
+				rgbCode = "rgb(" + colorCode[0:3] + "," + colorCode[3:6] + "," + colorCode[6:9] + ")"
+			}
 
 			subCat := Category{
-				CategoryId:      row.Int(id),
-				ParentId:        row.Int(parentID),
-				Sort:            row.Int(sort),
+				CategoryId:      catRow.Int(id),
+				ParentId:        catRow.Int(parentID),
+				Sort:            catRow.Int(sort),
 				DateAdded:       da,
-				Title:           row.Str(title),
-				ShortDesc:       row.Str(sDesc),
-				LongDesc:        row.Str(lDesc),
-				FontCode:        "#" + row.Str(font),
+				Title:           catRow.Str(title),
+				ShortDesc:       catRow.Str(sDesc),
+				LongDesc:        catRow.Str(lDesc),
+				FontCode:        "#" + catRow.Str(font),
 				Image:           imgUrl,
-				IsLifestyle:     row.ForceBool(isLife),
-				VehicleSpecific: row.ForceBool(vSpecific),
+				IsLifestyle:     catRow.ForceBool(isLife),
+				VehicleSpecific: catRow.ForceBool(vSpecific),
 				ColorCode:       rgbCode,
 			}
 

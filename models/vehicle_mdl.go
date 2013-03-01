@@ -3,6 +3,7 @@ package models
 import (
 	"../helpers/database"
 	"fmt"
+	"log"
 	"strings"
 )
 
@@ -41,13 +42,14 @@ var (
 					where bv.YearID = %f
 					order by ma.MakeName`
 
-	modelStmt = `select distinct mo.ModelName as model from BaseVehicle bv
-					join vcdb_Model mo on bv.ModelID = mo.ID
-					join vcdb_Make ma on bv.MakeID = ma.ID
-					join vcdb_Vehicle v on bv.ID = v.BaseVehicleID
-					join vcdb_VehiclePart vp on v.ID = vp.VehicleID
-					where bv.YearID = %f and ma.MakeName = '%s'
-					order by mo.ModelName`
+	modelStmt = `select distinct mo.ModelName as model
+				from BaseVehicle as bv 
+				join vcdb_Make as ma on bv.MakeID = ma.ID 
+				join vcdb_Model as mo on bv.ModelID = mo.ID
+				join vcdb_Vehicle as v on bv.ID = v.BaseVehicleID
+				join vcdb_VehiclePart as vp on v.ID = vp.VehicleID
+				where bv.YearID = %f and ma.MakeName = '%s'
+				order by mo.ModelName`
 
 	submodelStmt = `select distinct sm.SubmodelName as submodel from BaseVehicle bv
 					join vcdb_Model mo on bv.ModelID = mo.ID
@@ -157,13 +159,14 @@ func (vehicle *Vehicle) GetMakes() (opt ConfigOption) {
 	}
 	opt.Options = makes
 	return
-
 }
 
 func (vehicle *Vehicle) GetModels() (opt ConfigOption) {
 	db := database.Db
 
 	opt.Type = "Models"
+
+	log.Printf(modelStmt, vehicle.Year, vehicle.Make)
 
 	rows, _, err := db.Query(modelStmt, vehicle.Year, vehicle.Make)
 	if database.MysqlError(err) {
@@ -174,7 +177,6 @@ func (vehicle *Vehicle) GetModels() (opt ConfigOption) {
 	for _, row := range rows {
 		models = append(models, row.Str(0))
 	}
-
 	opt.Options = models
 	return
 }
