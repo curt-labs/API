@@ -46,6 +46,13 @@ Endpoints
 
     GET - http://api.curtmfg.com/v3/vehicle/2012/Audi/A5/Cabriolet/Coupe?key=[public api key]
 
+*Get Part by Part #
+
+    GET - http://api.curtmfg.com/v3/part/110003?key=[public api key]
+
+*Reverse Lookup by Part #
+
+    GET - http://api.curtmfg.com/v3/part/110003/vehicles?key=[public api key]
 
 ----
 
