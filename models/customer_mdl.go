@@ -20,17 +20,17 @@ var (
 					and ci.partID = %d`
 )
 
-
-
 func GetCustomerPrice(api_key string, part_id int) (price float64, err error) {
 	db := database.Db
 
 	row, _, err := db.QueryFirst(customerPriceStmt, api_key, part_id)
-	if database.MysqlError(err){
+	if database.MysqlError(err) {
 		return
 	}
+	if len(row) == 1 {
+		price = row.Float(0)
+	}
 
-	price = row.Float(0)
 	return
 }
 
@@ -38,10 +38,13 @@ func GetCustomerCartReference(api_key string, part_id int) (ref int, err error) 
 	db := database.Db
 
 	row, _, err := db.QueryFirst(customerPartStmt, api_key, part_id)
-	if database.MysqlError(err){
+	if database.MysqlError(err) {
 		return
 	}
 
-	ref = row.Int(0)
+	if len(row) == 1 {
+		ref = row.Int(0)
+	}
+
 	return
 }

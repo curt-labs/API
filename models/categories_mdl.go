@@ -7,6 +7,8 @@ import (
 )
 
 var (
+
+	// Get the category that a part is tied to, by PartId
 	partCategoryStmt = `select c.catID, c.parentID, c.sort, c.dateAdded,
 				c.catTitle, c.shortDesc, c.longDesc,
 				c.image, c.isLifestyle, c.vehicleSpecific,
@@ -17,6 +19,7 @@ var (
 				order by c.sort
 				limit 1`
 
+	// Get a category by catID
 	parentCategoryStmt = `select c.catID, c.parentID, c.sort, c.dateAdded,
 					c.catTitle, c.shortDesc, c.longDesc,
 					c.image, c.isLifestyle, c.vehicleSpecific,
@@ -36,14 +39,25 @@ type Category struct {
 	IsLifestyle, VehicleSpecific bool
 }
 
+/*
+* PartBreacrumbs
+*
+* Description: Builds out Category breadcrumb array for the current
+*  		part object.
+*
+*  Inherited: part Part
+*
+* Retruns: error
+ */
 func (part *Part) PartBreadcrumbs() error {
-	//db := database.Db
 
+	// Execute SQL Query against current PartId
 	catRow, catRes, err := database.Db.QueryFirst(partCategoryStmt, part.PartId)
-	if database.MysqlError(err) {
+	if database.MysqlError(err) { // Error occurred while executing query
 		return err
 	}
 
+	// Map the different columns to variables
 	id := catRes.Map("catID")
 	parent := catRes.Map("parentID")
 	sort := catRes.Map("sort")
@@ -57,15 +71,20 @@ func (part *Part) PartBreadcrumbs() error {
 	cCode := catRes.Map("code")
 	font := catRes.Map("font")
 
+	// Attempt to parse out the dataAdded field
 	da, _ := time.Parse("2006-01-02 15:04:01", catRow.Str(date))
+
+	// Attempt to parse out the image Url
 	imgUrl, _ := url.Parse(catRow.Str(img))
 
+	// Build out RGB value for color coding
 	colorCode := catRow.Str(cCode)
 	rgbCode := ""
 	if len(colorCode) == 9 {
 		rgbCode = "rgb(" + colorCode[0:3] + "," + colorCode[3:6] + "," + colorCode[6:9] + ")"
 	}
 
+	// Populate our lowest level Category
 	initCat := Category{
 		CategoryId:      catRow.Int(id),
 		ParentId:        catRow.Int(parent),
@@ -81,17 +100,27 @@ func (part *Part) PartBreadcrumbs() error {
 		ColorCode:       rgbCode,
 	}
 
+	// Instantiate our array with the initial category
 	var cats []Category
 	cats = append(cats, initCat)
 
-	if initCat.ParentId > 0 {
+	if initCat.ParentId > 0 { // Not top level category
+
+		// Loop through the categories retrieving parents until we
+		// hit the top-tier category
 		parent := initCat.ParentId
 		for {
 			if parent == 0 {
 				break
 			}
-			catRow, catRes, err = db.QueryFirst(parentCategoryStmt, parent)
 
+			// Execute out SQL query to retrieve a category by ParentId
+			catRow, catRes, err = db.QueryFirst(parentCategoryStmt, parent)
+			if database.MysqlError(err) {
+				return err
+			}
+
+			// Map the columns
 			id := catRes.Map("catID")
 			parentID := catRes.Map("parentID")
 			sort := catRes.Map("sort")
@@ -105,15 +134,20 @@ func (part *Part) PartBreadcrumbs() error {
 			cCode := catRes.Map("code")
 			font := catRes.Map("font")
 
+			// Parse the dateAdded field
 			da, _ := time.Parse("2006-01-02 15:04:01", catRow.Str(date))
+
+			// Parse the image Url
 			imgUrl, _ := url.Parse(catRow.Str(img))
 
+			// Build out RGB for color coding
 			colorCode := catRow.Str(cCode)
 			rgbCode := ""
 			if len(colorCode) == 9 {
 				rgbCode = "rgb(" + colorCode[0:3] + "," + colorCode[3:6] + "," + colorCode[6:9] + ")"
 			}
 
+			// Create Category object
 			subCat := Category{
 				CategoryId:      catRow.Int(id),
 				ParentId:        catRow.Int(parentID),
@@ -129,11 +163,13 @@ func (part *Part) PartBreadcrumbs() error {
 				ColorCode:       rgbCode,
 			}
 
+			// Append new Category onto array
 			cats = append(cats, subCat)
 			parent = subCat.ParentId
 		}
 	}
 
+	// Apply breadcrumbs to our part object and return
 	part.Categories = cats
 	return nil
 }
