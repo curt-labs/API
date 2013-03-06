@@ -8,7 +8,7 @@ for being Content-Type agnostic to XML and JSON. Some of the best features a lis
 
   - Concurrent MySQL access using [Goroutines](http://golang.org/doc/effective_go.html#concurrency)
   - JSON rendering powered by [encoding/json](http://golang.org/pkg/encoding/json/)
-  - XML rendering powered by [encoding/json](http://golang.org/pkg/encoding/xml/)
+  - XML rendering powered by [encoding/xml](http://golang.org/pkg/encoding/xml/)
   - MySQL Persistence using [mymysql](https://github.com/ziutek/mymysql)
   - ACES Compliant vehicle lookup with product groups
  
