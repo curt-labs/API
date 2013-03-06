@@ -52,6 +52,16 @@ type Part struct {
 	Customer                                Customer
 }
 
+type PagedParts struct {
+	Parts  []Part
+	Paging []Paging
+}
+
+type Paging struct {
+	CurrentIndex int
+	PageCount    int
+}
+
 type Customer struct {
 	Price         float64
 	CartReference int
@@ -324,6 +334,7 @@ func (p *Part) GetRelated() error {
 		related = append(related, row.Int(0))
 	}
 	p.Related = related
+	p.RelatedCount = len(related)
 	return nil
 }
 

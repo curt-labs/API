@@ -46,6 +46,10 @@ Endpoints
 
     GET - http://api.curtmfg.com/v3/vehicle/2012/Audi/A5/Cabriolet/Coupe?key=[public api key]
 
+#### Parts
+
+---
+
 *Get Part by Part #
 
     GET - http://api.curtmfg.com/v3/part/110003?key=[public api key]
@@ -56,7 +60,29 @@ Endpoints
 
 ----
 
+#### Categories
 
+---
+
+*Get Category By Category Title
+
+    GET - http://api.curtmfg.com/v3/category/Hitches?key=[public api key]
+
+*Get Category By Category Id
+
+    GET - http://api.curtmfg.com/v3/category/1?key=[public api key]
+
+*Get Top Level Categories
+
+    GET - http://api.curtmfg.com/v3/category?key=[public api key]
+
+*Get Sub-Categories By Category Id
+
+    GET - http://api.curtmfg.com/v3/category/1/subs?key=[public api key]
+
+*Get Sub-Categories By Category Title
+
+    GET - http://api.curtmfg.com/v3/category/Hitches/subs?key=[public api key]
 
 Philoshopy
 -

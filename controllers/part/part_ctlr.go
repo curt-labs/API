@@ -17,7 +17,8 @@ func Get(w http.ResponseWriter, r *http.Request) {
 
 	err := part.Get(key)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusFound)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	plate.ServeFormatted(w, r, part)
@@ -32,7 +33,8 @@ func Vehicles(w http.ResponseWriter, r *http.Request) {
 
 	vehicles, err := ReverseLookup(id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusFound)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	plate.ServeFormatted(w, r, vehicles)
