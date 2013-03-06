@@ -45,6 +45,8 @@ func main() {
 	server.Get("/category", category_ctlr.Parents)
 	server.Get("/category/:id", category_ctlr.GetCategory)
 	server.Get("/category/:id/subs", category_ctlr.SubCategories)
+	server.Get("/category/:id/parts", category_ctlr.GetParts)
+	server.Get("/category/:id/parts/:page/:count", category_ctlr.GetParts)
 
 	server.Get("/part/:part/vehicles", part_ctlr.Vehicles)
 	server.Get("/part/:part", part_ctlr.Get)

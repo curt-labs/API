@@ -2,6 +2,7 @@ package models
 
 import (
 	"../helpers/database"
+	"github.com/ziutek/mymysql/mysql"
 	"net/url"
 	"time"
 )
@@ -66,7 +67,14 @@ var (
 
 	categoryPartBasicStmt = `select cp.partID
 					from CatPart as cp
-					where cp.catID = %d limit %d,%d`
+					where cp.catID = %d 
+					order by cp.partID
+					limit %d,%d`
+
+	categoryContentStmt = `select ct.type, c.text from ContentBridge cb
+					join Content as c on cb.contentID = c.contentID
+					left join ContentType as ct on c.cTypeID = ct.cTypeID
+					where cb.catID = %d`
 )
 
 type Category struct {
@@ -90,7 +98,7 @@ type ExtendedCategory struct {
 
 	// Extension for more detail
 	SubCategories []Category
-	Content       []interface{}
+	Content       []Content
 }
 
 /*
@@ -450,17 +458,21 @@ func (c *Category) SubCategories() (cats []Category, err error) {
 	return
 }
 
-func (c *Category) GetCategoryParts(key string) (parts []Part, err error) {
+func (c *Category) GetCategoryParts(key string, page int, count int) (parts []Part, err error) {
 
-	rows, _, err := database.Db.Query(categoryPartBasicStmt, c.CategoryId, 0, 5)
+	if page > 0 {
+		page = count * page
+	}
+
+	rows, _, err := database.Db.Query(categoryPartBasicStmt, c.CategoryId, page, count)
 	if database.MysqlError(err) {
 		return
 	}
 
 	chans := make(chan int, len(rows))
 
-	for _, row := range rows {
-		go func() {
+	for _, r := range rows {
+		go func(row mysql.Row) {
 			if len(row) == 1 {
 				p := Part{
 					PartId: row.Int(0),
@@ -471,7 +483,7 @@ func (c *Category) GetCategoryParts(key string) (parts []Part, err error) {
 			} else {
 				chans <- 1
 			}
-		}()
+		}(r)
 
 	}
 
@@ -486,6 +498,7 @@ func (c Category) GetCategory(key string) (extended ExtendedCategory, err error)
 	var errs []error
 	catChan := make(chan int)
 	subChan := make(chan int)
+	conChan := make(chan int)
 	// partChan := make(chan int)
 
 	// Build out generalized category properties
@@ -521,6 +534,16 @@ func (c Category) GetCategory(key string) (extended ExtendedCategory, err error)
 		subChan <- 1
 	}()
 
+	go func() {
+		cons, conErr := c.GetContent()
+		if conErr != nil {
+			errs = append(errs, conErr)
+		} else {
+			extended.Content = cons
+		}
+		conChan <- 1
+	}()
+
 	// go func() {
 	// 	parts, partErr := c.GetCategoryParts(key)
 	// 	paged := PagedParts{
@@ -535,6 +558,7 @@ func (c Category) GetCategory(key string) (extended ExtendedCategory, err error)
 
 	<-catChan
 	<-subChan
+	<-conChan
 	// <-partChan
 
 	if len(errs) > 1 {
@@ -542,6 +566,25 @@ func (c Category) GetCategory(key string) (extended ExtendedCategory, err error)
 	}
 
 	return
+}
 
-	// Get the SubCategories for the category
+func (c *Category) GetContent() (content []Content, err error) {
+
+	// Execute SQL Query against current CategoryId
+	conRows, res, err := database.Db.Query(categoryContentStmt, c.CategoryId)
+	if database.MysqlError(err) {
+		return
+	}
+
+	typ := res.Map("type")
+	text := res.Map("text")
+
+	for _, conRow := range conRows {
+		con := Content{
+			Key:   conRow.Str(typ),
+			Value: conRow.Str(text),
+		}
+		content = append(content, con)
+	}
+	return
 }

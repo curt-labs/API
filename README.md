@@ -84,6 +84,26 @@ Endpoints
 
     GET - http://api.curtmfg.com/v3/category/Hitches/subs?key=[public api key]
 
+*Get Category Parts By Category Id
+
+    GET - http://api.curtmfg.com/v3/category/3/parts?key=[public api key]
+> Keep in mind that the Get Category Parts endpoint implements paging. Below are example endpoints to help demonstrate implementing the pager.
+
+*Get Category Parts By Category Id with Paging
+
+    GET - http://api.curtmfg.com/v3/category/3/parts/2/20?key=[public api key]
+> In the above example 2 references the second "page" and 20 in the total count returned.
+
+*Get Category Parts By Category Title
+
+    GET - http://api.curtmfg.com/v3/category/Class I Trailer Hitches/parts?key=[public api key]
+> Keep in mind that the Get Category Parts endpoint implements paging. Below are example endpoints to help demonstrate implementing the pager.
+
+*Get Category Parts By Category Title with Paging
+
+    GET - http://api.curtmfg.com/v3/category/Class I Trailer Hitches/parts/2/20?key=[public api key]
+> In the above example 2 references the second "page" and 20 in the total count returned.
+
 Philoshopy
 -
 
