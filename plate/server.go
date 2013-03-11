@@ -361,9 +361,9 @@ func (this *Server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		if !route.unfiltered {
 			// execute global middleware filters
 			for _, filter := range this.Filters {
-				go func() {
-					filter(w, r)
-				}()
+				//go func() {
+				filter(w, r)
+				//}()
 				if w.started {
 					return
 				}
@@ -443,19 +443,6 @@ func ServeJson(w http.ResponseWriter, v interface{}) {
 	w.Write(content)
 }
 
-func ServeJsonp(w http.ResponseWriter, v interface{}) {
-	content, err := json.MarshalIndent(v, "", " ")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-	w.Header().Set("Content-Length", strconv.Itoa(len(content)))
-	w.Header().Set("Content-Type", "application/x-javascript")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-	w.Header().Set("Access-Control-Allow-Headers", "Origin")
-	w.Write(content)
-}
-
 // ReadJson will parses the JSON-encoded data in the http
 // Request object and stores the result in the value
 // pointed to by v.
@@ -522,9 +509,9 @@ func (rs *RequestSessions) Get(req *http.Request) map[string]interface{} {
 	defer rs.lk.Unlock()
 
 	if rs.m == nil {
-		log.Printf(LOG, "seshcookie: warning! trying to get session "+
-			"data for unknown request. Perhaps your handler "+
-			"isn't wrapped by a SessionHandler?")
+		// log.Printf(LOG, "seshcookie: warning! trying to get session "+
+		// 	"data for unknown request. Perhaps your handler "+
+		// 	"isn't wrapped by a SessionHandler?")
 		return nil
 	}
 

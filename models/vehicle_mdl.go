@@ -3,7 +3,6 @@ package models
 import (
 	"../helpers/database"
 	"fmt"
-	"log"
 	"strings"
 )
 
@@ -80,6 +79,7 @@ var (
 	nestedConfigEnd = `))`
 
 	vehiclePartsStmt = `select distinct vp.PartNumber as part from vcdb_VehiclePart vp
+					join Part as p on vp.PartNumber = p.partID
 					join vcdb_Vehicle v on vp.VehicleID = v.ID
 					left join VehicleConfigAttribute vca on v.ConfigID = vca.VehicleConfigID
 					left join ConfigAttribute ca on vca.AttributeID = ca.ID
@@ -88,16 +88,18 @@ var (
 					left join Submodel sm on v.SubModelID = sm.ID
 					join vcdb_Make ma on bv.MakeID = ma.ID
 					join vcdb_Model mo on bv.ModelID = mo.ID
-					where 
-					(bv.YearID = %f and ma.MakeName = '%s'
-					and mo.ModelName = '%s')
-					or
-					(bv.YearID = %f and ma.MakeName = '%s'
-					and mo.ModelName = '%s' and sm.SubmodelName = '%s')
-					or
-					(bv.YearID = %f and ma.MakeName = '%s'
-					and mo.ModelName = '%s' and sm.SubmodelName = '%s'
-					and ca.value in ('%s'))
+					where p.status in (800,900)
+					and (
+						(bv.YearID = %f and ma.MakeName = '%s'
+						and mo.ModelName = '%s')
+						or
+						(bv.YearID = %f and ma.MakeName = '%s'
+						and mo.ModelName = '%s' and sm.SubmodelName = '%s')
+						or
+						(bv.YearID = %f and ma.MakeName = '%s'
+						and mo.ModelName = '%s' and sm.SubmodelName = '%s'
+						and ca.value in ('%s'))
+					)
 					order by part;`
 
 	reverseLookupStmt = `select bv.YearID, ma.MakeName, mo.ModelName, sm.SubmodelName
@@ -165,8 +167,6 @@ func (vehicle *Vehicle) GetModels() (opt ConfigOption) {
 	db := database.Db
 
 	opt.Type = "Models"
-
-	log.Printf(modelStmt, vehicle.Year, vehicle.Make)
 
 	rows, _, err := db.Query(modelStmt, vehicle.Year, vehicle.Make)
 	if database.MysqlError(err) {

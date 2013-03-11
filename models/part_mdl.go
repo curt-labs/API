@@ -3,6 +3,7 @@ package models
 import (
 	"../helpers/database"
 	"errors"
+	"log"
 	"net/url"
 	"strings"
 	"time"
@@ -12,7 +13,7 @@ var (
 	basicsStmt = `select p.status, p.dateAdded, p.dateModified, p.shortDesc, p.partID, p.priceCode, pc.class
 				from Part as p
 				left join Class as pc on p.classID = pc.classID
-				where p.partID = %d limit 1`
+				where p.partID = %d && p.status in (800,900) limit 1`
 
 	partAttrStmt = `select field, value from PartAttribute where partID = %d`
 
@@ -245,6 +246,8 @@ func (p *Part) GetAttributes() (err error) {
 	rows, _, err := db.Query(partAttrStmt, p.PartId)
 	if database.MysqlError(err) {
 		return err
+	} else if rows == nil {
+		return
 	}
 
 	var attrs []Attribute
@@ -266,6 +269,10 @@ func (p *Part) Basics() error {
 	row, res, err := db.QueryFirst(basicsStmt, p.PartId)
 	if database.MysqlError(err) {
 		return err
+	} else if row == nil {
+		log.Println(p.PartId)
+		log.Println("No Part found for: " + string(p.PartId))
+		return errors.New("No Part Found for:" + string(p.PartId))
 	}
 	status := res.Map("status")
 	dateAdded := res.Map("dateAdded")
@@ -296,6 +303,8 @@ func (p *Part) GetPricing() error {
 	rows, res, err := db.Query(partPriceStmt, p.PartId)
 	if database.MysqlError(err) {
 		return err
+	} else if rows == nil {
+		return errors.New("No pricing found for part: " + string(p.PartId))
 	}
 
 	typ := res.Map("priceType")
@@ -327,6 +336,8 @@ func (p *Part) GetRelated() error {
 	rows, _, err := db.Query(relatedPartStmt, p.PartId)
 	if database.MysqlError(err) {
 		return err
+	} else if rows == nil {
+		return errors.New("No related found for part: " + string(p.PartId))
 	}
 
 	var related []int
@@ -344,6 +355,8 @@ func (p *Part) GetContent() error {
 	rows, _, err := db.Query(partContentStmt, p.PartId)
 	if database.MysqlError(err) {
 		return err
+	} else if rows == nil {
+		return errors.New("No content found for part: " + string(p.PartId))
 	}
 
 	var content []Content
