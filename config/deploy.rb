@@ -1,26 +1,43 @@
-set :application, "go-api"
-set :repository,  "git@github.com:curt-labs/GoAPI.git"
-
+default_run_options[:pty] = true
 ssh_options[:forward_agent] = true
 
-set :user, 'ninnemana'
-set :deploy_to, "/home/#{user}/app"
-set :gopath, deploy_to
-set :pid_file, deploy_to+'/pids/PIDFILE'
-set :symlinks, { "pids" => "pids"}
 
-role :app, "curt-api.cloudapp.net"
-role :web, "curt-api.cloudapp.net"
+set :application, "GoAPI"
+set :repository,  "git@github.com:curt-labs/GoAPI.git"
 
-task :production do
-	server "curt-api.cloudapp.net", :app
+set :scm, :git
+set :scm_passphrase, ""
+set :user, "ninnemana"
+
+role :web, "curt-api-server1.cloudapp.net", "curt-api-server2.cloudapp.net"
+role :app, "curt-api-server1.cloudapp.net", "curt-api-server2.cloudapp.net"
+
+set :deploy_to, "/home/ninnemana/#{application}"
+set :deploy_via, :remote_cache
+
+set :use_sudo, false
+set :normalize_asset_timestamps, false
+
+after "deploy", "deploy:goget"
+after "deploy:goget", "deploy:compile"
+after "deploy:compile", "deploy:restart"
+
+namespace :deploy do
+  task :goget do
+  	run "/usr/local/go/bin/go get github.com/ziutek/mymysql/native"
+  	run "/usr/local/go/bin/go get github.com/ziutek/mymysql/mysql"
+  end
+  task :compile do
+  	run "GOOS=linux GOARCH=amd64 CGO_ENABLED=0 /usr/local/go/bin/go build -o #{deploy_to}/current/go-api #{deploy_to}/current/index.go"
+  end
+  task :start do ; end
+  task :stop do ; end
+  task :restart do
+  	restart_cmd = "#{current_release}/go-api"
+  	run "nohup sh -c '#{restart_cmd} &' > nohup.out"
+  end
 end
 
-after 'deploy:update_code', 'go:build'
-
-namespace :go do
-	task :build do
-		run "GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o go-api.linux index.go"
-		run "scp go-api.linux deploy-user:eC0mm3rc3@curt-api.cloudapp.net:/home/ninnemana"
-	end
+def kill_processes_matching(name)
+  run "ps -ef | grep #{name} | grep -v grep | awk '{print $2}' | xargs kill || echo 'no process with name #{name} found'"
 end
