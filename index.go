@@ -28,6 +28,7 @@ func main() {
 	flag.Parse()
 
 	server := plate.NewServer("doughboy")
+	server.Logging = true
 
 	server.AddFilter(auth.AuthHandler)
 	server.AddFilter(CorsHandler)

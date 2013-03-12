@@ -109,6 +109,17 @@ Philoshopy
 
 > This version if the API is meant to focus on data quantity while maintaining, if not improving performance, by leveraging concurrency. We would like the client to have the ability to make fewer requests to the API Server and be provided with a larger amount of data in the response.
 
+Deployment
+-
+
+We will be using Capistrano for deployment, you can see the capistrano configuration in the [deploy.rb](https://github.com/curt-labs/GoAPI/blob/master/config/deploy.rb).
+
+Capistrano is configured to pull from github, so you will need to commit and push to the master branch for changes to be pulled.
+
+Once everything has been updated on Github you can run the following command to deploy to curt-api-server1.cloudapp.net and curt-api-server2.cloudapp.net
+
+    cap deploy
+
 Contributors
 -
 * Alex Ninneman

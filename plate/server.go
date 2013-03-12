@@ -394,7 +394,6 @@ func (this *Server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 	}
 
-	// this.StatusService.ResponseCounts = this.StatusService.ResponseCounts + 1
 	end_time := time.Now()
 	dur := end_time.Sub(start_time)
 	this.StatusService.Update(w.status, &dur)
