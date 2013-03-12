@@ -35,6 +35,10 @@ func main() {
 		http.Redirect(w, r, "http://labs.curtmfg.com/", http.StatusFound)
 	}).NoFilter()
 
+	server.Get("/.status", func(w http.ResponseWriter, r *http.Request) {
+		server.StatusService.GetStatus(w, r)
+	}).NoFilter()
+
 	server.Get("/vehicle", vehicle_ctlr.Year)
 	server.Get("/vehicle/:year", vehicle_ctlr.Make)
 	server.Get("/vehicle/:year/:make", vehicle_ctlr.Model)

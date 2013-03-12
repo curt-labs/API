@@ -91,6 +91,7 @@ type Server struct {
 	SessionHandler *SessionHandler
 	Config         *ServerConfig
 	Filters        []http.HandlerFunc
+	StatusService  *StatusService
 }
 
 type Route struct {
@@ -166,6 +167,8 @@ func NewServer(session_key ...string) *Server {
 	if len(session_key) != 0 && len(session_key[0]) != 0 {
 		server.NewSessionHandler(session_key[0], nil)
 	}
+
+	server.StatusService = NewStatusService()
 	return server
 }
 
@@ -308,6 +311,7 @@ func (this *Route) FilterParam(param string, filter http.HandlerFunc) {
 // http server and will handle all page routing
 func (this *Server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
+	start_time := time.Now()
 	requestPath := r.URL.Path
 
 	//wrap the response writer, in our custom interface
@@ -389,6 +393,11 @@ func (this *Server) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	if w.started == false {
 		http.NotFound(w, r)
 	}
+
+	// this.StatusService.ResponseCounts = this.StatusService.ResponseCounts + 1
+	end_time := time.Now()
+	dur := end_time.Sub(start_time)
+	this.StatusService.Update(w.status, &dur)
 
 	//if logging is turned on
 	if this.Logging {
@@ -1085,4 +1094,88 @@ func Serve404(w http.ResponseWriter, error string) {
 
 	err = tmpl.Execute(w, bag)
 	return
+}
+
+type StatusService struct {
+	Lock              sync.Mutex
+	Start             time.Time
+	Pid               int
+	ResponseCounts    map[string]int
+	TotalResponseTime time.Time
+}
+
+func NewStatusService() *StatusService {
+	return &StatusService{
+		Start:             time.Now(),
+		Pid:               os.Getpid(),
+		ResponseCounts:    map[string]int{},
+		TotalResponseTime: time.Time{},
+	}
+}
+
+func (self *StatusService) Update(status_code int, response_time *time.Duration) {
+	self.Lock.Lock()
+	self.ResponseCounts[fmt.Sprintf("%d", status_code)]++
+	self.TotalResponseTime = self.TotalResponseTime.Add(*response_time)
+	self.Lock.Unlock()
+}
+
+type Status struct {
+	Pid                    int
+	UpTime                 string
+	UpTimeSec              float64
+	Time                   string
+	TimeUnix               int64
+	StatusCodeCount        map[string]int
+	TotalCount             int
+	TotalResponseTime      string
+	TotalResponseTimeSec   float64
+	AverageResponseTime    string
+	AverageResponseTimeSec float64
+}
+
+func (self *StatusService) GetStatus(w http.ResponseWriter, r *http.Request) {
+
+	now := time.Now()
+
+	uptime := now.Sub(self.Start)
+
+	total_count := 0
+	for _, count := range self.ResponseCounts {
+		total_count += count
+	}
+
+	TotalResponseTime := self.TotalResponseTime.Sub(time.Time{})
+
+	average_response_time := time.Duration(0)
+	if total_count > 0 {
+		avg_ns := int64(TotalResponseTime) / int64(total_count)
+		average_response_time = time.Duration(avg_ns)
+	}
+
+	st := &Status{
+		Pid:                    self.Pid,
+		UpTime:                 uptime.String(),
+		UpTimeSec:              uptime.Seconds(),
+		Time:                   now.String(),
+		TimeUnix:               now.Unix(),
+		StatusCodeCount:        self.ResponseCounts,
+		TotalCount:             total_count,
+		TotalResponseTime:      TotalResponseTime.String(),
+		TotalResponseTimeSec:   TotalResponseTime.Seconds(),
+		AverageResponseTime:    average_response_time.String(),
+		AverageResponseTimeSec: average_response_time.Seconds(),
+	}
+
+	jsonBytes, err := json.Marshal(st)
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+	}
+
+	// var buf bytes.Buffer
+	// buf.Write(jsonBytes)
+	_, err = w.Write(jsonBytes)
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+	}
 }
