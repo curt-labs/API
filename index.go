@@ -2,6 +2,7 @@ package main
 
 import (
 	"./controllers/category"
+	"./controllers/customer"
 	"./controllers/part"
 	"./controllers/vehicle"
 	"./helpers/auth"
@@ -55,6 +56,8 @@ func main() {
 
 	server.Get("/part/:part/vehicles", part_ctlr.Vehicles)
 	server.Get("/part/:part", part_ctlr.Get)
+
+	server.Post("/customer/auth", customer_ctlr.UserAuthentication).NoFilter()
 
 	http.Handle("/", server)
 	http.ListenAndServe(*listenAddr, nil)

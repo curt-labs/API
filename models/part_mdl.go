@@ -50,7 +50,7 @@ type Part struct {
 	Categories                              []Category
 	Videos                                  []Video
 	Packages                                []Package
-	Customer                                Customer
+	Customer                                CustomerPart
 }
 
 type PagedParts struct {
@@ -63,7 +63,7 @@ type Paging struct {
 	PageCount    int
 }
 
-type Customer struct {
+type CustomerPart struct {
 	Price         float64
 	CartReference int
 }
@@ -283,10 +283,10 @@ func (p *Part) Basics() error {
 	class := res.Map("class")
 
 	p.PartId = row.Int(partID)
-	date_add, _ := time.Parse("2006-01-02 15:04:01", row.Str(dateAdded))
+	date_add, _ := time.Parse("2006-01-02 15:04:15", row.Str(dateAdded))
 	p.DateAdded = date_add
 
-	date_mod, _ := time.Parse("2006-01-02 15:04:01", row.Str(dateModified))
+	date_mod, _ := time.Parse("2006-01-02 15:04:15", row.Str(dateModified))
 	p.DateModified = date_mod
 
 	p.ShortDesc = row.Str(shortDesc)
@@ -388,7 +388,7 @@ func (p *Part) BindCustomer(key string) error {
 		return err
 	}
 
-	cust := Customer{
+	cust := CustomerPart{
 		Price:         price,
 		CartReference: ref,
 	}

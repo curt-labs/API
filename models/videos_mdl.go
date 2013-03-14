@@ -24,7 +24,6 @@ func (p *Part) GetVideos() error {
 	if database.MysqlError(err) {
 		return err
 	}
-
 	video := res.Map("video")
 	typ := res.Map("name")
 	prime := res.Map("isPrimary")
