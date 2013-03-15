@@ -6,6 +6,8 @@ import (
 	"./controllers/vehicle"
 	"./helpers/auth"
 	"./plate"
+	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -13,7 +15,7 @@ import (
 	"testing"
 )
 
-func run_test_request(t *testing.T, server *plate.Server, method, url_str string, payload url.Values) *httptest.ResponseRecorder {
+func run_test_request(t *testing.T, server *plate.Server, method, url_str string, payload url.Values) (*httptest.ResponseRecorder, http.Request) {
 
 	url_obj, err := url.Parse(url_str)
 	if err != nil {
@@ -37,26 +39,41 @@ func run_test_request(t *testing.T, server *plate.Server, method, url_str string
 
 	server.ServeHTTP(recorder, &r)
 
-	return recorder
+	return recorder, r
 }
 
-func code_is(t *testing.T, r *httptest.ResponseRecorder, expected_code int) {
+func code_is(t *testing.T, r *httptest.ResponseRecorder, expected_code int) error {
 	if r.Code != expected_code {
-		t.Errorf("Code %d expected, got: %d", expected_code, r.Code)
+		return errors.New(fmt.Sprintf("Code %d expected, got: %d", expected_code, r.Code))
 	}
+	return nil
 }
 
-func content_type_is_json(t *testing.T, r *httptest.ResponseRecorder) {
+func content_type_is_json(t *testing.T, r *httptest.ResponseRecorder) error {
 	ct := r.HeaderMap.Get("Content-Type")
 	if ct != "application/json" {
-		t.Errorf("Content type 'application/json' expected, got: %s", ct)
+		return errors.New(fmt.Sprintf("Content type 'application/json' expected, got: %s", ct))
 	}
+	return nil
 }
 
-func body_is(t *testing.T, r *httptest.ResponseRecorder, expected_body string) {
+func body_is(t *testing.T, r *httptest.ResponseRecorder, expected_body string) error {
 	body := r.Body.String()
 	if body != expected_body {
-		t.Errorf("Body '%s' expected, got: '%s'", expected_body, body)
+		return errors.New(fmt.Sprintf("Body '%s' expected, got: '%s'", expected_body, body))
+	}
+	return nil
+}
+
+type ErrorMessage struct {
+	StatusCode int
+	Error      string
+	Route      *url.URL
+}
+
+func checkError(req http.Request, rec *httptest.ResponseRecorder, err error, t *testing.T) {
+	if err != nil {
+		t.Errorf("\nError: %s \nRoute: %s \n\n", err.Error(), req.URL)
 	}
 }
 
@@ -89,65 +106,98 @@ func TestHandler(t *testing.T) {
 	qs := url.Values{}
 	qs.Add("key", "8aee0620-412e-47fc-900a-947820ea1c1d")
 
-	recorder := run_test_request(t, server, "GET", "http://localhost:8080/vehicle", nil)
-	code_is(t, recorder, 401)
+	recorder, req := run_test_request(t, server, "GET", "http://localhost:8080/vehicle", nil)
+	err := code_is(t, recorder, 401)
+	checkError(req, recorder, err, t)
 
-	recorder = run_test_request(t, server, "GET", "http://localhost:8080/vehicle", qs)
-	code_is(t, recorder, 200)
-	content_type_is_json(t, recorder)
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/vehicle", qs)
+	err = code_is(t, recorder, 200)
+	checkError(req, recorder, err, t)
+	err = content_type_is_json(t, recorder)
+	checkError(req, recorder, err, t)
 
-	recorder = run_test_request(t, server, "GET", "http://localhost:8080/vehicle/2012", qs)
-	code_is(t, recorder, 200)
-	content_type_is_json(t, recorder)
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/vehicle/2012", qs)
+	err = code_is(t, recorder, 200)
+	checkError(req, recorder, err, t)
+	err = content_type_is_json(t, recorder)
+	checkError(req, recorder, err, t)
 
-	recorder = run_test_request(t, server, "GET", "http://localhost:8080/vehicle/2012/Chevrolet", qs)
-	code_is(t, recorder, 200)
-	content_type_is_json(t, recorder)
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/vehicle/2012/Chevrolet", qs)
+	err = code_is(t, recorder, 200)
+	checkError(req, recorder, err, t)
+	err = content_type_is_json(t, recorder)
+	checkError(req, recorder, err, t)
 
-	recorder = run_test_request(t, server, "GET", "http://localhost:8080/vehicle/2012/Chevrolet/Silverado 1500", qs)
-	code_is(t, recorder, 200)
-	content_type_is_json(t, recorder)
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/vehicle/2012/Chevrolet/Silverado 1500", qs)
+	err = code_is(t, recorder, 200)
+	checkError(req, recorder, err, t)
+	err = content_type_is_json(t, recorder)
+	checkError(req, recorder, err, t)
 
-	recorder = run_test_request(t, server, "GET", "http://localhost:8080/vehicle/2012/Chevrolet/Silverado 1500/LT", qs)
-	code_is(t, recorder, 200)
-	content_type_is_json(t, recorder)
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/vehicle/2012/Chevrolet/Silverado 1500/LT", qs)
+	err = code_is(t, recorder, 200)
+	checkError(req, recorder, err, t)
+	err = content_type_is_json(t, recorder)
+	checkError(req, recorder, err, t)
 
-	recorder = run_test_request(t, server, "GET", "http://localhost:8080/vehicle/2012/Chevrolet/Silverado 1500/LT/with factory tow package", qs)
-	code_is(t, recorder, 200)
-	content_type_is_json(t, recorder)
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/vehicle/2012/Chevrolet/Silverado 1500/LT/with factory tow package", qs)
+	err = code_is(t, recorder, 200)
+	checkError(req, recorder, err, t)
+	err = content_type_is_json(t, recorder)
+	checkError(req, recorder, err, t)
 
-	recorder = run_test_request(t, server, "GET", "http://localhost:8080/category", qs)
-	code_is(t, recorder, 200)
-	content_type_is_json(t, recorder)
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/category", qs)
+	err = code_is(t, recorder, 200)
+	checkError(req, recorder, err, t)
+	err = content_type_is_json(t, recorder)
+	checkError(req, recorder, err, t)
 
-	recorder = run_test_request(t, server, "GET", "http://localhost:8080/category/3", qs)
-	code_is(t, recorder, 200)
-	content_type_is_json(t, recorder)
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/category/3", qs)
+	err = code_is(t, recorder, 200)
+	checkError(req, recorder, err, t)
+	err = content_type_is_json(t, recorder)
+	checkError(req, recorder, err, t)
 
-	recorder = run_test_request(t, server, "GET", "http://localhost:8080/category/Hitches", qs)
-	code_is(t, recorder, 200)
-	content_type_is_json(t, recorder)
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/category/Hitches", qs)
+	err = code_is(t, recorder, 200)
+	checkError(req, recorder, err, t)
+	err = content_type_is_json(t, recorder)
+	checkError(req, recorder, err, t)
 
-	recorder = run_test_request(t, server, "GET", "http://localhost:8080/category/Hitches/parts", qs)
-	code_is(t, recorder, 200)
-	content_type_is_json(t, recorder)
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/category/Hitches/parts", qs)
+	err = code_is(t, recorder, 200)
+	checkError(req, recorder, err, t)
+	err = content_type_is_json(t, recorder)
+	checkError(req, recorder, err, t)
 
-	recorder = run_test_request(t, server, "GET", "http://localhost:8080/category/Hitches/subs", qs)
-	code_is(t, recorder, 200)
-	content_type_is_json(t, recorder)
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/category/Hitches/subs", qs)
+	err = code_is(t, recorder, 200)
+	checkError(req, recorder, err, t)
+	err = content_type_is_json(t, recorder)
+	checkError(req, recorder, err, t)
 
-	recorder = run_test_request(t, server, "GET", "http://localhost:8080/category/Class III Trailer Hitches/parts/2/20", qs)
-	code_is(t, recorder, 200)
-	content_type_is_json(t, recorder)
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/category/Class III Trailer Hitches/parts/2/20", qs)
+	err = code_is(t, recorder, 200)
+	checkError(req, recorder, err, t)
+	err = content_type_is_json(t, recorder)
+	checkError(req, recorder, err, t)
 
 	// This test is failing because for some reason the encrypted password for the test user
 	// did not properly carry over the password
 
 	// authForm := url.Values{}
 	// authForm.Add("email", "test@curtmfg.com")
-	// authForm.Add("password", "test")
-	// recorder = run_test_request(t, server, "POST", "http://localhost:8080/customer/auth", authForm)
-	// code_is(t, recorder, 200)
-	// content_type_is_json(t, recorder)
+	// authForm.Add("password", "")
+	// recorder, req = run_test_request(t, server, "POST", "http://localhost:8080/customer/auth", authForm)
+	// err = code_is(t, recorder, 200)
+	// err = content_type_is_json(t, recorder)
+
+	// authForm := url.Values{}
+	// authForm.Add("key", "c8bd5d89-8d16-11e2-801f-00155d47bb0a")
+	// recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/customer/auth", authForm)
+	// err = code_is(t, recorder, 200)
+	// checkError(req, recorder, err, t)
+	// err = content_type_is_json(t, recorder)
+	// checkError(req, recorder, err, t)
 
 }

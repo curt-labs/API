@@ -18,6 +18,8 @@ Endpoints
 ---------
 ---------
 
+> You can view example endpoints for all of the routes in the index_test.go file.
+
 #### Vehicle
 
 ---
