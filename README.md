@@ -4,7 +4,7 @@ CURT Go API
 ---------
 
 > The new version of the CURT API used the [GoEngine Boilerplate](http://github.com/ninnemana/goengine-boilerplate)
-for being Content-Type agnostic to XML and JSON. Some of the best features a listed below:
+for being Content-Type agnostic to XML and JSON. Some of the best features are listed below:
 
   - Concurrent MySQL access using [Goroutines](http://golang.org/doc/effective_go.html#concurrency)
   - JSON rendering powered by [encoding/json](http://golang.org/pkg/encoding/json/)
@@ -66,42 +66,42 @@ Endpoints
 
 ---
 
-*Get Category By Category Title
+*Get Category By Category Title*
 
     GET - http://api.curtmfg.com/v3/category/Hitches?key=[public api key]
 
-*Get Category By Category Id
+*Get Category By Category Id*
 
     GET - http://api.curtmfg.com/v3/category/1?key=[public api key]
 
-*Get Top Level Categories
+*Get Top Level Categories*
 
     GET - http://api.curtmfg.com/v3/category?key=[public api key]
 
-*Get Sub-Categories By Category Id
+*Get Sub-Categories By Category Id*
 
     GET - http://api.curtmfg.com/v3/category/1/subs?key=[public api key]
 
-*Get Sub-Categories By Category Title
+*Get Sub-Categories By Category Title*
 
     GET - http://api.curtmfg.com/v3/category/Hitches/subs?key=[public api key]
 
-*Get Category Parts By Category Id
+*Get Category Parts By Category Id*
 
     GET - http://api.curtmfg.com/v3/category/3/parts?key=[public api key]
 > Keep in mind that the Get Category Parts endpoint implements paging. Below are example endpoints to help demonstrate implementing the pager.
 
-*Get Category Parts By Category Id with Paging
+*Get Category Parts By Category Id with Paging*
 
     GET - http://api.curtmfg.com/v3/category/3/parts/2/20?key=[public api key]
-> In the above example 2 references the second "page" and 20 in the total count returned.
+> In the above example 2 references the second "page" and 20 is the total count returned.
 
-*Get Category Parts By Category Title
+*Get Category Parts By Category Title*
 
     GET - http://api.curtmfg.com/v3/category/Class I Trailer Hitches/parts?key=[public api key]
 > Keep in mind that the Get Category Parts endpoint implements paging. Below are example endpoints to help demonstrate implementing the pager.
 
-*Get Category Parts By Category Title with Paging
+*Get Category Parts By Category Title with Paging*
 
     GET - http://api.curtmfg.com/v3/category/Class I Trailer Hitches/parts/2/20?key=[public api key]
 > In the above example 2 references the second "page" and 20 in the total count returned.
