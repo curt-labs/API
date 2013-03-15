@@ -58,6 +58,7 @@ func main() {
 	server.Get("/part/:part", part_ctlr.Get)
 
 	server.Post("/customer/auth", customer_ctlr.UserAuthentication).NoFilter()
+	server.Get("/customer/auth", customer_ctlr.KeyedUserAuthentication).NoFilter()
 
 	http.Handle("/", server)
 	http.ListenAndServe(*listenAddr, nil)

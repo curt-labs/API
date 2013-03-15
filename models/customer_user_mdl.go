@@ -4,6 +4,7 @@ import (
 	"../helpers/api"
 	"../helpers/database"
 	"errors"
+	"log"
 	"net/url"
 	"strings"
 	"time"
@@ -17,27 +18,47 @@ const (
 
 var (
 	customerUserAuthStmt = `select * from CustomerUser
-					where email = '%s'
-					limit 1`
+							where email = '%s'
+							&& active = 1
+							limit 1`
+
+	customerUserKeyAuthStmt = `select cu.* from CustomerUser as cu
+							join ApiKey as ak on cu.id = ak.user_id
+							join ApiKeyType as akt on ak.type_id = akt.id
+							where UPPER(akt.type) = '%s'
+							&& ak.api_key = '%s'
+							&& cu.active = 1 && ak.date_added >= '%v'`
+
 	updateCustomerUserPassStmt = `update CustomerUser set proper_password = '%s'
-						where id = '%s' && active = 1`
+							where id = '%s' && active = 1`
 
 	customerUserKeysStmt = `select ak.api_key, akt.type, ak.date_added from ApiKey as ak 
-					join ApiKeyType as akt on ak.type_id = akt.id
-					where user_id = '%s' && UPPER(akt.type) NOT IN ('%s')`
+							join ApiKeyType as akt on ak.type_id = akt.id
+							where user_id = '%s' && UPPER(akt.type) NOT IN ('%s')`
 
 	userAuthenticationKeyStmt = `select ak.api_key, ak.type_id, akt.type from ApiKey as ak
-						join ApiKeyType as akt on ak.type_id = akt.id
-						where UPPER(akt.type) = '%s' 
-						&& ak.user_id = '%s'`
+							join ApiKeyType as akt on ak.type_id = akt.id
+							where UPPER(akt.type) = '%s' 
+							&& ak.user_id = '%s'`
 
 	// This statement will run the trigger on the
 	// ApiKey table to regenerate the api_key column 
 	// for the updated record
 	resetUserAuthenticationStmt = `update ApiKey as ak
+							set ak.date_added = '%s'
+							where ak.type_id = '%s' 
+							&& ak.user_id = '%s'`
+
+	// This statement will renew the timer on the
+	// authentication API key for the given user.
+	// The disabling of the trigger is to turn off the 
+	// key regeneration trigger for this table
+	enableTriggerStmt           = `SET @disable_trigger = 0;`
+	disableTriggerStmt          = `SET @disable_trigger = 1`
+	renewUserAuthenticationStmt = `update ApiKey as ak
+						join ApiKeyType as akt on ak.type_id = akt.id
 						set ak.date_added = '%s'
-						where ak.type_id = '%s' 
-						&& ak.user_id = '%s'`
+						where UPPER(akt.type) = '%s' && ak.user_id = '%s'`
 
 	userCustomerStmt = `select c.customerID, c.name, c.email, c.address, c.address2, c.city, c.phone, c.fax, c.contact_person,
 				c.latitude, c.longitude, c.searchURL, c.logo, c.website,
@@ -82,6 +103,39 @@ type ApiCredentials struct {
 func (u CustomerUser) UserAuthentication(password string) (cust Customer, err error) {
 
 	err = u.AuthenticateUser(password)
+	if err != nil {
+		return
+	}
+
+	keyChan := make(chan int)
+	locChan := make(chan int)
+
+	go func() {
+		if kErr := u.GetKeys(); kErr != nil {
+			err = kErr
+		}
+		keyChan <- 1
+	}()
+
+	go func() {
+		if lErr := u.GetLocation(); lErr != nil {
+			err = lErr
+		}
+		locChan <- 1
+	}()
+
+	cust, err = u.GetCustomer()
+
+	<-keyChan
+	<-locChan
+
+	cust.Users = append(cust.Users, u)
+
+	return
+}
+
+func UserAuthenticationByKey(key string) (cust Customer, err error) {
+	u, err := AuthenticateUserByKey(key)
 	if err != nil {
 		return
 	}
@@ -201,6 +255,7 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 }
 
 func (u *CustomerUser) AuthenticateUser(pass string) error {
+
 	enc_pass, err := api_helpers.Md5Encrypt(pass)
 	if err != nil {
 		return err
@@ -250,12 +305,63 @@ func (u *CustomerUser) AuthenticateUser(pass string) error {
 	u.Current = true
 	u.Id = row.Str(user_id)
 
-	da, _ := time.Parse("2006-01-02 15:04:15", row.Str(date))
-	u.DateAdded = da
+	//da, _ := time.Parse("2006-01-02 15:04:15", row.Str(date))
+	u.DateAdded = row.ForceLocaltime(date)
 
 	<-resetChan
 
 	return nil
+}
+
+func AuthenticateUserByKey(key string) (u CustomerUser, err error) {
+
+	t := time.Now()
+	t1 := t.Add(time.Duration(-6) * time.Hour)
+
+	log.Printf(customerUserKeyAuthStmt, AUTH_KEY_TYPE, key, t1.String())
+
+	row, res, err := database.Db.QueryFirst(customerUserKeyAuthStmt, AUTH_KEY_TYPE, key, t1.String())
+	if database.MysqlError(err) {
+		return
+	}
+	user_id := res.Map("id")
+	name := res.Map("name")
+	mail := res.Map("email")
+	date := res.Map("date_added")
+	active := res.Map("active")
+	sudo := res.Map("isSudo")
+
+	if err != nil {
+		return
+	} else if row == nil {
+		err = errors.New("Invalid password")
+		return
+	}
+
+	//
+	// DISABLED: See RenewAuthentication() below
+	// 
+	// resetChan := make(chan int)
+	// go func() {
+	// 	if resetErr := u.RenewAuthentication(); resetErr != nil {
+	// 		err = resetErr
+	// 	}
+	// 	resetChan <- 1
+	// }()
+
+	u.Name = row.Str(name)
+	u.Email = row.Str(mail)
+	u.Active = row.Int(active) == 1
+	u.Sudo = row.Int(sudo) == 1
+	u.Current = true
+	u.Id = row.Str(user_id)
+
+	//da, _ := time.Parse("2006-01-02 15:04:15", row.Str(date))
+	u.DateAdded = row.ForceLocaltime(date)
+
+	//<-resetChan
+
+	return
 }
 
 func (u *CustomerUser) GetKeys() error {
@@ -272,12 +378,12 @@ func (u *CustomerUser) GetKeys() error {
 	var keys []ApiCredentials
 	for _, row := range rows {
 
-		da, _ := time.Parse("2006-01-02 15:04:15", row.Str(dAdded))
+		//da, _ := time.Parse("2006-01-02 15:04:15", row.Str(dAdded))
 
 		k := ApiCredentials{
 			Key:       row.Str(key),
 			Type:      row.Str(typ),
-			DateAdded: da,
+			DateAdded: row.ForceLocaltime(dAdded),
 		}
 		keys = append(keys, k)
 	}
@@ -341,7 +447,7 @@ func (u *CustomerUser) GetLocation() error {
 }
 
 func (u *CustomerUser) ResetAuthentication() error {
-
+	log.Println("resetting authentication key")
 	// Retrieve the previously declared authentication key for this user
 	oldRow, oldRes, err := database.Db.QueryFirst(userAuthenticationKeyStmt, AUTH_KEY_TYPE, u.Id)
 
@@ -359,3 +465,35 @@ func (u *CustomerUser) ResetAuthentication() error {
 	}
 	return nil
 }
+
+// The disabling of the triggers is failing in this method.
+// 
+// I'm going to disable the call to it completely and expand
+// the time limit of the authentication key to 6 hours.
+// 
+// TODO: This will need to be fixed at some point in time. **Important
+
+// func (u *CustomerUser) RenewAuthentication() error {
+// 	log.Println("renewing authentication key")
+// 	t := time.Now()
+
+// 	log.Printf(renewUserAuthenticationStmt, t.String(), AUTH_KEY_TYPE, u.Id)
+
+// 	// Excecute the update statement
+// 	_, _, err := database.Db.Query(disableTriggerStmt)
+// 	if err != nil {
+// 		log.Println(err)
+// 		return err
+// 	}
+// 	_, _, err = database.Db.Query(renewUserAuthenticationStmt, t.String(), AUTH_KEY_TYPE, u.Id)
+// 	if err != nil {
+// 		log.Println(err)
+// 		return err
+// 	}
+// 	_, _, err = database.Db.Query(enableTriggerStmt)
+// 	if err != nil {
+// 		log.Println(err)
+// 		return err
+// 	}
+// 	return nil
+// }
