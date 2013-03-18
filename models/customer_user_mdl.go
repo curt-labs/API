@@ -4,7 +4,6 @@ import (
 	"../helpers/api"
 	"../helpers/database"
 	"errors"
-	"log"
 	"net/url"
 	"strings"
 	"time"
@@ -84,6 +83,18 @@ var (
 					left join Country as cty on s.countryID = cty.countryID
 					join CustomerUser as cu on cl.locationID = cu.locationID
 					where cu.id = '%s'`
+
+	customerIDFromKeyStmt = `select c.customerID from Customer as c
+					join CustomerUser as cu on c.cust_id = cu.cust_ID
+					join ApiKey as ak on cu.id = ak.user_id
+					where ak.api_key = '%s'
+					limit 1`
+
+	customerUserFromKeyStmt = `select cu.* from CustomerUser as cu
+					join ApiKey as ak on cu.id = ak.user_id
+					join ApiKeyType as akt on ak.type_id = akt.id
+					where akt.type = '%s' && ak.api_key = '%s'
+					limit 1`
 )
 
 type CustomerUser struct {
@@ -318,8 +329,6 @@ func AuthenticateUserByKey(key string) (u CustomerUser, err error) {
 	t := time.Now()
 	t1 := t.Add(time.Duration(-6) * time.Hour)
 
-	log.Printf(customerUserKeyAuthStmt, AUTH_KEY_TYPE, key, t1.String())
-
 	row, res, err := database.Db.QueryFirst(customerUserKeyAuthStmt, AUTH_KEY_TYPE, key, t1.String())
 	if database.MysqlError(err) {
 		return
@@ -447,7 +456,6 @@ func (u *CustomerUser) GetLocation() error {
 }
 
 func (u *CustomerUser) ResetAuthentication() error {
-	log.Println("resetting authentication key")
 	// Retrieve the previously declared authentication key for this user
 	oldRow, oldRes, err := database.Db.QueryFirst(userAuthenticationKeyStmt, AUTH_KEY_TYPE, u.Id)
 
@@ -464,6 +472,48 @@ func (u *CustomerUser) ResetAuthentication() error {
 		}
 	}
 	return nil
+}
+
+func GetCustomerIdFromKey(key string) (id int, err error) {
+	row, _, err := database.Db.QueryFirst(customerIDFromKeyStmt, key)
+	if database.MysqlError(err) {
+		return 0, err
+	} else if row == nil {
+		return 0, errors.New("Invalid API Key")
+	}
+
+	return row.Int(0), nil
+}
+
+func GetCustomerUserFromKey(key string) (u CustomerUser, err error) {
+
+	row, res, err := database.Db.QueryFirst(customerUserFromKeyStmt, PRIVATE_KEY_TYPE, key)
+	if database.MysqlError(err) {
+		return
+	}
+	user_id := res.Map("id")
+	name := res.Map("name")
+	mail := res.Map("email")
+	date := res.Map("date_added")
+	active := res.Map("active")
+	sudo := res.Map("isSudo")
+
+	if err != nil {
+		return
+	} else if row == nil {
+		err = errors.New("Invalid key")
+		return
+	}
+
+	u.Name = row.Str(name)
+	u.Email = row.Str(mail)
+	u.Active = row.Int(active) == 1
+	u.Sudo = row.Int(sudo) == 1
+	u.Current = true
+	u.Id = row.Str(user_id)
+	u.DateAdded = row.ForceLocaltime(date)
+
+	return
 }
 
 // The disabling of the triggers is failing in this method.

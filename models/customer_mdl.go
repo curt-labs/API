@@ -42,6 +42,11 @@ var (
 					left join States as s on cl.stateID = s.stateID
 					left join Country as cty on s.countryID = cty.countryID
 					where cl.cust_id = %d`
+
+	customerUsersStmt = `select cu.* from CustomerUser as cu
+					join Customer as c on cu.cust_ID = c.cust_id
+					where c.customerID = '%d'
+					&& cu.active = 1`
 )
 
 type Customer struct {
@@ -220,6 +225,34 @@ func (c *Customer) GetLocations() error {
 	}
 	c.Locations = &locs
 	return nil
+}
+
+func (c *Customer) GetUsers() (users []CustomerUser, err error) {
+
+	rows, res, err := database.Db.Query(customerUsersStmt, c.Id)
+	if database.MysqlError(err) {
+		return
+	}
+	user_id := res.Map("id")
+	name := res.Map("name")
+	mail := res.Map("email")
+	date := res.Map("date_added")
+	active := res.Map("active")
+	sudo := res.Map("isSudo")
+
+	for _, row := range rows {
+		var u CustomerUser
+		u.Name = row.Str(name)
+		u.Email = row.Str(mail)
+		u.Active = row.Int(active) == 1
+		u.Sudo = row.Int(sudo) == 1
+		u.Current = false
+		u.Id = row.Str(user_id)
+		u.DateAdded = row.ForceLocaltime(date)
+
+		users = append(users, u)
+	}
+	return
 }
 
 func GetCustomerPrice(api_key string, part_id int) (price float64, err error) {

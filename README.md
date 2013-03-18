@@ -106,6 +106,25 @@ Endpoints
     GET - http://api.curtmfg.com/v3/category/Class I Trailer Hitches/parts/2/20?key=[public api key]
 > In the above example 2 references the second "page" and 20 in the total count returned.
 
+----
+
+#### Customer
+
+---
+
+*Authentication*
+
+    POST - http://api.curtmfg.com/v3/customer/auth
+
+    Payload
+    --------------------------
+    email: user@example.com
+    password: password
+
+> The following GET route for the customer user authentication is only useful if in the last 6 hours this user has logged in through the POST directive of the /customer/auth endpoint.
+
+    GET - http://api.curtmfg.com/v3/customer/auth?key=c8bd5d89-8d16-11e2-801f-00155d47bb0a
+
 Philoshopy
 -
 

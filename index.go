@@ -25,6 +25,11 @@ const (
 	port = "80"
 )
 
+/**
+ * All GET routes require either public or private api keys to be passed in.
+ *
+ * All POST routes require private api keys to be passed in.
+ */
 func main() {
 	flag.Parse()
 
@@ -59,6 +64,9 @@ func main() {
 
 	server.Post("/customer/auth", customer_ctlr.UserAuthentication).NoFilter()
 	server.Get("/customer/auth", customer_ctlr.KeyedUserAuthentication).NoFilter()
+
+	server.Post("/customer/locations", customer_ctlr.GetLocations)
+	server.Post("/customer/users", customer_ctlr.GetUsers) // Requires a user to be marked as sudo
 
 	http.Handle("/", server)
 	http.ListenAndServe(*listenAddr, nil)
