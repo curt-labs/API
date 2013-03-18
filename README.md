@@ -125,6 +125,25 @@ Endpoints
 
     GET - http://api.curtmfg.com/v3/customer/auth?key=c8bd5d89-8d16-11e2-801f-00155d47bb0a
 
+*Customer Locations*
+
+    POST - http://api.curtmfg.com/v3/customer/locations
+
+    Payload
+    --------------------------
+    key: CEB28F99-F03A-4568-B004-E4FFA87CBDF1
+
+*Customer Users*
+
+    POST - http://api.curtmfg.com/v3/customer/users
+
+    Payload
+    --------------------------
+    key: CEB28F99-F03A-4568-B004-E4FFA87CBDF1
+
+> The customer users endpoint will only return data if the requesting user is marked as sudo user
+
+
 Philoshopy
 -
 
