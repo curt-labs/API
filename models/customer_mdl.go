@@ -486,7 +486,7 @@ type MapIcon struct {
 	MapIcon, MapIconShadow *url.URL
 }
 
-func GetLocalDealers(center string, latlng string) (dealers []Customer, err error) {
+func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, err error) {
 
 	var latlngs []string
 	var center_latlngs []string
@@ -582,71 +582,62 @@ func GetLocalDealers(center string, latlng string) (dealers []Customer, err erro
 	mpx_desc := res.Map("mapic_desc")
 	rep_name := res.Map("rep_name")
 	rep_code := res.Map("rep_code")
-	parentID := res.Map("parentID")
+	//parentID := res.Map("parentID")
 
-	c := make(chan int)
+	for _, r := range rows {
+		sURL, _ := url.Parse(r.Str(search))
+		websiteURL, _ := url.Parse(r.Str(site))
+		logoURL, _ := url.Parse(r.Str(logo))
 
-	for _, row := range rows {
-		go func(r mysql.Row, ch chan int) {
+		cust := DealerLocation{
+			Id:                      r.Int(customerID),
+			Name:                    r.Str(name),
+			Email:                   r.Str(email),
+			Address:                 r.Str(address),
+			Address2:                r.Str(address2),
+			City:                    r.Str(city),
+			PostalCode:              r.Str(zip),
+			Phone:                   r.Str(phone),
+			Fax:                     r.Str(fax),
+			ContactPerson:           r.Str(contact),
+			Latitude:                r.ForceFloat(lat),
+			Longitude:               r.ForceFloat(lon),
+			Website:                 websiteURL,
+			SearchUrl:               sURL,
+			Logo:                    logoURL,
+			DealerType:              r.Str(dealer_type),
+			DealerTier:              r.Str(dealer_tier),
+			SalesRepresentative:     r.Str(rep_name),
+			SalesRepresentativeCode: r.Int(rep_code),
+			MapixCode:               r.Str(mpx_code),
+			MapixDescription:        r.Str(mpx_desc),
+		}
 
-			sURL, _ := url.Parse(r.Str(search))
-			websiteURL, _ := url.Parse(r.Str(site))
-			logoURL, _ := url.Parse(r.Str(logo))
+		cust.Distance = EARTH * (2 * math.Atan2(
+			math.Sqrt((math.Sin(((cust.Latitude-clat)*(math.Pi/180))/2)*math.Sin(((cust.Latitude-clat)*(math.Pi/180))/2))+((math.Sin(((cust.Longitude-clong)*(math.Pi/180))/2))*(math.Sin(((cust.Longitude-clong)*(math.Pi/180))/2)))*math.Cos(clat*(math.Pi/180))*math.Cos(cust.Latitude*(math.Pi/180))),
+			math.Sqrt(1-((math.Sin(((cust.Latitude-clat)*(math.Pi/180))/2)*math.Sin(((cust.Latitude-clat)*(math.Pi/180))/2))+((math.Sin(((cust.Longitude-clong)*(math.Pi/180))/2))*(math.Sin(((cust.Longitude-clong)*(math.Pi/180))/2)))*math.Cos(clat*(math.Pi/180))*math.Cos(cust.Latitude*(math.Pi/180))))))
 
-			cust := Customer{
-				Id:                      r.Int(customerID),
-				Name:                    r.Str(name),
-				Email:                   r.Str(email),
-				Address:                 r.Str(address),
-				Address2:                r.Str(address2),
-				City:                    r.Str(city),
-				PostalCode:              r.Str(zip),
-				Phone:                   r.Str(phone),
-				Fax:                     r.Str(fax),
-				ContactPerson:           r.Str(contact),
-				Latitude:                r.ForceFloat(lat),
-				Longitude:               r.ForceFloat(lon),
-				Website:                 websiteURL,
-				SearchUrl:               sURL,
-				Logo:                    logoURL,
-				DealerType:              r.Str(dealer_type),
-				DealerTier:              r.Str(dealer_tier),
-				SalesRepresentative:     r.Str(rep_name),
-				SalesRepresentativeCode: r.Int(rep_code),
-				MapixCode:               r.Str(mpx_code),
-				MapixDescription:        r.Str(mpx_desc),
-			}
+		ctry := Country{
+			Country:      r.Str(country),
+			Abbreviation: r.Str(country_abbr),
+		}
 
-			ctry := Country{
-				Country:      r.Str(country),
-				Abbreviation: r.Str(country_abbr),
-			}
+		cust.State = &State{
+			State:        r.Str(state),
+			Abbreviation: r.Str(state_abbr),
+			Country:      &ctry,
+		}
 
-			cust.State = &State{
-				State:        r.Str(state),
-				Abbreviation: r.Str(state_abbr),
-				Country:      &ctry,
-			}
+		// if r.Int(parentID) != 0 {
+		// 	parent := Customer{
+		// 		Id: r.Int(parentID),
+		// 	}
+		// 	if err = parent.GetCustomer(); err == nil {
+		// 		cust.Parent = &parent
+		// 	}
+		// }
+		dealers = append(dealers, cust)
 
-			_ = cust.GetLocations()
-
-			if r.Int(parentID) != 0 {
-				parent := Customer{
-					Id: r.Int(parentID),
-				}
-				if err = parent.GetCustomer(); err == nil {
-					cust.Parent = &parent
-				}
-			}
-			dealers = append(dealers, cust)
-
-			ch <- 1
-		}(row, c)
-
-	}
-
-	for _, _ = range rows {
-		<-c
 	}
 
 	return
