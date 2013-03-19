@@ -2,6 +2,7 @@ package models
 
 import (
 	"../helpers/database"
+	"../helpers/sortutil"
 	"github.com/ziutek/mymysql/mysql"
 	"math"
 	"net/url"
@@ -76,17 +77,17 @@ var (
 				left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
 				where d_types.online = 1 && c.isDummy = 0`
 
-	// localDealersStmt(earth, center_latitude, center_latitude, center_longitude, center_longitude, center_latitude, center_latitude, center_latitude, center_longitude, center_longitude, center_latitude, view_distance)
-	localDealersStmt = `select c.customerID, c.name, c.email, c.address, c.address2, c.city, c.phone, c.fax, c.contact_person,
-				c.latitude, c.longitude, c.searchURL, c.logo, c.website,
-				c.postal_code, s.state, s.abbr as state_abbr, cty.name as country_name, cty.abbr as country_abbr,
+	// localDealersStmt(earth, center_latitude, center_latitude, center_longitude, center_longitude, center_latitude, center_latitude, center_latitude, center_longitude, center_longitude, center_latitude, view_distance, swlat, nelat, swlong, nelong, swlong2, nelong2)
+	localDealersStmt = `select c.customerID, cl.name, c.email, cl.address, cl.city, cl.phone, cl.fax, cl.contact_person,
+				cl.latitude, cl.longitude, c.searchURL, c.logo, c.website,
+				cl.postalCode, s.state, s.abbr as state_abbr, cty.name as country_name, cty.abbr as country_abbr,
 				dt.type as dealer_type, dtr.tier as dealer_tier, mpx.code as mapix_code, mpx.description as mapic_desc,
-				sr.name as rep_name, sr.code as rep_code, c.parentID 
+				sr.name as rep_name, sr.code as rep_code, c.parentID
 				from CustomerLocations as cl
 				join Customer as c on cl.cust_id = c.cust_id
 				join DealerTypes as dt on c.dealer_type = dt.dealer_type
 				join DealerTiers as dtr on c.tier = dtr.ID
-				left join States as s on c.stateID = s.stateID
+				left join States as s on cl.stateID = s.stateID
 				left join Country as cty on s.countryID = cty.countryID
 				left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
 				left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
@@ -97,6 +98,13 @@ var (
                                                                 SQRT(1 - ((SIN(((cl.latitude - %f) * (PI() / 180)) / 2) * SIN(((cl.latitude - %f) * (PI() / 180)) / 2)) + ((SIN(((cl.longitude - %f) * (PI() / 180)) / 2)) * (SIN(((cl.longitude - %f) * (PI() / 180)) / 2))) * COS(%f * (PI() / 180)) * COS(cl.latitude * (PI() / 180))))
                                                             )
                                                         ) < %f)
+				&& (
+					(cl.latitude >= %f && cl.latitude <= %f) 
+					&&
+                                              		(cl.longitude >= %f && cl.longitude <= %f) 
+                                              		||
+                                              		(cl.longitude >= %f && cl.longitude <= %f)
+                                              	)
 				order by dtr.sort desc`
 )
 
@@ -495,6 +503,7 @@ func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, er
 	clong := CENTER_LONGITUDE
 	swlat := SOUTWEST_LATITUDE
 	swlong := SOUTHWEST_LONGITUDE
+	swlong2 := SOUTHWEST_LONGITUDE
 	nelat := NORTHEAST_LATITUDE
 	nelong := NORTHEAST_LONGITUDE
 	nelong2 := NORTHEAST_LONGITUDE
@@ -528,7 +537,7 @@ func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, er
 						if err == nil {
 							swlat = sw_lat
 							swlong = sw_lon
-
+							swlong2 = sw_lon
 							nelat = ne_lat
 							nelong = ne_lon
 							nelong2 = ne_lon
@@ -552,7 +561,7 @@ func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, er
 		view_distance = distance_a
 	}
 
-	rows, res, err := database.Db.Query(localDealersStmt, EARTH, clat, clat, clong, clong, clat, clat, clat, clong, clong, clat, view_distance)
+	rows, res, err := database.Db.Query(localDealersStmt, EARTH, clat, clat, clong, clong, clat, clat, clat, clong, clong, clat, view_distance, swlat, nelat, swlong, nelong, swlong2, nelong2)
 	if database.MysqlError(err) {
 		return
 	}
@@ -561,7 +570,6 @@ func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, er
 	name := res.Map("name")
 	email := res.Map("email")
 	address := res.Map("address")
-	address2 := res.Map("address2")
 	city := res.Map("city")
 	phone := res.Map("phone")
 	fax := res.Map("fax")
@@ -571,7 +579,7 @@ func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, er
 	search := res.Map("searchURL")
 	site := res.Map("website")
 	logo := res.Map("logo")
-	zip := res.Map("postal_code")
+	zip := res.Map("postalCode")
 	state := res.Map("state")
 	state_abbr := res.Map("state_abbr")
 	country := res.Map("country_name")
@@ -582,7 +590,6 @@ func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, er
 	mpx_desc := res.Map("mapic_desc")
 	rep_name := res.Map("rep_name")
 	rep_code := res.Map("rep_code")
-	//parentID := res.Map("parentID")
 
 	for _, r := range rows {
 		sURL, _ := url.Parse(r.Str(search))
@@ -594,7 +601,6 @@ func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, er
 			Name:                    r.Str(name),
 			Email:                   r.Str(email),
 			Address:                 r.Str(address),
-			Address2:                r.Str(address2),
 			City:                    r.Str(city),
 			PostalCode:              r.Str(zip),
 			Phone:                   r.Str(phone),
@@ -628,18 +634,10 @@ func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, er
 			Country:      &ctry,
 		}
 
-		// if r.Int(parentID) != 0 {
-		// 	parent := Customer{
-		// 		Id: r.Int(parentID),
-		// 	}
-		// 	if err = parent.GetCustomer(); err == nil {
-		// 		cust.Parent = &parent
-		// 	}
-		// }
 		dealers = append(dealers, cust)
 
 	}
-
+	sortutil.AscByField(dealers, "Distance")
 	return
 }
 
