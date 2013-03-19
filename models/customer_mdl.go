@@ -3,7 +3,20 @@ package models
 import (
 	"../helpers/database"
 	"github.com/ziutek/mymysql/mysql"
+	"math"
 	"net/url"
+	"strconv"
+	"strings"
+)
+
+const (
+	EARTH               = 3963.1676 // radius of Earth in miles
+	SOUTWEST_LATITUDE   = -90.00
+	SOUTHWEST_LONGITUDE = -180.00
+	NORTHEAST_LATITUDE  = 90.00
+	NORTHEAST_LONGITUDE = 180.00
+	CENTER_LATITUDE     = 44.79300
+	CENTER_LONGITUDE    = -91.41048
 )
 
 var (
@@ -62,13 +75,35 @@ var (
 				left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
 				left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
 				where d_types.online = 1 && c.isDummy = 0`
+
+	// localDealersStmt(earth, center_latitude, center_latitude, center_longitude, center_longitude, center_latitude, center_latitude, center_latitude, center_longitude, center_longitude, center_latitude, view_distance)
+	localDealersStmt = `select c.customerID, c.name, c.email, c.address, c.address2, c.city, c.phone, c.fax, c.contact_person,
+				c.latitude, c.longitude, c.searchURL, c.logo, c.website,
+				c.postal_code, s.state, s.abbr as state_abbr, cty.name as country_name, cty.abbr as country_abbr,
+				dt.type as dealer_type, dtr.tier as dealer_tier, mpx.code as mapix_code, mpx.description as mapic_desc,
+				sr.name as rep_name, sr.code as rep_code, c.parentID 
+				from CustomerLocations as cl
+				join Customer as c on cl.cust_id = c.cust_id
+				join DealerTypes as dt on c.dealer_type = dt.dealer_type
+				join DealerTiers as dtr on c.tier = dtr.ID
+				left join States as s on c.stateID = s.stateID
+				left join Country as cty on s.countryID = cty.countryID
+				left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
+				left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
+				where dt.online = 0 && c.isDummy = 0 && dt.show = 1 &&
+				( %f * (
+                                                            2 * ATAN2(
+                                                                SQRT((SIN(((cl.latitude - %f) * (PI() / 180)) / 2) * SIN(((cl.latitude - %f) * (PI() / 180)) / 2)) + ((SIN(((cl.longitude - %f) * (PI() / 180)) / 2)) * (SIN(((cl.longitude - %f) * (PI() / 180)) / 2))) * COS(%f * (PI() / 180)) * COS(cl.latitude * (PI() / 180))),
+                                                                SQRT(1 - ((SIN(((cl.latitude - %f) * (PI() / 180)) / 2) * SIN(((cl.latitude - %f) * (PI() / 180)) / 2)) + ((SIN(((cl.longitude - %f) * (PI() / 180)) / 2)) * (SIN(((cl.longitude - %f) * (PI() / 180)) / 2))) * COS(%f * (PI() / 180)) * COS(cl.latitude * (PI() / 180))))
+                                                            )
+                                                        ) < %f)
+				order by dtr.sort desc`
 )
 
 type Customer struct {
 	Id                                   int
 	Name, Email, Address, Address2, City string
-	State, StateAbbreviation             string
-	Country, CountryAbbreviation         string
+	State                                *State
 	PostalCode                           string
 	Phone, Fax                           string
 	ContactPerson                        string
@@ -87,8 +122,7 @@ type Customer struct {
 type CustomerLocation struct {
 	Id                                     int
 	Name, Email, Address, City, PostalCode string
-	State, StateAbbreviation               string
-	Country, CountryAbbreviation           string
+	State                                  *State
 	Phone, Fax                             string
 	Latitude, Longitude                    float64
 	CustomerId                             int
@@ -157,10 +191,6 @@ func (c *Customer) Basics() error {
 	c.Address = row.Str(address)
 	c.Address2 = row.Str(address2)
 	c.City = row.Str(city)
-	c.State = row.Str(state)
-	c.StateAbbreviation = row.Str(state_abbr)
-	c.Country = row.Str(country)
-	c.CountryAbbreviation = row.Str(country_abbr)
 	c.PostalCode = row.Str(zip)
 	c.Phone = row.Str(phone)
 	c.Fax = row.Str(fax)
@@ -176,6 +206,17 @@ func (c *Customer) Basics() error {
 	c.SalesRepresentativeCode = row.Int(rep_code)
 	c.MapixCode = row.Str(mpx_code)
 	c.MapixDescription = row.Str(mpx_desc)
+
+	ctry := Country{
+		Country:      row.Str(country),
+		Abbreviation: row.Str(country_abbr),
+	}
+
+	c.State = &State{
+		State:        row.Str(state),
+		Abbreviation: row.Str(state_abbr),
+		Country:      &ctry,
+	}
 
 	if row.Int(parentID) != 0 {
 		parent := Customer{
@@ -217,24 +258,31 @@ func (c *Customer) GetLocations() error {
 	var locs []CustomerLocation
 	for _, row := range rows {
 		l := CustomerLocation{
-			Id:                  row.Int(locationID),
-			Name:                row.Str(name),
-			Email:               row.Str(email),
-			Address:             row.Str(address),
-			City:                row.Str(city),
-			State:               row.Str(state),
-			StateAbbreviation:   row.Str(state_abbr),
-			Country:             row.Str(country),
-			CountryAbbreviation: row.Str(country_abbr),
-			PostalCode:          row.Str(zip),
-			Phone:               row.Str(phone),
-			Fax:                 row.Str(fax),
-			ContactPerson:       row.Str(contact),
-			CustomerId:          row.Int(customerID),
-			Latitude:            row.ForceFloat(lat),
-			Longitude:           row.ForceFloat(lon),
-			IsPrimary:           row.ForceBool(isPrimary),
-			ShippingDefault:     row.ForceBool(shipDefault),
+			Id:              row.Int(locationID),
+			Name:            row.Str(name),
+			Email:           row.Str(email),
+			Address:         row.Str(address),
+			City:            row.Str(city),
+			PostalCode:      row.Str(zip),
+			Phone:           row.Str(phone),
+			Fax:             row.Str(fax),
+			ContactPerson:   row.Str(contact),
+			CustomerId:      row.Int(customerID),
+			Latitude:        row.ForceFloat(lat),
+			Longitude:       row.ForceFloat(lon),
+			IsPrimary:       row.ForceBool(isPrimary),
+			ShippingDefault: row.ForceBool(shipDefault),
+		}
+
+		ctry := Country{
+			Country:      row.Str(country),
+			Abbreviation: row.Str(country_abbr),
+		}
+
+		l.State = &State{
+			State:        row.Str(state),
+			Abbreviation: row.Str(state_abbr),
+			Country:      &ctry,
 		}
 		locs = append(locs, l)
 	}
@@ -350,10 +398,6 @@ func GetEtailers() (dealers []Customer, err error) {
 				Address:                 r.Str(address),
 				Address2:                r.Str(address2),
 				City:                    r.Str(city),
-				State:                   r.Str(state),
-				StateAbbreviation:       r.Str(state_abbr),
-				Country:                 r.Str(country),
-				CountryAbbreviation:     r.Str(country_abbr),
 				PostalCode:              r.Str(zip),
 				Phone:                   r.Str(phone),
 				Fax:                     r.Str(fax),
@@ -369,6 +413,17 @@ func GetEtailers() (dealers []Customer, err error) {
 				SalesRepresentativeCode: r.Int(rep_code),
 				MapixCode:               r.Str(mpx_code),
 				MapixDescription:        r.Str(mpx_desc),
+			}
+
+			ctry := Country{
+				Country:      r.Str(country),
+				Abbreviation: r.Str(country_abbr),
+			}
+
+			cust.State = &State{
+				State:        r.Str(state),
+				Abbreviation: r.Str(state_abbr),
+				Country:      &ctry,
 			}
 
 			_ = cust.GetLocations()
@@ -393,5 +448,219 @@ func GetEtailers() (dealers []Customer, err error) {
 	}
 
 	return
+
+}
+
+type DealerLocation struct {
+	Id                                   int
+	Name, Email, Address, Address2, City string
+	State                                *State
+	PostalCode                           string
+	Phone, Fax                           string
+	ContactPerson                        string
+	Latitude, Longitude, Distance        float64
+	Website                              *url.URL
+	Parent                               *Customer
+	SearchUrl, Logo                      *url.URL
+	DealerType, DealerTier               string
+	SalesRepresentative                  string
+	SalesRepresentativeCode              int
+	MapixCode, MapixDescription          string
+	Locations                            *[]CustomerLocation
+	Users                                []CustomerUser
+}
+
+type DealerTier struct {
+	Id, Sort int
+	Tier     string
+}
+
+type DealerType struct {
+	MapIcons     *[]MapIcon
+	Type, Label  string
+	Online, Show bool
+}
+
+type MapIcon struct {
+	Type, Tier             int
+	MapIcon, MapIconShadow *url.URL
+}
+
+func GetLocalDealers(center string, latlng string) (dealers []Customer, err error) {
+
+	var latlngs []string
+	var center_latlngs []string
+
+	clat := CENTER_LATITUDE
+	clong := CENTER_LONGITUDE
+	swlat := SOUTWEST_LATITUDE
+	swlong := SOUTHWEST_LONGITUDE
+	nelat := NORTHEAST_LATITUDE
+	nelong := NORTHEAST_LONGITUDE
+	nelong2 := NORTHEAST_LONGITUDE
+
+	// Get the center point
+	if center != "" {
+		center_latlngs = strings.Split(center, ",")
+		if len(center_latlngs) == 2 {
+			center_lat, err := strconv.ParseFloat(center_latlngs[0], 64)
+			if err == nil {
+				center_lon, err := strconv.ParseFloat(center_latlngs[1], 64)
+				if err == nil {
+					clat = center_lat
+					clong = center_lon
+				}
+			}
+		}
+	}
+
+	// Get the boundary points
+	if latlng != "" {
+		latlngs = strings.Split(latlng, ",")
+		if len(latlngs) == 4 {
+			sw_lat, err := strconv.ParseFloat(latlngs[0], 64)
+			if err == nil {
+				sw_lon, err := strconv.ParseFloat(latlngs[1], 64)
+				if err == nil {
+					ne_lat, err := strconv.ParseFloat(latlngs[2], 64)
+					if err == nil {
+						ne_lon, err := strconv.ParseFloat(latlngs[3], 64)
+						if err == nil {
+							swlat = sw_lat
+							swlong = sw_lon
+
+							nelat = ne_lat
+							nelong = ne_lon
+							nelong2 = ne_lon
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if swlong > nelong {
+		swlong = -180
+		nelong2 = 180
+	}
+
+	distance_a := getViewPortWidth(swlat, swlong, clat, clong)
+	distance_b := getViewPortWidth(nelat, nelong2, clat, clong)
+
+	view_distance := distance_b
+	if distance_a > distance_b {
+		view_distance = distance_a
+	}
+
+	rows, res, err := database.Db.Query(localDealersStmt, EARTH, clat, clat, clong, clong, clat, clat, clat, clong, clong, clat, view_distance)
+	if database.MysqlError(err) {
+		return
+	}
+
+	customerID := res.Map("customerID")
+	name := res.Map("name")
+	email := res.Map("email")
+	address := res.Map("address")
+	address2 := res.Map("address2")
+	city := res.Map("city")
+	phone := res.Map("phone")
+	fax := res.Map("fax")
+	contact := res.Map("contact_person")
+	lat := res.Map("latitude")
+	lon := res.Map("longitude")
+	search := res.Map("searchURL")
+	site := res.Map("website")
+	logo := res.Map("logo")
+	zip := res.Map("postal_code")
+	state := res.Map("state")
+	state_abbr := res.Map("state_abbr")
+	country := res.Map("country_name")
+	country_abbr := res.Map("country_abbr")
+	dealer_type := res.Map("dealer_type")
+	dealer_tier := res.Map("dealer_tier")
+	mpx_code := res.Map("mapix_code")
+	mpx_desc := res.Map("mapic_desc")
+	rep_name := res.Map("rep_name")
+	rep_code := res.Map("rep_code")
+	parentID := res.Map("parentID")
+
+	c := make(chan int)
+
+	for _, row := range rows {
+		go func(r mysql.Row, ch chan int) {
+
+			sURL, _ := url.Parse(r.Str(search))
+			websiteURL, _ := url.Parse(r.Str(site))
+			logoURL, _ := url.Parse(r.Str(logo))
+
+			cust := Customer{
+				Id:                      r.Int(customerID),
+				Name:                    r.Str(name),
+				Email:                   r.Str(email),
+				Address:                 r.Str(address),
+				Address2:                r.Str(address2),
+				City:                    r.Str(city),
+				PostalCode:              r.Str(zip),
+				Phone:                   r.Str(phone),
+				Fax:                     r.Str(fax),
+				ContactPerson:           r.Str(contact),
+				Latitude:                r.ForceFloat(lat),
+				Longitude:               r.ForceFloat(lon),
+				Website:                 websiteURL,
+				SearchUrl:               sURL,
+				Logo:                    logoURL,
+				DealerType:              r.Str(dealer_type),
+				DealerTier:              r.Str(dealer_tier),
+				SalesRepresentative:     r.Str(rep_name),
+				SalesRepresentativeCode: r.Int(rep_code),
+				MapixCode:               r.Str(mpx_code),
+				MapixDescription:        r.Str(mpx_desc),
+			}
+
+			ctry := Country{
+				Country:      r.Str(country),
+				Abbreviation: r.Str(country_abbr),
+			}
+
+			cust.State = &State{
+				State:        r.Str(state),
+				Abbreviation: r.Str(state_abbr),
+				Country:      &ctry,
+			}
+
+			_ = cust.GetLocations()
+
+			if r.Int(parentID) != 0 {
+				parent := Customer{
+					Id: r.Int(parentID),
+				}
+				if err = parent.GetCustomer(); err == nil {
+					cust.Parent = &parent
+				}
+			}
+			dealers = append(dealers, cust)
+
+			ch <- 1
+		}(row, c)
+
+	}
+
+	for _, _ = range rows {
+		<-c
+	}
+
+	return
+}
+
+func getViewPortWidth(lat1 float64, lon1 float64, lat2 float64, long2 float64) float64 {
+	dlat := (lat2 - lat1) * (math.Pi / 180)
+	dlon := (long2 - lon1) * (math.Pi / 180)
+
+	lat1 = lat1 * (math.Pi / 180)
+	lat2 = lat2 * (math.Pi / 180)
+
+	a := (math.Sin(dlat/2) * math.Sin(dlat/2)) + ((math.Sin(dlon/2))*(math.Sin(dlon/2)))*math.Cos(lat1)*math.Cos(lat2)
+	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
+	return EARTH * c
 
 }

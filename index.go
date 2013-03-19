@@ -71,6 +71,7 @@ func main() {
 
 	/**** INTERNAL USEW ONLY ****/
 	server.Get("/dealers/etailer", dealers_ctlr.Etailers).NoFilter()
+	server.Get("/dealers/local", dealers_ctlr.LocalDealers).NoFilter()
 
 	http.Handle("/", server)
 	http.ListenAndServe(*listenAddr, nil)

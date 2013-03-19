@@ -222,10 +222,6 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 		Address:                 row.Str(address),
 		Address2:                row.Str(address2),
 		City:                    row.Str(city),
-		State:                   row.Str(state),
-		StateAbbreviation:       row.Str(state_abbr),
-		Country:                 row.Str(country),
-		CountryAbbreviation:     row.Str(country_abbr),
 		PostalCode:              row.Str(zip),
 		Phone:                   row.Str(phone),
 		Fax:                     row.Str(fax),
@@ -241,6 +237,17 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 		SalesRepresentativeCode: row.Int(rep_code),
 		MapixCode:               row.Str(mpx_code),
 		MapixDescription:        row.Str(mpx_desc),
+	}
+
+	ctry := Country{
+		Country:      row.Str(country),
+		Abbreviation: row.Str(country_abbr),
+	}
+
+	c.State = &State{
+		State:        row.Str(state),
+		Abbreviation: row.Str(state_abbr),
+		Country:      &ctry,
 	}
 
 	locationChan := make(chan int)
@@ -430,24 +437,31 @@ func (u *CustomerUser) GetLocation() error {
 	shipDefault := res.Map("ShippingDefault")
 
 	l := CustomerLocation{
-		Id:                  row.Int(locationID),
-		Name:                row.Str(name),
-		Email:               row.Str(email),
-		Address:             row.Str(address),
-		City:                row.Str(city),
-		State:               row.Str(state),
-		StateAbbreviation:   row.Str(state_abbr),
-		Country:             row.Str(country),
-		CountryAbbreviation: row.Str(country_abbr),
-		PostalCode:          row.Str(zip),
-		Phone:               row.Str(phone),
-		Fax:                 row.Str(fax),
-		ContactPerson:       row.Str(contact),
-		CustomerId:          row.Int(customerID),
-		Latitude:            row.ForceFloat(lat),
-		Longitude:           row.ForceFloat(lon),
-		IsPrimary:           row.ForceBool(isPrimary),
-		ShippingDefault:     row.ForceBool(shipDefault),
+		Id:              row.Int(locationID),
+		Name:            row.Str(name),
+		Email:           row.Str(email),
+		Address:         row.Str(address),
+		City:            row.Str(city),
+		PostalCode:      row.Str(zip),
+		Phone:           row.Str(phone),
+		Fax:             row.Str(fax),
+		ContactPerson:   row.Str(contact),
+		CustomerId:      row.Int(customerID),
+		Latitude:        row.ForceFloat(lat),
+		Longitude:       row.ForceFloat(lon),
+		IsPrimary:       row.ForceBool(isPrimary),
+		ShippingDefault: row.ForceBool(shipDefault),
+	}
+
+	ctry := Country{
+		Country:      row.Str(country),
+		Abbreviation: row.Str(country_abbr),
+	}
+
+	l.State = &State{
+		State:        row.Str(state),
+		Abbreviation: row.Str(state_abbr),
+		Country:      &ctry,
 	}
 
 	u.Location = &l
