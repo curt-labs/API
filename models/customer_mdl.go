@@ -2,6 +2,7 @@ package models
 
 import (
 	"../helpers/database"
+	"github.com/ziutek/mymysql/mysql"
 	"net/url"
 )
 
@@ -47,6 +48,20 @@ var (
 					join Customer as c on cu.cust_ID = c.cust_id
 					where c.customerID = '%d'
 					&& cu.active = 1`
+
+	etailersStmt = `select c.customerID, c.name, c.email, c.address, c.address2, c.city, c.phone, c.fax, c.contact_person,
+				c.latitude, c.longitude, c.searchURL, c.logo, c.website,
+				c.postal_code, s.state, s.abbr as state_abbr, cty.name as country_name, cty.abbr as country_abbr,
+				d_types.type as dealer_type, d_tier.tier as dealer_tier, mpx.code as mapix_code, mpx.description as mapic_desc,
+				sr.name as rep_name, sr.code as rep_code, c.parentID
+				from Customer as c
+				join DealerTypes as d_types on c.dealer_type = d_types.dealer_type
+				join DealerTiers d_tier on c.tier = d_tier.ID
+				left join States as s on c.stateID = s.stateID
+				left join Country as cty on s.countryID = cty.countryID
+				left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
+				left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
+				where d_types.online = 1 && c.isDummy = 0`
 )
 
 type Customer struct {
@@ -282,4 +297,101 @@ func GetCustomerCartReference(api_key string, part_id int) (ref int, err error) 
 	}
 
 	return
+}
+
+/* Internal Use Only */
+
+func GetEtailers() (dealers []Customer, err error) {
+	rows, res, err := database.Db.Query(etailersStmt)
+	if database.MysqlError(err) {
+		return
+	}
+
+	customerID := res.Map("customerID")
+	name := res.Map("name")
+	email := res.Map("email")
+	address := res.Map("address")
+	address2 := res.Map("address2")
+	city := res.Map("city")
+	phone := res.Map("phone")
+	fax := res.Map("fax")
+	contact := res.Map("contact_person")
+	lat := res.Map("latitude")
+	lon := res.Map("longitude")
+	search := res.Map("searchURL")
+	site := res.Map("website")
+	logo := res.Map("logo")
+	zip := res.Map("postal_code")
+	state := res.Map("state")
+	state_abbr := res.Map("state_abbr")
+	country := res.Map("country_name")
+	country_abbr := res.Map("country_abbr")
+	dealer_type := res.Map("dealer_type")
+	dealer_tier := res.Map("dealer_tier")
+	mpx_code := res.Map("mapix_code")
+	mpx_desc := res.Map("mapic_desc")
+	rep_name := res.Map("rep_name")
+	rep_code := res.Map("rep_code")
+	parentID := res.Map("parentID")
+
+	c := make(chan int)
+
+	for _, row := range rows {
+		go func(r mysql.Row, ch chan int) {
+
+			sURL, _ := url.Parse(r.Str(search))
+			websiteURL, _ := url.Parse(r.Str(site))
+			logoURL, _ := url.Parse(r.Str(logo))
+
+			c := Customer{
+				Id:                      r.Int(customerID),
+				Name:                    r.Str(name),
+				Email:                   r.Str(email),
+				Address:                 r.Str(address),
+				Address2:                r.Str(address2),
+				City:                    r.Str(city),
+				State:                   r.Str(state),
+				StateAbbreviation:       r.Str(state_abbr),
+				Country:                 r.Str(country),
+				CountryAbbreviation:     r.Str(country_abbr),
+				PostalCode:              r.Str(zip),
+				Phone:                   r.Str(phone),
+				Fax:                     r.Str(fax),
+				ContactPerson:           r.Str(contact),
+				Latitude:                r.ForceFloat(lat),
+				Longitude:               r.ForceFloat(lon),
+				Website:                 websiteURL,
+				SearchUrl:               sURL,
+				Logo:                    logoURL,
+				DealerType:              r.Str(dealer_type),
+				DealerTier:              r.Str(dealer_tier),
+				SalesRepresentative:     r.Str(rep_name),
+				SalesRepresentativeCode: r.Int(rep_code),
+				MapixCode:               r.Str(mpx_code),
+				MapixDescription:        r.Str(mpx_desc),
+			}
+
+			_ = c.GetLocations()
+
+			if r.Int(parentID) != 0 {
+				parent := Customer{
+					Id: r.Int(parentID),
+				}
+				if err = parent.GetCustomer(); err == nil {
+					c.Parent = &parent
+				}
+			}
+			dealers = append(dealers, c)
+
+			ch <- 1
+		}(row, c)
+
+	}
+
+	for _, _ = range rows {
+		<-c
+	}
+
+	return
+
 }

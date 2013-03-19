@@ -144,6 +144,10 @@ Endpoints
 > The customer users endpoint will only return data if the requesting user is marked as sudo user
 
 
+ *Internal Use Only*
+
+    GET - http://api.curtmfg.com/v3/dealers/etailer
+
 Philoshopy
 -
 

@@ -3,6 +3,7 @@ package main
 import (
 	"./controllers/category"
 	"./controllers/customer"
+	"./controllers/dealers"
 	"./controllers/part"
 	"./controllers/vehicle"
 	"./helpers/auth"
@@ -67,6 +68,9 @@ func main() {
 
 	server.Post("/customer/locations", customer_ctlr.GetLocations)
 	server.Post("/customer/users", customer_ctlr.GetUsers) // Requires a user to be marked as sudo
+
+	/**** INTERNAL USEW ONLY ****/
+	server.Get("/dealers/etailer", dealers_ctlr.Etailers).NoFilter()
 
 	http.Handle("/", server)
 	http.ListenAndServe(*listenAddr, nil)
