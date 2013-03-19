@@ -343,7 +343,7 @@ func GetEtailers() (dealers []Customer, err error) {
 			websiteURL, _ := url.Parse(r.Str(site))
 			logoURL, _ := url.Parse(r.Str(logo))
 
-			c := Customer{
+			cust := Customer{
 				Id:                      r.Int(customerID),
 				Name:                    r.Str(name),
 				Email:                   r.Str(email),
@@ -371,17 +371,17 @@ func GetEtailers() (dealers []Customer, err error) {
 				MapixDescription:        r.Str(mpx_desc),
 			}
 
-			_ = c.GetLocations()
+			_ = cust.GetLocations()
 
 			if r.Int(parentID) != 0 {
 				parent := Customer{
 					Id: r.Int(parentID),
 				}
 				if err = parent.GetCustomer(); err == nil {
-					c.Parent = &parent
+					cust.Parent = &parent
 				}
 			}
-			dealers = append(dealers, c)
+			dealers = append(dealers, cust)
 
 			ch <- 1
 		}(row, c)

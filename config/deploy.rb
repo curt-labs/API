@@ -16,6 +16,7 @@ set :deploy_to, "/home/ninnemana/#{application}"
 set :deploy_via, :remote_cache
 
 set :use_sudo, false
+set :sudo_prompt, ""
 set :normalize_asset_timestamps, false
 
 after "deploy", "deploy:goget"
@@ -42,5 +43,5 @@ namespace :deploy do
 end
 
 def kill_processes_matching(name)
-  run "ps -ef | grep #{name} | grep -v grep | awk '{print $2}' | xargs kill -2 || echo 'no process with name #{name} found'"
+  run "ps -ef | grep #{name} | grep -v grep | awk '{print $2}' | sudo xargs kill -2 || echo 'no process with name #{name} found'"
 end
