@@ -35,3 +35,13 @@ func LocalDealers(w http.ResponseWriter, r *http.Request) {
 
 	plate.ServeFormatted(w, r, dealers)
 }
+
+func LocalRegions(w http.ResponseWriter, r *http.Request) {
+	regions, err := GetLocalRegions()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	plate.ServeFormatted(w, r, regions)
+}

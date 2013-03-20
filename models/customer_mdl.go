@@ -2,7 +2,9 @@ package models
 
 import (
 	"../helpers/database"
+	"../helpers/redis"
 	"../helpers/sortutil"
+	"encoding/json"
 	"github.com/ziutek/mymysql/mysql"
 	"math"
 	"net/url"
@@ -106,6 +108,31 @@ var (
                                               		(cl.longitude >= %f && cl.longitude <= %f)
                                               	)
 				order by dtr.sort desc`
+
+	polygonStmt = `select s.state, s.abbr,(
+					select COUNT(cl.locationID) from CustomerLocations as cl
+					join Customer as c on cl.cust_id = c.cust_id
+					join DealerTypes as dt on c.dealer_type = dt.dealer_type
+					where dt.online = 0 && cl.stateID = s.stateID
+				) as count, 
+				(select group_concat(mpc.latitude)
+				from MapPolygonCoordinates as mpc
+				join MapPolygon as mp on mpc.MapPolygonID = mp.ID
+				where mp.stateID = s.stateID
+				order by mpc.ID) as latitudes,
+				(select group_concat(mpc.longitude)
+				from MapPolygonCoordinates as mpc
+				join MapPolygon as mp on mpc.MapPolygonID = mp.ID
+				where mp.stateID = s.stateID
+				order by mpc.ID) as longitudes
+				from States as s
+				where (
+					select COUNT(cl.locationID) from CustomerLocations as cl
+					join Customer as c on cl.cust_id = c.cust_id
+					join DealerTypes as dt on c.dealer_type = dt.dealer_type
+					where dt.online = 0 && cl.stateID = s.stateID
+				) > 0
+				order by s.state`
 )
 
 type Customer struct {
@@ -456,7 +483,6 @@ func GetEtailers() (dealers []Customer, err error) {
 	}
 
 	return
-
 }
 
 type DealerLocation struct {
@@ -492,6 +518,16 @@ type DealerType struct {
 type MapIcon struct {
 	Type, Tier             int
 	MapIcon, MapIconShadow *url.URL
+}
+
+type MapCoordinates struct {
+	Latitude, Longitude float64
+}
+
+type StateRegion struct {
+	Name, Abbreviation string
+	Count              int
+	Polygons           *[]MapCoordinates
 }
 
 func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, err error) {
@@ -641,6 +677,63 @@ func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, er
 	return
 }
 
+func GetLocalRegions() (regions []StateRegion, err error) {
+
+	client := redis.NewRedisClient()
+
+	regions_bytes, err := client.Get("local_regions")
+	if err != nil || len(regions_bytes) == 0 {
+
+		_, _, _ = database.Db.Query("SET SESSION group_concat_max_len = 100024")
+		rows, res, err := database.Db.Query(polygonStmt)
+		_, _, _ = database.Db.Query("SET SESSION group_concat_max_len = 1024")
+		if !database.MysqlError(err) && rows != nil {
+			for _, row := range rows {
+
+				state := res.Map("state")
+				abbr := res.Map("abbr")
+				count := res.Map("count")
+				latitudes := res.Map("latitudes")
+				longitudes := res.Map("longitudes")
+
+				var coords []MapCoordinates
+				if row.Str(latitudes) != "" && row.Str(longitudes) != "" {
+					lats := strings.Split(row.Str(latitudes), ",")
+					lons := strings.Split(row.Str(longitudes), ",")
+
+					if len(lats) == len(lons) {
+						for i := 0; i < len(lats); i++ {
+							lat, er := strconv.ParseFloat(lats[i], 64)
+							if er == nil {
+								lon, er := strconv.ParseFloat(lons[i], 64)
+								if er == nil {
+									coords = append(coords, MapCoordinates{lat, lon})
+								}
+							}
+						}
+					}
+				}
+
+				reg := StateRegion{
+					Name:         row.Str(state),
+					Abbreviation: row.Str(abbr),
+					Count:        row.Int(count),
+					Polygons:     &coords,
+				}
+				regions = append(regions, reg)
+			}
+
+			if regions_bytes, err = json.Marshal(regions); err == nil {
+				client.Set("local_regions", []byte(regions_bytes))
+			}
+		}
+
+	} else {
+		_ = json.Unmarshal(regions_bytes, &regions)
+	}
+	return
+}
+
 func getViewPortWidth(lat1 float64, lon1 float64, lat2 float64, long2 float64) float64 {
 	dlat := (lat2 - lat1) * (math.Pi / 180)
 	dlon := (long2 - lon1) * (math.Pi / 180)
@@ -651,5 +744,4 @@ func getViewPortWidth(lat1 float64, lon1 float64, lat2 float64, long2 float64) f
 	a := (math.Sin(dlat/2) * math.Sin(dlat/2)) + ((math.Sin(dlon/2))*(math.Sin(dlon/2)))*math.Cos(lat1)*math.Cos(lat2)
 	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
 	return EARTH * c
-
 }

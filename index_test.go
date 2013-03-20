@@ -182,7 +182,19 @@ func TestHandler(t *testing.T) {
 	err = content_type_is_json(t, recorder)
 	checkError(req, recorder, err, t)
 
-	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/dealers/etailer", nil)
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/dealers/etailer", qs)
+	err = code_is(t, recorder, 200)
+	checkError(req, recorder, err, t)
+	err = content_type_is_json(t, recorder)
+	checkError(req, recorder, err, t)
+
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/dealers/local?latlng=44.279362,-93.166165,46.21285,-88.063015&center=45.254334,-90.61459", qs)
+	err = code_is(t, recorder, 200)
+	checkError(req, recorder, err, t)
+	err = content_type_is_json(t, recorder)
+	checkError(req, recorder, err, t)
+
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/dealers/local/regions", qs)
 	err = code_is(t, recorder, 200)
 	checkError(req, recorder, err, t)
 	err = content_type_is_json(t, recorder)

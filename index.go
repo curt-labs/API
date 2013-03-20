@@ -69,9 +69,10 @@ func main() {
 	server.Post("/customer/locations", customer_ctlr.GetLocations)
 	server.Post("/customer/users", customer_ctlr.GetUsers) // Requires a user to be marked as sudo
 
-	/**** INTERNAL USEW ONLY ****/
+	/**** INTERNAL USE ONLY ****/
 	server.Get("/dealers/etailer", dealers_ctlr.Etailers).NoFilter()
 	server.Get("/dealers/local", dealers_ctlr.LocalDealers).NoFilter()
+	server.Get("/dealers/local/regions", dealers_ctlr.LocalRegions).NoFilter()
 
 	http.Handle("/", server)
 	http.ListenAndServe(*listenAddr, nil)
