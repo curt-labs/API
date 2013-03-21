@@ -729,12 +729,11 @@ func GetLocalRegions() (regions []StateRegion, err error) {
 			}
 			log.Println(len(regions))
 
-			if regions_bytes, err = json.Marshal(regions); err == nil {
-				client.Set("local_regions", regions_bytes)
-				client.Expire("local_regions", int64(time.Duration.Hours(24)))
-			} else {
-				log.Println(err)
-			}
+			//if regions_bytes, err = json.Marshal(regions); err == nil {
+			client.Set("local_regions", []byte(regions))
+			client.Expire("local_regions", int64(time.Duration.Hours(24)))
+			// } else {
+			log.Println(err)
 		}
 
 	} else {
