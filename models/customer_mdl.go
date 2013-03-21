@@ -733,7 +733,7 @@ func GetLocalRegions() (regions []StateRegion, err error) {
 				log.Println(len(regions_bytes))
 				log.Println("sending local_regions to redis")
 				client.Set("local_regions", regions_bytes)
-				client.Expire("local_regions", int64(time.Duration.Hours(24)))
+				//client.Expire("local_regions", int64(time.Duration.Hours(24)))
 			}
 			log.Println(err)
 		}
