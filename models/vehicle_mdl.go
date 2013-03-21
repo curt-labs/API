@@ -2,8 +2,11 @@ package models
 
 import (
 	"../helpers/database"
+	"../helpers/redis"
+	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 )
 
 type ConfigResponse struct {
@@ -127,20 +130,31 @@ var (
 )
 
 func (vehicle *Vehicle) GetYears() (opt ConfigOption) {
+	client := redis.NewRedisClient()
 	db := database.Db
 
 	opt.Type = "Years"
-
-	rows, _, err := db.Query(yearStmt)
-	if database.MysqlError(err) {
-		return
-	}
-
 	years := make([]string, 0)
 
-	for _, row := range rows {
-		years = append(years, row.Str(0))
+	year_bytes, err := client.Get("vehicle_years")
+	if err != nil || len(year_bytes) == 0 {
+		rows, _, err := db.Query(yearStmt)
+		if database.MysqlError(err) {
+			return
+		}
+
+		for _, row := range rows {
+			years = append(years, row.Str(0))
+		}
+
+		if year_bytes, err = json.Marshal(years); err == nil {
+			client.Set("vehicle_years", year_bytes)
+			client.Expire("vehicle_years", int64(time.Duration.Hours(24)))
+		}
+	} else {
+		_ = json.Unmarshal(year_bytes, &years)
 	}
+
 	opt.Options = years
 	return
 }

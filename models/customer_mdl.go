@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -725,6 +726,7 @@ func GetLocalRegions() (regions []StateRegion, err error) {
 
 			if regions_bytes, err = json.Marshal(regions); err == nil {
 				client.Set("local_regions", []byte(regions_bytes))
+				client.Expire("local_regions", int64(time.Duration.Hours(24)))
 			}
 		}
 
