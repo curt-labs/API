@@ -6,6 +6,7 @@ import (
 	"../helpers/sortutil"
 	"encoding/json"
 	"github.com/ziutek/mymysql/mysql"
+	"log"
 	"math"
 	"net/url"
 	"strconv"
@@ -683,6 +684,7 @@ func GetLocalRegions() (regions []StateRegion, err error) {
 	client := redis.NewRedisClient()
 
 	regions_bytes, err := client.Get("local_regions")
+	log.Println(err)
 	if err != nil || len(regions_bytes) == 0 {
 
 		_, _, _ = database.Db.Query("SET SESSION group_concat_max_len = 100024")
