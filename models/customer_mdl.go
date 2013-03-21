@@ -685,6 +685,7 @@ func GetLocalRegions() (regions []StateRegion, err error) {
 
 	regions_bytes, _ := client.Get("local_regions")
 	log.Println(err)
+	log.Println(len(regions_bytes))
 	if err != nil || len(regions_bytes) == 0 {
 		log.Println("inside if err != nil")
 		_, _, _ = database.Db.Query("SET SESSION group_concat_max_len = 100024")
@@ -731,6 +732,8 @@ func GetLocalRegions() (regions []StateRegion, err error) {
 			if regions_bytes, err = json.Marshal(regions); err == nil {
 				client.Set("local_regions", regions_bytes)
 				client.Expire("local_regions", int64(time.Duration.Hours(24)))
+			} else {
+				log.Println(err)
 			}
 		}
 
