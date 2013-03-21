@@ -4,11 +4,12 @@ var (
 	RedisClient = NewRedisClient()
 )
 
-func NewRedisClient() (c Client) {
+func NewRedisClient() *Client {
+	c := NewClient(50)
 
-	// client.Addr = "137.117.72.189:6379"
+	// c.Addr = "168.61.40.178:6379"
 	c.Addr = "127.0.0.1:6379"
 	c.Db = 13
 
-	return
+	return c
 }
