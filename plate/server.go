@@ -3,6 +3,7 @@ package plate
 import (
 	"bufio"
 	"bytes"
+	"compress/gzip"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/hmac"
@@ -211,7 +212,7 @@ func (this *Server) AddRoute(method string, pattern string, handler http.Handler
 	route := &Route{}
 	route.method = method
 	route.regex = regex
-	route.handler = handler
+	route.handler = makeGzipHandler(handler)
 	route.params = params
 	route.sensitive = false
 
@@ -305,6 +306,28 @@ func (this *Route) FilterParam(param string, filter http.HandlerFunc) {
 			filter(w, r)
 		}
 	})
+}
+
+type gzipResponseWriter struct {
+	io.Writer
+	http.ResponseWriter
+}
+
+func (w gzipResponseWriter) Write(b []byte) (int, error) {
+	return w.Writer.Write(b)
+}
+
+func makeGzipHandler(fn http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+			fn(w, r)
+			return
+		}
+		w.Header().Set("Content-Encoding", "gzip")
+		gz := gzip.NewWriter(w)
+		defer gz.Close()
+		fn(gzipResponseWriter{Writer: gz, ResponseWriter: w}, r)
+	}
 }
 
 // Required by http.Handler interface. This method is invoked by the
