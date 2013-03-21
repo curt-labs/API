@@ -683,7 +683,7 @@ func GetLocalRegions() (regions []StateRegion, err error) {
 
 	client := redis.NewRedisClient()
 
-	regions_bytes, err := client.Get("local_regions")
+	regions_bytes, _ := client.Get("local_regions")
 	log.Println(err)
 	if err != nil || len(regions_bytes) == 0 {
 		log.Println("inside if err != nil")
@@ -726,6 +726,7 @@ func GetLocalRegions() (regions []StateRegion, err error) {
 				}
 				regions = append(regions, reg)
 			}
+			log.Println(len(regions))
 
 			if regions_bytes, err = json.Marshal(regions); err == nil {
 				client.Set("local_regions", regions_bytes)
