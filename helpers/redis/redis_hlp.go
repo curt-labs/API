@@ -1,13 +1,14 @@
 package redis
 
 var (
-	client Client
+	RedisClient = NewRedisClient()
 )
 
-func NewRedisClient() Client {
-	// client.Addr = "137.117.72.189:6379"
-	client.Addr = "127.0.0.1:6379"
-	client.Db = 13
+func NewRedisClient() (c Client) {
 
-	return client
+	// client.Addr = "137.117.72.189:6379"
+	c.Addr = "127.0.0.1:6379"
+	c.Db = 13
+
+	return
 }

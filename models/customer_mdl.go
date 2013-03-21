@@ -680,9 +680,7 @@ func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, er
 
 func GetLocalRegions() (regions []StateRegion, err error) {
 
-	client := redis.NewRedisClient()
-
-	regions_bytes, err := client.Get("local_regions")
+	regions_bytes, err := redis.RedisClient.Get("local_regions")
 	log.Println(err)
 	log.Println(len(regions_bytes))
 	if err != nil || len(regions_bytes) == 0 {
@@ -731,7 +729,7 @@ func GetLocalRegions() (regions []StateRegion, err error) {
 			if regions_bytes, err = json.Marshal(regions); err == nil {
 				log.Println(len(regions_bytes))
 				log.Println("sending local_regions to redis")
-				client.Set("local_regions", regions_bytes)
+				redis.RedisClient.Set("local_regions", regions_bytes)
 				//client.Expire("local_regions", int64(time.Duration.Hours(24)))
 			}
 			log.Println(err)
