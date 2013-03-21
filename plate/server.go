@@ -461,7 +461,7 @@ func (this *responseWriter) WriteHeader(code int) {
 // ServeJson replies to the request with a JSON
 // representation of resource v.
 func ServeJson(w http.ResponseWriter, v interface{}) {
-	content, err := json.MarshalIndent(v, "", "  ")
+	content, err := json.Marshal(v)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
