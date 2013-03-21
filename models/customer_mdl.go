@@ -685,6 +685,7 @@ func GetLocalRegions() (regions []StateRegion, err error) {
 
 	regions_bytes, err := client.Get("local_regions")
 	log.Println(err)
+	log.Println(regions_bytes)
 	if err != nil || len(regions_bytes) == 0 {
 
 		_, _, _ = database.Db.Query("SET SESSION group_concat_max_len = 100024")
