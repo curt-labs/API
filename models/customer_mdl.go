@@ -6,7 +6,6 @@ import (
 	"../helpers/sortutil"
 	"encoding/json"
 	"github.com/ziutek/mymysql/mysql"
-	"log"
 	"math"
 	"net/url"
 	"strconv"
@@ -110,7 +109,12 @@ var (
                                               	)
 				order by dtr.sort desc`
 
-	polygonStmt = `select s.state, s.abbr,(
+	mapCoordinatesForStateStmt = `select mpc.latitude, mpc.longitude
+						from MapPolygonCoordinates as mpc
+						join MapPolygon as mp on mpc.MapPolygonID = mp.ID
+						where mp.stateID = %d`
+
+	polygonStmt = `select s.stateID, s.state, s.abbr,(
 					select COUNT(cl.locationID) from CustomerLocations as cl
 					join Customer as c on cl.cust_id = c.cust_id
 					join DealerTypes as dt on c.dealer_type = dt.dealer_type
@@ -681,58 +685,50 @@ func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, er
 func GetLocalRegions() (regions []StateRegion, err error) {
 
 	regions_bytes, err := redis.RedisClient.Get("local_regions")
-	log.Println(err)
-	log.Println(len(regions_bytes))
 	if err != nil || len(regions_bytes) == 0 {
-		log.Println("inside if err != nil")
 		_, _, _ = database.Db.Query("SET SESSION group_concat_max_len = 100024")
 		rows, res, err := database.Db.Query(polygonStmt)
-		log.Printf("Database Error: %s", err)
 		_, _, _ = database.Db.Query("SET SESSION group_concat_max_len = 1024")
 		if !database.MysqlError(err) && rows != nil {
+			ch := make(chan int)
+
 			for _, row := range rows {
+				go func(c chan int, regRow mysql.Row, regRes mysql.Result) {
+					state := regRes.Map("state")
+					abbr := regRes.Map("abbr")
+					count := regRes.Map("count")
+					id := regRes.Map("stateID")
 
-				state := res.Map("state")
-				abbr := res.Map("abbr")
-				count := res.Map("count")
-				latitudes := res.Map("latitudes")
-				longitudes := res.Map("longitudes")
-
-				var coords []MapCoordinates
-				if row.Str(latitudes) != "" && row.Str(longitudes) != "" {
-					lats := strings.Split(row.Str(latitudes), ",")
-					lons := strings.Split(row.Str(longitudes), ",")
-
-					if len(lats) == len(lons) {
-						for i := 0; i < len(lats); i++ {
-							lat, er := strconv.ParseFloat(lats[i], 64)
-							if er == nil {
-								lon, er := strconv.ParseFloat(lons[i], 64)
-								if er == nil {
-									coords = append(coords, MapCoordinates{lat, lon})
-								}
-							}
-						}
+					reg := StateRegion{
+						Name:         regRow.Str(state),
+						Abbreviation: regRow.Str(abbr),
+						Count:        regRow.Int(count),
 					}
-				}
+					coordRows, coordRes, err := database.Db.Query(mapCoordinatesForStateStmt, regRow.Int(id))
+					if err == nil {
+						lat := coordRes.Map("latitude")
+						lon := coordRes.Map("longitude")
 
-				reg := StateRegion{
-					Name:         row.Str(state),
-					Abbreviation: row.Str(abbr),
-					Count:        row.Int(count),
-					Polygons:     &coords,
-				}
-				regions = append(regions, reg)
+						var coords []MapCoordinates
+						for _, coordRow := range coordRows {
+							coords = append(coords, MapCoordinates{coordRow.ForceFloat(lat), coordRow.ForceFloat(lon)})
+						}
+						reg.Polygons = &coords
+					}
+
+					regions = append(regions, reg)
+					c <- 1
+				}(ch, row, res)
 			}
-			log.Println(len(regions))
+
+			for _, _ = range rows {
+				<-ch
+			}
 
 			if regions_bytes, err = json.Marshal(regions); err == nil {
-				log.Println(len(regions_bytes))
-				log.Println("sending local_regions to redis")
 				redis.RedisClient.Set("local_regions", regions_bytes)
 				//client.Expire("local_regions", int64(time.Duration.Hours(24)))
 			}
-			log.Println(err)
 		}
 
 	} else {
