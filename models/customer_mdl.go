@@ -684,8 +684,8 @@ func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, er
 
 func GetLocalRegions() (regions []StateRegion, err error) {
 
-	regions_bytes, err := redis.RedisClient.Get("local_regions")
-	if err != nil || len(regions_bytes) == 0 {
+	regions_bytes, _ := redis.RedisClient.Get("local_regions")
+	if len(regions_bytes) == 0 {
 		_, _, _ = database.Db.Query("SET SESSION group_concat_max_len = 100024")
 		rows, res, err := database.Db.Query(polygonStmt)
 		_, _, _ = database.Db.Query("SET SESSION group_concat_max_len = 1024")
