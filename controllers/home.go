@@ -1,8 +1,8 @@
 package controllers
 
 import (
+	"../../helpers/plate"
 	. "../models"
-	"../plate"
 
 	"net/http"
 )

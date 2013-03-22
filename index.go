@@ -7,7 +7,7 @@ import (
 	"./controllers/part"
 	"./controllers/vehicle"
 	"./helpers/auth"
-	"./plate"
+	"./helpers/plate"
 	"flag"
 	"log"
 	"net/http"

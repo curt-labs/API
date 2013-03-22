@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"../../plate"
+	"../../helpers/plate"
 	"../database"
 	"net/http"
 

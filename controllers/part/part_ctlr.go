@@ -1,8 +1,8 @@
 package part_ctlr
 
 import (
+	"../../helpers/plate"
 	. "../../models"
-	"../../plate"
 	"net/http"
 	"strconv"
 )
