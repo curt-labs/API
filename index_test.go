@@ -2,10 +2,12 @@ package main
 
 import (
 	"./controllers/category"
+	"./controllers/customer"
+	"./controllers/dealers"
 	"./controllers/part"
 	"./controllers/vehicle"
 	"./helpers/auth"
-	"./plate"
+	"./helpers/plate"
 	"errors"
 	"fmt"
 	"net/http"
@@ -80,11 +82,16 @@ func checkError(req http.Request, rec *httptest.ResponseRecorder, err error, t *
 func TestHandler(t *testing.T) {
 
 	server := plate.NewServer("doughboy")
+	server.Logging = true
 
 	server.AddFilter(auth.AuthHandler)
 	server.AddFilter(CorsHandler)
 	server.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "http://labs.curtmfg.com/", http.StatusFound)
+	}).NoFilter()
+
+	server.Get("/.status", func(w http.ResponseWriter, r *http.Request) {
+		server.StatusService.GetStatus(w, r)
 	}).NoFilter()
 
 	server.Get("/vehicle", vehicle_ctlr.Year)
@@ -100,8 +107,22 @@ func TestHandler(t *testing.T) {
 	server.Get("/category/:id/parts", category_ctlr.GetParts)
 	server.Get("/category/:id/parts/:page/:count", category_ctlr.GetParts)
 
-	server.Get("/part/:part/vehicles", part_ctlr.Vehicles)
 	server.Get("/part/:part", part_ctlr.Get)
+	server.Get("/part/:part/vehicles", part_ctlr.Vehicles)
+	server.Get("/part/:part/attributes", part_ctlr.Attributes)
+	server.Get("/part/:part/images", part_ctlr.Images)
+	server.Get("/part/:part/pricing", part_ctlr.Prices)
+
+	server.Post("/customer/auth", customer_ctlr.UserAuthentication).NoFilter()
+	server.Get("/customer/auth", customer_ctlr.KeyedUserAuthentication).NoFilter()
+
+	server.Post("/customer/locations", customer_ctlr.GetLocations)
+	server.Post("/customer/users", customer_ctlr.GetUsers) // Requires a user to be marked as sudo
+
+	/**** INTERNAL USE ONLY ****/
+	server.Get("/dealers/etailer", dealers_ctlr.Etailers).NoFilter()
+	server.Get("/dealers/local", dealers_ctlr.LocalDealers).NoFilter()
+	server.Get("/dealers/local/regions", dealers_ctlr.LocalRegions).NoFilter()
 
 	qs := url.Values{}
 	qs.Add("key", "8aee0620-412e-47fc-900a-947820ea1c1d")
@@ -141,6 +162,36 @@ func TestHandler(t *testing.T) {
 	checkError(req, recorder, err, t)
 
 	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/vehicle/2012/Chevrolet/Silverado 1500/LT/with factory tow package", qs)
+	err = code_is(t, recorder, 200)
+	checkError(req, recorder, err, t)
+	err = content_type_is_json(t, recorder)
+	checkError(req, recorder, err, t)
+
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/part/12289", qs)
+	err = code_is(t, recorder, 200)
+	checkError(req, recorder, err, t)
+	err = content_type_is_json(t, recorder)
+	checkError(req, recorder, err, t)
+
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/part/12289/vehicles", qs)
+	err = code_is(t, recorder, 200)
+	checkError(req, recorder, err, t)
+	err = content_type_is_json(t, recorder)
+	checkError(req, recorder, err, t)
+
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/part/12289/attributes", qs)
+	err = code_is(t, recorder, 200)
+	checkError(req, recorder, err, t)
+	err = content_type_is_json(t, recorder)
+	checkError(req, recorder, err, t)
+
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/part/12289/images", qs)
+	err = code_is(t, recorder, 200)
+	checkError(req, recorder, err, t)
+	err = content_type_is_json(t, recorder)
+	checkError(req, recorder, err, t)
+
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/part/12289/pricing", qs)
 	err = code_is(t, recorder, 200)
 	checkError(req, recorder, err, t)
 	err = content_type_is_json(t, recorder)

@@ -62,6 +62,16 @@ func main() {
 
 	server.Get("/part/:part/vehicles", part_ctlr.Vehicles)
 	server.Get("/part/:part", part_ctlr.Get)
+	server.Get("/part/:part/attributes", part_ctlr.Attributes)
+	// server.Get("/part/:part/reviews", part_ctlr.Get)
+	// server.Get("/part/:part/categories", part_ctlr.Get)
+	// server.Get("/part/:part/content", part_ctlr.Get)
+	server.Get("/part/:part/images", part_ctlr.Images)
+	// server.Get("/part/:part.pdf", part_ctlr.Get)
+	// server.Get("/part/:part/packages", part_ctlr.Get)
+	server.Get("/part/:part/pricing", part_ctlr.Prices)
+	// server.Get("/part/:part/related", part_ctlr.Get)
+	// server.Get("/part/:part/videos", part_ctlr.Get)
 
 	server.Post("/customer/auth", customer_ctlr.UserAuthentication).NoFilter()
 	server.Get("/customer/auth", customer_ctlr.KeyedUserAuthentication).NoFilter()
