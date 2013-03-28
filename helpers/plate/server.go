@@ -47,6 +47,7 @@ const (
 	applicationJson = "application/json"
 	applicationXml  = "applicatoin/xml"
 	textXml         = "text/xml"
+	applicationPdf  = "application/pdf"
 
 	blockSize = 16 // we want 16 byte blocks, for AES-128
 )
@@ -419,6 +420,18 @@ func (this *responseWriter) WriteHeader(code int) {
 // Below are helper functions to replace boilerplate
 // code that serializes resources and writes to the
 // http response.
+
+// ServeJson replies to the request with a JSON
+// representation of resource v.
+func ServePdf(w http.ResponseWriter, data []byte) {
+
+	w.Header().Set("Content-Length", strconv.Itoa(len(data)))
+	w.Header().Set("Content-Type", applicationPdf)
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Access-Control-Allow-Headers", "Origin")
+	w.Write(data)
+}
 
 // ServeJson replies to the request with a JSON
 // representation of resource v.

@@ -2,8 +2,9 @@ package models
 
 import (
 	"../helpers/database"
+	"../helpers/rest"
 	"errors"
-	"log"
+	"net/http"
 	"net/url"
 	"strings"
 	"time"
@@ -32,6 +33,12 @@ var (
 				join ContentType as ct on con.cTypeID = ct.cTypeID
 				where cb.partID = %d
 				order by ct.type`
+
+	partInstallSheetStmt = `select c.text from ContentBridge as cb
+					join Content as c on cb.contentID = c.contentID
+					join ContentType as ct on c.cTypeID = ct.cTypeID
+					where partID = %d && ct.type = 'InstallationSheet'
+					limit 1`
 )
 
 type Part struct {
@@ -47,7 +54,7 @@ type Part struct {
 	Reviews                                 []Review
 	Images                                  []Image
 	Related                                 []int
-	Categories                              []Category
+	Categories                              []ExtendedCategory
 	Videos                                  []Video
 	Packages                                []Package
 	Customer                                CustomerPart
@@ -270,8 +277,6 @@ func (p *Part) Basics() error {
 	if database.MysqlError(err) {
 		return err
 	} else if row == nil {
-		log.Println(p.PartId)
-		log.Println("No Part found for: " + string(p.PartId))
 		return errors.New("No Part Found for:" + string(p.PartId))
 	}
 	status := res.Map("status")
@@ -394,4 +399,15 @@ func (p *Part) BindCustomer(key string) error {
 	}
 	p.Customer = cust
 	return nil
+}
+
+func (p *Part) GetInstallSheet(r *http.Request) (data []byte, err error) {
+	row, _, err := database.Db.QueryFirst(partInstallSheetStmt, p.PartId)
+	if database.MysqlError(err) || row == nil {
+		return
+	}
+
+	data, err = rest.GetPDF(row.Str(0), r)
+
+	return
 }

@@ -2,6 +2,7 @@ package models
 
 import (
 	"../helpers/database"
+	"errors"
 	"github.com/ziutek/mymysql/mysql"
 	"net/url"
 	"time"
@@ -19,6 +20,15 @@ var (
 				where cp.partID = %d
 				order by c.sort
 				limit 1`
+
+	partAllCategoryStmt = `select c.catID, c.dateAdded, c.parentID, c.catTitle, c.shortDesc, 
+					c.longDesc,c.sort, c.image, c.isLifestyle, c.vehicleSpecific,
+					cc.font, cc.code
+					from Categories as c
+					join CatPart as cp on c.catID = cp.catID
+					join ColorCode as cc on c.codeID = cc.codeID
+					where cp.partID = %d
+					order by c.catID`
 
 	// Get a category by catID
 	parentCategoryStmt = `select c.catID, c.parentID, c.sort, c.dateAdded,
@@ -117,6 +127,8 @@ func (part *Part) PartBreadcrumbs() error {
 	catRow, catRes, err := database.Db.QueryFirst(partCategoryStmt, part.PartId)
 	if database.MysqlError(err) { // Error occurred while executing query
 		return err
+	} else if catRow == nil {
+		return errors.New("No part found for " + string(part.PartId))
 	}
 
 	// Map the different columns to variables
@@ -147,7 +159,7 @@ func (part *Part) PartBreadcrumbs() error {
 	}
 
 	// Populate our lowest level Category
-	initCat := Category{
+	initCat := ExtendedCategory{
 		CategoryId:      catRow.Int(id),
 		ParentId:        catRow.Int(parent),
 		Sort:            catRow.Int(sort),
@@ -163,7 +175,7 @@ func (part *Part) PartBreadcrumbs() error {
 	}
 
 	// Instantiate our array with the initial category
-	var cats []Category
+	var cats []ExtendedCategory
 	cats = append(cats, initCat)
 
 	if initCat.ParentId > 0 { // Not top level category
@@ -210,7 +222,7 @@ func (part *Part) PartBreadcrumbs() error {
 			}
 
 			// Create Category object
-			subCat := Category{
+			subCat := ExtendedCategory{
 				CategoryId:      catRow.Int(id),
 				ParentId:        catRow.Int(parentID),
 				Sort:            catRow.Int(sort),
@@ -236,11 +248,95 @@ func (part *Part) PartBreadcrumbs() error {
 	return nil
 }
 
+func (part *Part) GetPartCategories() (cats []ExtendedCategory, err error) {
+	// Execute SQL Query against current PartId
+	catRows, catRes, err := database.Db.Query(partAllCategoryStmt, part.PartId)
+	if database.MysqlError(err) || catRows == nil { // Error occurred while executing query
+		return
+	}
+
+	// Map the different columns to variables
+	id := catRes.Map("catID")
+	parent := catRes.Map("parentID")
+	sort := catRes.Map("sort")
+	date := catRes.Map("dateAdded")
+	title := catRes.Map("catTitle")
+	sDesc := catRes.Map("shortDesc")
+	lDesc := catRes.Map("longDesc")
+	img := catRes.Map("image")
+	isLife := catRes.Map("isLifestyle")
+	vSpecific := catRes.Map("vehicleSpecific")
+	cCode := catRes.Map("code")
+	font := catRes.Map("font")
+
+	for _, catRow := range catRows {
+
+		// Attempt to parse out the dataAdded field
+		da, _ := time.Parse("2006-01-02 15:04:01", catRow.Str(date))
+
+		// Attempt to parse out the image Url
+		imgUrl, _ := url.Parse(catRow.Str(img))
+
+		// Build out RGB value for color coding
+		colorCode := catRow.Str(cCode)
+		rgbCode := ""
+		if len(colorCode) == 9 {
+			rgbCode = "rgb(" + colorCode[0:3] + "," + colorCode[3:6] + "," + colorCode[6:9] + ")"
+		}
+
+		// Populate our lowest level Category
+		cat := ExtendedCategory{
+			CategoryId:      catRow.Int(id),
+			ParentId:        catRow.Int(parent),
+			Sort:            catRow.Int(sort),
+			DateAdded:       da,
+			Title:           catRow.Str(title),
+			ShortDesc:       catRow.Str(sDesc),
+			LongDesc:        catRow.Str(lDesc),
+			FontCode:        "#" + catRow.Str(font),
+			Image:           imgUrl,
+			IsLifestyle:     catRow.ForceBool(isLife),
+			VehicleSpecific: catRow.ForceBool(vSpecific),
+			ColorCode:       rgbCode,
+		}
+
+		contentChan := make(chan int)
+		subChan := make(chan int)
+
+		c := Category{
+			CategoryId: cat.CategoryId,
+		}
+
+		go func() {
+			content, contentErr := c.GetContent()
+			if contentErr == nil {
+				cat.Content = content
+			}
+			contentChan <- 1
+		}()
+
+		go func() {
+			subs, subErr := c.SubCategories()
+			if subErr == nil {
+				cat.SubCategories = subs
+			}
+			subChan <- 1
+		}()
+
+		<-contentChan
+		<-subChan
+
+		cats = append(cats, cat)
+	}
+
+	return
+}
+
 func TopTierCategories() (cats []Category, err error) {
 
 	// Execute SQL Query against current PartId
 	catRows, catRes, err := database.Db.Query(topCategoriesStmt)
-	if database.MysqlError(err) { // Error occurred while executing query
+	if database.MysqlError(err) || catRows == nil { // Error occurred while executing query
 		return
 	}
 
@@ -297,7 +393,7 @@ func GetByTitle(cat_title string) (cat Category, err error) {
 
 	// Execute SQL Query against title
 	catRow, catRes, err := database.Db.QueryFirst(categoryByNameStmt, cat_title)
-	if database.MysqlError(err) { // Error occurred while executing query
+	if database.MysqlError(err) || catRow == nil { // Error occurred while executing query
 		return
 	}
 
@@ -351,7 +447,7 @@ func GetById(cat_id int) (cat Category, err error) {
 
 	// Execute SQL Query against title
 	catRow, catRes, err := database.Db.QueryFirst(categoryByIdStmt, cat_id)
-	if database.MysqlError(err) { // Error occurred while executing query
+	if database.MysqlError(err) || catRow == nil { // Error occurred while executing query
 		return
 	}
 
@@ -405,7 +501,7 @@ func (c *Category) SubCategories() (cats []Category, err error) {
 
 	// Execute SQL Query against current PartId
 	catRows, catRes, err := database.Db.Query(subCategoriesStmt, c.CategoryId)
-	if database.MysqlError(err) { // Error occurred while executing query
+	if database.MysqlError(err) || catRows == nil { // Error occurred while executing query
 		return
 	}
 
@@ -465,7 +561,7 @@ func (c *Category) GetCategoryParts(key string, page int, count int) (parts []Pa
 	}
 
 	rows, _, err := database.Db.Query(categoryPartBasicStmt, c.CategoryId, page, count)
-	if database.MysqlError(err) {
+	if database.MysqlError(err) || rows == nil {
 		return
 	}
 
@@ -572,7 +668,7 @@ func (c *Category) GetContent() (content []Content, err error) {
 
 	// Execute SQL Query against current CategoryId
 	conRows, res, err := database.Db.Query(categoryContentStmt, c.CategoryId)
-	if database.MysqlError(err) {
+	if database.MysqlError(err) || conRows == nil {
 		return
 	}
 

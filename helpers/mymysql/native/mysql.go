@@ -9,13 +9,14 @@ import (
 	"net"
 	"reflect"
 	"strings"
+	"time"
 )
 
 type serverInfo struct {
 	prot_ver byte
-	serv_ver string
+	serv_ver []byte
 	thr_id   uint32
-	scramble []byte
+	scramble [20]byte
 	caps     uint16
 	lang     byte
 }
@@ -49,22 +50,32 @@ type Conn struct {
 	// Default 16*1024*1024-1. You may change it before connect.
 	max_pkt_size int
 
+	// Timeout for connect
+	timeout time.Duration
+
+	// Return only types accepted by godrv
+	narrowTypeSet bool
+	// Store full information about fields in result
+	fullFieldInfo bool
+
 	// Debug logging. You may change it at any time.
 	Debug bool
 }
 
 // Create new MySQL handler. The first three arguments are passed to net.Bind
 // for create connection. user and passwd are for authentication. Optional db
-// is database name (you may not specifi it and use Use() method later).
+// is database name (you may not specify it and use Use() method later).
 func New(proto, laddr, raddr, user, passwd string, db ...string) mysql.Conn {
 	my := Conn{
-		proto:        proto,
-		laddr:        laddr,
-		raddr:        raddr,
-		user:         user,
-		passwd:       passwd,
-		stmt_map:     make(map[uint32]*Stmt),
-		max_pkt_size: 16*1024*1024 - 1,
+		proto:         proto,
+		laddr:         laddr,
+		raddr:         raddr,
+		user:          user,
+		passwd:        passwd,
+		stmt_map:      make(map[uint32]*Stmt),
+		max_pkt_size:  16*1024*1024 - 1,
+		timeout:       2 * time.Minute,
+		fullFieldInfo: true,
 	}
 	if len(db) == 1 {
 		my.dbname = db[0]
@@ -72,6 +83,14 @@ func New(proto, laddr, raddr, user, passwd string, db ...string) mysql.Conn {
 		panic("mymy.New: too many arguments")
 	}
 	return &my
+}
+
+func (my *Conn) NarrowTypeSet(narrow bool) {
+	my.narrowTypeSet = narrow
+}
+
+func (my *Conn) FullFieldInfo(full bool) {
+	my.fullFieldInfo = full
 }
 
 // Creates new (not connected) connection using configuration from current
@@ -84,6 +103,7 @@ func (my *Conn) Clone() mysql.Conn {
 		c = New(my.proto, my.laddr, my.raddr, my.user, my.passwd, my.dbname).(*Conn)
 	}
 	c.max_pkt_size = my.max_pkt_size
+	c.timeout = my.timeout
 	c.Debug = my.Debug
 	return c
 }
@@ -97,6 +117,24 @@ func (my *Conn) SetMaxPktSize(new_size int) int {
 	return old_size
 }
 
+// SetTimeout sets timeout for Connect and Reconnect
+func (my *Conn) SetTimeout(timeout time.Duration) {
+	my.timeout = timeout
+}
+
+type timeoutError struct{}
+
+func (e *timeoutError) Error() string   { return "i/o timeout" }
+func (e *timeoutError) Timeout() bool   { return true }
+func (e *timeoutError) Temporary() bool { return true }
+
+type stringAddr struct {
+	net, addr string
+}
+
+func (a stringAddr) Network() string { return a.net }
+func (a stringAddr) String() string  { return a.addr }
+
 func (my *Conn) connect() (err error) {
 	defer catchError(&err)
 
@@ -107,44 +145,73 @@ func (my *Conn) connect() (err error) {
 			proto = "tcp"
 		}
 	}
+
+	// Simulate DialTimeout
+	t := time.NewTimer(my.timeout)
+	defer t.Stop()
+	ch := make(chan error, 1)
+
 	// Make connection
-	switch proto {
-	case "tcp", "tcp4", "tcp6":
-		var la, ra *net.TCPAddr
-		if my.laddr != "" {
-			if la, err = net.ResolveTCPAddr(proto, my.laddr); err != nil {
+	go func() {
+		var e error
+		defer func() {
+			ch <- e
+		}()
+		switch proto {
+		case "tcp", "tcp4", "tcp6":
+			var la, ra *net.TCPAddr
+			if my.laddr != "" {
+				if la, e = net.ResolveTCPAddr(proto, my.laddr); e != nil {
+					return
+				}
+			}
+			if my.raddr != "" {
+				if ra, e = net.ResolveTCPAddr(proto, my.raddr); e != nil {
+					return
+				}
+			}
+			if my.net_conn, e = net.DialTCP(proto, la, ra); e != nil {
+				my.net_conn = nil
 				return
 			}
-		}
-		if my.raddr != "" {
-			if ra, err = net.ResolveTCPAddr(proto, my.raddr); err != nil {
+
+		case "unix":
+			var la, ra *net.UnixAddr
+			if my.raddr != "" {
+				if ra, e = net.ResolveUnixAddr(proto, my.raddr); e != nil {
+					return
+				}
+			}
+			if my.laddr != "" {
+				if la, e = net.ResolveUnixAddr(proto, my.laddr); e != nil {
+					return
+				}
+			}
+			if my.net_conn, e = net.DialUnix(proto, la, ra); e != nil {
+				my.net_conn = nil
 				return
 			}
+
+		default:
+			e = net.UnknownNetworkError(proto)
 		}
-		if my.net_conn, err = net.DialTCP(proto, la, ra); err != nil {
-			my.net_conn = nil
+		return
+	}()
+
+	select {
+	case <-t.C:
+		// DialTimeout timeout error
+		err = &net.OpError{
+			Op:   "dial",
+			Net:  proto,
+			Addr: &stringAddr{proto, my.raddr},
+			Err:  &timeoutError{},
+		}
+		return
+	case err = <-ch:
+		if err != nil {
 			return
 		}
-
-	case "unix":
-		var la, ra *net.UnixAddr
-		if my.raddr != "" {
-			if ra, err = net.ResolveUnixAddr(proto, my.raddr); err != nil {
-				return
-			}
-		}
-		if my.laddr != "" {
-			if la, err = net.ResolveUnixAddr(proto, my.laddr); err != nil {
-				return
-			}
-		}
-		if my.net_conn, err = net.DialUnix(proto, la, ra); err != nil {
-			my.net_conn = nil
-			return
-		}
-
-	default:
-		err = net.UnknownNetworkError(proto)
 	}
 
 	my.rd = bufio.NewReader(my.net_conn)
@@ -166,7 +233,7 @@ func (my *Conn) connect() (err error) {
 	// Execute all registered commands
 	for _, cmd := range my.init_cmds {
 		// Send command
-		my.sendCmd(_COM_QUERY, cmd)
+		my.sendCmdStr(_COM_QUERY, cmd)
 		// Get command response
 		res := my.getResponse()
 
@@ -285,7 +352,7 @@ func (my *Conn) Use(dbname string) (err error) {
 	}
 
 	// Send command
-	my.sendCmd(_COM_INIT_DB, dbname)
+	my.sendCmdStr(_COM_INIT_DB, dbname)
 	// Get server response
 	my.getResult(nil, nil)
 	// Save new database name if no errors
@@ -322,7 +389,7 @@ func (my *Conn) Start(sql string, params ...interface{}) (res mysql.Result, err 
 		sql = fmt.Sprintf(sql, params...)
 	}
 	// Send query
-	my.sendCmd(_COM_QUERY, sql)
+	my.sendCmdStr(_COM_QUERY, sql)
 
 	// Get command response
 	res = my.getResponse()
@@ -420,7 +487,7 @@ func (my *Conn) prepare(sql string) (stmt *Stmt, err error) {
 	defer catchError(&err)
 
 	// Send command
-	my.sendCmd(_COM_STMT_PREPARE, sql)
+	my.sendCmdStr(_COM_STMT_PREPARE, sql)
 	// Get server response
 	stmt, ok := my.getPrepareResult(nil).(*Stmt)
 	if !ok {
@@ -460,7 +527,7 @@ func (my *Conn) Prepare(sql string) (mysql.Stmt, error) {
 
 // Bind input data for the parameter markers in the SQL statement that was
 // passed to Prepare.
-// 
+//
 // params may be a parameter list (slice), a struct or a pointer to the struct.
 // A struct field can by value or pointer to value. A parameter (slice element)
 // can be value, pointer to value or pointer to pointer to value.
@@ -526,14 +593,6 @@ func (stmt *Stmt) Bind(params ...interface{}) {
 	stmt.binded = true
 }
 
-// Resets the previous parameter binding
-func (stmt *Stmt) ResetParams() {
-	stmt.rebind = true
-	for ii := 0; ii < stmt.param_count; ii++ {
-		stmt.params[ii] = nil
-	}
-}
-
 // Execute prepared statement. If statement requires parameters you may bind
 // them first or specify directly. After this command you may use GetRow to
 // retrieve data.
@@ -585,7 +644,7 @@ func (stmt *Stmt) Delete() (err error) {
 	}()
 
 	// Send command
-	stmt.my.sendCmd(_COM_STMT_CLOSE, stmt.id)
+	stmt.my.sendCmdU32(_COM_STMT_CLOSE, stmt.id)
 	return
 }
 
@@ -605,7 +664,7 @@ func (stmt *Stmt) Reset() (err error) {
 	// whether the command succeeds or not.
 	stmt.rebind = true
 	// Send command
-	stmt.my.sendCmd(_COM_STMT_RESET, stmt.id)
+	stmt.my.sendCmdU32(_COM_STMT_RESET, stmt.id)
 	// Get result
 	stmt.my.getResult(nil, nil)
 	return
@@ -623,7 +682,7 @@ func (stmt *Stmt) Reset() (err error) {
 // max_allowed_packet variable. You can obtain value of this variable
 // using such query: SHOW variables WHERE Variable_name = 'max_allowed_packet'
 // If data source is io.Reader then (pkt_size - 6) is size of a buffer that
-// will be allocated for reading. 
+// will be allocated for reading.
 //
 // If you have data source of type string or []byte in one piece you may
 // properly set pkt_size and call this method once. If you have data in
@@ -650,43 +709,36 @@ func (stmt *Stmt) SendLongData(pnum int, data interface{}, pkt_size int) (err er
 	case io.Reader:
 		buf := make([]byte, pkt_size)
 		for {
-			nn, ee := io.ReadFull(dd, buf)
+			nn, ee := dd.Read(buf)
+			if nn != 0 {
+				stmt.my.sendLongData(stmt.id, uint16(pnum), buf[0:nn])
+			}
 			if ee == io.EOF {
 				return
 			}
-			if nn != 0 {
-				stmt.my.sendCmd(
-					_COM_STMT_SEND_LONG_DATA,
-					stmt.id, uint16(pnum), buf[0:nn],
-				)
-			}
-			if ee == io.ErrUnexpectedEOF {
-				return
-			} else if ee != nil {
+			if ee != nil {
 				return ee
 			}
 		}
 
 	case []byte:
 		for len(dd) > pkt_size {
-			stmt.my.sendCmd(
-				_COM_STMT_SEND_LONG_DATA,
-				stmt.id, uint16(pnum), dd[0:pkt_size],
-			)
+			stmt.my.sendLongData(stmt.id, uint16(pnum), dd[0:pkt_size])
 			dd = dd[pkt_size:]
 		}
-		stmt.my.sendCmd(_COM_STMT_SEND_LONG_DATA, stmt.id, uint16(pnum), dd)
+		stmt.my.sendLongData(stmt.id, uint16(pnum), dd)
 		return
 
 	case string:
 		for len(dd) > pkt_size {
-			stmt.my.sendCmd(
-				_COM_STMT_SEND_LONG_DATA,
-				stmt.id, uint16(pnum), dd[0:pkt_size],
+			stmt.my.sendLongData(
+				stmt.id,
+				uint16(pnum),
+				[]byte(dd[0:pkt_size]),
 			)
 			dd = dd[pkt_size:]
 		}
-		stmt.my.sendCmd(_COM_STMT_SEND_LONG_DATA, stmt.id, uint16(pnum), dd)
+		stmt.my.sendLongData(stmt.id, uint16(pnum), []byte(dd))
 		return
 	}
 	return mysql.ErrUnkDataType
@@ -756,7 +808,7 @@ func (res *Result) GetRows() ([]mysql.Row, error) {
 
 // Escapes special characters in the txt, so it is safe to place returned string
 // to Query method.
-func (my *Conn) EscapeString(txt string) string {
+func (my *Conn) Escape(txt string) string {
 	if my.status&_SERVER_STATUS_NO_BACKSLASH_ESCAPES != 0 {
 		return escapeQuotes(txt)
 	}

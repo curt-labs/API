@@ -107,11 +107,18 @@ func TestHandler(t *testing.T) {
 	server.Get("/category/:id/parts", category_ctlr.GetParts)
 	server.Get("/category/:id/parts/:page/:count", category_ctlr.GetParts)
 
-	server.Get("/part/:part", part_ctlr.Get)
 	server.Get("/part/:part/vehicles", part_ctlr.Vehicles)
 	server.Get("/part/:part/attributes", part_ctlr.Attributes)
+	server.Get("/part/:part/reviews", part_ctlr.Reviews)
+	server.Get("/part/:part/categories", part_ctlr.Categories)
+	server.Get("/part/:part/content", part_ctlr.GetContent)
 	server.Get("/part/:part/images", part_ctlr.Images)
+	server.Get("/part/:part((.*?)\\.(PDF|pdf)$)", part_ctlr.InstallSheet).NoFilter() // Resolves: /part/11000.pdf
+	server.Get("/part/:part/packages", part_ctlr.Packaging)
 	server.Get("/part/:part/pricing", part_ctlr.Prices)
+	// server.Get("/part/:part/related", part_ctlr.Get)
+	server.Get("/part/:part/videos", part_ctlr.Videos)
+	server.Get("/part/:part", part_ctlr.Get)
 
 	server.Post("/customer/auth", customer_ctlr.UserAuthentication).NoFilter()
 	server.Get("/customer/auth", customer_ctlr.KeyedUserAuthentication).NoFilter()
@@ -185,7 +192,35 @@ func TestHandler(t *testing.T) {
 	err = content_type_is_json(t, recorder)
 	checkError(req, recorder, err, t)
 
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/part/12289/reviews", qs)
+	err = code_is(t, recorder, 200)
+	checkError(req, recorder, err, t)
+	err = content_type_is_json(t, recorder)
+	checkError(req, recorder, err, t)
+
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/part/12289/categories", qs)
+	err = code_is(t, recorder, 200)
+	checkError(req, recorder, err, t)
+	err = content_type_is_json(t, recorder)
+	checkError(req, recorder, err, t)
+
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/part/12289/content", qs)
+	err = code_is(t, recorder, 200)
+	checkError(req, recorder, err, t)
+	err = content_type_is_json(t, recorder)
+	checkError(req, recorder, err, t)
+
 	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/part/12289/images", qs)
+	err = code_is(t, recorder, 200)
+	checkError(req, recorder, err, t)
+	err = content_type_is_json(t, recorder)
+	checkError(req, recorder, err, t)
+
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/part/12289.pdf", nil)
+	err = code_is(t, recorder, 200)
+	checkError(req, recorder, err, t)
+
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/part/12289/packages", qs)
 	err = code_is(t, recorder, 200)
 	checkError(req, recorder, err, t)
 	err = content_type_is_json(t, recorder)
