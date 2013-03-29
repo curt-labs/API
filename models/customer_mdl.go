@@ -727,7 +727,7 @@ func GetLocalRegions() (regions []StateRegion, err error) {
 
 			if regions_bytes, err = json.Marshal(regions); err == nil {
 				redis.RedisClient.Set("local_regions", regions_bytes)
-				//client.Expire("local_regions", int64(time.Duration.Hours(24)))
+				redis.RedisClient.Expire("local_regions", 86400)
 			}
 		}
 
