@@ -17,36 +17,36 @@ const (
 
 var (
 	customerUserAuthStmt = `select * from CustomerUser
-							where email = '%s'
+							where email = ?
 							&& active = 1
 							limit 1`
 
 	customerUserKeyAuthStmt = `select cu.* from CustomerUser as cu
 							join ApiKey as ak on cu.id = ak.user_id
 							join ApiKeyType as akt on ak.type_id = akt.id
-							where UPPER(akt.type) = '%s'
-							&& ak.api_key = '%s'
-							&& cu.active = 1 && ak.date_added >= '%v'`
+							where UPPER(akt.type) = ? 
+							&& ak.api_key = ?
+							&& cu.active = 1 && ak.date_added >= ?`
 
-	updateCustomerUserPassStmt = `update CustomerUser set proper_password = '%s'
-							where id = '%s' && active = 1`
+	updateCustomerUserPassStmt = `update CustomerUser set proper_password = ?
+							where id = ? && active = 1`
 
 	customerUserKeysStmt = `select ak.api_key, akt.type, ak.date_added from ApiKey as ak 
 							join ApiKeyType as akt on ak.type_id = akt.id
-							where user_id = '%s' && UPPER(akt.type) NOT IN ('%s')`
+							where user_id = ? && UPPER(akt.type) NOT IN (?)`
 
 	userAuthenticationKeyStmt = `select ak.api_key, ak.type_id, akt.type from ApiKey as ak
 							join ApiKeyType as akt on ak.type_id = akt.id
-							where UPPER(akt.type) = '%s' 
-							&& ak.user_id = '%s'`
+							where UPPER(akt.type) = ?
+							&& ak.user_id = ?`
 
 	// This statement will run the trigger on the
 	// ApiKey table to regenerate the api_key column 
 	// for the updated record
 	resetUserAuthenticationStmt = `update ApiKey as ak
-							set ak.date_added = '%s'
-							where ak.type_id = '%s' 
-							&& ak.user_id = '%s'`
+							set ak.date_added = ?
+							where ak.type_id = ? 
+							&& ak.user_id = ?`
 
 	// This statement will renew the timer on the
 	// authentication API key for the given user.
@@ -56,8 +56,8 @@ var (
 	disableTriggerStmt          = `SET @disable_trigger = 1`
 	renewUserAuthenticationStmt = `update ApiKey as ak
 						join ApiKeyType as akt on ak.type_id = akt.id
-						set ak.date_added = '%s'
-						where UPPER(akt.type) = '%s' && ak.user_id = '%s'`
+						set ak.date_added = ?
+						where UPPER(akt.type) = ? && ak.user_id = ?`
 
 	userCustomerStmt = `select c.customerID, c.name, c.email, c.address, c.address2, c.city, c.phone, c.fax, c.contact_person,
 				c.latitude, c.longitude, c.searchURL, c.logo, c.website,
@@ -72,7 +72,7 @@ var (
 				left join DealerTiers d_tier on c.tier = d_tier.ID
 				left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
 				left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
-				where cu.id = '%s'`
+				where cu.id = ?`
 
 	userLocationStmt = `select cl.locationID, cl.name, cl.email, cl.address, cl.city,
 					cl.postalCode, cl.phone, cl.fax, cl.latitude, cl.longitude,
@@ -82,18 +82,18 @@ var (
 					left join States as s on cl.stateID = s.stateID
 					left join Country as cty on s.countryID = cty.countryID
 					join CustomerUser as cu on cl.locationID = cu.locationID
-					where cu.id = '%s'`
+					where cu.id = ?`
 
 	customerIDFromKeyStmt = `select c.customerID from Customer as c
 					join CustomerUser as cu on c.cust_id = cu.cust_ID
 					join ApiKey as ak on cu.id = ak.user_id
-					where ak.api_key = '%s'
+					where ak.api_key = ?
 					limit 1`
 
 	customerUserFromKeyStmt = `select cu.* from CustomerUser as cu
 					join ApiKey as ak on cu.id = ak.user_id
 					join ApiKeyType as akt on ak.type_id = akt.id
-					where akt.type = '%s' && ak.api_key = '%s'
+					where akt.type = ? && ak.api_key = ?
 					limit 1`
 )
 
@@ -179,7 +179,13 @@ func UserAuthenticationByKey(key string) (cust Customer, err error) {
 }
 
 func (u CustomerUser) GetCustomer() (c Customer, err error) {
-	row, res, err := database.Db.QueryFirst(userCustomerStmt, u.Id)
+
+	qry, err := database.Db.Prepare(userCustomerStmt)
+	if err != nil {
+		return
+	}
+
+	row, res, err := qry.ExecFirst(u.Id)
 	if database.MysqlError(err) {
 		return
 	}
@@ -279,7 +285,12 @@ func (u *CustomerUser) AuthenticateUser(pass string) error {
 		return err
 	}
 
-	row, res, err := database.Db.QueryFirst(customerUserAuthStmt, u.Email)
+	qry, err := database.Db.Prepare(customerUserAuthStmt)
+	if err != nil {
+		return err
+	}
+
+	row, res, err := qry.ExecFirst(u.Email)
 	if database.MysqlError(err) {
 		return err
 	}
@@ -301,7 +312,17 @@ func (u *CustomerUser) AuthenticateUser(pass string) error {
 			err = errors.New("Invalid password")
 			return err
 		} else {
-			_, _, _ = database.Db.Query(updateCustomerUserPassStmt, enc_pass, row.Str(user_id))
+			updateQry, _ := database.Db.Prepare(updateCustomerUserPassStmt)
+			params := struct {
+				pass string
+				user string
+			}{}
+			params.pass = enc_pass
+			params.user = row.Str(user_id)
+			updateQry.Bind(&params)
+			if updateQry != nil {
+				_, _ = updateQry.Raw.Run()
+			}
 		}
 	} else if !strings.EqualFold(prop, enc_pass) {
 		err = errors.New("Invalid password")
@@ -333,10 +354,24 @@ func (u *CustomerUser) AuthenticateUser(pass string) error {
 
 func AuthenticateUserByKey(key string) (u CustomerUser, err error) {
 
+	qry, err := database.Db.Prepare(customerUserKeyAuthStmt)
+	if err != nil {
+		return
+	}
+
+	params := struct {
+		key_type string
+		key      string
+		timer    string
+	}{}
+	params.key_type = AUTH_KEY_TYPE
+	params.key = key
+
 	t := time.Now()
 	t1 := t.Add(time.Duration(-6) * time.Hour)
+	params.timer = t1.String()
 
-	row, res, err := database.Db.QueryFirst(customerUserKeyAuthStmt, AUTH_KEY_TYPE, key, t1.String())
+	row, res, err := qry.ExecFirst(params)
 	if database.MysqlError(err) {
 		return
 	}
@@ -382,7 +417,19 @@ func AuthenticateUserByKey(key string) (u CustomerUser, err error) {
 
 func (u *CustomerUser) GetKeys() error {
 
-	rows, res, err := database.Db.Query(customerUserKeysStmt, u.Id, strings.Join([]string{AUTH_KEY_TYPE}, ","))
+	qry, err := database.Db.Prepare(customerUserKeysStmt)
+	if err != nil {
+		return err
+	}
+	params := struct {
+		User   string
+		Except string
+	}{}
+
+	params.User = u.Id
+	params.Except = strings.Join([]string{AUTH_KEY_TYPE}, ",")
+
+	rows, res, err := qry.Exec(params)
 	if database.MysqlError(err) {
 		return err
 	}
@@ -410,7 +457,12 @@ func (u *CustomerUser) GetKeys() error {
 
 func (u *CustomerUser) GetLocation() error {
 
-	row, res, err := database.Db.QueryFirst(userLocationStmt, u.Id)
+	qry, err := database.Db.Prepare(userLocationStmt)
+	if err != nil {
+		return err
+	}
+
+	row, res, err := qry.ExecFirst(u.Id)
 	if database.MysqlError(err) {
 		return err
 	} else if row == nil {
@@ -470,17 +522,45 @@ func (u *CustomerUser) GetLocation() error {
 }
 
 func (u *CustomerUser) ResetAuthentication() error {
+
+	oldQry, err := database.Db.Prepare(userAuthenticationKeyStmt)
+	if err != nil {
+		return err
+	}
+
+	params := struct {
+		KeyType string
+		User    string
+	}{}
+	params.KeyType = AUTH_KEY_TYPE
+	params.User = u.Id
+
 	// Retrieve the previously declared authentication key for this user
-	oldRow, oldRes, err := database.Db.QueryFirst(userAuthenticationKeyStmt, AUTH_KEY_TYPE, u.Id)
+	oldRow, oldRes, err := oldQry.ExecFirst(params)
 
 	if err != nil { // Must be something wrong with the db, lets bail
 		return err
 	} else if oldRow != nil { // Update the existing with a new date added and key
 		old_type_id := oldRes.Map("type_id")
-		t := time.Now()
+
+		updateQry, err := database.Db.Prepare(resetUserAuthenticationStmt)
+		if err != nil {
+			return err
+		}
+
+		params := struct {
+			Now     string
+			OldType string
+			User    string
+		}{}
+		updateQry.Bind(&params)
+
+		params.Now = time.Now().String()
+		params.OldType = oldRow.Str(old_type_id)
+		params.User = u.Id
 
 		// Excecute the update statement
-		_, _, err := database.Db.Query(resetUserAuthenticationStmt, t.String(), oldRow.Str(old_type_id), u.Id)
+		_, err = updateQry.Raw.Run()
 		if err != nil {
 			return err
 		}
@@ -489,7 +569,12 @@ func (u *CustomerUser) ResetAuthentication() error {
 }
 
 func GetCustomerIdFromKey(key string) (id int, err error) {
-	row, _, err := database.Db.QueryFirst(customerIDFromKeyStmt, key)
+	qry, err := database.Db.Prepare(customerIDFromKeyStmt)
+	if err != nil {
+		return
+	}
+
+	row, _, err := qry.ExecFirst(key)
 	if database.MysqlError(err) {
 		return 0, err
 	} else if row == nil {
@@ -501,7 +586,20 @@ func GetCustomerIdFromKey(key string) (id int, err error) {
 
 func GetCustomerUserFromKey(key string) (u CustomerUser, err error) {
 
-	row, res, err := database.Db.QueryFirst(customerUserFromKeyStmt, PRIVATE_KEY_TYPE, key)
+	qry, err := database.Db.Prepare(customerUserFromKeyStmt)
+	if err != nil {
+		return
+	}
+
+	params := struct {
+		KeyType string
+		Key     string
+	}{}
+
+	params.KeyType = PRIVATE_KEY_TYPE
+	params.Key = key
+
+	row, res, err := qry.ExecFirst(params)
 	if database.MysqlError(err) {
 		return
 	}
