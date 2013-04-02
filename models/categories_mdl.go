@@ -123,6 +123,10 @@ type ExtendedCategory struct {
  */
 func (part *Part) PartBreadcrumbs() error {
 
+	if part.PartId == 0 {
+		return errors.New("Invalid Part Number")
+	}
+
 	qry, err := database.Db.Prepare(partCategoryStmt)
 	if err != nil {
 		return err
@@ -259,6 +263,10 @@ func (part *Part) PartBreadcrumbs() error {
 }
 
 func (part *Part) GetPartCategories() (cats []ExtendedCategory, err error) {
+
+	if part.PartId == 0 {
+		return
+	}
 
 	qry, err := database.Db.Prepare(partAllCategoryStmt)
 	if err != nil {
@@ -525,6 +533,10 @@ func GetById(cat_id int) (cat Category, err error) {
 
 func (c *Category) SubCategories() (cats []Category, err error) {
 
+	if c.CategoryId == 0 {
+		return
+	}
+
 	qry, err := database.Db.Prepare(subCategoriesStmt)
 	if err != nil {
 		return
@@ -586,6 +598,10 @@ func (c *Category) SubCategories() (cats []Category, err error) {
 }
 
 func (c *Category) GetCategoryParts(key string, page int, count int) (parts []Part, err error) {
+
+	if c.CategoryId == 0 {
+		return
+	}
 
 	qry, err := database.Db.Prepare(categoryPartBasicStmt)
 	if err != nil {
@@ -695,12 +711,18 @@ func (c Category) GetCategory(key string) (extended ExtendedCategory, err error)
 
 	if len(errs) > 1 {
 		err = errs[0]
+	} else if extended.CategoryId == 0 {
+		return extended, errors.New("Invalid Category")
 	}
 
 	return
 }
 
 func (c *Category) GetContent() (content []Content, err error) {
+
+	if c.CategoryId == 0 {
+		return
+	}
 
 	qry, err := database.Db.Prepare(categoryContentStmt)
 	if err != nil {

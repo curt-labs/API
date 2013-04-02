@@ -2,10 +2,13 @@ package models
 
 import (
 	"../helpers/database"
+	"../helpers/redis"
 	"../helpers/rest"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -86,7 +89,7 @@ type Pricing struct {
 	Enforced bool
 }
 
-func (p *Part) Get(key string) error {
+func (p *Part) FromDatabase() error {
 
 	var errs []string
 
@@ -96,7 +99,6 @@ func (p *Part) Get(key string) error {
 	reviewChan := make(chan int)
 	imageChan := make(chan int)
 	videoChan := make(chan int)
-	customerChan := make(chan int)
 	relatedChan := make(chan int)
 	packageChan := make(chan int)
 	categoryChan := make(chan int)
@@ -150,14 +152,6 @@ func (p *Part) Get(key string) error {
 		videoChan <- 1
 	}()
 
-	go func(api_key string) {
-		bindErr := p.BindCustomer(api_key)
-		if bindErr != nil {
-			errs = append(errs, bindErr.Error())
-		}
-		customerChan <- 1
-	}(key)
-
 	go func() {
 		relErr := p.GetRelated()
 		if relErr != nil {
@@ -196,7 +190,6 @@ func (p *Part) Get(key string) error {
 	<-reviewChan
 	<-imageChan
 	<-videoChan
-	<-customerChan
 	<-relatedChan
 	<-packageChan
 	<-categoryChan
@@ -205,7 +198,53 @@ func (p *Part) Get(key string) error {
 	if len(errs) > 0 {
 		return errors.New("Error: " + strings.Join(errs, ", "))
 	}
+
+	if part_bytes, err := json.Marshal(p); err == nil {
+		part_key := "part:" + strconv.Itoa(p.PartId)
+		redis.RedisClient.Set(part_key, part_bytes)
+		redis.RedisClient.Expire(part_key, 86400)
+	}
+
 	return nil
+}
+
+func (p *Part) FromCache() error {
+
+	part_bytes, err := redis.RedisClient.Get("part:" + strconv.Itoa(p.PartId))
+	if err != nil {
+		return err
+	} else if len(part_bytes) == 0 {
+		return errors.New("Part does not exist in cache")
+	}
+
+	err = json.Unmarshal(part_bytes, &p)
+
+	return err
+}
+
+func (p *Part) Get(key string) error {
+
+	partChan := make(chan int)
+	customerChan := make(chan int)
+
+	var err error
+
+	go func() {
+		if err = p.FromCache(); err != nil {
+			err = p.FromDatabase()
+		}
+		partChan <- 1
+	}()
+
+	go func(api_key string) {
+		err = p.BindCustomer(api_key)
+		customerChan <- 1
+	}(key)
+
+	<-partChan
+	<-customerChan
+
+	return err
 }
 
 func (p *Part) GetWithVehicle(vehicle *Vehicle, api_key string) error {

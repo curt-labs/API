@@ -11,12 +11,12 @@ import (
 var (
 
 	//  Prepared statements would go here
-	authStmt = `select id from ApiKey where api_key = '%s'`
+	authStmt = `select id from ApiKey where api_key = ?`
 
 	privateAuthStmt = `select ak.id from ApiKey as ak
 				join ApiKeyType as akt on ak.type_id = akt.id
 				where akt.type = 'PRIVATE'
-				&& api_key = '%s'`
+				&& api_key = ?`
 )
 
 var AuthHandler = func(w http.ResponseWriter, r *http.Request) {
@@ -57,7 +57,16 @@ var AuthHandler = func(w http.ResponseWriter, r *http.Request) {
 
 func checkKey(key string) bool {
 
-	rows, _, err := database.Db.Query(authStmt, key)
+	qry, err := database.Db.Prepare(authStmt)
+	if err != nil {
+		return false
+	}
+
+	params := struct {
+		Key string
+	}{key}
+
+	rows, _, err := qry.Exec(params)
 	if database.MysqlError(err) {
 		return false
 	}
@@ -69,7 +78,16 @@ func checkKey(key string) bool {
 }
 
 func checkPrivateKey(key string) bool {
-	rows, _, err := database.Db.Query(privateAuthStmt, key)
+
+	qry, err := database.Db.Prepare(privateAuthStmt)
+	if err != nil {
+		return false
+	}
+
+	params := struct {
+		Key string
+	}{key}
+	rows, _, err := qry.Exec(params)
 	if database.MysqlError(err) || len(rows) == 0 {
 		return false
 	}
