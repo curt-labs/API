@@ -7,6 +7,7 @@ import (
 	"errors"
 	"github.com/ziutek/mymysql/mysql"
 	"net/url"
+	"strconv"
 	"time"
 )
 
@@ -552,6 +553,15 @@ func (c *Category) SubCategories() (cats []Category, err error) {
 		return
 	}
 
+	// First lets try to access the category:top endpoint in Redis
+	cat_bytes, err := redis.RedisClient.Get("category:" + strconv.Itoa(c.CategoryId) + ":subs")
+	if err == nil && len(cat_bytes) > 0 {
+		err = json.Unmarshal(cat_bytes, &cats)
+		if err == nil {
+			return
+		}
+	}
+
 	qry, err := database.Db.Prepare(subCategoriesStmt)
 	if err != nil {
 		return
@@ -609,6 +619,12 @@ func (c *Category) SubCategories() (cats []Category, err error) {
 		cats = append(cats, cat)
 	}
 
+	if cat_bytes, err = json.Marshal(cats); err == nil {
+		cat_key := "category:" + strconv.Itoa(c.CategoryId) + ":subs"
+		redis.RedisClient.Set(cat_key, cat_bytes)
+		redis.RedisClient.Expire(cat_key, 86400)
+	}
+
 	return
 }
 
@@ -657,6 +673,15 @@ func (c *Category) GetCategoryParts(key string, page int, count int) (parts []Pa
 }
 
 func (c Category) GetCategory(key string) (extended ExtendedCategory, err error) {
+
+	// First lets try to access the category:top endpoint in Redis
+	cat_bytes, err := redis.RedisClient.Get("category:" + strconv.Itoa(c.CategoryId))
+	if err == nil && len(cat_bytes) > 0 {
+		err = json.Unmarshal(cat_bytes, &extended)
+		if err == nil {
+			return
+		}
+	}
 
 	var errs []error
 	catChan := make(chan int)
@@ -728,6 +753,12 @@ func (c Category) GetCategory(key string) (extended ExtendedCategory, err error)
 		err = errs[0]
 	} else if extended.CategoryId == 0 {
 		return extended, errors.New("Invalid Category")
+	}
+
+	if cat_bytes, err := json.Marshal(extended); err == nil {
+		cat_key := "category:" + strconv.Itoa(c.CategoryId)
+		redis.RedisClient.Set(cat_key, cat_bytes)
+		redis.RedisClient.Expire(cat_key, 86400)
 	}
 
 	return
