@@ -2,6 +2,8 @@ package models
 
 import (
 	"../helpers/database"
+	"../helpers/redis"
+	"encoding/json"
 	"errors"
 	"github.com/ziutek/mymysql/mysql"
 	"net/url"
@@ -111,16 +113,12 @@ type ExtendedCategory struct {
 	Content       []Content
 }
 
-/*
-* PartBreacrumbs
-*
-* Description: Builds out Category breadcrumb array for the current
-*  		part object.
-*
-*  Inherited: part Part
-*
-* Retruns: error
- */
+// PartBreacrumbs
+// 
+// Description: Builds out Category breadcrumb array for the current part object.
+// 
+// Inherited: part Part
+// Returns: error
 func (part *Part) PartBreadcrumbs() error {
 
 	if part.PartId == 0 {
@@ -356,7 +354,19 @@ func (part *Part) GetPartCategories() (cats []ExtendedCategory, err error) {
 	return
 }
 
+// TopTierCategories
+// Description: Returns the top tier categories
+// Returns: []Category, error
 func TopTierCategories() (cats []Category, err error) {
+
+	// First lets try to access the category:top endpoint in Redis
+	cat_bytes, err := redis.RedisClient.Get("category:top")
+	if err == nil && len(cat_bytes) > 0 {
+		err = json.Unmarshal(cat_bytes, &cats)
+		if err == nil {
+			return
+		}
+	}
 
 	// Execute SQL Query against current PartId
 	catRows, catRes, err := database.Db.Query(topCategoriesStmt)
@@ -408,6 +418,11 @@ func TopTierCategories() (cats []Category, err error) {
 			ColorCode:       rgbCode,
 		}
 		cats = append(cats, cat)
+	}
+
+	if cat_bytes, err := json.Marshal(cats); err == nil {
+		redis.RedisClient.Set("category:top", cat_bytes)
+		redis.RedisClient.Expire("category:top", 86400)
 	}
 
 	return
