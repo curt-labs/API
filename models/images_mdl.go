@@ -14,13 +14,17 @@ type Image struct {
 var (
 	partImageStmt = `select pis.size,pi.sort,pi.height,pi.width,pi.path from PartImages as pi
 				join PartImageSizes as pis on pi.sizeID = pis.sizeID
-				where partID = %d order by pi.sort, pi.height`
+				where partID = ? order by pi.sort, pi.height`
 )
 
 func (p *Part) GetImages() error {
-	db := database.Db
 
-	rows, res, err := db.Query(partImageStmt, p.PartId)
+	qry, err := database.Db.Prepare(partImageStmt)
+	if err != nil {
+		return err
+	}
+
+	rows, res, err := qry.Exec(p.PartId)
 	if database.MysqlError(err) {
 		return err
 	}

@@ -6,6 +6,11 @@ import (
 	"time"
 )
 
+var (
+	partReviewStmt = `select rating,subject,review_text,name,email,createdDate from Review
+				where partID = ? and approved = 1 and active = 1`
+)
+
 type Review struct {
 	Rating                           int
 	Subject, ReviewText, Name, Email string
@@ -13,9 +18,12 @@ type Review struct {
 }
 
 func (p *Part) GetReviews() error {
-	db := database.Db
+	qry, err := database.Db.Prepare(partReviewStmt)
+	if err != nil {
+		return err
+	}
 
-	rows, res, err := db.Query(partReviewStmt, p.PartId)
+	rows, res, err := qry.Exec(p.PartId)
 	if database.MysqlError(err) {
 		return err
 	}

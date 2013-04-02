@@ -27,15 +27,15 @@ var (
 					join CustomerUser cu on ak.user_id = cu.id
 					join Customer c on cu.cust_ID = c.cust_id
 					join CustomerPricing cp on c.customerID = cp.cust_id
-					where api_key = '%s'
-					and cp.partID = %d`
+					where api_key = ?
+					and cp.partID = ?`
 
 	customerPartStmt = `select distinct ci.custPartID from ApiKey as ak
 					join CustomerUser cu on ak.user_id = cu.id
 					join Customer c on cu.cust_ID = c.cust_id
 					join CartIntegration ci on c.customerID = ci.custID
-					where ak.api_key = '%s'
-					and ci.partID = %d`
+					where ak.api_key = ?
+					and ci.partID = ?`
 
 	customerStmt = `select c.customerID, c.name, c.email, c.address, c.address2, c.city, c.phone, c.fax, c.contact_person,
 				c.latitude, c.longitude, c.searchURL, c.logo, c.website,
@@ -49,7 +49,7 @@ var (
 				left join DealerTiers d_tier on c.tier = d_tier.ID
 				left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
 				left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
-				where c.customerID = %d`
+				where c.customerID = ?`
 
 	customerLocationsStmt = `select cl.locationID, cl.name, cl.email, cl.address, cl.city,
 					cl.postalCode, cl.phone, cl.fax, cl.latitude, cl.longitude,
@@ -58,11 +58,11 @@ var (
 					from CustomerLocations as cl
 					left join States as s on cl.stateID = s.stateID
 					left join Country as cty on s.countryID = cty.countryID
-					where cl.cust_id = %d`
+					where cl.cust_id = ?`
 
 	customerUsersStmt = `select cu.* from CustomerUser as cu
 					join Customer as c on cu.cust_ID = c.cust_id
-					where c.customerID = '%d'
+					where c.customerID = '?'
 					&& cu.active = 1`
 
 	etailersStmt = `select c.customerID, c.name, c.email, c.address, c.address2, c.city, c.phone, c.fax, c.contact_person,
@@ -94,25 +94,25 @@ var (
 				left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
 				left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
 				where dt.online = 0 && c.isDummy = 0 && dt.show = 1 &&
-				( %f * (
+				( ? * (
                                                             2 * ATAN2(
-                                                                SQRT((SIN(((cl.latitude - %f) * (PI() / 180)) / 2) * SIN(((cl.latitude - %f) * (PI() / 180)) / 2)) + ((SIN(((cl.longitude - %f) * (PI() / 180)) / 2)) * (SIN(((cl.longitude - %f) * (PI() / 180)) / 2))) * COS(%f * (PI() / 180)) * COS(cl.latitude * (PI() / 180))),
-                                                                SQRT(1 - ((SIN(((cl.latitude - %f) * (PI() / 180)) / 2) * SIN(((cl.latitude - %f) * (PI() / 180)) / 2)) + ((SIN(((cl.longitude - %f) * (PI() / 180)) / 2)) * (SIN(((cl.longitude - %f) * (PI() / 180)) / 2))) * COS(%f * (PI() / 180)) * COS(cl.latitude * (PI() / 180))))
+                                                                SQRT((SIN(((cl.latitude - ?) * (PI() / 180)) / 2) * SIN(((cl.latitude - ?) * (PI() / 180)) / 2)) + ((SIN(((cl.longitude - ?) * (PI() / 180)) / 2)) * (SIN(((cl.longitude - ?) * (PI() / 180)) / 2))) * COS(? * (PI() / 180)) * COS(cl.latitude * (PI() / 180))),
+                                                                SQRT(1 - ((SIN(((cl.latitude - ?) * (PI() / 180)) / 2) * SIN(((cl.latitude - ?) * (PI() / 180)) / 2)) + ((SIN(((cl.longitude - ?) * (PI() / 180)) / 2)) * (SIN(((cl.longitude - ?) * (PI() / 180)) / 2))) * COS(? * (PI() / 180)) * COS(cl.latitude * (PI() / 180))))
                                                             )
-                                                        ) < %f)
+                                                        ) < ?)
 				&& (
-					(cl.latitude >= %f && cl.latitude <= %f) 
+					(cl.latitude >= ? && cl.latitude <= ?) 
 					&&
-                                              		(cl.longitude >= %f && cl.longitude <= %f) 
+                                              		(cl.longitude >= ? && cl.longitude <= ?) 
                                               		||
-                                              		(cl.longitude >= %f && cl.longitude <= %f)
+                                              		(cl.longitude >= ? && cl.longitude <= ?)
                                               	)
 				order by dtr.sort desc`
 
 	mapCoordinatesForStateStmt = `select mpc.latitude, mpc.longitude
 						from MapPolygonCoordinates as mpc
 						join MapPolygon as mp on mpc.MapPolygonID = mp.ID
-						where mp.stateID = %d`
+						where mp.stateID = ?`
 
 	polygonStmt = `select s.stateID, s.state, s.abbr,(
 					select COUNT(cl.locationID) from CustomerLocations as cl
@@ -189,7 +189,12 @@ func (c *Customer) GetCustomer() (err error) {
 
 func (c *Customer) Basics() error {
 
-	row, res, err := database.Db.QueryFirst(customerStmt, c.Id)
+	qry, err := database.Db.Prepare(customerStmt)
+	if err != nil {
+		return err
+	}
+
+	row, res, err := qry.ExecFirst(c.Id)
 	if database.MysqlError(err) {
 		return err
 	}
@@ -271,7 +276,13 @@ func (c *Customer) Basics() error {
 }
 
 func (c *Customer) GetLocations() error {
-	rows, res, err := database.Db.Query(customerLocationsStmt, c.Id)
+
+	qry, err := database.Db.Prepare(customerLocationsStmt)
+	if err != nil {
+		return err
+	}
+
+	rows, res, err := qry.Exec(c.Id)
 	if database.MysqlError(err) {
 		return err
 	}
@@ -332,7 +343,12 @@ func (c *Customer) GetLocations() error {
 
 func (c *Customer) GetUsers() (users []CustomerUser, err error) {
 
-	rows, res, err := database.Db.Query(customerUsersStmt, c.Id)
+	qry, err := database.Db.Prepare(customerUsersStmt)
+	if err != nil {
+		return
+	}
+
+	rows, res, err := qry.Exec(c.Id)
 	if database.MysqlError(err) {
 		return
 	}
@@ -359,9 +375,12 @@ func (c *Customer) GetUsers() (users []CustomerUser, err error) {
 }
 
 func GetCustomerPrice(api_key string, part_id int) (price float64, err error) {
-	db := database.Db
+	qry, err := database.Db.Prepare(customerPriceStmt)
+	if err != nil {
+		return
+	}
 
-	row, _, err := db.QueryFirst(customerPriceStmt, api_key, part_id)
+	row, _, err := qry.ExecFirst(api_key, part_id)
 	if database.MysqlError(err) {
 		return
 	}
@@ -373,9 +392,12 @@ func GetCustomerPrice(api_key string, part_id int) (price float64, err error) {
 }
 
 func GetCustomerCartReference(api_key string, part_id int) (ref int, err error) {
-	db := database.Db
+	qry, err := database.Db.Prepare(customerPartStmt)
+	if err != nil {
+		return
+	}
 
-	row, _, err := db.QueryFirst(customerPartStmt, api_key, part_id)
+	row, _, err := qry.ExecFirst(api_key, part_id)
 	if database.MysqlError(err) {
 		return
 	}
@@ -537,6 +559,11 @@ type StateRegion struct {
 
 func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, err error) {
 
+	qry, err := database.Db.Prepare(localDealersStmt)
+	if err != nil {
+		return
+	}
+
 	var latlngs []string
 	var center_latlngs []string
 
@@ -602,7 +629,47 @@ func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, er
 		view_distance = distance_a
 	}
 
-	rows, res, err := database.Db.Query(localDealersStmt, EARTH, clat, clat, clong, clong, clat, clat, clat, clong, clong, clat, view_distance, swlat, nelat, swlong, nelong, swlong2, nelong2)
+	params := struct {
+		Earth        float64
+		Clat1        float64
+		Clat2        float64
+		Clong1       float64
+		Clong2       float64
+		Clat3        float64
+		Clat4        float64
+		Clat5        float64
+		Clong3       float64
+		Clong4       float64
+		Clat6        float64
+		ViewDistance float64
+		SWLat        float64
+		NELat        float64
+		SWLong       float64
+		NELong       float64
+		SWLong2      float64
+		NELong2      float64
+	}{
+		EARTH,
+		clat,
+		clat,
+		clong,
+		clong,
+		clat,
+		clat,
+		clat,
+		clong,
+		clong,
+		clat,
+		view_distance,
+		swlat,
+		nelat,
+		swlong,
+		nelong,
+		swlong2,
+		nelong2,
+	}
+
+	rows, res, err := qry.Exec(params)
 	if database.MysqlError(err) {
 		return
 	}
@@ -684,10 +751,20 @@ func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, er
 
 func GetLocalRegions() (regions []StateRegion, err error) {
 
+	polyQuery, err := database.Db.Prepare(polygonStmt)
+	if err != nil {
+		return
+	}
+
+	coordQry, err := database.Db.Prepare(mapCoordinatesForStateStmt)
+	if err != nil {
+		return
+	}
+
 	regions_bytes, _ := redis.RedisClient.Get("local_regions")
 	if len(regions_bytes) == 0 {
 		_, _, _ = database.Db.Query("SET SESSION group_concat_max_len = 100024")
-		rows, res, err := database.Db.Query(polygonStmt)
+		rows, res, err := polyQuery.Exec()
 		_, _, _ = database.Db.Query("SET SESSION group_concat_max_len = 1024")
 		if !database.MysqlError(err) && rows != nil {
 			ch := make(chan int)
@@ -704,7 +781,7 @@ func GetLocalRegions() (regions []StateRegion, err error) {
 						Abbreviation: regRow.Str(abbr),
 						Count:        regRow.Int(count),
 					}
-					coordRows, coordRes, err := database.Db.Query(mapCoordinatesForStateStmt, regRow.Int(id))
+					coordRows, coordRes, err := coordQry.Exec(regRow.Int(id))
 					if err == nil {
 						lat := coordRes.Map("latitude")
 						lon := coordRes.Map("longitude")

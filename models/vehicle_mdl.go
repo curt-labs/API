@@ -33,15 +33,13 @@ type Vehicle struct {
 }
 
 var (
-	db = database.Db
-
 	yearStmt = `select YearID from vcdb_Year order by YearID desc`
 
 	makeStmt = `select distinct ma.MakeName as make from BaseVehicle bv
 					join vcdb_Make ma on bv.MakeID = ma.ID
 					join vcdb_Vehicle v on bv.ID = v.BaseVehicleID
 					join vcdb_VehiclePart vp on v.ID = vp.VehicleID
-					where bv.YearID = %f
+					where bv.YearID = ?
 					order by ma.MakeName`
 
 	modelStmt = `select distinct mo.ModelName as model
@@ -50,7 +48,7 @@ var (
 				join vcdb_Model as mo on bv.ModelID = mo.ID
 				join vcdb_Vehicle as v on bv.ID = v.BaseVehicleID
 				join vcdb_VehiclePart as vp on v.ID = vp.VehicleID
-				where bv.YearID = %f and ma.MakeName = '%s'
+				where bv.YearID = ? and ma.MakeName = ?
 				order by mo.ModelName`
 
 	submodelStmt = `select distinct sm.SubmodelName as submodel from BaseVehicle bv
@@ -59,8 +57,8 @@ var (
 					join vcdb_Vehicle v on bv.ID = v.BaseVehicleID
 					join Submodel sm on v.SubmodelID = sm.ID
 					join vcdb_VehiclePart vp on v.ID = vp.VehicleID
-					where bv.YearID = %f and ma.MakeName = '%s' 
-					and mo.ModelName = '%s'`
+					where bv.YearID = ? and ma.MakeName = ? 
+					and mo.ModelName = ?`
 
 	configStmt = `select cat.name, ca.value from ConfigAttributeType cat
 					join ConfigAttribute ca on cat.ID = ca.ConfigAttributeTypeID
@@ -70,8 +68,8 @@ var (
 					join Submodel sm on v.SubModelID = sm.ID
 					join vcdb_Make ma on bv.MakeID = ma.ID
 					join vcdb_Model mo on bv.ModelID = mo.ID
-					where bv.YearID = %f and ma.MakeName = '%s'
-					and mo.ModelName = '%s' and sm.SubmodelName = '%s' %s
+					where bv.YearID = ? and ma.MakeName = ?
+					and mo.ModelName = ? and sm.SubmodelName = ? %s
 					group by ca.value
 					order by cat.sort`
 
@@ -93,15 +91,15 @@ var (
 					join vcdb_Model mo on bv.ModelID = mo.ID
 					where p.status in (800,900)
 					and (
-						(bv.YearID = %f and ma.MakeName = '%s'
-						and mo.ModelName = '%s')
+						(bv.YearID = ? and ma.MakeName = ?
+						and mo.ModelName = ?)
 						or
-						(bv.YearID = %f and ma.MakeName = '%s'
-						and mo.ModelName = '%s' and sm.SubmodelName = '%s')
+						(bv.YearID = ? and ma.MakeName = ?
+						and mo.ModelName = ? and sm.SubmodelName = ?)
 						or
-						(bv.YearID = %f and ma.MakeName = '%s'
-						and mo.ModelName = '%s' and sm.SubmodelName = '%s'
-						and ca.value in ('%s'))
+						(bv.YearID = ? and ma.MakeName = ?
+						and mo.ModelName = ? and sm.SubmodelName = ?
+						and ca.value in (?))
 					)
 					order by part;`
 
@@ -112,7 +110,7 @@ var (
 				left join Submodel sm on v.SubModelID = sm.ID
 				left join vcdb_Make ma on bv.MakeID = ma.ID
 				left join vcdb_Model mo on bv.ModelID = mo.ID
-				where vp.PartNumber = %d
+				where vp.PartNumber = ?
 				order by bv.YearID desc, ma.MakeName, mo.ModelName`
 
 	vehicleNotesStmt = `select distinct n.note from vcdb_VehiclePart vp
@@ -124,21 +122,18 @@ var (
 					left join Submodel sm on v.SubModelID = sm.ID
 					join vcdb_Make ma on bv.MakeID = ma.ID
 					join vcdb_Model mo on bv.ModelID = mo.ID
-					where bv.YearID = %f and ma.MakeName = '%s'
-					and mo.ModelName = '%s' and (sm.SubmodelName = '%s' or sm.SubmodelName is null)
-					and (ca.value in ('%s') or ca.value is null) and vp.PartNumber = %d;`
+					where bv.YearID = ? and ma.MakeName = ?
+					and mo.ModelName = ? and (sm.SubmodelName = ? or sm.SubmodelName is null)
+					and (ca.value in (?) or ca.value is null) and vp.PartNumber = ?;`
 )
 
 func (vehicle *Vehicle) GetYears() (opt ConfigOption) {
-	client := redis.NewRedisClient()
-	db := database.Db
 
-	opt.Type = "Years"
 	years := make([]string, 0)
 
-	year_bytes, err := client.Get("vehicle_years")
+	year_bytes, err := redis.RedisClient.Get("vehicle_years")
 	if err != nil || len(year_bytes) == 0 {
-		rows, _, err := db.Query(yearStmt)
+		rows, _, err := database.Db.Query(yearStmt)
 		if database.MysqlError(err) {
 			return
 		}
@@ -148,23 +143,26 @@ func (vehicle *Vehicle) GetYears() (opt ConfigOption) {
 		}
 
 		if year_bytes, err = json.Marshal(years); err == nil {
-			client.Set("vehicle_years", year_bytes)
-			client.Expire("vehicle_years", int64(time.Duration.Hours(24)))
+			redis.RedisClient.Set("vehicle_years", year_bytes)
+			redis.RedisClient.Expire("vehicle_years", int64(time.Duration.Hours(24)))
 		}
 	} else {
 		_ = json.Unmarshal(year_bytes, &years)
 	}
 
+	opt.Type = "Years"
 	opt.Options = years
 	return
 }
 
 func (vehicle *Vehicle) GetMakes() (opt ConfigOption) {
-	db := database.Db
 
-	opt.Type = "Makes"
+	qry, err := database.Db.Prepare(makeStmt)
+	if err != nil {
+		return
+	}
 
-	rows, _, err := db.Query(makeStmt, vehicle.Year)
+	rows, _, err := qry.Exec(vehicle.Year)
 	if database.MysqlError(err) {
 		return
 	}
@@ -173,16 +171,27 @@ func (vehicle *Vehicle) GetMakes() (opt ConfigOption) {
 	for _, row := range rows {
 		makes = append(makes, row.Str(0))
 	}
+
+	opt.Type = "Makes"
 	opt.Options = makes
 	return
 }
 
 func (vehicle *Vehicle) GetModels() (opt ConfigOption) {
-	db := database.Db
+	qry, err := database.Db.Prepare(modelStmt)
+	if err != nil {
+		return
+	}
 
-	opt.Type = "Models"
+	params := struct {
+		Year float64
+		Make string
+	}{
+		vehicle.Year,
+		vehicle.Make,
+	}
 
-	rows, _, err := db.Query(modelStmt, vehicle.Year, vehicle.Make)
+	rows, _, err := qry.Exec(params)
 	if database.MysqlError(err) {
 		return
 	}
@@ -191,14 +200,29 @@ func (vehicle *Vehicle) GetModels() (opt ConfigOption) {
 	for _, row := range rows {
 		models = append(models, row.Str(0))
 	}
+
+	opt.Type = "Models"
 	opt.Options = models
 	return
 }
 
 func (vehicle *Vehicle) GetSubmodels() (opt ConfigOption) {
-	db := database.Db
+	qry, err := database.Db.Prepare(submodelStmt)
+	if err != nil {
+		return
+	}
 
-	rows, _, err := db.Query(submodelStmt, vehicle.Year, vehicle.Make, vehicle.Model)
+	params := struct {
+		Year  float64
+		Make  string
+		Model string
+	}{
+		vehicle.Year,
+		vehicle.Make,
+		vehicle.Model,
+	}
+
+	rows, _, err := qry.Exec(params)
 	if database.MysqlError(err) {
 		return
 	}
@@ -214,28 +238,35 @@ func (vehicle *Vehicle) GetSubmodels() (opt ConfigOption) {
 }
 
 func (vehicle *Vehicle) GetConfiguration() (opt ConfigOption) {
-	db := database.Db
 
 	var nested string
 	if len(vehicle.Configuration) > 0 {
-		nested = nestedConfigBegin
-		for i, c := range vehicle.Configuration {
-			if i != len(vehicle.Configuration)-1 {
-				nested = nested + fmt.Sprintf("'%s',", c)
-			} else {
-				nested = nested + fmt.Sprintf("'%s'", c)
-			}
-
-		}
-		nested = nested + nestedConfigEnd
+		nested = nestedConfigBegin + " ? " + nestedConfigEnd
 	}
 
-	rows, _, err := db.Query(configStmt,
+	stmt := fmt.Sprintf(configStmt, nested)
+
+	qry, err := database.Db.Prepare(stmt)
+	if err != nil {
+		return
+	}
+
+	params := struct {
+		Year          float64
+		Make          string
+		Model         string
+		Submodel      string
+		Configuration string
+	}{
 		vehicle.Year,
 		vehicle.Make,
 		vehicle.Model,
 		vehicle.Submodel,
-		nested)
+		strings.Join(vehicle.Configuration, ","),
+	}
+
+	rows, _, err := qry.Exec(params)
+
 	if database.MysqlError(err) {
 		return
 	}
@@ -292,9 +323,25 @@ func (vehicle *Vehicle) GetProductMatch(key string) (match *ProductMatch) {
 }
 
 func (v *Vehicle) GetParts() (parts []int, err error) {
-	db := database.Db
+	qry, err := database.Db.Prepare(vehiclePartsStmt)
+	if err != nil {
+		return
+	}
 
-	rows, _, err := db.Query(vehiclePartsStmt,
+	params := struct {
+		Year1     float64
+		Make1     string
+		Model1    string
+		Year2     float64
+		Make2     string
+		Model2    string
+		Submodel1 string
+		Year3     float64
+		Make3     string
+		Model3    string
+		Submodel2 string
+		Config    string
+	}{
 		v.Year,
 		v.Make,
 		v.Model,
@@ -306,8 +353,10 @@ func (v *Vehicle) GetParts() (parts []int, err error) {
 		v.Make,
 		v.Model,
 		v.Submodel,
-		strings.Join(v.Configuration, ","))
+		strings.Join(v.Configuration, ","),
+	}
 
+	rows, _, err := qry.Exec(params)
 	if err != nil {
 		return
 	}
@@ -342,9 +391,12 @@ func (v *Vehicle) GetNotes(partId int) (notes []string, err error) {
 }
 
 func ReverseLookup(partId int) (vehicles []Vehicle, err error) {
-	db := database.Db
+	qry, err := database.Db.Prepare(reverseLookupStmt)
+	if err != nil {
+		return
+	}
 
-	rows, res, err := db.Query(reverseLookupStmt, partId)
+	rows, res, err := qry.Exec(partId)
 	if database.MysqlError(err) {
 		return
 	}

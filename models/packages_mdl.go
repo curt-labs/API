@@ -12,8 +12,8 @@ var (
 				join UnitOfMeasure as um_dim on pp.dimensionUOM = um_dim.ID
 				join UnitOfMeasure as um_wt on pp.weightUOM = um_wt.ID
 				join UnitOfMeasure as um_pkg on pp.packageUOM = um_pkg.ID
-				where pp.partID = %d`
-)		
+				where pp.partID = ?`
+)
 
 type Package struct {
 	Height, Width, Length, Quantity   float64
@@ -24,9 +24,12 @@ type Package struct {
 }
 
 func (part *Part) GetPartPackaging() error {
-	db := database.Db
+	qry, err := database.Db.Prepare(partPackageStmt)
+	if err != nil {
+		return err
+	}
 
-	rows, res, err := db.Query(partPackageStmt, part.PartId)
+	rows, res, err := qry.Exec(part.PartId)
 	if database.MysqlError(err) {
 		return err
 	}
@@ -45,18 +48,18 @@ func (part *Part) GetPartPackaging() error {
 
 	var pkgs []Package
 	for _, row := range rows {
-		p := Package {
-			Height: row.Float(height), 
-			Width: row.Float(width), 
-			Length: row.Float(length), 
-			Quantity: row.Float(qty),
-			Weight: row.Float(weight),
-			DimensionUnit: row.Str(dimUnit), 
+		p := Package{
+			Height:             row.Float(height),
+			Width:              row.Float(width),
+			Length:             row.Float(length),
+			Quantity:           row.Float(qty),
+			Weight:             row.Float(weight),
+			DimensionUnit:      row.Str(dimUnit),
 			DimensionUnitLabel: row.Str(dimUnitLabel),
-			WeightUnit: row.Str(weightUnit), 
-			WeightUnitLabel: row.Str(weightUnitLabel),
-			PackageUnit: row.Str(pkgUnit), 
-			PackageUnitLabel: row.Str(pkgUnitLabel),
+			WeightUnit:         row.Str(weightUnit),
+			WeightUnitLabel:    row.Str(weightUnitLabel),
+			PackageUnit:        row.Str(pkgUnit),
+			PackageUnitLabel:   row.Str(pkgUnitLabel),
 		}
 		pkgs = append(pkgs, p)
 	}

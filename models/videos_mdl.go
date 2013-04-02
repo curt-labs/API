@@ -14,13 +14,13 @@ type Video struct {
 var (
 	partVideoStmt = `select pv.video,vt.name,pv.isPrimary, vt.icon from PartVideo as pv
 				join videoType vt on pv.vTypeID = vt.vTypeID
-				where pv.partID = %d`
+				where pv.partID = ?`
 )
 
 func (p *Part) GetVideos() error {
-	db := database.Db
+	qry, err := database.Db.Prepare(partVideoStmt)
 
-	rows, res, err := db.Query(partVideoStmt, p.PartId)
+	rows, res, err := qry.Exec(p.PartId)
 	if database.MysqlError(err) {
 		return err
 	}

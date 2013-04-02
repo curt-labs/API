@@ -14,30 +14,27 @@ var (
 	basicsStmt = `select p.status, p.dateAdded, p.dateModified, p.shortDesc, p.partID, p.priceCode, pc.class
 				from Part as p
 				left join Class as pc on p.classID = pc.classID
-				where p.partID = %d && p.status in (800,900) limit 1`
+				where p.partID = ? && p.status in (800,900) limit 1`
 
-	partAttrStmt = `select field, value from PartAttribute where partID = %d`
+	partAttrStmt = `select field, value from PartAttribute where partID = ?`
 
-	partPriceStmt = `select priceType, price, enforced from Price where partID = %d`
-
-	partReviewStmt = `select rating,subject,review_text,name,email,createdDate from Review
-				where partID = %d and approved = 1 and active = 1`
+	partPriceStmt = `select priceType, price, enforced from Price where partID = ?`
 
 	relatedPartStmt = `select distinct relatedID from RelatedPart
-				where partID = %d
+				where partID = ?
 				order by relatedID`
 
 	partContentStmt = `select ct.type, con.text
 				from Content as con
 				join ContentBridge as cb on con.contentID = cb.contentID
 				join ContentType as ct on con.cTypeID = ct.cTypeID
-				where cb.partID = %d
+				where cb.partID = ?
 				order by ct.type`
 
 	partInstallSheetStmt = `select c.text from ContentBridge as cb
 					join Content as c on cb.contentID = c.contentID
 					join ContentType as ct on c.cTypeID = ct.cTypeID
-					where partID = %d && ct.type = 'InstallationSheet'
+					where partID = ? && ct.type = 'InstallationSheet'
 					limit 1`
 )
 
@@ -248,9 +245,12 @@ func (p *Part) GetById(id int, key string) {
 }
 
 func (p *Part) GetAttributes() (err error) {
-	db := database.Db
+	qry, err := database.Db.Prepare(partAttrStmt)
+	if err != nil {
+		return
+	}
 
-	rows, _, err := db.Query(partAttrStmt, p.PartId)
+	rows, _, err := qry.Exec(p.PartId)
 	if database.MysqlError(err) {
 		return err
 	} else if rows == nil {
@@ -271,9 +271,12 @@ func (p *Part) GetAttributes() (err error) {
 }
 
 func (p *Part) Basics() error {
-	db := database.Db
+	qry, err := database.Db.Prepare(basicsStmt)
+	if err != nil {
+		return err
+	}
 
-	row, res, err := db.QueryFirst(basicsStmt, p.PartId)
+	row, res, err := qry.ExecFirst(p.PartId)
 	if database.MysqlError(err) {
 		return err
 	} else if row == nil {
@@ -303,9 +306,12 @@ func (p *Part) Basics() error {
 }
 
 func (p *Part) GetPricing() error {
-	db := database.Db
+	qry, err := database.Db.Prepare(partPriceStmt)
+	if err != nil {
+		return err
+	}
 
-	rows, res, err := db.Query(partPriceStmt, p.PartId)
+	rows, res, err := qry.Exec(p.PartId)
 	if database.MysqlError(err) {
 		return err
 	} else if rows == nil {
@@ -336,9 +342,12 @@ func (p *Part) GetPricing() error {
 }
 
 func (p *Part) GetRelated() error {
-	db := database.Db
+	qry, err := database.Db.Prepare(relatedPartStmt)
+	if err != nil {
+		return err
+	}
 
-	rows, _, err := db.Query(relatedPartStmt, p.PartId)
+	rows, _, err := qry.Exec(p.PartId)
 	if database.MysqlError(err) {
 		return err
 	} else if rows == nil {
@@ -355,9 +364,12 @@ func (p *Part) GetRelated() error {
 }
 
 func (p *Part) GetContent() error {
-	db := database.Db
+	qry, err := database.Db.Prepare(partContentStmt)
+	if err != nil {
+		return err
+	}
 
-	rows, _, err := db.Query(partContentStmt, p.PartId)
+	rows, _, err := qry.Exec(p.PartId)
 	if database.MysqlError(err) {
 		return err
 	} else if rows == nil {
@@ -402,7 +414,12 @@ func (p *Part) BindCustomer(key string) error {
 }
 
 func (p *Part) GetInstallSheet(r *http.Request) (data []byte, err error) {
-	row, _, err := database.Db.QueryFirst(partInstallSheetStmt, p.PartId)
+	qry, err := database.Db.Prepare(partInstallSheetStmt)
+	if err != nil {
+		return
+	}
+
+	row, _, err := qry.ExecFirst(p.PartId)
 	if database.MysqlError(err) || row == nil {
 		return
 	}
