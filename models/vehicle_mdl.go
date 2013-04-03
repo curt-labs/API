@@ -5,6 +5,7 @@ import (
 	"../helpers/redis"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 )
@@ -292,6 +293,8 @@ func (vehicle *Vehicle) GetConfiguration() (opt ConfigOption) {
 
 func (vehicle *Vehicle) GetProductMatch(key string) (match *ProductMatch) {
 
+	log.Println(time.Now())
+
 	match = new(ProductMatch)
 
 	parts, err := vehicle.GetParts()
@@ -299,30 +302,20 @@ func (vehicle *Vehicle) GetProductMatch(key string) (match *ProductMatch) {
 		return
 	}
 
-	c := make(chan int)
-	var part_objs []Part
-	for _, id := range parts {
-		go func(pId int) {
-			p := Part{
-				PartId: pId,
-			}
-			p.GetWithVehicle(vehicle, key)
-			part_objs = append(part_objs, p)
-			c <- 1
-		}(id)
+	populated, err := GetWithVehicleByGroup(parts, vehicle, key)
+
+	var ps []Part
+	for _, v := range populated {
+		ps = append(ps, v)
 	}
 
-	for _, _ = range parts {
-		<-c
-	}
-
-	match.Parts = part_objs
+	match.Parts = ps
 	match.Groups = make([]int, 0)
 
 	return
 }
 
-func (v *Vehicle) GetParts() (parts []int, err error) {
+func (v *Vehicle) GetParts() (parts map[int]Part, err error) {
 	qry, err := database.Db.Prepare(vehiclePartsStmt)
 	if err != nil {
 		return
@@ -361,8 +354,10 @@ func (v *Vehicle) GetParts() (parts []int, err error) {
 		return
 	}
 
+	parts = make(map[int]Part, len(rows))
+
 	for _, row := range rows {
-		parts = append(parts, row.Int(0))
+		parts[row.Int(0)] = Part{PartId: row.Int(0)}
 	}
 
 	return

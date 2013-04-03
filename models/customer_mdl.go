@@ -30,12 +30,26 @@ var (
 					where api_key = ?
 					and cp.partID = ?`
 
+	customerPriceStmt_Grouped = `select distinct cp.price, cp.partID from ApiKey as ak
+					join CustomerUser cu on ak.user_id = cu.id
+					join Customer c on cu.cust_ID = c.cust_id
+					join CustomerPricing cp on c.customerID = cp.cust_id
+					where api_key = '%s'
+					and cp.partID IN (%s)`
+
 	customerPartStmt = `select distinct ci.custPartID from ApiKey as ak
 					join CustomerUser cu on ak.user_id = cu.id
 					join Customer c on cu.cust_ID = c.cust_id
 					join CartIntegration ci on c.customerID = ci.custID
 					where ak.api_key = ?
 					and ci.partID = ?`
+
+	customerPartStmt_Grouped = `select distinct ci.custPartID, ci.partID from ApiKey as ak
+					join CustomerUser cu on ak.user_id = cu.id
+					join Customer c on cu.cust_ID = c.cust_id
+					join CartIntegration ci on c.customerID = ci.custID
+					where ak.api_key = '%s'
+					and ci.partID IN (%s)`
 
 	customerStmt = `select c.customerID, c.name, c.email, c.address, c.address2, c.city, c.phone, c.fax, c.contact_person,
 				c.latitude, c.longitude, c.searchURL, c.logo, c.website,
@@ -391,6 +405,33 @@ func GetCustomerPrice(api_key string, part_id int) (price float64, err error) {
 	return
 }
 
+func GetCustomerPriceByGroup(api_key string, existing map[int]Part) (prices map[int]float64, err error) {
+	prices = make(map[int]float64, len(existing))
+
+	var ids []string
+	for k, _ := range existing {
+		ids = append(ids, strconv.Itoa(k))
+	}
+
+	rows, res, err := database.Db.Query(customerPriceStmt_Grouped, api_key, strings.Join(ids, ","))
+	if database.MysqlError(err) {
+		return
+	} else if len(rows) == 0 {
+		return
+	}
+
+	price := res.Map("price")
+	partID := res.Map("partID")
+
+	for _, row := range rows {
+		pId := row.Int(partID)
+		pr := row.Float(price)
+		prices[pId] = pr
+	}
+
+	return
+}
+
 func GetCustomerCartReference(api_key string, part_id int) (ref int, err error) {
 	qry, err := database.Db.Prepare(customerPartStmt)
 	if err != nil {
@@ -404,6 +445,34 @@ func GetCustomerCartReference(api_key string, part_id int) (ref int, err error) 
 
 	if len(row) == 1 {
 		ref = row.Int(0)
+	}
+
+	return
+}
+
+func GetCustomerCartReferenceByGroup(api_key string, parts map[int]Part) (references map[int]int, err error) {
+
+	references = make(map[int]int, len(parts))
+
+	var ids []string
+	for k, _ := range parts {
+		ids = append(ids, strconv.Itoa(k))
+	}
+
+	rows, res, err := database.Db.Query(customerPartStmt_Grouped, api_key, strings.Join(ids, ","))
+	if err != nil {
+		return
+	} else if len(rows) == 0 {
+		return
+	}
+
+	partID := res.Map("partID")
+	custPartID := res.Map("custPartID")
+
+	for _, row := range rows {
+		pId := row.Int(partID)
+		ref := row.Int(custPartID)
+		references[pId] = ref
 	}
 
 	return
