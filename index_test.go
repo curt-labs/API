@@ -75,7 +75,7 @@ type ErrorMessage struct {
 
 func checkError(req http.Request, rec *httptest.ResponseRecorder, err error, t *testing.T) {
 	if err != nil {
-		t.Errorf("\nError: %s \nRoute: %s \n\n", err.Error(), req.URL)
+		t.Errorf("\nError: %s \nRoute: %s \n\n", err.Error(), req.URL.String())
 	} else {
 		t.Log("PASS: " + req.URL.String())
 	}
