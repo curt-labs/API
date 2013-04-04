@@ -574,6 +574,7 @@ func FromDatabaseByGroup(existing map[int]Part) (parts map[int]Part, err error) 
 	var relatedParts map[int]Part
 	var contentParts map[int]Part
 	var reviewParts map[int]Part
+	var imageParts map[int]Part
 
 	for k, _ := range existing {
 		parts[k] = Part{PartId: k}
@@ -633,10 +634,12 @@ func FromDatabaseByGroup(existing map[int]Part) (parts map[int]Part, err error) 
 	}(existing)
 
 	go func(ps map[int]Part) {
-		// imgErr := GetImagesByGroup(ps)
-		// if imgErr != nil {
-		// 	errs = append(errs, imgErr.Error())
-		// }
+		partArr, imgErr := GetImagesByGroup(ps)
+		if imgErr != nil {
+			errs = append(errs, imgErr.Error())
+		} else {
+			imageParts = partArr
+		}
 		imageChan <- 1
 	}(existing)
 
@@ -741,6 +744,12 @@ func FromDatabaseByGroup(existing map[int]Part) (parts map[int]Part, err error) 
 	for k, v := range reviewParts {
 		tmp := parts[k]
 		tmp.Reviews = v.Reviews
+		parts[k] = tmp
+	}
+
+	for k, v := range imageParts {
+		tmp := parts[k]
+		tmp.Images = v.Images
 		parts[k] = tmp
 	}
 
