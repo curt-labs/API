@@ -8,15 +8,13 @@ import (
 	"os"
 )
 
-const (
-	db_proto = "tcp"
-	db_addr  = "curtsql.cloudapp.net:3306"
-	db_user  = "root"
-	db_pass  = "eC0mm3rc3"
-	db_name  = "CurtDev2"
-)
-
 var (
+	db_proto = "tcp"
+	db_addr  = os.Getenv("DB_HOST")
+	db_user  = os.Getenv("API_DB_USER")
+	db_pass  = os.Getenv("API_DB_PASS")
+	db_name  = os.Getenv("API_DB")
+
 	// MySQL Connection Handler
 	Db = autorc.New(db_proto, "", db_addr, db_user, db_pass, db_name)
 
