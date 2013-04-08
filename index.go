@@ -11,6 +11,7 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"os"
 )
 
 var (
@@ -33,6 +34,11 @@ const (
  */
 func main() {
 	flag.Parse()
+
+	log.Println(os.Getenv("DB_HOST"))
+	log.Println(os.Getenv("API_DB_USER"))
+	log.Println(os.Getenv("API_DB_PASS"))
+	log.Println(os.Getenv("API_DB"))
 
 	server := plate.NewServer("doughboy")
 	server.Logging = true
