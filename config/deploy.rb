@@ -20,9 +20,36 @@ set :sudo_prompt, ""
 set :normalize_asset_timestamps, false
 
 after "deploy", "deploy:goget"
-after "deploy:goget", "deploy:compile"
+after "deploy:goget", "db:configure"
+after "db:configure", "deploy:compile"
 after "deploy:compile", "deploy:stop"
 after "deploy:stop", "deploy:restart"
+
+
+namespace :db do
+  desc "set database connction info"
+  task :configure do
+    set(:database_host) { Capistrano::CLI.ui.ask("Database Host: ") }
+    set(:database_username) { Capistrano::CLI.ui.ask("Database Username: ") }
+    set(:database_password) { Capistrano::CLI.password_prompt("Database Password: ")}
+    set(:database_name) { Capistrano::CLI.ui.ask("Database Name: ") }
+
+    db_config = <<-EOF
+      package database
+
+      const (
+        db_proto = "tcp"
+        db_addr = "#{database_host}"
+        db_user = "#{database_username}"
+        db_pass = "#{database_password}"
+        db_name = "#{database_name}"
+      )
+      EOF
+      run "mkdir -p #{deploy_to}/current/helpers/database"
+      put db_config, "#{deploy_to}/current/helpers/database/ConnectionString.go"
+  end
+end
+
 
 namespace :deploy do
   task :goget do
