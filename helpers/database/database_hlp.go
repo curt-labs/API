@@ -2,21 +2,13 @@ package database
 
 import (
 	"../mymysql/autorc"
-	// "github.com/ziutek/mymysql/mysql"
 	_ "../mymysql/thrsafe"
 	"log"
 	"os"
 )
 
-const (
-	db_proto = "tcp"
-	db_addr  = "curtsql.cloudapp.net:3306"
-	db_user  = "root"
-	db_pass  = "eC0mm3rc3"
-	db_name  = "CurtDev2"
-)
-
 var (
+
 	// MySQL Connection Handler
 	Db = autorc.New(db_proto, "", db_addr, db_user, db_pass, db_name)
 
