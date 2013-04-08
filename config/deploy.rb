@@ -7,12 +7,12 @@ set :repository,  "git@github.com:curt-labs/GoAPI.git"
 
 set :scm, :git
 set :scm_passphrase, ""
-set :user, "ninnemana"
+set :user, "deployer"
 
 role :web, "curt-api-server1.cloudapp.net", "curt-api-server2.cloudapp.net"
 role :app, "curt-api-server1.cloudapp.net", "curt-api-server2.cloudapp.net"
 
-set :deploy_to, "/home/ninnemana/#{application}"
+set :deploy_to, "/home/deployer/#{application}"
 set :deploy_via, :remote_cache
 
 set :use_sudo, false
