@@ -65,7 +65,7 @@ namespace :deploy do
   end
   task :restart do
   	restart_cmd = "#{current_release}/go-api"
-  	run "nohup sh -c '#{restart_cmd} &' > nohup.out"
+  	run "nohup sh -c '#{restart_cmd} &' > #{application}-nohup.out"
   end
 end
 
