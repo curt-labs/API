@@ -9,7 +9,6 @@ import (
 	"./helpers/auth"
 	"./helpers/plate"
 	"flag"
-	"log"
 	"net/http"
 )
 
@@ -86,6 +85,4 @@ func main() {
 
 	http.Handle("/", server)
 	http.ListenAndServe(*listenAddr, nil)
-
-	log.Println("Server running on port " + *listenAddr)
 }

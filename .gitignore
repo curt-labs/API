@@ -2,3 +2,5 @@ server.log
 go-api.linux
 index
 dump.rdb
+*.sublime-project
+*.sublime-workspace

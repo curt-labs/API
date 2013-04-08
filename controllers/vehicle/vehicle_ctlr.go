@@ -3,16 +3,17 @@ package vehicle_ctlr
 import (
 	"../../helpers/plate"
 	. "../../models"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
 )
 
 func Year(w http.ResponseWriter, r *http.Request) {
-	var v Vehicle
+	var l Lookup
 
 	config := ConfigResponse{
-		ConfigOption: v.GetYears(),
+		ConfigOption: l.GetYears(),
 		Matched:      new(ProductMatch),
 	}
 
@@ -23,12 +24,15 @@ func Year(w http.ResponseWriter, r *http.Request) {
 func Make(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 	year, _ := strconv.ParseFloat(params.Get(":year"), 64)
-	v := Vehicle{
-		Year: year,
+	lookup := Lookup{
+		Vehicle: Vehicle{
+			Year: year,
+		},
 	}
+	log.Println("fetching makes")
 
 	config := ConfigResponse{
-		ConfigOption: v.GetMakes(),
+		ConfigOption: lookup.GetMakes(),
 		Matched:      new(ProductMatch),
 	}
 
@@ -40,13 +44,15 @@ func Model(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 	year, _ := strconv.ParseFloat(params.Get(":year"), 64)
 
-	v := Vehicle{
-		Year: year,
-		Make: params.Get(":make"),
+	lookup := Lookup{
+		Vehicle: Vehicle{
+			Year: year,
+			Make: params.Get(":make"),
+		},
 	}
 
 	config := ConfigResponse{
-		ConfigOption: v.GetModels(),
+		ConfigOption: lookup.GetModels(),
 		Matched:      new(ProductMatch),
 	}
 
@@ -59,10 +65,12 @@ func Submodel(w http.ResponseWriter, r *http.Request) {
 	year, _ := strconv.ParseFloat(params.Get(":year"), 64)
 	key := params.Get("key")
 
-	v := Vehicle{
-		Year:  year,
-		Make:  params.Get(":make"),
-		Model: params.Get(":model"),
+	lookup := Lookup{
+		Vehicle: Vehicle{
+			Year:  year,
+			Make:  params.Get(":make"),
+			Model: params.Get(":model"),
+		},
 	}
 
 	var subs ConfigOption
@@ -71,11 +79,11 @@ func Submodel(w http.ResponseWriter, r *http.Request) {
 	subsChan := make(chan int)
 	matchedChan := make(chan int)
 	go func() {
-		subs = v.GetSubmodels()
+		subs = lookup.GetSubmodels()
 		subsChan <- 1
 	}()
 	go func(k string) {
-		matched = v.GetProductMatch(k)
+		matched = lookup.Vehicle.GetProductMatch(k)
 		matchedChan <- 1
 	}(key)
 	<-subsChan

@@ -10,6 +10,13 @@ import (
 	"time"
 )
 
+type Lookup struct {
+	Parts  []Part
+	Groups []int
+
+	Vehicle Vehicle
+}
+
 type ConfigResponse struct {
 	ConfigOption ConfigOption
 	Matched      *ProductMatch
@@ -128,7 +135,7 @@ var (
 					and (ca.value in (?) or ca.value is null) and vp.PartNumber = ?;`
 )
 
-func (vehicle *Vehicle) GetYears() (opt ConfigOption) {
+func (lookup *Lookup) GetYears() (opt ConfigOption) {
 
 	years := make([]string, 0)
 
@@ -156,14 +163,14 @@ func (vehicle *Vehicle) GetYears() (opt ConfigOption) {
 	return
 }
 
-func (vehicle *Vehicle) GetMakes() (opt ConfigOption) {
+func (lookup *Lookup) GetMakes() (opt ConfigOption) {
 
 	qry, err := database.Db.Prepare(makeStmt)
 	if err != nil {
 		return
 	}
 
-	rows, _, err := qry.Exec(vehicle.Year)
+	rows, _, err := qry.Exec(lookup.Vehicle.Year)
 	if database.MysqlError(err) {
 		return
 	}
@@ -178,7 +185,7 @@ func (vehicle *Vehicle) GetMakes() (opt ConfigOption) {
 	return
 }
 
-func (vehicle *Vehicle) GetModels() (opt ConfigOption) {
+func (lookup *Lookup) GetModels() (opt ConfigOption) {
 	qry, err := database.Db.Prepare(modelStmt)
 	if err != nil {
 		return
@@ -188,8 +195,8 @@ func (vehicle *Vehicle) GetModels() (opt ConfigOption) {
 		Year float64
 		Make string
 	}{
-		vehicle.Year,
-		vehicle.Make,
+		lookup.Vehicle.Year,
+		lookup.Vehicle.Make,
 	}
 
 	rows, _, err := qry.Exec(params)
@@ -207,7 +214,7 @@ func (vehicle *Vehicle) GetModels() (opt ConfigOption) {
 	return
 }
 
-func (vehicle *Vehicle) GetSubmodels() (opt ConfigOption) {
+func (lookup *Lookup) GetSubmodels() (opt ConfigOption) {
 	qry, err := database.Db.Prepare(submodelStmt)
 	if err != nil {
 		return
@@ -218,9 +225,9 @@ func (vehicle *Vehicle) GetSubmodels() (opt ConfigOption) {
 		Make  string
 		Model string
 	}{
-		vehicle.Year,
-		vehicle.Make,
-		vehicle.Model,
+		lookup.Vehicle.Year,
+		lookup.Vehicle.Make,
+		lookup.Vehicle.Model,
 	}
 
 	rows, _, err := qry.Exec(params)
@@ -229,8 +236,9 @@ func (vehicle *Vehicle) GetSubmodels() (opt ConfigOption) {
 	}
 
 	subs := make([]string, 0)
+
 	for _, row := range rows {
-		subs = append(subs, row.Str(0))
+		subs = append(subs, strings.TrimSpace(row.Str(0)))
 	}
 
 	opt.Type = "Submodels"
@@ -278,7 +286,9 @@ func (vehicle *Vehicle) GetConfiguration() (opt ConfigOption) {
 		config_vals := make([]string, 0)
 		for _, row := range rows {
 			if row.Str(0) == config_type {
-				config_vals = append(config_vals, row.Str(1))
+				val := strings.TrimSpace(row.Str(1))
+				log.Println(val)
+				config_vals = append(config_vals, val)
 			} else {
 				break
 			}
