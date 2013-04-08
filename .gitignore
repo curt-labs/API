@@ -2,4 +2,4 @@ server.log
 go-api.linux
 index
 dump.rdb
-/helpers/database/ConnectionString.go
+helpers/database/ConnectionString.go
