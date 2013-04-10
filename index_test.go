@@ -246,6 +246,7 @@ func TestHandler(t *testing.T) {
 	err = content_type_is_json(t, recorder)
 	checkError(req, recorder, err, t)
 
+	//log.Println(qs)
 	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/category/Hitches", qs)
 	err = code_is(t, recorder, 200)
 	checkError(req, recorder, err, t)

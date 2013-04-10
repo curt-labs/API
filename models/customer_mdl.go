@@ -405,12 +405,12 @@ func GetCustomerPrice(api_key string, part_id int) (price float64, err error) {
 	return
 }
 
-func GetCustomerPriceByGroup(api_key string, existing map[int]Part) (prices map[int]float64, err error) {
-	prices = make(map[int]float64, len(existing))
+func (lookup *Lookup) GetCustomerPrice(api_key string) (prices map[int]float64, err error) {
+	prices = make(map[int]float64, len(lookup.Parts))
 
 	var ids []string
-	for k, _ := range existing {
-		ids = append(ids, strconv.Itoa(k))
+	for _, p := range lookup.Parts {
+		ids = append(ids, strconv.Itoa(p.PartId))
 	}
 
 	rows, res, err := database.Db.Query(customerPriceStmt_Grouped, api_key, strings.Join(ids, ","))
@@ -450,13 +450,13 @@ func GetCustomerCartReference(api_key string, part_id int) (ref int, err error) 
 	return
 }
 
-func GetCustomerCartReferenceByGroup(api_key string, parts map[int]Part) (references map[int]int, err error) {
+func (lookup *Lookup) GetCustomerCartReference(api_key string) (references map[int]int, err error) {
 
-	references = make(map[int]int, len(parts))
+	references = make(map[int]int, len(lookup.Parts))
 
 	var ids []string
-	for k, _ := range parts {
-		ids = append(ids, strconv.Itoa(k))
+	for _, p := range lookup.Parts {
+		ids = append(ids, strconv.Itoa(p.PartId))
 	}
 
 	rows, res, err := database.Db.Query(customerPartStmt_Grouped, api_key, strings.Join(ids, ","))

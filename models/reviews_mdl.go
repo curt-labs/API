@@ -67,18 +67,16 @@ func (p *Part) GetReviews() error {
 	return nil
 }
 
-func GetReviewsByGroup(existing map[int]Part) (parts map[int]Part, err error) {
+func (lookup *Lookup) GetReviews() error {
 
-	parts = make(map[int]Part, len(existing))
 	var ids []string
-	for k, _ := range existing {
-		parts[k] = Part{PartId: k}
-		ids = append(ids, strconv.Itoa(k))
+	for _, p := range lookup.Parts {
+		ids = append(ids, strconv.Itoa(p.PartId))
 	}
 
 	rows, res, err := database.Db.Query(partReviewStmt_ByGroup, strings.Join(ids, ","))
 	if database.MysqlError(err) {
-		return
+		return err
 	}
 
 	partID := res.Map("partID")
@@ -88,6 +86,8 @@ func GetReviewsByGroup(existing map[int]Part) (parts map[int]Part, err error) {
 	name := res.Map("name")
 	email := res.Map("email")
 	createdDate := res.Map("createdDate")
+
+	reviews := make(map[int][]Review, len(lookup.Parts))
 
 	for _, row := range rows {
 		pId := row.Int(partID)
@@ -100,10 +100,12 @@ func GetReviewsByGroup(existing map[int]Part) (parts map[int]Part, err error) {
 			Email:       row.Str(email),
 			CreatedDate: date_add,
 		}
-		tmp := parts[pId]
-		tmp.Reviews = append(tmp.Reviews, r)
-		parts[pId] = tmp
+		reviews[pId] = append(reviews[pId], r)
 	}
 
-	return
+	for _, p := range lookup.Parts {
+		p.Reviews = reviews[p.PartId]
+	}
+
+	return nil
 }

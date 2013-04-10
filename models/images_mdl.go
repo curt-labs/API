@@ -62,18 +62,16 @@ func (p *Part) GetImages() error {
 	return nil
 }
 
-func GetImagesByGroup(existing map[int]Part) (parts map[int]Part, err error) {
+func (lookup *Lookup) GetImages() error {
 
-	parts = make(map[int]Part, len(existing))
 	var ids []string
-	for k, _ := range existing {
-		parts[k] = Part{PartId: k}
-		ids = append(ids, strconv.Itoa(k))
+	for _, p := range lookup.Parts {
+		ids = append(ids, strconv.Itoa(p.PartId))
 	}
 
 	rows, res, err := database.Db.Query(partImageStmt_ByGroup, strings.Join(ids, ","))
 	if database.MysqlError(err) {
-		return
+		return err
 	}
 
 	partID := res.Map("partID")
@@ -82,6 +80,8 @@ func GetImagesByGroup(existing map[int]Part) (parts map[int]Part, err error) {
 	height := res.Map("height")
 	width := res.Map("width")
 	path := res.Map("path")
+
+	images := make(map[int][]Image, len(lookup.Parts))
 
 	for _, row := range rows {
 		imgPath, urlErr := url.Parse(row.Str(path))
@@ -95,12 +95,14 @@ func GetImagesByGroup(existing map[int]Part) (parts map[int]Part, err error) {
 				Path:   imgPath,
 			}
 
-			tmp := parts[pId]
-			tmp.Images = append(tmp.Images, img)
-			parts[pId] = tmp
+			images[pId] = append(images[pId], img)
 		}
 	}
 
-	return
+	for _, p := range lookup.Parts {
+		p.Images = images[p.PartId]
+	}
+
+	return nil
 
 }

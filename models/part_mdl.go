@@ -495,64 +495,49 @@ func (p *Part) GetInstallSheet(r *http.Request) (data []byte, err error) {
 
 /*** Grouped Queries ****/
 
-func GetByGroup(existing map[int]Part, key string) (parts map[int]Part, err error) {
+func (lookup *Lookup) Get(key string) error {
 
 	partChan := make(chan int)
 	customerChan := make(chan int)
 
-	genParts := make(map[int]Part, 0)
-	custParts := make(map[int]CustomerPart, 0)
 	go func() {
 		//if err = p.FromCache(); err != nil {
-		genParts, err = FromDatabaseByGroup(existing)
+		_ = lookup.FromDatabase()
 		//}
 		partChan <- 1
 	}()
 
 	go func(api_key string) {
-		custParts, err = BindCustomerByGroup(existing, api_key)
+		_ = lookup.BindCustomer(api_key)
 		customerChan <- 1
 	}(key)
 
 	<-partChan
 	<-customerChan
 
-	parts = genParts
-	for k, _ := range parts {
-		tmp := parts[k]
-		tmp.Customer = custParts[k]
-		parts[k] = tmp
-	}
-
-	return
+	return nil
 }
 
-func GetWithVehicleByGroup(existing map[int]Part, vehicle *Vehicle, api_key string) (parts map[int]Part, err error) {
+func (lookup *Lookup) GetWithVehicle(api_key string) error {
 
 	var errs []string
-	parts = make(map[int]Part, len(existing))
 
 	superChan := make(chan int)
 	noteChan := make(chan int)
 
 	// Get the Part data
 	go func(key string) {
-		getParts, getErr := GetByGroup(existing, key)
-		if getErr != nil {
+		if getErr := lookup.Get(key); getErr != nil {
 			errs = append(errs, getErr.Error())
-		} else {
-			for k, v := range getParts {
-				parts[k] = v
-			}
 		}
 		superChan <- 1
 	}(api_key)
 
 	// Get Notes for each part with this vehicle information
 	go func() {
-		// if nErr := vehicle.GetNotesByGroup(parts); nErr != nil {
-		// 	errs = append(errs, nErr.Error())
-		// }
+		if nErr := lookup.GetNotes(); nErr != nil {
+			errs = append(errs, nErr.Error())
+		}
 		noteChan <- 1
 	}()
 
@@ -560,25 +545,12 @@ func GetWithVehicleByGroup(existing map[int]Part, vehicle *Vehicle, api_key stri
 	<-noteChan
 
 	if len(errs) > 0 {
-		err = errors.New("Error: " + strings.Join(errs, ", "))
+		return errors.New("Error: " + strings.Join(errs, ", "))
 	}
-	return
+	return nil
 }
 
-func FromDatabaseByGroup(existing map[int]Part) (parts map[int]Part, err error) {
-
-	parts = make(map[int]Part, len(existing))
-	var basicParts map[int]Part
-	var attrParts map[int]Part
-	var priceParts map[int]Part
-	var relatedParts map[int]Part
-	var contentParts map[int]Part
-	var reviewParts map[int]Part
-	var imageParts map[int]Part
-
-	for k, _ := range existing {
-		parts[k] = Part{PartId: k}
-	}
+func (lookup *Lookup) FromDatabase() error {
 
 	var errs []string
 
@@ -593,99 +565,77 @@ func FromDatabaseByGroup(existing map[int]Part) (parts map[int]Part, err error) 
 	categoryChan := make(chan int)
 	contentChan := make(chan int)
 
-	go func(ps map[int]Part) {
-		partArr, basicErr := BasicsByGroup(ps)
-		if basicErr != nil {
+	go func() {
+		if basicErr := lookup.Basics(); basicErr != nil {
 			errs = append(errs, basicErr.Error())
-		} else {
-			basicParts = partArr
 		}
 		basicChan <- 1
-	}(existing)
+	}()
 
-	go func(ps map[int]Part) {
-		partArr, attrErr := GetAttributesByGroup(ps)
-		if attrErr != nil {
+	go func() {
+		if attrErr := lookup.GetAttributes(); attrErr != nil {
 			errs = append(errs, attrErr.Error())
-		} else {
-			attrParts = partArr
 		}
 		attrChan <- 1
-	}(existing)
+	}()
 
-	go func(ps map[int]Part) {
-		partArr, priceErr := GetPricingByGroup(ps)
-		if priceErr != nil {
+	go func() {
+		if priceErr := lookup.GetPricing(); priceErr != nil {
 			errs = append(errs, priceErr.Error())
-		} else {
-			priceParts = partArr
 		}
 		priceChan <- 1
-	}(existing)
+	}()
 
-	go func(ps map[int]Part) {
-		partArr, reviewErr := GetReviewsByGroup(ps)
-		if reviewErr != nil {
+	go func() {
+		if reviewErr := lookup.GetReviews(); reviewErr != nil {
 			errs = append(errs, reviewErr.Error())
-		} else {
-			reviewParts = partArr
 		}
 		reviewChan <- 1
-	}(existing)
+	}()
 
-	go func(ps map[int]Part) {
-		partArr, imgErr := GetImagesByGroup(ps)
-		if imgErr != nil {
+	go func() {
+		if imgErr := lookup.GetImages(); imgErr != nil {
 			errs = append(errs, imgErr.Error())
-		} else {
-			imageParts = partArr
 		}
 		imageChan <- 1
-	}(existing)
+	}()
 
-	go func(ps map[int]Part) {
-		// vidErr := GetVideosByGroup(ps)
-		// if vidErr != nil {
-		// 	errs = append(errs, vidErr.Error())
-		// }
+	go func() {
+		if vidErr := lookup.GetVideos(); vidErr != nil {
+			errs = append(errs, vidErr.Error())
+		}
 		videoChan <- 1
-	}(existing)
+	}()
 
-	go func(ps map[int]Part) {
-		partArr, relErr := GetRelatedByGroup(ps)
-		if relErr != nil {
+	go func() {
+		if relErr := lookup.GetRelated(); relErr != nil {
 			errs = append(errs, relErr.Error())
-		} else {
-			relatedParts = partArr
 		}
 		relatedChan <- 1
-	}(existing)
+	}()
 
-	go func(ps map[int]Part) {
-		// pkgErr := GetPartPackagingByGroup(ps)
-		// if pkgErr != nil {
-		// 	errs = append(errs, pkgErr.Error())
-		// }
+	go func() {
+		if pkgErr := lookup.GetPartPackaging(); pkgErr != nil {
+			errs = append(errs, pkgErr.Error())
+		}
 		packageChan <- 1
-	}(existing)
+	}()
 
-	go func(ps map[int]Part) {
-		// catErr := PartBreadcrumbsByGroup(ps)
-		// if catErr != nil {
-		// 	errs = append(errs, catErr.Error())
-		// }
+	go func() {
+		for _, p := range lookup.Parts {
+			if catErr := p.PartBreadcrumbs(); catErr != nil {
+				errs = append(errs, catErr.Error())
+			}
+		}
 		categoryChan <- 1
-	}(existing)
+	}()
 
-	go func(ps map[int]Part) {
-		partArr, conErr := GetContentByGroup(ps)
-		if conErr != nil {
+	go func() {
+		if conErr := lookup.GetContent(); conErr != nil {
 			errs = append(errs, conErr.Error())
-		} else {
-			contentParts = partArr
 		}
 		contentChan <- 1
-	}(existing)
+	}()
 
 	<-basicChan
 	<-attrChan
@@ -699,58 +649,7 @@ func FromDatabaseByGroup(existing map[int]Part) (parts map[int]Part, err error) 
 	<-contentChan
 
 	if len(errs) > 0 {
-		err = errors.New("Error: " + strings.Join(errs, ", "))
-		return
-	}
-
-	for k, v := range basicParts {
-		tmp := parts[k]
-		tmp.PartId = v.PartId
-		tmp.DateAdded = v.DateAdded
-		tmp.DateModified = v.DateModified
-		tmp.ShortDesc = v.ShortDesc
-		tmp.PriceCode = v.PriceCode
-		tmp.PartClass = v.PartClass
-		tmp.Status = v.Status
-		parts[k] = tmp
-	}
-
-	for k, v := range attrParts {
-		tmp := parts[k]
-		tmp.Attributes = v.Attributes
-		parts[k] = tmp
-	}
-
-	for k, v := range priceParts {
-		tmp := parts[k]
-		tmp.Pricing = v.Pricing
-		parts[k] = tmp
-	}
-
-	for k, v := range relatedParts {
-		tmp := parts[k]
-		tmp.Related = v.Related
-		tmp.RelatedCount = len(v.Related)
-		parts[k] = tmp
-	}
-
-	for k, v := range contentParts {
-		tmp := parts[k]
-		tmp.Content = v.Content
-		tmp.InstallSheet = v.InstallSheet
-		parts[k] = tmp
-	}
-
-	for k, v := range reviewParts {
-		tmp := parts[k]
-		tmp.Reviews = v.Reviews
-		parts[k] = tmp
-	}
-
-	for k, v := range imageParts {
-		tmp := parts[k]
-		tmp.Images = v.Images
-		parts[k] = tmp
+		return errors.New("Error: " + strings.Join(errs, ", "))
 	}
 
 	// if part_bytes, err := json.Marshal(p); err == nil {
@@ -759,7 +658,7 @@ func FromDatabaseByGroup(existing map[int]Part) (parts map[int]Part, err error) 
 	// 	redis.RedisClient.Expire(part_key, 86400)
 	// }
 
-	return
+	return nil
 }
 
 // func FromCacheByGroup(ids []int) (parts []Part, err error) {
@@ -776,22 +675,18 @@ func FromDatabaseByGroup(existing map[int]Part) (parts map[int]Part, err error) 
 // 	return err
 // }
 
-func BasicsByGroup(existing map[int]Part) (parts map[int]Part, err error) {
-
-	parts = make(map[int]Part, len(existing))
+func (lookup *Lookup) Basics() error {
 
 	var ids []string
-	for k, _ := range existing {
-		parts[k] = Part{PartId: k}
-		ids = append(ids, strconv.Itoa(k))
+	for _, p := range lookup.Parts {
+		ids = append(ids, strconv.Itoa(p.PartId))
 	}
 
 	rows, res, err := database.Db.Query(basicsStmt_Grouped, strings.Join(ids, ","))
 	if database.MysqlError(err) {
-		return
+		return err
 	} else if len(rows) == 0 {
-		err = errors.New("No Parts Found for:" + strings.Join(ids, ","))
-		return
+		return errors.New("No Parts Found for:" + strings.Join(ids, ","))
 	}
 
 	status := res.Map("status")
@@ -802,12 +697,15 @@ func BasicsByGroup(existing map[int]Part) (parts map[int]Part, err error) {
 	priceCode := res.Map("priceCode")
 	class := res.Map("class")
 
+	ps := make(map[int]Part, len(rows))
+
 	for _, row := range rows {
 		date_add, _ := time.Parse("2006-01-02 15:04:15", row.Str(dateAdded))
 		date_mod, _ := time.Parse("2006-01-02 15:04:15", row.Str(dateModified))
 
 		pId := row.Int(partID)
-		part := Part{
+
+		p := Part{
 			PartId:       pId,
 			DateAdded:    date_add,
 			DateModified: date_mod,
@@ -816,25 +714,38 @@ func BasicsByGroup(existing map[int]Part) (parts map[int]Part, err error) {
 			PartClass:    row.Str(class),
 			Status:       row.Int(status),
 		}
-		parts[pId] = part
+		ps[pId] = p
 	}
 
-	return
+	for _, p := range lookup.Parts {
+		if val, ok := ps[p.PartId]; ok {
+			p.PartId = val.PartId
+			p.ShortDesc = val.ShortDesc
+			p.DateAdded = val.DateAdded
+			p.DateModified = val.DateModified
+			p.ShortDesc = val.ShortDesc
+			p.PriceCode = val.PriceCode
+			p.PartClass = val.PartClass
+			p.Status = val.Status
+		}
+	}
+
+	return nil
 }
 
-func GetAttributesByGroup(existing map[int]Part) (parts map[int]Part, err error) {
+func (lookup *Lookup) GetAttributes() error {
 
-	parts = make(map[int]Part, len(existing))
 	var ids []string
-	for k, _ := range existing {
-		parts[k] = Part{PartId: k}
-		ids = append(ids, strconv.Itoa(k))
+	for _, p := range lookup.Parts {
+		ids = append(ids, strconv.Itoa(p.PartId))
 	}
 
 	rows, _, err := database.Db.Query(partAttrStmt_Grouped, strings.Join(ids, ","))
 	if database.MysqlError(err) || len(rows) == 0 {
-		return
+		return err
 	}
+
+	attrs := make(map[int][]Attribute, len(lookup.Parts))
 
 	for _, row := range rows {
 		pId := row.Int(0)
@@ -842,36 +753,36 @@ func GetAttributesByGroup(existing map[int]Part) (parts map[int]Part, err error)
 			Key:   row.Str(1),
 			Value: row.Str(2),
 		}
-		tmp := parts[pId]
-		tmp.Attributes = append(tmp.Attributes, attr)
-
-		parts[pId] = tmp
+		attrs[pId] = append(attrs[pId], attr)
 	}
 
-	return
+	for _, p := range lookup.Parts {
+		p.Attributes = attrs[p.PartId]
+	}
+
+	return nil
 }
 
-func GetPricingByGroup(existing map[int]Part) (parts map[int]Part, err error) {
+func (lookup *Lookup) GetPricing() error {
 
-	parts = make(map[int]Part, len(existing))
 	var ids []string
-	for k, _ := range existing {
-		parts[k] = Part{PartId: k}
-		ids = append(ids, strconv.Itoa(k))
+	for _, p := range lookup.Parts {
+		ids = append(ids, strconv.Itoa(p.PartId))
 	}
 
 	rows, res, err := database.Db.Query(partPriceStmt_Grouped, strings.Join(ids, ","))
 	if database.MysqlError(err) {
-		return
+		return err
 	} else if len(rows) == 0 {
-		err = errors.New("No pricing found")
-		return
+		return errors.New("No pricing found")
 	}
 
 	partID := res.Map("partID")
 	typ := res.Map("priceType")
 	price := res.Map("price")
 	enforced := res.Map("enforced")
+
+	prices := make(map[int][]Pricing, len(lookup.Parts))
 
 	for _, row := range rows {
 		pId := row.Int(partID)
@@ -886,61 +797,64 @@ func GetPricingByGroup(existing map[int]Part) (parts map[int]Part, err error) {
 			pr.Enforced = true
 		}
 
-		tmp := parts[pId]
-		tmp.Pricing = append(tmp.Pricing, pr)
-		parts[pId] = tmp
+		prices[pId] = append(prices[pId], pr)
 	}
 
-	return
+	for _, p := range lookup.Parts {
+		p.Pricing = prices[p.PartId]
+	}
+
+	return nil
 }
 
-func GetRelatedByGroup(existing map[int]Part) (parts map[int]Part, err error) {
+func (lookup *Lookup) GetRelated() error {
 
-	parts = make(map[int]Part, len(existing))
 	var ids []string
-	for k, _ := range existing {
-		parts[k] = Part{PartId: k}
-		ids = append(ids, strconv.Itoa(k))
+	for _, p := range lookup.Parts {
+		ids = append(ids, strconv.Itoa(p.PartId))
 	}
 
 	rows, res, err := database.Db.Query(relatedPartStmt_Grouped, strings.Join(ids, ","))
 	if database.MysqlError(err) {
-		return
+		return err
 	} else if len(rows) == 0 {
-		err = errors.New("No related found")
-		return
+		return errors.New("No related found")
 	}
 
 	relatedID := res.Map("relatedID")
 	partID := res.Map("partID")
 
+	related := make(map[int][]int, len(lookup.Parts))
+
 	for _, row := range rows {
 		pId := row.Int(partID)
 
-		tmp := parts[pId]
-		tmp.Related = append(tmp.Related, row.Int(relatedID))
-		parts[pId] = tmp
+		related[pId] = append(related[pId], row.Int(relatedID))
 	}
 
-	return
+	for _, p := range lookup.Parts {
+		p.Related = related[p.PartId]
+	}
+
+	return nil
 }
 
-func GetContentByGroup(existing map[int]Part) (parts map[int]Part, err error) {
+func (lookup *Lookup) GetContent() error {
 
-	parts = make(map[int]Part, len(existing))
 	var ids []string
-	for k, _ := range existing {
-		parts[k] = Part{PartId: k}
-		ids = append(ids, strconv.Itoa(k))
+	for _, p := range lookup.Parts {
+		ids = append(ids, strconv.Itoa(p.PartId))
 	}
 
 	rows, _, err := database.Db.Query(partContentStmt_Grouped, strings.Join(ids, ","))
 	if database.MysqlError(err) {
-		return
+		return err
 	} else if len(rows) == 0 {
-		err = errors.New("No content found")
-		return
+		return errors.New("No content found")
 	}
+
+	content := make(map[int][]Content, len(lookup.Parts))
+	installSheets := make(map[int]*url.URL, len(lookup.Parts))
 
 	for _, row := range rows {
 		pId := row.Int(0)
@@ -949,48 +863,51 @@ func GetContentByGroup(existing map[int]Part) (parts map[int]Part, err error) {
 			Value: row.Str(2),
 		}
 
-		tmp := parts[pId]
 		if strings.Contains(strings.ToLower(con.Key), "install") {
 			sheetUrl, _ := url.Parse(con.Value)
-			tmp.InstallSheet = sheetUrl
+			installSheets[pId] = sheetUrl
 		} else {
-			tmp.Content = append(tmp.Content, con)
+			content[pId] = append(content[pId], con)
 		}
-		parts[pId] = tmp
 	}
 
-	return
+	for _, p := range lookup.Parts {
+		p.Content = content[p.PartId]
+		if val, ok := installSheets[p.PartId]; ok {
+			p.InstallSheet = val
+		}
+	}
+
+	return nil
 }
 
-func BindCustomerByGroup(existing map[int]Part, key string) (custs map[int]CustomerPart, err error) {
+func (lookup *Lookup) BindCustomer(key string) error {
 
-	custs = make(map[int]CustomerPart, len(existing))
 	var ids []string
-	for k, _ := range existing {
-		custs[k] = CustomerPart{}
-		ids = append(ids, strconv.Itoa(k))
+	for _, p := range lookup.Parts {
+		ids = append(ids, strconv.Itoa(p.PartId))
 	}
 
-	prices, err := GetCustomerPriceByGroup(key, existing)
+	prices, err := lookup.GetCustomerPrice(key)
 	if err != nil {
-		return
+		return err
 	}
 
-	refs, err := GetCustomerCartReferenceByGroup(key, existing)
+	refs, err := lookup.GetCustomerCartReference(key)
 	if err != nil {
-		return
+		return err
 	}
 
-	for k, v := range custs {
-		if _, ok := prices[k]; ok {
-			v.Price = prices[k]
+	for _, p := range lookup.Parts {
+		var cp CustomerPart
+		if pr, ok := prices[p.PartId]; ok {
+			cp.Price = pr
 		}
-
-		if _, ok := refs[k]; ok {
-			v.CartReference = refs[k]
+		if ref, ok := refs[p.PartId]; ok {
+			cp.CartReference = ref
 		}
-
-		custs[k] = v
+		p.Customer = cp
 	}
-	return
+
+	return nil
 }

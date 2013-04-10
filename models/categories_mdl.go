@@ -261,6 +261,22 @@ func (part *Part) PartBreadcrumbs() error {
 	return nil
 }
 
+// func (lookup *Lookup) PartBreadcrumbs() error {
+
+// 	var ids []string
+// 	for _, p := range lookup.Parts {
+// 		ids = append(ids, strconv.Itoa(p.PartId))
+// 	}
+
+// 	rows, res, err := database.Db.Query(partCategoryStmt_Grouped, strings.Join(ids, ","))
+// 	if database.MysqlError(err) {
+// 		return err
+// 	} else if len(rows) == 0 {
+// 		return nil
+// 	}
+
+// }
+
 func (part *Part) GetPartCategories() (cats []ExtendedCategory, err error) {
 
 	if part.PartId == 0 {

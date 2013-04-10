@@ -83,7 +83,7 @@ func Submodel(w http.ResponseWriter, r *http.Request) {
 		subsChan <- 1
 	}()
 	go func(k string) {
-		matched = lookup.Vehicle.GetProductMatch(k)
+		matched = lookup.GetProductMatch(k)
 		matchedChan <- 1
 	}(key)
 	<-subsChan
@@ -105,12 +105,14 @@ func Config(w http.ResponseWriter, r *http.Request) {
 
 	config_vals := strings.Split(params.Get(":config"), "/")
 
-	v := Vehicle{
-		Year:          year,
-		Make:          params.Get(":make"),
-		Model:         params.Get(":model"),
-		Submodel:      params.Get(":submodel"),
-		Configuration: config_vals,
+	lookup := Lookup{
+		Vehicle: Vehicle{
+			Year:          year,
+			Make:          params.Get(":make"),
+			Model:         params.Get(":model"),
+			Submodel:      params.Get(":submodel"),
+			Configuration: config_vals,
+		},
 	}
 
 	var config_opts ConfigOption
@@ -119,11 +121,11 @@ func Config(w http.ResponseWriter, r *http.Request) {
 	configChan := make(chan int)
 	matchedChan := make(chan int)
 	go func() {
-		config_opts = v.GetConfiguration()
+		config_opts = lookup.GetConfiguration()
 		configChan <- 1
 	}()
 	go func(k string) {
-		matched = v.GetProductMatch(k)
+		matched = lookup.GetProductMatch(k)
 		matchedChan <- 1
 	}(key)
 	<-configChan

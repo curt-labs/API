@@ -5,13 +5,13 @@ import (
 	"../helpers/redis"
 	"encoding/json"
 	"fmt"
-	"log"
+	"strconv"
 	"strings"
 	"time"
 )
 
 type Lookup struct {
-	Parts  []Part
+	Parts  []*Part
 	Groups []int
 
 	Vehicle Vehicle
@@ -28,7 +28,7 @@ type ConfigOption struct {
 }
 
 type ProductMatch struct {
-	Parts  []Part
+	Parts  []*Part
 	Groups []int
 }
 
@@ -107,9 +107,8 @@ var (
 						or
 						(bv.YearID = ? and ma.MakeName = ?
 						and mo.ModelName = ? and sm.SubmodelName = ?
-						and ca.value in (?))
-					)
-					order by part;`
+						and ca.value in (`
+	vehiclePartsStmtEnd = `))) order by part;`
 
 	reverseLookupStmt = `select bv.YearID, ma.MakeName, mo.ModelName, sm.SubmodelName
 				from BaseVehicle bv
@@ -132,7 +131,23 @@ var (
 					join vcdb_Model mo on bv.ModelID = mo.ID
 					where bv.YearID = ? and ma.MakeName = ?
 					and mo.ModelName = ? and (sm.SubmodelName = ? or sm.SubmodelName is null)
-					and (ca.value in (?) or ca.value is null) and vp.PartNumber = ?;`
+					and (ca.value in (`
+	vehicleNotesStmtEnd = `) or ca.value is null) and vp.PartNumber = ?;`
+
+	vehicleNotesStmt_Grouped = `select distinct n.note, vp.PartNumber from vcdb_VehiclePart vp
+					left join Note n on vp.ID = n.vehiclePartID
+					join vcdb_Vehicle v on vp.VehicleID = v.ID
+					left join VehicleConfigAttribute vca on v.ConfigID = vca.VehicleConfigID
+					left join ConfigAttribute ca on vca.AttributeID = ca.ID
+					join BaseVehicle bv on v.BaseVehicleID = bv.ID
+					left join Submodel sm on v.SubModelID = sm.ID
+					join vcdb_Make ma on bv.MakeID = ma.ID
+					join vcdb_Model mo on bv.ModelID = mo.ID
+					where bv.YearID = ? and ma.MakeName = ?
+					and mo.ModelName = ? and (sm.SubmodelName = ? or sm.SubmodelName is null)
+					and (ca.value in (`
+	vehicleNotesStmtMiddle_Grouped = `) or ca.value is null) and vp.PartNumber IN (`
+	vehicleNotesStmtEnd_Grouped    = `)`
 )
 
 func (lookup *Lookup) GetYears() (opt ConfigOption) {
@@ -246,11 +261,18 @@ func (lookup *Lookup) GetSubmodels() (opt ConfigOption) {
 	return
 }
 
-func (vehicle *Vehicle) GetConfiguration() (opt ConfigOption) {
+func (lookup *Lookup) GetConfiguration() (opt ConfigOption) {
 
 	var nested string
-	if len(vehicle.Configuration) > 0 {
-		nested = nestedConfigBegin + " ? " + nestedConfigEnd
+	if len(lookup.Vehicle.Configuration) > 0 {
+		nested = nestedConfigBegin
+		for i, c := range lookup.Vehicle.Configuration {
+			nested = nested + "'" + database.Db.Escape(c) + "'"
+			if i < len(lookup.Vehicle.Configuration)-1 {
+				nested = nested + ","
+			}
+		}
+		nested = nested + nestedConfigEnd
 	}
 
 	stmt := fmt.Sprintf(configStmt, nested)
@@ -261,17 +283,15 @@ func (vehicle *Vehicle) GetConfiguration() (opt ConfigOption) {
 	}
 
 	params := struct {
-		Year          float64
-		Make          string
-		Model         string
-		Submodel      string
-		Configuration string
+		Year     float64
+		Make     string
+		Model    string
+		Submodel string
 	}{
-		vehicle.Year,
-		vehicle.Make,
-		vehicle.Model,
-		vehicle.Submodel,
-		strings.Join(vehicle.Configuration, ","),
+		lookup.Vehicle.Year,
+		lookup.Vehicle.Make,
+		lookup.Vehicle.Model,
+		lookup.Vehicle.Submodel,
 	}
 
 	rows, _, err := qry.Exec(params)
@@ -287,7 +307,6 @@ func (vehicle *Vehicle) GetConfiguration() (opt ConfigOption) {
 		for _, row := range rows {
 			if row.Str(0) == config_type {
 				val := strings.TrimSpace(row.Str(1))
-				log.Println(val)
 				config_vals = append(config_vals, val)
 			} else {
 				break
@@ -301,21 +320,19 @@ func (vehicle *Vehicle) GetConfiguration() (opt ConfigOption) {
 	return
 }
 
-func (vehicle *Vehicle) GetProductMatch(key string) (match *ProductMatch) {
-
-	log.Println(time.Now())
+func (lookup *Lookup) GetProductMatch(key string) (match *ProductMatch) {
 
 	match = new(ProductMatch)
 
-	parts, err := vehicle.GetParts()
+	err := lookup.GetParts()
 	if err != nil {
 		return
 	}
 
-	populated, err := GetWithVehicleByGroup(parts, vehicle, key)
+	err = lookup.GetWithVehicle(key)
 
-	var ps []Part
-	for _, v := range populated {
+	var ps []*Part
+	for _, v := range lookup.Parts {
 		ps = append(ps, v)
 	}
 
@@ -325,10 +342,22 @@ func (vehicle *Vehicle) GetProductMatch(key string) (match *ProductMatch) {
 	return
 }
 
-func (v *Vehicle) GetParts() (parts map[int]Part, err error) {
-	qry, err := database.Db.Prepare(vehiclePartsStmt)
+func (lookup *Lookup) GetParts() error {
+
+	stmt := vehiclePartsStmt
+	if len(lookup.Vehicle.Configuration) > 0 {
+		for i, c := range lookup.Vehicle.Configuration {
+			stmt = stmt + "'" + database.Db.Escape(c) + "'"
+			if i < len(lookup.Vehicle.Configuration)-1 {
+				stmt = stmt + ","
+			}
+		}
+		stmt = stmt + vehiclePartsStmtEnd
+	}
+
+	qry, err := database.Db.Prepare(stmt)
 	if err != nil {
-		return
+		return err
 	}
 
 	params := struct {
@@ -343,34 +372,30 @@ func (v *Vehicle) GetParts() (parts map[int]Part, err error) {
 		Make3     string
 		Model3    string
 		Submodel2 string
-		Config    string
 	}{
-		v.Year,
-		v.Make,
-		v.Model,
-		v.Year,
-		v.Make,
-		v.Model,
-		v.Submodel,
-		v.Year,
-		v.Make,
-		v.Model,
-		v.Submodel,
-		strings.Join(v.Configuration, ","),
+		lookup.Vehicle.Year,
+		lookup.Vehicle.Make,
+		lookup.Vehicle.Model,
+		lookup.Vehicle.Year,
+		lookup.Vehicle.Make,
+		lookup.Vehicle.Model,
+		lookup.Vehicle.Submodel,
+		lookup.Vehicle.Year,
+		lookup.Vehicle.Make,
+		lookup.Vehicle.Model,
+		lookup.Vehicle.Submodel,
 	}
 
 	rows, _, err := qry.Exec(params)
 	if err != nil {
-		return
+		return err
 	}
-
-	parts = make(map[int]Part, len(rows))
 
 	for _, row := range rows {
-		parts[row.Int(0)] = Part{PartId: row.Int(0)}
+		lookup.Parts = append(lookup.Parts, &Part{PartId: row.Int(0)})
 	}
 
-	return
+	return nil
 }
 
 func (vehicle *Vehicle) GetGroupsByBase() (groups []int) {
@@ -386,13 +411,110 @@ func (vehicle *Vehicle) GetGroupsByConfig() (groups []int) {
 }
 
 func (v *Vehicle) GetNotes(partId int) (notes []string, err error) {
-	db := database.Db
 
-	rows, _, err := db.Query(vehicleNotesStmt, v.Year, v.Make, v.Model, v.Submodel, strings.Join(v.Configuration, ","), partId)
+	stmt := vehicleNotesStmt
+	if len(v.Configuration) > 0 {
+		for i, c := range v.Configuration {
+			stmt = stmt + "'" + database.Db.Escape(c) + "'"
+			if i < len(v.Configuration)-1 {
+				stmt = stmt + ","
+			}
+		}
+		stmt = stmt + vehicleNotesStmtEnd
+	}
+
+	qry, err := database.Db.Prepare(stmt)
+	if err != nil {
+		return
+	}
+
+	params := struct {
+		Year     float64
+		Make     string
+		Model    string
+		Submodel string
+		Part     int
+	}{
+		v.Year,
+		v.Make,
+		v.Model,
+		v.Submodel,
+		partId,
+	}
+
+	rows, _, err := qry.Exec(params)
+	if database.MysqlError(err) || len(rows) == 0 {
+		return
+	}
+
 	for _, row := range rows {
 		notes = append(notes, row.Str(0))
 	}
 	return
+}
+
+func (lookup *Lookup) GetNotes() error {
+
+	var ids []string
+	for _, p := range lookup.Parts {
+		ids = append(ids, strconv.Itoa(p.PartId))
+	}
+
+	stmt := vehicleNotesStmt_Grouped
+	if len(lookup.Vehicle.Configuration) > 0 {
+		for i, c := range lookup.Vehicle.Configuration {
+			stmt = stmt + "'" + database.Db.Escape(c) + "'"
+			if i < len(lookup.Vehicle.Configuration)-1 {
+				stmt = stmt + ","
+			}
+		}
+		stmt = stmt + vehicleNotesStmtMiddle_Grouped
+	}
+
+	if len(lookup.Parts) > 0 {
+		for i, p := range lookup.Parts {
+			stmt = stmt + "'" + strconv.Itoa(p.PartId) + "'"
+			if i < len(lookup.Parts)-1 {
+				stmt = stmt + ","
+			}
+		}
+		stmt = stmt + vehicleNotesStmtEnd_Grouped
+	}
+
+	qry, err := database.Db.Prepare(stmt)
+	if database.MysqlError(err) {
+		return err
+	}
+
+	params := struct {
+		Year     float64
+		Make     string
+		Model    string
+		Submodel string
+	}{
+		lookup.Vehicle.Year,
+		lookup.Vehicle.Make,
+		lookup.Vehicle.Model,
+		lookup.Vehicle.Submodel,
+	}
+
+	rows, _, err := qry.Exec(params)
+	if database.MysqlError(err) || len(rows) == 0 {
+		return err
+	}
+
+	notes := make(map[int][]string, len(lookup.Parts))
+
+	for _, row := range rows {
+		pId := row.Int(1)
+		notes[pId] = append(notes[pId], row.Str(0))
+	}
+
+	for _, p := range lookup.Parts {
+		p.VehicleAttributes = notes[p.PartId]
+	}
+
+	return nil
 }
 
 func ReverseLookup(partId int) (vehicles []Vehicle, err error) {
