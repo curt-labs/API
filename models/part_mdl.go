@@ -622,11 +622,11 @@ func (lookup *Lookup) FromDatabase() error {
 	}()
 
 	go func() {
-		for _, p := range lookup.Parts {
-			if catErr := p.PartBreadcrumbs(); catErr != nil {
-				errs = append(errs, catErr.Error())
-			}
-		}
+		// for _, p := range lookup.Parts {
+		// 	if catErr := p.PartBreadcrumbs(); catErr != nil {
+		// 		errs = append(errs, catErr.Error())
+		// 	}
+		// }
 		categoryChan <- 1
 	}()
 
