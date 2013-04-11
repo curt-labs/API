@@ -1,8 +1,8 @@
 package database
 
 import (
-	"../mymysql/autorc"
-	_ "../mymysql/thrsafe"
+	//"../mymysql/autorc"
+	"../mymysql/thrsafe"
 	"log"
 	"os"
 )
@@ -10,7 +10,7 @@ import (
 var (
 
 	// MySQL Connection Handler
-	Db = autorc.New(db_proto, "", db_addr, db_user, db_pass, db_name)
+	Db = thrsafe.New(db_proto, "", db_addr, db_user, db_pass, db_name)
 
 	//  Prepared statements would go here
 	//  stmt *autorc.Stmt
@@ -26,6 +26,7 @@ func MysqlError(err error) (ret bool) {
 
 func MysqlErrExit(err error) {
 	if MysqlError(err) {
+		log.Println(err)
 		os.Exit(1)
 	}
 }

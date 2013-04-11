@@ -2,10 +2,10 @@ package models
 
 import (
 	"../helpers/database"
+	"../helpers/mymysql/mysql"
 	"../helpers/redis"
 	"../helpers/sortutil"
 	"encoding/json"
-	"github.com/ziutek/mymysql/mysql"
 	"math"
 	"net/url"
 	"strconv"

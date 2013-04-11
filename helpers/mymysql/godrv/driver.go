@@ -2,12 +2,12 @@
 package godrv
 
 import (
+	"../mysql"
+	"../native"
 	"database/sql"
 	"database/sql/driver"
 	"errors"
 	"fmt"
-	"github.com/ziutek/mymysql/mysql"
-	"github.com/ziutek/mymysql/native"
 	"io"
 	"net"
 	"strconv"

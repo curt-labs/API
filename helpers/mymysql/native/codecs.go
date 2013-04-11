@@ -1,8 +1,8 @@
 package native
 
 import (
+	"../mysql"
 	"bytes"
-	"github.com/ziutek/mymysql/mysql"
 	"io"
 	"time"
 )

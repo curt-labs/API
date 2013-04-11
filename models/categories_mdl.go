@@ -2,92 +2,13 @@ package models
 
 import (
 	"../helpers/database"
+	"../helpers/mymysql/mysql"
 	"../helpers/redis"
 	"encoding/json"
 	"errors"
-	"github.com/ziutek/mymysql/mysql"
 	"net/url"
 	"strconv"
 	"time"
-)
-
-var (
-
-	// Get the category that a part is tied to, by PartId
-	partCategoryStmt = `select c.catID, c.parentID, c.sort, c.dateAdded,
-				c.catTitle, c.shortDesc, c.longDesc,
-				c.image, c.isLifestyle, c.vehicleSpecific,
-				cc.code, cc.font from Categories as c
-				join CatPart as cp on c.catID = cp.catID
-				left join ColorCode as cc on c.codeID = cc.codeID
-				where cp.partID = ?
-				order by c.sort
-				limit 1`
-
-	partAllCategoryStmt = `select c.catID, c.dateAdded, c.parentID, c.catTitle, c.shortDesc, 
-					c.longDesc,c.sort, c.image, c.isLifestyle, c.vehicleSpecific,
-					cc.font, cc.code
-					from Categories as c
-					join CatPart as cp on c.catID = cp.catID
-					join ColorCode as cc on c.codeID = cc.codeID
-					where cp.partID = ?
-					order by c.catID`
-
-	// Get a category by catID
-	parentCategoryStmt = `select c.catID, c.parentID, c.sort, c.dateAdded,
-					c.catTitle, c.shortDesc, c.longDesc,
-					c.image, c.isLifestyle, c.vehicleSpecific,
-					cc.code, cc.font from Categories as c
-					left join ColorCode as cc on c.codeID = cc.codeID
-					where c.catID = ?
-					order by c.sort
-					limit 1`
-
-	// Get the top-tier categories i.e Hitches, Electrical
-	topCategoriesStmt = `select c.catID, c.parentID, c.sort, c.dateAdded,
-					c.catTitle, c.shortDesc, c.longDesc,
-					c.image, c.isLifestyle, c.vehicleSpecific,
-					cc.code, cc.font from Categories as c
-					left join ColorCode as cc on c.codeID = cc.codeID
-					where c.parentID IS NULL or c.parentID = 0
-					and isLifestyle = 0
-					order by c.sort`
-
-	subCategoriesStmt = `select c.catID, c.parentID, c.sort, c.dateAdded,
-					c.catTitle, c.shortDesc, c.longDesc,
-					c.image, c.isLifestyle, c.vehicleSpecific,
-					cc.code, cc.font from Categories as c
-					left join ColorCode as cc on c.codeID = cc.codeID
-					where c.parentID = ?
-					and isLifestyle = 0
-					order by c.sort`
-
-	categoryByNameStmt = `select c.catID, c.parentID, c.sort, c.dateAdded,
-					c.catTitle, c.shortDesc, c.longDesc,
-					c.image, c.isLifestyle, c.vehicleSpecific,
-					cc.code, cc.font from Categories as c
-					left join ColorCode as cc on c.codeID = cc.codeID
-					where c.catTitle = ?
-					order by c.sort`
-
-	categoryByIdStmt = `select c.catID, c.parentID, c.sort, c.dateAdded,
-					c.catTitle, c.shortDesc, c.longDesc,
-					c.image, c.isLifestyle, c.vehicleSpecific,
-					cc.code, cc.font from Categories as c
-					left join ColorCode as cc on c.codeID = cc.codeID
-					where c.catID = ?
-					order by c.sort`
-
-	categoryPartBasicStmt = `select cp.partID
-					from CatPart as cp
-					where cp.catID = ?
-					order by cp.partID
-					limit ?,?`
-
-	categoryContentStmt = `select ct.type, c.text from ContentBridge cb
-					join Content as c on cb.contentID = c.contentID
-					left join ContentType as ct on c.cTypeID = ct.cTypeID
-					where cb.catID = ?`
 )
 
 type Category struct {
@@ -126,7 +47,12 @@ func (part *Part) PartBreadcrumbs() error {
 		return errors.New("Invalid Part Number")
 	}
 
-	qry, err := database.Db.Prepare(partCategoryStmt)
+	qry, err := database.GetStatement("PartCategoryStmt")
+	if err != nil {
+		return err
+	}
+
+	parentQuery, err := database.GetStatement("ParentCategoryStmt")
 	if err != nil {
 		return err
 	}
@@ -196,13 +122,8 @@ func (part *Part) PartBreadcrumbs() error {
 				break
 			}
 
-			catQry, err := database.Db.Prepare(parentCategoryStmt)
-			if err != nil {
-				return err
-			}
-
 			// Execute out SQL query to retrieve a category by ParentId
-			catRow, catRes, err = catQry.ExecFirst(parent)
+			catRow, catRes, err = parentQuery.ExecFirst(parent)
 			if database.MysqlError(err) {
 				return err
 			}
@@ -283,7 +204,7 @@ func (part *Part) GetPartCategories() (cats []ExtendedCategory, err error) {
 		return
 	}
 
-	qry, err := database.Db.Prepare(partAllCategoryStmt)
+	qry, err := database.GetStatement("PartAllCategoryStmt")
 	if err != nil {
 		return
 	}
@@ -385,8 +306,13 @@ func TopTierCategories() (cats []Category, err error) {
 		}
 	}
 
+	qry, err := database.GetStatement("TopCategoriesStmt")
+	if err != nil {
+		return
+	}
+
 	// Execute SQL Query against current PartId
-	catRows, catRes, err := database.Db.Query(topCategoriesStmt)
+	catRows, catRes, err := qry.Exec()
 	if database.MysqlError(err) || catRows == nil { // Error occurred while executing query
 		return
 	}
@@ -447,7 +373,7 @@ func TopTierCategories() (cats []Category, err error) {
 
 func GetByTitle(cat_title string) (cat Category, err error) {
 
-	qry, err := database.Db.Prepare(categoryByNameStmt)
+	qry, err := database.GetStatement("CategoryByNameStmt")
 	if err != nil {
 		return
 	}
@@ -506,7 +432,7 @@ func GetByTitle(cat_title string) (cat Category, err error) {
 
 func GetById(cat_id int) (cat Category, err error) {
 
-	qry, err := database.Db.Prepare(categoryByIdStmt)
+	qry, err := database.GetStatement("CategoryByIdStmt")
 	if err != nil {
 		return
 	}
@@ -578,7 +504,7 @@ func (c *Category) SubCategories() (cats []Category, err error) {
 		}
 	}
 
-	qry, err := database.Db.Prepare(subCategoriesStmt)
+	qry, err := database.GetStatement("SubCategoriesStmt")
 	if err != nil {
 		return
 	}
@@ -650,13 +576,13 @@ func (c *Category) GetCategoryParts(key string, page int, count int) (parts []Pa
 		return
 	}
 
-	qry, err := database.Db.Prepare(categoryPartBasicStmt)
-	if err != nil {
-		return
-	}
-
 	if page > 0 {
 		page = count * page
+	}
+
+	qry, err := database.GetStatement("CategoryPartBasicStmt")
+	if err != nil {
+		return
 	}
 
 	rows, _, err := qry.Exec(c.CategoryId, page, count)
@@ -786,7 +712,7 @@ func (c *Category) GetContent() (content []Content, err error) {
 		return
 	}
 
-	qry, err := database.Db.Prepare(categoryContentStmt)
+	qry, err := database.GetStatement("CategoryContentStmt")
 	if err != nil {
 		return
 	}

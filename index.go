@@ -8,8 +8,10 @@ import (
 	"./controllers/vehicle"
 	"./controllers/videos"
 	"./helpers/auth"
+	"./helpers/database"
 	"./helpers/plate"
 	"flag"
+	"log"
 	"net/http"
 )
 
@@ -33,6 +35,11 @@ const (
  */
 func main() {
 	flag.Parse()
+
+	err := database.PrepareAll()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	server := plate.NewServer("doughboy")
 	server.Logging = true

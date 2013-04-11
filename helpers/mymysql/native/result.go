@@ -1,8 +1,8 @@
 package native
 
 import (
+	"../mysql"
 	"errors"
-	"github.com/ziutek/mymysql/mysql"
 	"log"
 	"math"
 	"strconv"

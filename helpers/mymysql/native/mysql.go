@@ -2,9 +2,9 @@
 package native
 
 import (
+	"../mysql"
 	"bufio"
 	"fmt"
-	"github.com/ziutek/mymysql/mysql"
 	"io"
 	"net"
 	"reflect"

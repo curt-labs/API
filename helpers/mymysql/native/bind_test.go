@@ -1,9 +1,9 @@
 package native
 
 import (
+	"../mysql"
 	"bufio"
 	"bytes"
-	"github.com/ziutek/mymysql/mysql"
 	"math"
 	"reflect"
 	"strconv"

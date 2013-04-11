@@ -1,9 +1,9 @@
 package native
 
 import (
+	"../mysql"
 	"bytes"
 	"fmt"
-	"github.com/ziutek/mymysql/mysql"
 	"io/ioutil"
 	"os"
 	"reflect"

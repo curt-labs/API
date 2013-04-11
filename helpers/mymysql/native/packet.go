@@ -1,8 +1,8 @@
 package native
 
 import (
+	"../mysql"
 	"bufio"
-	"github.com/ziutek/mymysql/mysql"
 	"io"
 )
 
