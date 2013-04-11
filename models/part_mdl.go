@@ -80,7 +80,7 @@ type Part struct {
 	Images                                  []Image
 	Related                                 []int
 	Categories                              []ExtendedCategory
-	Videos                                  []Video
+	Videos                                  []PartVideo
 	Packages                                []Package
 	Customer                                CustomerPart
 }

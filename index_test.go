@@ -6,6 +6,7 @@ import (
 	"./controllers/dealers"
 	"./controllers/part"
 	"./controllers/vehicle"
+	"./controllers/videos"
 	"./helpers/auth"
 	"./helpers/plate"
 	"errors"
@@ -127,6 +128,8 @@ func TestHandler(t *testing.T) {
 
 	server.Post("/customer/locations", customer_ctlr.GetLocations)
 	server.Post("/customer/users", customer_ctlr.GetUsers) // Requires a user to be marked as sudo
+
+	server.Get("/videos", videos_ctlr.DistinctVideos).NoFilter()
 
 	/**** INTERNAL USE ONLY ****/
 	server.Get("/dealers/etailer", dealers_ctlr.Etailers).NoFilter()
@@ -284,6 +287,12 @@ func TestHandler(t *testing.T) {
 	checkError(req, recorder, err, t)
 
 	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/dealers/local/regions", qs)
+	err = code_is(t, recorder, 200)
+	checkError(req, recorder, err, t)
+	err = content_type_is_json(t, recorder)
+	checkError(req, recorder, err, t)
+
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/videos", nil)
 	err = code_is(t, recorder, 200)
 	checkError(req, recorder, err, t)
 	err = content_type_is_json(t, recorder)

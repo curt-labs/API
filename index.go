@@ -6,6 +6,7 @@ import (
 	"./controllers/dealers"
 	"./controllers/part"
 	"./controllers/vehicle"
+	"./controllers/videos"
 	"./helpers/auth"
 	"./helpers/plate"
 	"flag"
@@ -77,6 +78,11 @@ func main() {
 
 	server.Post("/customer/locations", customer_ctlr.GetLocations)
 	server.Post("/customer/users", customer_ctlr.GetUsers) // Requires a user to be marked as sudo
+
+	/**
+	 * Video
+	 */
+	server.Get("/videos", videos_ctlr.DistinctVideos).NoFilter()
 
 	/**** INTERNAL USE ONLY ****/
 	server.Get("/dealers/etailer", dealers_ctlr.Etailers).NoFilter()
