@@ -100,10 +100,10 @@ var (
 					where p.status in (800,900)
 					and (
 						(bv.YearID = ? and ma.MakeName = ?
-						and mo.ModelName = ?)
+						and mo.ModelName = ? and vca.ID is null)
 						or
 						(bv.YearID = ? and ma.MakeName = ?
-						and mo.ModelName = ? and sm.SubmodelName = ?)
+						and mo.ModelName = ? and sm.SubmodelName = ? and vca.ID is null)
 						or
 						(bv.YearID = ? and ma.MakeName = ?
 						and mo.ModelName = ? and sm.SubmodelName = ?
