@@ -240,7 +240,7 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 		DealerType:              row.Str(dealer_type),
 		DealerTier:              row.Str(dealer_tier),
 		SalesRepresentative:     row.Str(rep_name),
-		SalesRepresentativeCode: row.Int(rep_code),
+		SalesRepresentativeCode: row.Str(rep_code),
 		MapixCode:               row.Str(mpx_code),
 		MapixDescription:        row.Str(mpx_desc),
 	}

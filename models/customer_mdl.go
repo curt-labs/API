@@ -35,7 +35,7 @@ var (
 					join Customer c on cu.cust_ID = c.cust_id
 					join CustomerPricing cp on c.customerID = cp.cust_id
 					where api_key = '%s'
-					and cp.partID IN (%s)`
+					and cp.partID IN ('%s')`
 
 	customerPartStmt = `select distinct ci.custPartID from ApiKey as ak
 					join CustomerUser cu on ak.user_id = cu.id
@@ -49,7 +49,7 @@ var (
 					join Customer c on cu.cust_ID = c.cust_id
 					join CartIntegration ci on c.customerID = ci.custID
 					where ak.api_key = '%s'
-					and ci.partID IN (%s)`
+					and ci.partID IN ('%s')`
 
 	customerStmt = `select c.customerID, c.name, c.email, c.address, c.address2, c.city, c.phone, c.fax, c.contact_person,
 				c.latitude, c.longitude, c.searchURL, c.logo, c.website,
@@ -167,7 +167,7 @@ type Customer struct {
 	SearchUrl, Logo                      *url.URL
 	DealerType, DealerTier               string
 	SalesRepresentative                  string
-	SalesRepresentativeCode              int
+	SalesRepresentativeCode              string
 	MapixCode, MapixDescription          string
 	Locations                            *[]CustomerLocation
 	Users                                []CustomerUser
@@ -262,7 +262,7 @@ func (c *Customer) Basics() error {
 	c.DealerType = row.Str(dealer_type)
 	c.DealerTier = row.Str(dealer_tier)
 	c.SalesRepresentative = row.Str(rep_name)
-	c.SalesRepresentativeCode = row.Int(rep_code)
+	c.SalesRepresentativeCode = row.Str(rep_code)
 	c.MapixCode = row.Str(mpx_code)
 	c.MapixDescription = row.Str(mpx_desc)
 
@@ -541,7 +541,7 @@ func GetEtailers() (dealers []Customer, err error) {
 				DealerType:              r.Str(dealer_type),
 				DealerTier:              r.Str(dealer_tier),
 				SalesRepresentative:     r.Str(rep_name),
-				SalesRepresentativeCode: r.Int(rep_code),
+				SalesRepresentativeCode: r.Str(rep_code),
 				MapixCode:               r.Str(mpx_code),
 				MapixDescription:        r.Str(mpx_desc),
 			}
@@ -594,7 +594,7 @@ type DealerLocation struct {
 	SearchUrl, Logo                      *url.URL
 	DealerType, DealerTier               string
 	SalesRepresentative                  string
-	SalesRepresentativeCode              int
+	SalesRepresentativeCode              string
 	MapixCode, MapixDescription          string
 	Locations                            *[]CustomerLocation
 	Users                                []CustomerUser
@@ -791,7 +791,7 @@ func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, er
 			DealerType:              r.Str(dealer_type),
 			DealerTier:              r.Str(dealer_tier),
 			SalesRepresentative:     r.Str(rep_name),
-			SalesRepresentativeCode: r.Int(rep_code),
+			SalesRepresentativeCode: r.Str(rep_code),
 			MapixCode:               r.Str(mpx_code),
 			MapixDescription:        r.Str(mpx_desc),
 		}

@@ -267,10 +267,13 @@ func (lookup *Lookup) GetConfiguration() (opt ConfigOption) {
 	if len(lookup.Vehicle.Configuration) > 0 {
 		nested = nestedConfigBegin
 		for i, c := range lookup.Vehicle.Configuration {
-			nested = nested + "'" + database.Db.Escape(c) + "'"
-			if i < len(lookup.Vehicle.Configuration)-1 {
-				nested = nested + ","
+			if len(c) > 0 {
+				nested = nested + "'" + database.Db.Escape(c) + "'"
+				if i < len(lookup.Vehicle.Configuration)-1 {
+					nested = nested + ","
+				}
 			}
+
 		}
 		nested = nested + nestedConfigEnd
 	}

@@ -3,7 +3,6 @@ package vehicle_ctlr
 import (
 	"../../helpers/plate"
 	. "../../models"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -29,7 +28,6 @@ func Make(w http.ResponseWriter, r *http.Request) {
 			Year: year,
 		},
 	}
-	log.Println("fetching makes")
 
 	config := ConfigResponse{
 		ConfigOption: lookup.GetMakes(),
@@ -103,7 +101,11 @@ func Config(w http.ResponseWriter, r *http.Request) {
 	year, _ := strconv.ParseFloat(params.Get(":year"), 64)
 	key := params.Get("key")
 
-	config_vals := strings.Split(params.Get(":config"), "/")
+	config_vals := strings.Split(strings.TrimSpace(params.Get(":config")), "/")
+
+	if len(config_vals) == 1 && config_vals[0] == "" {
+		config_vals = nil
+	}
 
 	lookup := Lookup{
 		Vehicle: Vehicle{

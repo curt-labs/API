@@ -8,9 +8,11 @@ import (
 	"./controllers/vehicle"
 	"./controllers/videos"
 	"./helpers/auth"
+	"./helpers/database"
 	"./helpers/plate"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -84,6 +86,11 @@ func checkError(req http.Request, rec *httptest.ResponseRecorder, err error, t *
 
 func TestHandler(t *testing.T) {
 
+	err := database.PrepareAll()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	server := plate.NewServer("doughboy")
 	server.Logging = true
 
@@ -140,7 +147,7 @@ func TestHandler(t *testing.T) {
 	qs.Add("key", "8aee0620-412e-47fc-900a-947820ea1c1d")
 
 	recorder, req := run_test_request(t, server, "GET", "http://localhost:8080/vehicle", nil)
-	err := code_is(t, recorder, 401)
+	err = code_is(t, recorder, 401)
 	checkError(req, recorder, err, t)
 
 	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/vehicle", qs)
@@ -250,19 +257,19 @@ func TestHandler(t *testing.T) {
 	checkError(req, recorder, err, t)
 
 	//log.Println(qs)
-	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/category/Hitches", qs)
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/category/Trailer Hitches?key=8aee0620-412e-47fc-900a-947820ea1c1d", nil)
 	err = code_is(t, recorder, 200)
 	checkError(req, recorder, err, t)
 	err = content_type_is_json(t, recorder)
 	checkError(req, recorder, err, t)
 
-	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/category/Hitches/parts", qs)
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/category/Trailer Hitches/parts", qs)
 	err = code_is(t, recorder, 200)
 	checkError(req, recorder, err, t)
 	err = content_type_is_json(t, recorder)
 	checkError(req, recorder, err, t)
 
-	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/category/Hitches/subs", qs)
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/category/Trailer Hitches/subs", qs)
 	err = code_is(t, recorder, 200)
 	checkError(req, recorder, err, t)
 	err = content_type_is_json(t, recorder)

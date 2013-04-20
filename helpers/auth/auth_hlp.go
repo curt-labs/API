@@ -44,6 +44,7 @@ var AuthHandler = func(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	} else {
 		if checkPrivateKey(key) {
