@@ -244,6 +244,12 @@ func TestHandler(t *testing.T) {
 	err = content_type_is_json(t, recorder)
 	checkError(req, recorder, err, t)
 
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/part/12289/2004/Dodge/Grand Caravan/Anniversary Edition/Stow 'n Go", qs)
+	err = code_is(t, recorder, 200)
+	checkError(req, recorder, err, t)
+	err = content_type_is_json(t, recorder)
+	checkError(req, recorder, err, t)
+
 	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/category", qs)
 	err = code_is(t, recorder, 200)
 	checkError(req, recorder, err, t)
