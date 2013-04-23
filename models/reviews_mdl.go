@@ -12,7 +12,7 @@ var (
 				where partID = ? and approved = 1 and active = 1`
 
 	partReviewStmt_ByGroup = `select partID,rating,subject,review_text,name,email,createdDate from Review
-				where partID IN ('%s') and approved = 1 and active = 1`
+				where partID IN (%s) and approved = 1 and active = 1`
 )
 
 type Review struct {

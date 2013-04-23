@@ -35,7 +35,7 @@ var (
 					join Customer c on cu.cust_ID = c.cust_id
 					join CustomerPricing cp on c.customerID = cp.cust_id
 					where api_key = '%s'
-					and cp.partID IN ('%s')`
+					and cp.partID IN (%s)`
 
 	customerPartStmt = `select distinct ci.custPartID from ApiKey as ak
 					join CustomerUser cu on ak.user_id = cu.id
@@ -49,7 +49,7 @@ var (
 					join Customer c on cu.cust_ID = c.cust_id
 					join CartIntegration ci on c.customerID = ci.custID
 					where ak.api_key = '%s'
-					and ci.partID IN ('%s')`
+					and ci.partID IN (%s)`
 
 	customerStmt = `select c.customerID, c.name, c.email, c.address, c.address2, c.city, c.phone, c.fax, c.contact_person,
 				c.latitude, c.longitude, c.searchURL, c.logo, c.website,
@@ -93,7 +93,6 @@ var (
 				left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
 				where d_types.online = 1 && c.isDummy = 0`
 
-	// localDealersStmt(earth, center_latitude, center_latitude, center_longitude, center_longitude, center_latitude, center_latitude, center_latitude, center_longitude, center_longitude, center_latitude, view_distance, swlat, nelat, swlong, nelong, swlong2, nelong2)
 	localDealersStmt = `select c.customerID, cl.name, c.email, cl.address, cl.city, cl.phone, cl.fax, cl.contact_person,
 				cl.latitude, cl.longitude, c.searchURL, c.logo, c.website,
 				cl.postalCode, s.state, s.abbr as state_abbr, cty.name as country_name, cty.abbr as country_abbr,

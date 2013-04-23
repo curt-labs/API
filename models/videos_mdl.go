@@ -31,7 +31,7 @@ var (
 
 	partVideoStmt_Grouped = `select pv.partID, pv.video,vt.name,pv.isPrimary, vt.icon from PartVideo as pv
 				join videoType vt on pv.vTypeID = vt.vTypeID
-				where pv.partID IN ('%s')`
+				where pv.partID IN (%s)`
 
 	uniqueVideoStmt = `select distinct embed_link, dateAdded, sort, title, description, watchpage, screenshot 
 				from Video

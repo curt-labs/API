@@ -23,7 +23,7 @@ var (
 				join UnitOfMeasure as um_dim on pp.dimensionUOM = um_dim.ID
 				join UnitOfMeasure as um_wt on pp.weightUOM = um_wt.ID
 				join UnitOfMeasure as um_pkg on pp.packageUOM = um_pkg.ID
-				where pp.partID IN ('%s')`
+				where pp.partID IN (%s)`
 )
 
 type Package struct {

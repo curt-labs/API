@@ -22,22 +22,22 @@ var (
 	basicsStmt_Grouped = `select p.status, p.dateAdded, p.dateModified, p.shortDesc, p.partID, p.priceCode, pc.class
 				from Part as p
 				left join Class as pc on p.classID = pc.classID
-				where p.partID IN ('%s') && p.status in (800,900)`
+				where p.partID IN (%s) && p.status in (800,900)`
 
 	partAttrStmt = `select field, value from PartAttribute where partID = ?`
 
-	partAttrStmt_Grouped = `select partID,field, value from PartAttribute where partID IN ('%s')`
+	partAttrStmt_Grouped = `select partID,field, value from PartAttribute where partID IN (%s)`
 
 	partPriceStmt = `select priceType, price, enforced from Price where partID = ?`
 
-	partPriceStmt_Grouped = `select partID, priceType, price, enforced from Price where partID IN ('%s')`
+	partPriceStmt_Grouped = `select partID, priceType, price, enforced from Price where partID IN (%s)`
 
 	relatedPartStmt = `select distinct relatedID from RelatedPart
 				where partID = ?
 				order by relatedID`
 
 	relatedPartStmt_Grouped = `select distinct relatedID, partID from RelatedPart
-				where partID IN ('%s')
+				where partID IN (%s)
 				order by relatedID`
 
 	partContentStmt = `select ct.type, con.text
@@ -51,7 +51,7 @@ var (
 				from Content as con
 				join ContentBridge as cb on con.contentID = cb.contentID
 				join ContentType as ct on con.cTypeID = ct.cTypeID
-				where cb.partID IN ('%s')
+				where cb.partID IN (%s)
 				order by ct.type`
 
 	partInstallSheetStmt = `select c.text from ContentBridge as cb
@@ -834,6 +834,7 @@ func (lookup *Lookup) GetRelated() error {
 
 	for _, p := range lookup.Parts {
 		p.Related = related[p.PartId]
+		p.RelatedCount = len(related[p.PartId])
 	}
 
 	return nil

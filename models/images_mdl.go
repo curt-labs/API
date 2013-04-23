@@ -20,7 +20,7 @@ var (
 
 	partImageStmt_ByGroup = `select partID, pis.size,pi.sort,pi.height,pi.width,pi.path from PartImages as pi
 				join PartImageSizes as pis on pi.sizeID = pis.sizeID
-				where partID IN ('%s') order by pi.sort, pi.height`
+				where partID IN (%s) order by pi.sort, pi.height`
 )
 
 func (p *Part) GetImages() error {
