@@ -25,6 +25,45 @@ func Get(w http.ResponseWriter, r *http.Request) {
 	plate.ServeFormatted(w, r, part)
 }
 
+func GetWithVehicle(w http.ResponseWriter, r *http.Request) {
+	params := r.URL.Query()
+	partID, err := strconv.Atoi(params.Get(":part"))
+	if err != nil {
+		http.Error(w, "Invalid part number", http.StatusInternalServerError)
+		return
+	}
+	key := params.Get("key")
+	year, err := strconv.ParseFloat(params.Get(":year"), 64)
+	if err != nil {
+		http.Redirect(w, r, "/part/"+params.Get(":part")+"?key="+key, http.StatusFound)
+		return
+	}
+	vMake := params.Get(":make")
+	model := params.Get(":model")
+	submodel := params.Get(":submodel")
+	config_vals := strings.Split(strings.TrimSpace(params.Get(":config")), "/")
+
+	vehicle := Vehicle{
+		Year:          year,
+		Make:          vMake,
+		Model:         model,
+		Submodel:      submodel,
+		Configuration: config_vals,
+	}
+
+	part := Part{
+		PartId: partID,
+	}
+
+	err = part.GetWithVehicle(&vehicle, key)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	plate.ServeFormatted(w, r, part)
+
+}
+
 func Vehicles(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 	id, err := strconv.Atoi(params.Get(":part"))
