@@ -58,7 +58,10 @@ func main() {
 	server.Get("/vehicle/:year", vehicle_ctlr.Make)
 	server.Get("/vehicle/:year/:make", vehicle_ctlr.Model)
 	server.Get("/vehicle/:year/:make/:model", vehicle_ctlr.Submodel)
+	server.Get("/vehicle/:year/:make/:model/connector", vehicle_ctlr.Connector)
 	server.Get("/vehicle/:year/:make/:model/:submodel", vehicle_ctlr.Config)
+	server.Get("/vehicle/:year/:make/:model/:submodel/connector", vehicle_ctlr.Connector)
+	server.Get("/vehicle/:year/:make/:model/:submodel/:config(.+)/connector", vehicle_ctlr.Connector)
 	server.Get("/vehicle/:year/:make/:model/:submodel/:config(.+)", vehicle_ctlr.Config)
 
 	server.Get("/category", category_ctlr.Parents)

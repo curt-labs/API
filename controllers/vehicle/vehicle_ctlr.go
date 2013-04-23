@@ -141,3 +141,36 @@ func Config(w http.ResponseWriter, r *http.Request) {
 	plate.ServeFormatted(w, r, config)
 	return
 }
+
+func Connector(w http.ResponseWriter, r *http.Request) {
+	params := r.URL.Query()
+	year, err := strconv.ParseFloat(params.Get(":year"), 64)
+	if err != nil {
+		http.Error(w, "Failed to process vehicle", http.StatusInternalServerError)
+		return
+	}
+	key := params.Get("key")
+
+	config_vals := strings.Split(strings.TrimSpace(params.Get(":config")), "/")
+
+	if len(config_vals) == 1 && config_vals[0] == "" {
+		config_vals = nil
+	}
+
+	lookup := Lookup{
+		Vehicle: Vehicle{
+			Year:          year,
+			Make:          params.Get(":make"),
+			Model:         params.Get(":model"),
+			Submodel:      params.Get(":submodel"),
+			Configuration: config_vals,
+		},
+	}
+
+	err = lookup.GetConnector(key)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	plate.ServeFormatted(w, r, lookup.Parts)
+}

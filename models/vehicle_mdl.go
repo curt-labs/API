@@ -110,6 +110,37 @@ var (
 						and ca.value in (`
 	vehiclePartsStmtEnd = `))) order by part;`
 
+	vehicleConnectorStmt = `select distinct vp.PartNumber as part from vcdb_VehiclePart vp
+					join Part as p on vp.PartNumber = p.partID
+					join Class as pc on p.classID = pc.classID
+					join vcdb_Vehicle v on vp.VehicleID = v.ID
+					left join VehicleConfigAttribute vca on v.ConfigID = vca.VehicleConfigID
+					left join ConfigAttribute ca on vca.AttributeID = ca.ID
+					left join ConfigAttributeType cat on ca.ConfigAttributeTypeID = cat.ID
+					join BaseVehicle bv on v.BaseVehicleID = bv.ID
+					left join Submodel sm on v.SubModelID = sm.ID
+					join vcdb_Make ma on bv.MakeID = ma.ID
+					join vcdb_Model mo on bv.ModelID = mo.ID
+					where p.status in (800,900) and UPPER(pc.class) = 'WIRING' `
+	vehicleConnectorStmtWithConfig = `and (
+						(bv.YearID = ? and ma.MakeName = ?
+						and mo.ModelName = ? and vca.ID is null)
+						or
+						(bv.YearID = ? and ma.MakeName = ?
+						and mo.ModelName = ? and sm.SubmodelName = ? and vca.ID is null)
+						or
+						(bv.YearID = ? and ma.MakeName = ?
+						and mo.ModelName = ? and sm.SubmodelName = ?
+						and ca.value in (`
+	vehicleConnectorStmtWithConfigEnd = `))) order by part`
+
+	vehicleConnectorStmtWithoutConfig = `and (
+						(bv.YearID = ? and ma.MakeName = ?
+						and mo.ModelName = ? and vca.ID is null)
+						or
+						(bv.YearID = ? and ma.MakeName = ?
+						and mo.ModelName = ? and sm.SubmodelName = ? and vca.ID is null)) order by part`
+
 	reverseLookupStmt = `select v.ID,bv.YearID, ma.MakeName, mo.ModelName, sm.SubmodelName, ca.value
 				from BaseVehicle bv
 				join vcdb_Vehicle v on bv.ID = v.BaseVehicleID
@@ -519,6 +550,90 @@ func (lookup *Lookup) GetNotes() error {
 		p.VehicleAttributes = notes[p.PartId]
 	}
 
+	return nil
+}
+
+func (lookup *Lookup) GetConnector(key string) error {
+
+	stmt := vehicleConnectorStmt
+	var params interface{}
+	if len(lookup.Vehicle.Configuration) > 0 {
+		stmt = stmt + vehicleConnectorStmtWithConfig
+		for i, c := range lookup.Vehicle.Configuration {
+			stmt = stmt + "'" + database.Db.Escape(c) + "'"
+			if i < len(lookup.Vehicle.Configuration)-1 {
+				stmt = stmt + ","
+			}
+		}
+		stmt = stmt + vehicleConnectorStmtWithConfigEnd
+		params = struct {
+			Year1     float64
+			Make1     string
+			Model1    string
+			Year2     float64
+			Make2     string
+			Model2    string
+			Submodel1 string
+			Year3     float64
+			Make3     string
+			Model3    string
+			Submodel2 string
+		}{
+			lookup.Vehicle.Year,
+			lookup.Vehicle.Make,
+			lookup.Vehicle.Model,
+			lookup.Vehicle.Year,
+			lookup.Vehicle.Make,
+			lookup.Vehicle.Model,
+			lookup.Vehicle.Submodel,
+			lookup.Vehicle.Year,
+			lookup.Vehicle.Make,
+			lookup.Vehicle.Model,
+			lookup.Vehicle.Submodel,
+		}
+	} else {
+		stmt = stmt + vehicleConnectorStmtWithoutConfig
+		params = struct {
+			Year1     float64
+			Make1     string
+			Model1    string
+			Year2     float64
+			Make2     string
+			Model2    string
+			Submodel1 string
+		}{
+			lookup.Vehicle.Year,
+			lookup.Vehicle.Make,
+			lookup.Vehicle.Model,
+			lookup.Vehicle.Year,
+			lookup.Vehicle.Make,
+			lookup.Vehicle.Model,
+			lookup.Vehicle.Submodel,
+		}
+	}
+
+	qry, err := database.Db.Prepare(stmt)
+	if err != nil {
+		return err
+	}
+
+	rows, _, err := qry.Exec(params)
+	if err != nil {
+		return err
+	}
+
+	for _, row := range rows {
+		lookup.Parts = append(lookup.Parts, &Part{PartId: row.Int(0)})
+	}
+
+	err = lookup.GetWithVehicle(key)
+
+	var ps []*Part
+	for _, v := range lookup.Parts {
+		ps = append(ps, v)
+	}
+
+	lookup.Parts = ps
 	return nil
 }
 
