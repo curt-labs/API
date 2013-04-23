@@ -110,15 +110,17 @@ var (
 						and ca.value in (`
 	vehiclePartsStmtEnd = `))) order by part;`
 
-	reverseLookupStmt = `select bv.YearID, ma.MakeName, mo.ModelName, sm.SubmodelName
+	reverseLookupStmt = `select v.ID,bv.YearID, ma.MakeName, mo.ModelName, sm.SubmodelName, ca.value
 				from BaseVehicle bv
 				join vcdb_Vehicle v on bv.ID = v.BaseVehicleID
 				join vcdb_VehiclePart vp on v.ID = vp.VehicleID
 				left join Submodel sm on v.SubModelID = sm.ID
 				left join vcdb_Make ma on bv.MakeID = ma.ID
 				left join vcdb_Model mo on bv.ModelID = mo.ID
+				left join VehicleConfigAttribute vca on v.ConfigID = vca.VehicleConfigID
+				left join ConfigAttribute ca on vca.AttributeID = ca.ID
 				where vp.PartNumber = ?
-				order by bv.YearID desc, ma.MakeName, mo.ModelName`
+				order by bv.YearID desc, ma.MakeName, mo.ModelName, sm.SubmodelName`
 
 	vehicleNotesStmt = `select distinct n.note from vcdb_VehiclePart vp
 					left join Note n on vp.ID = n.vehiclePartID
@@ -521,6 +523,7 @@ func (lookup *Lookup) GetNotes() error {
 }
 
 func ReverseLookup(partId int) (vehicles []Vehicle, err error) {
+
 	qry, err := database.Db.Prepare(reverseLookupStmt)
 	if err != nil {
 		return
@@ -531,29 +534,41 @@ func ReverseLookup(partId int) (vehicles []Vehicle, err error) {
 		return
 	}
 
+	id := res.Map("ID")
 	year := res.Map("YearID")
-	make := res.Map("MakeName")
+	vMake := res.Map("MakeName")
 	model := res.Map("ModelName")
 	submodel := res.Map("SubmodelName")
+	config_val := res.Map("value")
+
+	vehicleArray := make(map[int]Vehicle, 0)
 
 	for _, row := range rows {
 
-		if database.MysqlError(err) {
+		if database.MysqlError(err) || row == nil {
 			break
 		}
-		if row == nil {
-			break // end of result
-		}
 
-		v := Vehicle{
-			Year:     row.Float(year),
-			Make:     row.Str(make),
-			Model:    row.Str(model),
-			Submodel: row.Str(submodel),
+		v, ok := vehicleArray[row.Int(id)]
+		if ok {
+			// Vehicle Record exists for this ID
+			// so we'll simply append this configuration variable
+			v.Configuration = append(v.Configuration, row.Str(config_val))
+		} else {
+			// New Vehicle record
+			v = Vehicle{
+				Year:          row.Float(year),
+				Make:          row.Str(vMake),
+				Model:         row.Str(model),
+				Submodel:      row.Str(submodel),
+				Configuration: []string{row.Str(config_val)},
+			}
 		}
+		vehicleArray[row.Int(id)] = v
+	}
 
+	for _, v := range vehicleArray {
 		vehicles = append(vehicles, v)
-
 	}
 	return
 }
