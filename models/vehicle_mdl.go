@@ -388,8 +388,10 @@ func (lookup *Lookup) GetParts() error {
 				stmt = stmt + ","
 			}
 		}
-		stmt = stmt + vehiclePartsStmtEnd
+	} else {
+		stmt = stmt + "''"
 	}
+	stmt = stmt + vehiclePartsStmtEnd
 
 	qry, err := database.Db.Prepare(stmt)
 	if err != nil {

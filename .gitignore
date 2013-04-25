@@ -3,3 +3,4 @@ go-api.linux
 index
 dump.rdb
 ConnectionString.go
+config.json
