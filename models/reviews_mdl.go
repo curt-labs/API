@@ -73,6 +73,9 @@ func (lookup *Lookup) GetReviews() error {
 	for _, p := range lookup.Parts {
 		ids = append(ids, strconv.Itoa(p.PartId))
 	}
+	if len(ids) == 0 {
+		return nil
+	}
 
 	rows, res, err := database.Db.Query(partReviewStmt_ByGroup, strings.Join(ids, ","))
 	if database.MysqlError(err) {

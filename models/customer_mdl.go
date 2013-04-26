@@ -411,6 +411,9 @@ func (lookup *Lookup) GetCustomerPrice(api_key string) (prices map[int]float64, 
 	for _, p := range lookup.Parts {
 		ids = append(ids, strconv.Itoa(p.PartId))
 	}
+	if len(ids) == 0 {
+		return
+	}
 
 	rows, res, err := database.Db.Query(customerPriceStmt_Grouped, api_key, strings.Join(ids, ","))
 	if database.MysqlError(err) {
@@ -456,6 +459,9 @@ func (lookup *Lookup) GetCustomerCartReference(api_key string) (references map[i
 	var ids []string
 	for _, p := range lookup.Parts {
 		ids = append(ids, strconv.Itoa(p.PartId))
+	}
+	if len(ids) == 0 {
+		return
 	}
 
 	rows, res, err := database.Db.Query(customerPartStmt_Grouped, api_key, strings.Join(ids, ","))

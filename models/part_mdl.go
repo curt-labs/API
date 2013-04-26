@@ -681,6 +681,9 @@ func (lookup *Lookup) Basics() error {
 	for _, p := range lookup.Parts {
 		ids = append(ids, strconv.Itoa(p.PartId))
 	}
+	if len(ids) == 0 {
+		return nil
+	}
 
 	rows, res, err := database.Db.Query(basicsStmt_Grouped, strings.Join(ids, ","))
 	if database.MysqlError(err) {
@@ -739,6 +742,9 @@ func (lookup *Lookup) GetAttributes() error {
 	for _, p := range lookup.Parts {
 		ids = append(ids, strconv.Itoa(p.PartId))
 	}
+	if len(ids) == 0 {
+		return nil
+	}
 
 	rows, _, err := database.Db.Query(partAttrStmt_Grouped, strings.Join(ids, ","))
 	if database.MysqlError(err) || len(rows) == 0 {
@@ -768,6 +774,9 @@ func (lookup *Lookup) GetPricing() error {
 	var ids []string
 	for _, p := range lookup.Parts {
 		ids = append(ids, strconv.Itoa(p.PartId))
+	}
+	if len(ids) == 0 {
+		return nil
 	}
 
 	rows, res, err := database.Db.Query(partPriceStmt_Grouped, strings.Join(ids, ","))
@@ -813,6 +822,9 @@ func (lookup *Lookup) GetRelated() error {
 	for _, p := range lookup.Parts {
 		ids = append(ids, strconv.Itoa(p.PartId))
 	}
+	if len(ids) == 0 {
+		return nil
+	}
 
 	rows, res, err := database.Db.Query(relatedPartStmt_Grouped, strings.Join(ids, ","))
 	if database.MysqlError(err) {
@@ -845,6 +857,9 @@ func (lookup *Lookup) GetContent() error {
 	var ids []string
 	for _, p := range lookup.Parts {
 		ids = append(ids, strconv.Itoa(p.PartId))
+	}
+	if len(ids) == 0 {
+		return nil
 	}
 
 	rows, _, err := database.Db.Query(partContentStmt_Grouped, strings.Join(ids, ","))
@@ -887,6 +902,9 @@ func (lookup *Lookup) BindCustomer(key string) error {
 	var ids []string
 	for _, p := range lookup.Parts {
 		ids = append(ids, strconv.Itoa(p.PartId))
+	}
+	if len(ids) == 0 {
+		return nil
 	}
 
 	prices, err := lookup.GetCustomerPrice(key)

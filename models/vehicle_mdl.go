@@ -497,6 +497,9 @@ func (lookup *Lookup) GetNotes() error {
 	for _, p := range lookup.Parts {
 		ids = append(ids, strconv.Itoa(p.PartId))
 	}
+	if len(ids) == 0 {
+		return nil
+	}
 
 	stmt := vehicleNotesStmt_Grouped
 	if len(lookup.Vehicle.Configuration) > 0 {
