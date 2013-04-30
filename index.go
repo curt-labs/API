@@ -79,7 +79,7 @@ func main() {
 	server.Get("/part/:part((.*?)\\.(PDF|pdf)$)", part_ctlr.InstallSheet).NoFilter() // Resolves: /part/11000.pdf
 	server.Get("/part/:part/packages", part_ctlr.Packaging)
 	server.Get("/part/:part/pricing", part_ctlr.Prices)
-	// server.Get("/part/:part/related", part_ctlr.Get)
+	server.Get("/part/:part/related", part_ctlr.GetRelated)
 	server.Get("/part/:part/videos", part_ctlr.Videos)
 	server.Get("/part/:part/:year/:make/:model", part_ctlr.GetWithVehicle)
 	server.Get("/part/:part/:year/:make/:model/:submodel", part_ctlr.GetWithVehicle)

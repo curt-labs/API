@@ -221,7 +221,7 @@ func (p *Part) FromDatabase() error {
 	<-contentChan
 
 	if len(errs) > 0 {
-		return errors.New("Error: " + strings.Join(errs, ", "))
+		//return errors.New("Error: " + strings.Join(errs, ", "))
 	}
 
 	if part_bytes, err := json.Marshal(p); err == nil {

@@ -25,6 +25,34 @@ func Get(w http.ResponseWriter, r *http.Request) {
 	plate.ServeFormatted(w, r, part)
 }
 
+func GetRelated(w http.ResponseWriter, r *http.Request) {
+	params := r.URL.Query()
+	id, _ := strconv.Atoi(params.Get(":part"))
+	key := params.Get("key")
+	part := Part{
+		PartId: id,
+	}
+
+	err := part.GetRelated()
+	var parts []Part
+	c := make(chan int, len(part.Related))
+	for _, p := range part.Related {
+		go func(partId int) {
+			relPart := Part{PartId: partId}
+			if err = relPart.Get(key); err == nil {
+				parts = append(parts, relPart)
+			}
+			c <- 1
+		}(p)
+	}
+
+	for _, _ = range part.Related {
+		<-c
+	}
+
+	plate.ServeFormatted(w, r, parts)
+}
+
 func GetWithVehicle(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 	partID, err := strconv.Atoi(params.Get(":part"))
