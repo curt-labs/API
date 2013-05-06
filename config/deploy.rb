@@ -64,7 +64,7 @@ namespace :deploy do
       kill_processes_matching "go-api"
   end
   task :restart do
-  	restart_cmd = "#{current_release}/go-api"
+  	restart_cmd = "#{current_release}/go-api -http=127.0.0.1:8080"
   	run "nohup sh -c '#{restart_cmd} &' > #{application}-nohup.out"
   end
 end
