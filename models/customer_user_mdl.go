@@ -321,7 +321,7 @@ func (u *CustomerUser) AuthenticateUser(pass string) error {
 			params.user = row.Str(user_id)
 			updateQry.Bind(&params)
 			if updateQry != nil {
-				_, _ = updateQry.Run()
+				_, _ = updateQry.Raw.Run()
 			}
 		}
 	} else if !strings.EqualFold(prop, enc_pass) {
@@ -560,7 +560,7 @@ func (u *CustomerUser) ResetAuthentication() error {
 		params.User = u.Id
 
 		// Excecute the update statement
-		_, err = updateQry.Run()
+		_, err = updateQry.Raw.Run()
 		if err != nil {
 			return err
 		}

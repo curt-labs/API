@@ -1,8 +1,8 @@
 package database
 
 import (
-	//"../mymysql/autorc"
-	"../mymysql/thrsafe"
+	"../mymysql/autorc"
+	_ "../mymysql/thrsafe"
 	"log"
 	"os"
 )
@@ -10,7 +10,7 @@ import (
 var (
 
 	// MySQL Connection Handler
-	Db = thrsafe.New(db_proto, "", db_addr, db_user, db_pass, db_name)
+	Db = autorc.New(db_proto, "", db_addr, db_user, db_pass, db_name)
 
 	//  Prepared statements would go here
 	//  stmt *autorc.Stmt
