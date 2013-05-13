@@ -1,6 +1,7 @@
 package models
 
 import (
+	"../helpers/api"
 	"../helpers/database"
 	"../helpers/redis"
 	"../helpers/rest"
@@ -448,8 +449,8 @@ func (p *Part) GetContent() error {
 		}
 
 		if strings.Contains(strings.ToLower(con.Key), "install") {
-			sheetUrl, _ := url.Parse(con.Value)
-			p.InstallSheet = sheetUrl
+			//sheetUrl, _ := url.Parse(con.Value)
+			p.InstallSheet, _ = url.Parse(api_helpers.API_DOMAIN + "/" + strconv.Itoa(p.PartId) + ".pdf")
 		} else {
 			content = append(content, con)
 		}
@@ -880,8 +881,8 @@ func (lookup *Lookup) GetContent() error {
 		}
 
 		if strings.Contains(strings.ToLower(con.Key), "install") {
-			sheetUrl, _ := url.Parse(con.Value)
-			installSheets[pId] = sheetUrl
+			//sheetUrl, _ := url.Parse(con.Value)
+			installSheets[pId], _ = url.Parse(api_helpers.API_DOMAIN + "/" + strconv.Itoa(pId) + ".pdf")
 		} else {
 			content[pId] = append(content[pId], con)
 		}

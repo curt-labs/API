@@ -10,6 +10,10 @@ import (
 	"strings"
 )
 
+var (
+	API_DOMAIN = "http://curt-api.cloudapp.net"
+)
+
 func ValueOrFileContents(value string, filename string) string {
 	if value != "" {
 		return value
