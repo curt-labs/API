@@ -450,7 +450,7 @@ func (p *Part) GetContent() error {
 
 		if strings.Contains(strings.ToLower(con.Key), "install") {
 			//sheetUrl, _ := url.Parse(con.Value)
-			p.InstallSheet, _ = url.Parse(api_helpers.API_DOMAIN + "/" + strconv.Itoa(p.PartId) + ".pdf")
+			p.InstallSheet, _ = url.Parse(api_helpers.API_DOMAIN + "/part/" + strconv.Itoa(p.PartId) + ".pdf")
 		} else {
 			content = append(content, con)
 		}
@@ -882,7 +882,7 @@ func (lookup *Lookup) GetContent() error {
 
 		if strings.Contains(strings.ToLower(con.Key), "install") {
 			//sheetUrl, _ := url.Parse(con.Value)
-			installSheets[pId], _ = url.Parse(api_helpers.API_DOMAIN + "/" + strconv.Itoa(pId) + ".pdf")
+			installSheets[pId], _ = url.Parse(api_helpers.API_DOMAIN + "/part/" + strconv.Itoa(pId) + ".pdf")
 		} else {
 			content[pId] = append(content[pId], con)
 		}
