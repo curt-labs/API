@@ -4,6 +4,7 @@ import (
 	"../helpers/api"
 	"../helpers/database"
 	"errors"
+	"log"
 	"net/url"
 	"strings"
 	"time"
@@ -313,12 +314,12 @@ func (u *CustomerUser) AuthenticateUser(pass string) error {
 			return err
 		} else {
 			updateQry, _ := database.Db.Prepare(updateCustomerUserPassStmt)
+			dbUserId := row.Str(user_id)
 			params := struct {
-				pass string
-				user string
-			}{}
-			params.pass = enc_pass
-			params.user = row.Str(user_id)
+				pass *string
+				user *string
+			}{&enc_pass, &dbUserId}
+
 			updateQry.Bind(&params)
 			if updateQry != nil {
 				_, _ = updateQry.Raw.Run()
