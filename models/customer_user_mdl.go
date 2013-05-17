@@ -4,7 +4,6 @@ import (
 	"../helpers/api"
 	"../helpers/database"
 	"errors"
-	"log"
 	"net/url"
 	"strings"
 	"time"
