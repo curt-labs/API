@@ -41,7 +41,7 @@ var (
 							&& ak.user_id = ?`
 
 	// This statement will run the trigger on the
-	// ApiKey table to regenerate the api_key column 
+	// ApiKey table to regenerate the api_key column
 	// for the updated record
 	resetUserAuthenticationStmt = `update ApiKey as ak
 							set ak.date_added = ?
@@ -50,7 +50,7 @@ var (
 
 	// This statement will renew the timer on the
 	// authentication API key for the given user.
-	// The disabling of the trigger is to turn off the 
+	// The disabling of the trigger is to turn off the
 	// key regeneration trigger for this table
 	enableTriggerStmt           = `SET @disable_trigger = 0;`
 	disableTriggerStmt          = `SET @disable_trigger = 1`
@@ -62,14 +62,18 @@ var (
 	userCustomerStmt = `select c.customerID, c.name, c.email, c.address, c.address2, c.city, c.phone, c.fax, c.contact_person,
 				c.latitude, c.longitude, c.searchURL, c.logo, c.website,
 				c.postal_code, s.state, s.abbr as state_abbr, cty.name as country_name, cty.abbr as country_abbr,
-				d_types.type as dealer_type, d_tier.tier as dealer_tier, mpx.code as mapix_code, mpx.description as mapic_desc,
+				dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
+				dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
+				mi.ID as iconID, mi.mapicon, mi.mapiconshadow,
+				mpx.code as mapix_code, mpx.description as mapic_desc,
 				sr.name as rep_name, sr.code as rep_code, c.parentID
 				from Customer as c
 				join CustomerUser as cu on c.cust_id = cu.cust_ID
 				left join States as s on c.stateID = s.stateID
 				left join Country as cty on s.countryID = cty.countryID
-				left join DealerTypes as d_types on c.dealer_type = d_types.dealer_type
-				left join DealerTiers d_tier on c.tier = d_tier.ID
+				left join DealerTypes as dt on c.dealer_type = dt.dealer_type
+				left join MapIcons as mi on dt.dealer_type = mi.dealer_type
+				left join DealerTiers dtr on c.tier = dtr.ID
 				left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
 				left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
 				where cu.id = ?`
@@ -209,8 +213,14 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 	state_abbr := res.Map("state_abbr")
 	country := res.Map("country_name")
 	country_abbr := res.Map("country_abbr")
-	dealer_type := res.Map("dealer_type")
-	dealer_tier := res.Map("dealer_tier")
+	dealerTypeId := res.Map("typeID")
+	dealerType := res.Map("dealerType")
+	typeOnline := res.Map("typeOnline")
+	typeShow := res.Map("typeShow")
+	typeLabel := res.Map("typeLabel")
+	tierID := res.Map("tierID")
+	tier := res.Map("tier")
+	tierSort := res.Map("tierSort")
 	mpx_code := res.Map("mapix_code")
 	mpx_desc := res.Map("mapic_desc")
 	rep_name := res.Map("rep_name")
@@ -222,23 +232,33 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 	logoURL, _ := url.Parse(row.Str(logo))
 
 	c = Customer{
-		Id:                      row.Int(customerID),
-		Name:                    row.Str(name),
-		Email:                   row.Str(email),
-		Address:                 row.Str(address),
-		Address2:                row.Str(address2),
-		City:                    row.Str(city),
-		PostalCode:              row.Str(zip),
-		Phone:                   row.Str(phone),
-		Fax:                     row.Str(fax),
-		ContactPerson:           row.Str(contact),
-		Latitude:                row.ForceFloat(lat),
-		Longitude:               row.ForceFloat(lon),
-		Website:                 websiteURL,
-		SearchUrl:               sURL,
-		Logo:                    logoURL,
-		DealerType:              row.Str(dealer_type),
-		DealerTier:              row.Str(dealer_tier),
+		Id:            row.Int(customerID),
+		Name:          row.Str(name),
+		Email:         row.Str(email),
+		Address:       row.Str(address),
+		Address2:      row.Str(address2),
+		City:          row.Str(city),
+		PostalCode:    row.Str(zip),
+		Phone:         row.Str(phone),
+		Fax:           row.Str(fax),
+		ContactPerson: row.Str(contact),
+		Latitude:      row.ForceFloat(lat),
+		Longitude:     row.ForceFloat(lon),
+		Website:       websiteURL,
+		SearchUrl:     sURL,
+		Logo:          logoURL,
+		DealerType: DealerType{
+			Id:     row.Int(dealerTypeId),
+			Type:   row.Str(dealerType),
+			Label:  row.Str(typeLabel),
+			Online: row.ForceBool(typeOnline),
+			Show:   row.ForceBool(typeShow),
+		},
+		DealerTier: DealerTier{
+			Id:   row.Int(tierID),
+			Tier: row.Str(tier),
+			Sort: row.Int(tierSort),
+		},
 		SalesRepresentative:     row.Str(rep_name),
 		SalesRepresentativeCode: row.Str(rep_code),
 		MapixCode:               row.Str(mpx_code),
@@ -391,7 +411,7 @@ func AuthenticateUserByKey(key string) (u CustomerUser, err error) {
 
 	//
 	// DISABLED: See RenewAuthentication() below
-	// 
+	//
 	// resetChan := make(chan int)
 	// go func() {
 	// 	if resetErr := u.RenewAuthentication(); resetErr != nil {
@@ -629,10 +649,10 @@ func GetCustomerUserFromKey(key string) (u CustomerUser, err error) {
 }
 
 // The disabling of the triggers is failing in this method.
-// 
+//
 // I'm going to disable the call to it completely and expand
 // the time limit of the authentication key to 6 hours.
-// 
+//
 // TODO: This will need to be fixed at some point in time. **Important
 
 // func (u *CustomerUser) RenewAuthentication() error {

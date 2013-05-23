@@ -108,7 +108,10 @@ func TestHandler(t *testing.T) {
 	server.Get("/vehicle/:year", vehicle_ctlr.Make)
 	server.Get("/vehicle/:year/:make", vehicle_ctlr.Model)
 	server.Get("/vehicle/:year/:make/:model", vehicle_ctlr.Submodel)
+	server.Get("/vehicle/:year/:make/:model/connector", vehicle_ctlr.Connector)
 	server.Get("/vehicle/:year/:make/:model/:submodel", vehicle_ctlr.Config)
+	server.Get("/vehicle/:year/:make/:model/:submodel/connector", vehicle_ctlr.Connector)
+	server.Get("/vehicle/:year/:make/:model/:submodel/:config(.+)/connector", vehicle_ctlr.Connector)
 	server.Get("/vehicle/:year/:make/:model/:submodel/:config(.+)", vehicle_ctlr.Config)
 
 	server.Get("/category", category_ctlr.Parents)
@@ -126,8 +129,11 @@ func TestHandler(t *testing.T) {
 	server.Get("/part/:part((.*?)\\.(PDF|pdf)$)", part_ctlr.InstallSheet).NoFilter() // Resolves: /part/11000.pdf
 	server.Get("/part/:part/packages", part_ctlr.Packaging)
 	server.Get("/part/:part/pricing", part_ctlr.Prices)
-	// server.Get("/part/:part/related", part_ctlr.Get)
+	server.Get("/part/:part/related", part_ctlr.GetRelated)
 	server.Get("/part/:part/videos", part_ctlr.Videos)
+	server.Get("/part/:part/:year/:make/:model", part_ctlr.GetWithVehicle)
+	server.Get("/part/:part/:year/:make/:model/:submodel", part_ctlr.GetWithVehicle)
+	server.Get("/part/:part/:year/:make/:model/:submodel/:config(.+)", part_ctlr.GetWithVehicle)
 	server.Get("/part/:part", part_ctlr.Get)
 
 	server.Post("/customer/auth", customer_ctlr.UserAuthentication).NoFilter()
@@ -136,12 +142,22 @@ func TestHandler(t *testing.T) {
 	server.Post("/customer/locations", customer_ctlr.GetLocations)
 	server.Post("/customer/users", customer_ctlr.GetUsers) // Requires a user to be marked as sudo
 
+	/**
+	 * Video
+	 */
 	server.Get("/videos", videos_ctlr.DistinctVideos).NoFilter()
 
 	/**** INTERNAL USE ONLY ****/
 	server.Get("/dealers/etailer", dealers_ctlr.Etailers).NoFilter()
+	server.Get("/dealers/etailer/platinum", dealers_ctlr.PlatinumEtailers).NoFilter()
 	server.Get("/dealers/local", dealers_ctlr.LocalDealers).NoFilter()
 	server.Get("/dealers/local/regions", dealers_ctlr.LocalRegions).NoFilter()
+	server.Get("/dealers/local/tiers", dealers_ctlr.LocalDealerTiers).NoFilter()
+	server.Get("/dealers/local/types", dealers_ctlr.LocalDealerTypes).NoFilter()
+	server.Get("/dealers/search", dealers_ctlr.SearchLocations).NoFilter()
+	server.Get("/dealers/search/type", dealers_ctlr.SearchLocationsByType).NoFilter()
+	server.Get("/dealers/search/geo", dealers_ctlr.SearchLocationsByLatLng).NoFilter()
+	server.Get("/dealers/search/geo/:latitude/:longitude", dealers_ctlr.SearchLocationsByLatLng).NoFilter()
 
 	qs := url.Values{}
 	qs.Add("key", "8aee0620-412e-47fc-900a-947820ea1c1d")
@@ -293,6 +309,12 @@ func TestHandler(t *testing.T) {
 	err = content_type_is_json(t, recorder)
 	checkError(req, recorder, err, t)
 
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/dealers/etailer/platinum", qs)
+	err = code_is(t, recorder, 200)
+	checkError(req, recorder, err, t)
+	err = content_type_is_json(t, recorder)
+	checkError(req, recorder, err, t)
+
 	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/dealers/local?latlng=44.279362,-93.166165,46.21285,-88.063015&center=45.254334,-90.61459", qs)
 	err = code_is(t, recorder, 200)
 	checkError(req, recorder, err, t)
@@ -300,6 +322,36 @@ func TestHandler(t *testing.T) {
 	checkError(req, recorder, err, t)
 
 	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/dealers/local/regions", qs)
+	err = code_is(t, recorder, 200)
+	checkError(req, recorder, err, t)
+	err = content_type_is_json(t, recorder)
+	checkError(req, recorder, err, t)
+
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/dealers/local/tiers", qs)
+	err = code_is(t, recorder, 200)
+	checkError(req, recorder, err, t)
+	err = content_type_is_json(t, recorder)
+	checkError(req, recorder, err, t)
+
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/dealers/local/types", qs)
+	err = code_is(t, recorder, 200)
+	checkError(req, recorder, err, t)
+	err = content_type_is_json(t, recorder)
+	checkError(req, recorder, err, t)
+
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/dealers/search/jc auto", qs)
+	err = code_is(t, recorder, 200)
+	checkError(req, recorder, err, t)
+	err = content_type_is_json(t, recorder)
+	checkError(req, recorder, err, t)
+
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/dealers/search/type/jc auto", qs)
+	err = code_is(t, recorder, 200)
+	checkError(req, recorder, err, t)
+	err = content_type_is_json(t, recorder)
+	checkError(req, recorder, err, t)
+
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/dealers/search/geo/43.853282/-95.571675", qs)
 	err = code_is(t, recorder, 200)
 	checkError(req, recorder, err, t)
 	err = content_type_is_json(t, recorder)

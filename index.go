@@ -99,8 +99,17 @@ func main() {
 
 	/**** INTERNAL USE ONLY ****/
 	server.Get("/dealers/etailer", dealers_ctlr.Etailers).NoFilter()
+	server.Get("/dealers/etailer/platinum", dealers_ctlr.PlatinumEtailers).NoFilter()
 	server.Get("/dealers/local", dealers_ctlr.LocalDealers).NoFilter()
 	server.Get("/dealers/local/regions", dealers_ctlr.LocalRegions).NoFilter()
+	server.Get("/dealers/local/tiers", dealers_ctlr.LocalDealerTiers).NoFilter()
+	server.Get("/dealers/local/types", dealers_ctlr.LocalDealerTypes).NoFilter()
+	server.Get("/dealers/search", dealers_ctlr.SearchLocations).NoFilter()
+	server.Get("/dealers/search/:search", dealers_ctlr.SearchLocations).NoFilter()
+	server.Get("/dealers/search/type", dealers_ctlr.SearchLocationsByType).NoFilter()
+	server.Get("/dealers/search/type/:search", dealers_ctlr.SearchLocationsByType).NoFilter()
+	server.Get("/dealers/search/geo", dealers_ctlr.SearchLocationsByLatLng).NoFilter()
+	server.Get("/dealers/search/geo/:latitude/:longitude", dealers_ctlr.SearchLocationsByLatLng).NoFilter()
 
 	http.Handle("/", server)
 	http.ListenAndServe(*listenAddr, nil)

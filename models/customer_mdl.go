@@ -6,6 +6,7 @@ import (
 	"../helpers/redis"
 	"../helpers/sortutil"
 	"encoding/json"
+	"log"
 	"math"
 	"net/url"
 	"strconv"
@@ -54,13 +55,17 @@ var (
 	customerStmt = `select c.customerID, c.name, c.email, c.address, c.address2, c.city, c.phone, c.fax, c.contact_person,
 				c.latitude, c.longitude, c.searchURL, c.logo, c.website,
 				c.postal_code, s.state, s.abbr as state_abbr, cty.name as country_name, cty.abbr as country_abbr,
-				d_types.type as dealer_type, d_tier.tier as dealer_tier, mpx.code as mapix_code, mpx.description as mapic_desc,
+				dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
+				dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
+				mi.ID as iconID, mi.mapicon, mi.mapiconshadow,
+				mpx.code as mapix_code, mpx.description as mapic_desc,
 				sr.name as rep_name, sr.code as rep_code, c.parentID
 				from Customer as c
 				left join States as s on c.stateID = s.stateID
 				left join Country as cty on s.countryID = cty.countryID
-				left join DealerTypes as d_types on c.dealer_type = d_types.dealer_type
-				left join DealerTiers d_tier on c.tier = d_tier.ID
+				left join DealerTypes as dt on c.dealer_type = dt.dealer_type
+				left join MapIcons as mi on dt.dealer_type = mi.dealer_type
+				left join DealerTiers as dtr on c.tier = dtr.ID
 				left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
 				left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
 				where c.customerID = ?`
@@ -82,25 +87,33 @@ var (
 	etailersStmt = `select c.customerID, c.name, c.email, c.address, c.address2, c.city, c.phone, c.fax, c.contact_person,
 				c.latitude, c.longitude, c.searchURL, c.logo, c.website,
 				c.postal_code, s.state, s.abbr as state_abbr, cty.name as country_name, cty.abbr as country_abbr,
-				d_types.type as dealer_type, d_tier.tier as dealer_tier, mpx.code as mapix_code, mpx.description as mapic_desc,
+				dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
+				dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
+				mi.ID as iconID, mi.mapicon, mi.mapiconshadow,
+				mpx.code as mapix_code, mpx.description as mapic_desc,
 				sr.name as rep_name, sr.code as rep_code, c.parentID
 				from Customer as c
-				join DealerTypes as d_types on c.dealer_type = d_types.dealer_type
-				join DealerTiers d_tier on c.tier = d_tier.ID
+				join DealerTypes as dt on c.dealer_type = dt.dealer_type
+				join DealerTiers dtr on c.tier = dtr.ID
+				left join MapIcons as mi on dt.dealer_type = mi.dealer_type
 				left join States as s on c.stateID = s.stateID
 				left join Country as cty on s.countryID = cty.countryID
 				left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
 				left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
-				where d_types.online = 1 && c.isDummy = 0`
+				where dt.online = 1 && c.isDummy = 0`
 
 	localDealersStmt = `select c.customerID, cl.name, c.email, cl.address, cl.city, cl.phone, cl.fax, cl.contact_person,
 				cl.latitude, cl.longitude, c.searchURL, c.logo, c.website,
 				cl.postalCode, s.state, s.abbr as state_abbr, cty.name as country_name, cty.abbr as country_abbr,
-				dt.type as dealer_type, dtr.tier as dealer_tier, mpx.code as mapix_code, mpx.description as mapic_desc,
+				dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
+				dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
+				mi.ID as iconID, mi.mapicon, mi.mapiconshadow,
+				mpx.code as mapix_code, mpx.description as mapic_desc,
 				sr.name as rep_name, sr.code as rep_code, c.parentID
 				from CustomerLocations as cl
 				join Customer as c on cl.cust_id = c.cust_id
 				join DealerTypes as dt on c.dealer_type = dt.dealer_type
+				left join MapIcons as mi on dt.dealer_type = mi.dealer_type
 				join DealerTiers as dtr on c.tier = dtr.ID
 				left join States as s on cl.stateID = s.stateID
 				left join Country as cty on s.countryID = cty.countryID
@@ -151,6 +164,24 @@ var (
 					where dt.online = 0 && cl.stateID = s.stateID
 				) > 0
 				order by s.state`
+
+	whereToBuyDealersStmt = `select c.customerID, c.name, c.email, c.address, c.address2, c.city, c.phone, c.fax, c.contact_person,
+								c.latitude, c.longitude, c.searchURL, c.logo, c.website,
+								c.postal_code, s.state, s.abbr as state_abbr, cty.name as country_name, cty.abbr as country_abbr,
+								dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
+								dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
+								mi.ID as iconID, mi.mapicon, mi.mapiconshadow,
+								mpx.code as mapix_code, mpx.description as mapic_desc,
+								sr.name as rep_name, sr.code as rep_code, c.parentID
+								from Customer as c
+								join DealerTypes as dt on c.dealer_type = dt.dealer_type
+								join DealerTiers dtr on c.tier = dtr.ID
+								left join MapIcons as mi on dt.dealer_type = mi.dealer_type
+								left join States as s on c.stateID = s.stateID
+								left join Country as cty on s.countryID = cty.countryID
+								left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
+								left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
+								where dt.dealer_type = 1 and dtr.ID = 4 and c.isDummy = false and length(c.searchURL) > 1`
 )
 
 type Customer struct {
@@ -164,7 +195,8 @@ type Customer struct {
 	Website                              *url.URL
 	Parent                               *Customer
 	SearchUrl, Logo                      *url.URL
-	DealerType, DealerTier               string
+	DealerType                           DealerType
+	DealerTier                           DealerTier
 	SalesRepresentative                  string
 	SalesRepresentativeCode              string
 	MapixCode, MapixDescription          string
@@ -181,6 +213,60 @@ type CustomerLocation struct {
 	CustomerId                             int
 	ContactPerson                          string
 	IsPrimary, ShippingDefault             bool
+}
+
+type DealerType struct {
+	Id           int
+	Type, Label  string
+	Online, Show bool
+	MapIcon      MapIcon
+}
+
+type DealerTier struct {
+	Id   int
+	Tier string
+	Sort int
+}
+
+type MapIcon struct {
+	Id, TierId             int
+	MapIcon, MapIconShadow *url.URL
+}
+
+type MapGraphics struct {
+	DealerTier DealerTier
+	DealerType DealerType
+	MapIcon    MapIcon
+}
+
+type GeoLocation struct {
+	Latitude, Longitude float64
+}
+
+type DealerLocation struct {
+	Id                                   int
+	Name, Email, Address, Address2, City string
+	State                                *State
+	PostalCode                           string
+	Phone, Fax                           string
+	ContactPerson                        string
+	Latitude, Longitude, Distance        float64
+	Website                              *url.URL
+	Parent                               *Customer
+	SearchUrl, Logo                      *url.URL
+	DealerType                           DealerType
+	DealerTier                           DealerTier
+	SalesRepresentative                  string
+	SalesRepresentativeCode              string
+	MapixCode, MapixDescription          string
+	Locations                            *[]CustomerLocation
+	Users                                []CustomerUser
+}
+
+type StateRegion struct {
+	Name, Abbreviation string
+	Count              int
+	Polygons           *[]GeoLocation
 }
 
 func (c *Customer) GetCustomer() (err error) {
@@ -231,8 +317,17 @@ func (c *Customer) Basics() error {
 	state_abbr := res.Map("state_abbr")
 	country := res.Map("country_name")
 	country_abbr := res.Map("country_abbr")
-	dealer_type := res.Map("dealer_type")
-	dealer_tier := res.Map("dealer_tier")
+	dealerTypeId := res.Map("typeID")
+	dealerType := res.Map("dealerType")
+	typeOnline := res.Map("typeOnline")
+	typeShow := res.Map("typeShow")
+	typeLabel := res.Map("typeLabel")
+	tierID := res.Map("tierID")
+	tier := res.Map("tier")
+	tierSort := res.Map("tierSort")
+	iconId := res.Map("iconID")
+	icon := res.Map("mapicon")
+	shadow := res.Map("mapiconshadow")
 	mpx_code := res.Map("mapix_code")
 	mpx_desc := res.Map("mapic_desc")
 	rep_name := res.Map("rep_name")
@@ -242,6 +337,8 @@ func (c *Customer) Basics() error {
 	sURL, _ := url.Parse(row.Str(search))
 	websiteURL, _ := url.Parse(row.Str(site))
 	logoURL, _ := url.Parse(row.Str(logo))
+	iconUrl, _ := url.Parse(row.Str(icon))
+	shadowUrl, _ := url.Parse(row.Str(shadow))
 
 	c.Id = row.Int(customerID)
 	c.Name = row.Str(name)
@@ -258,8 +355,24 @@ func (c *Customer) Basics() error {
 	c.Website = websiteURL
 	c.SearchUrl = sURL
 	c.Logo = logoURL
-	c.DealerType = row.Str(dealer_type)
-	c.DealerTier = row.Str(dealer_tier)
+	c.DealerType = DealerType{
+		Id:     row.Int(dealerTypeId),
+		Type:   row.Str(dealerType),
+		Label:  row.Str(typeLabel),
+		Online: row.ForceBool(typeOnline),
+		Show:   row.ForceBool(typeShow),
+		MapIcon: MapIcon{
+			Id:            row.Int(iconId),
+			TierId:        row.Int(tierID),
+			MapIcon:       iconUrl,
+			MapIconShadow: shadowUrl,
+		},
+	}
+	c.DealerTier = DealerTier{
+		Id:   row.Int(tierID),
+		Tier: row.Str(tier),
+		Sort: row.Int(tierSort),
+	}
 	c.SalesRepresentative = row.Str(rep_name)
 	c.SalesRepresentativeCode = row.Str(rep_code)
 	c.MapixCode = row.Str(mpx_code)
@@ -510,8 +623,17 @@ func GetEtailers() (dealers []Customer, err error) {
 	state_abbr := res.Map("state_abbr")
 	country := res.Map("country_name")
 	country_abbr := res.Map("country_abbr")
-	dealer_type := res.Map("dealer_type")
-	dealer_tier := res.Map("dealer_tier")
+	dealerTypeId := res.Map("typeID")
+	dealerType := res.Map("dealerType")
+	typeOnline := res.Map("typeOnline")
+	typeShow := res.Map("typeShow")
+	typeLabel := res.Map("typeLabel")
+	tierID := res.Map("tierID")
+	tier := res.Map("tier")
+	tierSort := res.Map("tierSort")
+	iconId := res.Map("iconID")
+	icon := res.Map("mapicon")
+	shadow := res.Map("mapiconshadow")
 	mpx_code := res.Map("mapix_code")
 	mpx_desc := res.Map("mapic_desc")
 	rep_name := res.Map("rep_name")
@@ -526,25 +648,43 @@ func GetEtailers() (dealers []Customer, err error) {
 			sURL, _ := url.Parse(r.Str(search))
 			websiteURL, _ := url.Parse(r.Str(site))
 			logoURL, _ := url.Parse(r.Str(logo))
+			iconUrl, _ := url.Parse(row.Str(icon))
+			shadowUrl, _ := url.Parse(row.Str(shadow))
 
 			cust := Customer{
-				Id:                      r.Int(customerID),
-				Name:                    r.Str(name),
-				Email:                   r.Str(email),
-				Address:                 r.Str(address),
-				Address2:                r.Str(address2),
-				City:                    r.Str(city),
-				PostalCode:              r.Str(zip),
-				Phone:                   r.Str(phone),
-				Fax:                     r.Str(fax),
-				ContactPerson:           r.Str(contact),
-				Latitude:                r.ForceFloat(lat),
-				Longitude:               r.ForceFloat(lon),
-				Website:                 websiteURL,
-				SearchUrl:               sURL,
-				Logo:                    logoURL,
-				DealerType:              r.Str(dealer_type),
-				DealerTier:              r.Str(dealer_tier),
+				Id:            r.Int(customerID),
+				Name:          r.Str(name),
+				Email:         r.Str(email),
+				Address:       r.Str(address),
+				Address2:      r.Str(address2),
+				City:          r.Str(city),
+				PostalCode:    r.Str(zip),
+				Phone:         r.Str(phone),
+				Fax:           r.Str(fax),
+				ContactPerson: r.Str(contact),
+				Latitude:      r.ForceFloat(lat),
+				Longitude:     r.ForceFloat(lon),
+				Website:       websiteURL,
+				SearchUrl:     sURL,
+				Logo:          logoURL,
+				DealerType: DealerType{
+					Id:     row.Int(dealerTypeId),
+					Type:   row.Str(dealerType),
+					Label:  row.Str(typeLabel),
+					Online: row.ForceBool(typeOnline),
+					Show:   row.ForceBool(typeShow),
+					MapIcon: MapIcon{
+						Id:            row.Int(iconId),
+						TierId:        row.Int(tierID),
+						MapIcon:       iconUrl,
+						MapIconShadow: shadowUrl,
+					},
+				},
+				DealerTier: DealerTier{
+					Id:   row.Int(tierID),
+					Tier: row.Str(tier),
+					Sort: row.Int(tierSort),
+				},
 				SalesRepresentative:     r.Str(rep_name),
 				SalesRepresentativeCode: r.Str(rep_code),
 				MapixCode:               r.Str(mpx_code),
@@ -586,55 +726,10 @@ func GetEtailers() (dealers []Customer, err error) {
 	return
 }
 
-type DealerLocation struct {
-	Id                                   int
-	Name, Email, Address, Address2, City string
-	State                                *State
-	PostalCode                           string
-	Phone, Fax                           string
-	ContactPerson                        string
-	Latitude, Longitude, Distance        float64
-	Website                              *url.URL
-	Parent                               *Customer
-	SearchUrl, Logo                      *url.URL
-	DealerType, DealerTier               string
-	SalesRepresentative                  string
-	SalesRepresentativeCode              string
-	MapixCode, MapixDescription          string
-	Locations                            *[]CustomerLocation
-	Users                                []CustomerUser
-}
-
-type DealerTier struct {
-	Id, Sort int
-	Tier     string
-}
-
-type DealerType struct {
-	MapIcons     *[]MapIcon
-	Type, Label  string
-	Online, Show bool
-}
-
-type MapIcon struct {
-	Type, Tier             int
-	MapIcon, MapIconShadow *url.URL
-}
-
-type MapCoordinates struct {
-	Latitude, Longitude float64
-}
-
-type StateRegion struct {
-	Name, Abbreviation string
-	Count              int
-	Polygons           *[]MapCoordinates
-}
-
 func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, err error) {
 
 	qry, err := database.Db.Prepare(localDealersStmt)
-	if err != nil {
+	if database.MysqlError(err) {
 		return
 	}
 
@@ -766,8 +861,17 @@ func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, er
 	state_abbr := res.Map("state_abbr")
 	country := res.Map("country_name")
 	country_abbr := res.Map("country_abbr")
-	dealer_type := res.Map("dealer_type")
-	dealer_tier := res.Map("dealer_tier")
+	dealerTypeId := res.Map("typeID")
+	dealerType := res.Map("dealerType")
+	typeOnline := res.Map("typeOnline")
+	typeShow := res.Map("typeShow")
+	typeLabel := res.Map("typeLabel")
+	tierID := res.Map("tierID")
+	tier := res.Map("tier")
+	tierSort := res.Map("tierSort")
+	iconId := res.Map("iconID")
+	icon := res.Map("mapicon")
+	shadow := res.Map("mapiconshadow")
 	mpx_code := res.Map("mapix_code")
 	mpx_desc := res.Map("mapic_desc")
 	rep_name := res.Map("rep_name")
@@ -777,24 +881,42 @@ func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, er
 		sURL, _ := url.Parse(r.Str(search))
 		websiteURL, _ := url.Parse(r.Str(site))
 		logoURL, _ := url.Parse(r.Str(logo))
+		iconUrl, _ := url.Parse(r.Str(icon))
+		shadowUrl, _ := url.Parse(r.Str(shadow))
 
 		cust := DealerLocation{
-			Id:                      r.Int(customerID),
-			Name:                    r.Str(name),
-			Email:                   r.Str(email),
-			Address:                 r.Str(address),
-			City:                    r.Str(city),
-			PostalCode:              r.Str(zip),
-			Phone:                   r.Str(phone),
-			Fax:                     r.Str(fax),
-			ContactPerson:           r.Str(contact),
-			Latitude:                r.ForceFloat(lat),
-			Longitude:               r.ForceFloat(lon),
-			Website:                 websiteURL,
-			SearchUrl:               sURL,
-			Logo:                    logoURL,
-			DealerType:              r.Str(dealer_type),
-			DealerTier:              r.Str(dealer_tier),
+			Id:            r.Int(customerID),
+			Name:          r.Str(name),
+			Email:         r.Str(email),
+			Address:       r.Str(address),
+			City:          r.Str(city),
+			PostalCode:    r.Str(zip),
+			Phone:         r.Str(phone),
+			Fax:           r.Str(fax),
+			ContactPerson: r.Str(contact),
+			Latitude:      r.ForceFloat(lat),
+			Longitude:     r.ForceFloat(lon),
+			Website:       websiteURL,
+			SearchUrl:     sURL,
+			Logo:          logoURL,
+			DealerType: DealerType{
+				Id:     r.Int(dealerTypeId),
+				Type:   r.Str(dealerType),
+				Label:  r.Str(typeLabel),
+				Online: r.ForceBool(typeOnline),
+				Show:   r.ForceBool(typeShow),
+				MapIcon: MapIcon{
+					Id:            r.Int(iconId),
+					TierId:        r.Int(tierID),
+					MapIcon:       iconUrl,
+					MapIconShadow: shadowUrl,
+				},
+			},
+			DealerTier: DealerTier{
+				Id:   r.Int(tierID),
+				Tier: r.Str(tier),
+				Sort: r.Int(tierSort),
+			},
 			SalesRepresentative:     r.Str(rep_name),
 			SalesRepresentativeCode: r.Str(rep_code),
 			MapixCode:               r.Str(mpx_code),
@@ -860,9 +982,9 @@ func GetLocalRegions() (regions []StateRegion, err error) {
 						lat := coordRes.Map("latitude")
 						lon := coordRes.Map("longitude")
 
-						var coords []MapCoordinates
+						var coords []GeoLocation
 						for _, coordRow := range coordRows {
-							coords = append(coords, MapCoordinates{coordRow.ForceFloat(lat), coordRow.ForceFloat(lon)})
+							coords = append(coords, GeoLocation{coordRow.ForceFloat(lat), coordRow.ForceFloat(lon)})
 						}
 						reg.Polygons = &coords
 					}
@@ -898,4 +1020,552 @@ func getViewPortWidth(lat1 float64, lon1 float64, lat2 float64, long2 float64) f
 	a := (math.Sin(dlat/2) * math.Sin(dlat/2)) + ((math.Sin(dlon/2))*(math.Sin(dlon/2)))*math.Cos(lat1)*math.Cos(lat2)
 	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
 	return EARTH * c
+}
+
+func GetLocalDealerTiers() (tiers []DealerTier) {
+
+	qry, err := database.GetStatement("GetLocalDealerTiers")
+	if database.MysqlError(err) {
+		return
+	}
+
+	rows, res, err := qry.Exec()
+	if database.MysqlError(err) {
+		return
+	}
+
+	id := res.Map("ID")
+	tier := res.Map("tier")
+	sort := res.Map("sort")
+
+	for _, row := range rows {
+		dTier := DealerTier{
+			Id:   row.Int(id),
+			Tier: row.Str(tier),
+			Sort: row.Int(sort),
+		}
+		tiers = append(tiers, dTier)
+	}
+	return
+}
+
+func GetLocalDealerTypes() (graphics []MapGraphics) {
+	qry, err := database.GetStatement("GetLocalDealerTypes")
+	if database.MysqlError(err) {
+		return
+	}
+
+	rows, res, err := qry.Exec()
+	if database.MysqlError(err) {
+		return
+	}
+
+	iconId := res.Map("iconId")
+	mapicon := res.Map("mapicon")
+	mapiconshadow := res.Map("mapiconshadow")
+	dealerTypeId := res.Map("dealerTypeId")
+	dealerType := res.Map("dealerType")
+	typeOnline := res.Map("online")
+	typeShow := res.Map("show")
+	typeLabel := res.Map("label")
+	tierID := res.Map("tierID")
+	tier := res.Map("tier")
+	tierSort := res.Map("tierSort")
+
+	for _, row := range rows {
+		iconUrl, _ := url.Parse(row.Str(mapicon))
+		shadowUrl, _ := url.Parse(row.Str(mapiconshadow))
+
+		gx := MapGraphics{
+			DealerTier: DealerTier{
+				Id:   row.Int(tierID),
+				Tier: row.Str(tier),
+				Sort: row.Int(tierSort),
+			},
+			DealerType: DealerType{
+				Id:     row.Int(dealerTypeId),
+				Type:   row.Str(dealerType),
+				Label:  row.Str(typeLabel),
+				Online: row.ForceBool(typeOnline),
+				Show:   row.ForceBool(typeShow),
+			},
+			MapIcon: MapIcon{
+				Id:            row.Int(iconId),
+				TierId:        row.Int(tierID),
+				MapIcon:       iconUrl,
+				MapIconShadow: shadowUrl,
+			},
+		}
+		graphics = append(graphics, gx)
+	}
+	return
+}
+
+func GetWhereToBuyDealers() (customers []Customer) {
+	rows, res, err := database.Db.Query(whereToBuyDealersStmt)
+	if database.MysqlError(err) {
+		return
+	}
+
+	customerID := res.Map("customerID")
+	name := res.Map("name")
+	email := res.Map("email")
+	address := res.Map("address")
+	address2 := res.Map("address2")
+	city := res.Map("city")
+	phone := res.Map("phone")
+	fax := res.Map("fax")
+	contact := res.Map("contact_person")
+	lat := res.Map("latitude")
+	lon := res.Map("longitude")
+	search := res.Map("searchURL")
+	site := res.Map("website")
+	logo := res.Map("logo")
+	zip := res.Map("postal_code")
+	state := res.Map("state")
+	state_abbr := res.Map("state_abbr")
+	country := res.Map("country_name")
+	country_abbr := res.Map("country_abbr")
+	dealerTypeId := res.Map("typeID")
+	dealerType := res.Map("dealerType")
+	typeOnline := res.Map("typeOnline")
+	typeShow := res.Map("typeShow")
+	typeLabel := res.Map("typeLabel")
+	tierID := res.Map("tierID")
+	tier := res.Map("tier")
+	tierSort := res.Map("tierSort")
+	iconId := res.Map("iconID")
+	icon := res.Map("mapicon")
+	shadow := res.Map("mapiconshadow")
+	mpx_code := res.Map("mapix_code")
+	mpx_desc := res.Map("mapic_desc")
+	rep_name := res.Map("rep_name")
+	rep_code := res.Map("rep_code")
+	parentID := res.Map("parentID")
+
+	c := make(chan int)
+
+	for _, row := range rows {
+		go func(r mysql.Row, ch chan int) {
+
+			sURL, _ := url.Parse(r.Str(search))
+			websiteURL, _ := url.Parse(r.Str(site))
+			logoURL, _ := url.Parse(r.Str(logo))
+			iconUrl, _ := url.Parse(row.Str(icon))
+			shadowUrl, _ := url.Parse(row.Str(shadow))
+
+			cust := Customer{
+				Id:            r.Int(customerID),
+				Name:          r.Str(name),
+				Email:         r.Str(email),
+				Address:       r.Str(address),
+				Address2:      r.Str(address2),
+				City:          r.Str(city),
+				PostalCode:    r.Str(zip),
+				Phone:         r.Str(phone),
+				Fax:           r.Str(fax),
+				ContactPerson: r.Str(contact),
+				Latitude:      r.ForceFloat(lat),
+				Longitude:     r.ForceFloat(lon),
+				Website:       websiteURL,
+				SearchUrl:     sURL,
+				Logo:          logoURL,
+				DealerType: DealerType{
+					Id:     row.Int(dealerTypeId),
+					Type:   row.Str(dealerType),
+					Label:  row.Str(typeLabel),
+					Online: row.ForceBool(typeOnline),
+					Show:   row.ForceBool(typeShow),
+					MapIcon: MapIcon{
+						Id:            row.Int(iconId),
+						TierId:        row.Int(tierID),
+						MapIcon:       iconUrl,
+						MapIconShadow: shadowUrl,
+					},
+				},
+				DealerTier: DealerTier{
+					Id:   row.Int(tierID),
+					Tier: row.Str(tier),
+					Sort: row.Int(tierSort),
+				},
+				SalesRepresentative:     r.Str(rep_name),
+				SalesRepresentativeCode: r.Str(rep_code),
+				MapixCode:               r.Str(mpx_code),
+				MapixDescription:        r.Str(mpx_desc),
+			}
+
+			ctry := Country{
+				Country:      r.Str(country),
+				Abbreviation: r.Str(country_abbr),
+			}
+
+			cust.State = &State{
+				State:        r.Str(state),
+				Abbreviation: r.Str(state_abbr),
+				Country:      &ctry,
+			}
+
+			_ = cust.GetLocations()
+
+			if r.Int(parentID) != 0 {
+				parent := Customer{
+					Id: r.Int(parentID),
+				}
+				if err = parent.GetCustomer(); err == nil {
+					cust.Parent = &parent
+				}
+			}
+			customers = append(customers, cust)
+
+			ch <- 1
+		}(row, c)
+
+	}
+
+	for _, _ = range rows {
+		<-c
+	}
+
+	return
+}
+
+func SearchLocations(term string) (locations []DealerLocation, err error) {
+
+	qry, err := database.GetStatement("SearchDealerLocations")
+	if database.MysqlError(err) {
+		return
+	}
+
+	term = "%" + term + "%"
+	log.Println(term)
+	rows, res, err := qry.Exec(term, term)
+	if database.MysqlError(err) {
+		return
+	}
+
+	stateId := res.Map("stateID")
+	state := res.Map("state")
+	abbr := res.Map("abbr")
+	// countryID := res.Map("countryID")
+	dealerTypeId := res.Map("typeID")
+	dealerType := res.Map("dealerType")
+	typeOnline := res.Map("typeOnline")
+	typeShow := res.Map("typeShow")
+	typeLabel := res.Map("typeLabel")
+	tierID := res.Map("tierID")
+	tier := res.Map("tier")
+	tierSort := res.Map("tierSort")
+	locationID := res.Map("locationID")
+	name := res.Map("name")
+	address := res.Map("address")
+	city := res.Map("city")
+	postalCode := res.Map("postalCode")
+	email := res.Map("email")
+	phone := res.Map("phone")
+	fax := res.Map("fax")
+	latitude := res.Map("latitude")
+	longitude := res.Map("longitude")
+	cust_id := res.Map("cust_id")
+	isPrimary := res.Map("isPrimary")
+	shipDefault := res.Map("ShippingDefault")
+	contactPerson := res.Map("contact_person")
+	showWebsite := res.Map("showWebsite")
+	website := res.Map("website")
+	elocal := res.Map("eLocalURL")
+
+	for _, row := range rows {
+
+		site := row.Str(website)
+		var siteUrl *url.URL
+		if site == "" {
+			site = row.Str(elocal)
+		}
+		if site != "" {
+			siteUrl, _ = url.Parse(site)
+		}
+
+		dealerType := DealerType{
+			Id:     row.Int(dealerTypeId),
+			Type:   row.Str(dealerType),
+			Label:  row.Str(typeLabel),
+			Online: row.ForceBool(typeOnline),
+			Show:   row.ForceBool(typeShow),
+		}
+
+		dealerTier := DealerTier{
+			Id:   row.Int(tierID),
+			Tier: row.Str(tier),
+			Sort: row.Int(tierSort),
+		}
+
+		loc := DealerLocation{
+			Name:    row.Str(name),
+			Website: siteUrl,
+			// ShowWebsite: row.ForceBool(showWebsite),
+			// Type:        &dealerType,
+			// Tier:        &dealerTier,
+			Location: CustomerLocation{
+				Id:         row.Int(locationID),
+				Name:       row.Str(name),
+				Address:    row.Str(address),
+				City:       row.Str(city),
+				PostalCode: row.Str(postalCode),
+				State: &geo.State{
+					Id:           row.Int(stateId),
+					Name:         row.Str(state),
+					Abbreviation: row.Str(abbr),
+				},
+				Email:           row.Str(email),
+				Phone:           row.Str(phone),
+				Fax:             row.Str(fax),
+				Latitude:        row.ForceFloat(latitude),
+				Longitude:       row.ForceFloat(longitude),
+				CustomerId:      row.Int(cust_id),
+				ContactPerson:   row.Str(contactPerson),
+				Primary:         row.ForceBool(isPrimary),
+				ShippingDefault: row.ForceBool(shipDefault),
+			},
+		}
+		locations = append(locations, loc)
+	}
+
+	return
+}
+
+func SearchLocationsByType(term string) (locations []DealerLocation, err error) {
+
+	qry, err := database.GetStatement("SearchDealerLocationsByType")
+	if database.MysqlError(err) {
+		return
+	}
+
+	term = "%" + term + "%"
+	log.Println(term)
+	rows, res, err := qry.Exec(term, term)
+	if database.MysqlError(err) {
+		return
+	}
+
+	stateId := res.Map("stateID")
+	state := res.Map("state")
+	abbr := res.Map("abbr")
+	// countryID := res.Map("countryID")
+	dealerTypeId := res.Map("typeID")
+	dealerType := res.Map("dealerType")
+	typeOnline := res.Map("typeOnline")
+	typeShow := res.Map("typeShow")
+	typeLabel := res.Map("typeLabel")
+	tierID := res.Map("tierID")
+	tier := res.Map("tier")
+	tierSort := res.Map("tierSort")
+	locationID := res.Map("locationID")
+	name := res.Map("name")
+	address := res.Map("address")
+	city := res.Map("city")
+	postalCode := res.Map("postalCode")
+	email := res.Map("email")
+	phone := res.Map("phone")
+	fax := res.Map("fax")
+	latitude := res.Map("latitude")
+	longitude := res.Map("longitude")
+	cust_id := res.Map("cust_id")
+	isPrimary := res.Map("isPrimary")
+	shipDefault := res.Map("ShippingDefault")
+	contactPerson := res.Map("contact_person")
+	showWebsite := res.Map("showWebsite")
+	website := res.Map("website")
+	elocal := res.Map("eLocalURL")
+
+	for _, row := range rows {
+
+		site := row.Str(website)
+		var siteUrl *url.URL
+		if site == "" {
+			site = row.Str(elocal)
+		}
+		if site != "" {
+			siteUrl, _ = url.Parse(site)
+		}
+
+		dealerType := DealerType{
+			Id:     row.Int(dealerTypeId),
+			Type:   row.Str(dealerType),
+			Label:  row.Str(typeLabel),
+			Online: row.ForceBool(typeOnline),
+			Show:   row.ForceBool(typeShow),
+		}
+
+		dealerTier := DealerTier{
+			Id:   row.Int(tierID),
+			Tier: row.Str(tier),
+			Sort: row.Int(tierSort),
+		}
+
+		loc := DealerLocation{
+			Name:        row.Str(name),
+			Website:     siteUrl,
+			ShowWebsite: row.ForceBool(showWebsite),
+			Type:        &dealerType,
+			Tier:        &dealerTier,
+			Location: CustomerLocation{
+				Id:         row.Int(locationID),
+				Name:       row.Str(name),
+				Address:    row.Str(address),
+				City:       row.Str(city),
+				PostalCode: row.Str(postalCode),
+				State: &geo.State{
+					Id:           row.Int(stateId),
+					Name:         row.Str(state),
+					Abbreviation: row.Str(abbr),
+				},
+				Email:           row.Str(email),
+				Phone:           row.Str(phone),
+				Fax:             row.Str(fax),
+				Latitude:        row.ForceFloat(latitude),
+				Longitude:       row.ForceFloat(longitude),
+				CustomerId:      row.Int(cust_id),
+				ContactPerson:   row.Str(contactPerson),
+				Primary:         row.ForceBool(isPrimary),
+				ShippingDefault: row.ForceBool(shipDefault),
+			},
+		}
+		locations = append(locations, loc)
+	}
+
+	return
+}
+
+func SearchLocationsByLatLng(loc GeoLocation) (locations []DealerLocation, err error) {
+
+	qry, err := database.GetStatement("SearchDealerLocationsByLatLng")
+	if database.MysqlError(err) {
+		return
+	}
+
+	params := struct {
+		Earth       float64
+		Lat1        float64
+		Lat2        float64
+		Lon1        float64
+		Lon2        float64
+		LatRadians1 float64
+		Lat3        float64
+		Lat4        float64
+		Lon3        float64
+		Lon4        float64
+		LatRadians2 float64
+	}{
+		globals.EARTH,
+		loc.Latitude,
+		loc.Latitude,
+		loc.Longitude,
+		loc.Longitude,
+		loc.LatitudeRadians(),
+		loc.Latitude,
+		loc.Latitude,
+		loc.Longitude,
+		loc.Longitude,
+		loc.LatitudeRadians(),
+	}
+
+	rows, res, err := qry.Exec(params)
+	if database.MysqlError(err) {
+		return
+	}
+
+	stateId := res.Map("stateID")
+	state := res.Map("state")
+	abbr := res.Map("abbr")
+	// countryID := res.Map("countryID")
+	dealerTypeId := res.Map("typeID")
+	dealerType := res.Map("dealerType")
+	typeOnline := res.Map("typeOnline")
+	typeShow := res.Map("typeShow")
+	typeLabel := res.Map("typeLabel")
+	tierID := res.Map("tierID")
+	tier := res.Map("tier")
+	tierSort := res.Map("tierSort")
+	locationID := res.Map("locationID")
+	name := res.Map("name")
+	address := res.Map("address")
+	city := res.Map("city")
+	postalCode := res.Map("postalCode")
+	email := res.Map("email")
+	phone := res.Map("phone")
+	fax := res.Map("fax")
+	latitude := res.Map("latitude")
+	longitude := res.Map("longitude")
+	cust_id := res.Map("cust_id")
+	isPrimary := res.Map("isPrimary")
+	shipDefault := res.Map("ShippingDefault")
+	contactPerson := res.Map("contact_person")
+	showWebsite := res.Map("showWebsite")
+	website := res.Map("website")
+	elocal := res.Map("eLocalURL")
+
+	for _, row := range rows {
+
+		site := row.Str(website)
+		var siteUrl *url.URL
+		if site == "" {
+			site = row.Str(elocal)
+		}
+		if site != "" {
+			siteUrl, _ = url.Parse(site)
+		}
+
+		dealerType := DealerType{
+			Id:     row.Int(dealerTypeId),
+			Type:   row.Str(dealerType),
+			Label:  row.Str(typeLabel),
+			Online: row.ForceBool(typeOnline),
+			Show:   row.ForceBool(typeShow),
+		}
+
+		dealerTier := DealerTier{
+			Id:   row.Int(tierID),
+			Tier: row.Str(tier),
+			Sort: row.Int(tierSort),
+		}
+
+		loc := DealerLocation{
+			Name:        row.Str(name),
+			Website:     siteUrl,
+			ShowWebsite: row.ForceBool(showWebsite),
+			Type:        &dealerType,
+			Tier:        &dealerTier,
+			Location: CustomerLocation{
+				Id:         row.Int(locationID),
+				Name:       row.Str(name),
+				Address:    row.Str(address),
+				City:       row.Str(city),
+				PostalCode: row.Str(postalCode),
+				State: &geo.State{
+					Id:           row.Int(stateId),
+					Name:         row.Str(state),
+					Abbreviation: row.Str(abbr),
+				},
+				Email:           row.Str(email),
+				Phone:           row.Str(phone),
+				Fax:             row.Str(fax),
+				Latitude:        row.ForceFloat(latitude),
+				Longitude:       row.ForceFloat(longitude),
+				CustomerId:      row.Int(cust_id),
+				ContactPerson:   row.Str(contactPerson),
+				Primary:         row.ForceBool(isPrimary),
+				ShippingDefault: row.ForceBool(shipDefault),
+			},
+		}
+		locations = append(locations, loc)
+	}
+
+	return
+}
+
+func (g *GeoLocation) LatitudeRadians() float64 {
+	return (g.Latitude * (math.Pi / 180))
+}
+
+func (g *GeoLocation) LongitudeRadians() float64 {
+	return (g.Longitude * (math.Pi / 180))
 }
