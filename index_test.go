@@ -339,13 +339,13 @@ func TestHandler(t *testing.T) {
 	err = content_type_is_json(t, recorder)
 	checkError(req, recorder, err, t)
 
-	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/dealers/search/jc auto", qs)
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/dealers/search/jc%20auto", qs)
 	err = code_is(t, recorder, 200)
 	checkError(req, recorder, err, t)
 	err = content_type_is_json(t, recorder)
 	checkError(req, recorder, err, t)
 
-	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/dealers/search/type/jc auto", qs)
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/dealers/search/type/jc%20auto", qs)
 	err = code_is(t, recorder, 200)
 	checkError(req, recorder, err, t)
 	err = content_type_is_json(t, recorder)

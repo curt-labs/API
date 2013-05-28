@@ -2,14 +2,14 @@ package dealers_ctlr
 
 import (
 	"../../helpers/plate"
-	. "../../models"
+	"../../models"
 	"net/http"
 	"strconv"
 )
 
 func Etailers(w http.ResponseWriter, r *http.Request) {
 
-	dealers, err := GetEtailers()
+	dealers, err := models.GetEtailers()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -28,7 +28,7 @@ func LocalDealers(w http.ResponseWriter, r *http.Request) {
 	latlng := params.Get("latlng")
 	center := params.Get("center")
 
-	dealers, err := GetLocalDealers(center, latlng)
+	dealers, err := models.GetLocalDealers(center, latlng)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -38,7 +38,7 @@ func LocalDealers(w http.ResponseWriter, r *http.Request) {
 }
 
 func LocalRegions(w http.ResponseWriter, r *http.Request) {
-	regions, err := GetLocalRegions()
+	regions, err := models.GetLocalRegions()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -48,17 +48,17 @@ func LocalRegions(w http.ResponseWriter, r *http.Request) {
 }
 
 func LocalDealerTiers(w http.ResponseWriter, r *http.Request) {
-	tiers := dealers.GetLocalDealerTiers()
+	tiers := models.GetLocalDealerTiers()
 	plate.ServeFormatted(w, r, tiers)
 }
 
 func LocalDealerTypes(w http.ResponseWriter, r *http.Request) {
-	types := dealers.GetLocalDealerTypes()
+	types := models.GetLocalDealerTypes()
 	plate.ServeFormatted(w, r, types)
 }
 
 func PlatinumEtailers(w http.ResponseWriter, r *http.Request) {
-	custs := dealers.GetWhereToBuyDealers()
+	custs := models.GetWhereToBuyDealers()
 	plate.ServeFormatted(w, r, custs)
 }
 
@@ -68,7 +68,7 @@ func SearchLocations(w http.ResponseWriter, r *http.Request) {
 	if search_term == "" {
 		search_term = params.Get("search")
 	}
-	locs, err := dealers.SearchLocations(search_term)
+	locs, err := models.SearchLocations(search_term)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -82,7 +82,7 @@ func SearchLocationsByType(w http.ResponseWriter, r *http.Request) {
 	if search_term == "" {
 		search_term = params.Get("search")
 	}
-	locs, err := dealers.SearchLocationsByType(search_term)
+	locs, err := models.SearchLocationsByType(search_term)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -107,12 +107,12 @@ func SearchLocationsByLatLng(w http.ResponseWriter, r *http.Request) {
 	latFloat, _ := strconv.ParseFloat(latitude, 64)
 	lngFloat, _ := strconv.ParseFloat(longitude, 64)
 
-	latlng := dealers.GeoLocation{
+	latlng := models.GeoLocation{
 		Latitude:  latFloat,
 		Longitude: lngFloat,
 	}
 
-	locs, err := dealers.SearchLocationsByLatLng(latlng)
+	locs, err := models.SearchLocationsByLatLng(latlng)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

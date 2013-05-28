@@ -6,7 +6,6 @@ import (
 	"../helpers/redis"
 	"../helpers/sortutil"
 	"encoding/json"
-	"log"
 	"math"
 	"net/url"
 	"strconv"
@@ -1237,13 +1236,11 @@ func SearchLocations(term string) (locations []DealerLocation, err error) {
 	}
 
 	term = "%" + term + "%"
-	log.Println(term)
 	rows, res, err := qry.Exec(term, term)
 	if database.MysqlError(err) {
 		return
 	}
 
-	stateId := res.Map("stateID")
 	state := res.Map("state")
 	abbr := res.Map("abbr")
 	// countryID := res.Map("countryID")
@@ -1277,11 +1274,13 @@ func SearchLocations(term string) (locations []DealerLocation, err error) {
 
 		site := row.Str(website)
 		var siteUrl *url.URL
-		if site == "" {
-			site = row.Str(elocal)
-		}
-		if site != "" {
-			siteUrl, _ = url.Parse(site)
+		if row.ForceBool(showWebsite) {
+			if site == "" {
+				site = row.Str(elocal)
+			}
+			if site != "" {
+				siteUrl, _ = url.Parse(site)
+			}
 		}
 
 		dealerType := DealerType{
@@ -1297,22 +1296,15 @@ func SearchLocations(term string) (locations []DealerLocation, err error) {
 			Tier: row.Str(tier),
 			Sort: row.Int(tierSort),
 		}
-
-		loc := DealerLocation{
-			Name:    row.Str(name),
-			Website: siteUrl,
-			// ShowWebsite: row.ForceBool(showWebsite),
-			// Type:        &dealerType,
-			// Tier:        &dealerTier,
-			Location: CustomerLocation{
+		custLocations := []CustomerLocation{
+			CustomerLocation{
 				Id:         row.Int(locationID),
 				Name:       row.Str(name),
 				Address:    row.Str(address),
 				City:       row.Str(city),
 				PostalCode: row.Str(postalCode),
-				State: &geo.State{
-					Id:           row.Int(stateId),
-					Name:         row.Str(state),
+				State: &State{
+					State:        row.Str(state),
 					Abbreviation: row.Str(abbr),
 				},
 				Email:           row.Str(email),
@@ -1322,9 +1314,17 @@ func SearchLocations(term string) (locations []DealerLocation, err error) {
 				Longitude:       row.ForceFloat(longitude),
 				CustomerId:      row.Int(cust_id),
 				ContactPerson:   row.Str(contactPerson),
-				Primary:         row.ForceBool(isPrimary),
+				IsPrimary:       row.ForceBool(isPrimary),
 				ShippingDefault: row.ForceBool(shipDefault),
 			},
+		}
+
+		loc := DealerLocation{
+			Name:       row.Str(name),
+			Website:    siteUrl,
+			DealerType: dealerType,
+			DealerTier: dealerTier,
+			Locations:  &custLocations,
 		}
 		locations = append(locations, loc)
 	}
@@ -1340,13 +1340,11 @@ func SearchLocationsByType(term string) (locations []DealerLocation, err error) 
 	}
 
 	term = "%" + term + "%"
-	log.Println(term)
 	rows, res, err := qry.Exec(term, term)
 	if database.MysqlError(err) {
 		return
 	}
 
-	stateId := res.Map("stateID")
 	state := res.Map("state")
 	abbr := res.Map("abbr")
 	// countryID := res.Map("countryID")
@@ -1380,11 +1378,13 @@ func SearchLocationsByType(term string) (locations []DealerLocation, err error) 
 
 		site := row.Str(website)
 		var siteUrl *url.URL
-		if site == "" {
-			site = row.Str(elocal)
-		}
-		if site != "" {
-			siteUrl, _ = url.Parse(site)
+		if row.ForceBool(showWebsite) {
+			if site == "" {
+				site = row.Str(elocal)
+			}
+			if site != "" {
+				siteUrl, _ = url.Parse(site)
+			}
 		}
 
 		dealerType := DealerType{
@@ -1401,21 +1401,15 @@ func SearchLocationsByType(term string) (locations []DealerLocation, err error) 
 			Sort: row.Int(tierSort),
 		}
 
-		loc := DealerLocation{
-			Name:        row.Str(name),
-			Website:     siteUrl,
-			ShowWebsite: row.ForceBool(showWebsite),
-			Type:        &dealerType,
-			Tier:        &dealerTier,
-			Location: CustomerLocation{
+		custLocations := []CustomerLocation{
+			CustomerLocation{
 				Id:         row.Int(locationID),
 				Name:       row.Str(name),
 				Address:    row.Str(address),
 				City:       row.Str(city),
 				PostalCode: row.Str(postalCode),
-				State: &geo.State{
-					Id:           row.Int(stateId),
-					Name:         row.Str(state),
+				State: &State{
+					State:        row.Str(state),
 					Abbreviation: row.Str(abbr),
 				},
 				Email:           row.Str(email),
@@ -1425,9 +1419,17 @@ func SearchLocationsByType(term string) (locations []DealerLocation, err error) 
 				Longitude:       row.ForceFloat(longitude),
 				CustomerId:      row.Int(cust_id),
 				ContactPerson:   row.Str(contactPerson),
-				Primary:         row.ForceBool(isPrimary),
+				IsPrimary:       row.ForceBool(isPrimary),
 				ShippingDefault: row.ForceBool(shipDefault),
 			},
+		}
+
+		loc := DealerLocation{
+			Name:       row.Str(name),
+			Website:    siteUrl,
+			DealerType: dealerType,
+			DealerTier: dealerTier,
+			Locations:  &custLocations,
 		}
 		locations = append(locations, loc)
 	}
@@ -1455,7 +1457,7 @@ func SearchLocationsByLatLng(loc GeoLocation) (locations []DealerLocation, err e
 		Lon4        float64
 		LatRadians2 float64
 	}{
-		globals.EARTH,
+		EARTH,
 		loc.Latitude,
 		loc.Latitude,
 		loc.Longitude,
@@ -1473,7 +1475,6 @@ func SearchLocationsByLatLng(loc GeoLocation) (locations []DealerLocation, err e
 		return
 	}
 
-	stateId := res.Map("stateID")
 	state := res.Map("state")
 	abbr := res.Map("abbr")
 	// countryID := res.Map("countryID")
@@ -1507,11 +1508,13 @@ func SearchLocationsByLatLng(loc GeoLocation) (locations []DealerLocation, err e
 
 		site := row.Str(website)
 		var siteUrl *url.URL
-		if site == "" {
-			site = row.Str(elocal)
-		}
-		if site != "" {
-			siteUrl, _ = url.Parse(site)
+		if row.ForceBool(showWebsite) {
+			if site == "" {
+				site = row.Str(elocal)
+			}
+			if site != "" {
+				siteUrl, _ = url.Parse(site)
+			}
 		}
 
 		dealerType := DealerType{
@@ -1528,21 +1531,15 @@ func SearchLocationsByLatLng(loc GeoLocation) (locations []DealerLocation, err e
 			Sort: row.Int(tierSort),
 		}
 
-		loc := DealerLocation{
-			Name:        row.Str(name),
-			Website:     siteUrl,
-			ShowWebsite: row.ForceBool(showWebsite),
-			Type:        &dealerType,
-			Tier:        &dealerTier,
-			Location: CustomerLocation{
+		custLocations := []CustomerLocation{
+			CustomerLocation{
 				Id:         row.Int(locationID),
 				Name:       row.Str(name),
 				Address:    row.Str(address),
 				City:       row.Str(city),
 				PostalCode: row.Str(postalCode),
-				State: &geo.State{
-					Id:           row.Int(stateId),
-					Name:         row.Str(state),
+				State: &State{
+					State:        row.Str(state),
 					Abbreviation: row.Str(abbr),
 				},
 				Email:           row.Str(email),
@@ -1552,9 +1549,17 @@ func SearchLocationsByLatLng(loc GeoLocation) (locations []DealerLocation, err e
 				Longitude:       row.ForceFloat(longitude),
 				CustomerId:      row.Int(cust_id),
 				ContactPerson:   row.Str(contactPerson),
-				Primary:         row.ForceBool(isPrimary),
+				IsPrimary:       row.ForceBool(isPrimary),
 				ShippingDefault: row.ForceBool(shipDefault),
 			},
+		}
+
+		loc := DealerLocation{
+			Name:       row.Str(name),
+			Website:    siteUrl,
+			DealerType: dealerType,
+			DealerTier: dealerTier,
+			Locations:  &custLocations,
 		}
 		locations = append(locations, loc)
 	}
