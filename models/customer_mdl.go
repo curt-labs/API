@@ -132,6 +132,7 @@ var (
                                               		||
                                               		(cl.longitude >= ? && cl.longitude <= ?)
                                               	)
+				group by cl.locationID
 				order by dtr.sort desc`
 
 	mapCoordinatesForStateStmt = `select mpc.latitude, mpc.longitude
