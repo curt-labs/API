@@ -168,23 +168,27 @@ func PrepareAll() error {
 											left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
 											where dt.online = true && c.isDummy = false
 											order by dtr.sort`
-	UnPreparedStatements["PolygonStmt"] = `select s.stateID, s.state, s.abbr,(
+	UnPreparedStatements["PolygonStmt"] = `select s.stateID, s.state, s.abbr,
+											(
 												select COUNT(cl.locationID) from CustomerLocations as cl
 												join Customer as c on cl.cust_id = c.cust_id
 												join DealerTypes as dt on c.dealer_type = dt.dealer_type
 												where dt.online = 0 && cl.stateID = s.stateID
 											) as count, 
-											(select group_concat(mpc.latitude)
-											from MapPolygonCoordinates as mpc
-											join MapPolygon as mp on mpc.MapPolygonID = mp.ID
-											where mp.stateID = s.stateID
-											order by mpc.ID) as latitudes,
-											(select group_concat(mpc.longitude)
-											from MapPolygonCoordinates as mpc
-											join MapPolygon as mp on mpc.MapPolygonID = mp.ID
-											where mp.stateID = s.stateID
-											order by mpc.ID) as longitudes
+											(
+												select group_concat(mpc.latitude)
+												from MapPolygonCoordinates as mpc
+												join MapPolygon as mp on mpc.MapPolygonID = mp.ID
+												where mp.stateID = s.stateID and mp.ID = mp_outer.ID
+											) as latitudes,
+											(
+												select group_concat(mpc.longitude)
+												from MapPolygonCoordinates as mpc
+												join MapPolygon as mp on mpc.MapPolygonID = mp.ID
+												where mp.stateID = s.stateID and mp.ID = mp_outer.ID
+											) as longitudes
 											from States as s
+											join MapPolygon as mp_outer on s.stateID = mp_outer.stateID
 											where (
 												select COUNT(cl.locationID) from CustomerLocations as cl
 												join Customer as c on cl.cust_id = c.cust_id
