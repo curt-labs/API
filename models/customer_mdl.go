@@ -23,13 +23,6 @@ const (
 )
 
 var (
-	customerPriceStmt = `select distinct cp.price from ApiKey as ak
-					join CustomerUser cu on ak.user_id = cu.id
-					join Customer c on cu.cust_ID = c.cust_id
-					join CustomerPricing cp on c.customerID = cp.cust_id
-					where api_key = ?
-					and cp.partID = ?`
-
 	customerPriceStmt_Grouped = `select distinct cp.price, cp.partID from ApiKey as ak
 					join CustomerUser cu on ak.user_id = cu.id
 					join Customer c on cu.cust_ID = c.cust_id
@@ -37,51 +30,12 @@ var (
 					where api_key = '%s'
 					and cp.partID IN (%s)`
 
-	customerPartStmt = `select distinct ci.custPartID from ApiKey as ak
-					join CustomerUser cu on ak.user_id = cu.id
-					join Customer c on cu.cust_ID = c.cust_id
-					join CartIntegration ci on c.customerID = ci.custID
-					where ak.api_key = ?
-					and ci.partID = ?`
-
 	customerPartStmt_Grouped = `select distinct ci.custPartID, ci.partID from ApiKey as ak
 					join CustomerUser cu on ak.user_id = cu.id
 					join Customer c on cu.cust_ID = c.cust_id
 					join CartIntegration ci on c.customerID = ci.custID
 					where ak.api_key = '%s'
 					and ci.partID IN (%s)`
-
-	customerStmt = `select c.customerID, c.name, c.email, c.address, c.address2, c.city, c.phone, c.fax, c.contact_person,
-				c.latitude, c.longitude, c.searchURL, c.logo, c.website,
-				c.postal_code, s.state, s.abbr as state_abbr, cty.name as country_name, cty.abbr as country_abbr,
-				dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
-				dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
-				mi.ID as iconID, mi.mapicon, mi.mapiconshadow,
-				mpx.code as mapix_code, mpx.description as mapic_desc,
-				sr.name as rep_name, sr.code as rep_code, c.parentID
-				from Customer as c
-				left join States as s on c.stateID = s.stateID
-				left join Country as cty on s.countryID = cty.countryID
-				left join DealerTypes as dt on c.dealer_type = dt.dealer_type
-				left join MapIcons as mi on dt.dealer_type = mi.dealer_type
-				left join DealerTiers as dtr on c.tier = dtr.ID
-				left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
-				left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
-				where c.customerID = ?`
-
-	customerLocationsStmt = `select cl.locationID, cl.name, cl.email, cl.address, cl.city,
-					cl.postalCode, cl.phone, cl.fax, cl.latitude, cl.longitude,
-					cl.cust_id, cl.contact_person, cl.isprimary, cl.ShippingDefault,
-					s.state, s.abbr as state_abbr, cty.name as cty_name, cty.abbr as cty_abbr
-					from CustomerLocations as cl
-					left join States as s on cl.stateID = s.stateID
-					left join Country as cty on s.countryID = cty.countryID
-					where cl.cust_id = ?`
-
-	customerUsersStmt = `select cu.* from CustomerUser as cu
-					join Customer as c on cu.cust_ID = c.cust_id
-					where c.customerID = '?'
-					&& cu.active = 1`
 
 	etailersStmt = `select c.customerID, c.name, c.email, c.address, c.address2, c.city, c.phone, c.fax, c.contact_person,
 				c.latitude, c.longitude, c.searchURL, c.logo, c.website,
@@ -100,88 +54,6 @@ var (
 				left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
 				left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
 				where dt.online = 1 && c.isDummy = 0`
-
-	localDealersStmt = `select cl.locationID, c.customerID, cl.name, c.email, cl.address, cl.city, cl.phone, cl.fax, cl.contact_person,
-				cl.latitude, cl.longitude, c.searchURL, c.logo, c.website,
-				cl.postalCode, s.state, s.abbr as state_abbr, cty.name as country_name, cty.abbr as country_abbr,
-				dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
-				dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
-				mi.ID as iconID, mi.mapicon, mi.mapiconshadow,
-				mpx.code as mapix_code, mpx.description as mapic_desc,
-				sr.name as rep_name, sr.code as rep_code, c.parentID
-				from CustomerLocations as cl
-				join Customer as c on cl.cust_id = c.cust_id
-				join DealerTypes as dt on c.dealer_type = dt.dealer_type
-				left join MapIcons as mi on dt.dealer_type = mi.dealer_type
-				join DealerTiers as dtr on c.tier = dtr.ID
-				left join States as s on cl.stateID = s.stateID
-				left join Country as cty on s.countryID = cty.countryID
-				left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
-				left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
-				where dt.online = 0 && c.isDummy = 0 && dt.show = 1 &&
-				( ? * (
-                                                            2 * ATAN2(
-                                                                SQRT((SIN(((cl.latitude - ?) * (PI() / 180)) / 2) * SIN(((cl.latitude - ?) * (PI() / 180)) / 2)) + ((SIN(((cl.longitude - ?) * (PI() / 180)) / 2)) * (SIN(((cl.longitude - ?) * (PI() / 180)) / 2))) * COS(? * (PI() / 180)) * COS(cl.latitude * (PI() / 180))),
-                                                                SQRT(1 - ((SIN(((cl.latitude - ?) * (PI() / 180)) / 2) * SIN(((cl.latitude - ?) * (PI() / 180)) / 2)) + ((SIN(((cl.longitude - ?) * (PI() / 180)) / 2)) * (SIN(((cl.longitude - ?) * (PI() / 180)) / 2))) * COS(? * (PI() / 180)) * COS(cl.latitude * (PI() / 180))))
-                                                            )
-                                                        ) < ?)
-				&& (
-					(cl.latitude >= ? && cl.latitude <= ?) 
-					&&
-                                              		(cl.longitude >= ? && cl.longitude <= ?) 
-                                              		||
-                                              		(cl.longitude >= ? && cl.longitude <= ?)
-                                              	)
-				group by cl.locationID
-				order by dtr.sort desc`
-
-	mapCoordinatesForStateStmt = `select mpc.latitude, mpc.longitude
-						from MapPolygonCoordinates as mpc
-						join MapPolygon as mp on mpc.MapPolygonID = mp.ID
-						where mp.stateID = ?`
-
-	polygonStmt = `select s.stateID, s.state, s.abbr,(
-					select COUNT(cl.locationID) from CustomerLocations as cl
-					join Customer as c on cl.cust_id = c.cust_id
-					join DealerTypes as dt on c.dealer_type = dt.dealer_type
-					where dt.online = 0 && cl.stateID = s.stateID
-				) as count, 
-				(select group_concat(mpc.latitude)
-				from MapPolygonCoordinates as mpc
-				join MapPolygon as mp on mpc.MapPolygonID = mp.ID
-				where mp.stateID = s.stateID
-				order by mpc.ID) as latitudes,
-				(select group_concat(mpc.longitude)
-				from MapPolygonCoordinates as mpc
-				join MapPolygon as mp on mpc.MapPolygonID = mp.ID
-				where mp.stateID = s.stateID
-				order by mpc.ID) as longitudes
-				from States as s
-				where (
-					select COUNT(cl.locationID) from CustomerLocations as cl
-					join Customer as c on cl.cust_id = c.cust_id
-					join DealerTypes as dt on c.dealer_type = dt.dealer_type
-					where dt.online = 0 && cl.stateID = s.stateID
-				) > 0
-				order by s.state`
-
-	whereToBuyDealersStmt = `select c.customerID, c.name, c.email, c.address, c.address2, c.city, c.phone, c.fax, c.contact_person,
-								c.latitude, c.longitude, c.searchURL, c.logo, c.website,
-								c.postal_code, s.state, s.abbr as state_abbr, cty.name as country_name, cty.abbr as country_abbr,
-								dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
-								dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
-								mi.ID as iconID, mi.mapicon, mi.mapiconshadow,
-								mpx.code as mapix_code, mpx.description as mapic_desc,
-								sr.name as rep_name, sr.code as rep_code, c.parentID
-								from Customer as c
-								join DealerTypes as dt on c.dealer_type = dt.dealer_type
-								join DealerTiers dtr on c.tier = dtr.ID
-								left join MapIcons as mi on dt.dealer_type = mi.dealer_type
-								left join States as s on c.stateID = s.stateID
-								left join Country as cty on s.countryID = cty.countryID
-								left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
-								left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
-								where dt.dealer_type = 1 and dtr.ID = 4 and c.isDummy = false and length(c.searchURL) > 1`
 )
 
 type Customer struct {
@@ -286,8 +158,8 @@ func (c *Customer) GetCustomer() (err error) {
 
 func (c *Customer) Basics() error {
 
-	qry, err := database.Db.Prepare(customerStmt)
-	if err != nil {
+	qry, err := database.GetStatement("CustomerStmt")
+	if database.MysqlError(err) {
 		return err
 	}
 
@@ -401,8 +273,8 @@ func (c *Customer) Basics() error {
 
 func (c *Customer) GetLocations() error {
 
-	qry, err := database.Db.Prepare(customerLocationsStmt)
-	if err != nil {
+	qry, err := database.GetStatement("CustomerLocationStmt")
+	if database.MysqlError(err) {
 		return err
 	}
 
@@ -467,8 +339,8 @@ func (c *Customer) GetLocations() error {
 
 func (c *Customer) GetUsers() (users []CustomerUser, err error) {
 
-	qry, err := database.Db.Prepare(customerUsersStmt)
-	if err != nil {
+	qry, err := database.GetStatement("CustomerUserStmt")
+	if database.MysqlError(err) {
 		return
 	}
 
@@ -499,8 +371,8 @@ func (c *Customer) GetUsers() (users []CustomerUser, err error) {
 }
 
 func GetCustomerPrice(api_key string, part_id int) (price float64, err error) {
-	qry, err := database.Db.Prepare(customerPriceStmt)
-	if err != nil {
+	qry, err := database.GetStatement("CustomerPriceStmt")
+	if database.MysqlError(err) {
 		return
 	}
 
@@ -546,8 +418,8 @@ func (lookup *Lookup) GetCustomerPrice(api_key string) (prices map[int]float64, 
 }
 
 func GetCustomerCartReference(api_key string, part_id int) (ref int, err error) {
-	qry, err := database.Db.Prepare(customerPartStmt)
-	if err != nil {
+	qry, err := database.GetStatement("CustomerPartStmt")
+	if database.MysqlError(err) {
 		return
 	}
 
@@ -726,7 +598,7 @@ func GetEtailers() (dealers []Customer, err error) {
 
 func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, err error) {
 
-	qry, err := database.Db.Prepare(localDealersStmt)
+	qry, err := database.GetStatement("LocalDealersStmt")
 	if database.MysqlError(err) {
 		return
 	}
@@ -947,65 +819,71 @@ func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, er
 
 func GetLocalRegions() (regions []StateRegion, err error) {
 
-	polyQuery, err := database.Db.Prepare(polygonStmt)
-	if err != nil {
+	redis_key := "local_regions"
+
+	// Attempt to get the local regions from Redis
+	regions_bytes, _ := redis.RedisClient.Get(redis_key)
+	if len(regions_bytes) > 0 {
+		err = json.Unmarshal(regions_bytes, &regions)
+		if err == nil {
+			return
+		}
+	}
+
+	polyQuery, err := database.GetStatement("PolygonStmt")
+	if database.MysqlError(err) {
 		return
 	}
 
-	coordQry, err := database.Db.Prepare(mapCoordinatesForStateStmt)
-	if err != nil {
+	coordQry, err := database.GetStatement("MapPolygonCoordinatesForStateStmt")
+	if database.MysqlError(err) {
 		return
 	}
 
-	regions_bytes, _ := redis.RedisClient.Get("local_regions")
-	if len(regions_bytes) == 0 {
-		_, _, _ = database.Db.Query("SET SESSION group_concat_max_len = 100024")
-		rows, res, err := polyQuery.Exec()
-		_, _, _ = database.Db.Query("SET SESSION group_concat_max_len = 1024")
-		if !database.MysqlError(err) && rows != nil {
-			ch := make(chan int)
+	// Get the local regions from the database
+	_, _, _ = database.Db.Query("SET SESSION group_concat_max_len = 100024")
+	rows, res, err := polyQuery.Exec()
+	_, _, _ = database.Db.Query("SET SESSION group_concat_max_len = 1024")
+	if !database.MysqlError(err) && rows != nil {
+		ch := make(chan int)
 
-			for _, row := range rows {
-				go func(c chan int, regRow mysql.Row, regRes mysql.Result) {
-					state := regRes.Map("state")
-					abbr := regRes.Map("abbr")
-					count := regRes.Map("count")
-					id := regRes.Map("stateID")
+		for _, row := range rows {
+			go func(c chan int, regRow mysql.Row, regRes mysql.Result) {
+				state := regRes.Map("state")
+				abbr := regRes.Map("abbr")
+				count := regRes.Map("count")
+				id := regRes.Map("stateID")
 
-					reg := StateRegion{
-						Name:         regRow.Str(state),
-						Abbreviation: regRow.Str(abbr),
-						Count:        regRow.Int(count),
+				reg := StateRegion{
+					Name:         regRow.Str(state),
+					Abbreviation: regRow.Str(abbr),
+					Count:        regRow.Int(count),
+				}
+				coordRows, coordRes, err := coordQry.Exec(regRow.Int(id))
+				if err == nil {
+					lat := coordRes.Map("latitude")
+					lon := coordRes.Map("longitude")
+
+					var coords []GeoLocation
+					for _, coordRow := range coordRows {
+						coords = append(coords, GeoLocation{coordRow.ForceFloat(lat), coordRow.ForceFloat(lon)})
 					}
-					coordRows, coordRes, err := coordQry.Exec(regRow.Int(id))
-					if err == nil {
-						lat := coordRes.Map("latitude")
-						lon := coordRes.Map("longitude")
+					reg.Polygons = &coords
+				}
 
-						var coords []GeoLocation
-						for _, coordRow := range coordRows {
-							coords = append(coords, GeoLocation{coordRow.ForceFloat(lat), coordRow.ForceFloat(lon)})
-						}
-						reg.Polygons = &coords
-					}
-
-					regions = append(regions, reg)
-					c <- 1
-				}(ch, row, res)
-			}
-
-			for _, _ = range rows {
-				<-ch
-			}
-
-			if regions_bytes, err = json.Marshal(regions); err == nil {
-				redis.RedisClient.Set("local_regions", regions_bytes)
-				redis.RedisClient.Expire("local_regions", 86400)
-			}
+				regions = append(regions, reg)
+				c <- 1
+			}(ch, row, res)
 		}
 
-	} else {
-		_ = json.Unmarshal(regions_bytes, &regions)
+		for _, _ = range rows {
+			<-ch
+		}
+
+		if regions_bytes, err = json.Marshal(regions); err == nil {
+			redis.RedisClient.Set(redis_key, regions_bytes)
+			redis.RedisClient.Expire(redis_key, 86400)
+		}
 	}
 	return
 }
@@ -1102,7 +980,13 @@ func GetLocalDealerTypes() (graphics []MapGraphics) {
 }
 
 func GetWhereToBuyDealers() (customers []Customer) {
-	rows, res, err := database.Db.Query(whereToBuyDealersStmt)
+
+	qry, err := database.GetStatement("WhereToBuyDealersStmt")
+	if database.MysqlError(err) {
+		return
+	}
+
+	rows, res, err := qry.Exec()
 	if database.MysqlError(err) {
 		return
 	}
