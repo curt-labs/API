@@ -883,9 +883,11 @@ func GetLocalRegions() (regions []StateRegion, err error) {
 		}
 
 		if regions_bytes, err = json.Marshal(regions); err == nil {
+			log.Println("Successfully marshalled into json bytes")
 			redis.RedisClient.Set(redis_key, regions_bytes)
 			redis.RedisClient.Expire(redis_key, 86400)
 		}
+		log.Printf("Logging LocalRegions Redis Submission: %d | %s\n", len(regions_bytes), err)
 	}
 	return
 }
