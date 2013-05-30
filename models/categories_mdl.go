@@ -365,9 +365,8 @@ func TopTierCategories() (cats []Category, err error) {
 	}
 
 	if cat_bytes, err := json.Marshal(cats); err == nil {
-		err = redis.RedisClient.Set("category:top", cat_bytes)
+		err = redis.RedisClient.Setex("category:top", 86400, cat_bytes)
 		log.Println("Top Tier Category Submission: %s", err)
-		redis.RedisClient.Expire("category:top", 86400)
 	}
 
 	return

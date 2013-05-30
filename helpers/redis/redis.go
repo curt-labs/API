@@ -11,12 +11,13 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"syscall"
 )
 
-var MaxPoolSize = 50
-
-var defaultAddr = "137.117.72.189:6379"
+var (
+	MaxPoolSize  = 50
+	defaultAddr  = "137.117.72.189:6379"
+	doesNotExist = RedisError("Key does not exist ")
+)
 
 type Client struct {
 	Addr     string
@@ -29,8 +30,6 @@ type Client struct {
 type RedisError string
 
 func (err RedisError) Error() string { return "Redis Error: " + string(err) }
-
-var doesNotExist = RedisError("Key does not exist ")
 
 func NewClient(poolsize int) (c *Client) {
 	_c := new(Client)
@@ -150,7 +149,6 @@ func readResponse(reader *bufio.Reader) (interface{}, error) {
 	return readBulk(reader, line)
 }
 
-// TODO: client is not needed here
 func (client *Client) rawSend(c net.Conn, cmd []byte) (interface{}, error) {
 	_, err := c.Write(cmd)
 	if err != nil {
@@ -193,27 +191,26 @@ func (client *Client) openConnection() (c net.Conn, err error) {
 
 func (client *Client) sendCommand(cmd string, args ...string) (data interface{}, err error) {
 	// grab a connection from the pool
-	c, err := client.popCon()
-
 	var b []byte
+	c, err := client.popCon()
 	if err != nil {
-		//add the client back to the queue
-		client.pushCon(c)
-		return data, err
+		println(err.Error())
+		goto End
 	}
 
 	b = commandBytes(cmd, args...)
 	data, err = client.rawSend(c, b)
-	if err2, ok := err.(syscall.Errno); err == io.EOF || (ok && err2 == syscall.EPIPE) {
+	if err == io.EOF {
 		c, err = client.openConnection()
 		if err != nil {
-			//add the client back to the queue
-			client.pushCon(c)
-			return data, err
+			println(err.Error())
+			goto End
 		}
 
 		data, err = client.rawSend(c, b)
 	}
+
+End:
 
 	//add the client back to the queue
 	client.pushCon(c)
@@ -225,13 +222,11 @@ func (client *Client) sendCommands(cmdArgs <-chan []string, data chan<- interfac
 	// grab a connection from the pool
 	c, err := client.popCon()
 	var reader *bufio.Reader
+	var pong interface{}
+	var errs chan error
 
 	if err != nil {
-		// Close client and synchronization issues are a nightmare to solve.
-		c.Close()
-		// Push nil back onto queue
-		client.pushCon(nil)
-		return err
+		goto End
 	}
 
 	reader = bufio.NewReader(c)
@@ -240,33 +235,25 @@ func (client *Client) sendCommands(cmdArgs <-chan []string, data chan<- interfac
 	err = writeRequest(c, "PING")
 
 	// On first attempt permit a reconnection attempt
-	if err == io.EOF || err == io.ErrClosedPipe {
+	if err == io.EOF {
 		// Looks like we have to open a new connection
 		c, err = client.openConnection()
 		if err != nil {
-			// Close client and synchronization issues are a nightmare to solve.
-			c.Close()
-			// Push nil back onto queue
-			client.pushCon(nil)
-			return err
+			goto End
 		}
 		reader = bufio.NewReader(c)
 	} else {
 		// Read Ping response
-		pong, err := readResponse(reader)
+		pong, err = readResponse(reader)
 		if pong != "PONG" {
 			return RedisError("Unexpected response to PING.")
 		}
 		if err != nil {
-			// Close client and synchronization issues are a nightmare to solve.
-			c.Close()
-			// Push nil back onto queue
-			client.pushCon(nil)
-			return err
+			goto End
 		}
 	}
 
-	errs := make(chan error)
+	errs = make(chan error)
 
 	go func() {
 		for cmdArg := range cmdArgs {
@@ -295,6 +282,8 @@ func (client *Client) sendCommands(cmdArgs <-chan []string, data chan<- interfac
 	for e := range errs {
 		err = e
 	}
+
+End:
 
 	// Close client and synchronization issues are a nightmare to solve.
 	c.Close()
@@ -476,13 +465,11 @@ func (client *Client) Set(key string, val []byte) error {
 }
 
 func (client *Client) Get(key string) ([]byte, error) {
-	res, err := client.sendCommand("GET", key)
-	if err != nil {
-		return nil, err
-	}
+	res, _ := client.sendCommand("GET", key)
 	if res == nil {
-		return []byte(""), nil
+		return nil, RedisError("Key `" + key + "` does not exist")
 	}
+
 	data := res.([]byte)
 	return data, nil
 }
@@ -687,11 +674,12 @@ func (client *Client) Lset(key string, index int, value []byte) error {
 	return nil
 }
 
-func (client *Client) Lrem(key string, count int, value []byte) (int, error) {
-	res, err := client.sendCommand("LREM", key, strconv.Itoa(count), string(value))
+func (client *Client) Lrem(key string, index int) (int, error) {
+	res, err := client.sendCommand("LREM", key, strconv.Itoa(index))
 	if err != nil {
 		return -1, err
 	}
+
 	return int(res.(int64)), nil
 }
 
@@ -1021,14 +1009,12 @@ func (client *Client) Hset(key string, field string, val []byte) (bool, error) {
 }
 
 func (client *Client) Hget(key string, field string) ([]byte, error) {
-	res, err := client.sendCommand("HGET", key, field)
+	res, _ := client.sendCommand("HGET", key, field)
 
-	if err != nil {
-		return nil, err
-	}
 	if res == nil {
-		return []byte(""), nil
+		return nil, RedisError("Hget failed")
 	}
+
 	data := res.([]byte)
 	return data, nil
 }
@@ -1082,7 +1068,7 @@ func valueToString(v reflect.Value) (string, error) {
 	return "", errors.New("Unsupported type")
 }
 
-func containerToString(val reflect.Value, args []string) ([]string, error) {
+func containerToString(val reflect.Value, args *[]string) error {
 	switch v := val; v.Kind() {
 	case reflect.Ptr:
 		return containerToString(reflect.Indirect(v), args)
@@ -1090,36 +1076,35 @@ func containerToString(val reflect.Value, args []string) ([]string, error) {
 		return containerToString(v.Elem(), args)
 	case reflect.Map:
 		if v.Type().Key().Kind() != reflect.String {
-			return nil, errors.New("Unsupported type - map key must be a string")
+			return errors.New("Unsupported type - map key must be a string")
 		}
 		for _, k := range v.MapKeys() {
-			args = append(args, k.String())
+			*args = append(*args, k.String())
 			s, err := valueToString(v.MapIndex(k))
 			if err != nil {
-				return nil, err
+				return err
 			}
-			args = append(args, s)
+			*args = append(*args, s)
 		}
 	case reflect.Struct:
 		st := v.Type()
 		for i := 0; i < st.NumField(); i++ {
 			ft := st.FieldByIndex([]int{i})
-			args = append(args, ft.Name)
+			*args = append(*args, ft.Name)
 			s, err := valueToString(v.FieldByIndex([]int{i}))
 			if err != nil {
-				return nil, err
+				return err
 			}
-			args = append(args, s)
+			*args = append(*args, s)
 		}
 	}
-	return args, nil
+	return nil
 }
 
 func (client *Client) Hmset(key string, mapping interface{}) error {
-	args := make([]string, 0, 5)
+	var args []string
 	args = append(args, key)
-
-	args, err := containerToString(reflect.ValueOf(mapping), args)
+	err := containerToString(reflect.ValueOf(mapping), &args)
 	if err != nil {
 		return err
 	}
@@ -1400,58 +1385,4 @@ func (client *Client) Bgrewriteaof() error {
 		return err
 	}
 	return nil
-}
-
-func (client *Client) Ping() (string, error) {
-	res, err := client.sendCommand("PING")
-	if err != nil {
-		return "", err
-	}
-	return res.(string), nil
-}
-
-type Transaction struct {
-	c net.Conn
-	*Client
-}
-
-func (client *Client) Transaction() (*Transaction, error) {
-	c, err := client.openConnection()
-	if err != nil {
-		return nil, err
-	}
-	return &Transaction{c, client}, nil
-}
-
-func (t *Transaction) sendCommand(cmd string, args ...string) (data interface{}, err error) {
-	b := commandBytes(cmd, args...)
-	return t.Client.rawSend(t.c, b)
-}
-
-func (t *Transaction) Watch(keys []string) error {
-	_, err := t.sendCommand("WATCH", keys...)
-	return err
-}
-
-func (t *Transaction) Unwatch() error {
-	_, err := t.sendCommand("UNWATCH")
-	return err
-}
-
-func (t *Transaction) Multi() error {
-	_, err := t.sendCommand("MULTI")
-	return err
-}
-
-func (t *Transaction) Discard() error {
-	_, err := t.sendCommand("DISCARD")
-	return err
-}
-
-func (t *Transaction) Exec() ([][]byte, error) {
-	res, err := t.sendCommand("EXEC")
-	if err != nil {
-		return nil, err
-	}
-	return res.([][]byte), nil
 }
