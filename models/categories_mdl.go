@@ -6,7 +6,6 @@ import (
 	"../helpers/redis"
 	"encoding/json"
 	"errors"
-	"log"
 	"net/url"
 	"strconv"
 	"time"
@@ -298,8 +297,10 @@ func (part *Part) GetPartCategories() (cats []ExtendedCategory, err error) {
 // Returns: []Category, error
 func TopTierCategories() (cats []Category, err error) {
 
+	redis_key := "goapi:category:top"
+
 	// First lets try to access the category:top endpoint in Redis
-	cat_bytes, err := redis.RedisClient.Get("category:top")
+	cat_bytes, err := redis.RedisClient.Get(redis_key)
 	if err == nil && len(cat_bytes) > 0 {
 		err = json.Unmarshal(cat_bytes, &cats)
 		if err == nil {
@@ -365,14 +366,24 @@ func TopTierCategories() (cats []Category, err error) {
 	}
 
 	if cat_bytes, err := json.Marshal(cats); err == nil {
-		err = redis.RedisClient.Setex("category:top", 86400, cat_bytes)
-		log.Println("Top Tier Category Submission: %s", err)
+		redis.RedisClient.Setex(redis_key, 86400, cat_bytes)
 	}
 
 	return
 }
 
 func GetByTitle(cat_title string) (cat Category, err error) {
+
+	redis_key := "goapi:category:title:" + cat_title
+
+	// Attempt to get the category from Redis
+	redis_bytes, err := redis.RedisClient.Get(redis_key)
+	if len(redis_bytes) > 0 {
+		err = json.Unmarshal(redis_bytes, &cat)
+		if err == nil {
+			return
+		}
+	}
 
 	qry, err := database.GetStatement("CategoryByNameStmt")
 	if err != nil {
@@ -428,10 +439,25 @@ func GetByTitle(cat_title string) (cat Category, err error) {
 		ColorCode:       rgbCode,
 	}
 
+	if redis_bytes, err = json.Marshal(cat); err == nil {
+		redis.RedisClient.Setex(redis_key, 86400, redis_bytes)
+	}
+
 	return
 }
 
 func GetById(cat_id int) (cat Category, err error) {
+
+	redis_key := "goapi:category:id:" + strconv.Itoa(cat_id)
+
+	// Attempt to get the category from Redis
+	redis_bytes, err := redis.RedisClient.Get(redis_key)
+	if len(redis_bytes) > 0 {
+		err = json.Unmarshal(redis_bytes, &cat)
+		if err == nil {
+			return
+		}
+	}
 
 	qry, err := database.GetStatement("CategoryByIdStmt")
 	if err != nil {
@@ -485,6 +511,10 @@ func GetById(cat_id int) (cat Category, err error) {
 		IsLifestyle:     catRow.ForceBool(isLife),
 		VehicleSpecific: catRow.ForceBool(vSpecific),
 		ColorCode:       rgbCode,
+	}
+
+	if redis_bytes, err = json.Marshal(cat); err == nil {
+		redis.RedisClient.Setex(redis_key, 86400, redis_bytes)
 	}
 
 	return

@@ -6,7 +6,6 @@ import (
 	"../helpers/redis"
 	"../helpers/sortutil"
 	"encoding/json"
-	"log"
 	"math"
 	"net/url"
 	"strconv"
@@ -470,6 +469,18 @@ func (lookup *Lookup) GetCustomerCartReference(api_key string) (references map[i
 /* Internal Use Only */
 
 func GetEtailers() (dealers []Customer, err error) {
+
+	redis_key := "goapi:dealers:etailers"
+
+	// Attempt to get the etailers from Redis
+	etailer_bytes, err := redis.RedisClient.Get(redis_key)
+	if len(etailer_bytes) > 0 {
+		err = json.Unmarshal(etailer_bytes, &dealers)
+		if err == nil {
+			return
+		}
+	}
+
 	rows, res, err := database.Db.Query(etailersStmt)
 	if database.MysqlError(err) {
 		return
@@ -592,6 +603,10 @@ func GetEtailers() (dealers []Customer, err error) {
 
 	for _, _ = range rows {
 		<-c
+	}
+
+	if etailer_bytes, err = json.Marshal(dealers); err == nil {
+		redis.RedisClient.Setex(redis_key, 86400, etailer_bytes)
 	}
 
 	return
@@ -820,11 +835,10 @@ func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, er
 
 func GetLocalRegions() (regions []StateRegion, err error) {
 
-	redis_key := ":goapi:local:regions"
+	redis_key := "goapi:local:regions"
 
 	// Attempt to get the local regions from Redis
 	regions_bytes, err := redis.RedisClient.Get(redis_key)
-	log.Printf("Logging LocalRegions Redis: %d | %s\n", len(regions_bytes), err)
 	if len(regions_bytes) > 0 {
 		err = json.Unmarshal(regions_bytes, &regions)
 		if err == nil {
@@ -883,12 +897,8 @@ func GetLocalRegions() (regions []StateRegion, err error) {
 		}
 
 		if regions_bytes, err = json.Marshal(regions); err == nil {
-			log.Println("Successfully marshalled into json bytes")
-			err = redis.RedisClient.Set(redis_key, regions_bytes)
-			log.Println("Logging Redis Submission Error: %s", err)
-			redis.RedisClient.Expire(redis_key, 86400)
+			redis.RedisClient.Setex(redis_key, 86400, regions_bytes)
 		}
-		log.Printf("Logging LocalRegions Redis Submission: %d | %s\n", len(regions_bytes), err)
 	}
 	return
 }
@@ -906,6 +916,17 @@ func getViewPortWidth(lat1 float64, lon1 float64, lat2 float64, long2 float64) f
 }
 
 func GetLocalDealerTiers() (tiers []DealerTier) {
+
+	redis_key := "goapi:local:tiers"
+
+	// Attempt to get the local regions from Redis
+	redis_bytes, err := redis.RedisClient.Get(redis_key)
+	if len(redis_bytes) > 0 {
+		err = json.Unmarshal(redis_bytes, &tiers)
+		if err == nil {
+			return
+		}
+	}
 
 	qry, err := database.GetStatement("GetLocalDealerTiers")
 	if database.MysqlError(err) {
@@ -929,10 +950,27 @@ func GetLocalDealerTiers() (tiers []DealerTier) {
 		}
 		tiers = append(tiers, dTier)
 	}
+
+	if redis_bytes, err = json.Marshal(tiers); err == nil {
+		redis.RedisClient.Setex(redis_key, 86400, redis_bytes)
+	}
+
 	return
 }
 
 func GetLocalDealerTypes() (graphics []MapGraphics) {
+
+	redis_key := "goapi:local:types"
+
+	// Attempt to get the local regions from Redis
+	redis_bytes, err := redis.RedisClient.Get(redis_key)
+	if len(redis_bytes) > 0 {
+		err = json.Unmarshal(redis_bytes, &graphics)
+		if err == nil {
+			return
+		}
+	}
+
 	qry, err := database.GetStatement("GetLocalDealerTypes")
 	if database.MysqlError(err) {
 		return
@@ -981,10 +1019,26 @@ func GetLocalDealerTypes() (graphics []MapGraphics) {
 		}
 		graphics = append(graphics, gx)
 	}
+
+	if redis_bytes, err = json.Marshal(graphics); err == nil {
+		redis.RedisClient.Setex(redis_key, 86400, redis_bytes)
+	}
+
 	return
 }
 
 func GetWhereToBuyDealers() (customers []Customer) {
+
+	redis_key := "goapi:dealers:wheretobuy"
+
+	// Attempt to get the local regions from Redis
+	redis_bytes, err := redis.RedisClient.Get(redis_key)
+	if len(redis_bytes) > 0 {
+		err = json.Unmarshal(redis_bytes, &customers)
+		if err == nil {
+			return
+		}
+	}
 
 	qry, err := database.GetStatement("WhereToBuyDealersStmt")
 	if database.MysqlError(err) {
@@ -1113,6 +1167,10 @@ func GetWhereToBuyDealers() (customers []Customer) {
 
 	for _, _ = range rows {
 		<-c
+	}
+
+	if redis_bytes, err = json.Marshal(customers); err == nil {
+		redis.RedisClient.Setex(redis_key, 86400, redis_bytes)
 	}
 
 	return
