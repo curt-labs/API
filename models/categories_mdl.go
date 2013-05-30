@@ -6,6 +6,7 @@ import (
 	"../helpers/redis"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/url"
 	"strconv"
 	"time"
@@ -36,9 +37,9 @@ type ExtendedCategory struct {
 }
 
 // PartBreacrumbs
-// 
+//
 // Description: Builds out Category breadcrumb array for the current part object.
-// 
+//
 // Inherited: part Part
 // Returns: error
 func (part *Part) PartBreadcrumbs() error {
@@ -364,7 +365,8 @@ func TopTierCategories() (cats []Category, err error) {
 	}
 
 	if cat_bytes, err := json.Marshal(cats); err == nil {
-		redis.RedisClient.Set("category:top", cat_bytes)
+		err = redis.RedisClient.Set("category:top", cat_bytes)
+		log.Println("Top Tier Category Submission: %s", err)
 		redis.RedisClient.Expire("category:top", 86400)
 	}
 
