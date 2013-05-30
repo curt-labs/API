@@ -15,7 +15,7 @@ import (
 
 var (
 	MaxPoolSize  = 50
-	defaultAddr  = "137.117.72.189:6379"
+	defaultAddr  = "127.0.0.1:6379"
 	doesNotExist = RedisError("Key does not exist ")
 )
 
