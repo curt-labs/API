@@ -6,6 +6,7 @@ import (
 	"../helpers/redis"
 	"../helpers/sortutil"
 	"encoding/json"
+	"log"
 	"math"
 	"net/url"
 	"strconv"
@@ -822,7 +823,8 @@ func GetLocalRegions() (regions []StateRegion, err error) {
 	redis_key := "local_regions"
 
 	// Attempt to get the local regions from Redis
-	regions_bytes, _ := redis.RedisClient.Get(redis_key)
+	regions_bytes, err := redis.RedisClient.Get(redis_key)
+	log.Printf("Logging LocalRegions Redis: %d | %s\n", len(regions_bytes), err)
 	if len(regions_bytes) > 0 {
 		err = json.Unmarshal(regions_bytes, &regions)
 		if err == nil {
