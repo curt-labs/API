@@ -1,6 +1,7 @@
 package models
 
 import (
+	"../helpers/api"
 	"../helpers/database"
 	"../helpers/mymysql/mysql"
 	"../helpers/redis"
@@ -10,16 +11,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-)
-
-const (
-	EARTH               = 3963.1676 // radius of Earth in miles
-	SOUTWEST_LATITUDE   = -90.00
-	SOUTHWEST_LONGITUDE = -180.00
-	NORTHEAST_LATITUDE  = 90.00
-	NORTHEAST_LONGITUDE = 180.00
-	CENTER_LATITUDE     = 44.79300
-	CENTER_LONGITUDE    = -91.41048
 )
 
 var (
@@ -39,7 +30,7 @@ var (
 
 	etailersStmt = `select c.customerID, c.name, c.email, c.address, c.address2, c.city, c.phone, c.fax, c.contact_person,
 				c.latitude, c.longitude, c.searchURL, c.logo, c.website,
-				c.postal_code, s.state, s.abbr as state_abbr, cty.name as country_name, cty.abbr as country_abbr,
+				c.postal_code, s.stateID, s.state, s.abbr as state_abbr, cty.countryID, cty.name as country_name, cty.abbr as country_abbr,
 				dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
 				dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
 				mi.ID as iconID, mi.mapicon, mi.mapiconshadow,
@@ -134,6 +125,7 @@ type DealerLocation struct {
 }
 
 type StateRegion struct {
+	Id                 int
 	Name, Abbreviation string
 	Count              int
 	Polygons           *[]GeoLocation
@@ -183,8 +175,10 @@ func (c *Customer) Basics() error {
 	site := res.Map("website")
 	logo := res.Map("logo")
 	zip := res.Map("postal_code")
+	stateID := res.Map("stateID")
 	state := res.Map("state")
 	state_abbr := res.Map("state_abbr")
+	countryID := res.Map("countryID")
 	country := res.Map("country_name")
 	country_abbr := res.Map("country_abbr")
 	dealerTypeId := res.Map("typeID")
@@ -249,11 +243,13 @@ func (c *Customer) Basics() error {
 	c.MapixDescription = row.Str(mpx_desc)
 
 	ctry := Country{
+		Id:           row.Int(countryID),
 		Country:      row.Str(country),
 		Abbreviation: row.Str(country_abbr),
 	}
 
 	c.State = &State{
+		Id:           row.Int(stateID),
 		State:        row.Str(state),
 		Abbreviation: row.Str(state_abbr),
 		Country:      &ctry,
@@ -294,8 +290,10 @@ func (c *Customer) GetLocations() error {
 	lat := res.Map("latitude")
 	lon := res.Map("longitude")
 	zip := res.Map("postalCode")
+	stateID := res.Map("stateID")
 	state := res.Map("state")
 	state_abbr := res.Map("state_abbr")
+	countryID := res.Map("countryID")
 	country := res.Map("cty_name")
 	country_abbr := res.Map("cty_abbr")
 	customerID := res.Map("cust_id")
@@ -322,11 +320,13 @@ func (c *Customer) GetLocations() error {
 		}
 
 		ctry := Country{
+			Id:           row.Int(countryID),
 			Country:      row.Str(country),
 			Abbreviation: row.Str(country_abbr),
 		}
 
 		l.State = &State{
+			Id:           row.Int(stateID),
 			State:        row.Str(state),
 			Abbreviation: row.Str(state_abbr),
 			Country:      &ctry,
@@ -501,8 +501,10 @@ func GetEtailers() (dealers []Customer, err error) {
 	site := res.Map("website")
 	logo := res.Map("logo")
 	zip := res.Map("postal_code")
+	stateID := res.Map("stateID")
 	state := res.Map("state")
 	state_abbr := res.Map("state_abbr")
+	countryID := res.Map("countryID")
 	country := res.Map("country_name")
 	country_abbr := res.Map("country_abbr")
 	dealerTypeId := res.Map("typeID")
@@ -574,11 +576,13 @@ func GetEtailers() (dealers []Customer, err error) {
 			}
 
 			ctry := Country{
+				Id:           r.Int(countryID),
 				Country:      r.Str(country),
 				Abbreviation: r.Str(country_abbr),
 			}
 
 			cust.State = &State{
+				Id:           r.Int(stateID),
 				State:        r.Str(state),
 				Abbreviation: r.Str(state_abbr),
 				Country:      &ctry,
@@ -622,14 +626,14 @@ func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, er
 	var latlngs []string
 	var center_latlngs []string
 
-	clat := CENTER_LATITUDE
-	clong := CENTER_LONGITUDE
-	swlat := SOUTWEST_LATITUDE
-	swlong := SOUTHWEST_LONGITUDE
-	swlong2 := SOUTHWEST_LONGITUDE
-	nelat := NORTHEAST_LATITUDE
-	nelong := NORTHEAST_LONGITUDE
-	nelong2 := NORTHEAST_LONGITUDE
+	clat := api_helpers.CENTER_LATITUDE
+	clong := api_helpers.CENTER_LONGITUDE
+	swlat := api_helpers.SOUTWEST_LATITUDE
+	swlong := api_helpers.SOUTHWEST_LONGITUDE
+	swlong2 := api_helpers.SOUTHWEST_LONGITUDE
+	nelat := api_helpers.NORTHEAST_LATITUDE
+	nelong := api_helpers.NORTHEAST_LONGITUDE
+	nelong2 := api_helpers.NORTHEAST_LONGITUDE
 
 	// Get the center point
 	if center != "" {
@@ -704,7 +708,7 @@ func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, er
 		SWLong2      float64
 		NELong2      float64
 	}{
-		EARTH,
+		api_helpers.EARTH,
 		clat,
 		clat,
 		clong,
@@ -744,8 +748,10 @@ func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, er
 	site := res.Map("website")
 	logo := res.Map("logo")
 	zip := res.Map("postalCode")
+	stateID := res.Map("stateID")
 	state := res.Map("state")
 	state_abbr := res.Map("state_abbr")
+	countryID := res.Map("countryID")
 	country := res.Map("country_name")
 	country_abbr := res.Map("country_abbr")
 	dealerTypeId := res.Map("typeID")
@@ -811,16 +817,18 @@ func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, er
 			MapixDescription:        r.Str(mpx_desc),
 		}
 
-		cust.Distance = EARTH * (2 * math.Atan2(
+		cust.Distance = api_helpers.EARTH * (2 * math.Atan2(
 			math.Sqrt((math.Sin(((cust.Latitude-clat)*(math.Pi/180))/2)*math.Sin(((cust.Latitude-clat)*(math.Pi/180))/2))+((math.Sin(((cust.Longitude-clong)*(math.Pi/180))/2))*(math.Sin(((cust.Longitude-clong)*(math.Pi/180))/2)))*math.Cos(clat*(math.Pi/180))*math.Cos(cust.Latitude*(math.Pi/180))),
 			math.Sqrt(1-((math.Sin(((cust.Latitude-clat)*(math.Pi/180))/2)*math.Sin(((cust.Latitude-clat)*(math.Pi/180))/2))+((math.Sin(((cust.Longitude-clong)*(math.Pi/180))/2))*(math.Sin(((cust.Longitude-clong)*(math.Pi/180))/2)))*math.Cos(clat*(math.Pi/180))*math.Cos(cust.Latitude*(math.Pi/180))))))
 
 		ctry := Country{
+			Id:           r.Int(countryID),
 			Country:      r.Str(country),
 			Abbreviation: r.Str(country_abbr),
 		}
 
 		cust.State = &State{
+			Id:           r.Int(stateID),
 			State:        r.Str(state),
 			Abbreviation: r.Str(state_abbr),
 			Country:      &ctry,
@@ -865,12 +873,14 @@ func GetLocalRegions() (regions []StateRegion, err error) {
 
 		for _, row := range rows {
 			go func(c chan int, regRow mysql.Row, regRes mysql.Result) {
+				stateID := regRes.Map("stateID")
 				state := regRes.Map("state")
 				abbr := regRes.Map("abbr")
 				count := regRes.Map("count")
 				id := regRes.Map("stateID")
 
 				reg := StateRegion{
+					Id:           regRow.Int(stateID),
 					Name:         regRow.Str(state),
 					Abbreviation: regRow.Str(abbr),
 					Count:        regRow.Int(count),
@@ -912,7 +922,7 @@ func getViewPortWidth(lat1 float64, lon1 float64, lat2 float64, long2 float64) f
 
 	a := (math.Sin(dlat/2) * math.Sin(dlat/2)) + ((math.Sin(dlon/2))*(math.Sin(dlon/2)))*math.Cos(lat1)*math.Cos(lat2)
 	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
-	return EARTH * c
+	return api_helpers.EARTH * c
 }
 
 func GetLocalDealerTiers() (tiers []DealerTier) {
@@ -1065,8 +1075,10 @@ func GetWhereToBuyDealers() (customers []Customer) {
 	site := res.Map("website")
 	logo := res.Map("logo")
 	zip := res.Map("postal_code")
+	stateID := res.Map("stateID")
 	state := res.Map("state")
 	state_abbr := res.Map("state_abbr")
+	countryID := res.Map("countryID")
 	country := res.Map("country_name")
 	country_abbr := res.Map("country_abbr")
 	dealerTypeId := res.Map("typeID")
@@ -1138,11 +1150,13 @@ func GetWhereToBuyDealers() (customers []Customer) {
 			}
 
 			ctry := Country{
+				Id:           r.Int(countryID),
 				Country:      r.Str(country),
 				Abbreviation: r.Str(country_abbr),
 			}
 
 			cust.State = &State{
+				Id:           r.Int(stateID),
 				State:        r.Str(state),
 				Abbreviation: r.Str(state_abbr),
 				Country:      &ctry,
@@ -1189,9 +1203,9 @@ func SearchLocations(term string) (locations []DealerLocation, err error) {
 		return
 	}
 
+	stateID := res.Map("stateID")
 	state := res.Map("state")
 	abbr := res.Map("abbr")
-	// countryID := res.Map("countryID")
 	dealerTypeId := res.Map("typeID")
 	dealerType := res.Map("dealerType")
 	typeOnline := res.Map("typeOnline")
@@ -1251,6 +1265,7 @@ func SearchLocations(term string) (locations []DealerLocation, err error) {
 			City:       row.Str(city),
 			PostalCode: row.Str(postalCode),
 			State: &State{
+				Id:           row.Int(stateID),
 				State:        row.Str(state),
 				Abbreviation: row.Str(abbr),
 			},
@@ -1283,9 +1298,9 @@ func SearchLocationsByType(term string) (locations []DealerLocation, err error) 
 		return
 	}
 
+	stateID := res.Map("stateID")
 	state := res.Map("state")
 	abbr := res.Map("abbr")
-	// countryID := res.Map("countryID")
 	dealerTypeId := res.Map("typeID")
 	dealerType := res.Map("dealerType")
 	typeOnline := res.Map("typeOnline")
@@ -1348,6 +1363,7 @@ func SearchLocationsByType(term string) (locations []DealerLocation, err error) 
 			City:       row.Str(city),
 			PostalCode: row.Str(postalCode),
 			State: &State{
+				Id:           row.Int(stateID),
 				State:        row.Str(state),
 				Abbreviation: row.Str(abbr),
 			},
@@ -1384,7 +1400,7 @@ func SearchLocationsByLatLng(loc GeoLocation) (locations []DealerLocation, err e
 		Lon4        float64
 		LatRadians2 float64
 	}{
-		EARTH,
+		api_helpers.EARTH,
 		loc.Latitude,
 		loc.Latitude,
 		loc.Longitude,
@@ -1402,9 +1418,9 @@ func SearchLocationsByLatLng(loc GeoLocation) (locations []DealerLocation, err e
 		return
 	}
 
+	stateID := res.Map("stateID")
 	state := res.Map("state")
 	abbr := res.Map("abbr")
-	// countryID := res.Map("countryID")
 	dealerTypeId := res.Map("typeID")
 	dealerType := res.Map("dealerType")
 	typeOnline := res.Map("typeOnline")
@@ -1467,6 +1483,7 @@ func SearchLocationsByLatLng(loc GeoLocation) (locations []DealerLocation, err e
 			City:       row.Str(city),
 			PostalCode: row.Str(postalCode),
 			State: &State{
+				Id:           row.Int(stateID),
 				State:        row.Str(state),
 				Abbreviation: row.Str(abbr),
 			},

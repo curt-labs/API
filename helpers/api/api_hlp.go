@@ -10,8 +10,19 @@ import (
 	"strings"
 )
 
-var (
-	API_DOMAIN = "http://curt-api.cloudapp.net"
+const (
+	EARTH               = 3963.1676 // radius of Earth in miles
+	SOUTWEST_LATITUDE   = -90.00
+	SOUTHWEST_LONGITUDE = -180.00
+	NORTHEAST_LATITUDE  = 90.00
+	NORTHEAST_LONGITUDE = 180.00
+	CENTER_LATITUDE     = 44.79300
+	CENTER_LONGITUDE    = -91.41048
+
+	API_DOMAIN       = "https://goapi.curtmfg.com"
+	AUTH_KEY_TYPE    = "AUTHENTICATION"
+	PUBLIC_KEY_TYPE  = "PUBLIC"
+	PRIVATE_KEY_TYPE = "PRIVATE"
 )
 
 func ValueOrFileContents(value string, filename string) string {

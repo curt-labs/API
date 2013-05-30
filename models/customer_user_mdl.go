@@ -9,98 +9,6 @@ import (
 	"time"
 )
 
-const (
-	AUTH_KEY_TYPE    = "AUTHENTICATION"
-	PUBLIC_KEY_TYPE  = "PUBLIC"
-	PRIVATE_KEY_TYPE = "PRIVATE"
-)
-
-var (
-	customerUserAuthStmt = `select * from CustomerUser
-							where email = ?
-							&& active = 1
-							limit 1`
-
-	customerUserKeyAuthStmt = `select cu.* from CustomerUser as cu
-							join ApiKey as ak on cu.id = ak.user_id
-							join ApiKeyType as akt on ak.type_id = akt.id
-							where UPPER(akt.type) = ? 
-							&& ak.api_key = ?
-							&& cu.active = 1 && ak.date_added >= ?`
-
-	updateCustomerUserPassStmt = `update CustomerUser set proper_password = ?
-							where id = ? && active = 1`
-
-	customerUserKeysStmt = `select ak.api_key, akt.type, ak.date_added from ApiKey as ak 
-							join ApiKeyType as akt on ak.type_id = akt.id
-							where user_id = ? && UPPER(akt.type) NOT IN (?)`
-
-	userAuthenticationKeyStmt = `select ak.api_key, ak.type_id, akt.type from ApiKey as ak
-							join ApiKeyType as akt on ak.type_id = akt.id
-							where UPPER(akt.type) = ?
-							&& ak.user_id = ?`
-
-	// This statement will run the trigger on the
-	// ApiKey table to regenerate the api_key column
-	// for the updated record
-	resetUserAuthenticationStmt = `update ApiKey as ak
-							set ak.date_added = ?
-							where ak.type_id = ? 
-							&& ak.user_id = ?`
-
-	// This statement will renew the timer on the
-	// authentication API key for the given user.
-	// The disabling of the trigger is to turn off the
-	// key regeneration trigger for this table
-	enableTriggerStmt           = `SET @disable_trigger = 0;`
-	disableTriggerStmt          = `SET @disable_trigger = 1`
-	renewUserAuthenticationStmt = `update ApiKey as ak
-						join ApiKeyType as akt on ak.type_id = akt.id
-						set ak.date_added = ?
-						where UPPER(akt.type) = ? && ak.user_id = ?`
-
-	userCustomerStmt = `select c.customerID, c.name, c.email, c.address, c.address2, c.city, c.phone, c.fax, c.contact_person,
-				c.latitude, c.longitude, c.searchURL, c.logo, c.website,
-				c.postal_code, s.state, s.abbr as state_abbr, cty.name as country_name, cty.abbr as country_abbr,
-				dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
-				dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
-				mi.ID as iconID, mi.mapicon, mi.mapiconshadow,
-				mpx.code as mapix_code, mpx.description as mapic_desc,
-				sr.name as rep_name, sr.code as rep_code, c.parentID
-				from Customer as c
-				join CustomerUser as cu on c.cust_id = cu.cust_ID
-				left join States as s on c.stateID = s.stateID
-				left join Country as cty on s.countryID = cty.countryID
-				left join DealerTypes as dt on c.dealer_type = dt.dealer_type
-				left join MapIcons as mi on dt.dealer_type = mi.dealer_type
-				left join DealerTiers dtr on c.tier = dtr.ID
-				left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
-				left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
-				where cu.id = ?`
-
-	userLocationStmt = `select cl.locationID, cl.name, cl.email, cl.address, cl.city,
-					cl.postalCode, cl.phone, cl.fax, cl.latitude, cl.longitude,
-					cl.cust_id, cl.contact_person, cl.isprimary, cl.ShippingDefault,
-					s.state, s.abbr as state_abbr, cty.name as cty_name, cty.abbr as cty_abbr
-					from CustomerLocations as cl
-					left join States as s on cl.stateID = s.stateID
-					left join Country as cty on s.countryID = cty.countryID
-					join CustomerUser as cu on cl.locationID = cu.locationID
-					where cu.id = ?`
-
-	customerIDFromKeyStmt = `select c.customerID from Customer as c
-					join CustomerUser as cu on c.cust_id = cu.cust_ID
-					join ApiKey as ak on cu.id = ak.user_id
-					where ak.api_key = ?
-					limit 1`
-
-	customerUserFromKeyStmt = `select cu.* from CustomerUser as cu
-					join ApiKey as ak on cu.id = ak.user_id
-					join ApiKeyType as akt on ak.type_id = akt.id
-					where akt.type = ? && ak.api_key = ?
-					limit 1`
-)
-
 type CustomerUser struct {
 	Id                    string
 	Name, Email           string
@@ -184,8 +92,8 @@ func UserAuthenticationByKey(key string) (cust Customer, err error) {
 
 func (u CustomerUser) GetCustomer() (c Customer, err error) {
 
-	qry, err := database.Db.Prepare(userCustomerStmt)
-	if err != nil {
+	qry, err := database.GetStatement("UserCustomerStmt")
+	if database.MysqlError(err) {
 		return
 	}
 
@@ -209,8 +117,10 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 	site := res.Map("website")
 	logo := res.Map("logo")
 	zip := res.Map("postal_code")
+	stateID := res.Map("stateID")
 	state := res.Map("state")
 	state_abbr := res.Map("state_abbr")
+	countryID := res.Map("countryID")
 	country := res.Map("country_name")
 	country_abbr := res.Map("country_abbr")
 	dealerTypeId := res.Map("typeID")
@@ -266,11 +176,13 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 	}
 
 	ctry := Country{
+		Id:           row.Int(countryID),
 		Country:      row.Str(country),
 		Abbreviation: row.Str(country_abbr),
 	}
 
 	c.State = &State{
+		Id:           row.Int(stateID),
 		State:        row.Str(state),
 		Abbreviation: row.Str(state_abbr),
 		Country:      &ctry,
@@ -305,8 +217,8 @@ func (u *CustomerUser) AuthenticateUser(pass string) error {
 		return err
 	}
 
-	qry, err := database.Db.Prepare(customerUserAuthStmt)
-	if err != nil {
+	qry, err := database.GetStatement("CustomerUserAuthStmt")
+	if database.MysqlError(err) {
 		return err
 	}
 
@@ -332,7 +244,7 @@ func (u *CustomerUser) AuthenticateUser(pass string) error {
 			err = errors.New("Invalid password")
 			return err
 		} else {
-			updateQry, _ := database.Db.Prepare(updateCustomerUserPassStmt)
+			updateQry, _ := database.GetStatement("UpdateCustomerUserPassStmt")
 			dbUserId := row.Str(user_id)
 			params := struct {
 				pass *string
@@ -374,8 +286,8 @@ func (u *CustomerUser) AuthenticateUser(pass string) error {
 
 func AuthenticateUserByKey(key string) (u CustomerUser, err error) {
 
-	qry, err := database.Db.Prepare(customerUserKeyAuthStmt)
-	if err != nil {
+	qry, err := database.GetStatement("CustomerUserKeyAuthStmt")
+	if database.MysqlError(err) {
 		return
 	}
 
@@ -384,7 +296,7 @@ func AuthenticateUserByKey(key string) (u CustomerUser, err error) {
 		key      string
 		timer    string
 	}{}
-	params.key_type = AUTH_KEY_TYPE
+	params.key_type = api_helpers.AUTH_KEY_TYPE
 	params.key = key
 
 	t := time.Now()
@@ -437,8 +349,8 @@ func AuthenticateUserByKey(key string) (u CustomerUser, err error) {
 
 func (u *CustomerUser) GetKeys() error {
 
-	qry, err := database.Db.Prepare(customerUserKeysStmt)
-	if err != nil {
+	qry, err := database.GetStatement("CustomerUserKeysStmt")
+	if database.MysqlError(err) {
 		return err
 	}
 	params := struct {
@@ -447,7 +359,7 @@ func (u *CustomerUser) GetKeys() error {
 	}{}
 
 	params.User = u.Id
-	params.Except = strings.Join([]string{AUTH_KEY_TYPE}, ",")
+	params.Except = strings.Join([]string{api_helpers.AUTH_KEY_TYPE}, ",")
 
 	rows, res, err := qry.Exec(params)
 	if database.MysqlError(err) {
@@ -477,8 +389,8 @@ func (u *CustomerUser) GetKeys() error {
 
 func (u *CustomerUser) GetLocation() error {
 
-	qry, err := database.Db.Prepare(userLocationStmt)
-	if err != nil {
+	qry, err := database.GetStatement("UserLocationStmt")
+	if database.MysqlError(err) {
 		return err
 	}
 
@@ -500,8 +412,10 @@ func (u *CustomerUser) GetLocation() error {
 	lat := res.Map("latitude")
 	lon := res.Map("longitude")
 	zip := res.Map("postalCode")
+	stateID := res.Map("stateID")
 	state := res.Map("state")
 	state_abbr := res.Map("state_abbr")
+	countryID := res.Map("countryID")
 	country := res.Map("cty_name")
 	country_abbr := res.Map("cty_abbr")
 	customerID := res.Map("cust_id")
@@ -526,11 +440,13 @@ func (u *CustomerUser) GetLocation() error {
 	}
 
 	ctry := Country{
+		Id:           row.Int(countryID),
 		Country:      row.Str(country),
 		Abbreviation: row.Str(country_abbr),
 	}
 
 	l.State = &State{
+		Id:           row.Int(stateID),
 		State:        row.Str(state),
 		Abbreviation: row.Str(state_abbr),
 		Country:      &ctry,
@@ -543,8 +459,8 @@ func (u *CustomerUser) GetLocation() error {
 
 func (u *CustomerUser) ResetAuthentication() error {
 
-	oldQry, err := database.Db.Prepare(userAuthenticationKeyStmt)
-	if err != nil {
+	oldQry, err := database.GetStatement("UserAuthenticationKeyStmt")
+	if database.MysqlError(err) {
 		return err
 	}
 
@@ -552,7 +468,7 @@ func (u *CustomerUser) ResetAuthentication() error {
 		KeyType string
 		User    string
 	}{}
-	params.KeyType = AUTH_KEY_TYPE
+	params.KeyType = api_helpers.AUTH_KEY_TYPE
 	params.User = u.Id
 
 	// Retrieve the previously declared authentication key for this user
@@ -563,8 +479,8 @@ func (u *CustomerUser) ResetAuthentication() error {
 	} else if oldRow != nil { // Update the existing with a new date added and key
 		old_type_id := oldRes.Map("type_id")
 
-		updateQry, err := database.Db.Prepare(resetUserAuthenticationStmt)
-		if err != nil {
+		updateQry, err := database.GetStatement("ResetUserAuthenticationStmt")
+		if database.MysqlError(err) {
 			return err
 		}
 
@@ -589,8 +505,8 @@ func (u *CustomerUser) ResetAuthentication() error {
 }
 
 func GetCustomerIdFromKey(key string) (id int, err error) {
-	qry, err := database.Db.Prepare(customerIDFromKeyStmt)
-	if err != nil {
+	qry, err := database.GetStatement("customerIDFromKeyStmt")
+	if database.MysqlError(err) {
 		return
 	}
 
@@ -606,8 +522,8 @@ func GetCustomerIdFromKey(key string) (id int, err error) {
 
 func GetCustomerUserFromKey(key string) (u CustomerUser, err error) {
 
-	qry, err := database.Db.Prepare(customerUserFromKeyStmt)
-	if err != nil {
+	qry, err := database.GetStatement("CustomerUserFromKeyStmt")
+	if database.MysqlError(err) {
 		return
 	}
 
@@ -616,7 +532,7 @@ func GetCustomerUserFromKey(key string) (u CustomerUser, err error) {
 		Key     string
 	}{}
 
-	params.KeyType = PRIVATE_KEY_TYPE
+	params.KeyType = api_helpers.PRIVATE_KEY_TYPE
 	params.Key = key
 
 	row, res, err := qry.ExecFirst(params)

@@ -154,7 +154,7 @@ func PrepareAll() error {
 													order by dtr.sort desc`
 	UnPreparedStatements["GetEtailers"] = `select c.customerID, c.name, c.email, c.address, c.address2, c.city, c.phone, c.fax, c.contact_person,
 											c.latitude, c.longitude, c.searchURL, c.logo, c.website,
-											c.postal_code, s.state, s.abbr as state_abbr, cty.name as country_name, cty.abbr as country_abbr,
+											c.postal_code, s.stateID, s.state, s.abbr as state_abbr, cty.countryID, cty.name as country_name, cty.abbr as country_abbr,
 											dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
 											dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
 											mpx.code as mapix_code, mpx.description as mapic_desc,
@@ -198,7 +198,7 @@ func PrepareAll() error {
 															where mp.stateID = ?`
 	UnPreparedStatements["WhereToBuyDealersStmt"] = `select c.customerID, c.name, c.email, c.address, c.address2, c.city, c.phone, c.fax, c.contact_person,
 														c.latitude, c.longitude, c.searchURL, c.logo, c.website,
-														c.postal_code, s.state, s.abbr as state_abbr, cty.name as country_name, cty.abbr as country_abbr,
+														c.postal_code, s.stateID, s.state, s.abbr as state_abbr, cty.countryID, cty.name as country_name, cty.abbr as country_abbr,
 														dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
 														dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
 														mi.ID as iconID, mi.mapicon, mi.mapiconshadow,
@@ -215,7 +215,7 @@ func PrepareAll() error {
 														where dt.dealer_type = 1 and dtr.ID = 4 and c.isDummy = false and length(c.searchURL) > 1`
 	UnPreparedStatements["CustomerStmt"] = `select c.customerID, c.name, c.email, c.address, c.address2, c.city, c.phone, c.fax, c.contact_person,
 												c.latitude, c.longitude, c.searchURL, c.logo, c.website,
-												c.postal_code, s.state, s.abbr as state_abbr, cty.name as country_name, cty.abbr as country_abbr,
+												c.postal_code, s.stateID, s.state, s.abbr as state_abbr, cty.countryID, cty.name as country_name, cty.abbr as country_abbr,
 												dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
 												dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
 												mi.ID as iconID, mi.mapicon, mi.mapiconshadow,
@@ -233,7 +233,7 @@ func PrepareAll() error {
 	UnPreparedStatements["CustomerLocationStmt"] = `select cl.locationID, cl.name, cl.email, cl.address, cl.city,
 														cl.postalCode, cl.phone, cl.fax, cl.latitude, cl.longitude,
 														cl.cust_id, cl.contact_person, cl.isprimary, cl.ShippingDefault,
-														s.state, s.abbr as state_abbr, cty.name as cty_name, cty.abbr as cty_abbr
+														s.stateID, s.state, s.abbr as state_abbr, cty.countryID, cty.name as cty_name, cty.abbr as cty_abbr
 														from CustomerLocations as cl
 														left join States as s on cl.stateID = s.stateID
 														left join Country as cty on s.countryID = cty.countryID
@@ -256,7 +256,7 @@ func PrepareAll() error {
 												and ci.partID = ?`
 	UnPreparedStatements["LocalDealersStmt"] = `select cl.locationID, c.customerID, cl.name, c.email, cl.address, cl.city, cl.phone, cl.fax, cl.contact_person,
 												cl.latitude, cl.longitude, c.searchURL, c.logo, c.website,
-												cl.postalCode, s.state, s.abbr as state_abbr, cty.name as country_name, cty.abbr as country_abbr,
+												cl.postalCode, s.stateID, s.state, s.abbr as state_abbr, cty.countryID, cty.name as country_name, cty.abbr as country_abbr,
 												dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
 												dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
 												mi.ID as iconID, mi.mapicon, mi.mapiconshadow,
@@ -287,6 +287,82 @@ func PrepareAll() error {
 												)
 												group by cl.locationID
 												order by dtr.sort desc`
+	UnPreparedStatements["UserCustomerStmt"] = `select c.customerID, c.name, c.email, c.address, c.address2, c.city, c.phone, c.fax, c.contact_person,
+												c.latitude, c.longitude, c.searchURL, c.logo, c.website,
+												c.postal_code, s.stateID, s.state, s.abbr as state_abbr, cty.countryID, cty.name as country_name, cty.abbr as country_abbr,
+												dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
+												dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
+												mi.ID as iconID, mi.mapicon, mi.mapiconshadow,
+												mpx.code as mapix_code, mpx.description as mapic_desc,
+												sr.name as rep_name, sr.code as rep_code, c.parentID
+												from Customer as c
+												join CustomerUser as cu on c.cust_id = cu.cust_ID
+												left join States as s on c.stateID = s.stateID
+												left join Country as cty on s.countryID = cty.countryID
+												left join DealerTypes as dt on c.dealer_type = dt.dealer_type
+												left join MapIcons as mi on dt.dealer_type = mi.dealer_type
+												left join DealerTiers dtr on c.tier = dtr.ID
+												left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
+												left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
+												where cu.id = ?`
+	UnPreparedStatements["CustomerUserAuthStmt"] = `select * from CustomerUser
+													where email = ?
+													&& active = 1
+													limit 1`
+	UnPreparedStatements["UpdateCustomerUserPassStmt"] = `update CustomerUser set proper_password = ?
+															where id = ? && active = 1`
+	UnPreparedStatements["CustomerUserKeyAuthStmt"] = `select cu.* from CustomerUser as cu
+														join ApiKey as ak on cu.id = ak.user_id
+														join ApiKeyType as akt on ak.type_id = akt.id
+														where UPPER(akt.type) = ? 
+														&& ak.api_key = ?
+														&& cu.active = 1 && ak.date_added >= ?`
+	UnPreparedStatements["CustomerUserKeysStmt"] = `select ak.api_key, akt.type, ak.date_added from ApiKey as ak 
+													join ApiKeyType as akt on ak.type_id = akt.id
+													where user_id = ? && UPPER(akt.type) NOT IN (?)`
+	UnPreparedStatements["UserAuthenticationKeyStmt"] = `select ak.api_key, ak.type_id, akt.type from ApiKey as ak
+															join ApiKeyType as akt on ak.type_id = akt.id
+															where UPPER(akt.type) = ?
+															&& ak.user_id = ?`
+
+	// This statement will run the trigger on the
+	// ApiKey table to regenerate the api_key column
+	// for the updated record
+	UnPreparedStatements["ResetUserAuthenticationStmt"] = `update ApiKey as ak
+															set ak.date_added = ?
+															where ak.type_id = ? 
+															&& ak.user_id = ?`
+
+	// This statement will renew the timer on the
+	// authentication API key for the given user.
+	// The disabling of the trigger is to turn off the
+	// key regeneration trigger for this table
+	UnPreparedStatements["EnableTriggerStmt"] = `SET @disable_trigger = 0`
+	UnPreparedStatements["DisableTriggerStmt"] = `SET @disable_trigger = 1`
+	UnPreparedStatements["RenewUserAuthenticationStmt"] = `update ApiKey as ak
+															join ApiKeyType as akt on ak.type_id = akt.id
+															set ak.date_added = ?
+															where UPPER(akt.type) = ? && ak.user_id = ?`
+
+	UnPreparedStatements["UserLocationStmt"] = `select cl.locationID, cl.name, cl.email, cl.address, cl.city,
+												cl.postalCode, cl.phone, cl.fax, cl.latitude, cl.longitude,
+												cl.cust_id, cl.contact_person, cl.isprimary, cl.ShippingDefault,
+												s.stateID, s.state, s.abbr as state_abbr, cty.countryID, cty.name as cty_name, cty.abbr as cty_abbr
+												from CustomerLocations as cl
+												left join States as s on cl.stateID = s.stateID
+												left join Country as cty on s.countryID = cty.countryID
+												join CustomerUser as cu on cl.locationID = cu.locationID
+												where cu.id = ?`
+	UnPreparedStatements["CustomerIDFromKeyStmt"] = `select c.customerID from Customer as c
+														join CustomerUser as cu on c.cust_id = cu.cust_ID
+														join ApiKey as ak on cu.id = ak.user_id
+														where ak.api_key = ?
+														limit 1`
+	UnPreparedStatements["CustomerUserFromKeyStmt"] = `select cu.* from CustomerUser as cu
+														join ApiKey as ak on cu.id = ak.user_id
+														join ApiKeyType as akt on ak.type_id = akt.id
+														where akt.type = ? && ak.api_key = ?
+														limit 1`
 
 	if !Db.Raw.IsConnected() {
 		Db.Raw.Connect()
