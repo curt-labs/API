@@ -820,7 +820,7 @@ func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, er
 
 func GetLocalRegions() (regions []StateRegion, err error) {
 
-	redis_key := "goapi:local:regions"
+	redis_key := ":goapi:local:regions"
 
 	// Attempt to get the local regions from Redis
 	regions_bytes, err := redis.RedisClient.Get(redis_key)
