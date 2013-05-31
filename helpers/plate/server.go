@@ -435,7 +435,7 @@ func ServePdf(w http.ResponseWriter, data []byte) {
 
 // ServeJson replies to the request with a JSON
 // representation of resource v.
-func ServeJson(w http.ResponseWriter, v interface{}) {
+func ServeJson(w http.ResponseWriter, v interface{}, callback string) {
 	content, err := json.Marshal(v)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -451,7 +451,13 @@ func ServeJson(w http.ResponseWriter, v interface{}) {
 	w.Header().Set("Access-Control-Allow-Headers", "Origin")
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Methods", "*")
-	w.Write(content)
+	if callback != "" {
+		w.Write([]byte(callback + "("))
+		w.Write(content)
+		w.Write([]byte(")"))
+	} else {
+		w.Write(content)
+	}
 }
 
 // ReadJson will parses the JSON-encoded data in the http
@@ -497,13 +503,14 @@ func ReadXml(r *http.Request, v interface{}) error {
 // Accept header.
 func ServeFormatted(w http.ResponseWriter, r *http.Request, v interface{}) {
 	accept := r.Header.Get("Accept")
+	params := r.URL.Query()
 	switch accept {
 	case applicationJson:
-		ServeJson(w, v)
+		ServeJson(w, v, params.Get("callback"))
 	case applicationXml, textXml:
 		ServeXml(w, v)
 	default:
-		ServeJson(w, v)
+		ServeJson(w, v, params.Get("callback"))
 	}
 
 	return
