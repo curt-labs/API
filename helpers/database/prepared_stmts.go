@@ -174,21 +174,8 @@ func PrepareAll() error {
 												join Customer as c on cl.cust_id = c.cust_id
 												join DealerTypes as dt on c.dealer_type = dt.dealer_type
 												where dt.online = 0 && cl.stateID = s.stateID
-											) as count, 
-											(
-												select group_concat(mpc.latitude)
-												from MapPolygonCoordinates as mpc
-												join MapPolygon as mp on mpc.MapPolygonID = mp.ID
-												where mp.stateID = s.stateID and mp.ID = mp_outer.ID
-											) as latitudes,
-											(
-												select group_concat(mpc.longitude)
-												from MapPolygonCoordinates as mpc
-												join MapPolygon as mp on mpc.MapPolygonID = mp.ID
-												where mp.stateID = s.stateID and mp.ID = mp_outer.ID
-											) as longitudes
+											) as count
 											from States as s
-											join MapPolygon as mp_outer on s.stateID = mp_outer.stateID
 											where (
 												select COUNT(cl.locationID) from CustomerLocations as cl
 												join Customer as c on cl.cust_id = c.cust_id
@@ -196,10 +183,10 @@ func PrepareAll() error {
 												where dt.online = 0 && cl.stateID = s.stateID
 											) > 0
 											order by s.state`
-	UnPreparedStatements["MapPolygonCoordinatesForStateStmt"] = `select mpc.latitude, mpc.longitude
-															from MapPolygonCoordinates as mpc
-															join MapPolygon as mp on mpc.MapPolygonID = mp.ID
-															where mp.stateID = ?`
+	UnPreparedStatements["MapPolygonCoordinatesForStateStmt"] = `select mp.ID,mpc.latitude, mpc.longitude
+																	from MapPolygonCoordinates as mpc
+																	join MapPolygon as mp on mpc.MapPolygonID = mp.ID
+																	where mp.stateID = ?`
 	UnPreparedStatements["WhereToBuyDealersStmt"] = `select c.customerID, c.name, c.email, c.address, c.address2, c.city, c.phone, c.fax, c.contact_person,
 														c.latitude, c.longitude, c.searchURL, c.logo, c.website,
 														c.postal_code, s.stateID, s.state, s.abbr as state_abbr, cty.countryID, cty.name as country_name, cty.abbr as country_abbr,

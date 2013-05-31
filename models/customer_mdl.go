@@ -124,13 +124,6 @@ type DealerLocation struct {
 	MapixCode, MapixDescription          string
 }
 
-type StateRegion struct {
-	Id                 int
-	Name, Abbreviation string
-	Count              int
-	Polygons           *[]GeoLocation
-}
-
 func (c *Customer) GetCustomer() (err error) {
 
 	locationChan := make(chan int)
@@ -841,6 +834,18 @@ func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, er
 	return
 }
 
+type StateRegion struct {
+	Id                 int
+	Name, Abbreviation string
+	Count              int
+	Polygons           []MapPolygon
+}
+
+type MapPolygon struct {
+	Id          int
+	Coordinates []GeoLocation
+}
+
 func GetLocalRegions() (regions []StateRegion, err error) {
 
 	redis_key := "goapi:local:regions"
@@ -868,48 +873,83 @@ func GetLocalRegions() (regions []StateRegion, err error) {
 	_, _, _ = database.Db.Query("SET SESSION group_concat_max_len = 100024")
 	rows, res, err := polyQuery.Exec()
 	_, _, _ = database.Db.Query("SET SESSION group_concat_max_len = 1024")
-	if !database.MysqlError(err) && rows != nil {
-		ch := make(chan int)
 
-		for _, row := range rows {
-			go func(c chan int, regRow mysql.Row, regRes mysql.Result) {
-				stateID := regRes.Map("stateID")
-				state := regRes.Map("state")
-				abbr := regRes.Map("abbr")
-				count := regRes.Map("count")
-				id := regRes.Map("stateID")
-
-				reg := StateRegion{
-					Id:           regRow.Int(stateID),
-					Name:         regRow.Str(state),
-					Abbreviation: regRow.Str(abbr),
-					Count:        regRow.Int(count),
-				}
-				coordRows, coordRes, err := coordQry.Exec(regRow.Int(id))
-				if err == nil {
-					lat := coordRes.Map("latitude")
-					lon := coordRes.Map("longitude")
-
-					var coords []GeoLocation
-					for _, coordRow := range coordRows {
-						coords = append(coords, GeoLocation{coordRow.ForceFloat(lat), coordRow.ForceFloat(lon)})
-					}
-					reg.Polygons = &coords
-				}
-
-				regions = append(regions, reg)
-				c <- 1
-			}(ch, row, res)
-		}
-
-		for _, _ = range rows {
-			<-ch
-		}
-
-		if regions_bytes, err = json.Marshal(regions); err == nil {
-			redis.RedisClient.Setex(redis_key, 86400, regions_bytes)
-		}
+	if database.MysqlError(err) || rows == nil {
+		return
 	}
+
+	ch := make(chan int)
+
+	for _, row := range rows {
+		go func(c chan int, regRow mysql.Row, regRes mysql.Result) {
+
+			// Populate the StateRegion with state data
+			stateID := regRes.Map("stateID")
+			state := regRes.Map("state")
+			abbr := regRes.Map("abbr")
+			count := regRes.Map("count")
+
+			reg := StateRegion{
+				Id:           regRow.Int(stateID),
+				Name:         regRow.Str(state),
+				Abbreviation: regRow.Str(abbr),
+				Count:        regRow.Int(count),
+			}
+
+			// Build out the polygons for this state
+			// including latitude and longitude
+			coordRows, coordRes, err := coordQry.Exec(reg.Id)
+			if err == nil {
+				polyId := coordRes.Map("ID")
+				lat := coordRes.Map("latitude")
+				lon := coordRes.Map("longitude")
+
+				polygons := make(map[int]MapPolygon, 0)
+
+				// Loops the coordinates (latitude, longitude)
+				for _, coordRow := range coordRows {
+					// Check if we have an index for this polygon created
+					if _, ok := polygons[coordRow.Int(polyId)]; !ok {
+						// First time hitting this polygon
+						// so we'll create one
+						polygons[coordRow.Int(polyId)] = MapPolygon{
+							Id:          coordRow.Int(polyId),
+							Coordinates: make([]GeoLocation, 0),
+						}
+					}
+
+					// Add the GeoLocartion info to our polygon
+					poly := polygons[coordRow.Int(polyId)]
+					poly.Coordinates = append(poly.Coordinates, GeoLocation{coordRow.ForceFloat(lat), coordRow.ForceFloat(lon)})
+					polygons[coordRow.Int(polyId)] = poly
+				}
+
+				// We need to drop the key/value pair
+				// our end user doesn't need that
+				var polys []MapPolygon
+				for _, poly := range polygons {
+					polys = append(polys, poly)
+				}
+
+				reg.Polygons = polys
+			}
+
+			regions = append(regions, reg)
+			c <- 1
+		}(ch, row, res)
+	}
+
+	for _, _ = range rows {
+		<-ch
+	}
+
+	if regions_bytes, err = json.Marshal(regions); err == nil {
+		// We're not going to set the expiration on this
+		// it won't ever change...until the San Andreas fault
+		// completely drops the western part of CA anyway :/
+		redis.RedisClient.Set(redis_key, regions_bytes)
+	}
+
 	return
 }
 
