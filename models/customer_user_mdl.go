@@ -505,7 +505,7 @@ func (u *CustomerUser) ResetAuthentication() error {
 }
 
 func GetCustomerIdFromKey(key string) (id int, err error) {
-	qry, err := database.GetStatement("customerIDFromKeyStmt")
+	qry, err := database.GetStatement("CustomerIDFromKeyStmt")
 	if database.MysqlError(err) {
 		return
 	}
