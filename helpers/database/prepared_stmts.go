@@ -277,7 +277,7 @@ func PrepareAll() error {
 													(cl.longitude >= ? && cl.longitude <= ?)
 												)
 												group by cl.locationID
-												order by dtr.sort desc`
+												order by dtr.sort desc, mi.mapiconshadow desc`
 	UnPreparedStatements["UserCustomerStmt"] = `select c.customerID, c.name, c.email, c.address, c.address2, c.city, c.phone, c.fax, c.contact_person,
 												c.latitude, c.longitude, c.searchURL, c.logo, c.website,
 												c.postal_code, s.stateID, s.state, s.abbr as state_abbr, cty.countryID, cty.name as country_name, cty.abbr as country_abbr,
