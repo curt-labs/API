@@ -262,7 +262,7 @@ func PrepareAll() error {
 												left join Country as cty on s.countryID = cty.countryID
 												left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
 												left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
-												where dt.online = 0 && c.isDummy = 0 && dt.show = 1 &&
+												where dt.online = 0 && c.isDummy = 0 && dt.show = 1 && dtr.ID = mi.tier &&
 												( ? * (
 													2 * ATAN2(
 														SQRT((SIN(((cl.latitude - ?) * (PI() / 180)) / 2) * SIN(((cl.latitude - ?) * (PI() / 180)) / 2)) + ((SIN(((cl.longitude - ?) * (PI() / 180)) / 2)) * (SIN(((cl.longitude - ?) * (PI() / 180)) / 2))) * COS(? * (PI() / 180)) * COS(cl.latitude * (PI() / 180))),
@@ -277,7 +277,7 @@ func PrepareAll() error {
 													(cl.longitude >= ? && cl.longitude <= ?)
 												)
 												group by cl.locationID
-												order by dtr.sort desc, mi.mapiconshadow desc`
+												order by dtr.sort desc`
 	UnPreparedStatements["UserCustomerStmt"] = `select c.customerID, c.name, c.email, c.address, c.address2, c.city, c.phone, c.fax, c.contact_person,
 												c.latitude, c.longitude, c.searchURL, c.logo, c.website,
 												c.postal_code, s.stateID, s.state, s.abbr as state_abbr, cty.countryID, cty.name as country_name, cty.abbr as country_abbr,
