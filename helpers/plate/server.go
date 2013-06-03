@@ -452,6 +452,7 @@ func ServeJson(w http.ResponseWriter, v interface{}, callback string) {
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Methods", "*")
 	if callback != "" {
+		w.Header().Set("Content-Type", "text/json")
 		w.Write([]byte(callback + "("))
 		w.Write(content)
 		w.Write([]byte(")"))
