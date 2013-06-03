@@ -110,6 +110,7 @@ func main() {
 	server.Get("/dealers/search/type/:search", dealers_ctlr.SearchLocationsByType).NoFilter()
 	server.Get("/dealers/search/geo", dealers_ctlr.SearchLocationsByLatLng).NoFilter()
 	server.Get("/dealers/search/geo/:latitude/:longitude", dealers_ctlr.SearchLocationsByLatLng).NoFilter()
+	server.Get("/dealer/location/:id", dealers_ctlr.GetLocation).NoFilter()
 
 	http.Handle("/", server)
 	http.ListenAndServe(*listenAddr, nil)

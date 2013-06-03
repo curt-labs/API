@@ -229,6 +229,18 @@ func PrepareAll() error {
 														left join States as s on cl.stateID = s.stateID
 														left join Country as cty on s.countryID = cty.countryID
 														where cl.cust_id = ?`
+	UnPreparedStatements["CustomerLocationByIdStmt"] = `select cls.*, dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
+													dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
+													cl.locationID, cl.name, cl.address,cl.city,
+													cl.postalCode, cl.email, cl.phone,cl.fax,
+													cl.latitude, cl.longitude, cl.cust_id, cl.isPrimary, cl.ShippingDefault, cl.contact_person,
+													c.showWebsite, c.website, c.eLocalURL
+													from CustomerLocations as cl
+													join States as cls on cl.stateID = cls.stateID
+													join Customer as c on cl.cust_id = c.cust_id
+													join DealerTypes as dt on c.dealer_type = dt.dealer_type
+													join DealerTiers as dtr on c.tier = dtr.ID
+													where cl.locationID = ? limit 1`
 	UnPreparedStatements["CustomerUserStmt"] = `select cu.* from CustomerUser as cu
 												join Customer as c on cu.cust_ID = c.cust_id
 												where c.customerID = '?'

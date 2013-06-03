@@ -62,6 +62,27 @@ func PlatinumEtailers(w http.ResponseWriter, r *http.Request) {
 	plate.ServeFormatted(w, r, custs)
 }
 
+func GetLocation(w http.ResponseWriter, r *http.Request) {
+	params := r.URL.Query()
+	str_id := params.Get(":id")
+	if str_id == "" {
+		http.Error(w, "You must supply a location identification number.", http.StatusInternalServerError)
+		return
+	}
+	id, err := strconv.Atoi(str_id)
+	if err != nil {
+		http.Error(w, "You must supply a location identification number.", http.StatusInternalServerError)
+		return
+	}
+
+	loc, err := models.GetLocationById(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	plate.ServeFormatted(w, r, loc)
+}
+
 func SearchLocations(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 	search_term := params.Get(":search")

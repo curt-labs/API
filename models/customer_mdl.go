@@ -1230,6 +1230,96 @@ func GetWhereToBuyDealers() (customers []Customer) {
 	return
 }
 
+func GetLocationById(id int) (location DealerLocation, err error) {
+
+	qry, err := database.GetStatement("CustomerLocationByIdStmt")
+	if database.MysqlError(err) {
+		return
+	}
+
+	row, res, err := qry.ExecFirst(id)
+	if database.MysqlError(err) {
+		return
+	}
+
+	stateID := res.Map("stateID")
+	state := res.Map("state")
+	abbr := res.Map("abbr")
+	dealerTypeId := res.Map("typeID")
+	dealerType := res.Map("dealerType")
+	typeOnline := res.Map("typeOnline")
+	typeShow := res.Map("typeShow")
+	typeLabel := res.Map("typeLabel")
+	tierID := res.Map("tierID")
+	tier := res.Map("tier")
+	tierSort := res.Map("tierSort")
+	locationID := res.Map("locationID")
+	name := res.Map("name")
+	address := res.Map("address")
+	city := res.Map("city")
+	postalCode := res.Map("postalCode")
+	email := res.Map("email")
+	phone := res.Map("phone")
+	fax := res.Map("fax")
+	latitude := res.Map("latitude")
+	longitude := res.Map("longitude")
+	cust_id := res.Map("cust_id")
+	contactPerson := res.Map("contact_person")
+	showWebsite := res.Map("showWebsite")
+	website := res.Map("website")
+	elocal := res.Map("eLocalURL")
+
+	site := row.Str(website)
+	var siteUrl *url.URL
+	if row.ForceBool(showWebsite) {
+		if site == "" {
+			site = row.Str(elocal)
+		}
+		if site != "" {
+			siteUrl, _ = url.Parse(site)
+		}
+	}
+
+	dType := DealerType{
+		Id:     row.Int(dealerTypeId),
+		Type:   row.Str(dealerType),
+		Label:  row.Str(typeLabel),
+		Online: row.ForceBool(typeOnline),
+		Show:   row.ForceBool(typeShow),
+	}
+
+	dealerTier := DealerTier{
+		Id:   row.Int(tierID),
+		Tier: row.Str(tier),
+		Sort: row.Int(tierSort),
+	}
+
+	location = DealerLocation{
+		Id:         row.Int(cust_id),
+		LocationId: row.Int(locationID),
+		Name:       row.Str(name),
+		Address:    row.Str(address),
+		City:       row.Str(city),
+		PostalCode: row.Str(postalCode),
+		State: &State{
+			Id:           row.Int(stateID),
+			State:        row.Str(state),
+			Abbreviation: row.Str(abbr),
+		},
+		Email:         row.Str(email),
+		Phone:         row.Str(phone),
+		Fax:           row.Str(fax),
+		Latitude:      row.ForceFloat(latitude),
+		Longitude:     row.ForceFloat(longitude),
+		ContactPerson: row.Str(contactPerson),
+		Website:       siteUrl,
+		DealerType:    dType,
+		DealerTier:    dealerTier,
+	}
+
+	return
+}
+
 func SearchLocations(term string) (locations []DealerLocation, err error) {
 
 	qry, err := database.GetStatement("SearchDealerLocations")
