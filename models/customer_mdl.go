@@ -525,8 +525,8 @@ func GetEtailers() (dealers []Customer, err error) {
 			sURL, _ := url.Parse(r.Str(search))
 			websiteURL, _ := url.Parse(r.Str(site))
 			logoURL, _ := url.Parse(r.Str(logo))
-			iconUrl, _ := url.Parse(row.Str(icon))
-			shadowUrl, _ := url.Parse(row.Str(shadow))
+			iconUrl, _ := url.Parse(r.Str(icon))
+			shadowUrl, _ := url.Parse(r.Str(shadow))
 
 			cust := Customer{
 				Id:            r.Int(customerID),
@@ -545,22 +545,22 @@ func GetEtailers() (dealers []Customer, err error) {
 				SearchUrl:     sURL,
 				Logo:          logoURL,
 				DealerType: DealerType{
-					Id:     row.Int(dealerTypeId),
-					Type:   row.Str(dealerType),
-					Label:  row.Str(typeLabel),
-					Online: row.ForceBool(typeOnline),
-					Show:   row.ForceBool(typeShow),
+					Id:     r.Int(dealerTypeId),
+					Type:   r.Str(dealerType),
+					Label:  r.Str(typeLabel),
+					Online: r.ForceBool(typeOnline),
+					Show:   r.ForceBool(typeShow),
 					MapIcon: MapIcon{
-						Id:            row.Int(iconId),
-						TierId:        row.Int(tierID),
+						Id:            r.Int(iconId),
+						TierId:        r.Int(tierID),
 						MapIcon:       iconUrl,
 						MapIconShadow: shadowUrl,
 					},
 				},
 				DealerTier: DealerTier{
-					Id:   row.Int(tierID),
-					Tier: row.Str(tier),
-					Sort: row.Int(tierSort),
+					Id:   r.Int(tierID),
+					Tier: r.Str(tier),
+					Sort: r.Int(tierSort),
 				},
 				SalesRepresentative:     r.Str(rep_name),
 				SalesRepresentativeCode: r.Str(rep_code),
