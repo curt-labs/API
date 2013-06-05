@@ -362,7 +362,7 @@ func (p *Part) Basics() error {
 	date_mod, _ := time.Parse("2006-01-02 15:04:15", row.Str(dateModified))
 	p.DateModified = date_mod
 
-	p.ShortDesc = "CURT " + row.Str(shortDesc) + " #" + row.Str(partID)
+	p.ShortDesc = "CURT " + row.Str(shortDesc) + " " + row.Str(partID)
 	p.PriceCode = row.Int(priceCode)
 	p.PartClass = row.Str(class)
 	p.Status = row.Int(status)
