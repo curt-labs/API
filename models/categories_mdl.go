@@ -626,52 +626,52 @@ func (c *Category) GetCategoryParts(key string, page int, count int) (parts []Pa
 		page = count * page
 	}
 
-	// qry, err := database.GetStatement("CategoryPartBasicStmt")
-	// if database.MysqlError(err){
-	// 	return
-	// }
-
-	// rows, _, err := qry.Exec(c.CategoryId, page, count)
-	// if database.MysqlError(err) {
-	// 	return
-	// }
-
 	tree := CategoryTree{
 		CategoryId: c.CategoryId,
 	}
 
-	tree.CategoryTreeBuilder()
-	catIdStr := strconv.Itoa(tree.CategoryId)
-	for _, treeId := range tree.SubCategories {
-		catIdStr = catIdStr + "," + strconv.Itoa(treeId)
+	redis_key := "goapi:category:" + strconv.Itoa(tree.CategoryId) + ":tree"
+
+	redis_bytes, _ := redis.RedisClient.Get(redis_key)
+	if len(redis_bytes) > 0 {
+		err = json.Unmarshal(redis_bytes, &tree)
 	}
 
-	rows, _, err := database.Db.Query(SubCategoryPartIdStmt, catIdStr, page, count)
-	if database.MysqlError(err) {
-		return
+	if len(tree.SubCategories) == 0 {
+		tree.CategoryTreeBuilder()
+		catIdStr := strconv.Itoa(tree.CategoryId)
+		for _, treeId := range tree.SubCategories {
+			catIdStr = catIdStr + "," + strconv.Itoa(treeId)
+		}
+
+		rows, _, err := database.Db.Query(SubCategoryPartIdStmt, catIdStr, page, count)
+		if database.MysqlError(err) {
+			return nil, err
+		}
+
+		for _, row := range rows {
+			tree.Parts = append(tree.Parts, Part{PartId: row.Int(0)})
+		}
+
+		if redis_bytes, err = json.Marshal(tree); err == nil {
+			redis.RedisClient.Setex(redis_key, 86400, redis_bytes)
+		}
 	}
 
 	// This will work for populating the
 	// parts that match this exact category.
-	chans := make(chan int, len(rows))
+	chans := make(chan int, len(tree.Parts))
 
-	for _, r := range rows {
-		go func(row mysql.Row) {
-			if len(row) == 1 {
-				p := Part{
-					PartId: row.Int(0),
-				}
-				p.Get(key)
-				parts = append(parts, p)
-				chans <- 1
-			} else {
-				chans <- 1
-			}
-		}(r)
+	for _, part := range tree.Parts {
+		go func(p Part) {
+			p.Get(key)
+			parts = append(parts, p)
+			chans <- 1
+		}(part)
 
 	}
 
-	for i := 0; i < len(rows); i++ {
+	for i := 0; i < len(tree.Parts); i++ {
 		<-chans
 	}
 	return
@@ -725,9 +725,11 @@ func (tree *CategoryTree) CategoryTreeBuilder() {
 
 func (c Category) GetCategory(key string) (extended ExtendedCategory, err error) {
 
+	redis_key := "gopapi:category:" + strconv.Itoa(c.CategoryId)
+
 	// First lets try to access the category:top endpoint in Redis
-	cat_bytes, err := redis.RedisClient.Get("category:" + strconv.Itoa(c.CategoryId))
-	if err == nil && len(cat_bytes) > 0 {
+	cat_bytes, err := redis.RedisClient.Get(redis_key)
+	if len(cat_bytes) > 0 {
 		err = json.Unmarshal(cat_bytes, &extended)
 		if err == nil {
 			return
@@ -807,9 +809,7 @@ func (c Category) GetCategory(key string) (extended ExtendedCategory, err error)
 	}
 
 	if cat_bytes, err := json.Marshal(extended); err == nil {
-		cat_key := "category:" + strconv.Itoa(c.CategoryId)
-		redis.RedisClient.Set(cat_key, cat_bytes)
-		redis.RedisClient.Expire(cat_key, 86400)
+		redis.RedisClient.Setex(redis_key, 86400, cat_bytes)
 	}
 
 	return
