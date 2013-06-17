@@ -626,18 +626,13 @@ func (c *Category) GetCategoryParts(key string, page int, count int) (parts []Pa
 		page = count * page
 	}
 
-	tree := CategoryTree{
-		CategoryId: c.CategoryId,
-	}
-
-	redis_key := "goapi:category:" + strconv.Itoa(tree.CategoryId) + ":tree"
-
+	redis_key := "goapi:category:" + strconv.Itoa(c.CategoryId) + ":tree" + strconv.Itoa(page) + ":" + strconv.Itoa(count)
 	redis_bytes, _ := redis.RedisClient.Get(redis_key)
-	if len(redis_bytes) > 0 {
-		err = json.Unmarshal(redis_bytes, &tree)
-	}
+	if len(redis_bytes) == 0 {
+		tree := CategoryTree{
+			CategoryId: c.CategoryId,
+		}
 
-	if len(tree.SubCategories) == 0 {
 		tree.CategoryTreeBuilder()
 		catIdStr := strconv.Itoa(tree.CategoryId)
 		for _, treeId := range tree.SubCategories {
@@ -653,27 +648,43 @@ func (c *Category) GetCategoryParts(key string, page int, count int) (parts []Pa
 			tree.Parts = append(tree.Parts, Part{PartId: row.Int(0)})
 		}
 
-		if redis_bytes, err = json.Marshal(tree); err == nil {
+		// This will work for populating the
+		// parts that match this exact category.
+		chans := make(chan int, len(tree.Parts))
+
+		for _, part := range tree.Parts {
+			go func(p Part) {
+				p.Get(key)
+				parts = append(parts, p)
+				chans <- 1
+			}(part)
+
+		}
+
+		for i := 0; i < len(tree.Parts); i++ {
+			<-chans
+		}
+
+		if redis_bytes, err = json.Marshal(parts); err == nil {
 			redis.RedisClient.Setex(redis_key, 86400, redis_bytes)
+		}
+	} else {
+		err = json.Unmarshal(redis_bytes, &parts)
+
+		chans := make(chan int, len(parts))
+
+		for _, part := range parts {
+			go func(p Part, k string) {
+				p.BindCustomer(k)
+				chans <- 1
+			}(part, key)
+		}
+
+		for i := 0; i < len(parts); i++ {
+			<-chans
 		}
 	}
 
-	// This will work for populating the
-	// parts that match this exact category.
-	chans := make(chan int, len(tree.Parts))
-
-	for _, part := range tree.Parts {
-		go func(p Part) {
-			p.Get(key)
-			parts = append(parts, p)
-			chans <- 1
-		}(part)
-
-	}
-
-	for i := 0; i < len(tree.Parts); i++ {
-		<-chans
-	}
 	return
 }
 
