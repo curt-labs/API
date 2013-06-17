@@ -626,7 +626,7 @@ func (c *Category) GetCategoryParts(key string, page int, count int) (parts []Pa
 		page = count * page
 	}
 
-	redis_key := "goapi:category:" + strconv.Itoa(c.CategoryId) + ":tree" + strconv.Itoa(page) + ":" + strconv.Itoa(count)
+	redis_key := "goapi:category:" + strconv.Itoa(c.CategoryId) + ":tree:" + strconv.Itoa(page) + ":" + strconv.Itoa(count)
 	redis_bytes, _ := redis.RedisClient.Get(redis_key)
 	if len(redis_bytes) == 0 {
 		tree := CategoryTree{
