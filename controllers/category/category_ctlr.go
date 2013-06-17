@@ -89,7 +89,7 @@ func GetParts(w http.ResponseWriter, r *http.Request) {
 
 	count, err := strconv.Atoi(params.Get(":count"))
 	if err != nil {
-		count = 10
+		count = 5
 	}
 
 	page, err := strconv.Atoi(params.Get(":page"))

@@ -460,15 +460,24 @@ func (p *Part) GetContent() error {
 }
 
 func (p *Part) BindCustomer(key string) error {
-	price, err := GetCustomerPrice(key, p.PartId)
-	if err != nil {
-		return err
-	}
+	var price float64
+	var ref int
 
-	ref, err := GetCustomerCartReference(key, p.PartId)
-	if err != nil {
-		return err
-	}
+	priceChan := make(chan int)
+	refChan := make(chan int)
+
+	go func() {
+		price, _ = GetCustomerPrice(key, p.PartId)
+		priceChan <- 1
+	}()
+
+	go func() {
+		ref, _ = GetCustomerCartReference(key, p.PartId)
+		refChan <- 1
+	}()
+
+	<-priceChan
+	<-refChan
 
 	cust := CustomerPart{
 		Price:         price,

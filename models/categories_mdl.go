@@ -6,6 +6,7 @@ import (
 	"../helpers/redis"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/url"
 	"strconv"
 	"time"
@@ -629,6 +630,7 @@ func (c *Category) GetCategoryParts(key string, page int, count int) (parts []Pa
 	redis_key := "goapi:category:" + strconv.Itoa(c.CategoryId) + ":tree:" + strconv.Itoa(page) + ":" + strconv.Itoa(count)
 	redis_bytes, _ := redis.RedisClient.Get(redis_key)
 	if len(redis_bytes) == 0 {
+		log.Println("missed redis")
 		tree := CategoryTree{
 			CategoryId: c.CategoryId,
 		}
