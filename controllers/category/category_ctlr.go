@@ -110,5 +110,4 @@ func GetParts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	plate.ServeFormatted(w, r, parts)
-
 }

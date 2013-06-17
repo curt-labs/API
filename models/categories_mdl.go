@@ -11,6 +11,15 @@ import (
 	"time"
 )
 
+var (
+	SubCategoryPartIdStmt = `select distinct cp.partID
+								from CatPart as cp
+								join Part as p on cp.partID = p.partID
+								where cp.catID IN(%s) and (p.status = 800 || p.status = 900)
+								order by cp.partID
+								limit %d, %d`
+)
+
 type Category struct {
 	CategoryId, ParentId, Sort   int
 	DateAdded                    time.Time
@@ -33,6 +42,12 @@ type ExtendedCategory struct {
 	// Extension for more detail
 	SubCategories []Category
 	Content       []Content
+}
+
+type CategoryTree struct {
+	CategoryId    int
+	SubCategories []int
+	Parts         []Part
 }
 
 // PartBreacrumbs
@@ -611,16 +626,33 @@ func (c *Category) GetCategoryParts(key string, page int, count int) (parts []Pa
 		page = count * page
 	}
 
-	qry, err := database.GetStatement("CategoryPartBasicStmt")
-	if err != nil {
+	// qry, err := database.GetStatement("CategoryPartBasicStmt")
+	// if database.MysqlError(err){
+	// 	return
+	// }
+
+	// rows, _, err := qry.Exec(c.CategoryId, page, count)
+	// if database.MysqlError(err) {
+	// 	return
+	// }
+
+	tree := CategoryTree{
+		CategoryId: c.CategoryId,
+	}
+
+	tree.CategoryTreeBuilder()
+	catIdStr := strconv.Itoa(tree.CategoryId)
+	for _, treeId := range tree.SubCategories {
+		catIdStr = catIdStr + "," + strconv.Itoa(treeId)
+	}
+
+	rows, _, err := database.Db.Query(SubCategoryPartIdStmt, catIdStr, page, count)
+	if database.MysqlError(err) {
 		return
 	}
 
-	rows, _, err := qry.Exec(c.CategoryId, page, count)
-	if database.MysqlError(err) || rows == nil {
-		return
-	}
-
+	// This will work for populating the
+	// parts that match this exact category.
 	chans := make(chan int, len(rows))
 
 	for _, r := range rows {
@@ -643,6 +675,52 @@ func (c *Category) GetCategoryParts(key string, page int, count int) (parts []Pa
 		<-chans
 	}
 	return
+}
+
+func (tree *CategoryTree) CategoryTreeBuilder() {
+
+	// Get Prepared Statement
+	subQry, err := database.GetStatement("SubCategoryIdStmt")
+	if database.MysqlError(err) {
+		return
+	}
+
+	// Execute against current Category Id
+	// to retrieve all category Ids that are children.
+	rows, _, err := subQry.Exec(tree.CategoryId)
+	if database.MysqlError(err) {
+		return
+	}
+
+	chans := make(chan int, len(rows))
+	for _, r := range rows {
+		go func(row mysql.Row) {
+			cat := Category{
+				CategoryId: row.Int(0),
+			}
+			tree.SubCategories = append(tree.SubCategories, cat.CategoryId)
+
+			subRows, _, err := subQry.Exec(cat.CategoryId)
+			if !database.MysqlError(err) {
+				for _, sub := range subRows {
+					subTree := CategoryTree{
+						CategoryId: sub.Int(0),
+					}
+					tree.SubCategories = append(tree.SubCategories, subTree.CategoryId)
+					subTree.CategoryTreeBuilder()
+					tree.SubCategories = append(tree.SubCategories, subTree.SubCategories...)
+				}
+			}
+			chans <- 1
+		}(r)
+	}
+
+	for i := 0; i < len(rows); i++ {
+		<-chans
+	}
+
+	return
+
 }
 
 func (c Category) GetCategory(key string) (extended ExtendedCategory, err error) {

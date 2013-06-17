@@ -88,6 +88,9 @@ func PrepareAll() error {
 					order by cp.partID
 					limit ?,?`
 
+	UnPreparedStatements["SubCategoryIdStmt"] = `select c.catID from Categories as c
+													where c.parentID = ?`
+
 	UnPreparedStatements["CategoryContentStmt"] = `select ct.type, c.text from ContentBridge cb
 					join Content as c on cb.contentID = c.contentID
 					left join ContentType as ct on c.cTypeID = ct.cTypeID
