@@ -11,8 +11,8 @@ set :user, "deployer"
 
 # role :web, "curt-api-server1.cloudapp.net", "curt-api-server2.cloudapp.net"
 # role :app, "curt-api-server1.cloudapp.net", "curt-api-server2.cloudapp.net"
-role :web, "173.255.117.20"
-role :app, "173.255.117.20"
+role :web, "173.255.117.20", "173.255.117.102"
+role :app, "173.255.117.20", "173.255.117.102"
 
 set :deploy_to, "/home/#{user}/#{application}"
 set :deploy_via, :remote_cache
