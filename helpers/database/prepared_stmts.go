@@ -88,8 +88,10 @@ func PrepareAll() error {
 					order by cp.partID
 					limit ?,?`
 
-	UnPreparedStatements["SubCategoryIdStmt"] = `select c.catID from Categories as c
-													where c.parentID = ?`
+	UnPreparedStatements["SubCategoryIdStmt"] = `select c.catID, group_concat(p.partID) as parts from Categories as c
+													left join CatPart as cp on c.catID = cp.catID
+													left join Part as p on cp.partID = p.partID
+													where c.parentID = ? && (p.status = null || (p.status = 800 || p.status = 900))`
 
 	UnPreparedStatements["CategoryContentStmt"] = `select ct.type, c.text from ContentBridge cb
 					join Content as c on cb.contentID = c.contentID

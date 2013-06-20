@@ -708,6 +708,11 @@ func (tree *CategoryTree) CategoryTreeBuilder() {
 	chans := make(chan int, len(rows))
 	for _, r := range rows {
 		go func(row mysql.Row) {
+			// partStr := row.Str(1)
+			// partArr := strings.Split(partStr, ",")
+
+			// Need to parse out string array into ints and populate
+
 			cat := Category{
 				CategoryId: row.Int(0),
 			}

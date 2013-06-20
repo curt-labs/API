@@ -9,10 +9,12 @@ set :scm, :git
 set :scm_passphrase, ""
 set :user, "deployer"
 
-role :web, "curt-api-server1.cloudapp.net", "curt-api-server2.cloudapp.net"
-role :app, "curt-api-server1.cloudapp.net", "curt-api-server2.cloudapp.net"
+# role :web, "curt-api-server1.cloudapp.net", "curt-api-server2.cloudapp.net"
+# role :app, "curt-api-server1.cloudapp.net", "curt-api-server2.cloudapp.net"
+role :web, "173.255.117.20"
+role :app, "173.255.117.20"
 
-set :deploy_to, "/home/deployer/#{application}"
+set :deploy_to, "/home/#{user}/#{application}"
 set :deploy_via, :remote_cache
 
 set :use_sudo, false
@@ -57,11 +59,11 @@ end
 
 namespace :deploy do
   task :goget do
-  	run "/usr/local/go/bin/go get -u github.com/ziutek/mymysql/native"
-  	run "/usr/local/go/bin/go get -u github.com/ziutek/mymysql/mysql"
+  	run "/home/#{user}/bin/go get -u github.com/ziutek/mymysql/native"
+  	run "/home/#{user}/bin/go get -u github.com/ziutek/mymysql/mysql"
   end
   task :compile do
-  	run "GOOS=linux GOARCH=amd64 CGO_ENABLED=0 /usr/local/go/bin/go build -o #{deploy_to}/current/go-api #{deploy_to}/current/index.go"
+  	run "GOOS=linux GOARCH=amd64 CGO_ENABLED=0 /home/#{user}/bin/go build -o #{deploy_to}/current/go-api #{deploy_to}/current/index.go"
   end
   task :start do ; end
   task :stop do 
