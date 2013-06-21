@@ -5,6 +5,7 @@ import (
 	"./controllers/customer"
 	"./controllers/dealers"
 	"./controllers/part"
+	"./controllers/search"
 	"./controllers/vehicle"
 	"./controllers/videos"
 	"./helpers/auth"
@@ -92,6 +93,8 @@ func main() {
 	server.Post("/customer/locations", customer_ctlr.GetLocations)
 	server.Post("/customer/users", customer_ctlr.GetUsers) // Requires a user to be marked as sudo
 
+	server.Get("/search/part/:term", search_ctlr.SearchPart)
+
 	/**
 	 * Video
 	 */
@@ -113,5 +116,7 @@ func main() {
 	server.Get("/dealer/location/:id", dealers_ctlr.GetLocation).NoFilter()
 
 	http.Handle("/", server)
-	http.ListenAndServe(*listenAddr, nil)
+	log.Println("Server running on port " + *listenAddr)
+
+	log.Fatal(http.ListenAndServe(*listenAddr, nil))
 }
