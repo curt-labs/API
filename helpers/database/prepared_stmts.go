@@ -497,6 +497,84 @@ func PrepareSearch(prepChan chan int) {
 	prepChan <- 1
 }
 
+func PrepareCMS(prepChan chan int) {
+	UnPreparedStatements := make(map[string]string, 0)
+
+	UnPreparedStatements["AllCustomerContent"] = `select cc.id, cc.text,cc.added,cc.modified,cc.deleted, 
+													ct.type,ct.allowHTML,
+													ccb.partID, ccb.catID
+													from CustomerContent as cc
+													left join CustomerContentBridge as ccb on cc.id = ccb.contentID
+													join ContentType as ct on cc.typeID = ct.cTypeID
+													join Customer as c on cc.custID = c.cust_id
+													join CustomerUser as cu on c.cust_id = cu.cust_ID
+													join ApiKey as ak on cu.id = ak.user_id
+													where api_key = ?
+													group by cc.id`
+
+	UnPreparedStatements["AllCustomerPartContent"] = `select cc.id, cc.text,cc.added,cc.modified,cc.deleted, 
+													ct.type,ct.allowHTML,ccb.partID
+													from CustomerContent as cc
+													join CustomerContentBridge as ccb on cc.id = ccb.contentID
+													join ContentType as ct on cc.typeID = ct.cTypeID
+													join Customer as c on cc.custID = c.cust_id
+													join CustomerUser as cu on c.cust_id = cu.cust_ID
+													join ApiKey as ak on cu.id = ak.user_id
+													where api_key = ? and ccb.partID > 0
+													group by cc.id
+													order by ccb.partID`
+
+	UnPreparedStatements["CustomerPartContent"] = `select cc.id, cc.text,cc.added,cc.modified,cc.deleted, 
+													ct.type,ct.allowHTML,ccb.partID
+													from CustomerContent as cc
+													join CustomerContentBridge as ccb on cc.id = ccb.contentID
+													join ContentType as ct on cc.typeID = ct.cTypeID
+													join Customer as c on cc.custID = c.cust_id
+													join CustomerUser as cu on c.cust_id = cu.cust_ID
+													join ApiKey as ak on cu.id = ak.user_id
+													where api_key = ? and ccb.partID = ?
+													group by cc.id`
+
+	UnPreparedStatements["AllCustomerCategoryContent"] = `select cc.id, cc.text,cc.added,cc.modified,cc.deleted, 
+													ct.type,ct.allowHTML,ccb.catID
+													from CustomerContent as cc
+													join CustomerContentBridge as ccb on cc.id = ccb.contentID
+													join ContentType as ct on cc.typeID = ct.cTypeID
+													join Customer as c on cc.custID = c.cust_id
+													join CustomerUser as cu on c.cust_id = cu.cust_ID
+													join ApiKey as ak on cu.id = ak.user_id
+													where api_key = ? and ccb.catID > 0
+													group by cc.id
+													order by ccb.catID`
+
+	UnPreparedStatements["CustomerCategoryContent"] = `select cc.id, cc.text,cc.added,cc.modified,cc.deleted, 
+													ct.type,ct.allowHTML,ccb.catID
+													from CustomerContent as cc
+													join CustomerContentBridge as ccb on cc.id = ccb.contentID
+													join ContentType as ct on cc.typeID = ct.cTypeID
+													join Customer as c on cc.custID = c.cust_id
+													join CustomerUser as cu on c.cust_id = cu.cust_ID
+													join ApiKey as ak on cu.id = ak.user_id
+													where api_key = ? and ccb.catID = ?
+													group by cc.id`
+
+	if !Db.Raw.IsConnected() {
+		Db.Raw.Connect()
+	}
+
+	c := make(chan int)
+
+	for stmtname, stmtsql := range UnPreparedStatements {
+		go PrepareStatement(stmtname, stmtsql, c)
+	}
+
+	for _, _ = range UnPreparedStatements {
+		<-c
+	}
+
+	prepChan <- 1
+}
+
 // Prepare all MySQL statements
 func PrepareAll() error {
 
@@ -505,26 +583,31 @@ func PrepareAll() error {
 	custChan := make(chan int)
 	userChan := make(chan int)
 	searchChan := make(chan int)
+	cmsChan := make(chan int)
 
 	go PrepareCategory(catChan)
 	go PrepareGeoLocation(geoChan)
 	go PrepareCustomer(custChan)
 	go PrepareCustomerUser(userChan)
 	go PrepareSearch(searchChan)
+	go PrepareCMS(cmsChan)
 
 	log.Print("Executing Prepared Statements...")
 
 	<-catChan
-	log.Print("...")
+	log.Println("Category Statements Completed.............[OK]")
 	<-geoChan
-	log.Print("...")
+	log.Println("GeoLocation Statements Completed..........[OK]")
 	<-custChan
-	log.Print("...")
+	log.Println("Customer Statements Completed.............[OK]")
 	<-userChan
-	log.Print("...")
+	log.Println("CustomerUser Statements Completed.........[OK]")
 	<-searchChan
+	log.Println("Search Statements Completed...............[OK]")
+	<-cmsChan
+	log.Println("CMS Statements Completed..................[OK]")
 
-	log.Print("Finished.")
+	log.Println("Finished.")
 
 	return nil
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"./controllers/category"
 	"./controllers/customer"
+	"./controllers/customer/cms/content"
 	"./controllers/dealers"
 	"./controllers/part"
 	"./controllers/search"
@@ -92,6 +93,19 @@ func main() {
 
 	server.Post("/customer/locations", customer_ctlr.GetLocations)
 	server.Post("/customer/users", customer_ctlr.GetUsers) // Requires a user to be marked as sudo
+
+	// Customer CMS endpoints
+	server.Get("/customer/cms", customer_content_ctlr.AllContent)
+
+	server.Get("/customer/cms/part", customer_content_ctlr.AllPartContent)
+	server.Get("/customer/cms/part/:id", customer_content_ctlr.PartContent)
+	server.Post("/customer/cms/part/:id", customer_content_ctlr.UpdatePartContent)
+	server.Del("/customer/cms/part/:id", customer_content_ctlr.DeletePartContent)
+
+	server.Get("/customer/cms/category", customer_content_ctlr.AllCategoryContent)
+	server.Get("/customer/cms/category/:id", customer_content_ctlr.CategoryContent)
+	server.Post("/customer/cms/category/:id", customer_content_ctlr.UpdateCategoryContent)
+	server.Del("/customer/cms/category/:id", customer_content_ctlr.DeleteCategoryContent)
 
 	server.Get("/search/part/:term", search_ctlr.SearchPart)
 
