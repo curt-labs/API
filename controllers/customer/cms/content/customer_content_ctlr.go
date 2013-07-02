@@ -3,6 +3,8 @@ package customer_content_ctlr
 import (
 	"../../../../helpers/plate"
 	"../../../../models/cms/customer"
+	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 )
@@ -19,7 +21,6 @@ func AllContent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	plate.ServeFormatted(w, r, content)
-
 }
 
 // Part Content Endpoints
@@ -55,9 +56,61 @@ func PartContent(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdatePartContent(w http.ResponseWriter, r *http.Request) {
+	// Get the key from the query string
+	params := r.URL.Query()
+	key := params.Get("key")
+	id, err := strconv.Atoi(params.Get(":id"))
+
+	// Defer the body closing until we're finished
+	defer r.Body.Close()
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var content customer_cms.CustomerContent
+	err = json.Unmarshal(body, &content)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err = content.Save(id, 0, key); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	plate.ServeFormatted(w, r, content)
 }
 
 func DeletePartContent(w http.ResponseWriter, r *http.Request) {
+	// Get the key from the query string
+	params := r.URL.Query()
+	key := params.Get("key")
+	id, err := strconv.Atoi(params.Get(":id"))
+
+	// Defer the body closing until we're finished
+	defer r.Body.Close()
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var content customer_cms.CustomerContent
+	err = json.Unmarshal(body, &content)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err = content.Delete(id, 0, key); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	plate.ServeFormatted(w, r, content)
 }
 
 // Category Content Endpoints
@@ -93,7 +146,59 @@ func CategoryContent(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateCategoryContent(w http.ResponseWriter, r *http.Request) {
+	// Get the key from the query string
+	params := r.URL.Query()
+	key := params.Get("key")
+	id, err := strconv.Atoi(params.Get(":id"))
+
+	// Defer the body closing until we're finished
+	defer r.Body.Close()
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var content customer_cms.CustomerContent
+	err = json.Unmarshal(body, &content)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err = content.Save(0, id, key); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	plate.ServeFormatted(w, r, content)
 }
 
 func DeleteCategoryContent(w http.ResponseWriter, r *http.Request) {
+	// Get the key from the query string
+	params := r.URL.Query()
+	key := params.Get("key")
+	id, err := strconv.Atoi(params.Get(":id"))
+
+	// Defer the body closing until we're finished
+	defer r.Body.Close()
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var content customer_cms.CustomerContent
+	err = json.Unmarshal(body, &content)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err = content.Delete(0, id, key); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	plate.ServeFormatted(w, r, content)
 }

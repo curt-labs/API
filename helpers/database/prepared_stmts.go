@@ -521,7 +521,7 @@ func PrepareCMS(prepChan chan int) {
 													join CustomerUser as cu on c.cust_id = cu.cust_ID
 													join ApiKey as ak on cu.id = ak.user_id
 													where api_key = ? and ccb.partID > 0
-													group by cc.id
+													group by ccb.partID, cc.id
 													order by ccb.partID`
 
 	UnPreparedStatements["CustomerPartContent"] = `select cc.id, cc.text,cc.added,cc.modified,cc.deleted, 
@@ -544,7 +544,7 @@ func PrepareCMS(prepChan chan int) {
 													join CustomerUser as cu on c.cust_id = cu.cust_ID
 													join ApiKey as ak on cu.id = ak.user_id
 													where api_key = ? and ccb.catID > 0
-													group by cc.id
+													group by ccb.catID, cc.id
 													order by ccb.catID`
 
 	UnPreparedStatements["CustomerCategoryContent"] = `select cc.id, cc.text,cc.added,cc.modified,cc.deleted, 
@@ -557,6 +557,49 @@ func PrepareCMS(prepChan chan int) {
 													join ApiKey as ak on cu.id = ak.user_id
 													where api_key = ? and ccb.catID = ?
 													group by cc.id`
+
+	UnPreparedStatements["InsertCustomerContent"] = `insert into CustomerContent (
+														text, custID, modified, userID, typeID, deleted
+													)
+													select ?, c.cust_id, now(), cu.id, ?, 0
+													from Customer as c
+													join CustomerUser as cu on c.cust_id = cu.cust_ID
+													join ApiKey as ak on cu.id = ak.user_id
+													where ak.api_key = ?`
+
+	UnPreparedStatements["UpdateCustomerContent"] = `update CustomerContent as cc
+														join Customer as c on cc.custID = c.cust_id
+														join CustomerUser as cu on c.cust_id = cu.cust_ID
+														join ApiKey as ak on cu.id = ak.user_id
+														set cc.text = ?, cc.modified = now(), 
+														cc.userID = cu.id, cc.typeID = ?, cc.deleted = ?
+														where ak.api_key = ? and cc.id = ?`
+
+	UnPreparedStatements["CheckExistingCustomerContentBridge"] = `select count(id) from CustomerContentBridge
+																	where partID = ? and catID = ? and contentID = ?`
+
+	UnPreparedStatements["CreateCustomerContentBridge"] = `insert into CustomerContentBridge
+															(partID, catID, contentID)
+															values (?,?,?)`
+
+	UnPreparedStatements["DeleteCustomerContentBridge"] = `delete from CustomerContentBridge
+															where contentID in(
+																select cc.id from CustomerContent as cc
+																join Customer as c on cc.custID = c.cust_id
+																join CustomerUser as cu on c.cust_id = cu.cust_ID
+																join ApiKey ak on cu.id = ak.user_id
+																where api_key = ? and contentID = ?
+															) and partID = ? and catID = ?`
+
+	UnPreparedStatements["MarkCustomerContentDeleted"] = `update CustomerContent as cc
+															join Customer as c on cc.custID = c.cust_id
+															join CustomerUser as cu on c.cust_id = cu.cust_ID
+															join ApiKey as ak on cu.id = ak.user_id
+															set cc.deleted = 1, cc.modified = now(),
+															cc.userID = cu.id where ak.api_key = ?
+															and cc.id = ?`
+
+	UnPreparedStatements["GetContentTypeId"] = `select cTypeID, type, allowHTML from ContentType where type = ? limit 1`
 
 	if !Db.Raw.IsConnected() {
 		Db.Raw.Connect()
