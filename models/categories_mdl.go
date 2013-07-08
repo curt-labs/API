@@ -4,11 +4,13 @@ import (
 	"../helpers/database"
 	"../helpers/mymysql/mysql"
 	"../helpers/redis"
+	"./cms/customer"
 	"encoding/json"
 	"errors"
 	"log"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -214,7 +216,7 @@ func (part *Part) PartBreadcrumbs() error {
 
 // }
 
-func (part *Part) GetPartCategories() (cats []ExtendedCategory, err error) {
+func (part *Part) GetPartCategories(key string) (cats []ExtendedCategory, err error) {
 
 	if part.PartId == 0 {
 		return
@@ -278,6 +280,7 @@ func (part *Part) GetPartCategories() (cats []ExtendedCategory, err error) {
 
 		contentChan := make(chan int)
 		subChan := make(chan int)
+		customerChan := make(chan int)
 
 		c := Category{
 			CategoryId: cat.CategoryId,
@@ -299,8 +302,26 @@ func (part *Part) GetPartCategories() (cats []ExtendedCategory, err error) {
 			subChan <- 1
 		}()
 
+		go func() {
+			content, _ := customer_cms.GetCategoryContent(cat.CategoryId, key)
+			for _, con := range content {
+				strArr := strings.Split(con.ContentType.Type, ":")
+				cType := con.ContentType.Type
+				if len(strArr) > 1 {
+					cType = strArr[1]
+				}
+				log.Println(con)
+				cat.Content = append(cat.Content, Content{
+					Key:   cType,
+					Value: con.Text,
+				})
+			}
+			customerChan <- 1
+		}()
+
 		<-contentChan
 		<-subChan
+		<-customerChan
 
 		cats = append(cats, cat)
 	}
@@ -750,7 +771,19 @@ func (c Category) GetCategory(key string) (extended ExtendedCategory, err error)
 	if len(cat_bytes) > 0 {
 		err = json.Unmarshal(cat_bytes, &extended)
 		if err == nil {
-			return
+			content, err := customer_cms.GetCategoryContent(extended.CategoryId, key)
+			for _, con := range content {
+				strArr := strings.Split(con.ContentType.Type, ":")
+				cType := con.ContentType.Type
+				if len(strArr) > 1 {
+					cType = strArr[1]
+				}
+				extended.Content = append(extended.Content, Content{
+					Key:   cType,
+					Value: con.Text,
+				})
+			}
+			return extended, err
 		}
 	}
 
@@ -828,6 +861,19 @@ func (c Category) GetCategory(key string) (extended ExtendedCategory, err error)
 
 	if cat_bytes, err := json.Marshal(extended); err == nil {
 		redis.RedisClient.Setex(redis_key, 86400, cat_bytes)
+	}
+
+	content, err := customer_cms.GetCategoryContent(extended.CategoryId, key)
+	for _, con := range content {
+		strArr := strings.Split(con.ContentType.Type, ":")
+		cType := con.ContentType.Type
+		if len(strArr) > 1 {
+			cType = strArr[1]
+		}
+		extended.Content = append(extended.Content, Content{
+			Key:   cType,
+			Value: con.Text,
+		})
 	}
 
 	return

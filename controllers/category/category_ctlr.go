@@ -9,7 +9,7 @@ import (
 
 func GetCategory(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
-	key := params.Get(":key")
+	key := params.Get("key")
 	id, err := strconv.Atoi(params.Get(":id"))
 
 	var cat Category

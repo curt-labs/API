@@ -225,11 +225,12 @@ func InstallSheet(w http.ResponseWriter, r *http.Request) {
 func Categories(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 	id, _ := strconv.Atoi(params.Get(":part"))
+	key := params.Get("key")
 	part := Part{
 		PartId: id,
 	}
 
-	cats, err := part.GetPartCategories()
+	cats, err := part.GetPartCategories(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
