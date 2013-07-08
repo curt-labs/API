@@ -5,6 +5,7 @@ import (
 	"../helpers/database"
 	"../helpers/redis"
 	"../helpers/rest"
+	"./cms/customer"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -465,6 +466,7 @@ func (p *Part) BindCustomer(key string) error {
 
 	priceChan := make(chan int)
 	refChan := make(chan int)
+	contentChan := make(chan int)
 
 	go func() {
 		price, _ = GetCustomerPrice(key, p.PartId)
@@ -476,8 +478,26 @@ func (p *Part) BindCustomer(key string) error {
 		refChan <- 1
 	}()
 
+	go func() {
+		content, _ := customer_cms.GetPartContent(p.PartId, key)
+		for _, con := range content {
+
+			strArr := strings.Split(con.ContentType.Type, ":")
+			cType := con.ContentType.Type
+			if len(strArr) > 1 {
+				cType = strArr[1]
+			}
+			p.Content = append(p.Content, Content{
+				Key:   cType,
+				Value: con.Text,
+			})
+		}
+		contentChan <- 1
+	}()
+
 	<-priceChan
 	<-refChan
+	<-contentChan
 
 	cust := CustomerPart{
 		Price:         price,
@@ -917,15 +937,32 @@ func (lookup *Lookup) BindCustomer(key string) error {
 		return nil
 	}
 
-	prices, err := lookup.GetCustomerPrice(key)
-	if err != nil {
-		return err
-	}
+	var prices map[int]float64
+	var refs map[int]int
+	var content map[int][]customer_cms.CustomerContent
 
-	refs, err := lookup.GetCustomerCartReference(key)
-	if err != nil {
-		return err
-	}
+	priceChan := make(chan int)
+	refChan := make(chan int)
+	conChan := make(chan int)
+
+	go func() {
+		prices, _ = lookup.GetCustomerPrice(key)
+		priceChan <- 1
+	}()
+
+	go func() {
+		refs, _ = lookup.GetCustomerCartReference(key)
+		refChan <- 1
+	}()
+
+	go func() {
+		content, _ = customer_cms.GetGroupedPartContent(ids, key)
+		conChan <- 1
+	}()
+
+	<-priceChan
+	<-refChan
+	<-conChan
 
 	for _, p := range lookup.Parts {
 		var cp CustomerPart
@@ -934,6 +971,19 @@ func (lookup *Lookup) BindCustomer(key string) error {
 		}
 		if ref, ok := refs[p.PartId]; ok {
 			cp.CartReference = ref
+		}
+		if cons, ok := content[p.PartId]; ok {
+			for _, con := range cons {
+				strArr := strings.Split(con.ContentType.Type, ":")
+				cType := con.ContentType.Type
+				if len(strArr) > 1 {
+					cType = strArr[1]
+				}
+				p.Content = append(p.Content, Content{
+					Key:   cType,
+					Value: con.Text,
+				})
+			}
 		}
 		p.Customer = cp
 	}
