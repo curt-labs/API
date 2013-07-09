@@ -35,6 +35,37 @@ func KeyedUserAuthentication(w http.ResponseWriter, r *http.Request) {
 	plate.ServeFormatted(w, r, cust)
 }
 
+func GetCustomer(w http.ResponseWriter, r *http.Request) {
+	params := r.URL.Query()
+	key := params.Get("key")
+	if key == "" {
+		key = r.FormValue("key")
+	}
+
+	if key == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	id, err := GetCustomerIdFromKey(key)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	c := Customer{
+		Id: id,
+	}
+
+	err = c.GetCustomer()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	plate.ServeFormatted(w, r, c)
+}
+
 func GetLocations(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 	key := params.Get("key")
