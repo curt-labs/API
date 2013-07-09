@@ -223,9 +223,17 @@ func (u *CustomerUser) AuthenticateUser(pass string) error {
 	}
 
 	row, res, err := qry.ExecFirst(u.Email)
+
+	// Check for error while executing query
 	if database.MysqlError(err) {
 		return err
 	}
+
+	// Make sure we have a record for this email
+	if row == nil {
+		return errors.New("No user found that matches: " + u.Email)
+	}
+
 	pwd := res.Map("password")
 	prop_pass := res.Map("proper_password")
 	user_id := res.Map("id")

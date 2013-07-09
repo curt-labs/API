@@ -44,11 +44,7 @@ func main() {
 func doTests() {
 	exec.Command("killall", "index").Run()
 	var gotest *exec.Cmd
-	if testing != nil {
-		gotest = exec.Command("go", "test")
-	} else {
-		gotest = exec.Command("go", "run", "index.go")
-	}
+	gotest = exec.Command("go", "run", "index.go")
 	gotest.Stderr = os.Stderr
 	gotest.Stdout = os.Stdout
 	if err := gotest.Start(); err != nil {
