@@ -4,7 +4,6 @@ import (
 	"../helpers/database"
 	"../helpers/mymysql/mysql"
 	"../helpers/redis"
-	"./cms/customer"
 	"encoding/json"
 	"errors"
 	"log"
@@ -303,7 +302,7 @@ func (part *Part) GetPartCategories(key string) (cats []ExtendedCategory, err er
 		}()
 
 		go func() {
-			content, _ := customer_cms.GetCategoryContent(cat.CategoryId, key)
+			content, _ := GetCategoryContent(cat.CategoryId, key)
 			for _, con := range content {
 				strArr := strings.Split(con.ContentType.Type, ":")
 				cType := con.ContentType.Type
@@ -771,7 +770,7 @@ func (c Category) GetCategory(key string) (extended ExtendedCategory, err error)
 	if len(cat_bytes) > 0 {
 		err = json.Unmarshal(cat_bytes, &extended)
 		if err == nil {
-			content, err := customer_cms.GetCategoryContent(extended.CategoryId, key)
+			content, err := GetCategoryContent(extended.CategoryId, key)
 			for _, con := range content {
 				strArr := strings.Split(con.ContentType.Type, ":")
 				cType := con.ContentType.Type
@@ -863,7 +862,7 @@ func (c Category) GetCategory(key string) (extended ExtendedCategory, err error)
 		redis.RedisClient.Setex(redis_key, 86400, cat_bytes)
 	}
 
-	content, err := customer_cms.GetCategoryContent(extended.CategoryId, key)
+	content, err := GetCategoryContent(extended.CategoryId, key)
 	for _, con := range content {
 		strArr := strings.Split(con.ContentType.Type, ":")
 		cType := con.ContentType.Type

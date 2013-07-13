@@ -1,8 +1,8 @@
-package customer_content_ctlr
+package customer_ctlr
 
 import (
-	"../../../../helpers/plate"
-	"../../../../models/cms/customer"
+	"../../helpers/plate"
+	. "../../models"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -10,17 +10,59 @@ import (
 )
 
 // Get it all
-func AllContent(w http.ResponseWriter, r *http.Request) {
+func GetAllContent(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 	key := params.Get("key")
 
-	content, err := customer_cms.AllContent(key)
+	content, err := AllCustomerContent(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	plate.ServeFormatted(w, r, content)
+}
+
+// Get Content by Content Id
+// Returns: CustomerContent
+func GetContentById(w http.ResponseWriter, r *http.Request) {
+	params := r.URL.Query()
+	key := params.Get("key")
+	id, err := strconv.Atoi(params.Get(":id"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	content, err := GetCustomerContent(id, key)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	plate.ServeFormatted(w, r, content)
+
+}
+
+// Get Content by Content Id
+// Returns: CustomerContent
+func GetContentRevisionsById(w http.ResponseWriter, r *http.Request) {
+	params := r.URL.Query()
+	key := params.Get("key")
+	id, err := strconv.Atoi(params.Get(":id"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	revs, err := GetCustomerContentRevisions(id, key)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	plate.ServeFormatted(w, r, revs)
+
 }
 
 // Part Content Endpoints
@@ -28,7 +70,7 @@ func AllPartContent(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 	key := params.Get("key")
 
-	content, err := customer_cms.AllPartContent(key)
+	content, err := GetAllPartContent(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -37,7 +79,7 @@ func AllPartContent(w http.ResponseWriter, r *http.Request) {
 	plate.ServeFormatted(w, r, content)
 }
 
-func PartContent(w http.ResponseWriter, r *http.Request) {
+func UniquePartContent(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 	key := params.Get("key")
 	partID, err := strconv.Atoi(params.Get(":id"))
@@ -46,7 +88,7 @@ func PartContent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	content, err := customer_cms.GetPartContent(partID, key)
+	content, err := GetPartContent(partID, key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -70,7 +112,7 @@ func UpdatePartContent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var content customer_cms.CustomerContent
+	var content CustomerContent
 	err = json.Unmarshal(body, &content)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -99,7 +141,7 @@ func DeletePartContent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var content customer_cms.CustomerContent
+	var content CustomerContent
 	err = json.Unmarshal(body, &content)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -118,7 +160,7 @@ func AllCategoryContent(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 	key := params.Get("key")
 
-	content, err := customer_cms.AllCategoryContent(key)
+	content, err := GetAllCategoryContent(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -127,7 +169,7 @@ func AllCategoryContent(w http.ResponseWriter, r *http.Request) {
 	plate.ServeFormatted(w, r, content)
 }
 
-func CategoryContent(w http.ResponseWriter, r *http.Request) {
+func UniqueCategoryContent(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 	key := params.Get("key")
 	catID, err := strconv.Atoi(params.Get(":id"))
@@ -136,7 +178,7 @@ func CategoryContent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	content, err := customer_cms.GetCategoryContent(catID, key)
+	content, err := GetCategoryContent(catID, key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -160,7 +202,7 @@ func UpdateCategoryContent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var content customer_cms.CustomerContent
+	var content CustomerContent
 	err = json.Unmarshal(body, &content)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -189,7 +231,7 @@ func DeleteCategoryContent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var content customer_cms.CustomerContent
+	var content CustomerContent
 	err = json.Unmarshal(body, &content)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

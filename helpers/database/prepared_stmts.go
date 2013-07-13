@@ -442,6 +442,12 @@ func PrepareCustomerUser(prepChan chan int) {
 														where akt.type = ? && ak.api_key = ?
 														limit 1`
 
+	UnPreparedStatements["CustomerUserFromId"] = `select cu.* from CustomerUser as cu
+														join ApiKey as ak on cu.id = ak.user_id
+														join ApiKeyType as akt on ak.type_id = akt.id
+														where cu.id = ?
+														limit 1`
+
 	if !Db.Raw.IsConnected() {
 		Db.Raw.Connect()
 	}
@@ -511,6 +517,31 @@ func PrepareCMS(prepChan chan int) {
 													join ApiKey as ak on cu.id = ak.user_id
 													where api_key = ?
 													group by cc.id`
+
+	UnPreparedStatements["CustomerContent"] = `select cc.id, cc.text,cc.added,cc.modified,cc.deleted, 
+													ct.type,ct.allowHTML,ccb.partID,ccb.catID
+													from CustomerContent as cc
+													join CustomerContentBridge as ccb on cc.id = ccb.contentID
+													join ContentType as ct on cc.typeID = ct.cTypeID
+													join Customer as c on cc.custID = c.cust_id
+													join CustomerUser as cu on c.cust_id = cu.cust_ID
+													join ApiKey as ak on cu.id = ak.user_id
+													where api_key = ? and cc.id = ?
+													limit 1`
+
+	UnPreparedStatements["CustomerContentRevisions"] = `select ccr.old_text, ccr.new_text, ccr.date, ccr.changeType, 
+														ct1.type as newType, ct1.allowHTML as newAllowHtml,
+														ct2.type as oldType, ct2.allowHTML as oldAllowHtml,
+														cu.id as userId
+														from CustomerContent_Revisions ccr
+														left join ContentType ct1 on ccr.new_type = ct1.cTypeId
+														left join ContentType ct2 on ccr.old_type = ct2.cTypeId
+														join CustomerContent cc on ccr.contentID = cc.id
+														join Customer as c on cc.custID = c.cust_id
+														join CustomerUser as cu on c.cust_id = cu.cust_ID
+														join ApiKey as ak on cu.id = ak.user_id
+														where ak.api_key = ? and ccr.contentID = ?
+														order by ccr.date`
 
 	UnPreparedStatements["AllCustomerPartContent"] = `select cc.id, cc.text,cc.added,cc.modified,cc.deleted, 
 													ct.type,ct.allowHTML,ccb.partID

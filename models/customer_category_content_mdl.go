@@ -1,7 +1,7 @@
-package customer_cms
+package models
 
 import (
-	"../../../helpers/database"
+	"../helpers/database"
 	"time"
 )
 
@@ -11,7 +11,7 @@ type CategoryContent struct {
 }
 
 // Retrieves all category content for this customer
-func AllCategoryContent(key string) (content []CategoryContent, err error) {
+func GetAllCategoryContent(key string) (content []CategoryContent, err error) {
 	qry, err := database.GetStatement("AllCustomerCategoryContent")
 	if database.MysqlError(err) {
 		return

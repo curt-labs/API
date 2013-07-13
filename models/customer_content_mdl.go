@@ -1,7 +1,7 @@
-package customer_cms
+package models
 
 import (
-	"../../../helpers/database"
+	"../helpers/database"
 	"errors"
 	"html"
 	"log"
@@ -29,7 +29,7 @@ type ContentType struct {
 }
 
 type CustomerContentRevision struct {
-	User                           string
+	User                           CustomerUser
 	OldText, NewText               string
 	Date                           time.Time
 	ChangeType                     string
@@ -37,7 +37,7 @@ type CustomerContentRevision struct {
 }
 
 // Retrieves all content for this customer
-func AllContent(key string) (content []CustomerContent, err error) {
+func AllCustomerContent(key string) (content []CustomerContent, err error) {
 
 	qry, err := database.GetStatement("AllCustomerContent")
 	if database.MysqlError(err) {
@@ -82,6 +82,103 @@ func AllContent(key string) (content []CustomerContent, err error) {
 		}
 
 		content = append(content, c)
+	}
+
+	return
+}
+
+func GetCustomerContent(id int, key string) (content CustomerContent, err error) {
+	qry, err := database.GetStatement("CustomerContent")
+	if database.MysqlError(err) {
+		return
+	}
+
+	row, res, err := qry.ExecFirst(key, id)
+	if database.MysqlError(err) {
+		return
+	}
+
+	text := res.Map("text")
+	added := res.Map("added")
+	mod := res.Map("modified")
+	deleted := res.Map("deleted")
+	cType := res.Map("type")
+	html := res.Map("allowHTML")
+	partID := res.Map("partID")
+	catID := res.Map("catID")
+
+	content = CustomerContent{
+		Id:       id,
+		Text:     row.Str(text),
+		Added:    row.ForceTime(added, time.UTC),
+		Modified: row.ForceTime(mod, time.UTC),
+		Hidden:   row.ForceBool(deleted),
+		ContentType: ContentType{
+			AllowHtml: row.ForceBool(html),
+		},
+	}
+
+	part_id := row.Int(partID)
+	cat_id := row.Int(catID)
+	if part_id > 0 {
+		content.ContentType.Type = "Part:" + row.Str(cType)
+	} else if cat_id > 0 {
+		content.ContentType.Type = "Category:" + row.Str(cType)
+	} else {
+		content.ContentType.Type = row.Str(cType)
+	}
+
+	return
+}
+
+func GetCustomerContentRevisions(id int, key string) (revs []CustomerContentRevision, err error) {
+	qry, err := database.GetStatement("CustomerContentRevisions")
+	if database.MysqlError(err) {
+		return
+	}
+
+	rows, res, err := qry.Exec(key, id)
+	if database.MysqlError(err) {
+		return
+	}
+
+	txtOld := res.Map("old_text")
+	txtNew := res.Map("new_text")
+	date := res.Map("date")
+	change := res.Map("changeType")
+	newType := res.Map("newType")
+	oldType := res.Map("oldType")
+	newHTML := res.Map("newAllowHtml")
+	oldHTML := res.Map("oldAllowHtml")
+	userId := res.Map("userId")
+
+	users := make(map[string]CustomerUser, 0)
+
+	for _, row := range rows {
+		ccr := CustomerContentRevision{
+			OldText:    row.Str(txtOld),
+			NewText:    row.Str(txtNew),
+			Date:       row.ForceTime(date, time.UTC),
+			ChangeType: row.Str(change),
+			OldContentType: ContentType{
+				Type:      row.Str(oldType),
+				AllowHtml: row.ForceBool(oldHTML),
+			},
+			NewContentType: ContentType{
+				Type:      row.Str(newType),
+				AllowHtml: row.ForceBool(newHTML),
+			},
+		}
+
+		if _, ok := users[row.Str(userId)]; !ok {
+			u, err := GetCustomerUserById(row.Str(userId))
+			if err == nil {
+				users[row.Str(userId)] = u
+			}
+		}
+		ccr.User = users[row.Str(userId)]
+
+		revs = append(revs, ccr)
 	}
 
 	return

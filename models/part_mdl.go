@@ -5,7 +5,6 @@ import (
 	"../helpers/database"
 	"../helpers/redis"
 	"../helpers/rest"
-	"./cms/customer"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -479,7 +478,7 @@ func (p *Part) BindCustomer(key string) error {
 	}()
 
 	go func() {
-		content, _ := customer_cms.GetPartContent(p.PartId, key)
+		content, _ := GetPartContent(p.PartId, key)
 		for _, con := range content {
 
 			strArr := strings.Split(con.ContentType.Type, ":")
@@ -939,7 +938,7 @@ func (lookup *Lookup) BindCustomer(key string) error {
 
 	var prices map[int]float64
 	var refs map[int]int
-	var content map[int][]customer_cms.CustomerContent
+	var content map[int][]CustomerContent
 
 	priceChan := make(chan int)
 	refChan := make(chan int)
@@ -956,7 +955,7 @@ func (lookup *Lookup) BindCustomer(key string) error {
 	}()
 
 	go func() {
-		content, _ = customer_cms.GetGroupedPartContent(ids, key)
+		content, _ = GetGroupedPartContent(ids, key)
 		conChan <- 1
 	}()
 

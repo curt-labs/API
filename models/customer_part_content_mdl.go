@@ -1,7 +1,7 @@
-package customer_cms
+package models
 
 import (
-	"../../../helpers/database"
+	"../helpers/database"
 	"strconv"
 	"strings"
 	"time"
@@ -26,7 +26,7 @@ type PartContent struct {
 }
 
 // Retrieves all part content for this customer
-func AllPartContent(key string) (content []PartContent, err error) {
+func GetAllPartContent(key string) (content []PartContent, err error) {
 
 	qry, err := database.GetStatement("AllCustomerPartContent")
 	if database.MysqlError(err) {

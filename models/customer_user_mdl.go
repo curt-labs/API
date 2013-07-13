@@ -572,6 +572,41 @@ func GetCustomerUserFromKey(key string) (u CustomerUser, err error) {
 	return
 }
 
+func GetCustomerUserById(id string) (u CustomerUser, err error) {
+	qry, err := database.GetStatement("CustomerUserFromId")
+	if database.MysqlError(err) {
+		return
+	}
+
+	row, res, err := qry.ExecFirst(id)
+	if database.MysqlError(err) {
+		return
+	}
+	user_id := res.Map("id")
+	name := res.Map("name")
+	mail := res.Map("email")
+	date := res.Map("date_added")
+	active := res.Map("active")
+	sudo := res.Map("isSudo")
+
+	if err != nil {
+		return
+	} else if row == nil {
+		err = errors.New("Invalid key")
+		return
+	}
+
+	u.Name = row.Str(name)
+	u.Email = row.Str(mail)
+	u.Active = row.Int(active) == 1
+	u.Sudo = row.Int(sudo) == 1
+	u.Current = true
+	u.Id = row.Str(user_id)
+	u.DateAdded = row.ForceLocaltime(date)
+
+	return
+}
+
 // The disabling of the triggers is failing in this method.
 //
 // I'm going to disable the call to it completely and expand
