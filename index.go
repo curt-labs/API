@@ -97,10 +97,6 @@ func main() {
 	// Customer CMS endpoints
 	server.Get("/customer/cms", customer_ctlr.GetAllContent)
 
-	// Customer Content By Content Id
-	server.Get("/customer/cms/:id", customer_ctlr.GetContentById)
-	server.Get("/customer/cms/:id/revisions", customer_ctlr.GetContentRevisionsById)
-
 	server.Get("/customer/cms/part", customer_ctlr.AllPartContent)
 	server.Get("/customer/cms/part/:id", customer_ctlr.UniquePartContent)
 	server.Post("/customer/cms/part/:id", customer_ctlr.UpdatePartContent)
@@ -110,6 +106,10 @@ func main() {
 	server.Get("/customer/cms/category/:id", customer_ctlr.UniqueCategoryContent)
 	server.Post("/customer/cms/category/:id", customer_ctlr.UpdateCategoryContent)
 	server.Del("/customer/cms/category/:id", customer_ctlr.DeleteCategoryContent)
+
+	// Customer Content By Content Id
+	server.Get("/customer/cms/:id", customer_ctlr.GetContentById)
+	server.Get("/customer/cms/:id/revisions", customer_ctlr.GetContentRevisionsById)
 
 	server.Get("/search/part/:term", search_ctlr.SearchPart)
 
