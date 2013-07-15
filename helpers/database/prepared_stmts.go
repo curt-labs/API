@@ -632,6 +632,8 @@ func PrepareCMS(prepChan chan int) {
 
 	UnPreparedStatements["GetContentTypeId"] = `select cTypeID, type, allowHTML from ContentType where type = ? limit 1`
 
+	UnPreparedStatements["GetAllContentTypes"] = `select type, allowHTML from ContentType order by type`
+
 	if !Db.Raw.IsConnected() {
 		Db.Raw.Connect()
 	}

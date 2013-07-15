@@ -244,3 +244,13 @@ func DeleteCategoryContent(w http.ResponseWriter, r *http.Request) {
 	}
 	plate.ServeFormatted(w, r, content)
 }
+
+// Content Types
+func GetAllContentTypes(w http.ResponseWriter, r *http.Request) {
+	types, err := AllCustomerContentTypes()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	plate.ServeFormatted(w, r, types)
+}

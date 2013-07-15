@@ -360,3 +360,27 @@ func (content CustomerContent) GetContentType() (ct IndexedContentType, err erro
 
 	return
 }
+
+func AllCustomerContentTypes() (types []ContentType, err error) {
+	qry, err := database.GetStatement("GetAllContentTypes")
+	if database.MysqlError(err) {
+		return
+	}
+
+	rows, res, err := qry.Exec()
+	if database.MysqlError(err) || rows == nil {
+		return
+	}
+
+	typ := res.Map("type")
+	html := res.Map("allowHTML")
+
+	for _, row := range rows {
+		ct := ContentType{
+			Type:      row.Str(typ),
+			AllowHtml: row.ForceBool(html),
+		}
+		types = append(types, ct)
+	}
+	return
+}

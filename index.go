@@ -95,13 +95,20 @@ func main() {
 	server.Post("/customer/users", customer_ctlr.GetUsers) // Requires a user to be marked as sudo
 
 	// Customer CMS endpoints
+
+	// Content Types
+	server.Get("/customer/cms/content_types", customer_ctlr.GetAllContentTypes)
+
+	// All Customer Content
 	server.Get("/customer/cms", customer_ctlr.GetAllContent)
 
+	// Customer Part Content
 	server.Get("/customer/cms/part", customer_ctlr.AllPartContent)
 	server.Get("/customer/cms/part/:id", customer_ctlr.UniquePartContent)
 	server.Post("/customer/cms/part/:id", customer_ctlr.UpdatePartContent)
 	server.Del("/customer/cms/part/:id", customer_ctlr.DeletePartContent)
 
+	// Customer Category Content
 	server.Get("/customer/cms/category", customer_ctlr.AllCategoryContent)
 	server.Get("/customer/cms/category/:id", customer_ctlr.UniqueCategoryContent)
 	server.Post("/customer/cms/category/:id", customer_ctlr.UpdateCategoryContent)
