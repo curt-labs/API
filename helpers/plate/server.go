@@ -193,7 +193,7 @@ func (this *Server) AddRoute(method string, pattern string, handler http.Handler
 	route := &Route{}
 	route.method = method
 	route.regex = regex
-	route.handler = makeGzipHandler(handler)
+	route.handler = handler
 	route.params = params
 	route.sensitive = false
 
@@ -513,7 +513,6 @@ func ServeFormatted(w http.ResponseWriter, r *http.Request, v interface{}) {
 	default:
 		ServeJson(w, v, params.Get("callback"))
 	}
-
 	return
 }
 
