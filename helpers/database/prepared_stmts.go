@@ -532,7 +532,7 @@ func PrepareCMS(prepChan chan int) {
 	UnPreparedStatements["CustomerContentRevisions"] = `select ccr.old_text, ccr.new_text, ccr.date, ccr.changeType, 
 														ct1.type as newType, ct1.allowHTML as newAllowHtml,
 														ct2.type as oldType, ct2.allowHTML as oldAllowHtml,
-														cu.id as userId
+														ccr.userID as userId
 														from CustomerContent_Revisions ccr
 														left join ContentType ct1 on ccr.new_type = ct1.cTypeId
 														left join ContentType ct2 on ccr.old_type = ct2.cTypeId
