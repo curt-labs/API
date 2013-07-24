@@ -16,14 +16,12 @@ role :app, "173.255.117.20", "173.255.112.170"
 
 set :deploy_to, "/home/#{user}/#{application}"
 set :deploy_via, :remote_cache
+set :gopath, deploy_to
 
 set :use_sudo, false
 set :sudo_prompt, ""
 set :normalize_asset_timestamps, false
 
-set :default_environment, {
-  'GOPATH' => "$HOME/gocode"
-}
 
 after "deploy", "deploy:goget"
 after "deploy:goget", "db:configure"
@@ -59,8 +57,10 @@ end
 
 namespace :deploy do
   task :goget do
-  	run "/home/#{user}/bin/go get -u github.com/ziutek/mymysql/native"
-  	run "/home/#{user}/bin/go get -u github.com/ziutek/mymysql/mysql"
+    with_env('GOPATH', gopath) do
+    	run "/home/#{user}/bin/go get -u github.com/ziutek/mymysql/native"
+    	run "/home/#{user}/bin/go get -u github.com/ziutek/mymysql/mysql"
+    end
   end
   task :compile do
   	run "GOOS=linux GOARCH=amd64 CGO_ENABLED=0 /home/#{user}/bin/go build -o #{deploy_to}/current/go-api #{deploy_to}/current/index.go"
