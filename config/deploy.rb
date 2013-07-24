@@ -59,7 +59,7 @@ namespace :deploy do
   task :goget do
     with_env('GOPATH', gopath) do
     	#run "/home/#{user}/bin/go get -u github.com/ziutek/mymysql/native"
-    	run "sudo /home/#{user}/bin/go get -u github.com/ziutek/mymysql/mysql"
+    	run "export GOPATH=$HOME/gocode | sudo /home/#{user}/bin/go get -u github.com/ziutek/mymysql/mysql"
     end
   end
   task :compile do
