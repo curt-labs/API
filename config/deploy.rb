@@ -22,13 +22,15 @@ set :use_sudo, false
 set :sudo_prompt, ""
 set :normalize_asset_timestamps, false
 
+set :default_environment, {
+  'GOPATH' => '$HOME/gocode'
+}
 
 after "deploy", "deploy:goget"
 after "deploy:goget", "db:configure"
 after "db:configure", "deploy:compile"
 after "deploy:compile", "deploy:stop"
 after "deploy:stop", "deploy:restart"
-
 
 namespace :db do
   desc "set database connction info"
