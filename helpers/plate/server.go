@@ -486,6 +486,14 @@ func ServeXml(w http.ResponseWriter, v interface{}) {
 	w.Header().Set("Content-Type", "text/xml; charset=utf-8")
 }
 
+// ServeStringAsXml replies to the request with an
+// XML representation of string content.
+func ServeStringAsXml(w http.ResponseWriter, content string) {
+	w.Header().Set("Content-Length", strconv.Itoa(len(content)))
+	w.Header().Set("Content-Type", "text/xml; charset=utf-8")
+	w.Write([]byte(content))
+}
+
 // ReadXml will parses the XML-encoded data in the http
 // Request object and stores the result in the value
 // pointed to by v.

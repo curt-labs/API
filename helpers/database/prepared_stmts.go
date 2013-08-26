@@ -651,10 +651,76 @@ func PrepareCMS(prepChan chan int) {
 	prepChan <- 1
 }
 
+func PrepareACES(acesChan chan int) {
+	UnPreparedStatements := make(map[string]string, 0)
+
+	// UnPreparedStatements["UniqueACESPartNumbers"] = `select distinct PartNumber from vcdb_VehiclePart
+	// 													order by PartNumber limit 10`
+
+	// UnPreparedStatements["GetACESPartData"] = `select vp.ID, p.ACESPartTypeID, p.shortDesc, vp.PartNumber from vcdb_VehiclePart as vp
+	// 											join Part as p on vp.PartNumber = p.partID
+	// 											group by vp.ID`
+	// UnPreparedStatements["GetACESBaseData"] = `select vp.ID, p.ACESPartTypeID, p.shortDesc, vp.PartNumber, bv.AAIABaseVehicleID, s.AAIASubmodelID from BaseVehicle as bv
+	// 													join vcdb_Vehicle as v on bv.ID = v.BaseVehicleID
+	// 													join vcdb_VehiclePart as vp on v.ID = vp.VehicleID
+	// 													join Part as p on vp.PartNumber = p.partID
+	// 													join Submodel as s on v.SubModelID = s.ID`
+
+	UnPreparedStatements["GetAcesTypes"] = `select ID, name from AcesType order by ID`
+	UnPreparedStatements["BigFatACESQuery"] = `select vp.ID, p.ACESPartTypeID, p.shortDesc, vp.PartNumber, bv.AAIABaseVehicleID, s.AAIASubmodelID, p.classID,
+												(
+													select group_concat(trim(ca1.vcdbID),'') from ConfigAttribute as ca1
+													join VehicleConfigAttribute as vca1 on ca1.ID = vca1.AttributeID
+													where vca1.VehicleConfigID = v.ConfigID && ca1.vcdbID > 0 && ca1.value != ""
+												) as configIDs,
+												(
+													select group_concat(cat2.AcesTypeID) from ConfigAttributeType as cat2
+													join ConfigAttribute as ca2 on cat2.ID = ca2.ConfigAttributeTypeID
+													join VehicleConfigAttribute as vca2 on ca2.ID = vca2.AttributeID
+													join vcdb_Vehicle as v2 on vca2.VehicleConfigID = v2.ConfigID
+													where v2.ID = v.ID && cat2.AcesTypeID > 0
+												) as configNames,
+												(
+													select group_concat(ca3.value) from ConfigAttribute as ca3
+													join ConfigAttributeType as cat3 on ca3.ConfigAttributeTypeID = cat3.ID
+													join VehicleConfigAttribute as vca3 on ca3.ID = vca3.AttributeID
+													join vcdb_Vehicle as v3 on vca3.VehicleConfigID = v3.ConfigID
+													where v3.ID = v.ID && ca3.vcdbID = 0
+												) as notes,
+												(
+													select group_concat(n.note) from Note as n
+													where n.vehiclePartID = vp.ID
+												) as part_notes
+												from BaseVehicle as bv
+												join vcdb_Make as ma on bv.MakeID = ma.ID
+												join vcdb_Model as mo on bv.ModelID = mo.ID
+												join vcdb_Vehicle as v on bv.ID = v.BaseVehicleID
+												join vcdb_VehiclePart as vp on v.ID = vp.VehicleID
+												join Part as p on vp.PartNumber = p.partID
+												left join Submodel as s on v.SubModelID = s.ID`
+
+	if !Db.Raw.IsConnected() {
+		Db.Raw.Connect()
+	}
+
+	c := make(chan int)
+
+	for stmtname, stmtsql := range UnPreparedStatements {
+		go PrepareStatement(stmtname, stmtsql, c)
+	}
+
+	for _, _ = range UnPreparedStatements {
+		<-c
+	}
+
+	acesChan <- 1
+}
+
 // Prepare all MySQL statements
 func PrepareAll() error {
 
 	catChan := make(chan int)
+	acesChan := make(chan int)
 	geoChan := make(chan int)
 	custChan := make(chan int)
 	userChan := make(chan int)
@@ -662,6 +728,7 @@ func PrepareAll() error {
 	cmsChan := make(chan int)
 
 	go PrepareCategory(catChan)
+	go PrepareACES(acesChan)
 	go PrepareGeoLocation(geoChan)
 	go PrepareCustomer(custChan)
 	go PrepareCustomerUser(userChan)
@@ -672,6 +739,8 @@ func PrepareAll() error {
 
 	<-catChan
 	log.Println("Category Statements Completed.............[OK]")
+	<-acesChan
+	log.Println("ACES Statements Completed.................[OK]")
 	<-geoChan
 	log.Println("GeoLocation Statements Completed..........[OK]")
 	<-custChan

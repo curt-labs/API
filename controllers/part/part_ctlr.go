@@ -89,7 +89,6 @@ func GetWithVehicle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	plate.ServeFormatted(w, r, part)
-
 }
 
 func Vehicles(w http.ResponseWriter, r *http.Request) {
