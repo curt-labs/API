@@ -94,14 +94,14 @@ func GetACESPartData() (resp string, err error) {
 		xml_helper.E("Company", xml_helper.T("CURT Manufacturing")),
 		xml_helper.E("SenderName", xml_helper.T("Nichole Scott")),
 		xml_helper.E("SenderPhone", xml_helper.T("715-838-4160")),
-		xml_helper.E("TransferDate", xml_helper.T(time.Now().String())),
+		xml_helper.E("TransferDate", xml_helper.T(time.Now().Format("2006-01-06"))),
 		xml_helper.E("MfrCode", xml_helper.T("BKDK")),
 		xml_helper.E("DocumentTitle", xml_helper.T("Trailer Hitches")),
-		xml_helper.E("EffectiveDate", xml_helper.T(time.Now().String())),
-		xml_helper.E("SubmissionType", xml_helper.T("FULL")),
-		xml_helper.E("PcdbVersionDate", xml_helper.T("2013-08-09")),
-		xml_helper.E("QdbVersionDate", xml_helper.T("2013-06-27")),
-		xml_helper.E("VcdbVersionDate", xml_helper.T("2013-07-26")))
+		xml_helper.E("EffectiveDate", xml_helper.T(time.Now().Format("2006-01-06"))),
+		xml_helper.E("SubmissionType", xml_helper.T("FULL")))
+	// xml_helper.E("VcdbVersionDate", xml_helper.T("2013-07-26")),
+	// xml_helper.E("QdbVersionDate", xml_helper.T("2013-06-27")),
+	// xml_helper.E("PcdbVersionDate", xml_helper.T("2013-07-26"))
 	doc.Add(header)
 
 	for _, row := range rows {
@@ -120,38 +120,41 @@ func GetACESPartData() (resp string, err error) {
 			PartNotes:         strings.Split(row.Str(part_notes), ","),
 		}
 
-		partEl := xml_helper.E("App",
-			xml_helper.A("action", "A"),
-			xml_helper.A("id", strconv.Itoa(data.Id)))
+		if data.BaseVehicleID > 0 {
+			partEl := xml_helper.E("App",
+				xml_helper.A("action", "A"),
+				xml_helper.A("id", strconv.Itoa(data.Id)))
 
-		partEl.Add(xml_helper.E("BaseVehicle", xml_helper.A("id", strconv.Itoa(data.BaseVehicleID))))
-		partEl.Add(xml_helper.E("Submodel", xml_helper.T(strconv.Itoa(data.SubmodelID))))
-		for i := 0; i < len(data.ConfigIds); i++ {
-			if config, ok := types[data.ConfigNames[i]]; ok {
-				noteEl := xml_helper.E(config, xml_helper.A("id", data.ConfigIds[i]))
-				partEl.Add(noteEl)
+			partEl.Add(xml_helper.E("BaseVehicle", xml_helper.A("id", strconv.Itoa(data.BaseVehicleID))))
+			partEl.Add(xml_helper.E("SubModel", xml_helper.A("id", strconv.Itoa(data.SubmodelID))))
+			for i := 0; i < len(data.ConfigIds); i++ {
+				if config, ok := types[data.ConfigNames[i]]; ok {
+					noteEl := xml_helper.E(config, xml_helper.A("id", data.ConfigIds[i]))
+					partEl.Add(noteEl)
+				}
 			}
-		}
-		for _, note := range data.Notes {
-			if note != "" {
-				partEl.Add(xml_helper.E("Note", xml_helper.T(note)))
+			for _, note := range data.Notes {
+				if note != "" {
+					partEl.Add(xml_helper.E("Note", xml_helper.T(note)))
+				}
 			}
-		}
-		for _, note := range data.PartNotes {
-			if note != "" {
-				partEl.Add(xml_helper.E("Note", xml_helper.T(note)))
+			for _, note := range data.PartNotes {
+				if note != "" {
+					partEl.Add(xml_helper.E("Note", xml_helper.T(note)))
+				}
 			}
-		}
 
-		partEl.Add(xml_helper.E("Qty", xml_helper.T(strconv.Itoa(data.Qty))))
-		partEl.Add(xml_helper.E("MfrLabel", xml_helper.T(data.ManufacturerLabel)))
-		if data.ClassId == 5 || data.ClassId == 11 {
-			partEl.Add(xml_helper.E("Position", xml_helper.T("22")))
-		} else if data.ClassId > 0 {
-			partEl.Add(xml_helper.E("Position", xml_helper.T("30")))
+			partEl.Add(xml_helper.E("Qty", xml_helper.T(strconv.Itoa(data.Qty))))
+			partEl.Add(xml_helper.E("PartType", xml_helper.A("id", strconv.Itoa(data.PartTypeId))))
+			partEl.Add(xml_helper.E("MfrLabel", xml_helper.T(data.ManufacturerLabel)))
+			if data.ClassId == 5 {
+				partEl.Add(xml_helper.E("Position", xml_helper.A("id", "22")))
+			} else if data.ClassId > 0 && data.ClassId != 11 {
+				partEl.Add(xml_helper.E("Position", xml_helper.A("id", "30")))
+			}
+			partEl.Add(xml_helper.E("Part", xml_helper.T(strconv.Itoa(data.PartNumber))))
+			doc.Add(partEl)
 		}
-		partEl.Add(xml_helper.E("Part", xml_helper.T(strconv.Itoa(data.PartNumber))))
-		doc.Add(partEl)
 	}
 	footerEl := xml_helper.E("Footer", xml_helper.E("RecordCount", xml_helper.T(strconv.Itoa(len(rows)))))
 	doc.Add(footerEl)

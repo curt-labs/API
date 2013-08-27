@@ -679,6 +679,7 @@ func PrepareACES(acesChan chan int) {
 													join VehicleConfigAttribute as vca2 on ca2.ID = vca2.AttributeID
 													join vcdb_Vehicle as v2 on vca2.VehicleConfigID = v2.ConfigID
 													where v2.ID = v.ID && cat2.AcesTypeID > 0
+													order by cat2.sort
 												) as configNames,
 												(
 													select group_concat(ca3.value) from ConfigAttribute as ca3
@@ -686,6 +687,7 @@ func PrepareACES(acesChan chan int) {
 													join VehicleConfigAttribute as vca3 on ca3.ID = vca3.AttributeID
 													join vcdb_Vehicle as v3 on vca3.VehicleConfigID = v3.ConfigID
 													where v3.ID = v.ID && ca3.vcdbID = 0
+													order by cat3.sort
 												) as notes,
 												(
 													select group_concat(n.note) from Note as n
@@ -697,7 +699,9 @@ func PrepareACES(acesChan chan int) {
 												join vcdb_Vehicle as v on bv.ID = v.BaseVehicleID
 												join vcdb_VehiclePart as vp on v.ID = vp.VehicleID
 												join Part as p on vp.PartNumber = p.partID
-												left join Submodel as s on v.SubModelID = s.ID`
+												left join Submodel as s on v.SubModelID = s.ID
+												order by vp.ID
+												limit 0,100`
 
 	if !Db.Raw.IsConnected() {
 		Db.Raw.Connect()
