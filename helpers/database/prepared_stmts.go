@@ -654,18 +654,6 @@ func PrepareCMS(prepChan chan int) {
 func PrepareACES(acesChan chan int) {
 	UnPreparedStatements := make(map[string]string, 0)
 
-	// UnPreparedStatements["UniqueACESPartNumbers"] = `select distinct PartNumber from vcdb_VehiclePart
-	// 													order by PartNumber limit 10`
-
-	// UnPreparedStatements["GetACESPartData"] = `select vp.ID, p.ACESPartTypeID, p.shortDesc, vp.PartNumber from vcdb_VehiclePart as vp
-	// 											join Part as p on vp.PartNumber = p.partID
-	// 											group by vp.ID`
-	// UnPreparedStatements["GetACESBaseData"] = `select vp.ID, p.ACESPartTypeID, p.shortDesc, vp.PartNumber, bv.AAIABaseVehicleID, s.AAIASubmodelID from BaseVehicle as bv
-	// 													join vcdb_Vehicle as v on bv.ID = v.BaseVehicleID
-	// 													join vcdb_VehiclePart as vp on v.ID = vp.VehicleID
-	// 													join Part as p on vp.PartNumber = p.partID
-	// 													join Submodel as s on v.SubModelID = s.ID`
-
 	UnPreparedStatements["GetAcesTypes"] = `select ID, name from AcesType order by ID`
 	UnPreparedStatements["BigFatACESQuery"] = `select vp.ID, p.ACESPartTypeID, p.shortDesc, vp.PartNumber, bv.AAIABaseVehicleID, s.AAIASubmodelID, p.classID,
 												(
@@ -700,8 +688,7 @@ func PrepareACES(acesChan chan int) {
 												join vcdb_VehiclePart as vp on v.ID = vp.VehicleID
 												join Part as p on vp.PartNumber = p.partID
 												left join Submodel as s on v.SubModelID = s.ID
-												order by vp.ID
-												limit 0,100`
+												order by vp.ID`
 
 	if !Db.Raw.IsConnected() {
 		Db.Raw.Connect()

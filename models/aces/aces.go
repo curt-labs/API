@@ -98,10 +98,9 @@ func GetACESPartData() (resp string, err error) {
 		xml_helper.E("MfrCode", xml_helper.T("BKDK")),
 		xml_helper.E("DocumentTitle", xml_helper.T("Trailer Hitches")),
 		xml_helper.E("EffectiveDate", xml_helper.T(time.Now().Format("2006-01-06"))),
-		xml_helper.E("SubmissionType", xml_helper.T("FULL")))
-	// xml_helper.E("VcdbVersionDate", xml_helper.T("2013-07-26")),
-	// xml_helper.E("QdbVersionDate", xml_helper.T("2013-06-27")),
-	// xml_helper.E("PcdbVersionDate", xml_helper.T("2013-07-26"))
+		xml_helper.E("SubmissionType", xml_helper.T("FULL")),
+		xml_helper.E("VcdbVersionDate", xml_helper.T("2013-07-26")))
+
 	doc.Add(header)
 
 	for _, row := range rows {
