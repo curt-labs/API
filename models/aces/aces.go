@@ -57,9 +57,10 @@ func GetUniqueACESPartNumbers() (ids []int, err error) {
 func GetACESPartData() (resp string, err error) {
 
 	redis_key := "reports:aces:base:data"
-	if data_bytes, err := redis.RedisClient.Get(redis_key); err == nil {
-		return string(data_bytes), nil
-	}
+	data_bytes, err := redis.RedisClient.Get(redis_key)
+	// if err == nil {
+	// 	//return string(data_bytes), nil
+	// }
 
 	qry, err := database.GetStatement("BigFatACESQuery")
 	if database.MysqlError(err) {
@@ -83,7 +84,7 @@ func GetACESPartData() (resp string, err error) {
 	notes := res.Map("notes")
 	part_notes := res.Map("part_notes")
 
-	types, err := GetAcesTypes()
+	//types, err := GetAcesTypes()
 
 	// Create Header
 	doc := xml_helper.E("ACES",
@@ -125,9 +126,12 @@ func GetACESPartData() (resp string, err error) {
 				xml_helper.A("id", strconv.Itoa(data.Id)))
 
 			partEl.Add(xml_helper.E("BaseVehicle", xml_helper.A("id", strconv.Itoa(data.BaseVehicleID))))
-			partEl.Add(xml_helper.E("SubModel", xml_helper.A("id", strconv.Itoa(data.SubmodelID))))
+			if data.SubmodelID > 0 {
+				partEl.Add(xml_helper.E("SubModel", xml_helper.A("id", strconv.Itoa(data.SubmodelID))))
+			}
 			for i := 0; i < len(data.ConfigIds); i++ {
-				if config, ok := types[data.ConfigNames[i]]; ok {
+				config := data.ConfigNames[i]
+				if config != "" {
 					noteEl := xml_helper.E(config, xml_helper.A("id", data.ConfigIds[i]))
 					partEl.Add(noteEl)
 				}
@@ -159,7 +163,7 @@ func GetACESPartData() (resp string, err error) {
 	doc.Add(footerEl)
 	resp = "<?xml version=\"1.0\" encoding=\"utf-16\" standalone=\"yes\"?>\n" + doc.String()
 
-	data_bytes := []byte(resp)
+	data_bytes = []byte(resp)
 	redis.RedisClient.Setex(redis_key, 86400, data_bytes)
 
 	return

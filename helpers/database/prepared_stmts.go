@@ -656,39 +656,42 @@ func PrepareACES(acesChan chan int) {
 
 	UnPreparedStatements["GetAcesTypes"] = `select ID, name from AcesType order by ID`
 	UnPreparedStatements["BigFatACESQuery"] = `select vp.ID, p.ACESPartTypeID, p.shortDesc, vp.PartNumber, bv.AAIABaseVehicleID, s.AAIASubmodelID, p.classID,
-												(
-													select group_concat(trim(ca1.vcdbID),'') from ConfigAttribute as ca1
-													join VehicleConfigAttribute as vca1 on ca1.ID = vca1.AttributeID
-													where vca1.VehicleConfigID = v.ConfigID && ca1.vcdbID > 0 && ca1.value != ""
-												) as configIDs,
-												(
-													select group_concat(cat2.AcesTypeID) from ConfigAttributeType as cat2
-													join ConfigAttribute as ca2 on cat2.ID = ca2.ConfigAttributeTypeID
-													join VehicleConfigAttribute as vca2 on ca2.ID = vca2.AttributeID
-													join vcdb_Vehicle as v2 on vca2.VehicleConfigID = v2.ConfigID
-													where v2.ID = v.ID && cat2.AcesTypeID > 0
-													order by cat2.sort
-												) as configNames,
-												(
-													select group_concat(ca3.value) from ConfigAttribute as ca3
-													join ConfigAttributeType as cat3 on ca3.ConfigAttributeTypeID = cat3.ID
-													join VehicleConfigAttribute as vca3 on ca3.ID = vca3.AttributeID
-													join vcdb_Vehicle as v3 on vca3.VehicleConfigID = v3.ConfigID
-													where v3.ID = v.ID && ca3.vcdbID = 0
-													order by cat3.sort
-												) as notes,
-												(
-													select group_concat(n.note) from Note as n
-													where n.vehiclePartID = vp.ID
-												) as part_notes
-												from BaseVehicle as bv
-												join vcdb_Make as ma on bv.MakeID = ma.ID
-												join vcdb_Model as mo on bv.ModelID = mo.ID
-												join vcdb_Vehicle as v on bv.ID = v.BaseVehicleID
-												join vcdb_VehiclePart as vp on v.ID = vp.VehicleID
-												join Part as p on vp.PartNumber = p.partID
-												left join Submodel as s on v.SubModelID = s.ID
-												order by vp.ID`
+(
+select group_concat(trim(ca1.vcdbID) order by cat1.sort) from ConfigAttribute as ca1
+join ConfigAttributeType as cat1 on ca1.ConfigAttributeTypeID = cat1.ID
+join VehicleConfigAttribute as vca1 on ca1.ID = vca1.AttributeID
+where vca1.VehicleConfigID = v.ConfigID && ca1.vcdbID > 0 && ca1.value != ""
+order by cat1.sort
+) as configIDs,
+(
+select group_concat(at.name order by cat2.sort) from AcesType as at
+join ConfigAttributeType as cat2 on at.ID = cat2.AcesTypeID
+join ConfigAttribute as ca2 on cat2.ID = ca2.ConfigAttributeTypeID
+join VehicleConfigAttribute as vca2 on ca2.ID = vca2.AttributeID
+join vcdb_Vehicle as v2 on vca2.VehicleConfigID = v2.ConfigID
+where v2.ID = v.ID && cat2.AcesTypeID > 0
+order by cat2.sort
+) as configNames,
+(
+select group_concat(ca3.value order by cat3.sort) from ConfigAttribute as ca3
+join ConfigAttributeType as cat3 on ca3.ConfigAttributeTypeID = cat3.ID
+join VehicleConfigAttribute as vca3 on ca3.ID = vca3.AttributeID
+join vcdb_Vehicle as v3 on vca3.VehicleConfigID = v3.ConfigID
+where v3.ID = v.ID && ca3.vcdbID = 0
+order by cat3.sort
+) as notes,
+(
+select group_concat(n.note) from Note as n
+where n.vehiclePartID = vp.ID
+) as part_notes
+from BaseVehicle as bv
+join vcdb_Make as ma on bv.MakeID = ma.ID
+join vcdb_Model as mo on bv.ModelID = mo.ID
+join vcdb_Vehicle as v on bv.ID = v.BaseVehicleID
+join vcdb_VehiclePart as vp on v.ID = vp.VehicleID
+join Part as p on vp.PartNumber = p.partID
+left join Submodel as s on v.SubModelID = s.ID
+order by vp.ID`
 
 	if !Db.Raw.IsConnected() {
 		Db.Raw.Connect()
