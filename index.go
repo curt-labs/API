@@ -94,6 +94,7 @@ func main() {
 	server.Get("/customer/auth", customer_ctlr.KeyedUserAuthentication).NoFilter()
 
 	server.Post("/customer", customer_ctlr.GetCustomer)
+	server.Post("/customer/user", customer_ctlr.GetUser)
 	server.Post("/customer/locations", customer_ctlr.GetLocations)
 	server.Post("/customer/users", customer_ctlr.GetUsers) // Requires a user to be marked as sudo
 

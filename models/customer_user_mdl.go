@@ -4,7 +4,6 @@ import (
 	"../helpers/api"
 	"../helpers/database"
 	"errors"
-	"log"
 	"net/url"
 	"strings"
 	"time"
@@ -312,7 +311,6 @@ func AuthenticateUserByKey(key string) (u CustomerUser, err error) {
 	t1 := t.Add(time.Duration(-6) * time.Hour)
 	params.Timer = t1.String()
 
-	log.Println(params)
 	row, res, err := qry.ExecFirst(params)
 	if database.MysqlError(err) {
 		return

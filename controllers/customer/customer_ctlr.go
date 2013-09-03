@@ -133,3 +133,19 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+func GetUser(w http.ResponseWriter, r *http.Request) {
+	key := r.FormValue("key")
+
+	if key == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	user, err := GetCustomerUserFromKey(key)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	plate.ServeFormatted(w, r, user)
+}
