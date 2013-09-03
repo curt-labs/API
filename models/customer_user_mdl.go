@@ -4,6 +4,7 @@ import (
 	"../helpers/api"
 	"../helpers/database"
 	"errors"
+	"log"
 	"net/url"
 	"strings"
 	"time"
@@ -300,17 +301,18 @@ func AuthenticateUserByKey(key string) (u CustomerUser, err error) {
 	}
 
 	params := struct {
-		key_type string
-		key      string
-		timer    string
+		KeyType string
+		Key     string
+		Timer   string
 	}{}
-	params.key_type = api_helpers.AUTH_KEY_TYPE
-	params.key = key
+	params.KeyType = api_helpers.AUTH_KEY_TYPE
+	params.Key = key
 
 	t := time.Now()
 	t1 := t.Add(time.Duration(-6) * time.Hour)
-	params.timer = t1.String()
+	params.Timer = t1.String()
 
+	log.Println(params)
 	row, res, err := qry.ExecFirst(params)
 	if database.MysqlError(err) {
 		return
