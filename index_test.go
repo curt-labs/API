@@ -20,6 +20,13 @@ import (
 	"testing"
 )
 
+var (
+	CorsHandler = func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Access-Control-Allow-Origin", "*")
+		return
+	}
+)
+
 func run_test_request(t *testing.T, server *plate.Server, method, url_str string, payload url.Values) (*httptest.ResponseRecorder, http.Request) {
 
 	url_obj, err := url.Parse(url_str)
@@ -339,13 +346,13 @@ func TestHandler(t *testing.T) {
 	err = content_type_is_json(t, recorder)
 	checkError(req, recorder, err, t)
 
-	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/dealers/search/jc%20auto", qs)
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/dealers/search/carquest", qs)
 	err = code_is(t, recorder, 200)
 	checkError(req, recorder, err, t)
 	err = content_type_is_json(t, recorder)
 	checkError(req, recorder, err, t)
 
-	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/dealers/search/type/jc%20auto", qs)
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/dealers/search/type/carquest", qs)
 	err = code_is(t, recorder, 200)
 	checkError(req, recorder, err, t)
 	err = content_type_is_json(t, recorder)

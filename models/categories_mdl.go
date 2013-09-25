@@ -725,11 +725,10 @@ func (tree *CategoryTree) CategoryTreeBuilder() {
 		return
 	}
 
-	chans := make(chan int, len(rows))
+	log.Println(len(rows))
+	chans := make(chan int, 0)
 	for _, r := range rows {
 		go func(row mysql.Row) {
-			// partStr := row.Str(1)
-			// partArr := strings.Split(partStr, ",")
 
 			// Need to parse out string array into ints and populate
 
@@ -745,20 +744,19 @@ func (tree *CategoryTree) CategoryTreeBuilder() {
 						CategoryId: sub.Int(0),
 					}
 					tree.SubCategories = append(tree.SubCategories, subTree.CategoryId)
-					subTree.CategoryTreeBuilder()
-					tree.SubCategories = append(tree.SubCategories, subTree.SubCategories...)
+					// subTree.CategoryTreeBuilder()
+					// tree.SubCategories = append(tree.SubCategories, subTree.SubCategories...)
 				}
 			}
 			chans <- 1
 		}(r)
 	}
 
-	for i := 0; i < len(rows); i++ {
+	for _, _ = range rows {
 		<-chans
 	}
 
 	return
-
 }
 
 func (c Category) GetCategory(key string) (extended ExtendedCategory, err error) {
