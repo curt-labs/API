@@ -1,15 +1,15 @@
 package main
 
 import (
-	"./controllers/category"
-	"./controllers/customer"
-	"./controllers/dealers"
-	"./controllers/part"
-	"./controllers/vehicle"
-	"./controllers/videos"
-	"./helpers/auth"
-	"./helpers/database"
-	"./helpers/plate"
+	"../controllers/category"
+	"../controllers/customer"
+	"../controllers/dealers"
+	"../controllers/part"
+	"../controllers/vehicle"
+	"../controllers/videos"
+	"../helpers/auth"
+	"../helpers/database"
+	"../helpers/plate"
 	"errors"
 	"fmt"
 	"log"
@@ -56,6 +56,7 @@ func run_test_request(t *testing.T, server *plate.Server, method, url_str string
 
 func code_is(t *testing.T, r *httptest.ResponseRecorder, expected_code int) error {
 	if r.Code != expected_code {
+		log.Println(r.Body.String())
 		return errors.New(fmt.Sprintf("Code %d expected, got: %d", expected_code, r.Code))
 	}
 	return nil
@@ -346,13 +347,13 @@ func TestHandler(t *testing.T) {
 	err = content_type_is_json(t, recorder)
 	checkError(req, recorder, err, t)
 
-	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/dealers/search/carquest", qs)
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/dealers/search/jc", qs)
 	err = code_is(t, recorder, 200)
 	checkError(req, recorder, err, t)
 	err = content_type_is_json(t, recorder)
 	checkError(req, recorder, err, t)
 
-	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/dealers/search/type/carquest", qs)
+	recorder, req = run_test_request(t, server, "GET", "http://localhost:8080/dealers/search/type/jc", qs)
 	err = code_is(t, recorder, 200)
 	checkError(req, recorder, err, t)
 	err = content_type_is_json(t, recorder)

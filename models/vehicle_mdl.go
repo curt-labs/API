@@ -187,7 +187,7 @@ func (lookup *Lookup) GetYears() (opt ConfigOption) {
 
 	years := make([]string, 0)
 
-	year_bytes, err := redis.RedisClient.Get("vehicle_years")
+	year_bytes, err := redis.GetClient().Get("vehicle_years")
 	if err != nil || len(year_bytes) == 0 {
 		rows, _, err := database.Db.Query(yearStmt)
 		if database.MysqlError(err) {
@@ -199,8 +199,8 @@ func (lookup *Lookup) GetYears() (opt ConfigOption) {
 		}
 
 		if year_bytes, err = json.Marshal(years); err == nil {
-			redis.RedisClient.Set("vehicle_years", year_bytes)
-			redis.RedisClient.Expire("vehicle_years", int64(time.Duration.Hours(24)))
+			redis.GetClient().Set("vehicle_years", year_bytes)
+			redis.GetClient().Expire("vehicle_years", int64(time.Duration.Hours(24)))
 		}
 	} else {
 		_ = json.Unmarshal(year_bytes, &years)
