@@ -18,16 +18,11 @@ import (
 )
 
 var (
-	listenAddr = flag.String("http", ":8080", "http listen address")
-
+	listenAddr  = flag.String("http", ":8080", "http listen address")
 	CorsHandler = func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Access-Control-Allow-Origin", "*")
 		return
 	}
-)
-
-const (
-	port = "80"
 )
 
 /**

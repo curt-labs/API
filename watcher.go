@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"github.com/str1ngs/util/file"
 	"log"
@@ -12,9 +11,8 @@ import (
 )
 
 var (
-	files   = map[string]string{}
-	dir     = "."
-	testing = flag.Bool("test", false, "run tests")
+	files = map[string]string{}
+	dir   = "."
 )
 
 func init() {
@@ -27,8 +25,6 @@ func init() {
 }
 
 func main() {
-	flag.Parse()
-	log.Println(testing)
 	tick := time.Tick(time.Second)
 	for _ = range tick {
 		dirty, err := update_files()
@@ -43,11 +39,17 @@ func main() {
 
 func doTests() {
 	exec.Command("killall", "index").Run()
-	var gotest *exec.Cmd
-	gotest = exec.Command("go", "run", "index.go")
-	gotest.Stderr = os.Stderr
-	gotest.Stdout = os.Stdout
-	if err := gotest.Start(); err != nil {
+	gobuild := exec.Command("go", "build", "index.go")
+	gobuild.Stderr = os.Stderr
+	gobuild.Stdout = os.Stdout
+	if err := gobuild.Run(); err != nil {
+		log.Println(err)
+	}
+
+	gorun := exec.Command("./index")
+	gorun.Stderr = os.Stderr
+	gorun.Stdout = os.Stdout
+	if err := gorun.Start(); err != nil {
 		log.Println(err)
 	}
 }
