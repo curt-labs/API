@@ -3,20 +3,10 @@ package auth
 import (
 	"../../helpers/plate"
 	"../database"
+	"log"
 	"net/http"
 
 	//"time"
-)
-
-var (
-
-	//  Prepared statements would go here
-	authStmt = `select id from ApiKey where api_key = ?`
-
-	privateAuthStmt = `select ak.id from ApiKey as ak
-				join ApiKeyType as akt on ak.type_id = akt.id
-				where akt.type = 'PRIVATE'
-				&& api_key = ?`
 )
 
 var AuthHandler = func(w http.ResponseWriter, r *http.Request) {
@@ -58,8 +48,9 @@ var AuthHandler = func(w http.ResponseWriter, r *http.Request) {
 
 func checkKey(key string) bool {
 
-	qry, err := database.Db.Prepare(authStmt)
+	qry, err := database.GetStatement("AuthStmt")
 	if err != nil {
+		log.Println(err)
 		return false
 	}
 
@@ -80,7 +71,7 @@ func checkKey(key string) bool {
 
 func checkPrivateKey(key string) bool {
 
-	qry, err := database.Db.Prepare(privateAuthStmt)
+	qry, err := database.GetStatement("PrivateAuthStmt")
 	if err != nil {
 		return false
 	}
