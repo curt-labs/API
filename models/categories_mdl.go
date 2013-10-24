@@ -336,7 +336,7 @@ func TopTierCategories() (cats []Category, err error) {
 	redis_key := "goapi:category:top"
 
 	// First lets try to access the category:top endpoint in Redis
-	cat_bytes, err := redis.GetClient().Get(redis_key)
+	cat_bytes, err := redis.RedisClient.Get(redis_key)
 	if err == nil && len(cat_bytes) > 0 {
 		err = json.Unmarshal(cat_bytes, &cats)
 		if err == nil {
@@ -402,7 +402,7 @@ func TopTierCategories() (cats []Category, err error) {
 	}
 
 	if cat_bytes, err := json.Marshal(cats); err == nil {
-		redis.GetClient().Setex(redis_key, 86400, cat_bytes)
+		redis.RedisClient.Setex(redis_key, 86400, cat_bytes)
 	}
 
 	return
@@ -413,8 +413,8 @@ func GetByTitle(cat_title string) (cat Category, err error) {
 	redis_key := "goapi:category:title:" + cat_title
 
 	// Attempt to get the category from Redis
-	if redis.GetClient() != nil {
-		redis_bytes, err := redis.GetClient().Get(redis_key)
+	if redis.RedisClient != nil {
+		redis_bytes, err := redis.RedisClient.Get(redis_key)
 		if len(redis_bytes) > 0 {
 			err = json.Unmarshal(redis_bytes, &cat)
 			if err == nil {
@@ -478,7 +478,7 @@ func GetByTitle(cat_title string) (cat Category, err error) {
 	}
 
 	if redis_bytes, err := json.Marshal(cat); err == nil {
-		redis.GetClient().Setex(redis_key, 86400, redis_bytes)
+		redis.RedisClient.Setex(redis_key, 86400, redis_bytes)
 	}
 
 	return
@@ -489,7 +489,7 @@ func GetById(cat_id int) (cat Category, err error) {
 	redis_key := "goapi:category:id:" + strconv.Itoa(cat_id)
 
 	// Attempt to get the category from Redis
-	redis_bytes, err := redis.GetClient().Get(redis_key)
+	redis_bytes, err := redis.RedisClient.Get(redis_key)
 	if len(redis_bytes) > 0 {
 		err = json.Unmarshal(redis_bytes, &cat)
 		if err == nil {
@@ -552,7 +552,7 @@ func GetById(cat_id int) (cat Category, err error) {
 	}
 
 	if redis_bytes, err = json.Marshal(cat); err == nil {
-		redis.GetClient().Setex(redis_key, 86400, redis_bytes)
+		redis.RedisClient.Setex(redis_key, 86400, redis_bytes)
 	}
 
 	return
@@ -565,7 +565,7 @@ func (c *Category) SubCategories() (cats []Category, err error) {
 	}
 
 	// First lets try to access the category:top endpoint in Redis
-	cat_bytes, err := redis.GetClient().Get("category:" + strconv.Itoa(c.CategoryId) + ":subs")
+	cat_bytes, err := redis.RedisClient.Get("category:" + strconv.Itoa(c.CategoryId) + ":subs")
 	if err == nil && len(cat_bytes) > 0 {
 		err = json.Unmarshal(cat_bytes, &cats)
 		if err == nil {
@@ -632,8 +632,8 @@ func (c *Category) SubCategories() (cats []Category, err error) {
 
 	if cat_bytes, err = json.Marshal(cats); err == nil {
 		cat_key := "category:" + strconv.Itoa(c.CategoryId) + ":subs"
-		redis.GetClient().Set(cat_key, cat_bytes)
-		redis.GetClient().Expire(cat_key, 86400)
+		redis.RedisClient.Set(cat_key, cat_bytes)
+		redis.RedisClient.Expire(cat_key, 86400)
 	}
 
 	return
@@ -650,7 +650,7 @@ func (c *Category) GetCategoryParts(key string, page int, count int) (parts []Pa
 	}
 
 	redis_key := "goapi:category:" + strconv.Itoa(c.CategoryId) + ":tree:" + strconv.Itoa(page) + ":" + strconv.Itoa(count)
-	redis_bytes, _ := redis.GetClient().Get(redis_key)
+	redis_bytes, _ := redis.RedisClient.Get(redis_key)
 	if len(redis_bytes) == 0 {
 		log.Println("missed redis")
 		tree := CategoryTree{
@@ -690,7 +690,7 @@ func (c *Category) GetCategoryParts(key string, page int, count int) (parts []Pa
 		}
 
 		if redis_bytes, err = json.Marshal(parts); err == nil {
-			redis.GetClient().Setex(redis_key, 86400, redis_bytes)
+			redis.RedisClient.Setex(redis_key, 86400, redis_bytes)
 		}
 	} else {
 		err = json.Unmarshal(redis_bytes, &parts)
@@ -764,7 +764,7 @@ func (c Category) GetCategory(key string) (extended ExtendedCategory, err error)
 	redis_key := "gopapi:category:" + strconv.Itoa(c.CategoryId)
 
 	// First lets try to access the category:top endpoint in Redis
-	cat_bytes, err := redis.GetClient().Get(redis_key)
+	cat_bytes, err := redis.RedisClient.Get(redis_key)
 	if len(cat_bytes) > 0 {
 		err = json.Unmarshal(cat_bytes, &extended)
 		if err == nil {
@@ -857,7 +857,7 @@ func (c Category) GetCategory(key string) (extended ExtendedCategory, err error)
 	}
 
 	if cat_bytes, err := json.Marshal(extended); err == nil {
-		redis.GetClient().Setex(redis_key, 86400, cat_bytes)
+		redis.RedisClient.Setex(redis_key, 86400, cat_bytes)
 	}
 
 	content, err := GetCategoryContent(extended.CategoryId, key)
