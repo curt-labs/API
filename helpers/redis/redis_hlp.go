@@ -1,8 +1,15 @@
 package redis
 
 var (
-	RedisClient = NewRedisClient()
+	RedisClient *Client
 )
+
+func GetClient() *Client {
+	if RedisClient == nil {
+		RedisClient = NewRedisClient()
+	}
+	return RedisClient
+}
 
 func NewRedisClient() *Client {
 	c := NewClient(50)
