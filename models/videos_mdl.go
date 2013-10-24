@@ -2,7 +2,6 @@ package models
 
 import (
 	"../helpers/database"
-	"errors"
 	"net/url"
 	"strconv"
 	"strings"
@@ -40,6 +39,10 @@ var (
 )
 
 func (p *Part) GetVideos() error {
+	if p == nil {
+		return errors.New("Part is nil")
+	}
+
 	qry, err := database.Db.Prepare(partVideoStmt)
 
 	if p == nil {
