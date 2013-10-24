@@ -2,6 +2,7 @@ package models
 
 import (
 	"../helpers/database"
+	"errors"
 	"net/url"
 	"strconv"
 	"strings"
