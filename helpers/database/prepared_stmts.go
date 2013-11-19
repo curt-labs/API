@@ -1,10 +1,10 @@
 package database
 
 import (
-	"../mymysql/autorc"
-	_ "../mymysql/thrsafe"
 	"errors"
 	"expvar"
+	"github.com/ziutek/mymysql/autorc"
+	_ "github.com/ziutek/mymysql/thrsafe"
 	"log"
 )
 

@@ -1,12 +1,12 @@
 package models
 
 import (
-	"../helpers/api"
-	"../helpers/database"
-	"../helpers/redis"
-	"../helpers/rest"
 	"encoding/json"
 	"errors"
+	"github.com/curt-labs/GoAPI/helpers/api"
+	"github.com/curt-labs/GoAPI/helpers/database"
+	"github.com/curt-labs/GoAPI/helpers/redis"
+	"github.com/curt-labs/GoAPI/helpers/rest"
 	"net/http"
 	"net/url"
 	"strconv"

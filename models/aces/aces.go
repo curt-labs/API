@@ -1,9 +1,9 @@
 package aces
 
 import (
-	"../../helpers/database"
-	"../../helpers/redis"
-	"../../helpers/xml"
+	"github.com/curt-labs/GoAPI/helpers/database"
+	"github.com/curt-labs/GoAPI/helpers/redis"
+	"github.com/curt-labs/GoAPI/helpers/xml"
 	"strconv"
 	"strings"
 	"time"

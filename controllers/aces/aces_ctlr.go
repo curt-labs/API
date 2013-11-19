@@ -1,8 +1,8 @@
 package aces_ctlr
 
 import (
-	"../../helpers/plate"
-	"../../models/aces"
+	"github.com/curt-labs/GoAPI/helpers/plate"
+	"github.com/curt-labs/GoAPI/models/aces"
 	"net/http"
 )
 

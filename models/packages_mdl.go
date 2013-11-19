@@ -1,7 +1,7 @@
 package models
 
 import (
-	"../helpers/database"
+	"github.com/curt-labs/GoAPI/helpers/database"
 	"strconv"
 	"strings"
 )

@@ -1,8 +1,8 @@
 package part_ctlr
 
 import (
-	"../../helpers/plate"
-	. "../../models"
+	"github.com/curt-labs/GoAPI/helpers/plate"
+	. "github.com/curt-labs/GoAPI/models"
 	"net/http"
 	"strconv"
 	"strings"

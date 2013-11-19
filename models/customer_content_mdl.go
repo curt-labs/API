@@ -1,8 +1,8 @@
 package models
 
 import (
-	"../helpers/database"
 	"errors"
+	"github.com/curt-labs/GoAPI/helpers/database"
 	"html"
 	"log"
 	"strings"

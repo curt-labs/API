@@ -8,6 +8,7 @@ ssh_options[:forward_agent] = true
 set :application, "GoAPI"
 set :repository,  "git@github.com:curt-labs/GoAPI.git"
 set :branch, "master"
+set :deploy_via, :remote_cache
 
 set :scm, :git
 set :scm_passphrase, ""
@@ -16,9 +17,8 @@ set :user, "deployer"
 role :web, "173.255.117.20", "173.255.112.170"
 role :app, "173.255.117.20", "173.255.112.170"
 
-set :deploy_to, "/home/#{user}/#{application}"
-set :deploy_via, :remote_cache
-set :gopath, deploy_to
+set :deploy_to, "/home/#{user}/gocode/versionsing/#{application}"
+set :app_path, "/home/#{user}/gocode/src/github.com/curt-labs/#{application}"
 set :deploy_settings, "deploy_settings.json"
 
 set :use_sudo, false
@@ -38,8 +38,8 @@ after "deploy:stop", "deploy:restart"
 namespace :db do
   desc "set database connction info"
   task :configure do
-     if File.exists?(File.join(Dir.getwd, "config/deploy_settings.json"))
-      obj = JSON.parse(File.read(File.join(Dir.getwd, "config/deploy_settings.json")))
+     if File.exists?(File.join(Dir.getwd, "config/#{deploy_settings}"))
+      obj = JSON.parse(File.read(File.join(Dir.getwd, "config/#{deploy_settings}")))
       set(:database_host) { obj["database"]["host"] }
       set(:database_username) { obj["database"]["username"] }
       set(:database_password) { obj["database"]["password"]}
@@ -62,8 +62,8 @@ namespace :db do
         db_name = "#{database_name}"
       )
       EOF
-      run "mkdir -p #{deploy_to}/current/helpers/database"
-      put db_config, "#{deploy_to}/current/helpers/database/ConnectionString.go"
+      run "mkdir -p #{current_release}/current/helpers/database"
+      put db_config, "#{current_release}/current/helpers/database/ConnectionString.go"
   end
 end
 
@@ -74,14 +74,18 @@ namespace :deploy do
   	run "/home/#{user}/bin/go get -u github.com/ziutek/mymysql/mysql"
   end
   task :compile do
-  	run "GOOS=linux GOARCH=amd64 CGO_ENABLED=0 /home/#{user}/bin/go build -o #{deploy_to}/current/go-api #{deploy_to}/current/index.go"
+    run "mkdir -p #{app_path}"
+    run "cp -r #{current_release}/* #{app_path}"
+  	run "GOOS=linux GOARCH=amd64 CGO_ENABLED=0 /home/#{user}/bin/go build -o #{app_path}#{application} #{app_path}/index.go"
   end
   task :start do ; end
   task :stop do 
       kill_processes_matching "go-api"
+      kill_processes_matching "#{application}"
   end
   task :restart do
-  	restart_cmd = "#{current_release}/go-api -http=127.0.0.1:8080"
+    run "mkdir -p #{app_path}"
+  	restart_cmd = "#{app_path}/#{application} -http=127.0.0.1:8080"
   	run "nohup sh -c '#{restart_cmd} &' > #{application}-nohup.out"
   end
 end

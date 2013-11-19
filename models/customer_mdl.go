@@ -1,12 +1,12 @@
 package models
 
 import (
-	"../helpers/api"
-	"../helpers/database"
-	"../helpers/mymysql/mysql"
-	"../helpers/redis"
-	"../helpers/sortutil"
 	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/api"
+	"github.com/curt-labs/GoAPI/helpers/database"
+	"github.com/curt-labs/GoAPI/helpers/redis"
+	"github.com/curt-labs/GoAPI/helpers/sortutil"
+	"github.com/ziutek/mymysql/mysql"
 	"math"
 	"net/url"
 	"strconv"

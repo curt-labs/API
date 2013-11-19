@@ -1,9 +1,9 @@
 package customer_ctlr
 
 import (
-	"../../helpers/plate"
-	. "../../models"
 	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/plate"
+	. "github.com/curt-labs/GoAPI/models"
 	"io/ioutil"
 	"net/http"
 	"strconv"

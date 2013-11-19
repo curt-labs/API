@@ -1,9 +1,9 @@
 package models
 
 import (
-	"../helpers/api"
-	"../helpers/database"
 	"errors"
+	"github.com/curt-labs/GoAPI/helpers/api"
+	"github.com/curt-labs/GoAPI/helpers/database"
 	"net/url"
 	"strings"
 	"time"

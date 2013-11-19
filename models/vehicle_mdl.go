@@ -1,10 +1,10 @@
 package models
 
 import (
-	"../helpers/database"
-	"../helpers/redis"
 	"encoding/json"
 	"fmt"
+	"github.com/curt-labs/GoAPI/helpers/database"
+	"github.com/curt-labs/GoAPI/helpers/redis"
 	"strconv"
 	"strings"
 	"time"

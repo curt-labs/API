@@ -1,11 +1,11 @@
 package models
 
 import (
-	"../helpers/database"
-	"../helpers/mymysql/mysql"
-	"../helpers/redis"
 	"encoding/json"
 	"errors"
+	"github.com/curt-labs/GoAPI/helpers/database"
+	"github.com/curt-labs/GoAPI/helpers/redis"
+	"github.com/ziutek/mymysql/mysql"
 	"log"
 	"net/url"
 	"strconv"

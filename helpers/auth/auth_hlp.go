@@ -1,8 +1,8 @@
 package auth
 
 import (
-	"../../helpers/plate"
-	"../database"
+	"github.com/curt-labs/GoAPI/helpers/database"
+	"github.com/curt-labs/GoAPI/helpers/plate"
 	"log"
 	"net/http"
 
