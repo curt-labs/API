@@ -62,8 +62,8 @@ namespace :db do
         db_name = "#{database_name}"
       )
       EOF
-      run "mkdir -p #{current_release}/current/helpers/database"
-      put db_config, "#{current_release}/current/helpers/database/ConnectionString.go"
+      run "mkdir -p #{current_release}/helpers/database"
+      put db_config, "#{current_release}/helpers/database/ConnectionString.go"
   end
 end
 
@@ -76,7 +76,7 @@ namespace :deploy do
   task :compile do
     run "mkdir -p #{app_path}"
     run "cp -r #{current_release}/* #{app_path}"
-  	run "GOOS=linux GOARCH=amd64 CGO_ENABLED=0 /home/#{user}/bin/go build -o #{app_path}#{application} #{app_path}/index.go"
+  	run "GOOS=linux GOARCH=amd64 CGO_ENABLED=0 /home/#{user}/bin/go build -o #{app_path}/#{application} #{app_path}/index.go"
   end
   task :start do ; end
   task :stop do 
@@ -86,7 +86,7 @@ namespace :deploy do
   task :restart do
     run "mkdir -p #{app_path}"
   	restart_cmd = "#{app_path}/#{application} -http=127.0.0.1:8080"
-  	run "nohup sh -c '#{restart_cmd} &' > #{application}-nohup.out"
+  	run "cd #{app_path} && nohup sh -c '#{restart_cmd} &' > #{application}-nohup.out"
   end
 end
 
