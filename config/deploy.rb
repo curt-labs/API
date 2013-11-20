@@ -15,7 +15,7 @@ set :scm_passphrase, ""
 set :user, "deployer"
 
 role :web, "173.255.117.20", "173.255.112.170"
-role :app, "173.255.117.20", "173.255.112.170"
+# role :app, "173.255.117.20", "173.255.112.170"
 
 set :deploy_to, "/home/#{user}/gocode/versionsing/#{application}"
 set :app_path, "/home/#{user}/gocode/src/github.com/curt-labs/#{application}"
@@ -29,7 +29,7 @@ set :default_environment, {
   'GOPATH' => '$HOME/gocode'
 }
 
-after "deploy", "deploy:goget"
+after :deploy, "deploy:goget"
 after "deploy:goget", "db:configure"
 after "db:configure", "deploy:compile"
 after "deploy:compile", "deploy:stop"
