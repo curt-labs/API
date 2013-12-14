@@ -421,7 +421,7 @@ func (this *responseWriter) WriteHeader(code int) {
 // code that serializes resources and writes to the
 // http response.
 
-// ServeJson replies to the request with a JSON
+// ServePdf replies to the request with a PDF
 // representation of resource v.
 func ServePdf(w http.ResponseWriter, data []byte) {
 
@@ -437,15 +437,15 @@ func ServePdf(w http.ResponseWriter, data []byte) {
 // representation of resource v.
 func ServeJson(w http.ResponseWriter, v interface{}, callback string) {
 	content, err := json.Marshal(v)
+	strContent := string(content)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if string(content) == "null" {
+	if strContent == "null" {
 		content = []byte("")
 	}
 	w.Header().Set("Content-Length", strconv.Itoa(len(content)))
-	w.Header().Set("Content-Type", applicationJson)
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	//w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 	w.Header().Set("Access-Control-Allow-Headers", "Origin")
@@ -453,10 +453,11 @@ func ServeJson(w http.ResponseWriter, v interface{}, callback string) {
 	w.Header().Set("Access-Control-Allow-Methods", "*")
 	if callback != "" {
 		w.Header().Set("Content-Type", "text/json")
-		w.Write([]byte(callback + "("))
-		w.Write(content)
-		w.Write([]byte(")"))
+		resp := []byte(fmt.Sprintf("%s(%s)", callback, content))
+		w.Header().Set("Content-Length", strconv.Itoa(len(resp)))
+		w.Write(resp)
 	} else {
+		w.Header().Set("Content-Type", applicationJson)
 		w.Write(content)
 	}
 }
