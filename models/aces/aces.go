@@ -164,7 +164,7 @@ func GetACESPartData() (resp string, err error) {
 	resp = "<?xml version=\"1.0\" encoding=\"utf-16\" standalone=\"yes\"?>\n" + doc.String()
 
 	data_bytes = []byte(resp)
-	redis.RedisClient.Setex(redis_key, 86400, data_bytes)
+	redis.RedisMaster.Setex(redis_key, 86400, data_bytes)
 
 	return
 }

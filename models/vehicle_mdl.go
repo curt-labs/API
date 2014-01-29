@@ -7,7 +7,6 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	"strconv"
 	"strings"
-	"time"
 )
 
 type Lookup struct {
@@ -51,8 +50,8 @@ var (
 					order by ma.MakeName`
 
 	modelStmt = `select distinct mo.ModelName as model
-				from BaseVehicle as bv 
-				join vcdb_Make as ma on bv.MakeID = ma.ID 
+				from BaseVehicle as bv
+				join vcdb_Make as ma on bv.MakeID = ma.ID
 				join vcdb_Model as mo on bv.ModelID = mo.ID
 				join vcdb_Vehicle as v on bv.ID = v.BaseVehicleID
 				join vcdb_VehiclePart as vp on v.ID = vp.VehicleID
@@ -65,7 +64,7 @@ var (
 					join vcdb_Vehicle v on bv.ID = v.BaseVehicleID
 					join Submodel sm on v.SubmodelID = sm.ID
 					join vcdb_VehiclePart vp on v.ID = vp.VehicleID
-					where bv.YearID = ? and ma.MakeName = ? 
+					where bv.YearID = ? and ma.MakeName = ?
 					and mo.ModelName = ?`
 
 	configStmt = `select cat.name, ca.value from ConfigAttributeType cat
@@ -199,8 +198,7 @@ func (lookup *Lookup) GetYears() (opt ConfigOption) {
 		}
 
 		if year_bytes, err = json.Marshal(years); err == nil {
-			redis.RedisClient.Set("vehicle_years", year_bytes)
-			redis.RedisClient.Expire("vehicle_years", int64(time.Duration.Hours(24)))
+			redis.RedisMaster.Setex("vehicle_years", 86400, year_bytes)
 		}
 	} else {
 		_ = json.Unmarshal(year_bytes, &years)

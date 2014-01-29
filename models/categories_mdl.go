@@ -402,7 +402,7 @@ func TopTierCategories() (cats []Category, err error) {
 	}
 
 	if cat_bytes, err := json.Marshal(cats); err == nil {
-		redis.RedisClient.Setex(redis_key, 86400, cat_bytes)
+		redis.RedisMaster.Setex(redis_key, 86400, cat_bytes)
 	}
 
 	return
@@ -478,7 +478,7 @@ func GetByTitle(cat_title string) (cat Category, err error) {
 	}
 
 	if redis_bytes, err := json.Marshal(cat); err == nil {
-		redis.RedisClient.Setex(redis_key, 86400, redis_bytes)
+		redis.RedisMaster.Setex(redis_key, 86400, redis_bytes)
 	}
 
 	return
@@ -552,7 +552,7 @@ func GetById(cat_id int) (cat Category, err error) {
 	}
 
 	if redis_bytes, err = json.Marshal(cat); err == nil {
-		redis.RedisClient.Setex(redis_key, 86400, redis_bytes)
+		redis.RedisMaster.Setex(redis_key, 86400, redis_bytes)
 	}
 
 	return
@@ -690,7 +690,7 @@ func (c *Category) GetCategoryParts(key string, page int, count int) (parts []Pa
 		}
 
 		if redis_bytes, err = json.Marshal(parts); err == nil {
-			redis.RedisClient.Setex(redis_key, 86400, redis_bytes)
+			redis.RedisMaster.Setex(redis_key, 86400, redis_bytes)
 		}
 	} else {
 		err = json.Unmarshal(redis_bytes, &parts)
@@ -857,7 +857,7 @@ func (c Category) GetCategory(key string) (extended ExtendedCategory, err error)
 	}
 
 	if cat_bytes, err := json.Marshal(extended); err == nil {
-		redis.RedisClient.Setex(redis_key, 86400, cat_bytes)
+		redis.RedisMaster.Setex(redis_key, 86400, cat_bytes)
 	}
 
 	content, err := GetCategoryContent(extended.CategoryId, key)

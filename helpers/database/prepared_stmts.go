@@ -53,7 +53,7 @@ func PrepareCategory(prepChan chan int) {
 				order by c.sort
 				limit 1`
 
-	UnPreparedStatements["PartAllCategoryStmt"] = `select c.catID, c.dateAdded, c.parentID, c.catTitle, c.shortDesc, 
+	UnPreparedStatements["PartAllCategoryStmt"] = `select c.catID, c.dateAdded, c.parentID, c.catTitle, c.shortDesc,
 					c.longDesc,c.sort, c.image, c.isLifestyle, c.vehicleSpecific,
 					cc.font, cc.code
 					from Categories as c
@@ -281,9 +281,9 @@ func PrepareGeoLocation(prepChan chan int) {
 													)
 												) < ?)
 												&& (
-													(cl.latitude >= ? && cl.latitude <= ?) 
+													(cl.latitude >= ? && cl.latitude <= ?)
 													&&
-													(cl.longitude >= ? && cl.longitude <= ?) 
+													(cl.longitude >= ? && cl.longitude <= ?)
 													||
 													(cl.longitude >= ? && cl.longitude <= ?)
 												)
@@ -422,10 +422,10 @@ func PrepareCustomerUser(prepChan chan int) {
 	UnPreparedStatements["CustomerUserKeyAuthStmt"] = `select cu.* from CustomerUser as cu
 														join ApiKey as ak on cu.id = ak.user_id
 														join ApiKeyType as akt on ak.type_id = akt.id
-														where UPPER(akt.type) = ? 
+														where UPPER(akt.type) = ?
 														&& ak.api_key = ?
 														&& cu.active = 1 && ak.date_added >= ?`
-	UnPreparedStatements["CustomerUserKeysStmt"] = `select ak.api_key, akt.type, ak.date_added from ApiKey as ak 
+	UnPreparedStatements["CustomerUserKeysStmt"] = `select ak.api_key, akt.type, ak.date_added from ApiKey as ak
 													join ApiKeyType as akt on ak.type_id = akt.id
 													where user_id = ? && UPPER(akt.type) NOT IN (?)`
 	UnPreparedStatements["UserAuthenticationKeyStmt"] = `select ak.api_key, ak.type_id, akt.type from ApiKey as ak
@@ -438,7 +438,7 @@ func PrepareCustomerUser(prepChan chan int) {
 	// for the updated record
 	UnPreparedStatements["ResetUserAuthenticationStmt"] = `update ApiKey as ak
 															set ak.date_added = ?
-															where ak.type_id = ? 
+															where ak.type_id = ?
 															&& ak.user_id = ?`
 
 	// This statement will renew the timer on the
@@ -495,18 +495,18 @@ func PrepareSearch(prepChan chan int) {
 
 	UnPreparedStatements := make(map[string]string, 0)
 
-	UnPreparedStatements["SearchPartAttributes"] = `select partID, value, field, sort, 
+	UnPreparedStatements["SearchPartAttributes"] = `select partID, value, field, sort,
 														(
 															match(field,value) against (? in natural language mode)
-														) as score from PartAttribute 
+														) as score from PartAttribute
 														where match(field,value) against (? in natural language mode)
 														order by score desc
 														limit ?,?`
 
 	UnPreparedStatements["SearchPart"] = `select *, (
 												match(shortDesc) against (? in natural language mode)
-											) as score from Part 
-											where match(shortDesc) 
+											) as score from Part
+											where match(shortDesc)
 											against (? in natural language mode)
 											|| partID = ?
 											order by score desc
@@ -532,7 +532,7 @@ func PrepareSearch(prepChan chan int) {
 func PrepareCMS(prepChan chan int) {
 	UnPreparedStatements := make(map[string]string, 0)
 
-	UnPreparedStatements["AllCustomerContent"] = `select cc.id, cc.text,cc.added,cc.modified,cc.deleted, 
+	UnPreparedStatements["AllCustomerContent"] = `select cc.id, cc.text,cc.added,cc.modified,cc.deleted,
 													ct.type,ct.allowHTML,
 													ccb.partID, ccb.catID
 													from CustomerContent as cc
@@ -544,7 +544,7 @@ func PrepareCMS(prepChan chan int) {
 													where api_key = ?
 													group by cc.id`
 
-	UnPreparedStatements["CustomerContent"] = `select cc.id, cc.text,cc.added,cc.modified,cc.deleted, 
+	UnPreparedStatements["CustomerContent"] = `select cc.id, cc.text,cc.added,cc.modified,cc.deleted,
 													ct.type,ct.allowHTML,ccb.partID,ccb.catID
 													from CustomerContent as cc
 													join CustomerContentBridge as ccb on cc.id = ccb.contentID
@@ -555,7 +555,7 @@ func PrepareCMS(prepChan chan int) {
 													where api_key = ? and cc.id = ?
 													limit 1`
 
-	UnPreparedStatements["CustomerContentRevisions"] = `select ccr.old_text, ccr.new_text, ccr.date, ccr.changeType, 
+	UnPreparedStatements["CustomerContentRevisions"] = `select ccr.old_text, ccr.new_text, ccr.date, ccr.changeType,
 														ct1.type as newType, ct1.allowHTML as newAllowHtml,
 														ct2.type as oldType, ct2.allowHTML as oldAllowHtml,
 														ccr.userID as userId
@@ -569,7 +569,7 @@ func PrepareCMS(prepChan chan int) {
 														where ak.api_key = ? and ccr.contentID = ?
 														order by ccr.date`
 
-	UnPreparedStatements["AllCustomerPartContent"] = `select cc.id, cc.text,cc.added,cc.modified,cc.deleted, 
+	UnPreparedStatements["AllCustomerPartContent"] = `select cc.id, cc.text,cc.added,cc.modified,cc.deleted,
 													ct.type,ct.allowHTML,ccb.partID
 													from CustomerContent as cc
 													join CustomerContentBridge as ccb on cc.id = ccb.contentID
@@ -581,7 +581,7 @@ func PrepareCMS(prepChan chan int) {
 													group by ccb.partID, cc.id
 													order by ccb.partID`
 
-	UnPreparedStatements["CustomerPartContent"] = `select cc.id, cc.text,cc.added,cc.modified,cc.deleted, 
+	UnPreparedStatements["CustomerPartContent"] = `select cc.id, cc.text,cc.added,cc.modified,cc.deleted,
 													ct.type,ct.allowHTML,ccb.partID
 													from CustomerContent as cc
 													join CustomerContentBridge as ccb on cc.id = ccb.contentID
@@ -592,7 +592,7 @@ func PrepareCMS(prepChan chan int) {
 													where api_key = ? and ccb.partID = ?
 													group by cc.id`
 
-	UnPreparedStatements["AllCustomerCategoryContent"] = `select cc.id, cc.text,cc.added,cc.modified,cc.deleted, 
+	UnPreparedStatements["AllCustomerCategoryContent"] = `select cc.id, cc.text,cc.added,cc.modified,cc.deleted,
 													ct.type,ct.allowHTML,ccb.catID
 													from CustomerContent as cc
 													join CustomerContentBridge as ccb on cc.id = ccb.contentID
@@ -604,7 +604,7 @@ func PrepareCMS(prepChan chan int) {
 													group by ccb.catID, cc.id
 													order by ccb.catID`
 
-	UnPreparedStatements["CustomerCategoryContent"] = `select cc.id, cc.text,cc.added,cc.modified,cc.deleted, 
+	UnPreparedStatements["CustomerCategoryContent"] = `select cc.id, cc.text,cc.added,cc.modified,cc.deleted,
 													ct.type,ct.allowHTML,ccb.catID
 													from CustomerContent as cc
 													join CustomerContentBridge as ccb on cc.id = ccb.contentID
@@ -628,7 +628,7 @@ func PrepareCMS(prepChan chan int) {
 														join Customer as c on cc.custID = c.cust_id
 														join CustomerUser as cu on c.cust_id = cu.cust_ID
 														join ApiKey as ak on cu.id = ak.user_id
-														set cc.text = ?, cc.modified = now(), 
+														set cc.text = ?, cc.modified = now(),
 														cc.userID = cu.id, cc.typeID = ?, cc.deleted = ?
 														where ak.api_key = ? and cc.id = ?`
 
@@ -738,6 +738,10 @@ func PrepareACES(acesChan chan int) {
 
 // Prepare all MySQL statements
 func PrepareAll() error {
+
+	// Bind the connection string from
+	// environment variables
+	BindDatabase()
 
 	authChan := make(chan int)
 	catChan := make(chan int)

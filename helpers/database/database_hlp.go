@@ -10,11 +10,18 @@ import (
 var (
 
 	// MySQL Connection Handler
-	Db = autorc.New(db_proto, "", db_addr, db_user, db_pass, db_name)
-
-	//  Prepared statements would go here
-	//  stmt *autorc.Stmt
+	Db = autorc.New("tcp", "", "127.0.0.1:3306", "root", "", "CurtDev")
 )
+
+func BindDatabase() {
+	if addr := os.Getenv("DATABASE_HOST"); addr != "" {
+		proto := os.Getenv("DATABASE_PROTOCOL")
+		user := os.Getenv("DATABASE_USERNAME")
+		pass := os.Getenv("DATABASE_PASSWORD")
+		name := os.Getenv("CURT_DEV_NAME")
+		Db = autorc.New(proto, "", addr, user, pass, name)
+	}
+}
 
 func MysqlError(err error) (ret bool) {
 	ret = (err != nil)

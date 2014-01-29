@@ -1,41 +1,38 @@
--- MySQL dump 10.13  Distrib 5.6.10, for osx10.7 (i386)
---
--- Host: curtsql.cloudapp.net    Database: CurtDev2
--- ------------------------------------------------------
--- Server version	5.6.10-log
+/*
+ Navicat Premium Data Transfer
 
-/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
-/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!40101 SET NAMES utf8 */;
-/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
-/*!40103 SET TIME_ZONE='+00:00' */;
-/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
-/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
-/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
-/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+ Source Server         : Localhost
+ Source Server Type    : MySQL
+ Source Server Version : 50614
+ Source Host           : localhost
+ Source Database       : CurtDev
 
---
--- Table structure for table `AcesType`
---
+ Target Server Type    : MySQL
+ Target Server Version : 50614
+ File Encoding         : utf-8
 
+ Date: 12/03/2013 09:06:27 AM
+*/
+
+CREATE DATABASE IF NOT EXISTS CurtDev;
+
+SET NAMES utf8;
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- ----------------------------
+--  Table structure for `AcesType`
+-- ----------------------------
 DROP TABLE IF EXISTS `AcesType`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `AcesType` (
   `ID` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(100) NOT NULL,
   PRIMARY KEY (`ID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=41 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `ApiAccess`
---
-
+-- ----------------------------
+--  Table structure for `ApiAccess`
+-- ----------------------------
 DROP TABLE IF EXISTS `ApiAccess`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `ApiAccess` (
   `id` varchar(64) NOT NULL,
   `key_id` varchar(64) NOT NULL,
@@ -47,15 +44,11 @@ CREATE TABLE `ApiAccess` (
   CONSTRAINT `FK__ApiAccess__key_i__628F3CBE` FOREIGN KEY (`key_id`) REFERENCES `ApiKey` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `FK__ApiAccess__modul__638360F7` FOREIGN KEY (`module_id`) REFERENCES `ApiModules` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `ApiKey`
---
-
+-- ----------------------------
+--  Table structure for `ApiKey`
+-- ----------------------------
 DROP TABLE IF EXISTS `ApiKey`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `ApiKey` (
   `id` varchar(64) NOT NULL,
   `api_key` varchar(64) NOT NULL,
@@ -69,33 +62,11 @@ CREATE TABLE `ApiKey` (
   CONSTRAINT `FK__ApiKey__type_id__5AEE1AF6` FOREIGN KEY (`type_id`) REFERENCES `ApiKeyType` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `FK__ApiKey__user_id__5BE23F2F` FOREIGN KEY (`user_id`) REFERENCES `CustomerUser` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
-/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
-/*!50003 SET @saved_col_connection = @@collation_connection */ ;
-/*!50003 SET character_set_client  = utf8 */ ;
-/*!50003 SET character_set_results = utf8 */ ;
-/*!50003 SET collation_connection  = utf8_general_ci */ ;
-/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
-/*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
-DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 trigger before_update_api_key
-before update on ApiKey
-for each row
-set new.api_key = uuid() */;;
-DELIMITER ;
-/*!50003 SET sql_mode              = @saved_sql_mode */ ;
-/*!50003 SET character_set_client  = @saved_cs_client */ ;
-/*!50003 SET character_set_results = @saved_cs_results */ ;
-/*!50003 SET collation_connection  = @saved_col_connection */ ;
 
---
--- Table structure for table `ApiKeyType`
---
-
+-- ----------------------------
+--  Table structure for `ApiKeyType`
+-- ----------------------------
 DROP TABLE IF EXISTS `ApiKeyType`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `ApiKeyType` (
   `id` varchar(64) NOT NULL,
   `type` varchar(500) DEFAULT NULL,
@@ -103,15 +74,11 @@ CREATE TABLE `ApiKeyType` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `id` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `ApiModules`
---
-
+-- ----------------------------
+--  Table structure for `ApiModules`
+-- ----------------------------
 DROP TABLE IF EXISTS `ApiModules`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `ApiModules` (
   `id` varchar(64) NOT NULL,
   `name` varchar(500) DEFAULT NULL,
@@ -120,32 +87,27 @@ CREATE TABLE `ApiModules` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `id` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `AuthAccess`
---
-
+-- ----------------------------
+--  Table structure for `AuthAccess`
+-- ----------------------------
 DROP TABLE IF EXISTS `AuthAccess`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `AuthAccess` (
   `id` varchar(64) NOT NULL,
   `userID` varchar(64) NOT NULL,
   `AreaID` varchar(64) NOT NULL,
   `dateAdded` datetime NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `id` (`id`)
+  UNIQUE KEY `id` (`id`),
+  KEY `authArea_ref_idx` (`AreaID`),
+  KEY `custUser_ref_idx` (`userID`),
+  CONSTRAINT `custUserAuthAccess_ref` FOREIGN KEY (`userID`) REFERENCES `CustomerUser` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `AuthAreas`
---
-
+-- ----------------------------
+--  Table structure for `AuthAreas`
+-- ----------------------------
 DROP TABLE IF EXISTS `AuthAreas`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `AuthAreas` (
   `id` varchar(64) NOT NULL,
   `path` varchar(50) NOT NULL,
@@ -153,17 +115,15 @@ CREATE TABLE `AuthAreas` (
   `name` varchar(50) NOT NULL,
   `parentAreaID` varchar(64) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `id` (`id`)
+  UNIQUE KEY `id` (`id`),
+  KEY `authDomain_ref_idx` (`DomainID`),
+  CONSTRAINT `authDomains` FOREIGN KEY (`DomainID`) REFERENCES `AuthDomains` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `AuthDomains`
---
-
+-- ----------------------------
+--  Table structure for `AuthDomains`
+-- ----------------------------
 DROP TABLE IF EXISTS `AuthDomains`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `AuthDomains` (
   `id` varchar(64) NOT NULL,
   `url` varchar(50) NOT NULL,
@@ -171,15 +131,11 @@ CREATE TABLE `AuthDomains` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `id` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `AuthorizedTracking`
---
-
+-- ----------------------------
+--  Table structure for `AuthorizedTracking`
+-- ----------------------------
 DROP TABLE IF EXISTS `AuthorizedTracking`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `AuthorizedTracking` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `property` varchar(500) NOT NULL,
@@ -189,15 +145,11 @@ CREATE TABLE `AuthorizedTracking` (
   `date_modified` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `Authors`
---
-
+-- ----------------------------
+--  Table structure for `Authors`
+-- ----------------------------
 DROP TABLE IF EXISTS `Authors`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Authors` (
   `authorID` int(11) NOT NULL AUTO_INCREMENT,
   `first_name` varchar(510) DEFAULT NULL,
@@ -206,15 +158,11 @@ CREATE TABLE `Authors` (
   `active` tinyint(1) NOT NULL DEFAULT '1',
   PRIMARY KEY (`authorID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `Banners`
---
-
+-- ----------------------------
+--  Table structure for `Banners`
+-- ----------------------------
 DROP TABLE IF EXISTS `Banners`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Banners` (
   `bannerID` int(11) NOT NULL AUTO_INCREMENT,
   `title` varchar(100) DEFAULT NULL,
@@ -224,15 +172,11 @@ CREATE TABLE `Banners` (
   `path` varchar(200) DEFAULT NULL,
   PRIMARY KEY (`bannerID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `BaseVehicle`
---
-
+-- ----------------------------
+--  Table structure for `BaseVehicle`
+-- ----------------------------
 DROP TABLE IF EXISTS `BaseVehicle`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `BaseVehicle` (
   `ID` int(11) NOT NULL AUTO_INCREMENT,
   `AAIABaseVehicleID` int(11) DEFAULT NULL,
@@ -247,16 +191,12 @@ CREATE TABLE `BaseVehicle` (
   CONSTRAINT `FK_BaseVehicle_Year` FOREIGN KEY (`YearID`) REFERENCES `vcdb_Year` (`YearID`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `FK__BaseVehic__MakeI__75B5891D` FOREIGN KEY (`MakeID`) REFERENCES `vcdb_Make` (`ID`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `FK__BaseVehic__Model__76A9AD56` FOREIGN KEY (`ModelID`) REFERENCES `vcdb_Model` (`ID`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB AUTO_INCREMENT=22334 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=22513 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `BlogCategories`
---
-
+-- ----------------------------
+--  Table structure for `BlogCategories`
+-- ----------------------------
 DROP TABLE IF EXISTS `BlogCategories`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `BlogCategories` (
   `blogCategoryID` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) DEFAULT NULL,
@@ -264,15 +204,11 @@ CREATE TABLE `BlogCategories` (
   `active` tinyint(1) NOT NULL DEFAULT '1',
   PRIMARY KEY (`blogCategoryID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `BlogPost_BlogCategory`
---
-
+-- ----------------------------
+--  Table structure for `BlogPost_BlogCategory`
+-- ----------------------------
 DROP TABLE IF EXISTS `BlogPost_BlogCategory`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `BlogPost_BlogCategory` (
   `postCategoryID` int(11) NOT NULL AUTO_INCREMENT,
   `blogPostID` int(11) NOT NULL,
@@ -283,22 +219,18 @@ CREATE TABLE `BlogPost_BlogCategory` (
   CONSTRAINT `FK__BlogPost___blogC__57DD0BE4` FOREIGN KEY (`blogCategoryID`) REFERENCES `BlogCategories` (`blogCategoryID`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `FK__BlogPost___blogP__58D1301D` FOREIGN KEY (`blogPostID`) REFERENCES `BlogPosts` (`blogPostID`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `BlogPosts`
---
-
+-- ----------------------------
+--  Table structure for `BlogPosts`
+-- ----------------------------
 DROP TABLE IF EXISTS `BlogPosts`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `BlogPosts` (
   `blogPostID` int(11) NOT NULL AUTO_INCREMENT,
   `post_title` varchar(500) NOT NULL,
   `slug` varchar(500) NOT NULL,
   `post_text` longtext,
   `publishedDate` datetime DEFAULT NULL,
-  `createdDate` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `createdDate` datetime NOT NULL,
   `lastModified` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
   `userID` int(11) NOT NULL,
   `meta_title` varchar(510) DEFAULT NULL,
@@ -307,31 +239,23 @@ CREATE TABLE `BlogPosts` (
   `active` tinyint(1) NOT NULL DEFAULT '1',
   PRIMARY KEY (`blogPostID`),
   KEY `BlogPostAuthorID` (`userID`)
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `Brand`
---
-
+-- ----------------------------
+--  Table structure for `Brand`
+-- ----------------------------
 DROP TABLE IF EXISTS `Brand`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Brand` (
   `ID` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
   `code` varchar(255) NOT NULL,
   PRIMARY KEY (`ID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `BrandPart`
---
-
+-- ----------------------------
+--  Table structure for `BrandPart`
+-- ----------------------------
 DROP TABLE IF EXISTS `BrandPart`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `BrandPart` (
   `ID` int(11) NOT NULL AUTO_INCREMENT,
   `brandID` int(11) NOT NULL,
@@ -341,15 +265,11 @@ CREATE TABLE `BrandPart` (
   `dateAdded` datetime NOT NULL,
   PRIMARY KEY (`ID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `BusinessClass`
---
-
+-- ----------------------------
+--  Table structure for `BusinessClass`
+-- ----------------------------
 DROP TABLE IF EXISTS `BusinessClass`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `BusinessClass` (
   `BusinessClassID` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) DEFAULT NULL,
@@ -357,46 +277,35 @@ CREATE TABLE `BusinessClass` (
   `showOnWebsite` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`BusinessClassID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `Cabelas`
---
-
+-- ----------------------------
+--  Table structure for `Cabelas`
+-- ----------------------------
 DROP TABLE IF EXISTS `Cabelas`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Cabelas` (
   `cabelasID` int(11) NOT NULL AUTO_INCREMENT,
   `priceCode` int(11) DEFAULT NULL,
   `cabelasPart` varchar(50) NOT NULL,
   PRIMARY KEY (`cabelasID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `CartIntegration`
---
-
+-- ----------------------------
+--  Table structure for `CartIntegration`
+-- ----------------------------
 DROP TABLE IF EXISTS `CartIntegration`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `CartIntegration` (
   `referenceID` int(11) NOT NULL AUTO_INCREMENT,
   `partID` int(11) NOT NULL,
   `custPartID` int(11) NOT NULL,
   `custID` int(11) NOT NULL DEFAULT '0',
-  PRIMARY KEY (`referenceID`)
-) ENGINE=InnoDB AUTO_INCREMENT=65097 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+  PRIMARY KEY (`referenceID`),
+  KEY `partID` (`partID`)
+) ENGINE=InnoDB AUTO_INCREMENT=69508 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `CatPart`
---
-
+-- ----------------------------
+--  Table structure for `CatPart`
+-- ----------------------------
 DROP TABLE IF EXISTS `CatPart`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `CatPart` (
   `catPartID` int(11) NOT NULL AUTO_INCREMENT,
   `catID` int(11) NOT NULL,
@@ -404,20 +313,14 @@ CREATE TABLE `CatPart` (
   PRIMARY KEY (`catPartID`),
   KEY `IX_CatPart_Cat_Part` (`catID`,`partID`),
   KEY `FK__CatPart__partID__54945AAA` (`partID`),
-  KEY `cat_idx` (`catID`),
-  KEY `part_idx` (`partID`),
   CONSTRAINT `FK__CatPart__catID__55887EE3` FOREIGN KEY (`catID`) REFERENCES `Categories` (`catID`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `FK__CatPart__partID__54945AAA` FOREIGN KEY (`partID`) REFERENCES `Part` (`partID`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB AUTO_INCREMENT=5026 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=5228 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `Categories`
---
-
+-- ----------------------------
+--  Table structure for `Categories`
+-- ----------------------------
 DROP TABLE IF EXISTS `Categories`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Categories` (
   `catID` int(11) NOT NULL AUTO_INCREMENT,
   `dateAdded` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
@@ -432,48 +335,34 @@ CREATE TABLE `Categories` (
   `vehicleSpecific` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`catID`),
   KEY `IX_Categories_ParentID` (`parentID`),
-  KEY `IX_Categories_Sort` (`sort`),
-  KEY `idx` (`catID`),
-  KEY `title_idx` (`catTitle`)
-) ENGINE=InnoDB AUTO_INCREMENT=277 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+  KEY `IX_Categories_Sort` (`sort`)
+) ENGINE=InnoDB AUTO_INCREMENT=282 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `Class`
---
-
+-- ----------------------------
+--  Table structure for `Class`
+-- ----------------------------
 DROP TABLE IF EXISTS `Class`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Class` (
   `classID` int(11) NOT NULL AUTO_INCREMENT,
   `class` varchar(255) DEFAULT NULL,
   `image` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`classID`)
-) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `ColorCode`
---
-
+-- ----------------------------
+--  Table structure for `ColorCode`
+-- ----------------------------
 DROP TABLE IF EXISTS `ColorCode`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `ColorCode` (
   `codeID` int(11) NOT NULL,
   `code` varchar(100) DEFAULT NULL,
   `font` varchar(100) NOT NULL DEFAULT ''
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `Comments`
---
-
+-- ----------------------------
+--  Table structure for `Comments`
+-- ----------------------------
 DROP TABLE IF EXISTS `Comments`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Comments` (
   `commentID` int(11) NOT NULL AUTO_INCREMENT,
   `blogPostID` int(11) NOT NULL,
@@ -487,15 +376,11 @@ CREATE TABLE `Comments` (
   KEY `FK__Comments__blogPo__56E8E7AB` (`blogPostID`),
   CONSTRAINT `FK__Comments__blogPo__56E8E7AB` FOREIGN KEY (`blogPostID`) REFERENCES `BlogPosts` (`blogPostID`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `Company`
---
-
+-- ----------------------------
+--  Table structure for `Company`
+-- ----------------------------
 DROP TABLE IF EXISTS `Company`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Company` (
   `companyID` int(11) NOT NULL AUTO_INCREMENT,
   `company_image` varchar(500) DEFAULT NULL,
@@ -516,15 +401,11 @@ CREATE TABLE `Company` (
   `stylesheet` varchar(200) NOT NULL DEFAULT 'light_layout.css',
   PRIMARY KEY (`companyID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `ConfigAttribute`
---
-
+-- ----------------------------
+--  Table structure for `ConfigAttribute`
+-- ----------------------------
 DROP TABLE IF EXISTS `ConfigAttribute`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `ConfigAttribute` (
   `ID` int(11) NOT NULL AUTO_INCREMENT,
   `ConfigAttributeTypeID` int(11) NOT NULL,
@@ -534,16 +415,12 @@ CREATE TABLE `ConfigAttribute` (
   PRIMARY KEY (`ID`),
   KEY `AAIA_ConfigAttribute_IX` (`ConfigAttributeTypeID`,`parentID`),
   CONSTRAINT `FK__ConfigAtt__Confi__07D43958` FOREIGN KEY (`ConfigAttributeTypeID`) REFERENCES `ConfigAttributeType` (`ID`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB AUTO_INCREMENT=293 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=308 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `ConfigAttributeType`
---
-
+-- ----------------------------
+--  Table structure for `ConfigAttributeType`
+-- ----------------------------
 DROP TABLE IF EXISTS `ConfigAttributeType`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `ConfigAttributeType` (
   `ID` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(100) NOT NULL,
@@ -552,16 +429,12 @@ CREATE TABLE `ConfigAttributeType` (
   PRIMARY KEY (`ID`),
   KEY `FK__ConfigAtt__AcesT__030F843B` (`AcesTypeID`),
   CONSTRAINT `FK__ConfigAtt__AcesT__030F843B` FOREIGN KEY (`AcesTypeID`) REFERENCES `AcesType` (`ID`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB AUTO_INCREMENT=74 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=77 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `Contact`
---
-
+-- ----------------------------
+--  Table structure for `Contact`
+-- ----------------------------
 DROP TABLE IF EXISTS `Contact`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Contact` (
   `contactID` int(11) NOT NULL AUTO_INCREMENT,
   `first_name` varchar(255) DEFAULT NULL,
@@ -579,16 +452,12 @@ CREATE TABLE `Contact` (
   `postalcode` varchar(20) DEFAULT NULL,
   `country` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`contactID`)
-) ENGINE=InnoDB AUTO_INCREMENT=2147483647 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=9610 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `ContactReceiver`
---
-
+-- ----------------------------
+--  Table structure for `ContactReceiver`
+-- ----------------------------
 DROP TABLE IF EXISTS `ContactReceiver`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `ContactReceiver` (
   `contactReceiverID` int(11) NOT NULL AUTO_INCREMENT,
   `first_name` varchar(255) DEFAULT NULL,
@@ -596,15 +465,11 @@ CREATE TABLE `ContactReceiver` (
   `email` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`contactReceiverID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `ContactReceiver_ContactType`
---
-
+-- ----------------------------
+--  Table structure for `ContactReceiver_ContactType`
+-- ----------------------------
 DROP TABLE IF EXISTS `ContactReceiver_ContactType`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `ContactReceiver_ContactType` (
   `receiverTypeID` int(11) NOT NULL AUTO_INCREMENT,
   `contactReceiverID` int(11) NOT NULL,
@@ -612,32 +477,24 @@ CREATE TABLE `ContactReceiver_ContactType` (
   PRIMARY KEY (`receiverTypeID`),
   KEY `FK__ContactRe__conta__6FB49575` (`contactReceiverID`),
   KEY `FK__ContactRe__conta__70A8B9AE` (`contactTypeID`),
-  CONSTRAINT `FK__ContactRe__conta__6FB49575` FOREIGN KEY (`contactReceiverID`) REFERENCES `ContactReceiver` (`contactReceiverID`) ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `FK__ContactRe__conta__70A8B9AE` FOREIGN KEY (`contactTypeID`) REFERENCES `ContactType` (`contactTypeID`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB AUTO_INCREMENT=111 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+  CONSTRAINT `FK__ContactRe__conta__6FB49575` FOREIGN KEY (`contactReceiverID`) REFERENCES `ContactReceiver` (`contactReceiverID`) ON DELETE CASCADE,
+  CONSTRAINT `FK__ContactRe__conta__70A8B9AE` FOREIGN KEY (`contactTypeID`) REFERENCES `ContactType` (`contactTypeID`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=113 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `ContactType`
---
-
+-- ----------------------------
+--  Table structure for `ContactType`
+-- ----------------------------
 DROP TABLE IF EXISTS `ContactType`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `ContactType` (
   `contactTypeID` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`contactTypeID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `Content`
---
-
+-- ----------------------------
+--  Table structure for `Content`
+-- ----------------------------
 DROP TABLE IF EXISTS `Content`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Content` (
   `contentID` int(11) NOT NULL AUTO_INCREMENT,
   `text` longtext,
@@ -645,16 +502,12 @@ CREATE TABLE `Content` (
   PRIMARY KEY (`contentID`),
   KEY `FK__Content__cTypeID__0B457116` (`cTypeID`),
   CONSTRAINT `FK__Content__cTypeID__0B457116` FOREIGN KEY (`cTypeID`) REFERENCES `ContentType` (`cTypeID`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB AUTO_INCREMENT=296001 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=298062 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `ContentBridge`
---
-
+-- ----------------------------
+--  Table structure for `ContentBridge`
+-- ----------------------------
 DROP TABLE IF EXISTS `ContentBridge`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `ContentBridge` (
   `cBridgeID` int(11) NOT NULL AUTO_INCREMENT,
   `catID` int(11) DEFAULT NULL,
@@ -667,68 +520,56 @@ CREATE TABLE `ContentBridge` (
   CONSTRAINT `FK__ContentBr__catID__3A005FFF` FOREIGN KEY (`catID`) REFERENCES `Categories` (`catID`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `FK__ContentBr__conte__390C3BC6` FOREIGN KEY (`contentID`) REFERENCES `Content` (`contentID`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `FK__ContentBr__partI__3AF48438` FOREIGN KEY (`partID`) REFERENCES `Part` (`partID`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB AUTO_INCREMENT=26230 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=28708 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `ContentType`
---
-
+-- ----------------------------
+--  Table structure for `ContentType`
+-- ----------------------------
 DROP TABLE IF EXISTS `ContentType`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `ContentType` (
   `cTypeID` int(11) NOT NULL AUTO_INCREMENT,
   `type` varchar(255) DEFAULT NULL,
   `allowHTML` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`cTypeID`)
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `Country`
---
-
+-- ----------------------------
+--  Table structure for `Country`
+-- ----------------------------
 DROP TABLE IF EXISTS `Country`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Country` (
   `countryID` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) DEFAULT NULL,
   `abbr` varchar(10) DEFAULT NULL,
   PRIMARY KEY (`countryID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `CustUserWebProperties`
---
-
+-- ----------------------------
+--  Table structure for `CustUserWebProperties`
+-- ----------------------------
 DROP TABLE IF EXISTS `CustUserWebProperties`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `CustUserWebProperties` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `userID` varchar(64) NOT NULL,
   `webPropID` int(11) NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=165 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+  PRIMARY KEY (`id`),
+  KEY `webProp_ref_idx` (`webPropID`),
+  KEY `custUser_ref_idx` (`userID`),
+  CONSTRAINT `custUser_ref` FOREIGN KEY (`userID`) REFERENCES `CustomerUser` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `webProps_ref` FOREIGN KEY (`webPropID`) REFERENCES `WebProperties` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB AUTO_INCREMENT=193 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `Customer`
---
-
+-- ----------------------------
+--  Table structure for `Customer`
+-- ----------------------------
 DROP TABLE IF EXISTS `Customer`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Customer` (
   `cust_id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) DEFAULT NULL,
   `email` varchar(255) DEFAULT NULL,
   `address` varchar(500) DEFAULT NULL,
   `city` varchar(150) DEFAULT NULL,
-  `stateID` int(11) NOT NULL,
+  `stateID` int(11) DEFAULT NULL,
   `phone` varchar(50) DEFAULT NULL,
   `fax` varchar(50) DEFAULT NULL,
   `contact_person` varchar(300) DEFAULT NULL,
@@ -753,32 +594,91 @@ CREATE TABLE `Customer` (
   PRIMARY KEY (`cust_id`),
   KEY `CustomerCustomerID` (`customerID`),
   KEY `IX_CustomerID` (`customerID`)
-) ENGINE=InnoDB AUTO_INCREMENT=10443192 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=10443411 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `CustomerCost`
---
+-- ----------------------------
+--  Table structure for `CustomerContent`
+-- ----------------------------
+DROP TABLE IF EXISTS `CustomerContent`;
+CREATE TABLE `CustomerContent` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `text` longtext NOT NULL,
+  `custID` int(11) NOT NULL,
+  `added` datetime NOT NULL,
+  `modified` datetime NOT NULL,
+  `userID` varchar(64) NOT NULL,
+  `typeID` int(11) NOT NULL,
+  `deleted` tinyint(1) unsigned NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `id_UNIQUE` (`id`),
+  KEY `cTypeID_idx` (`typeID`),
+  KEY `cust_id_idx` (`custID`),
+  KEY `id_idx` (`userID`),
+  KEY `deleted_idx` (`deleted`),
+  CONSTRAINT `cTypeID` FOREIGN KEY (`typeID`) REFERENCES `ContentType` (`cTypeID`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `cust_id` FOREIGN KEY (`custID`) REFERENCES `Customer` (`cust_id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `id` FOREIGN KEY (`userID`) REFERENCES `CustomerUser` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8 COMMENT='Customer Content';
+delimiter ;;
+CREATE TRIGGER `CustomerContent_INSERT` AFTER INSERT ON `CustomerContent` FOR EACH ROW BEGIN IF NEW.deleted THEN SET @changeType = 'DELETE'; ELSE SET @changeType ='NEW'; END IF; INSERT INTO CustomerContent_Revisions (userID,custID,new_text,date,changeType, contentID,new_type) VALUES (NEW.userID,NEW.custID,NEW.text,CURRENT_TIMESTAMP, @changeType, NEW.id, NEW.typeID); END;
+ ;;
+delimiter ;
+delimiter ;;
+CREATE TRIGGER `CustomerContent_Update` AFTER UPDATE ON `CustomerContent` FOR EACH ROW BEGIN IF NEW.deleted THEN SET @changeType = 'DELETE'; ELSE SET @changeType = 'EDIT'; END IF; INSERT INTO CustomerContent_Revisions (userID,custID,new_text,old_text, date, changeType,contentID,new_type,old_type) VALUES(NEW.userID,NEW.custID,NEW.text,OLD.text,NOW(),@changeType, NEW.id,NEW.typeID,OLD.typeID); END;
+ ;;
+delimiter ;
 
+-- ----------------------------
+--  Table structure for `CustomerContentBridge`
+-- ----------------------------
+DROP TABLE IF EXISTS `CustomerContentBridge`;
+CREATE TABLE `CustomerContentBridge` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `catID` int(11) NOT NULL,
+  `partID` int(11) NOT NULL,
+  `contentID` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `id_idx` (`contentID`)
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8 COMMENT='Customer Content Bridge';
+
+-- ----------------------------
+--  Table structure for `CustomerContent_Revisions`
+-- ----------------------------
+DROP TABLE IF EXISTS `CustomerContent_Revisions`;
+CREATE TABLE `CustomerContent_Revisions` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `userID` varchar(64) NOT NULL,
+  `custID` int(11) NOT NULL,
+  `old_text` longtext,
+  `new_text` longtext,
+  `date` datetime NOT NULL,
+  `changeType` enum('NEW','EDIT','DELETE') NOT NULL,
+  `contentID` int(11) NOT NULL,
+  `old_type` int(11) NOT NULL,
+  `new_type` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `id_UNIQUE` (`id`),
+  KEY `id_idx` (`contentID`),
+  KEY `cTypeID_idx` (`old_type`),
+  KEY `cTypeID_idx1` (`new_type`)
+) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8 COMMENT='Revision History for CustomerContent';
+
+-- ----------------------------
+--  Table structure for `CustomerCost`
+-- ----------------------------
 DROP TABLE IF EXISTS `CustomerCost`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `CustomerCost` (
   `ID` int(11) NOT NULL AUTO_INCREMENT,
   `cust_id` int(11) NOT NULL,
   `partID` int(11) NOT NULL,
   `cost` decimal(18,2) NOT NULL,
   PRIMARY KEY (`ID`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=4599 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `CustomerLocations`
---
-
+-- ----------------------------
+--  Table structure for `CustomerLocations`
+-- ----------------------------
 DROP TABLE IF EXISTS `CustomerLocations`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `CustomerLocations` (
   `locationID` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(500) DEFAULT NULL,
@@ -797,16 +697,129 @@ CREATE TABLE `CustomerLocations` (
   `ShippingDefault` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`locationID`),
   KEY `IX_CustomerLocations_Customer` (`cust_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=7727 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=7820 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `CustomerPricing`
---
+-- ----------------------------
+--  Table structure for `CustomerPartAttributeFields`
+-- ----------------------------
+DROP TABLE IF EXISTS `CustomerPartAttributeFields`;
+CREATE TABLE `CustomerPartAttributeFields` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `field` varchar(255) DEFAULT NULL,
+  `dataType` int(11) NOT NULL,
+  `added` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `id_UNIQUE` (`id`),
+  KEY `id_idx` (`dataType`),
+  CONSTRAINT `datatype_id` FOREIGN KEY (`dataType`) REFERENCES `DataTypes` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+-- ----------------------------
+--  Table structure for `CustomerPartAttributeValues`
+-- ----------------------------
+DROP TABLE IF EXISTS `CustomerPartAttributeValues`;
+CREATE TABLE `CustomerPartAttributeValues` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `value` varchar(255) NOT NULL,
+  `added` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `id_UNIQUE` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- ----------------------------
+--  Table structure for `CustomerPartAttributes`
+-- ----------------------------
+DROP TABLE IF EXISTS `CustomerPartAttributes`;
+CREATE TABLE `CustomerPartAttributes` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `fieldID` int(11) NOT NULL,
+  `valueID` int(11) NOT NULL,
+  `sort` int(11) NOT NULL,
+  `custID` int(11) NOT NULL,
+  `userID` varchar(64) NOT NULL,
+  `added` datetime NOT NULL,
+  `modified` datetime NOT NULL,
+  `deleted` tinyint(1) unsigned zerofill NOT NULL,
+  `partID` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `id_UNIQUE` (`id`),
+  KEY `id_idx` (`fieldID`),
+  KEY `id_idx1` (`valueID`),
+  KEY `cust_id_idx` (`custID`),
+  KEY `id_idx2` (`userID`),
+  KEY `partID_idx` (`partID`),
+  CONSTRAINT `CustomerPartAttributeFields_id` FOREIGN KEY (`fieldID`) REFERENCES `CustomerPartAttributeFields` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `CustomerPartAttributeValues_id` FOREIGN KEY (`valueID`) REFERENCES `CustomerPartAttributeValues` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `CustomerUser_id` FOREIGN KEY (`userID`) REFERENCES `CustomerUser` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `Customer_cust_id` FOREIGN KEY (`custID`) REFERENCES `Customer` (`cust_id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `Part_partID` FOREIGN KEY (`partID`) REFERENCES `Part` (`partID`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+delimiter ;;
+CREATE TRIGGER `CustomerPartAttributes_Insert` AFTER INSERT ON `CustomerPartAttributes` FOR EACH ROW BEGIN 
+	IF NEW.deleted THEN 
+		SET @changeType = 'DELETE'; 
+	ELSE 
+		SET @changeType ='NEW'; 
+	END IF; 
+	INSERT INTO CustomerPartAttributes_Revisions
+		(userID,custID,new_field,new_value,changeType,attributeID)
+	VALUES
+		(NEW.userID,NEW.custID, NEW.fieldID, NEW.valueID, @changeType, NEW.id);
+END;
+ ;;
+delimiter ;
+delimiter ;;
+CREATE TRIGGER `CustomerPartAttributes_Update` AFTER UPDATE ON `CustomerPartAttributes` FOR EACH ROW BEGIN
+	IF NEW.deleted THEN
+		SET @changeType = 'DELETE';
+	ELSE
+		SET @changeType = 'EDIT';
+	END IF;
+	INSERT INTO CustomerPartAttributes_Revisions 
+		(userID,custID,old_field,new_field,old_value,new_value,changeType,attributeID)
+	VALUES
+		(NEW.userID,NEW.custID,OLD.fieldID, NEW.fieldID, OLD.valueID, NEW.valueID, @changeType, NEW.id);
+END;
+ ;;
+delimiter ;
+
+-- ----------------------------
+--  Table structure for `CustomerPartAttributes_Revisions`
+-- ----------------------------
+DROP TABLE IF EXISTS `CustomerPartAttributes_Revisions`;
+CREATE TABLE `CustomerPartAttributes_Revisions` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `userID` varchar(64) NOT NULL,
+  `custID` int(11) DEFAULT NULL,
+  `old_field` int(11) NOT NULL,
+  `new_field` int(11) NOT NULL,
+  `old_value` int(11) NOT NULL,
+  `new_value` int(11) NOT NULL,
+  `date` datetime NOT NULL,
+  `changeType` enum('NEW','EDIT','DELETE') NOT NULL,
+  `attributeID` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `id_UNIQUE` (`id`),
+  KEY `id_idx` (`userID`),
+  KEY `cust_id_idx` (`custID`),
+  KEY `id_idx1` (`old_field`),
+  KEY `id_idx2` (`new_field`),
+  KEY `id_idx3` (`old_value`),
+  KEY `id_idx4` (`new_value`),
+  KEY `id_idx5` (`attributeID`),
+  CONSTRAINT `CustomerPartAttributeFields_Revisions_new_id` FOREIGN KEY (`new_field`) REFERENCES `CustomerPartAttributeFields` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `CustomerPartAttributeFields_Revisions_old_id` FOREIGN KEY (`old_field`) REFERENCES `CustomerPartAttributeFields` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `CustomerPartAttributes_Revisions_id` FOREIGN KEY (`attributeID`) REFERENCES `CustomerPartAttributes` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `CustomerPartAttributeValues_Revisions_new_id` FOREIGN KEY (`new_value`) REFERENCES `CustomerPartAttributeValues` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `CustomerPartAttributeValues_Revisions_old_id` FOREIGN KEY (`old_value`) REFERENCES `CustomerPartAttributeValues` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `CustomerUser_Revisions_id` FOREIGN KEY (`userID`) REFERENCES `CustomerUser` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `Customer_Revisions_cust_id` FOREIGN KEY (`custID`) REFERENCES `Customer` (`cust_id`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- ----------------------------
+--  Table structure for `CustomerPricing`
+-- ----------------------------
 DROP TABLE IF EXISTS `CustomerPricing`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `CustomerPricing` (
   `cust_price_id` int(11) NOT NULL AUTO_INCREMENT,
   `cust_id` int(11) NOT NULL,
@@ -815,17 +828,14 @@ CREATE TABLE `CustomerPricing` (
   `isSale` int(11) NOT NULL DEFAULT '0',
   `sale_start` date DEFAULT NULL,
   `sale_end` date DEFAULT NULL,
-  PRIMARY KEY (`cust_price_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=330807 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+  PRIMARY KEY (`cust_price_id`),
+  KEY `partID` (`partID`)
+) ENGINE=InnoDB AUTO_INCREMENT=388362 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `CustomerReport`
---
-
+-- ----------------------------
+--  Table structure for `CustomerReport`
+-- ----------------------------
 DROP TABLE IF EXISTS `CustomerReport`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `CustomerReport` (
   `ID` int(11) NOT NULL AUTO_INCREMENT,
   `customerID` int(11) NOT NULL,
@@ -835,30 +845,22 @@ CREATE TABLE `CustomerReport` (
   KEY `FK__CustomerR__Repor__0F604C87` (`ReportTypeID`),
   CONSTRAINT `FK__CustomerR__Repor__0F604C87` FOREIGN KEY (`ReportTypeID`) REFERENCES `ReportType` (`ID`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `CustomerReportPart`
---
-
+-- ----------------------------
+--  Table structure for `CustomerReportPart`
+-- ----------------------------
 DROP TABLE IF EXISTS `CustomerReportPart`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `CustomerReportPart` (
   `ID` int(11) NOT NULL AUTO_INCREMENT,
   `customerID` int(11) NOT NULL,
   `partID` int(11) NOT NULL,
   PRIMARY KEY (`ID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=279 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `CustomerUser`
---
-
+-- ----------------------------
+--  Table structure for `CustomerUser`
+-- ----------------------------
 DROP TABLE IF EXISTS `CustomerUser`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `CustomerUser` (
   `id` varchar(64) NOT NULL,
   `name` varchar(255) DEFAULT NULL,
@@ -875,30 +877,33 @@ CREATE TABLE `CustomerUser` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `id` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `DealerTiers`
---
+-- ----------------------------
+--  Table structure for `DataTypes`
+-- ----------------------------
+DROP TABLE IF EXISTS `DataTypes`;
+CREATE TABLE `DataTypes` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `type` varchar(45) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `id_UNIQUE` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+-- ----------------------------
+--  Table structure for `DealerTiers`
+-- ----------------------------
 DROP TABLE IF EXISTS `DealerTiers`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `DealerTiers` (
   `ID` int(11) NOT NULL AUTO_INCREMENT,
   `tier` varchar(255) DEFAULT NULL,
   `sort` int(11) NOT NULL,
   PRIMARY KEY (`ID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `DealerTypes`
---
-
+-- ----------------------------
+--  Table structure for `DealerTypes`
+-- ----------------------------
 DROP TABLE IF EXISTS `DealerTypes`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `DealerTypes` (
   `dealer_type` int(11) NOT NULL AUTO_INCREMENT,
   `type` varchar(100) DEFAULT NULL,
@@ -907,30 +912,22 @@ CREATE TABLE `DealerTypes` (
   `label` varchar(300) DEFAULT NULL,
   PRIMARY KEY (`dealer_type`)
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `FAQ`
---
-
+-- ----------------------------
+--  Table structure for `FAQ`
+-- ----------------------------
 DROP TABLE IF EXISTS `FAQ`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `FAQ` (
   `faqID` int(11) NOT NULL AUTO_INCREMENT,
   `question` varchar(500) DEFAULT NULL,
   `answer` longtext,
   PRIMARY KEY (`faqID`)
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `File`
---
-
+-- ----------------------------
+--  Table structure for `File`
+-- ----------------------------
 DROP TABLE IF EXISTS `File`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `File` (
   `fileID` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(500) NOT NULL,
@@ -944,16 +941,12 @@ CREATE TABLE `File` (
   PRIMARY KEY (`fileID`),
   KEY `FK__File__fileExtID__6C390A4C` (`fileExtID`),
   CONSTRAINT `FK__File__fileExtID__6C390A4C` FOREIGN KEY (`fileExtID`) REFERENCES `FileExt` (`fileExtID`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB AUTO_INCREMENT=1286 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=51 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `FileExt`
---
-
+-- ----------------------------
+--  Table structure for `FileExt`
+-- ----------------------------
 DROP TABLE IF EXISTS `FileExt`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `FileExt` (
   `fileExtID` int(11) NOT NULL AUTO_INCREMENT,
   `fileExt` varchar(10) NOT NULL,
@@ -963,45 +956,33 @@ CREATE TABLE `FileExt` (
   KEY `FK__FileExt__fileTyp__6A50C1DA` (`fileTypeID`),
   CONSTRAINT `FK__FileExt__fileTyp__6A50C1DA` FOREIGN KEY (`fileTypeID`) REFERENCES `FileType` (`fileTypeID`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB AUTO_INCREMENT=28 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `FileGallery`
---
-
+-- ----------------------------
+--  Table structure for `FileGallery`
+-- ----------------------------
 DROP TABLE IF EXISTS `FileGallery`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `FileGallery` (
   `fileGalleryID` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
   `description` varchar(4000) DEFAULT NULL,
   `parentID` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`fileGalleryID`)
-) ENGINE=InnoDB AUTO_INCREMENT=98 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=129 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `FileType`
---
-
+-- ----------------------------
+--  Table structure for `FileType`
+-- ----------------------------
 DROP TABLE IF EXISTS `FileType`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `FileType` (
   `fileTypeID` int(11) NOT NULL AUTO_INCREMENT,
   `fileType` varchar(500) DEFAULT NULL,
   PRIMARY KEY (`fileTypeID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `ForumGroup`
---
-
+-- ----------------------------
+--  Table structure for `ForumGroup`
+-- ----------------------------
 DROP TABLE IF EXISTS `ForumGroup`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `ForumGroup` (
   `forumGroupID` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
@@ -1009,15 +990,11 @@ CREATE TABLE `ForumGroup` (
   `createdDate` datetime NOT NULL,
   PRIMARY KEY (`forumGroupID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `ForumPost`
---
-
+-- ----------------------------
+--  Table structure for `ForumPost`
+-- ----------------------------
 DROP TABLE IF EXISTS `ForumPost`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `ForumPost` (
   `postID` int(11) NOT NULL AUTO_INCREMENT,
   `parentID` int(11) NOT NULL,
@@ -1038,15 +1015,11 @@ CREATE TABLE `ForumPost` (
   KEY `FK__ForumPost__threa__22B5E1E5` (`threadID`),
   CONSTRAINT `FK__ForumPost__threa__22B5E1E5` FOREIGN KEY (`threadID`) REFERENCES `ForumThread` (`threadID`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `ForumThread`
---
-
+-- ----------------------------
+--  Table structure for `ForumThread`
+-- ----------------------------
 DROP TABLE IF EXISTS `ForumThread`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `ForumThread` (
   `threadID` int(11) NOT NULL AUTO_INCREMENT,
   `topicID` int(11) NOT NULL,
@@ -1057,15 +1030,11 @@ CREATE TABLE `ForumThread` (
   KEY `FK__ForumThre__topic__1DF12CC8` (`topicID`),
   CONSTRAINT `FK__ForumThre__topic__1DF12CC8` FOREIGN KEY (`topicID`) REFERENCES `ForumTopic` (`topicID`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `ForumTopic`
---
-
+-- ----------------------------
+--  Table structure for `ForumTopic`
+-- ----------------------------
 DROP TABLE IF EXISTS `ForumTopic`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `ForumTopic` (
   `topicID` int(11) NOT NULL AUTO_INCREMENT,
   `TopicGroupID` int(11) NOT NULL,
@@ -1079,15 +1048,11 @@ CREATE TABLE `ForumTopic` (
   KEY `FK__ForumTopi__Topic__192C77AB` (`TopicGroupID`),
   CONSTRAINT `FK__ForumTopi__Topic__192C77AB` FOREIGN KEY (`TopicGroupID`) REFERENCES `ForumGroup` (`forumGroupID`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `Gallery`
---
-
+-- ----------------------------
+--  Table structure for `Gallery`
+-- ----------------------------
 DROP TABLE IF EXISTS `Gallery`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Gallery` (
   `imgID` int(11) NOT NULL AUTO_INCREMENT,
   `img_path` varchar(500) NOT NULL,
@@ -1095,15 +1060,11 @@ CREATE TABLE `Gallery` (
   `sort_order` int(11) NOT NULL,
   PRIMARY KEY (`imgID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `IPBlock`
---
-
+-- ----------------------------
+--  Table structure for `IPBlock`
+-- ----------------------------
 DROP TABLE IF EXISTS `IPBlock`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `IPBlock` (
   `blockID` int(11) NOT NULL AUTO_INCREMENT,
   `IPAddress` varchar(255) NOT NULL,
@@ -1112,35 +1073,26 @@ CREATE TABLE `IPBlock` (
   `userID` int(11) NOT NULL,
   PRIMARY KEY (`blockID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `IncludedPart`
---
-
+-- ----------------------------
+--  Table structure for `IncludedPart`
+-- ----------------------------
 DROP TABLE IF EXISTS `IncludedPart`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `IncludedPart` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `partID` int(11) NOT NULL,
   `includedID` int(11) NOT NULL,
-  `quantity` int(11) NOT NULL DEFAULT '1',
   PRIMARY KEY (`id`),
   KEY `FK__IncludedP__partI__33DF3ACD` (`partID`),
   KEY `FK__IncludedP__inclu__34D35F06` (`includedID`),
   CONSTRAINT `FK__IncludedP__inclu__34D35F06` FOREIGN KEY (`includedID`) REFERENCES `Part` (`partID`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `FK__IncludedP__partI__33DF3ACD` FOREIGN KEY (`partID`) REFERENCES `Part` (`partID`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB AUTO_INCREMENT=24 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `KioskOrderItems`
---
-
+-- ----------------------------
+--  Table structure for `KioskOrderItems`
+-- ----------------------------
 DROP TABLE IF EXISTS `KioskOrderItems`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `KioskOrderItems` (
   `itemID` int(11) NOT NULL AUTO_INCREMENT,
   `orderID` int(11) NOT NULL,
@@ -1149,16 +1101,12 @@ CREATE TABLE `KioskOrderItems` (
   `price` decimal(19,4) NOT NULL,
   `isFulfilled` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`itemID`)
-) ENGINE=InnoDB AUTO_INCREMENT=120 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=124 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `KioskOrders`
---
-
+-- ----------------------------
+--  Table structure for `KioskOrders`
+-- ----------------------------
 DROP TABLE IF EXISTS `KioskOrders`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `KioskOrders` (
   `orderID` int(11) NOT NULL AUTO_INCREMENT,
   `order_date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1176,19 +1124,14 @@ CREATE TABLE `KioskOrders` (
   `zip` varchar(100) DEFAULT NULL,
   `locationID` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`orderID`)
-) ENGINE=InnoDB AUTO_INCREMENT=10000077 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=10000081 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `LandingPage`
---
-
+-- ----------------------------
+--  Table structure for `LandingPage`
+-- ----------------------------
 DROP TABLE IF EXISTS `LandingPage`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `LandingPage` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `websiteID` int(11) NOT NULL,
   `name` varchar(255) NOT NULL,
   `startDate` datetime NOT NULL,
   `endDate` datetime NOT NULL,
@@ -1199,19 +1142,13 @@ CREATE TABLE `LandingPage` (
   `conversionLabel` varchar(150) DEFAULT NULL,
   `newWindow` tinyint(1) NOT NULL DEFAULT '0',
   `menuPosition` varchar(15) NOT NULL DEFAULT 'top',
-  PRIMARY KEY (`id`),
-  KEY `FK__LandingPa__websi__509AA9B5` (`websiteID`),
-  CONSTRAINT `FK__LandingPa__websi__509AA9B5` FOREIGN KEY (`websiteID`) REFERENCES `Website` (`ID`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB AUTO_INCREMENT=100 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `LandingPageData`
---
-
+-- ----------------------------
+--  Table structure for `LandingPageData`
+-- ----------------------------
 DROP TABLE IF EXISTS `LandingPageData`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `LandingPageData` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `landingPageID` int(11) NOT NULL,
@@ -1219,17 +1156,13 @@ CREATE TABLE `LandingPageData` (
   `dataValue` varchar(100) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `FK__LandingPa__landi__5A2413EF` (`landingPageID`),
-  CONSTRAINT `FK__LandingPa__landi__5A2413EF` FOREIGN KEY (`landingPageID`) REFERENCES `LandingPage` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
+  CONSTRAINT `FK__LandingPa__landi__5A2413EF` FOREIGN KEY (`landingPageID`) REFERENCES `LandingPage` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `LandingPageImages`
---
-
+-- ----------------------------
+--  Table structure for `LandingPageImages`
+-- ----------------------------
 DROP TABLE IF EXISTS `LandingPageImages`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `LandingPageImages` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `landingPageID` int(11) NOT NULL,
@@ -1237,17 +1170,13 @@ CREATE TABLE `LandingPageImages` (
   `sort` int(11) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `FK__LandingPa__landi__555F5ED2` (`landingPageID`),
-  CONSTRAINT `FK__LandingPa__landi__555F5ED2` FOREIGN KEY (`landingPageID`) REFERENCES `LandingPage` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
+  CONSTRAINT `FK__LandingPa__landi__555F5ED2` FOREIGN KEY (`landingPageID`) REFERENCES `LandingPage` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `Lifestyle_Trailer`
---
-
+-- ----------------------------
+--  Table structure for `Lifestyle_Trailer`
+-- ----------------------------
 DROP TABLE IF EXISTS `Lifestyle_Trailer`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Lifestyle_Trailer` (
   `lifestyleTrailerID` int(11) NOT NULL AUTO_INCREMENT,
   `catID` int(11) NOT NULL,
@@ -1258,30 +1187,22 @@ CREATE TABLE `Lifestyle_Trailer` (
   CONSTRAINT `FK__Lifestyle__catID__0869046B` FOREIGN KEY (`catID`) REFERENCES `Categories` (`catID`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `FK__Lifestyle__trail__095D28A4` FOREIGN KEY (`trailerID`) REFERENCES `Trailer` (`trailerID`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB AUTO_INCREMENT=165 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `Location_Services`
---
-
+-- ----------------------------
+--  Table structure for `Location_Services`
+-- ----------------------------
 DROP TABLE IF EXISTS `Location_Services`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Location_Services` (
   `loc_service_id` int(11) NOT NULL AUTO_INCREMENT,
   `serviceID` int(11) NOT NULL,
   `locationID` int(11) NOT NULL,
   PRIMARY KEY (`loc_service_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `Locations`
---
-
+-- ----------------------------
+--  Table structure for `Locations`
+-- ----------------------------
 DROP TABLE IF EXISTS `Locations`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Locations` (
   `locationID` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) DEFAULT NULL,
@@ -1300,15 +1221,11 @@ CREATE TABLE `Locations` (
   `places_id` varchar(300) DEFAULT NULL,
   PRIMARY KEY (`locationID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `Logger`
---
-
+-- ----------------------------
+--  Table structure for `Logger`
+-- ----------------------------
 DROP TABLE IF EXISTS `Logger`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Logger` (
   `id` varchar(64) NOT NULL,
   `Message` varchar(500) DEFAULT NULL,
@@ -1322,44 +1239,32 @@ CREATE TABLE `Logger` (
   KEY `FK_Logger_LoggerTypes` (`loggedType`),
   CONSTRAINT `FK_Logger_LoggerTypes` FOREIGN KEY (`loggedType`) REFERENCES `LoggerTypes` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `LoggerTypes`
---
-
+-- ----------------------------
+--  Table structure for `LoggerTypes`
+-- ----------------------------
 DROP TABLE IF EXISTS `LoggerTypes`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `LoggerTypes` (
   `id` varchar(64) NOT NULL,
   `type` varchar(200) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `Make`
---
-
+-- ----------------------------
+--  Table structure for `Make`
+-- ----------------------------
 DROP TABLE IF EXISTS `Make`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Make` (
   `makeID` int(11) NOT NULL AUTO_INCREMENT,
   `make` varchar(255) NOT NULL,
   PRIMARY KEY (`makeID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=54 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `MakeModel`
---
-
+-- ----------------------------
+--  Table structure for `MakeModel`
+-- ----------------------------
 DROP TABLE IF EXISTS `MakeModel`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `MakeModel` (
   `mmID` int(11) NOT NULL AUTO_INCREMENT,
   `makeID` int(11) NOT NULL,
@@ -1369,16 +1274,12 @@ CREATE TABLE `MakeModel` (
   KEY `FK__MakeModel__model__4977ADB9` (`modelID`),
   CONSTRAINT `FK__MakeModel__makeI__48838980` FOREIGN KEY (`makeID`) REFERENCES `Make` (`makeID`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `FK__MakeModel__model__4977ADB9` FOREIGN KEY (`modelID`) REFERENCES `Model` (`modelID`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB AUTO_INCREMENT=733 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=743 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `MapIcons`
---
-
+-- ----------------------------
+--  Table structure for `MapIcons`
+-- ----------------------------
 DROP TABLE IF EXISTS `MapIcons`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `MapIcons` (
   `ID` int(11) NOT NULL AUTO_INCREMENT,
   `tier` int(11) NOT NULL,
@@ -1391,29 +1292,21 @@ CREATE TABLE `MapIcons` (
   CONSTRAINT `FK__MapIcons__dealer__5064A26A` FOREIGN KEY (`dealer_type`) REFERENCES `DealerTypes` (`dealer_type`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `FK__MapIcons__tier__4F707E31` FOREIGN KEY (`tier`) REFERENCES `DealerTiers` (`ID`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `MapPolygon`
---
-
+-- ----------------------------
+--  Table structure for `MapPolygon`
+-- ----------------------------
 DROP TABLE IF EXISTS `MapPolygon`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `MapPolygon` (
   `ID` int(11) NOT NULL AUTO_INCREMENT,
   `stateID` int(11) NOT NULL,
   PRIMARY KEY (`ID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=148 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `MapPolygonCoordinates`
---
-
+-- ----------------------------
+--  Table structure for `MapPolygonCoordinates`
+-- ----------------------------
 DROP TABLE IF EXISTS `MapPolygonCoordinates`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `MapPolygonCoordinates` (
   `ID` int(11) NOT NULL AUTO_INCREMENT,
   `MapPolygonID` int(11) NOT NULL,
@@ -1421,30 +1314,22 @@ CREATE TABLE `MapPolygonCoordinates` (
   `longitude` double NOT NULL,
   PRIMARY KEY (`ID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=16225 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `MapixCode`
---
-
+-- ----------------------------
+--  Table structure for `MapixCode`
+-- ----------------------------
 DROP TABLE IF EXISTS `MapixCode`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `MapixCode` (
   `mCodeID` int(11) NOT NULL AUTO_INCREMENT,
   `code` varchar(255) DEFAULT NULL,
   `description` varchar(200) DEFAULT NULL,
   PRIMARY KEY (`mCodeID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `Menu`
---
-
+-- ----------------------------
+--  Table structure for `Menu`
+-- ----------------------------
 DROP TABLE IF EXISTS `Menu`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Menu` (
   `menuID` int(11) NOT NULL AUTO_INCREMENT,
   `menu_name` varchar(255) NOT NULL,
@@ -1454,20 +1339,13 @@ CREATE TABLE `Menu` (
   `requireAuthentication` tinyint(1) NOT NULL DEFAULT '0',
   `showOnSitemap` tinyint(1) NOT NULL DEFAULT '0',
   `sort` int(11) NOT NULL DEFAULT '1',
-  `websiteID` int(11) NOT NULL DEFAULT '1',
-  PRIMARY KEY (`menuID`),
-  KEY `FK__Menu__websiteID__1FCC89D1` (`websiteID`),
-  CONSTRAINT `FK__Menu__websiteID__1FCC89D1` FOREIGN KEY (`websiteID`) REFERENCES `Website` (`ID`) ON DELETE NO ACTION ON UPDATE NO ACTION
+  PRIMARY KEY (`menuID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `Menu_SiteContent`
---
-
+-- ----------------------------
+--  Table structure for `Menu_SiteContent`
+-- ----------------------------
 DROP TABLE IF EXISTS `Menu_SiteContent`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Menu_SiteContent` (
   `menuContentID` int(11) NOT NULL AUTO_INCREMENT,
   `menuID` int(11) NOT NULL,
@@ -1481,33 +1359,23 @@ CREATE TABLE `Menu_SiteContent` (
   KEY `FK__Menu_Site__menuI__208CD6FA` (`menuID`),
   KEY `FK__Menu_Site__conte__2180FB33` (`contentID`),
   KEY `FK__Menu_Site__paren__22751F6C` (`parentID`),
-  CONSTRAINT `FK__Menu_Site__conte__2180FB33` FOREIGN KEY (`contentID`) REFERENCES `SiteContent` (`contentID`) ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `FK__Menu_Site__menuI__208CD6FA` FOREIGN KEY (`menuID`) REFERENCES `Menu` (`menuID`) ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `FK__Menu_Site__paren__22751F6C` FOREIGN KEY (`parentID`) REFERENCES `Menu_SiteContent` (`menuContentID`) ON DELETE NO ACTION ON UPDATE NO ACTION
+  CONSTRAINT `FK__Menu_Site__menuI__208CD6FA` FOREIGN KEY (`menuID`) REFERENCES `Menu` (`menuID`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB AUTO_INCREMENT=130 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `Model`
---
-
+-- ----------------------------
+--  Table structure for `Model`
+-- ----------------------------
 DROP TABLE IF EXISTS `Model`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Model` (
   `modelID` int(11) NOT NULL AUTO_INCREMENT,
   `model` varchar(255) NOT NULL,
   PRIMARY KEY (`modelID`)
-) ENGINE=InnoDB AUTO_INCREMENT=704 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=714 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `ModelStyle`
---
-
+-- ----------------------------
+--  Table structure for `ModelStyle`
+-- ----------------------------
 DROP TABLE IF EXISTS `ModelStyle`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `ModelStyle` (
   `msID` int(11) NOT NULL AUTO_INCREMENT,
   `modelID` int(11) NOT NULL,
@@ -1517,16 +1385,12 @@ CREATE TABLE `ModelStyle` (
   KEY `FK__ModelStyl__style__4B5FF62B` (`styleID`),
   CONSTRAINT `FK__ModelStyl__model__4A6BD1F2` FOREIGN KEY (`modelID`) REFERENCES `Model` (`modelID`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `FK__ModelStyl__style__4B5FF62B` FOREIGN KEY (`styleID`) REFERENCES `Style` (`styleID`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB AUTO_INCREMENT=1371 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=1404 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `Modules`
---
-
+-- ----------------------------
+--  Table structure for `Modules`
+-- ----------------------------
 DROP TABLE IF EXISTS `Modules`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Modules` (
   `moduleID` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(50) DEFAULT NULL,
@@ -1534,15 +1398,11 @@ CREATE TABLE `Modules` (
   `image` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`moduleID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `NewsItem`
---
-
+-- ----------------------------
+--  Table structure for `NewsItem`
+-- ----------------------------
 DROP TABLE IF EXISTS `NewsItem`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `NewsItem` (
   `newsItemID` int(11) NOT NULL AUTO_INCREMENT,
   `title` varchar(500) DEFAULT NULL,
@@ -1553,16 +1413,12 @@ CREATE TABLE `NewsItem` (
   `active` tinyint(1) NOT NULL DEFAULT '1',
   `slug` varchar(500) DEFAULT NULL,
   PRIMARY KEY (`newsItemID`)
-) ENGINE=InnoDB AUTO_INCREMENT=212 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `Note`
---
-
+-- ----------------------------
+--  Table structure for `Note`
+-- ----------------------------
 DROP TABLE IF EXISTS `Note`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Note` (
   `ID` int(11) NOT NULL AUTO_INCREMENT,
   `vehiclePartID` int(11) NOT NULL,
@@ -1570,32 +1426,22 @@ CREATE TABLE `Note` (
   PRIMARY KEY (`ID`),
   KEY `AAIA_Note_IX` (`vehiclePartID`),
   CONSTRAINT `FK__Note__vehiclePar__2BFEED3A` FOREIGN KEY (`vehiclePartID`) REFERENCES `vcdb_VehiclePart` (`ID`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB AUTO_INCREMENT=289708 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=317674 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `PackageType`
---
-
+-- ----------------------------
+--  Table structure for `PackageType`
+-- ----------------------------
 DROP TABLE IF EXISTS `PackageType`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `PackageType` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `ID` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `id_UNIQUE` (`id`),
-  KEY `idx` (`name`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
+  PRIMARY KEY (`ID`)
+) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `Part`
---
-
+-- ----------------------------
+--  Table structure for `Part`
+-- ----------------------------
 DROP TABLE IF EXISTS `Part`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Part` (
   `partID` int(11) NOT NULL,
   `status` int(11) NOT NULL,
@@ -1609,18 +1455,13 @@ CREATE TABLE `Part` (
   `ACESPartTypeID` int(11) DEFAULT NULL,
   PRIMARY KEY (`partID`),
   KEY `IX_Part_status` (`status`),
-  KEY `IX_Part_Class` (`classID`),
-  KEY `idx` (`partID`)
+  KEY `IX_Part_Class` (`classID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `PartAttribute`
---
-
+-- ----------------------------
+--  Table structure for `PartAttribute`
+-- ----------------------------
 DROP TABLE IF EXISTS `PartAttribute`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `PartAttribute` (
   `pAttrID` int(11) NOT NULL AUTO_INCREMENT,
   `partID` int(11) NOT NULL,
@@ -1629,32 +1470,23 @@ CREATE TABLE `PartAttribute` (
   `sort` int(11) NOT NULL DEFAULT '1',
   PRIMARY KEY (`pAttrID`),
   KEY `IX_PartAttribute_Part` (`partID`),
-  KEY `idx` (`partID`),
   CONSTRAINT `FK__PartAttri__partI__4C541A64` FOREIGN KEY (`partID`) REFERENCES `Part` (`partID`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB AUTO_INCREMENT=65075 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=66685 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `PartGroup`
---
-
+-- ----------------------------
+--  Table structure for `PartGroup`
+-- ----------------------------
 DROP TABLE IF EXISTS `PartGroup`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `PartGroup` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=552 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `PartGroupPart`
---
-
+-- ----------------------------
+--  Table structure for `PartGroupPart`
+-- ----------------------------
 DROP TABLE IF EXISTS `PartGroupPart`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `PartGroupPart` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `partGroupID` int(11) NOT NULL,
@@ -1666,30 +1498,22 @@ CREATE TABLE `PartGroupPart` (
   CONSTRAINT `FK__PartGroup__partG__2D323D3E` FOREIGN KEY (`partGroupID`) REFERENCES `PartGroup` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `FK__PartGroup__partI__2E266177` FOREIGN KEY (`partID`) REFERENCES `Part` (`partID`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB AUTO_INCREMENT=2202 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `PartImageSizes`
---
-
+-- ----------------------------
+--  Table structure for `PartImageSizes`
+-- ----------------------------
 DROP TABLE IF EXISTS `PartImageSizes`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `PartImageSizes` (
   `sizeID` int(11) NOT NULL AUTO_INCREMENT,
   `size` varchar(25) DEFAULT NULL,
   `dimensions` varchar(20) DEFAULT NULL,
   PRIMARY KEY (`sizeID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `PartImages`
---
-
+-- ----------------------------
+--  Table structure for `PartImages`
+-- ----------------------------
 DROP TABLE IF EXISTS `PartImages`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `PartImages` (
   `imageID` int(11) NOT NULL AUTO_INCREMENT,
   `sizeID` int(11) NOT NULL,
@@ -1701,34 +1525,25 @@ CREATE TABLE `PartImages` (
   PRIMARY KEY (`imageID`),
   KEY `IX_PartImages_Part` (`partID`),
   KEY `IX_PartImages_Size` (`sizeID`),
-  KEY `idx` (`partID`),
   CONSTRAINT `FK__PartImage__partI__0E21DDC1` FOREIGN KEY (`partID`) REFERENCES `Part` (`partID`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `FK__PartImage__sizeI__0D2DB988` FOREIGN KEY (`sizeID`) REFERENCES `PartImageSizes` (`sizeID`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB AUTO_INCREMENT=498099 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=1328071 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `PartIndex`
---
-
+-- ----------------------------
+--  Table structure for `PartIndex`
+-- ----------------------------
 DROP TABLE IF EXISTS `PartIndex`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `PartIndex` (
   `partIndexID` bigint(20) NOT NULL AUTO_INCREMENT,
   `partID` int(11) NOT NULL,
   `partIndex` longtext,
   PRIMARY KEY (`partIndexID`)
-) ENGINE=InnoDB AUTO_INCREMENT=47779 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=50339 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `PartPackage`
---
-
+-- ----------------------------
+--  Table structure for `PartPackage`
+-- ----------------------------
 DROP TABLE IF EXISTS `PartPackage`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `PartPackage` (
   `ID` int(11) NOT NULL AUTO_INCREMENT,
   `partID` int(11) NOT NULL,
@@ -1740,18 +1555,22 @@ CREATE TABLE `PartPackage` (
   `weightUOM` int(11) NOT NULL,
   `packageUOM` int(11) NOT NULL,
   `quantity` int(11) NOT NULL,
+  `typeID` int(11) NOT NULL,
   PRIMARY KEY (`ID`),
-  KEY `idx` (`partID`)
-) ENGINE=InnoDB AUTO_INCREMENT=4384 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+  KEY `dimUnit_idx` (`dimensionUOM`),
+  KEY `weightUnit_idx` (`weightUOM`),
+  KEY `packageUnit_idx` (`packageUOM`),
+  KEY `typeUnit_FK_idx` (`typeID`),
+  CONSTRAINT `dimUinit_FK` FOREIGN KEY (`dimensionUOM`) REFERENCES `UnitOfMeasure` (`ID`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `packageUnit_FK` FOREIGN KEY (`packageUOM`) REFERENCES `UnitOfMeasure` (`ID`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `typeUnit_FK` FOREIGN KEY (`typeID`) REFERENCES `PackageType` (`ID`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `weightUnit_FK` FOREIGN KEY (`weightUOM`) REFERENCES `UnitOfMeasure` (`ID`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB AUTO_INCREMENT=4538 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `PartVideo`
---
-
+-- ----------------------------
+--  Table structure for `PartVideo`
+-- ----------------------------
 DROP TABLE IF EXISTS `PartVideo`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `PartVideo` (
   `pVideoID` int(11) NOT NULL AUTO_INCREMENT,
   `partID` int(11) NOT NULL,
@@ -1763,16 +1582,12 @@ CREATE TABLE `PartVideo` (
   KEY `FK__PartVideo__partI__3818178D` (`partID`),
   CONSTRAINT `FK__PartVideo__partI__3818178D` FOREIGN KEY (`partID`) REFERENCES `Part` (`partID`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `FK__PartVideo__vType__3723F354` FOREIGN KEY (`vTypeID`) REFERENCES `videoType` (`vTypeID`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB AUTO_INCREMENT=3014 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=3204 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `Post_Category`
---
-
+-- ----------------------------
+--  Table structure for `Post_Category`
+-- ----------------------------
 DROP TABLE IF EXISTS `Post_Category`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Post_Category` (
   `postCategoryID` int(11) NOT NULL AUTO_INCREMENT,
   `postID` int(11) NOT NULL,
@@ -1781,15 +1596,11 @@ CREATE TABLE `Post_Category` (
   KEY `FK__Post_Cate__postI__2BC97F7C` (`postID`),
   CONSTRAINT `FK__Post_Cate__postI__2BC97F7C` FOREIGN KEY (`postID`) REFERENCES `Posts` (`postID`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `Posts`
---
-
+-- ----------------------------
+--  Table structure for `Posts`
+-- ----------------------------
 DROP TABLE IF EXISTS `Posts`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Posts` (
   `postID` int(11) NOT NULL AUTO_INCREMENT,
   `siteContentID` int(11) DEFAULT NULL,
@@ -1806,49 +1617,37 @@ CREATE TABLE `Posts` (
   CONSTRAINT `FK__Posts__authorID__28ED12D1` FOREIGN KEY (`authorID`) REFERENCES `Authors` (`authorID`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `FK__Posts__siteConte__29E1370A` FOREIGN KEY (`siteContentID`) REFERENCES `SiteContent` (`contentID`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `Price`
---
-
+-- ----------------------------
+--  Table structure for `Price`
+-- ----------------------------
 DROP TABLE IF EXISTS `Price`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Price` (
   `priceID` int(11) NOT NULL AUTO_INCREMENT,
   `partID` int(11) NOT NULL,
   `priceType` varchar(255) DEFAULT NULL,
-  `price` decimal(19,4) NOT NULL,
+  `price` decimal(8,2) NOT NULL,
   `enforced` bit(1) NOT NULL,
+  `dateModified` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`priceID`),
   KEY `IX_Price_Part` (`partID`),
-  KEY `idx` (`partID`),
   CONSTRAINT `FK__Price__partID__0A514CDD` FOREIGN KEY (`partID`) REFERENCES `Part` (`partID`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB AUTO_INCREMENT=29534 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=30173 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `Region`
---
-
+-- ----------------------------
+--  Table structure for `Region`
+-- ----------------------------
 DROP TABLE IF EXISTS `Region`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Region` (
   `ID` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(100) NOT NULL,
   PRIMARY KEY (`ID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `RelatedPart`
---
-
+-- ----------------------------
+--  Table structure for `RelatedPart`
+-- ----------------------------
 DROP TABLE IF EXISTS `RelatedPart`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `RelatedPart` (
   `relPartID` int(11) NOT NULL AUTO_INCREMENT,
   `partID` int(11) NOT NULL,
@@ -1856,44 +1655,32 @@ CREATE TABLE `RelatedPart` (
   `rTypeID` int(11) NOT NULL,
   PRIMARY KEY (`relPartID`),
   KEY `IX_RelatedPart_Part` (`partID`,`relatedID`)
-) ENGINE=InnoDB AUTO_INCREMENT=23312 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=24952 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `RelatedType`
---
-
+-- ----------------------------
+--  Table structure for `RelatedType`
+-- ----------------------------
 DROP TABLE IF EXISTS `RelatedType`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `RelatedType` (
   `rTypeID` int(11) NOT NULL AUTO_INCREMENT,
   `type` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`rTypeID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `ReportType`
---
-
+-- ----------------------------
+--  Table structure for `ReportType`
+-- ----------------------------
 DROP TABLE IF EXISTS `ReportType`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `ReportType` (
   `ID` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(200) NOT NULL,
   PRIMARY KEY (`ID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `Review`
---
-
+-- ----------------------------
+--  Table structure for `Review`
+-- ----------------------------
 DROP TABLE IF EXISTS `Review`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Review` (
   `reviewID` int(11) NOT NULL AUTO_INCREMENT,
   `partID` int(11) DEFAULT NULL,
@@ -1910,31 +1697,23 @@ CREATE TABLE `Review` (
   KEY `ReviewPartID` (`partID`),
   KEY `IX_Review_Part` (`partID`,`createdDate`),
   CONSTRAINT `FK__Review__partID__0C39954F` FOREIGN KEY (`partID`) REFERENCES `Part` (`partID`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB AUTO_INCREMENT=390 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=524 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `SalesRepresentative`
---
-
+-- ----------------------------
+--  Table structure for `SalesRepresentative`
+-- ----------------------------
 DROP TABLE IF EXISTS `SalesRepresentative`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `SalesRepresentative` (
   `salesRepID` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) DEFAULT NULL,
   `code` varchar(10) DEFAULT NULL,
   PRIMARY KEY (`salesRepID`)
-) ENGINE=InnoDB AUTO_INCREMENT=33 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=47 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `Services`
---
-
+-- ----------------------------
+--  Table structure for `Services`
+-- ----------------------------
 DROP TABLE IF EXISTS `Services`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Services` (
   `serviceID` int(11) NOT NULL AUTO_INCREMENT,
   `service_title` varchar(255) DEFAULT NULL,
@@ -1943,20 +1722,16 @@ CREATE TABLE `Services` (
   `hourly` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`serviceID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `SiteContent`
---
-
+-- ----------------------------
+--  Table structure for `SiteContent`
+-- ----------------------------
 DROP TABLE IF EXISTS `SiteContent`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `SiteContent` (
   `contentID` int(11) NOT NULL AUTO_INCREMENT,
   `content_type` varchar(255) DEFAULT NULL,
   `page_title` varchar(500) DEFAULT NULL,
-  `createdDate` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `createdDate` datetime NOT NULL,
   `lastModified` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
   `meta_title` varchar(255) DEFAULT NULL,
   `meta_description` varchar(255) DEFAULT NULL,
@@ -1967,35 +1742,39 @@ CREATE TABLE `SiteContent` (
   `slug` varchar(500) DEFAULT NULL,
   `requireAuthentication` tinyint(1) NOT NULL DEFAULT '0',
   `canonical` varchar(255) DEFAULT NULL,
-  `websiteID` int(11) NOT NULL DEFAULT '1',
-  PRIMARY KEY (`contentID`),
-  KEY `FK__SiteConte__websi__21B4D243` (`websiteID`),
-  CONSTRAINT `FK__SiteConte__websi__21B4D243` FOREIGN KEY (`websiteID`) REFERENCES `Website` (`ID`) ON DELETE NO ACTION ON UPDATE NO ACTION
+  PRIMARY KEY (`contentID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=66 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `State`
---
+-- ----------------------------
+--  Table structure for `SiteContentRevision`
+-- ----------------------------
+DROP TABLE IF EXISTS `SiteContentRevision`;
+CREATE TABLE `SiteContentRevision` (
+  `revisionID` int(11) NOT NULL AUTO_INCREMENT,
+  `contentID` int(11) NOT NULL DEFAULT '1',
+  `content_text` longtext,
+  `createdOn` datetime NOT NULL,
+  `active` tinyint(1) NOT NULL DEFAULT '1',
+  PRIMARY KEY (`revisionID`),
+  KEY `FK__SiteConte__conte__151B244E` (`contentID`),
+  CONSTRAINT `FK__SiteConte__conte__151B244E` FOREIGN KEY (`contentID`) REFERENCES `SiteContent` (`contentID`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB AUTO_INCREMENT=76 DEFAULT CHARSET=utf8;
 
+-- ----------------------------
+--  Table structure for `State`
+-- ----------------------------
 DROP TABLE IF EXISTS `State`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `State` (
   `state` varchar(128) NOT NULL,
   `abbr` varchar(128) NOT NULL,
   `stateID` int(11) NOT NULL,
   `countryID` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `States`
---
-
+-- ----------------------------
+--  Table structure for `States`
+-- ----------------------------
 DROP TABLE IF EXISTS `States`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `States` (
   `stateID` int(11) NOT NULL AUTO_INCREMENT,
   `state` varchar(100) NOT NULL,
@@ -2005,47 +1784,51 @@ CREATE TABLE `States` (
   KEY `FK__States__countryI__607251E5` (`countryID`),
   CONSTRAINT `FK__States__countryI__607251E5` FOREIGN KEY (`countryID`) REFERENCES `Country` (`countryID`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB AUTO_INCREMENT=85 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `Style`
---
-
+-- ----------------------------
+--  Table structure for `Style`
+-- ----------------------------
 DROP TABLE IF EXISTS `Style`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Style` (
   `styleID` int(11) NOT NULL AUTO_INCREMENT,
   `style` varchar(255) NOT NULL,
   `aaiaID` int(11) NOT NULL,
   PRIMARY KEY (`styleID`)
-) ENGINE=InnoDB AUTO_INCREMENT=613 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=631 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `Submodel`
---
-
+-- ----------------------------
+--  Table structure for `Submodel`
+-- ----------------------------
 DROP TABLE IF EXISTS `Submodel`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Submodel` (
   `ID` int(11) NOT NULL AUTO_INCREMENT,
   `AAIASubmodelID` int(11) DEFAULT NULL,
   `SubmodelName` varchar(50) NOT NULL,
   PRIMARY KEY (`ID`),
-  KEY `AAIA_Submodel_IX` (`AAIASubmodelID`),
-  KEY `idx` (`SubmodelName`)
-) ENGINE=InnoDB AUTO_INCREMENT=1708 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+  KEY `AAIA_Submodel_IX` (`AAIASubmodelID`)
+) ENGINE=InnoDB AUTO_INCREMENT=1729 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `Testimonial`
---
+-- ----------------------------
+--  Table structure for `TechNews`
+-- ----------------------------
+DROP TABLE IF EXISTS `TechNews`;
+CREATE TABLE `TechNews` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `pageContent` text,
+  `showDealers` tinyint(1) NOT NULL,
+  `showPublic` tinyint(1) NOT NULL,
+  `dateModified` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `displayOrder` int(11) DEFAULT NULL,
+  `active` tinyint(1) NOT NULL,
+  `title` varchar(500) NOT NULL,
+  `subTitle` varchar(500) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+-- ----------------------------
+--  Table structure for `Testimonial`
+-- ----------------------------
 DROP TABLE IF EXISTS `Testimonial`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Testimonial` (
   `testimonialID` int(11) NOT NULL AUTO_INCREMENT,
   `rating` double NOT NULL,
@@ -2058,16 +1841,12 @@ CREATE TABLE `Testimonial` (
   `last_name` varchar(255) DEFAULT NULL,
   `location` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`testimonialID`)
-) ENGINE=InnoDB AUTO_INCREMENT=88 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=100 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `Testimonials`
---
-
+-- ----------------------------
+--  Table structure for `Testimonials`
+-- ----------------------------
 DROP TABLE IF EXISTS `Testimonials`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Testimonials` (
   `reviewID` int(11) NOT NULL AUTO_INCREMENT,
   `reviewer` varchar(400) DEFAULT NULL,
@@ -2077,15 +1856,11 @@ CREATE TABLE `Testimonials` (
   `is_hidden` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`reviewID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `Trailer`
---
-
+-- ----------------------------
+--  Table structure for `Trailer`
+-- ----------------------------
 DROP TABLE IF EXISTS `Trailer`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Trailer` (
   `trailerID` int(11) NOT NULL AUTO_INCREMENT,
   `image` varchar(255) DEFAULT NULL,
@@ -2097,30 +1872,38 @@ CREATE TABLE `Trailer` (
   `message` varchar(1000) DEFAULT NULL,
   PRIMARY KEY (`trailerID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=36 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `UnitOfMeasure`
---
+-- ----------------------------
+--  Table structure for `Tweets`
+-- ----------------------------
+DROP TABLE IF EXISTS `Tweets`;
+CREATE TABLE `Tweets` (
+  `tweetID` int(11) NOT NULL AUTO_INCREMENT,
+  `twitterTweetID` varchar(500) NOT NULL,
+  `tweet` varchar(150) NOT NULL,
+  `postDate` datetime NOT NULL,
+  `twitterUserID` varchar(500) NOT NULL,
+  `screenName` varchar(100) NOT NULL,
+  `profilePhoto` varchar(500) NOT NULL,
+  PRIMARY KEY (`tweetID`),
+  UNIQUE KEY `tweetID_UNIQUE` (`tweetID`)
+) ENGINE=InnoDB AUTO_INCREMENT=755 DEFAULT CHARSET=utf8;
 
+-- ----------------------------
+--  Table structure for `UnitOfMeasure`
+-- ----------------------------
 DROP TABLE IF EXISTS `UnitOfMeasure`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `UnitOfMeasure` (
   `ID` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) DEFAULT NULL,
   `code` varchar(5) NOT NULL,
   PRIMARY KEY (`ID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=51 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `UserProfiles`
---
-
+-- ----------------------------
+--  Table structure for `UserProfiles`
+-- ----------------------------
 DROP TABLE IF EXISTS `UserProfiles`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `UserProfiles` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `customerID` int(11) DEFAULT NULL,
@@ -2128,16 +1911,12 @@ CREATE TABLE `UserProfiles` (
   `email` varchar(255) DEFAULT NULL,
   `IP` varchar(25) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=527 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=715 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `Vehicle`
---
-
+-- ----------------------------
+--  Table structure for `Vehicle`
+-- ----------------------------
 DROP TABLE IF EXISTS `Vehicle`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Vehicle` (
   `vehicleID` int(11) NOT NULL AUTO_INCREMENT,
   `yearID` int(11) NOT NULL,
@@ -2154,31 +1933,23 @@ CREATE TABLE `Vehicle` (
   CONSTRAINT `FK__Vehicle__modelID__4F30870F` FOREIGN KEY (`modelID`) REFERENCES `Model` (`modelID`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `FK__Vehicle__styleID__5024AB48` FOREIGN KEY (`styleID`) REFERENCES `Style` (`styleID`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `FK__Vehicle__yearID__4D483E9D` FOREIGN KEY (`yearID`) REFERENCES `Year` (`yearID`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB AUTO_INCREMENT=248482 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=248743 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `VehicleConfig`
---
-
+-- ----------------------------
+--  Table structure for `VehicleConfig`
+-- ----------------------------
 DROP TABLE IF EXISTS `VehicleConfig`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `VehicleConfig` (
   `ID` int(11) NOT NULL AUTO_INCREMENT,
   `AAIAVehicleConfigID` int(11) DEFAULT NULL,
   PRIMARY KEY (`ID`),
   KEY `AAIA_VehicleConfig_IX` (`AAIAVehicleConfigID`)
-) ENGINE=InnoDB AUTO_INCREMENT=28002 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=28348 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `VehicleConfigAttribute`
---
-
+-- ----------------------------
+--  Table structure for `VehicleConfigAttribute`
+-- ----------------------------
 DROP TABLE IF EXISTS `VehicleConfigAttribute`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `VehicleConfigAttribute` (
   `ID` int(11) NOT NULL AUTO_INCREMENT,
   `AttributeID` int(11) NOT NULL,
@@ -2188,16 +1959,12 @@ CREATE TABLE `VehicleConfigAttribute` (
   KEY `FK__VehicleCo__Vehic__1AD46138` (`VehicleConfigID`),
   CONSTRAINT `FK__VehicleCo__Attri__19E03CFF` FOREIGN KEY (`AttributeID`) REFERENCES `ConfigAttribute` (`ID`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `FK__VehicleCo__Vehic__1AD46138` FOREIGN KEY (`VehicleConfigID`) REFERENCES `VehicleConfig` (`ID`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB AUTO_INCREMENT=38264 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=39846 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `VehiclePart`
---
-
+-- ----------------------------
+--  Table structure for `VehiclePart`
+-- ----------------------------
 DROP TABLE IF EXISTS `VehiclePart`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `VehiclePart` (
   `vPartID` int(11) NOT NULL AUTO_INCREMENT,
   `vehicleID` int(11) NOT NULL,
@@ -2210,16 +1977,12 @@ CREATE TABLE `VehiclePart` (
   KEY `FK__VehiclePa__partI__0F1601FA` (`partID`),
   CONSTRAINT `FK__VehiclePa__partI__0F1601FA` FOREIGN KEY (`partID`) REFERENCES `Part` (`partID`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `FK__VehiclePa__vehic__5118CF81` FOREIGN KEY (`vehicleID`) REFERENCES `Vehicle` (`vehicleID`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB AUTO_INCREMENT=39419 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=42585 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `VehiclePartAttribute`
---
-
+-- ----------------------------
+--  Table structure for `VehiclePartAttribute`
+-- ----------------------------
 DROP TABLE IF EXISTS `VehiclePartAttribute`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `VehiclePartAttribute` (
   `vpAttrID` int(11) NOT NULL AUTO_INCREMENT,
   `vPartID` int(11) NOT NULL,
@@ -2229,16 +1992,12 @@ CREATE TABLE `VehiclePartAttribute` (
   PRIMARY KEY (`vpAttrID`),
   KEY `IX_VehiclePartAttr_VPart` (`vPartID`),
   CONSTRAINT `FK__VehiclePa__vPart__520CF3BA` FOREIGN KEY (`vPartID`) REFERENCES `VehiclePart` (`vPartID`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB AUTO_INCREMENT=98331 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=102410 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `VehicleType`
---
-
+-- ----------------------------
+--  Table structure for `VehicleType`
+-- ----------------------------
 DROP TABLE IF EXISTS `VehicleType`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `VehicleType` (
   `VehicleTypeID` int(11) NOT NULL AUTO_INCREMENT,
   `VehicleTypeName` varchar(50) NOT NULL,
@@ -2247,29 +2006,21 @@ CREATE TABLE `VehicleType` (
   KEY `FK__VehicleTy__Vehic__648AFD1B` (`VehicleTypeGroupID`),
   CONSTRAINT `FK__VehicleTy__Vehic__648AFD1B` FOREIGN KEY (`VehicleTypeGroupID`) REFERENCES `VehicleTypeGroup` (`VehicleTypeGroupID`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB AUTO_INCREMENT=51 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `VehicleTypeGroup`
---
-
+-- ----------------------------
+--  Table structure for `VehicleTypeGroup`
+-- ----------------------------
 DROP TABLE IF EXISTS `VehicleTypeGroup`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `VehicleTypeGroup` (
   `VehicleTypeGroupID` int(11) NOT NULL AUTO_INCREMENT,
   `VehicleTypeGroupName` varchar(50) NOT NULL,
   PRIMARY KEY (`VehicleTypeGroupID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `Video`
---
-
+-- ----------------------------
+--  Table structure for `Video`
+-- ----------------------------
 DROP TABLE IF EXISTS `Video`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Video` (
   `videoID` int(11) NOT NULL AUTO_INCREMENT,
   `embed_link` varchar(200) DEFAULT NULL,
@@ -2281,16 +2032,51 @@ CREATE TABLE `Video` (
   `watchpage` varchar(255) DEFAULT NULL,
   `screenshot` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`videoID`)
-) ENGINE=InnoDB AUTO_INCREMENT=59 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=71 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `WebProperties`
---
+-- ----------------------------
+--  Table structure for `WebPropNotes`
+-- ----------------------------
+DROP TABLE IF EXISTS `WebPropNotes`;
+CREATE TABLE `WebPropNotes` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `webPropID` int(11) NOT NULL,
+  `text` varchar(255) NOT NULL,
+  `dateAdded` datetime NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=32 DEFAULT CHARSET=utf8;
 
+-- ----------------------------
+--  Table structure for `WebPropRequirementCheck`
+-- ----------------------------
+DROP TABLE IF EXISTS `WebPropRequirementCheck`;
+CREATE TABLE `WebPropRequirementCheck` (
+  `ID` int(11) NOT NULL AUTO_INCREMENT,
+  `WebPropertiesID` int(11) DEFAULT NULL,
+  `Compliance` tinyint(1) DEFAULT NULL,
+  `WebPropRequirementsID` int(11) DEFAULT NULL,
+  PRIMARY KEY (`ID`),
+  KEY `webPropID_ref_idx` (`WebPropertiesID`),
+  KEY `webPropReqID_ref_idx` (`WebPropRequirementsID`),
+  CONSTRAINT `webPropID_ref` FOREIGN KEY (`WebPropertiesID`) REFERENCES `WebProperties` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `webPropReqID_ref` FOREIGN KEY (`WebPropRequirementsID`) REFERENCES `WebPropRequirements` (`ID`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB AUTO_INCREMENT=825 DEFAULT CHARSET=utf8;
+
+-- ----------------------------
+--  Table structure for `WebPropRequirements`
+-- ----------------------------
+DROP TABLE IF EXISTS `WebPropRequirements`;
+CREATE TABLE `WebPropRequirements` (
+  `ID` int(11) NOT NULL AUTO_INCREMENT,
+  `ReqType` varchar(255) DEFAULT NULL,
+  `Requirement` varchar(1000) DEFAULT NULL,
+  PRIMARY KEY (`ID`)
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8;
+
+-- ----------------------------
+--  Table structure for `WebProperties`
+-- ----------------------------
 DROP TABLE IF EXISTS `WebProperties`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `WebProperties` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(75) NOT NULL,
@@ -2306,76 +2092,58 @@ CREATE TABLE `WebProperties` (
   `requestedDate` datetime DEFAULT NULL,
   `addedDate` datetime NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `badgeID` (`badgeID`)
-) ENGINE=InnoDB AUTO_INCREMENT=165 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+  UNIQUE KEY `badgeID` (`badgeID`),
+  KEY `type_ref_idx` (`typeID`),
+  CONSTRAINT `type_ref` FOREIGN KEY (`typeID`) REFERENCES `WebPropertyTypes` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB AUTO_INCREMENT=193 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `WebPropertyTypes`
---
-
+-- ----------------------------
+--  Table structure for `WebPropertyTypes`
+-- ----------------------------
 DROP TABLE IF EXISTS `WebPropertyTypes`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `WebPropertyTypes` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `typeID` int(11) NOT NULL,
   `type` varchar(50) NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `Website`
---
-
+-- ----------------------------
+--  Table structure for `Website`
+-- ----------------------------
 DROP TABLE IF EXISTS `Website`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Website` (
   `ID` int(11) NOT NULL AUTO_INCREMENT,
   `url` varchar(255) DEFAULT NULL,
   `description` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`ID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `WidgetDeployments`
---
-
+-- ----------------------------
+--  Table structure for `WidgetDeployments`
+-- ----------------------------
 DROP TABLE IF EXISTS `WidgetDeployments`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `WidgetDeployments` (
   `trackerID` int(11) NOT NULL AUTO_INCREMENT,
   `url` varchar(400) NOT NULL,
   `date_added` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`trackerID`)
-) ENGINE=InnoDB AUTO_INCREMENT=76 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=80 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `Year`
---
-
+-- ----------------------------
+--  Table structure for `Year`
+-- ----------------------------
 DROP TABLE IF EXISTS `Year`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Year` (
   `yearID` int(11) NOT NULL AUTO_INCREMENT,
   `year` double NOT NULL,
   PRIMARY KEY (`yearID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=283 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `YearMake`
---
-
+-- ----------------------------
+--  Table structure for `YearMake`
+-- ----------------------------
 DROP TABLE IF EXISTS `YearMake`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `YearMake` (
   `ymID` int(11) NOT NULL AUTO_INCREMENT,
   `yearID` int(11) DEFAULT NULL,
@@ -2385,51 +2153,37 @@ CREATE TABLE `YearMake` (
   KEY `FK__YearMake__makeID__478F6547` (`makeID`),
   CONSTRAINT `FK__YearMake__makeID__478F6547` FOREIGN KEY (`makeID`) REFERENCES `Make` (`makeID`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `FK__YearMake__yearID__469B410E` FOREIGN KEY (`yearID`) REFERENCES `Year` (`yearID`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB AUTO_INCREMENT=1301 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=1327 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `vcdb_Make`
---
-
+-- ----------------------------
+--  Table structure for `vcdb_Make`
+-- ----------------------------
 DROP TABLE IF EXISTS `vcdb_Make`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `vcdb_Make` (
   `ID` int(11) NOT NULL AUTO_INCREMENT,
   `AAIAMakeID` int(11) DEFAULT NULL,
   `MakeName` varchar(50) NOT NULL,
   PRIMARY KEY (`ID`),
-  KEY `AAIA_Make_IX` (`AAIAMakeID`),
-  KEY `idx` (`MakeName`)
-) ENGINE=InnoDB AUTO_INCREMENT=52 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+  KEY `AAIA_Make_IX` (`AAIAMakeID`)
+) ENGINE=InnoDB AUTO_INCREMENT=53 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `vcdb_Model`
---
-
+-- ----------------------------
+--  Table structure for `vcdb_Model`
+-- ----------------------------
 DROP TABLE IF EXISTS `vcdb_Model`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `vcdb_Model` (
   `ID` int(11) NOT NULL AUTO_INCREMENT,
   `AAIAModelID` int(11) DEFAULT NULL,
   `ModelName` varchar(100) DEFAULT NULL,
   `VehicleTypeID` int(11) NOT NULL,
   PRIMARY KEY (`ID`),
-  KEY `AAIA_Model_IX` (`AAIAModelID`),
-  KEY `idx` (`ModelName`)
-) ENGINE=InnoDB AUTO_INCREMENT=3868 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+  KEY `AAIA_Model_IX` (`AAIAModelID`)
+) ENGINE=InnoDB AUTO_INCREMENT=3877 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `vcdb_Vehicle`
---
-
+-- ----------------------------
+--  Table structure for `vcdb_Vehicle`
+-- ----------------------------
 DROP TABLE IF EXISTS `vcdb_Vehicle`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `vcdb_Vehicle` (
   `ID` int(11) NOT NULL AUTO_INCREMENT,
   `BaseVehicleID` int(11) NOT NULL,
@@ -2443,16 +2197,12 @@ CREATE TABLE `vcdb_Vehicle` (
   CONSTRAINT `FK__vcdb_Vehi__BaseV__1F991655` FOREIGN KEY (`BaseVehicleID`) REFERENCES `BaseVehicle` (`ID`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `FK__vcdb_Vehi__Confi__21815EC7` FOREIGN KEY (`ConfigID`) REFERENCES `VehicleConfig` (`ID`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `FK__vcdb_Vehi__SubMo__208D3A8E` FOREIGN KEY (`SubModelID`) REFERENCES `Submodel` (`ID`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB AUTO_INCREMENT=33906 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=35130 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `vcdb_VehiclePart`
---
-
+-- ----------------------------
+--  Table structure for `vcdb_VehiclePart`
+-- ----------------------------
 DROP TABLE IF EXISTS `vcdb_VehiclePart`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `vcdb_VehiclePart` (
   `ID` int(11) NOT NULL AUTO_INCREMENT,
   `VehicleID` int(11) NOT NULL,
@@ -2462,44 +2212,26 @@ CREATE TABLE `vcdb_VehiclePart` (
   KEY `FK__vcdb_Vehi__PartN__273A381D` (`PartNumber`),
   CONSTRAINT `FK__vcdb_Vehi__PartN__273A381D` FOREIGN KEY (`PartNumber`) REFERENCES `Part` (`partID`) ON DELETE NO ACTION ON UPDATE NO ACTION,
   CONSTRAINT `FK__vcdb_Vehi__Vehic__264613E4` FOREIGN KEY (`VehicleID`) REFERENCES `vcdb_Vehicle` (`ID`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB AUTO_INCREMENT=191945 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
+) ENGINE=InnoDB AUTO_INCREMENT=202619 DEFAULT CHARSET=utf8;
 
---
--- Table structure for table `vcdb_Year`
---
-
+-- ----------------------------
+--  Table structure for `vcdb_Year`
+-- ----------------------------
 DROP TABLE IF EXISTS `vcdb_Year`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `vcdb_Year` (
   `YearID` int(11) NOT NULL,
   PRIMARY KEY (`YearID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `videoType`
---
-
+-- ----------------------------
+--  Table structure for `videoType`
+-- ----------------------------
 DROP TABLE IF EXISTS `videoType`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `videoType` (
   `vTypeID` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) DEFAULT NULL,
   `icon` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`vTypeID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
-/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
-/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
-/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
-
--- Dump completed on 2013-04-10 16:02:49
+SET FOREIGN_KEY_CHECKS = 1;

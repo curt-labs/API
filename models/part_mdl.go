@@ -227,8 +227,7 @@ func (p *Part) FromDatabase() error {
 
 	if part_bytes, err := json.Marshal(p); err == nil {
 		part_key := "part:" + strconv.Itoa(p.PartId)
-		redis.RedisClient.Set(part_key, part_bytes)
-		redis.RedisClient.Expire(part_key, 86400)
+		redis.RedisMaster.Setex(part_key, 86400, part_bytes)
 	}
 
 	return nil
@@ -683,8 +682,7 @@ func (lookup *Lookup) FromDatabase() error {
 
 	// if part_bytes, err := json.Marshal(p); err == nil {
 	// 	part_key := "part:" + strconv.Itoa(p.PartId)
-	// 	redis.RedisClient.Set(part_key, part_bytes)
-	// 	redis.RedisClient.Expire(part_key, 86400)
+	// 	redis.RedisClient.Setex(part_key, 86400, part_bytes)
 	// }
 
 	return nil
