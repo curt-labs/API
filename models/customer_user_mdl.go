@@ -1,6 +1,7 @@
 package models
 
 import (
+	"code.google.com/p/go.crypto/bcrypt"
 	"errors"
 	"github.com/curt-labs/GoAPI/helpers/api"
 	"github.com/curt-labs/GoAPI/helpers/database"
@@ -212,61 +213,53 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 
 func (u *CustomerUser) AuthenticateUser(pass string) error {
 
-	enc_pass, err := api_helpers.Md5Encrypt(pass)
-	if err != nil {
-		return err
-	}
-
 	qry, err := database.GetStatement("CustomerUserAuthStmt")
 	if database.MysqlError(err) {
 		return err
 	}
 
 	row, res, err := qry.ExecFirst(u.Email)
-
-	// Check for error while executing query
-	if database.MysqlError(err) {
+	if database.MysqlError(err) || row == nil {
+		if err == nil {
+			err = errors.New("No user found that matches: " + u.Email)
+		}
 		return err
 	}
 
-	// Make sure we have a record for this email
-	if row == nil {
-		return errors.New("No user found that matches: " + u.Email)
-	}
-
 	pwd := res.Map("password")
-	prop_pass := res.Map("proper_password")
 	user_id := res.Map("id")
 	name := res.Map("name")
 	mail := res.Map("email")
 	date := res.Map("date_added")
 	active := res.Map("active")
 	sudo := res.Map("isSudo")
+	passConversion := res.Map("passwordConverted")
 
-	prop := row.Str(prop_pass)
-
-	if err != nil {
-		return err
-	} else if prop == "" {
-		if len(enc_pass) != len(row.Str(pwd)) {
-			err = errors.New("Invalid password")
+	// Attempt to compare bcrypt strings
+	dbPass := row.Str(pwd)
+	if bcrypt.CompareHashAndPassword([]byte(dbPass), []byte(pass)) != nil {
+		// Compare unsuccessful
+		enc_pass, err := api_helpers.Md5Encrypt(pass)
+		if err != nil {
 			return err
-		} else {
-			updateQry, _ := database.GetStatement("UpdateCustomerUserPassStmt")
-			dbUserId := row.Str(user_id)
-			params := struct {
-				pass *string
-				user *string
-			}{&enc_pass, &dbUserId}
-
-			updateQry.Bind(&params)
-			if updateQry != nil {
-				_, _ = updateQry.Raw.Run()
-			}
 		}
-	} else if !strings.EqualFold(prop, enc_pass) {
-		err = errors.New("Invalid password")
-		return err
+		if len(enc_pass) != len(dbPass) || row.ForceBool(passConversion) {
+			return errors.New("Invalid password")
+		}
+
+		hashedPass, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
+		if err != nil {
+			return errors.New("Failed to encode the password")
+		}
+
+		upd, err := database.GetStatement("UpdateCustomerUserPassStmt")
+		if database.MysqlError(err) {
+			return err
+		}
+		_, _, err = upd.Exec(hashedPass, row.Str(user_id))
+		if database.MysqlError(err) {
+			return err
+		}
 	}
 
 	resetChan := make(chan int)
@@ -284,7 +277,6 @@ func (u *CustomerUser) AuthenticateUser(pass string) error {
 	u.Current = true
 	u.Id = row.Str(user_id)
 
-	//da, _ := time.Parse("2006-01-02 15:04:15", row.Str(date))
 	u.DateAdded = row.ForceLocaltime(date)
 
 	<-resetChan

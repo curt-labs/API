@@ -413,11 +413,11 @@ func PrepareCustomerUser(prepChan chan int) {
 												left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
 												left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
 												where cu.id = ?`
-	UnPreparedStatements["CustomerUserAuthStmt"] = `select * from CustomerUser
+	UnPreparedStatements["CustomerUserAuthStmt"] = `select password, id, name, email, date_added, active, isSudo, passwordConverted from CustomerUser
 													where email = ?
 													&& active = 1
 													limit 1`
-	UnPreparedStatements["UpdateCustomerUserPassStmt"] = `update CustomerUser set proper_password = ?
+	UnPreparedStatements["UpdateCustomerUserPassStmt"] = `update CustomerUser set password = ?, passwordConverted = 1
 															where id = ? && active = 1`
 	UnPreparedStatements["CustomerUserKeyAuthStmt"] = `select cu.* from CustomerUser as cu
 														join ApiKey as ak on cu.id = ak.user_id
