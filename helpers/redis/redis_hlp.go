@@ -1,6 +1,7 @@
 package redis
 
 import (
+	"log"
 	"os"
 )
 
@@ -14,6 +15,7 @@ func NewRedisClient() *Client {
 
 	c.Addr = "127.0.0.1:6379"
 	if addr := os.Getenv("REDIS_CLIENT_ADDRESS"); addr != "" {
+		log.Println(addr)
 		c.Addr = addr
 	}
 
