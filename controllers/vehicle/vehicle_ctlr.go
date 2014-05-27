@@ -3,6 +3,7 @@ package vehicle_ctlr
 import (
 	"github.com/curt-labs/GoAPI/helpers/plate"
 	. "github.com/curt-labs/GoAPI/models"
+	"github.com/go-martini/martini"
 	"net/http"
 	"strconv"
 	"strings"
@@ -20,9 +21,8 @@ func Year(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func Make(w http.ResponseWriter, r *http.Request) {
-	params := r.URL.Query()
-	year, _ := strconv.ParseFloat(params.Get(":year"), 64)
+func Make(w http.ResponseWriter, r *http.Request, params martini.Params) {
+	year, _ := strconv.ParseFloat(params["year"], 64)
 	lookup := Lookup{
 		Vehicle: Vehicle{
 			Year: year,
@@ -38,14 +38,13 @@ func Make(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func Model(w http.ResponseWriter, r *http.Request) {
-	params := r.URL.Query()
-	year, _ := strconv.ParseFloat(params.Get(":year"), 64)
+func Model(w http.ResponseWriter, r *http.Request, params martini.Params) {
+	year, _ := strconv.ParseFloat(params["year"], 64)
 
 	lookup := Lookup{
 		Vehicle: Vehicle{
 			Year: year,
-			Make: params.Get(":make"),
+			Make: params["make"],
 		},
 	}
 
@@ -58,16 +57,16 @@ func Model(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func Submodel(w http.ResponseWriter, r *http.Request) {
-	params := r.URL.Query()
-	year, _ := strconv.ParseFloat(params.Get(":year"), 64)
-	key := params.Get("key")
+func Submodel(w http.ResponseWriter, r *http.Request, params martini.Params) {
+	qs := r.URL.Query()
+	year, _ := strconv.ParseFloat(params["year"], 64)
+	key := qs.Get("key")
 
 	lookup := Lookup{
 		Vehicle: Vehicle{
 			Year:  year,
-			Make:  params.Get(":make"),
-			Model: params.Get(":model"),
+			Make:  params["make"],
+			Model: params["model"],
 		},
 	}
 
@@ -96,12 +95,12 @@ func Submodel(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func Config(w http.ResponseWriter, r *http.Request) {
-	params := r.URL.Query()
-	year, _ := strconv.ParseFloat(params.Get(":year"), 64)
-	key := params.Get("key")
+func Config(w http.ResponseWriter, r *http.Request, params martini.Params) {
+	qs := r.URL.Query()
+	year, _ := strconv.ParseFloat(params["year"], 64)
+	key := qs.Get("key")
 
-	config_vals := strings.Split(strings.TrimSpace(params.Get(":config")), "/")
+	config_vals := strings.Split(strings.TrimSpace(params["config"]), "/")
 
 	if len(config_vals) == 1 && config_vals[0] == "" {
 		config_vals = nil
@@ -110,9 +109,9 @@ func Config(w http.ResponseWriter, r *http.Request) {
 	lookup := Lookup{
 		Vehicle: Vehicle{
 			Year:          year,
-			Make:          params.Get(":make"),
-			Model:         params.Get(":model"),
-			Submodel:      params.Get(":submodel"),
+			Make:          params["make"],
+			Model:         params["model"],
+			Submodel:      params["submodel"],
 			Configuration: config_vals,
 		},
 	}
@@ -142,16 +141,16 @@ func Config(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func Connector(w http.ResponseWriter, r *http.Request) {
-	params := r.URL.Query()
-	year, err := strconv.ParseFloat(params.Get(":year"), 64)
+func Connector(w http.ResponseWriter, r *http.Request, params martini.Params) {
+	year, err := strconv.ParseFloat(params["year"], 64)
 	if err != nil {
 		http.Error(w, "Failed to process vehicle", http.StatusInternalServerError)
 		return
 	}
-	key := params.Get("key")
+	qs := r.URL.Query()
+	key := qs.Get("key")
 
-	config_vals := strings.Split(strings.TrimSpace(params.Get(":config")), "/")
+	config_vals := strings.Split(strings.TrimSpace(params["config"]), "/")
 
 	if len(config_vals) == 1 && config_vals[0] == "" {
 		config_vals = nil
@@ -160,9 +159,9 @@ func Connector(w http.ResponseWriter, r *http.Request) {
 	lookup := Lookup{
 		Vehicle: Vehicle{
 			Year:          year,
-			Make:          params.Get(":make"),
-			Model:         params.Get(":model"),
-			Submodel:      params.Get(":submodel"),
+			Make:          params["make"],
+			Model:         params["model"],
+			Submodel:      params["submodel"],
 			Configuration: config_vals,
 		},
 	}

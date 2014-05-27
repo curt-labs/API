@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
+	"log"
 	"strconv"
 	"strings"
 )
@@ -216,6 +217,7 @@ func (lookup *Lookup) GetMakes() (opt ConfigOption) {
 		return
 	}
 
+	log.Println(lookup.Vehicle.Year)
 	rows, _, err := qry.Exec(lookup.Vehicle.Year)
 	if database.MysqlError(err) {
 		return
