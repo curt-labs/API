@@ -43,7 +43,7 @@ func main() {
 	}
 
 	m := martini.Classic()
-	martini_gorelic.InitNewrelicAgent("5fbc49f51bd658d47b4d5517f7a9cb407099c08c", "GoSurvey", false)
+	martini_gorelic.InitNewrelicAgent("5fbc49f51bd658d47b4d5517f7a9cb407099c08c", "GoAPI", false)
 	m.Use(martini_gorelic.Handler)
 	m.Use(gzip.All())
 	m.Use(cors.Allow(&cors.Options{
