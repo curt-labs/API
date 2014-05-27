@@ -12,9 +12,13 @@ import (
 	"github.com/curt-labs/GoAPI/controllers/videos"
 	"github.com/curt-labs/GoAPI/helpers/auth"
 	"github.com/curt-labs/GoAPI/helpers/database"
-	"github.com/curt-labs/GoAPI/helpers/plate"
+	"github.com/go-martini/martini"
+	"github.com/martini-contrib/cors"
+	"github.com/martini-contrib/gzip"
+	"github.com/yvasiyarov/martini_gorelic"
 	"log"
 	"net/http"
+	"time"
 )
 
 var (
@@ -38,109 +42,131 @@ func main() {
 		log.Fatal(err)
 	}
 
-	server := plate.NewServer("doughboy")
-	server.Logging = true
+	m := martini.Classic()
+	martini_gorelic.InitNewrelicAgent("5fbc49f51bd658d47b4d5517f7a9cb407099c08c", "GoSurvey", false)
+	m.Use(martini_gorelic.Handler)
+	m.Use(gzip.All())
+	m.Use(cors.Allow(&cors.Options{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
+		AllowHeaders:     []string{"Origin"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+	}))
 
-	server.AddFilter(auth.AuthHandler)
-	server.AddFilter(CorsHandler)
-	server.Get("/", func(w http.ResponseWriter, r *http.Request) {
+	internalCors := cors.Allow(&cors.Options{
+		AllowOrigins:     []string{"https://*.curtmfg.com", "http://*.curtmfg.com"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
+		AllowHeaders:     []string{"Origin"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+	})
+
+	m.Group("/vehicle", func(r martini.Router) {
+		r.Get("", auth.AuthHandler, vehicle_ctlr.Year)
+		r.Get("/:year", auth.AuthHandler, vehicle_ctlr.Make)
+		r.Get("/:year/:make", auth.AuthHandler, vehicle_ctlr.Model)
+		r.Get("/:year/:make/:model", auth.AuthHandler, vehicle_ctlr.Submodel)
+		r.Get("/:year/:make/:model/connector", auth.AuthHandler, vehicle_ctlr.Connector)
+		r.Get("/:year/:make/:model/:submodel", auth.AuthHandler, vehicle_ctlr.Config)
+		r.Get("/:year/:make/:model/:submodel/connector", auth.AuthHandler, vehicle_ctlr.Connector)
+		r.Get("/:year/:make/:model/:submodel/:config(.+)/connector", auth.AuthHandler, vehicle_ctlr.Connector)
+		r.Get("/:year/:make/:model/:submodel/:config(.+)", auth.AuthHandler, vehicle_ctlr.Config)
+	})
+
+	m.Group("/category", func(r martini.Router) {
+		r.Get("", auth.AuthHandler, category_ctlr.Parents)
+		r.Get("/:id", auth.AuthHandler, category_ctlr.GetCategory)
+		r.Get("/:id/subs", auth.AuthHandler, category_ctlr.SubCategories)
+		r.Get("/:id/parts", auth.AuthHandler, category_ctlr.GetParts)
+		r.Get("/:id/parts/:page/:count", auth.AuthHandler, category_ctlr.GetParts)
+	})
+
+	m.Group("/reports", func(r martini.Router) {
+		r.Get("/aces", auth.AuthHandler, aces_ctlr.ACES)
+	})
+
+	m.Group("/part", func(r martini.Router) {
+		r.Get("/:part/vehicles", auth.AuthHandler, part_ctlr.Vehicles)
+		r.Get("/:part/attributes", auth.AuthHandler, part_ctlr.Attributes)
+		r.Get("/:part/reviews", auth.AuthHandler, part_ctlr.Reviews)
+		r.Get("/:part/categories", auth.AuthHandler, part_ctlr.Categories)
+		r.Get("/:part/content", auth.AuthHandler, part_ctlr.GetContent)
+		r.Get("/:part/images", auth.AuthHandler, part_ctlr.Images)
+		r.Get("/:part((.*?)\\.(PDF|pdf)$)", auth.AuthHandler, part_ctlr.InstallSheet) // Resolves: /part/11000.pdf
+		r.Get("/:part/packages", auth.AuthHandler, part_ctlr.Packaging)
+		r.Get("/:part/pricing", auth.AuthHandler, part_ctlr.Prices)
+		r.Get("/:part/related", auth.AuthHandler, part_ctlr.GetRelated)
+		r.Get("/:part/videos", auth.AuthHandler, part_ctlr.Videos)
+		r.Get("/:part/:year/:make/:model", auth.AuthHandler, part_ctlr.GetWithVehicle)
+		r.Get("/:part/:year/:make/:model/:submodel", auth.AuthHandler, part_ctlr.GetWithVehicle)
+		r.Get("/:part/:year/:make/:model/:submodel/:config(.+)", auth.AuthHandler, part_ctlr.GetWithVehicle)
+		r.Get("/:part", auth.AuthHandler, part_ctlr.Get)
+	})
+
+	m.Group("/customer", func(r martini.Router) {
+		r.Post("", auth.AuthHandler, customer_ctlr.GetCustomer)
+		r.Post("/user", auth.AuthHandler, customer_ctlr.GetUser)
+		r.Post("/locations", auth.AuthHandler, customer_ctlr.GetLocations)
+		r.Post("/users", auth.AuthHandler, customer_ctlr.GetUsers) // requires no user to be marked as sudo
+		// Customer CMS endpoints
+
+		// Content Types
+		r.Get("/cms/content_types", auth.AuthHandler, customer_ctlr.GetAllContentTypes)
+
+		// All Customer Content
+		r.Get("/cms", auth.AuthHandler, customer_ctlr.GetAllContent)
+
+		// Customer Part Content
+		r.Get("/cms/part", auth.AuthHandler, customer_ctlr.AllPartContent)
+		r.Get("/cms/part/:id", auth.AuthHandler, customer_ctlr.UniquePartContent)
+		r.Post("/cms/part/:id", auth.AuthHandler, customer_ctlr.UpdatePartContent)
+		r.Delete("/cms/part/:id", auth.AuthHandler, customer_ctlr.DeletePartContent)
+
+		// Customer Category Content
+		r.Get("/cms/category", auth.AuthHandler, customer_ctlr.AllCategoryContent)
+		r.Get("/cms/category/:id", auth.AuthHandler, customer_ctlr.UniqueCategoryContent)
+		r.Post("/cms/category/:id", auth.AuthHandler, customer_ctlr.UpdateCategoryContent)
+		r.Delete("/cms/category/:id", auth.AuthHandler, customer_ctlr.DeleteCategoryContent)
+
+		// Customer Content By Content Id
+		r.Get("/cms/:id", auth.AuthHandler, customer_ctlr.GetContentById)
+		r.Get("/cms/:id/revisions", auth.AuthHandler, customer_ctlr.GetContentRevisionsById)
+		r.Post("/auth", customer_ctlr.UserAuthentication)
+		r.Get("/auth", customer_ctlr.KeyedUserAuthentication)
+	})
+
+	m.Get("/search/part/:term", auth.AuthHandler, search_ctlr.SearchPart)
+	m.Get("/videos", videos_ctlr.DistinctVideos)
+
+	m.Group("/dealers", func(r martini.Router) {
+		/**** INTERNAL USE ONLY ****/
+		r.Get("/etailer", internalCors, dealers_ctlr.Etailers)
+		r.Get("/etailer/platinum", internalCors, dealers_ctlr.PlatinumEtailers)
+		r.Get("/local", internalCors, dealers_ctlr.LocalDealers)
+		r.Get("/local/regions", internalCors, dealers_ctlr.LocalRegions)
+		r.Get("/local/tiers", internalCors, dealers_ctlr.LocalDealerTiers)
+		r.Get("/local/types", internalCors, dealers_ctlr.LocalDealerTypes)
+		r.Get("/search", internalCors, dealers_ctlr.SearchLocations)
+		r.Get("/search/:search", internalCors, dealers_ctlr.SearchLocations)
+		r.Get("/search/type", internalCors, dealers_ctlr.SearchLocationsByType)
+		r.Get("/search/type/:search", internalCors, dealers_ctlr.SearchLocationsByType)
+		r.Get("/search/geo", internalCors, dealers_ctlr.SearchLocationsByLatLng)
+		r.Get("/search/geo/:latitude/:longitude", internalCors, dealers_ctlr.SearchLocationsByLatLng)
+	})
+	m.Get("/dealer/location/:id", internalCors, dealers_ctlr.GetLocation)
+
+	m.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "http://labs.curtmfg.com/", http.StatusFound)
-	}).NoFilter()
+	})
 
-	server.Get("/.status", func(w http.ResponseWriter, r *http.Request) {
-		server.StatusService.GetStatus(w, r)
-	}).NoFilter()
+	srv := &http.Server{
+		Addr:         *listenAddr,
+		Handler:      m,
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 30 * time.Second,
+	}
 
-	server.Get("/vehicle", vehicle_ctlr.Year)
-	server.Get("/vehicle/:year", vehicle_ctlr.Make)
-	server.Get("/vehicle/:year/:make", vehicle_ctlr.Model)
-	server.Get("/vehicle/:year/:make/:model", vehicle_ctlr.Submodel)
-	server.Get("/vehicle/:year/:make/:model/connector", vehicle_ctlr.Connector)
-	server.Get("/vehicle/:year/:make/:model/:submodel", vehicle_ctlr.Config)
-	server.Get("/vehicle/:year/:make/:model/:submodel/connector", vehicle_ctlr.Connector)
-	server.Get("/vehicle/:year/:make/:model/:submodel/:config(.+)/connector", vehicle_ctlr.Connector)
-	server.Get("/vehicle/:year/:make/:model/:submodel/:config(.+)", vehicle_ctlr.Config)
-
-	server.Get("/category", category_ctlr.Parents)
-	server.Get("/category/:id", category_ctlr.GetCategory)
-	server.Get("/category/:id/subs", category_ctlr.SubCategories)
-	server.Get("/category/:id/parts", category_ctlr.GetParts)
-	server.Get("/category/:id/parts/:page/:count", category_ctlr.GetParts)
-
-	server.Get("/reports/aces", aces_ctlr.ACES)
-
-	server.Get("/part/:part/vehicles", part_ctlr.Vehicles)
-	server.Get("/part/:part/attributes", part_ctlr.Attributes)
-	server.Get("/part/:part/reviews", part_ctlr.Reviews)
-	server.Get("/part/:part/categories", part_ctlr.Categories)
-	server.Get("/part/:part/content", part_ctlr.GetContent)
-	server.Get("/part/:part/images", part_ctlr.Images)
-	server.Get("/part/:part((.*?)\\.(PDF|pdf)$)", part_ctlr.InstallSheet).NoFilter() // Resolves: /part/11000.pdf
-	server.Get("/part/:part/packages", part_ctlr.Packaging)
-	server.Get("/part/:part/pricing", part_ctlr.Prices)
-	server.Get("/part/:part/related", part_ctlr.GetRelated)
-	server.Get("/part/:part/videos", part_ctlr.Videos)
-	server.Get("/part/:part/:year/:make/:model", part_ctlr.GetWithVehicle)
-	server.Get("/part/:part/:year/:make/:model/:submodel", part_ctlr.GetWithVehicle)
-	server.Get("/part/:part/:year/:make/:model/:submodel/:config(.+)", part_ctlr.GetWithVehicle)
-	server.Get("/part/:part", part_ctlr.Get)
-
-	server.Post("/customer/auth", customer_ctlr.UserAuthentication).NoFilter()
-	server.Get("/customer/auth", customer_ctlr.KeyedUserAuthentication).NoFilter()
-
-	server.Post("/customer", customer_ctlr.GetCustomer)
-	server.Post("/customer/user", customer_ctlr.GetUser)
-	server.Post("/customer/locations", customer_ctlr.GetLocations)
-	server.Post("/customer/users", customer_ctlr.GetUsers) // Requires a user to be marked as sudo
-
-	// Customer CMS endpoints
-
-	// Content Types
-	server.Get("/customer/cms/content_types", customer_ctlr.GetAllContentTypes)
-
-	// All Customer Content
-	server.Get("/customer/cms", customer_ctlr.GetAllContent)
-
-	// Customer Part Content
-	server.Get("/customer/cms/part", customer_ctlr.AllPartContent)
-	server.Get("/customer/cms/part/:id", customer_ctlr.UniquePartContent)
-	server.Post("/customer/cms/part/:id", customer_ctlr.UpdatePartContent)
-	server.Del("/customer/cms/part/:id", customer_ctlr.DeletePartContent)
-
-	// Customer Category Content
-	server.Get("/customer/cms/category", customer_ctlr.AllCategoryContent)
-	server.Get("/customer/cms/category/:id", customer_ctlr.UniqueCategoryContent)
-	server.Post("/customer/cms/category/:id", customer_ctlr.UpdateCategoryContent)
-	server.Del("/customer/cms/category/:id", customer_ctlr.DeleteCategoryContent)
-
-	// Customer Content By Content Id
-	server.Get("/customer/cms/:id", customer_ctlr.GetContentById)
-	server.Get("/customer/cms/:id/revisions", customer_ctlr.GetContentRevisionsById)
-
-	server.Get("/search/part/:term", search_ctlr.SearchPart)
-
-	/**
-	 * Video
-	 */
-	server.Get("/videos", videos_ctlr.DistinctVideos).NoFilter()
-
-	/**** INTERNAL USE ONLY ****/
-	server.Get("/dealers/etailer", dealers_ctlr.Etailers).NoFilter()
-	server.Get("/dealers/etailer/platinum", dealers_ctlr.PlatinumEtailers).NoFilter()
-	server.Get("/dealers/local", dealers_ctlr.LocalDealers).NoFilter()
-	server.Get("/dealers/local/regions", dealers_ctlr.LocalRegions).NoFilter()
-	server.Get("/dealers/local/tiers", dealers_ctlr.LocalDealerTiers).NoFilter()
-	server.Get("/dealers/local/types", dealers_ctlr.LocalDealerTypes).NoFilter()
-	server.Get("/dealers/search", dealers_ctlr.SearchLocations).NoFilter()
-	server.Get("/dealers/search/:search", dealers_ctlr.SearchLocations).NoFilter()
-	server.Get("/dealers/search/type", dealers_ctlr.SearchLocationsByType).NoFilter()
-	server.Get("/dealers/search/type/:search", dealers_ctlr.SearchLocationsByType).NoFilter()
-	server.Get("/dealers/search/geo", dealers_ctlr.SearchLocationsByLatLng).NoFilter()
-	server.Get("/dealers/search/geo/:latitude/:longitude", dealers_ctlr.SearchLocationsByLatLng).NoFilter()
-	server.Get("/dealer/location/:id", dealers_ctlr.GetLocation).NoFilter()
-
-	http.Handle("/", server)
-	log.Println("Server running on port " + *listenAddr)
-
-	log.Fatal(http.ListenAndServe(*listenAddr, nil))
+	log.Printf("Starting server on 127.0.0.1:%s\n", *listenAddr)
+	log.Fatal(srv.ListenAndServe())
 }
