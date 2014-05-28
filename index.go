@@ -14,7 +14,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/cors"
-	"github.com/martini-contrib/gzip"
+	// "github.com/martini-contrib/gzip"
 	"github.com/yvasiyarov/martini_gorelic"
 	"log"
 	"net/http"
@@ -45,7 +45,7 @@ func main() {
 	m := martini.Classic()
 	martini_gorelic.InitNewrelicAgent("5fbc49f51bd658d47b4d5517f7a9cb407099c08c", "GoAPI", false)
 	m.Use(martini_gorelic.Handler)
-	m.Use(gzip.All())
+	// m.Use(gzip.All())
 	m.Use(cors.Allow(&cors.Options{
 		AllowOrigins:     []string{"*"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
