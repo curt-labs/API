@@ -1,7 +1,7 @@
 package vehicle_ctlr
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/plate"
+	"github.com/curt-labs/GoAPI/helpers/encoding"
 	. "github.com/curt-labs/GoAPI/models"
 	"github.com/go-martini/martini"
 	"net/http"
@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func Year(w http.ResponseWriter, r *http.Request) {
+func Year(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 	var l Lookup
 
 	config := ConfigResponse{
@@ -17,11 +17,10 @@ func Year(w http.ResponseWriter, r *http.Request) {
 		Matched:      new(ProductMatch),
 	}
 
-	plate.ServeFormatted(w, r, config)
-	return
+	return encoding.Must(enc.Encode(config))
 }
 
-func Make(w http.ResponseWriter, r *http.Request, params martini.Params) {
+func Make(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
 	year, _ := strconv.ParseFloat(params["year"], 64)
 	lookup := Lookup{
 		Vehicle: Vehicle{
@@ -34,11 +33,10 @@ func Make(w http.ResponseWriter, r *http.Request, params martini.Params) {
 		Matched:      new(ProductMatch),
 	}
 
-	plate.ServeFormatted(w, r, config)
-	return
+	return encoding.Must(enc.Encode(config))
 }
 
-func Model(w http.ResponseWriter, r *http.Request, params martini.Params) {
+func Model(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
 	year, _ := strconv.ParseFloat(params["year"], 64)
 
 	lookup := Lookup{
@@ -53,11 +51,10 @@ func Model(w http.ResponseWriter, r *http.Request, params martini.Params) {
 		Matched:      new(ProductMatch),
 	}
 
-	plate.ServeFormatted(w, r, config)
-	return
+	return encoding.Must(enc.Encode(config))
 }
 
-func Submodel(w http.ResponseWriter, r *http.Request, params martini.Params) {
+func Submodel(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
 	qs := r.URL.Query()
 	year, _ := strconv.ParseFloat(params["year"], 64)
 	key := qs.Get("key")
@@ -91,11 +88,10 @@ func Submodel(w http.ResponseWriter, r *http.Request, params martini.Params) {
 		Matched:      matched,
 	}
 
-	plate.ServeFormatted(w, r, config)
-	return
+	return encoding.Must(enc.Encode(config))
 }
 
-func Config(w http.ResponseWriter, r *http.Request, params martini.Params) {
+func Config(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
 	qs := r.URL.Query()
 	year, _ := strconv.ParseFloat(params["year"], 64)
 	key := qs.Get("key")
@@ -137,15 +133,14 @@ func Config(w http.ResponseWriter, r *http.Request, params martini.Params) {
 		Matched:      matched,
 	}
 
-	plate.ServeFormatted(w, r, config)
-	return
+	return encoding.Must(enc.Encode(config))
 }
 
-func Connector(w http.ResponseWriter, r *http.Request, params martini.Params) {
+func Connector(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
 	year, err := strconv.ParseFloat(params["year"], 64)
 	if err != nil {
 		http.Error(w, "Failed to process vehicle", http.StatusInternalServerError)
-		return
+		return ""
 	}
 	qs := r.URL.Query()
 	key := qs.Get("key")
@@ -169,7 +164,8 @@ func Connector(w http.ResponseWriter, r *http.Request, params martini.Params) {
 	err = lookup.GetConnector(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return ""
 	}
-	plate.ServeFormatted(w, r, lookup.Parts)
+
+	return encoding.Must(enc.Encode(lookup.Parts))
 }

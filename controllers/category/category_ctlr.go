@@ -1,13 +1,13 @@
 package category_ctlr
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/plate"
+	"github.com/curt-labs/GoAPI/helpers/encoding"
 	. "github.com/curt-labs/GoAPI/models"
 	"net/http"
 	"strconv"
 )
 
-func GetCategory(w http.ResponseWriter, r *http.Request) {
+func GetCategory(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 	params := r.URL.Query()
 	key := params.Get("key")
 	id, err := strconv.Atoi(params.Get(":id"))
@@ -17,7 +17,7 @@ func GetCategory(w http.ResponseWriter, r *http.Request) {
 		cat, err = GetByTitle(params.Get(":id"))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+			return ""
 		}
 	} else {
 		cat.CategoryId = id
@@ -26,24 +26,24 @@ func GetCategory(w http.ResponseWriter, r *http.Request) {
 	ext, err := cat.GetCategory(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return ""
 	}
 
-	plate.ServeFormatted(w, r, ext)
+	return encoding.Must(enc.Encode(ext))
 }
 
-func Parents(w http.ResponseWriter, r *http.Request) {
+func Parents(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 
 	cats, err := TopTierCategories()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return ""
 	}
 
-	plate.ServeFormatted(w, r, cats)
+	return encoding.Must(enc.Encode(cats))
 }
 
-func SubCategories(w http.ResponseWriter, r *http.Request) {
+func SubCategories(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 	params := r.URL.Query()
 	id, err := strconv.Atoi(params.Get(":id"))
 
@@ -52,7 +52,7 @@ func SubCategories(w http.ResponseWriter, r *http.Request) {
 		cat, err = GetByTitle(params.Get(":id"))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+			return ""
 		}
 	} else {
 		cat.CategoryId = id
@@ -61,12 +61,13 @@ func SubCategories(w http.ResponseWriter, r *http.Request) {
 	subs, err := cat.SubCategories()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return ""
 	}
-	plate.ServeFormatted(w, r, subs)
+
+	return encoding.Must(enc.Encode(subs))
 }
 
-func GetParts(w http.ResponseWriter, r *http.Request) {
+func GetParts(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 	params := r.URL.Query()
 	key := params.Get("key")
 	catID, err := strconv.Atoi(params.Get(":id"))
@@ -76,12 +77,12 @@ func GetParts(w http.ResponseWriter, r *http.Request) {
 		title := params.Get(":id")
 		if title == "" {
 			http.Error(w, "Invalid Category", http.StatusInternalServerError)
-			return
+			return ""
 		}
 		cat, err = GetByTitle(title)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+			return ""
 		}
 	} else {
 		cat.CategoryId = catID
@@ -102,12 +103,12 @@ func GetParts(w http.ResponseWriter, r *http.Request) {
 	parts, err := cat.GetCategoryParts(key, page, count)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return ""
 	}
 
 	if parts == nil {
 		parts = make([]Part, 0)
 	}
 
-	plate.ServeFormatted(w, r, parts)
+	return encoding.Must(enc.Encode(parts))
 }

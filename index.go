@@ -12,12 +12,15 @@ import (
 	"github.com/curt-labs/GoAPI/controllers/videos"
 	"github.com/curt-labs/GoAPI/helpers/auth"
 	"github.com/curt-labs/GoAPI/helpers/database"
+	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/cors"
-	// "github.com/martini-contrib/gzip"
+	"github.com/martini-contrib/gzip"
+	"github.com/martini-contrib/sessions"
 	"github.com/yvasiyarov/martini_gorelic"
 	"log"
 	"net/http"
+	"regexp"
 	"time"
 )
 
@@ -45,7 +48,7 @@ func main() {
 	m := martini.Classic()
 	martini_gorelic.InitNewrelicAgent("5fbc49f51bd658d47b4d5517f7a9cb407099c08c", "GoAPI", false)
 	m.Use(martini_gorelic.Handler)
-	// m.Use(gzip.All())
+	m.Use(gzip.All())
 	m.Use(cors.Allow(&cors.Options{
 		AllowOrigins:     []string{"*"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
@@ -53,6 +56,9 @@ func main() {
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 	}))
+	store := sessions.NewCookieStore([]byte("api_secret_session"))
+	m.Use(sessions.Sessions("api_sessions", store))
+	m.Use(MapEncoder)
 
 	internalCors := cors.Allow(&cors.Options{
 		AllowOrigins:     []string{"https://*.curtmfg.com", "http://*.curtmfg.com"},
@@ -169,4 +175,34 @@ func main() {
 
 	log.Printf("Starting server on 127.0.0.1:%s\n", *listenAddr)
 	log.Fatal(srv.ListenAndServe())
+}
+
+var rxAccept = regexp.MustCompile(`(?:xml|html|plain|json)\/?$`)
+
+func MapEncoder(c martini.Context, w http.ResponseWriter, r *http.Request) {
+	accept := r.Header.Get("Accept")
+	if accept == "*/*" {
+		accept = r.Header.Get("Content-Type")
+	}
+	matches := rxAccept.FindStringSubmatch(accept)
+
+	dt := "json"
+	if len(matches) == 1 {
+		dt = matches[0]
+	}
+	switch dt {
+	case "xml":
+
+		c.MapTo(encoding.XmlEncoder{}, (*encoding.Encoder)(nil))
+		w.Header().Set("Content-Type", "application/xml")
+	case "plain":
+		c.MapTo(encoding.TextEncoder{}, (*encoding.Encoder)(nil))
+		w.Header().Set("Content-Type", "text/plain")
+	case "html":
+		c.MapTo(encoding.TextEncoder{}, (*encoding.Encoder)(nil))
+		w.Header().Set("Content-Type", "text/html")
+	default:
+		c.MapTo(encoding.JsonEncoder{}, (*encoding.Encoder)(nil))
+		w.Header().Set("Content-Type", "application/json")
+	}
 }

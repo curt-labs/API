@@ -1,16 +1,17 @@
 package search_ctlr
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/plate"
+	"github.com/curt-labs/GoAPI/helpers/encoding"
 	. "github.com/curt-labs/GoAPI/models"
+	"github.com/go-martini/martini"
 	"net/http"
 	"strings"
 )
 
-func SearchPart(w http.ResponseWriter, r *http.Request) {
-	params := r.URL.Query()
-	terms := params.Get(":term")
-	key := params.Get("key")
+func SearchPart(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+	qs := r.URL.Query()
+	terms := params["term"]
+	key := qs.Get("key")
 
 	qry := PartSearchResult{
 		Request: SearchQuery{
@@ -22,5 +23,5 @@ func SearchPart(w http.ResponseWriter, r *http.Request) {
 
 	qry.SearchParts(key)
 
-	plate.ServeFormatted(w, r, qry)
+	return encoding.Must(enc.Encode(qry))
 }

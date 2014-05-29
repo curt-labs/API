@@ -1,12 +1,12 @@
 package customer_ctlr
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/plate"
+	"github.com/curt-labs/GoAPI/helpers/encoding"
 	. "github.com/curt-labs/GoAPI/models"
 	"net/http"
 )
 
-func UserAuthentication(w http.ResponseWriter, r *http.Request) {
+func UserAuthentication(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 	email := r.FormValue("email")
 	pass := r.FormValue("password")
 
@@ -16,41 +16,41 @@ func UserAuthentication(w http.ResponseWriter, r *http.Request) {
 	cust, err := user.UserAuthentication(pass)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return ""
 	}
 
-	plate.ServeFormatted(w, r, cust)
+	return encoding.Must(enc.Encode(cust))
 }
 
-func KeyedUserAuthentication(w http.ResponseWriter, r *http.Request) {
-	params := r.URL.Query()
-	key := params.Get("key")
+func KeyedUserAuthentication(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+	qs := r.URL.Query()
+	key := qs.Get("key")
 
 	cust, err := UserAuthenticationByKey(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return ""
 	}
 
-	plate.ServeFormatted(w, r, cust)
+	return encoding.Must(enc.Encode(cust))
 }
 
-func GetCustomer(w http.ResponseWriter, r *http.Request) {
-	params := r.URL.Query()
-	key := params.Get("key")
+func GetCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+	qs := r.URL.Query()
+	key := qs.Get("key")
 	if key == "" {
 		key = r.FormValue("key")
 	}
 
 	if key == "" {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
+		return ""
 	}
 
 	id, err := GetCustomerIdFromKey(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return ""
 	}
 
 	c := Customer{
@@ -60,28 +60,28 @@ func GetCustomer(w http.ResponseWriter, r *http.Request) {
 	err = c.GetCustomer()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return ""
 	}
 
-	plate.ServeFormatted(w, r, c)
+	return encoding.Must(enc.Encode(c))
 }
 
-func GetLocations(w http.ResponseWriter, r *http.Request) {
-	params := r.URL.Query()
-	key := params.Get("key")
+func GetLocations(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+	qs := r.URL.Query()
+	key := qs.Get("key")
 	if key == "" {
 		key = r.FormValue("key")
 	}
 
 	if key == "" {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
+		return ""
 	}
 
 	id, err := GetCustomerIdFromKey(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return ""
 	}
 
 	c := Customer{
@@ -91,13 +91,13 @@ func GetLocations(w http.ResponseWriter, r *http.Request) {
 	err = c.GetLocations()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return ""
 	}
 
-	plate.ServeFormatted(w, r, c.Locations)
+	return encoding.Must(enc.Encode(c.Locations))
 }
 
-func GetUsers(w http.ResponseWriter, r *http.Request) {
+func GetUsers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 	params := r.URL.Query()
 	key := params.Get("key")
 	if key == "" {
@@ -106,46 +106,47 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 
 	if key == "" {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
+		return ""
 	}
 
 	user, err := GetCustomerUserFromKey(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return ""
 	}
-	if user.Sudo {
-		cust, err := user.GetCustomer()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		users, err := cust.GetUsers()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		plate.ServeFormatted(w, r, users)
-	} else {
+	if !user.Sudo {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
+		return ""
 	}
+
+	cust, err := user.GetCustomer()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+
+	users, err := cust.GetUsers()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(users))
 }
 
-func GetUser(w http.ResponseWriter, r *http.Request) {
+func GetUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 	key := r.FormValue("key")
 
 	if key == "" {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
+		return ""
 	}
 
 	user, err := GetCustomerUserFromKey(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return ""
 	}
-	plate.ServeFormatted(w, r, user)
+
+	return encoding.Must(enc.Encode(user))
 }

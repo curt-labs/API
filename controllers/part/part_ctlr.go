@@ -1,17 +1,18 @@
 package part_ctlr
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/plate"
+	"github.com/curt-labs/GoAPI/helpers/encoding"
 	. "github.com/curt-labs/GoAPI/models"
+	"github.com/go-martini/martini"
 	"net/http"
 	"strconv"
 	"strings"
 )
 
-func Get(w http.ResponseWriter, r *http.Request) {
-	params := r.URL.Query()
-	id, _ := strconv.Atoi(params.Get(":part"))
-	key := params.Get("key")
+func Get(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+	qs := r.URL.Query()
+	id, _ := strconv.Atoi(params["part"])
+	key := qs.Get("key")
 	part := Part{
 		PartId: id,
 	}
@@ -19,16 +20,16 @@ func Get(w http.ResponseWriter, r *http.Request) {
 	err := part.Get(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return ""
 	}
 
-	plate.ServeFormatted(w, r, part)
+	return encoding.Must(enc.Encode(part))
 }
 
-func GetRelated(w http.ResponseWriter, r *http.Request) {
-	params := r.URL.Query()
-	id, _ := strconv.Atoi(params.Get(":part"))
-	key := params.Get("key")
+func GetRelated(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+	qs := r.URL.Query()
+	id, _ := strconv.Atoi(params["part"])
+	key := qs.Get("key")
 	part := Part{
 		PartId: id,
 	}
@@ -50,26 +51,26 @@ func GetRelated(w http.ResponseWriter, r *http.Request) {
 		<-c
 	}
 
-	plate.ServeFormatted(w, r, parts)
+	return encoding.Must(enc.Encode(parts))
 }
 
-func GetWithVehicle(w http.ResponseWriter, r *http.Request) {
-	params := r.URL.Query()
-	partID, err := strconv.Atoi(params.Get(":part"))
+func GetWithVehicle(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+	qs := r.URL.Query()
+	partID, err := strconv.Atoi(params["part"])
 	if err != nil {
 		http.Error(w, "Invalid part number", http.StatusInternalServerError)
-		return
+		return ""
 	}
-	key := params.Get("key")
-	year, err := strconv.ParseFloat(params.Get(":year"), 64)
+	key := qs.Get("key")
+	year, err := strconv.ParseFloat(params["year"], 64)
 	if err != nil {
-		http.Redirect(w, r, "/part/"+params.Get(":part")+"?key="+key, http.StatusFound)
-		return
+		http.Redirect(w, r, "/part/"+params["part"]+"?key="+key, http.StatusFound)
+		return ""
 	}
-	vMake := params.Get(":make")
-	model := params.Get(":model")
-	submodel := params.Get(":submodel")
-	config_vals := strings.Split(strings.TrimSpace(params.Get(":config")), "/")
+	vMake := params["make"]
+	model := params["model"]
+	submodel := params["submodel"]
+	config_vals := strings.Split(strings.TrimSpace(params["config"]), "/")
 
 	vehicle := Vehicle{
 		Year:          year,
@@ -86,14 +87,14 @@ func GetWithVehicle(w http.ResponseWriter, r *http.Request) {
 	err = part.GetWithVehicle(&vehicle, key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return ""
 	}
-	plate.ServeFormatted(w, r, part)
+
+	return encoding.Must(enc.Encode(part))
 }
 
-func Vehicles(w http.ResponseWriter, r *http.Request) {
-	params := r.URL.Query()
-	id, err := strconv.Atoi(params.Get(":part"))
+func Vehicles(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+	id, err := strconv.Atoi(params["part"])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusFound)
 	}
@@ -101,15 +102,14 @@ func Vehicles(w http.ResponseWriter, r *http.Request) {
 	vehicles, err := ReverseLookup(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return ""
 	}
 
-	plate.ServeFormatted(w, r, vehicles)
+	return encoding.Must(enc.Encode(vehicles))
 }
 
-func Images(w http.ResponseWriter, r *http.Request) {
-	params := r.URL.Query()
-	id, _ := strconv.Atoi(params.Get(":part"))
+func Images(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+	id, _ := strconv.Atoi(params["part"])
 	part := Part{
 		PartId: id,
 	}
@@ -117,15 +117,15 @@ func Images(w http.ResponseWriter, r *http.Request) {
 	err := part.GetImages()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return ""
 	}
 
-	plate.ServeFormatted(w, r, part.Images)
+	return encoding.Must(enc.Encode(part.Images))
 }
 
-func Attributes(w http.ResponseWriter, r *http.Request) {
-	params := r.URL.Query()
-	id, _ := strconv.Atoi(params.Get(":part"))
+func Attributes(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+
+	id, _ := strconv.Atoi(params["part"])
 	part := Part{
 		PartId: id,
 	}
@@ -133,15 +133,14 @@ func Attributes(w http.ResponseWriter, r *http.Request) {
 	err := part.GetAttributes()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return ""
 	}
 
-	plate.ServeFormatted(w, r, part.Attributes)
+	return encoding.Must(enc.Encode(part.Attributes))
 }
 
-func GetContent(w http.ResponseWriter, r *http.Request) {
-	params := r.URL.Query()
-	id, _ := strconv.Atoi(params.Get(":part"))
+func GetContent(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+	id, _ := strconv.Atoi(params["part"])
 	part := Part{
 		PartId: id,
 	}
@@ -149,15 +148,14 @@ func GetContent(w http.ResponseWriter, r *http.Request) {
 	err := part.GetContent()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return ""
 	}
 
-	plate.ServeFormatted(w, r, part.Content)
+	return encoding.Must(enc.Encode(part.Content))
 }
 
-func Packaging(w http.ResponseWriter, r *http.Request) {
-	params := r.URL.Query()
-	id, _ := strconv.Atoi(params.Get(":part"))
+func Packaging(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+	id, _ := strconv.Atoi(params["part"])
 	part := Part{
 		PartId: id,
 	}
@@ -165,15 +163,14 @@ func Packaging(w http.ResponseWriter, r *http.Request) {
 	err := part.GetPartPackaging()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return ""
 	}
 
-	plate.ServeFormatted(w, r, part.Packages)
+	return encoding.Must(enc.Encode(part.Packages))
 }
 
-func Reviews(w http.ResponseWriter, r *http.Request) {
-	params := r.URL.Query()
-	id, _ := strconv.Atoi(params.Get(":part"))
+func Reviews(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+	id, _ := strconv.Atoi(params["part"])
 	part := Part{
 		PartId: id,
 	}
@@ -181,15 +178,14 @@ func Reviews(w http.ResponseWriter, r *http.Request) {
 	err := part.GetReviews()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return ""
 	}
 
-	plate.ServeFormatted(w, r, part.Reviews)
+	return encoding.Must(enc.Encode(part.Reviews))
 }
 
-func Videos(w http.ResponseWriter, r *http.Request) {
-	params := r.URL.Query()
-	id, _ := strconv.Atoi(params.Get(":part"))
+func Videos(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+	id, _ := strconv.Atoi(params["part"])
 	part := Part{
 		PartId: id,
 	}
@@ -197,15 +193,14 @@ func Videos(w http.ResponseWriter, r *http.Request) {
 	err := part.GetVideos()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return ""
 	}
 
-	plate.ServeFormatted(w, r, part.Videos)
+	return encoding.Must(enc.Encode(part.Videos))
 }
 
-func InstallSheet(w http.ResponseWriter, r *http.Request) {
-	params := r.URL.Query()
-	id, _ := strconv.Atoi(strings.Split(params.Get(":part"), ".")[0])
+func InstallSheet(w http.ResponseWriter, r *http.Request, params martini.Params) {
+	id, _ := strconv.Atoi(strings.Split(params["part"], ".")[0])
 	part := Part{
 		PartId: id,
 	}
@@ -218,13 +213,19 @@ func InstallSheet(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "No Installation Sheet found", http.StatusNotFound)
 		return
 	}
-	plate.ServePdf(w, data)
+
+	w.Header().Set("Content-Length", strconv.Itoa(len(data)))
+	w.Header().Set("Content-Type", "application/pdf")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Access-Control-Allow-Headers", "Origin")
+	w.Write(data)
 }
 
-func Categories(w http.ResponseWriter, r *http.Request) {
-	params := r.URL.Query()
-	id, _ := strconv.Atoi(params.Get(":part"))
-	key := params.Get("key")
+func Categories(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+	qs := r.URL.Query()
+	id, _ := strconv.Atoi(params["part"])
+	key := qs.Get("key")
 	part := Part{
 		PartId: id,
 	}
@@ -232,16 +233,16 @@ func Categories(w http.ResponseWriter, r *http.Request) {
 	cats, err := part.GetPartCategories(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return ""
 	}
 
-	plate.ServeFormatted(w, r, cats)
+	return encoding.Must(enc.Encode(cats))
 }
 
-func Prices(w http.ResponseWriter, r *http.Request) {
-	params := r.URL.Query()
-	id, _ := strconv.Atoi(params.Get(":part"))
-	key := params.Get("key")
+func Prices(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+	qs := r.URL.Query()
+	id, _ := strconv.Atoi(params["part"])
+	key := qs.Get("key")
 	part := Part{
 		PartId: id,
 	}
@@ -269,8 +270,8 @@ func Prices(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return ""
 	}
 
-	plate.ServeFormatted(w, r, part.Pricing)
+	return encoding.Must(enc.Encode(part.Pricing))
 }
