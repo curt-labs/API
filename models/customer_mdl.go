@@ -603,7 +603,7 @@ func GetEtailers() (dealers []Customer, err error) {
 	}
 
 	if etailer_bytes, err = json.Marshal(dealers); err == nil {
-		redis.RedisMaster.Setex(redis_key, 86400, etailer_bytes)
+		go redis.RedisMaster.Setex(redis_key, 86400, etailer_bytes)
 	}
 
 	return
@@ -1002,7 +1002,7 @@ func GetLocalDealerTiers() (tiers []DealerTier) {
 	}
 
 	if redis_bytes, err = json.Marshal(tiers); err == nil {
-		redis.RedisMaster.Setex(redis_key, 86400, redis_bytes)
+		go redis.RedisMaster.Setex(redis_key, 86400, redis_bytes)
 	}
 
 	return
@@ -1071,7 +1071,7 @@ func GetLocalDealerTypes() (graphics []MapGraphics) {
 	}
 
 	if redis_bytes, err = json.Marshal(graphics); err == nil {
-		redis.RedisMaster.Setex(redis_key, 86400, redis_bytes)
+		go redis.RedisMaster.Setex(redis_key, 86400, redis_bytes)
 	}
 
 	return
@@ -1224,7 +1224,7 @@ func GetWhereToBuyDealers() (customers []Customer) {
 	}
 
 	if redis_bytes, err = json.Marshal(customers); err == nil {
-		redis.RedisMaster.Setex(redis_key, 86400, redis_bytes)
+		go redis.RedisMaster.Setex(redis_key, 86400, redis_bytes)
 	}
 
 	return

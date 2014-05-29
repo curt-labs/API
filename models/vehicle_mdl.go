@@ -199,7 +199,7 @@ func (lookup *Lookup) GetYears() (opt ConfigOption) {
 		}
 
 		if year_bytes, err = json.Marshal(years); err == nil {
-			redis.RedisMaster.Setex("vehicle_years", 86400, year_bytes)
+			go redis.RedisMaster.Setex("vehicle_years", 86400, year_bytes)
 		}
 	} else {
 		_ = json.Unmarshal(year_bytes, &years)
