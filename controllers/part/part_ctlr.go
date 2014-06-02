@@ -1,13 +1,41 @@
 package part_ctlr
 
 import (
+	"encoding/json"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	. "github.com/curt-labs/GoAPI/models"
 	"github.com/go-martini/martini"
+	"github.com/ninnemana/analytics-go"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
+
+func track(endpoint string, params map[string]string) {
+	client := analytics.New("sud7rjoq3o")
+	client.FlushAfter = 30 * time.Second
+	client.FlushAt = 25
+
+	js, err := json.Marshal(params)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	client.Track(map[string]interface{}{
+		"event":  "Endpoint Request",
+		"userId": "alex31",
+		"properties": map[string]interface{}{
+			"application": "segmenter",
+			"version":     "0.0.1",
+			"platform":    "osx",
+			"endpoint":    endpoint,
+			"parameters":  string(js),
+		},
+	})
+}
 
 func Get(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
 	qs := r.URL.Query()
