@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-func track(endpoint string, params map[string]string) {
+func track(endpoint string, params map[string]string, r *http.Request) {
 	client := analytics.New("sud7rjoq3o")
 	client.FlushAfter = 30 * time.Second
 	client.FlushAt = 25
@@ -24,16 +24,11 @@ func track(endpoint string, params map[string]string) {
 		return
 	}
 
-	client.Track(map[string]interface{}{
-		"event":  "Endpoint Request",
-		"userId": "alex31",
-		"properties": map[string]interface{}{
-			"application": "segmenter",
-			"version":     "0.0.1",
-			"platform":    "osx",
-			"endpoint":    endpoint,
-			"parameters":  string(js),
-		},
+	client.Page(map[string]interface{}{
+		"title":    "Part Endpoint",
+		"url":      r.URL.String(),
+		"path":     r.URL.Path,
+		"referrer": r.URL.RequestURI(),
 	})
 }
 
@@ -51,7 +46,7 @@ func Get(w http.ResponseWriter, r *http.Request, params martini.Params, enc enco
 		return ""
 	}
 
-	track("/part/get", params)
+	// go track("/part/get", params, r)
 
 	return encoding.Must(enc.Encode(part))
 }
