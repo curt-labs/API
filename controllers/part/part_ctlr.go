@@ -29,6 +29,7 @@ func track(endpoint string, params map[string]string, r *http.Request) {
 		"url":      r.URL.String(),
 		"path":     r.URL.Path,
 		"referrer": r.URL.RequestURI(),
+		"params":   js,
 	})
 }
 
@@ -46,7 +47,7 @@ func Get(w http.ResponseWriter, r *http.Request, params martini.Params, enc enco
 		return ""
 	}
 
-	// go track("/part/get", params, r)
+	track("/part/get", params, r)
 
 	return encoding.Must(enc.Encode(part))
 }
