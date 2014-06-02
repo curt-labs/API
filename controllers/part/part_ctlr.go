@@ -51,6 +51,8 @@ func Get(w http.ResponseWriter, r *http.Request, params martini.Params, enc enco
 		return ""
 	}
 
+	track("/part/get", params)
+
 	return encoding.Must(enc.Encode(part))
 }
 
