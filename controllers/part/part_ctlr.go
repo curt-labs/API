@@ -24,7 +24,7 @@ func track(endpoint string, params map[string]string, r *http.Request) {
 		return
 	}
 
-	client.Page(map[string]interface{}{
+	client.Track(map[string]interface{}{
 		"title":    "Part Endpoint",
 		"url":      r.URL.String(),
 		"path":     r.URL.Path,
