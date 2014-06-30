@@ -145,8 +145,10 @@ func main() {
 	m.Get("/search/part/:term", auth.AuthHandler, search_ctlr.SearchPart)
 	m.Get("/videos", videos_ctlr.DistinctVideos)
 
+	/**** INTERNAL USE ONLY ****/
+	// These endpoints will not work to the public eye when deployed on CURT's
+	// servers. We will have restrictions in place to prevent access...sorry :/
 	m.Group("/dealers", func(r martini.Router) {
-		/**** INTERNAL USE ONLY ****/
 		r.Get("/etailer", internalCors, dealers_ctlr.Etailers)
 		r.Get("/etailer/platinum", internalCors, dealers_ctlr.PlatinumEtailers)
 		r.Get("/local", internalCors, dealers_ctlr.LocalDealers)

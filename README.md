@@ -11,12 +11,14 @@ for being Content-Type agnostic to XML and JSON. Some of the best features are l
   - XML rendering powered by [encoding/xml](http://golang.org/pkg/encoding/xml/)
   - MySQL Persistence using [mymysql](https://github.com/ziutek/mymysql)
   - ACES Compliant vehicle lookup with product groups
- 
+
 
 --------
 Endpoints
 ---------
 ---------
+
+> Note: this application is still in heavy development and all endpoints/objects have the potential to change at any time.
 
 > You can view example endpoints for all of the routes in the index_test.go file.
 
@@ -143,11 +145,6 @@ Endpoints
 
 > The customer users endpoint will only return data if the requesting user is marked as sudo user
 
-
- *Internal Use Only*
-
-    GET - http://api.curtmfg.com/v3/dealers/etailer
-
 Philoshopy
 -
 
@@ -156,24 +153,19 @@ Philoshopy
 Deployment
 -
 
-We will be using Capistrano for deployment, you can see the capistrano configuration in the [deploy.rb](https://github.com/curt-labs/GoAPI/blob/master/config/deploy.rb).
-
-Capistrano is configured to pull from github, so you will need to commit and push to the master branch for changes to be pulled.
-
-Once everything has been updated on Github you can run the following command to deploy to curt-api-server1.cloudapp.net and curt-api-server2.cloudapp.net
-
-    cap deploy
+Deployment will be done using the master branch on Github. Once a commit is pushed to Github
+it will route that commit to Drone.io, which will then running CI testing across
+the project and then deploy new Docker containers to all CURT servers.
 
 Contributors
 -
 * Alex Ninneman
     * [Github](http://github.com/ninnemana)
     * [Twitter](https://twitter.com/ninnemana)
-* Jessica Janiuk
-    * [Github](http://github.com/janiukjf)
-    * [Twitter](http://twitter.com/janiukjf)
-
-
+* Matt Mickelson
+    * [Github](https://github.com/mickelsonm)
+* David Vaini
+    * [Github](https://github.com/DavidVaini)
 
 License
 -
@@ -181,5 +173,4 @@ License
 MIT
 
 *Free Software, Fuck Yeah!*
-  
-    
+
