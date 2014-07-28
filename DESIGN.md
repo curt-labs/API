@@ -5,16 +5,16 @@ This document will lay out of the features that need to go into v3 of the CURT
 
 ### Services
 
-- [User](#user)
-- [Customer](#customer)
-- [Vehicles](#vehicles)
-- [Product](#product)
-- [Category](#category)
+- [User](#user-service)
+- [Customer](#customer-service)
+- [Vehicles](#vehicles-service)
+- [Product](#product-service)
+- [Category](#category-service)
 - more to come...
 
 ***
 
-#### <a href="user"></a>User Service
+#### <a href="user-service"></a>User Service
 
 Manage all customer user manipulation. This will include things like:
 
@@ -27,7 +27,7 @@ Manage all customer user manipulation. This will include things like:
 
 ***
 
-#### <a href="customer"></a>Customer Service
+#### <a href="customer-service"></a>Customer Service
 
 Manage all customer manipulation. Some of the features this will
 include:
@@ -41,7 +41,7 @@ include:
 
 ***
 
-#### <a href="vehicles"></a>Vehicle Service
+#### <a href="vehicles-service"></a>Vehicles Service
 
 Query ACES vehicle configurations. Just a series of aggregation depending on
 currently provided attributes. Tricky part here is going to be flexibility and
@@ -49,7 +49,7 @@ performance.
 
 ***
 
-#### <a href="product"></a>Product Service
+#### <a href="product-service"></a>Product Service
 
 A series of data getters for a single product object, a series of product objects,
 or a segment of a product object (prices, attributes, categories).
@@ -63,7 +63,7 @@ product objects or should this reside in the category service?)
 
 ***
 
-### <a href="category"></a>Category Service
+### <a href="category-service"></a>Category Service
 
 A series of data retrieval endpoints, also with a certain level of customer data
 injection. This will need to maintain more of a top-level category structure, we don't
