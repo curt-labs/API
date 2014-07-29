@@ -66,7 +66,10 @@ product objects or should this reside in the category service?)
 
 > A function that takes in a list of PartID's, and Filteration Rules. This function would return a list of parts that meet the filteration conditions. The beauty of having a function that takes a list of parts, and returns a list of parts, is that it is very modular and extensible. For example, it could be used as a standalone (I have these parts and I want to apply filter rules to them to narrow down my results). 
 
-> It could also be used in conjunction with the vehicle lookup. Say you wanted to do the vehicle lookup and filter rules at the same time via the same request. The vehicle lookup would accept the list of filter rules. Once the vehicle lookup grabs all the parts, it would then call this filter function passing in the list of PartIDs and fowarding the filteration rules. It would then return the list of parts, and use that list to return to the user. This also allows use to keep all the messy filteration code out of the vehicle lookup, and out of all the individual GetParts calls. I will draw up a flow diagram explaining this process and update this design doc accordingly.
+> It could also be used in conjunction with the vehicle lookup. Say you wanted to do the vehicle lookup and filter rules at the same time via the same request. The vehicle lookup would accept the list of filter rules. Once the vehicle lookup grabs all the parts, it would then call this filter function passing in the list of PartIDs and fowarding the filteration rules. It would then return the list of parts, and use that list to return to the user. This also allows use to keep all the messy filteration code out of the vehicle lookup, and out of all the individual GetParts calls. Below is a quick diagram I made to show the flow:
+
+> ![alt text](http://i.imgur.com/eYwjUHt.png "Really quick and bad flowchart")
+
 
 ***
 
