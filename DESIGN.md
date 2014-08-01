@@ -70,6 +70,11 @@ product objects or should this reside in the category service?)
 
 > ![alt text](http://i.imgur.com/eYwjUHt.png "Really quick and bad flowchart")
 
+> This System has some downsides, it requires a way to map the type of the filter the user wants with the custom logic needed to grab that data. For example if Someone wants to filter on vehicles, they need to pass in a filter object stating they want to filter on vehicles. This would then have to match up with the code to loop through the vehicles and compare values. If they wanted to filter on list price or something, that would involve different logic than categories.
+
+> Another problem that I have found is that there is no easy way to populate the drop downs or the form on the front end for filtering the parts. For example, say you get 10 class 1 hitches, 3, class 2 hitches. And if you wanted to filter on category, you would want a drop down with class 1, and class 2 as options, instead of every category. This system doesnt populate that.
+
+
 
 ***
 
