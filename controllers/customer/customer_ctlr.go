@@ -2,7 +2,7 @@ package customer_ctlr
 
 import (
 	"github.com/curt-labs/GoAPI/helpers/encoding"
-	. "github.com/curt-labs/GoAPI/models"
+	"github.com/curt-labs/GoAPI/models/customer"
 	"net/http"
 )
 
@@ -10,7 +10,7 @@ func UserAuthentication(w http.ResponseWriter, r *http.Request, enc encoding.Enc
 	email := r.FormValue("email")
 	pass := r.FormValue("password")
 
-	user := CustomerUser{
+	user := customer.CustomerUser{
 		Email: email,
 	}
 	cust, err := user.UserAuthentication(pass)
@@ -26,7 +26,7 @@ func KeyedUserAuthentication(w http.ResponseWriter, r *http.Request, enc encodin
 	qs := r.URL.Query()
 	key := qs.Get("key")
 
-	cust, err := UserAuthenticationByKey(key)
+	cust, err := customer.UserAuthenticationByKey(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -47,13 +47,13 @@ func GetCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) s
 		return ""
 	}
 
-	id, err := GetCustomerIdFromKey(key)
+	id, err := customer.GetCustomerIdFromKey(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
 
-	c := Customer{
+	c := customer.Customer{
 		Id: id,
 	}
 
@@ -78,13 +78,13 @@ func GetLocations(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) 
 		return ""
 	}
 
-	id, err := GetCustomerIdFromKey(key)
+	id, err := customer.GetCustomerIdFromKey(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
 
-	c := Customer{
+	c := customer.Customer{
 		Id: id,
 	}
 
@@ -109,7 +109,7 @@ func GetUsers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) stri
 		return ""
 	}
 
-	user, err := GetCustomerUserFromKey(key)
+	user, err := customer.GetCustomerUserFromKey(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -142,7 +142,7 @@ func GetUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) strin
 		return ""
 	}
 
-	user, err := GetCustomerUserFromKey(key)
+	user, err := customer.GetCustomerUserFromKey(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""

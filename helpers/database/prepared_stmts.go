@@ -38,108 +38,6 @@ func PrepareAuthentication(authChan chan int) {
 	authChan <- 1
 }
 
-func PrepareCategory(prepChan chan int) {
-
-	UnPreparedStatements := make(map[string]string, 0)
-
-	// Get the category that a part is tied to, by PartId
-	UnPreparedStatements["PartCategoryStmt"] = `select c.catID, c.parentID, c.sort, c.dateAdded,
-				c.catTitle, c.shortDesc, c.longDesc,
-				c.image, c.isLifestyle, c.vehicleSpecific,
-				cc.code, cc.font from Categories as c
-				join CatPart as cp on c.catID = cp.catID
-				left join ColorCode as cc on c.codeID = cc.codeID
-				where cp.partID = ?
-				order by c.sort
-				limit 1`
-
-	UnPreparedStatements["PartAllCategoryStmt"] = `select c.catID, c.dateAdded, c.parentID, c.catTitle, c.shortDesc,
-					c.longDesc,c.sort, c.image, c.isLifestyle, c.vehicleSpecific,
-					cc.font, cc.code
-					from Categories as c
-					join CatPart as cp on c.catID = cp.catID
-					join ColorCode as cc on c.codeID = cc.codeID
-					where cp.partID = ?
-					order by c.catID`
-
-	// Get a category by catID
-	UnPreparedStatements["ParentCategoryStmt"] = `select c.catID, c.parentID, c.sort, c.dateAdded,
-					c.catTitle, c.shortDesc, c.longDesc,
-					c.image, c.isLifestyle, c.vehicleSpecific,
-					cc.code, cc.font from Categories as c
-					left join ColorCode as cc on c.codeID = cc.codeID
-					where c.catID = ?
-					order by c.sort
-					limit 1`
-
-	// Get the top-tier categories i.e Hitches, Electrical
-	UnPreparedStatements["TopCategoriesStmt"] = `select c.catID, c.parentID, c.sort, c.dateAdded,
-					c.catTitle, c.shortDesc, c.longDesc,
-					c.image, c.isLifestyle, c.vehicleSpecific,
-					cc.code, cc.font from Categories as c
-					left join ColorCode as cc on c.codeID = cc.codeID
-					where c.parentID IS NULL or c.parentID = 0
-					and isLifestyle = 0
-					order by c.sort`
-
-	UnPreparedStatements["SubCategoriesStmt"] = `select c.catID, c.parentID, c.sort, c.dateAdded,
-					c.catTitle, c.shortDesc, c.longDesc,
-					c.image, c.isLifestyle, c.vehicleSpecific,
-					cc.code, cc.font from Categories as c
-					left join ColorCode as cc on c.codeID = cc.codeID
-					where c.parentID = ?
-					and isLifestyle = 0
-					order by c.sort`
-
-	UnPreparedStatements["CategoryByNameStmt"] = `select c.catID, c.parentID, c.sort, c.dateAdded,
-					c.catTitle, c.shortDesc, c.longDesc,
-					c.image, c.isLifestyle, c.vehicleSpecific,
-					cc.code, cc.font from Categories as c
-					left join ColorCode as cc on c.codeID = cc.codeID
-					where c.catTitle = ?
-					order by c.sort`
-
-	UnPreparedStatements["CategoryByIdStmt"] = `select c.catID, c.parentID, c.sort, c.dateAdded,
-					c.catTitle, c.shortDesc, c.longDesc,
-					c.image, c.isLifestyle, c.vehicleSpecific,
-					cc.code, cc.font from Categories as c
-					left join ColorCode as cc on c.codeID = cc.codeID
-					where c.catID = ?
-					order by c.sort`
-
-	UnPreparedStatements["CategoryPartBasicStmt"] = `select cp.partID
-					from CatPart as cp
-					where cp.catID = ?
-					order by cp.partID
-					limit ?,?`
-
-	UnPreparedStatements["SubCategoryIdStmt"] = `select c.catID, group_concat(p.partID) as parts from Categories as c
-													left join CatPart as cp on c.catID = cp.catID
-													left join Part as p on cp.partID = p.partID
-													where c.parentID = ? && (p.status = null || (p.status = 800 || p.status = 900))`
-
-	UnPreparedStatements["CategoryContentStmt"] = `select ct.type, c.text from ContentBridge cb
-					join Content as c on cb.contentID = c.contentID
-					left join ContentType as ct on c.cTypeID = ct.cTypeID
-					where cb.catID = ?`
-
-	if !Db.Raw.IsConnected() {
-		Db.Raw.Connect()
-	}
-
-	c := make(chan int)
-
-	for stmtname, stmtsql := range UnPreparedStatements {
-		go PrepareStatement(stmtname, stmtsql, c)
-	}
-
-	for _, _ = range UnPreparedStatements {
-		<-c
-	}
-
-	prepChan <- 1
-}
-
 func PrepareGeoLocation(prepChan chan int) {
 
 	UnPreparedStatements := make(map[string]string, 0)
@@ -744,7 +642,6 @@ func PrepareAll() error {
 	BindDatabase()
 
 	authChan := make(chan int)
-	catChan := make(chan int)
 	acesChan := make(chan int)
 	geoChan := make(chan int)
 	custChan := make(chan int)
@@ -753,7 +650,6 @@ func PrepareAll() error {
 	cmsChan := make(chan int)
 
 	go PrepareAuthentication(authChan)
-	go PrepareCategory(catChan)
 	go PrepareACES(acesChan)
 	go PrepareGeoLocation(geoChan)
 	go PrepareCustomer(custChan)
@@ -765,8 +661,6 @@ func PrepareAll() error {
 
 	<-authChan
 	log.Println("Authentication Statements Completed.......[OK]")
-	<-catChan
-	log.Println("Category Statements Completed.............[OK]")
 	<-acesChan
 	log.Println("ACES Statements Completed.................[OK]")
 	<-geoChan

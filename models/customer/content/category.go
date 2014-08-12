@@ -1,4 +1,4 @@
-package models
+package custcontent
 
 import (
 	"github.com/curt-labs/GoAPI/helpers/database"

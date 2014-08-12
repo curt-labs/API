@@ -1,10 +1,11 @@
-package models
+package customer
 
 import (
 	"code.google.com/p/go.crypto/bcrypt"
 	"errors"
 	"github.com/curt-labs/GoAPI/helpers/api"
 	"github.com/curt-labs/GoAPI/helpers/database"
+	"github.com/curt-labs/GoAPI/models/geography"
 	"net/url"
 	"strings"
 	"time"
@@ -176,13 +177,13 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 		MapixDescription:        row.Str(mpx_desc),
 	}
 
-	ctry := Country{
+	ctry := geography.Country{
 		Id:           row.Int(countryID),
 		Country:      row.Str(country),
 		Abbreviation: row.Str(country_abbr),
 	}
 
-	c.State = &State{
+	c.State = &geography.State{
 		Id:           row.Int(stateID),
 		State:        row.Str(state),
 		Abbreviation: row.Str(state_abbr),
@@ -439,13 +440,13 @@ func (u *CustomerUser) GetLocation() error {
 		ShippingDefault: row.ForceBool(shipDefault),
 	}
 
-	ctry := Country{
+	ctry := geography.Country{
 		Id:           row.Int(countryID),
 		Country:      row.Str(country),
 		Abbreviation: row.Str(country_abbr),
 	}
 
-	l.State = &State{
+	l.State = &geography.State{
 		Id:           row.Int(stateID),
 		State:        row.Str(state),
 		Abbreviation: row.Str(state_abbr),

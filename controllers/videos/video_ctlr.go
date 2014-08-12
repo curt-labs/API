@@ -2,13 +2,13 @@ package videos_ctlr
 
 import (
 	"github.com/curt-labs/GoAPI/helpers/encoding"
-	. "github.com/curt-labs/GoAPI/models"
+	"github.com/curt-labs/GoAPI/models/video"
 	"net/http"
 )
 
 func DistinctVideos(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 
-	videos, err := UniqueVideos()
+	videos, err := video.UniqueVideos()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""

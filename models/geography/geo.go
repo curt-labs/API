@@ -1,4 +1,4 @@
-package models
+package geography
 
 type State struct {
 	Id                  int

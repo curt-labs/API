@@ -3,7 +3,7 @@ package customer_ctlr
 import (
 	"encoding/json"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
-	. "github.com/curt-labs/GoAPI/models"
+	"github.com/curt-labs/GoAPI/models/customer/content"
 	"github.com/go-martini/martini"
 	"io/ioutil"
 	"net/http"
@@ -15,7 +15,7 @@ func GetAllContent(w http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 	params := r.URL.Query()
 	key := params.Get("key")
 
-	content, err := AllCustomerContent(key)
+	content, err := custcontent.AllCustomerContent(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -35,7 +35,7 @@ func GetContentById(w http.ResponseWriter, r *http.Request, enc encoding.Encoder
 		return ""
 	}
 
-	content, err := GetCustomerContent(id, key)
+	content, err := custcontent.GetCustomerContent(id, key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -55,7 +55,7 @@ func GetContentRevisionsById(w http.ResponseWriter, r *http.Request, enc encodin
 		return ""
 	}
 
-	revs, err := GetCustomerContentRevisions(id, key)
+	revs, err := custcontent.GetCustomerContentRevisions(id, key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -69,7 +69,7 @@ func AllPartContent(w http.ResponseWriter, r *http.Request, enc encoding.Encoder
 	params := r.URL.Query()
 	key := params.Get("key")
 
-	content, err := GetAllPartContent(key)
+	content, err := custcontent.GetAllPartContent(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -87,7 +87,7 @@ func UniquePartContent(w http.ResponseWriter, r *http.Request, enc encoding.Enco
 		return ""
 	}
 
-	content, err := GetPartContent(partID, key)
+	content, err := custcontent.GetPartContent(partID, key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -111,7 +111,7 @@ func UpdatePartContent(w http.ResponseWriter, r *http.Request, params martini.Pa
 		return ""
 	}
 
-	var content CustomerContent
+	var content custcontent.CustomerContent
 	err = json.Unmarshal(body, &content)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -141,7 +141,7 @@ func DeletePartContent(w http.ResponseWriter, r *http.Request, params martini.Pa
 		return ""
 	}
 
-	var content CustomerContent
+	var content custcontent.CustomerContent
 	err = json.Unmarshal(body, &content)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -161,7 +161,7 @@ func AllCategoryContent(w http.ResponseWriter, r *http.Request, enc encoding.Enc
 	params := r.URL.Query()
 	key := params.Get("key")
 
-	content, err := GetAllCategoryContent(key)
+	content, err := custcontent.GetAllCategoryContent(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -179,7 +179,7 @@ func UniqueCategoryContent(w http.ResponseWriter, r *http.Request, params martin
 		return ""
 	}
 
-	content, err := GetCategoryContent(catID, key)
+	content, err := custcontent.GetCategoryContent(catID, key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -203,7 +203,7 @@ func UpdateCategoryContent(w http.ResponseWriter, r *http.Request, params martin
 		return ""
 	}
 
-	var content CustomerContent
+	var content custcontent.CustomerContent
 	err = json.Unmarshal(body, &content)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -233,7 +233,7 @@ func DeleteCategoryContent(w http.ResponseWriter, r *http.Request, params martin
 		return ""
 	}
 
-	var content CustomerContent
+	var content custcontent.CustomerContent
 	err = json.Unmarshal(body, &content)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -250,7 +250,7 @@ func DeleteCategoryContent(w http.ResponseWriter, r *http.Request, params martin
 
 // Content Types
 func GetAllContentTypes(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
-	types, err := AllCustomerContentTypes()
+	types, err := custcontent.AllCustomerContentTypes()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""

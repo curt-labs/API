@@ -2,7 +2,7 @@ package dealers_ctlr
 
 import (
 	"github.com/curt-labs/GoAPI/helpers/encoding"
-	"github.com/curt-labs/GoAPI/models"
+	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/go-martini/martini"
 	"net/http"
 	"strconv"
@@ -10,7 +10,7 @@ import (
 
 func Etailers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 
-	dealers, err := models.GetEtailers()
+	dealers, err := customer.GetEtailers()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -31,7 +31,7 @@ func LocalDealers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) 
 	latlng := qs.Get("latlng")
 	center := qs.Get("center")
 
-	dealers, err := models.GetLocalDealers(center, latlng)
+	dealers, err := customer.GetLocalDealers(center, latlng)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -41,7 +41,7 @@ func LocalDealers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) 
 }
 
 func LocalRegions(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
-	regions, err := models.GetLocalRegions()
+	regions, err := customer.GetLocalRegions()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -51,19 +51,19 @@ func LocalRegions(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) 
 }
 
 func LocalDealerTiers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
-	tiers := models.GetLocalDealerTiers()
+	tiers := customer.GetLocalDealerTiers()
 
 	return encoding.Must(enc.Encode(tiers))
 }
 
 func LocalDealerTypes(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
-	types := models.GetLocalDealerTypes()
+	types := customer.GetLocalDealerTypes()
 
 	return encoding.Must(enc.Encode(types))
 }
 
 func PlatinumEtailers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
-	custs := models.GetWhereToBuyDealers()
+	custs := customer.GetWhereToBuyDealers()
 	return encoding.Must(enc.Encode(custs))
 }
 
@@ -79,7 +79,7 @@ func GetLocation(w http.ResponseWriter, r *http.Request, params martini.Params, 
 		return ""
 	}
 
-	loc, err := models.GetLocationById(id)
+	loc, err := customer.GetLocationById(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -94,7 +94,7 @@ func SearchLocations(w http.ResponseWriter, r *http.Request, params martini.Para
 	if search_term == "" {
 		search_term = qs.Get("search")
 	}
-	locs, err := models.SearchLocations(search_term)
+	locs, err := customer.SearchLocations(search_term)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -109,7 +109,7 @@ func SearchLocationsByType(w http.ResponseWriter, r *http.Request, params martin
 	if search_term == "" {
 		search_term = qs.Get("search")
 	}
-	locs, err := models.SearchLocationsByType(search_term)
+	locs, err := customer.SearchLocationsByType(search_term)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -135,12 +135,12 @@ func SearchLocationsByLatLng(w http.ResponseWriter, r *http.Request, params mart
 	latFloat, _ := strconv.ParseFloat(latitude, 64)
 	lngFloat, _ := strconv.ParseFloat(longitude, 64)
 
-	latlng := models.GeoLocation{
+	latlng := customer.GeoLocation{
 		Latitude:  latFloat,
 		Longitude: lngFloat,
 	}
 
-	locs, err := models.SearchLocationsByLatLng(latlng)
+	locs, err := customer.SearchLocationsByLatLng(latlng)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
