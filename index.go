@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"github.com/curt-labs/GoAPI/controllers/aces"
 	"github.com/curt-labs/GoAPI/controllers/category"
 	"github.com/curt-labs/GoAPI/controllers/customer"
 	"github.com/curt-labs/GoAPI/controllers/dealers"
@@ -68,17 +67,7 @@ func main() {
 		AllowCredentials: true,
 	})
 
-	m.Group("/vehicle", func(r martini.Router) {
-		r.Get("", auth.AuthHandler, vehicle_ctlr.Year)
-		r.Get("/:year", auth.AuthHandler, vehicle_ctlr.Make)
-		r.Get("/:year/:make", auth.AuthHandler, vehicle_ctlr.Model)
-		r.Get("/:year/:make/:model", auth.AuthHandler, vehicle_ctlr.Submodel)
-		r.Get("/:year/:make/:model/connector", auth.AuthHandler, vehicle_ctlr.Connector)
-		r.Get("/:year/:make/:model/:submodel", auth.AuthHandler, vehicle_ctlr.Config)
-		r.Get("/:year/:make/:model/:submodel/connector", auth.AuthHandler, vehicle_ctlr.Connector)
-		r.Get("/:year/:make/:model/:submodel/:config(.+)/connector", auth.AuthHandler, vehicle_ctlr.Connector)
-		r.Get("/:year/:make/:model/:submodel/:config(.+)", auth.AuthHandler, vehicle_ctlr.Config)
-	})
+	m.Post("/vehicle", vehicle.Query)
 
 	m.Group("/category", func(r martini.Router) {
 		r.Get("", auth.AuthHandler, category_ctlr.Parents)
@@ -86,10 +75,6 @@ func main() {
 		r.Get("/:id/subs", auth.AuthHandler, category_ctlr.SubCategories)
 		r.Get("/:id/parts", auth.AuthHandler, category_ctlr.GetParts)
 		r.Get("/:id/parts/:page/:count", auth.AuthHandler, category_ctlr.GetParts)
-	})
-
-	m.Group("/reports", func(r martini.Router) {
-		r.Get("/aces", auth.AuthHandler, aces_ctlr.ACES)
 	})
 
 	m.Group("/part", func(r martini.Router) {
@@ -175,7 +160,7 @@ func main() {
 		WriteTimeout: 30 * time.Second,
 	}
 
-	log.Printf("Starting server on 127.0.0.1:%s\n", *listenAddr)
+	log.Printf("Starting server on 127.0.0.1%s\n", *listenAddr)
 	log.Fatal(srv.ListenAndServe())
 }
 

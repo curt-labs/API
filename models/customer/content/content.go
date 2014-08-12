@@ -1,8 +1,9 @@
-package models
+package custcontent
 
 import (
 	"errors"
 	"github.com/curt-labs/GoAPI/helpers/database"
+	"github.com/curt-labs/GoAPI/models/customer"
 	"html"
 	"log"
 	"strings"
@@ -29,7 +30,7 @@ type ContentType struct {
 }
 
 type CustomerContentRevision struct {
-	User                           CustomerUser
+	User                           customer.CustomerUser
 	OldText, NewText               string
 	Date                           time.Time
 	ChangeType                     string
@@ -152,7 +153,7 @@ func GetCustomerContentRevisions(id int, key string) (revs []CustomerContentRevi
 	oldHTML := res.Map("oldAllowHtml")
 	userId := res.Map("userId")
 
-	users := make(map[string]CustomerUser, 0)
+	users := make(map[string]customer.CustomerUser, 0)
 
 	for _, row := range rows {
 		ccr := CustomerContentRevision{
@@ -171,7 +172,7 @@ func GetCustomerContentRevisions(id int, key string) (revs []CustomerContentRevi
 		}
 
 		if _, ok := users[row.Str(userId)]; !ok {
-			u, err := GetCustomerUserById(row.Str(userId))
+			u, err := customer.GetCustomerUserById(row.Str(userId))
 			if err == nil {
 				users[row.Str(userId)] = u
 			}

@@ -1,4 +1,4 @@
-package models
+package part
 
 type FilterSet struct {
 	Name    string

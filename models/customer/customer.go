@@ -1,4 +1,4 @@
-package models
+package customer
 
 import (
 	"encoding/json"
@@ -6,6 +6,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
+	"github.com/curt-labs/GoAPI/models/geography"
 	"github.com/ziutek/mymysql/mysql"
 	"math"
 	"net/url"
@@ -14,20 +15,6 @@ import (
 )
 
 var (
-	customerPriceStmt_Grouped = `select distinct cp.price, cp.partID from ApiKey as ak
-					join CustomerUser cu on ak.user_id = cu.id
-					join Customer c on cu.cust_ID = c.cust_id
-					join CustomerPricing cp on c.customerID = cp.cust_id
-					where api_key = '%s'
-					and cp.partID IN (%s)`
-
-	customerPartStmt_Grouped = `select distinct ci.custPartID, ci.partID from ApiKey as ak
-					join CustomerUser cu on ak.user_id = cu.id
-					join Customer c on cu.cust_ID = c.cust_id
-					join CartIntegration ci on c.customerID = ci.custID
-					where ak.api_key = '%s'
-					and ci.partID IN (%s)`
-
 	etailersStmt = `select c.customerID, c.name, c.email, c.address, c.address2, c.city, c.phone, c.fax, c.contact_person,
 				c.latitude, c.longitude, c.searchURL, c.logo, c.website,
 				c.postal_code, s.stateID, s.state, s.abbr as state_abbr, cty.countryID, cty.name as country_name, cty.abbr as country_abbr,
@@ -50,7 +37,7 @@ var (
 type Customer struct {
 	Id                                   int
 	Name, Email, Address, Address2, City string
-	State                                *State
+	State                                *geography.State
 	PostalCode                           string
 	Phone, Fax                           string
 	ContactPerson                        string
@@ -70,7 +57,7 @@ type Customer struct {
 type CustomerLocation struct {
 	Id                                     int
 	Name, Email, Address, City, PostalCode string
-	State                                  *State
+	State                                  *geography.State
 	Phone, Fax                             string
 	Latitude, Longitude                    float64
 	CustomerId                             int
@@ -109,7 +96,7 @@ type GeoLocation struct {
 type DealerLocation struct {
 	Id, LocationId                       int
 	Name, Email, Address, Address2, City string
-	State                                *State
+	State                                *geography.State
 	PostalCode                           string
 	Phone, Fax                           string
 	ContactPerson                        string
@@ -235,13 +222,13 @@ func (c *Customer) Basics() error {
 	c.MapixCode = row.Str(mpx_code)
 	c.MapixDescription = row.Str(mpx_desc)
 
-	ctry := Country{
+	ctry := geography.Country{
 		Id:           row.Int(countryID),
 		Country:      row.Str(country),
 		Abbreviation: row.Str(country_abbr),
 	}
 
-	c.State = &State{
+	c.State = &geography.State{
 		Id:           row.Int(stateID),
 		State:        row.Str(state),
 		Abbreviation: row.Str(state_abbr),
@@ -312,13 +299,13 @@ func (c *Customer) GetLocations() error {
 			ShippingDefault: row.ForceBool(shipDefault),
 		}
 
-		ctry := Country{
+		ctry := geography.Country{
 			Id:           row.Int(countryID),
 			Country:      row.Str(country),
 			Abbreviation: row.Str(country_abbr),
 		}
 
-		l.State = &State{
+		l.State = &geography.State{
 			Id:           row.Int(stateID),
 			State:        row.Str(state),
 			Abbreviation: row.Str(state_abbr),
@@ -380,36 +367,6 @@ func GetCustomerPrice(api_key string, part_id int) (price float64, err error) {
 	return
 }
 
-func (lookup *Lookup) GetCustomerPrice(api_key string) (prices map[int]float64, err error) {
-	prices = make(map[int]float64, len(lookup.Parts))
-
-	var ids []string
-	for _, p := range lookup.Parts {
-		ids = append(ids, strconv.Itoa(p.PartId))
-	}
-	if len(ids) == 0 {
-		return
-	}
-
-	rows, res, err := database.Db.Query(customerPriceStmt_Grouped, api_key, strings.Join(ids, ","))
-	if database.MysqlError(err) {
-		return
-	} else if len(rows) == 0 {
-		return
-	}
-
-	price := res.Map("price")
-	partID := res.Map("partID")
-
-	for _, row := range rows {
-		pId := row.Int(partID)
-		pr := row.Float(price)
-		prices[pId] = pr
-	}
-
-	return
-}
-
 func GetCustomerCartReference(api_key string, part_id int) (ref int, err error) {
 	qry, err := database.GetStatement("CustomerPartStmt")
 	if database.MysqlError(err) {
@@ -423,37 +380,6 @@ func GetCustomerCartReference(api_key string, part_id int) (ref int, err error) 
 
 	if len(row) == 1 {
 		ref = row.Int(0)
-	}
-
-	return
-}
-
-func (lookup *Lookup) GetCustomerCartReference(api_key string) (references map[int]int, err error) {
-
-	references = make(map[int]int, len(lookup.Parts))
-
-	var ids []string
-	for _, p := range lookup.Parts {
-		ids = append(ids, strconv.Itoa(p.PartId))
-	}
-	if len(ids) == 0 {
-		return
-	}
-
-	rows, res, err := database.Db.Query(customerPartStmt_Grouped, api_key, strings.Join(ids, ","))
-	if err != nil {
-		return
-	} else if len(rows) == 0 {
-		return
-	}
-
-	partID := res.Map("partID")
-	custPartID := res.Map("custPartID")
-
-	for _, row := range rows {
-		pId := row.Int(partID)
-		ref := row.Int(custPartID)
-		references[pId] = ref
 	}
 
 	return
@@ -568,13 +494,13 @@ func GetEtailers() (dealers []Customer, err error) {
 				MapixDescription:        r.Str(mpx_desc),
 			}
 
-			ctry := Country{
+			ctry := geography.Country{
 				Id:           r.Int(countryID),
 				Country:      r.Str(country),
 				Abbreviation: r.Str(country_abbr),
 			}
 
-			cust.State = &State{
+			cust.State = &geography.State{
 				Id:           r.Int(stateID),
 				State:        r.Str(state),
 				Abbreviation: r.Str(state_abbr),
@@ -814,13 +740,13 @@ func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, er
 			math.Sqrt((math.Sin(((cust.Latitude-clat)*(math.Pi/180))/2)*math.Sin(((cust.Latitude-clat)*(math.Pi/180))/2))+((math.Sin(((cust.Longitude-clong)*(math.Pi/180))/2))*(math.Sin(((cust.Longitude-clong)*(math.Pi/180))/2)))*math.Cos(clat*(math.Pi/180))*math.Cos(cust.Latitude*(math.Pi/180))),
 			math.Sqrt(1-((math.Sin(((cust.Latitude-clat)*(math.Pi/180))/2)*math.Sin(((cust.Latitude-clat)*(math.Pi/180))/2))+((math.Sin(((cust.Longitude-clong)*(math.Pi/180))/2))*(math.Sin(((cust.Longitude-clong)*(math.Pi/180))/2)))*math.Cos(clat*(math.Pi/180))*math.Cos(cust.Latitude*(math.Pi/180))))))
 
-		ctry := Country{
+		ctry := geography.Country{
 			Id:           r.Int(countryID),
 			Country:      r.Str(country),
 			Abbreviation: r.Str(country_abbr),
 		}
 
-		cust.State = &State{
+		cust.State = &geography.State{
 			Id:           r.Int(stateID),
 			State:        r.Str(state),
 			Abbreviation: r.Str(state_abbr),
@@ -1189,13 +1115,13 @@ func GetWhereToBuyDealers() (customers []Customer) {
 				MapixDescription:        r.Str(mpx_desc),
 			}
 
-			ctry := Country{
+			ctry := geography.Country{
 				Id:           r.Int(countryID),
 				Country:      r.Str(country),
 				Abbreviation: r.Str(country_abbr),
 			}
 
-			cust.State = &State{
+			cust.State = &geography.State{
 				Id:           r.Int(stateID),
 				State:        r.Str(state),
 				Abbreviation: r.Str(state_abbr),
@@ -1301,7 +1227,7 @@ func GetLocationById(id int) (location DealerLocation, err error) {
 		Address:    row.Str(address),
 		City:       row.Str(city),
 		PostalCode: row.Str(postalCode),
-		State: &State{
+		State: &geography.State{
 			Id:           row.Int(stateID),
 			State:        row.Str(state),
 			Abbreviation: row.Str(abbr),
@@ -1394,7 +1320,7 @@ func SearchLocations(term string) (locations []DealerLocation, err error) {
 			Address:    row.Str(address),
 			City:       row.Str(city),
 			PostalCode: row.Str(postalCode),
-			State: &State{
+			State: &geography.State{
 				Id:           row.Int(stateID),
 				State:        row.Str(state),
 				Abbreviation: row.Str(abbr),
@@ -1492,7 +1418,7 @@ func SearchLocationsByType(term string) (locations []DealerLocation, err error) 
 			Address:    row.Str(address),
 			City:       row.Str(city),
 			PostalCode: row.Str(postalCode),
-			State: &State{
+			State: &geography.State{
 				Id:           row.Int(stateID),
 				State:        row.Str(state),
 				Abbreviation: row.Str(abbr),
@@ -1612,7 +1538,7 @@ func SearchLocationsByLatLng(loc GeoLocation) (locations []DealerLocation, err e
 			Address:    row.Str(address),
 			City:       row.Str(city),
 			PostalCode: row.Str(postalCode),
-			State: &State{
+			State: &geography.State{
 				Id:           row.Int(stateID),
 				State:        row.Str(state),
 				Abbreviation: row.Str(abbr),

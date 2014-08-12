@@ -1,4 +1,4 @@
-package models
+package custcontent
 
 import (
 	"github.com/curt-labs/GoAPI/helpers/database"
@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	CustomerPartContent_Grouped = `select cc.id, cc.text,cc.added,cc.modified,cc.deleted, 
+	CustomerPartContent_Grouped = `select cc.id, cc.text,cc.added,cc.modified,cc.deleted,
 									ct.type,ct.allowHTML,ccb.partID
 									from CustomerContent as cc
 									join CustomerContentBridge as ccb on cc.id = ccb.contentID
