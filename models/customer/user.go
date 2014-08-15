@@ -373,9 +373,6 @@ func (u *CustomerUser) GetKeys() error {
 
 	var keys []ApiCredentials
 	for _, row := range rows {
-
-		//da, _ := time.Parse("2006-01-02 15:04:15", row.Str(dAdded))
-
 		k := ApiCredentials{
 			Key:       row.Str(key),
 			Type:      row.Str(typ),

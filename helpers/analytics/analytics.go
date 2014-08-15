@@ -42,7 +42,7 @@ type batch struct {
 // UUID formatting.
 func init() {
 	// TODO: wtf, this is lame
-	uuid.SwitchFormat(uuid.CleanHyphen, false)
+	uuid.SwitchFormat(uuid.CleanHyphen)
 }
 
 // Return a new Segment.io client

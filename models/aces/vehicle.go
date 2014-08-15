@@ -5,6 +5,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	_ "github.com/go-sql-driver/mysql"
+	"log"
 	"strings"
 )
 
@@ -89,8 +90,10 @@ func (l *Lookup) LoadParts(ch chan []int) {
 
 	if len(l.Vehicle.Configurations) > 0 {
 		configs, err := l.Vehicle.getDefinedConfigurations()
+		log.Println(err)
 		if err != nil || configs == nil {
 			ch <- parts
+			return
 		}
 
 		chosenValArr := make(map[string]string, 0)

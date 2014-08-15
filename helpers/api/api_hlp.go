@@ -7,7 +7,9 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"strings"
+	"time"
 )
 
 const (
@@ -24,6 +26,14 @@ const (
 	PUBLIC_KEY_TYPE  = "PUBLIC"
 	PRIVATE_KEY_TYPE = "PRIVATE"
 )
+
+func RandGenerator(max int) int {
+	if max == 0 {
+		return 0
+	}
+	r := rand.New(rand.NewSource(time.Now().UTC().UnixNano()))
+	return r.Intn(max)
+}
 
 func ValueOrFileContents(value string, filename string) string {
 	if value != "" {
