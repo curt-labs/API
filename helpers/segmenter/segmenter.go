@@ -1,6 +1,7 @@
 package segmenter
 
 import (
+	"github.com/curt-labs/GoAPI/helpers/slack"
 	"github.com/go-martini/martini"
 	"github.com/segmentio/analytics-go"
 	"net/http"
@@ -23,7 +24,7 @@ func Log() martini.Handler {
 				key = r.FormValue("key")
 			}
 
-			client.Track(map[string]interface{}{
+			err := client.Track(map[string]interface{}{
 				"event":       r.URL.String(),
 				"userId":      key,
 				"method":      r.Method,
@@ -31,6 +32,14 @@ func Log() martini.Handler {
 				"form":        r.Form,
 				"requestTime": time.Since(start),
 			})
+			if err != nil {
+				m := slack.Message{
+					Channel:  "debugging",
+					Username: "GoAPI",
+					Text:     err.Error(),
+				}
+				m.Send()
+			}
 		}(r)
 
 	}
