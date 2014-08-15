@@ -13,7 +13,7 @@ func Log() martini.Handler {
 		start := time.Now()
 		c.Next()
 		go func(req *http.Request) {
-			client := analytics.New("sud7rjoq3o")
+			client := analytics.New("oactr73lbg")
 
 			key := r.Header.Get("key")
 			if key == "" {
