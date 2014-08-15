@@ -12,6 +12,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/auth"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
+	"github.com/curt-labs/GoAPI/helpers/segmenter"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/cors"
 	"github.com/martini-contrib/gorelic"
@@ -47,6 +48,7 @@ func main() {
 	m := martini.Classic()
 	gorelic.InitNewrelicAgent("5fbc49f51bd658d47b4d5517f7a9cb407099c08c", "GoAPI", false)
 	m.Use(gorelic.Handler)
+	m.Use(segmenter.Log())
 	m.Use(gzip.All())
 	m.Use(cors.Allow(&cors.Options{
 		AllowOrigins:     []string{"*"},
@@ -151,6 +153,10 @@ func main() {
 
 	m.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "http://labs.curtmfg.com/", http.StatusFound)
+	})
+
+	m.Any("/*", func(w http.ResponseWriter, r *http.Request) {
+		log.Println("hit any")
 	})
 
 	srv := &http.Server{
