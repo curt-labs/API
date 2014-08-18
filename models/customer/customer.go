@@ -390,11 +390,9 @@ func GetCustomerCartReference(api_key string, part_id int) (ref int, err error) 
 func GetEtailers() (dealers []Customer, err error) {
 
 	redis_key := "goapi:dealers:etailers"
-
-	// Attempt to get the etailers from Redis
-	etailer_bytes, err := redis.RedisClient.Get(redis_key)
-	if len(etailer_bytes) > 0 {
-		err = json.Unmarshal(etailer_bytes, &dealers)
+	data, err := redis.Get(redis_key)
+	if len(data) > 0 && err != nil {
+		err = json.Unmarshal(data, &dealers)
 		if err == nil {
 			return
 		}
@@ -521,16 +519,13 @@ func GetEtailers() (dealers []Customer, err error) {
 
 			ch <- 1
 		}(row, c)
-
 	}
 
 	for _, _ = range rows {
 		<-c
 	}
 
-	if etailer_bytes, err = json.Marshal(dealers); err == nil {
-		go redis.RedisMaster.Setex(redis_key, 86400, etailer_bytes)
-	}
+	go redis.Setex(redis_key, dealers, 86400)
 
 	return
 }
@@ -777,9 +772,9 @@ func GetLocalRegions() (regions []StateRegion, err error) {
 	redis_key := "goapi:local:regions"
 
 	// Attempt to get the local regions from Redis
-	regions_bytes, err := redis.RedisClient.Get(redis_key)
-	if len(regions_bytes) > 0 {
-		err = json.Unmarshal(regions_bytes, &regions)
+	data, err := redis.Get(redis_key)
+	if len(data) > 0 && err != nil {
+		err = json.Unmarshal(data, &regions)
 		if err == nil {
 			return
 		}
@@ -869,12 +864,10 @@ func GetLocalRegions() (regions []StateRegion, err error) {
 		<-ch
 	}
 
-	if regions_bytes, err = json.Marshal(regions); err == nil {
-		// We're not going to set the expiration on this
-		// it won't ever change...until the San Andreas fault
-		// completely drops the western part of CA anyway :/
-		redis.RedisClient.Set(redis_key, regions_bytes)
-	}
+	// We're not going to set the expiration on this
+	// it won't ever change...until the San Andreas fault
+	// completely drops the western part of CA anyway :/
+	go redis.Set(redis_key, regions)
 
 	return
 }
@@ -895,10 +888,10 @@ func GetLocalDealerTiers() (tiers []DealerTier) {
 
 	redis_key := "goapi:local:tiers"
 
-	// Attempt to get the local regions from Redis
-	redis_bytes, err := redis.RedisClient.Get(redis_key)
-	if len(redis_bytes) > 0 {
-		err = json.Unmarshal(redis_bytes, &tiers)
+	// Attempt to get the local tiers from Redis
+	data, err := redis.Get(redis_key)
+	if len(data) > 0 && err != nil {
+		err = json.Unmarshal(data, &tiers)
 		if err == nil {
 			return
 		}
@@ -927,9 +920,7 @@ func GetLocalDealerTiers() (tiers []DealerTier) {
 		tiers = append(tiers, dTier)
 	}
 
-	if redis_bytes, err = json.Marshal(tiers); err == nil {
-		go redis.RedisMaster.Setex(redis_key, 86400, redis_bytes)
-	}
+	go redis.Setex(redis_key, tiers, 86400)
 
 	return
 }
@@ -938,10 +929,10 @@ func GetLocalDealerTypes() (graphics []MapGraphics) {
 
 	redis_key := "goapi:local:types"
 
-	// Attempt to get the local regions from Redis
-	redis_bytes, err := redis.RedisClient.Get(redis_key)
-	if len(redis_bytes) > 0 {
-		err = json.Unmarshal(redis_bytes, &graphics)
+	// Attempt to get the local types from Redis
+	data, err := redis.Get(redis_key)
+	if len(data) > 0 && err != nil {
+		err = json.Unmarshal(data, &graphics)
 		if err == nil {
 			return
 		}
@@ -996,9 +987,7 @@ func GetLocalDealerTypes() (graphics []MapGraphics) {
 		graphics = append(graphics, gx)
 	}
 
-	if redis_bytes, err = json.Marshal(graphics); err == nil {
-		go redis.RedisMaster.Setex(redis_key, 86400, redis_bytes)
-	}
+	go redis.Setex(redis_key, graphics, 86400)
 
 	return
 }
@@ -1007,10 +996,9 @@ func GetWhereToBuyDealers() (customers []Customer) {
 
 	redis_key := "goapi:dealers:wheretobuy"
 
-	// Attempt to get the local regions from Redis
-	redis_bytes, err := redis.RedisClient.Get(redis_key)
-	if len(redis_bytes) > 0 {
-		err = json.Unmarshal(redis_bytes, &customers)
+	data, err := redis.Get(redis_key)
+	if len(data) > 0 && err != nil {
+		err = json.Unmarshal(data, &customers)
 		if err == nil {
 			return
 		}
@@ -1149,9 +1137,7 @@ func GetWhereToBuyDealers() (customers []Customer) {
 		<-c
 	}
 
-	if redis_bytes, err = json.Marshal(customers); err == nil {
-		go redis.RedisMaster.Setex(redis_key, 86400, redis_bytes)
-	}
+	go redis.Setex(redis_key, customers, 86400)
 
 	return
 }

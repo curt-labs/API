@@ -200,21 +200,14 @@ func (p *Part) FromDatabase() error {
 	<-categoryChan
 	<-contentChan
 
-	if len(errs) > 0 {
-		//return errors.New("Error: " + strings.Join(errs, ", "))
-	}
-
-	if part_bytes, err := json.Marshal(p); err == nil {
-		part_key := "part:" + strconv.Itoa(p.PartId)
-		go redis.RedisMaster.Setex(part_key, 86400, part_bytes)
-	}
+	go redis.Setex("goapi:part:"+strconv.Itoa(p.PartId), p, 86400)
 
 	return nil
 }
 
 func (p *Part) FromCache() error {
 
-	part_bytes, err := redis.RedisClient.Get("part:" + strconv.Itoa(p.PartId))
+	part_bytes, err := redis.Get("goapi:part:" + strconv.Itoa(p.PartId))
 	if err != nil {
 		return err
 	} else if len(part_bytes) == 0 {
@@ -601,53 +594,14 @@ func GetCategoryParts(c category.Category, key string, page int, count int) (par
 	}
 
 	redis_key := "goapi:category:" + strconv.Itoa(c.CategoryId) + ":tree:" + strconv.Itoa(page) + ":" + strconv.Itoa(count)
-	redis_bytes, _ := redis.RedisClient.Get(redis_key)
-	if len(redis_bytes) == 0 {
-		log.Println("missed redis")
-		tree := CategoryTree{
-			CategoryId: c.CategoryId,
-		}
-
-		tree.CategoryTreeBuilder()
-		catIdStr := strconv.Itoa(tree.CategoryId)
-		for _, treeId := range tree.SubCategories {
-			catIdStr = catIdStr + "," + strconv.Itoa(treeId)
-		}
-
-		rows, _, err := database.Db.Query(SubCategoryPartIdStmt, catIdStr, page, count)
+	data, err := redis.Get(redis_key)
+	if err == nil && len(data) > 0 {
+		err = json.Unmarshal(data, &parts)
 		if err != nil {
-			return nil, err
+			return
 		}
-
-		for _, row := range rows {
-			tree.Parts = append(tree.Parts, Part{PartId: row.Int(0)})
-		}
-
-		// This will work for populating the
-		// parts that match this exact category.
-		chans := make(chan int, len(tree.Parts))
-
-		for _, part := range tree.Parts {
-			go func(p Part) {
-				p.Get(key)
-				parts = append(parts, p)
-				chans <- 1
-			}(part)
-
-		}
-
-		for i := 0; i < len(tree.Parts); i++ {
-			<-chans
-		}
-
-		if redis_bytes, err = json.Marshal(parts); err == nil {
-			go redis.RedisMaster.Setex(redis_key, 86400, redis_bytes)
-		}
-	} else {
-		err = json.Unmarshal(redis_bytes, &parts)
 
 		chans := make(chan int, len(parts))
-
 		for _, part := range parts {
 			go func(p Part, k string) {
 				p.BindCustomer(k)
@@ -658,7 +612,48 @@ func GetCategoryParts(c category.Category, key string, page int, count int) (par
 		for i := 0; i < len(parts); i++ {
 			<-chans
 		}
+
+		return
 	}
+	log.Println("missed redis")
+
+	tree := CategoryTree{
+		CategoryId: c.CategoryId,
+	}
+
+	tree.CategoryTreeBuilder()
+	catIdStr := strconv.Itoa(tree.CategoryId)
+	for _, treeId := range tree.SubCategories {
+		catIdStr = catIdStr + "," + strconv.Itoa(treeId)
+	}
+
+	rows, _, err := database.Db.Query(SubCategoryPartIdStmt, catIdStr, page, count)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, row := range rows {
+		tree.Parts = append(tree.Parts, Part{PartId: row.Int(0)})
+	}
+
+	// This will work for populating the
+	// parts that match this exact category.
+	chans := make(chan int, len(tree.Parts))
+
+	for _, part := range tree.Parts {
+		go func(p Part) {
+			p.Get(key)
+			parts = append(parts, p)
+			chans <- 1
+		}(part)
+
+	}
+
+	for i := 0; i < len(tree.Parts); i++ {
+		<-chans
+	}
+
+	go redis.Setex(redis_key, parts, 86400)
 
 	return
 }

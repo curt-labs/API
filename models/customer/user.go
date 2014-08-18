@@ -2,10 +2,13 @@ package customer
 
 import (
 	"code.google.com/p/go.crypto/bcrypt"
+	"encoding/json"
 	"errors"
 	"github.com/curt-labs/GoAPI/helpers/api"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/models/geography"
+	"log"
+	"net/http"
 	"net/url"
 	"strings"
 	"time"
@@ -530,7 +533,7 @@ func GetCustomerUserFromKey(key string) (u CustomerUser, err error) {
 		Key     string
 	}{}
 
-	params.KeyType = api_helpers.PRIVATE_KEY_TYPE
+	params.KeyType = api_helpers.AUTH_KEY_TYPE
 	params.Key = key
 
 	row, res, err := qry.ExecFirst(params)
@@ -595,6 +598,30 @@ func GetCustomerUserById(id string) (u CustomerUser, err error) {
 	u.DateAdded = row.ForceLocaltime(date)
 
 	return
+}
+
+type ApiRequest struct {
+	User        CustomerUser
+	RequestTime time.Time
+	Url         *url.URL
+	Query       url.Values
+	Form        url.Values
+}
+
+func (u *CustomerUser) LogApiRequest(r *http.Request) {
+	var ar ApiRequest
+	ar.User = *u
+	ar.RequestTime = time.Now()
+	ar.Url = r.URL
+	ar.Query = r.URL.Query()
+	ar.Form = r.Form
+
+	js, err := json.Marshal(ar)
+	if err != nil {
+		return
+	}
+
+	log.Println(string(js))
 }
 
 // The disabling of the triggers is failing in this method.
