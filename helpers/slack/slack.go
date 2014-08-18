@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 var (
@@ -26,6 +27,11 @@ func (m *Message) Send() error {
 
 	if len(m.Text) == 0 {
 		return errors.New("Must specifty text for slack message!")
+	}
+
+	//added for those who forget or don't want to use the hashtag prefix
+	if !strings.HasPrefix(m.Channel, "#") {
+		m.Channel = "#" + m.Channel
 	}
 
 	js, err := json.Marshal(m)
