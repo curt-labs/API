@@ -323,9 +323,9 @@ func TopTierCategories() (cats []Category, err error) {
 	redis_key := "goapi:category:top"
 
 	// First lets try to access the category:top endpoint in Redis
-	cat_bytes, err := redis.RedisClient.Get(redis_key)
-	if err == nil && len(cat_bytes) > 0 {
-		err = json.Unmarshal(cat_bytes, &cats)
+	data, err := redis.Get(redis_key)
+	if len(data) > 0 && err != nil {
+		err = json.Unmarshal(data, &cats)
 		if err == nil {
 			return
 		}
@@ -353,9 +353,7 @@ func TopTierCategories() (cats []Category, err error) {
 	go PopulateCategoryMulti(catRows, ch)
 	cats = <-ch
 
-	if cat_bytes, err := json.Marshal(cats); err == nil {
-		go redis.RedisMaster.Setex(redis_key, 86400, cat_bytes)
-	}
+	go redis.Setex(redis_key, cats, 86400)
 
 	return
 }
@@ -365,13 +363,11 @@ func GetByTitle(cat_title string) (cat Category, err error) {
 	redis_key := "goapi:category:title:" + cat_title
 
 	// Attempt to get the category from Redis
-	if redis.RedisClient != nil {
-		redis_bytes, err := redis.RedisClient.Get(redis_key)
-		if len(redis_bytes) > 0 {
-			err = json.Unmarshal(redis_bytes, &cat)
-			if err == nil {
-				return cat, err
-			}
+	data, err := redis.Get(redis_key)
+	if len(data) > 0 && err != nil {
+		err = json.Unmarshal(data, &cat)
+		if err == nil {
+			return
 		}
 	}
 
@@ -397,9 +393,7 @@ func GetByTitle(cat_title string) (cat Category, err error) {
 	go PopulateCategory(catRow, ch)
 	cat = <-ch
 
-	if redis_bytes, err := json.Marshal(cat); err == nil {
-		go redis.RedisMaster.Setex(redis_key, 86400, redis_bytes)
-	}
+	go redis.Setex(redis_key, cat, 86400)
 
 	return
 }
@@ -409,9 +403,9 @@ func GetById(cat_id int) (cat Category, err error) {
 	redis_key := "goapi:category:id:" + strconv.Itoa(cat_id)
 
 	// Attempt to get the category from Redis
-	redis_bytes, err := redis.RedisClient.Get(redis_key)
-	if len(redis_bytes) > 0 {
-		err = json.Unmarshal(redis_bytes, &cat)
+	data, err := redis.Get(redis_key)
+	if len(data) > 0 && err != nil {
+		err = json.Unmarshal(data, &cat)
 		if err == nil {
 			return
 		}
@@ -439,9 +433,7 @@ func GetById(cat_id int) (cat Category, err error) {
 	go PopulateCategory(catRow, ch)
 	cat = <-ch
 
-	if redis_bytes, err = json.Marshal(cat); err == nil {
-		go redis.RedisMaster.Setex(redis_key, 86400, redis_bytes)
-	}
+	go redis.Setex(redis_key, cat, 86400)
 
 	return
 }
@@ -452,10 +444,12 @@ func (c *Category) SubCategories() (cats []Category, err error) {
 		return
 	}
 
+	redis_key := "category:" + strconv.Itoa(c.CategoryId) + ":subs"
+
 	// First lets try to access the category:top endpoint in Redis
-	cat_bytes, err := redis.RedisClient.Get("category:" + strconv.Itoa(c.CategoryId) + ":subs")
-	if err == nil && len(cat_bytes) > 0 {
-		err = json.Unmarshal(cat_bytes, &cats)
+	data, err := redis.Get(redis_key)
+	if len(data) > 0 && err != nil {
+		err = json.Unmarshal(data, &cats)
 		if err == nil {
 			return
 		}
@@ -483,11 +477,7 @@ func (c *Category) SubCategories() (cats []Category, err error) {
 	go PopulateCategoryMulti(catRows, ch)
 	cats = <-ch
 
-	if cat_bytes, err = json.Marshal(cats); err == nil {
-		cat_key := "category:" + strconv.Itoa(c.CategoryId) + ":subs"
-		redis.RedisClient.Set(cat_key, cat_bytes)
-		redis.RedisClient.Expire(cat_key, 86400)
-	}
+	go redis.Setex(redis_key, cats, 86400)
 
 	return
 }
@@ -558,7 +548,7 @@ func (c Category) GetCategory(key string) (extended ExtendedCategory, err error)
 	redis_key := "gopapi:category:" + strconv.Itoa(c.CategoryId)
 
 	// First lets try to access the category:top endpoint in Redis
-	cat_bytes, err := redis.RedisClient.Get(redis_key)
+	cat_bytes, err := redis.Get(redis_key)
 	if len(cat_bytes) > 0 {
 		err = json.Unmarshal(cat_bytes, &extended)
 		if err == nil {
@@ -636,9 +626,7 @@ func (c Category) GetCategory(key string) (extended ExtendedCategory, err error)
 		return extended, errors.New("Invalid Category")
 	}
 
-	if cat_bytes, err := json.Marshal(extended); err == nil {
-		go redis.RedisMaster.Setex(redis_key, 86400, cat_bytes)
-	}
+	go redis.Setex(redis_key, extended, 86400)
 
 	content, err := custcontent.GetCategoryContent(extended.CategoryId, key)
 	for _, con := range content {

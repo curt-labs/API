@@ -363,7 +363,7 @@ func PrepareCustomerUser(prepChan chan int) {
 	UnPreparedStatements["CustomerUserFromKeyStmt"] = `select cu.* from CustomerUser as cu
 														join ApiKey as ak on cu.id = ak.user_id
 														join ApiKeyType as akt on ak.type_id = akt.id
-														where akt.type = ? && ak.api_key = ?
+														where akt.type != ? && ak.api_key = ?
 														limit 1`
 
 	UnPreparedStatements["CustomerUserFromId"] = `select cu.* from CustomerUser as cu
