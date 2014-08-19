@@ -5,7 +5,7 @@ import (
 	"github.com/curt-labs/GoAPI/controllers/category"
 	"github.com/curt-labs/GoAPI/controllers/customer"
 	"github.com/curt-labs/GoAPI/controllers/dealers"
-	"github.com/curt-labs/GoAPI/controllers/middleware"
+	// "github.com/curt-labs/GoAPI/controllers/middleware"
 	"github.com/curt-labs/GoAPI/controllers/part"
 	"github.com/curt-labs/GoAPI/controllers/search"
 	"github.com/curt-labs/GoAPI/controllers/vehicle"
@@ -49,7 +49,7 @@ func main() {
 	gorelic.InitNewrelicAgent("5fbc49f51bd658d47b4d5517f7a9cb407099c08c", "GoAPI", false)
 	m.Use(gorelic.Handler)
 	m.Use(gzip.All())
-	m.Use(middleware.Meddler())
+	// m.Use(middleware.Meddler())
 	m.Use(cors.Allow(&cors.Options{
 		AllowOrigins:     []string{"*"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
