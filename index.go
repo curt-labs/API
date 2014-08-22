@@ -5,12 +5,12 @@ import (
 	"github.com/curt-labs/GoAPI/controllers/category"
 	"github.com/curt-labs/GoAPI/controllers/customer"
 	"github.com/curt-labs/GoAPI/controllers/dealers"
-	// "github.com/curt-labs/GoAPI/controllers/middleware"
+	"github.com/curt-labs/GoAPI/controllers/middleware"
 	"github.com/curt-labs/GoAPI/controllers/part"
 	"github.com/curt-labs/GoAPI/controllers/search"
 	"github.com/curt-labs/GoAPI/controllers/vehicle"
 	"github.com/curt-labs/GoAPI/controllers/videos"
-	"github.com/curt-labs/GoAPI/helpers/auth"
+	// "github.com/curt-labs/GoAPI/helpers/auth"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/go-martini/martini"
@@ -49,7 +49,7 @@ func main() {
 	gorelic.InitNewrelicAgent("5fbc49f51bd658d47b4d5517f7a9cb407099c08c", "GoAPI", false)
 	m.Use(gorelic.Handler)
 	m.Use(gzip.All())
-	// m.Use(middleware.Meddler())
+	m.Use(middleware.Meddler())
 	m.Use(cors.Allow(&cors.Options{
 		AllowOrigins:     []string{"*"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
@@ -72,64 +72,64 @@ func main() {
 	m.Post("/vehicle", vehicle.Query)
 
 	m.Group("/category", func(r martini.Router) {
-		r.Get("", auth.AuthHandler, category_ctlr.Parents)
-		r.Get("/:id", auth.AuthHandler, category_ctlr.GetCategory)
-		r.Get("/:id/subs", auth.AuthHandler, category_ctlr.SubCategories)
-		r.Get("/:id/parts", auth.AuthHandler, category_ctlr.GetParts)
-		r.Get("/:id/parts/:page/:count", auth.AuthHandler, category_ctlr.GetParts)
+		r.Get("", category_ctlr.Parents)
+		r.Get("/:id", category_ctlr.GetCategory)
+		r.Get("/:id/subs", category_ctlr.SubCategories)
+		r.Get("/:id/parts", category_ctlr.GetParts)
+		r.Get("/:id/parts/:page/:count", category_ctlr.GetParts)
 	})
 
 	m.Group("/part", func(r martini.Router) {
-		r.Get("/:part/vehicles", auth.AuthHandler, part_ctlr.Vehicles)
-		r.Get("/:part/attributes", auth.AuthHandler, part_ctlr.Attributes)
-		r.Get("/:part/reviews", auth.AuthHandler, part_ctlr.Reviews)
-		r.Get("/:part/categories", auth.AuthHandler, part_ctlr.Categories)
-		r.Get("/:part/content", auth.AuthHandler, part_ctlr.GetContent)
-		r.Get("/:part/images", auth.AuthHandler, part_ctlr.Images)
-		r.Get("/:part((.*?)\\.(PDF|pdf)$)", auth.AuthHandler, part_ctlr.InstallSheet) // Resolves: /part/11000.pdf
-		r.Get("/:part/packages", auth.AuthHandler, part_ctlr.Packaging)
-		r.Get("/:part/pricing", auth.AuthHandler, part_ctlr.Prices)
-		r.Get("/:part/related", auth.AuthHandler, part_ctlr.GetRelated)
-		r.Get("/:part/videos", auth.AuthHandler, part_ctlr.Videos)
-		r.Get("/:part/:year/:make/:model", auth.AuthHandler, part_ctlr.GetWithVehicle)
-		r.Get("/:part/:year/:make/:model/:submodel", auth.AuthHandler, part_ctlr.GetWithVehicle)
-		r.Get("/:part/:year/:make/:model/:submodel/:config(.+)", auth.AuthHandler, part_ctlr.GetWithVehicle)
-		r.Get("/:part", auth.AuthHandler, part_ctlr.Get)
+		r.Get("/:part/vehicles", part_ctlr.Vehicles)
+		r.Get("/:part/attributes", part_ctlr.Attributes)
+		r.Get("/:part/reviews", part_ctlr.Reviews)
+		r.Get("/:part/categories", part_ctlr.Categories)
+		r.Get("/:part/content", part_ctlr.GetContent)
+		r.Get("/:part/images", part_ctlr.Images)
+		r.Get("/:part((.*?)\\.(PDF|pdf)$)", part_ctlr.InstallSheet) // Resolves: /part/11000.pdf
+		r.Get("/:part/packages", part_ctlr.Packaging)
+		r.Get("/:part/pricing", part_ctlr.Prices)
+		r.Get("/:part/related", part_ctlr.GetRelated)
+		r.Get("/:part/videos", part_ctlr.Videos)
+		r.Get("/:part/:year/:make/:model", part_ctlr.GetWithVehicle)
+		r.Get("/:part/:year/:make/:model/:submodel", part_ctlr.GetWithVehicle)
+		r.Get("/:part/:year/:make/:model/:submodel/:config(.+)", part_ctlr.GetWithVehicle)
+		r.Get("/:part", part_ctlr.Get)
 	})
 
 	m.Group("/customer", func(r martini.Router) {
-		r.Post("", auth.AuthHandler, customer_ctlr.GetCustomer)
-		r.Post("/user", auth.AuthHandler, customer_ctlr.GetUser)
-		r.Post("/locations", auth.AuthHandler, customer_ctlr.GetLocations)
-		r.Post("/users", auth.AuthHandler, customer_ctlr.GetUsers) // requires no user to be marked as sudo
+		r.Post("", customer_ctlr.GetCustomer)
+		r.Post("/user", customer_ctlr.GetUser)
+		r.Post("/locations", customer_ctlr.GetLocations)
+		r.Post("/users", customer_ctlr.GetUsers) // requires no user to be marked as sudo
 		// Customer CMS endpoints
 
 		// Content Types
-		r.Get("/cms/content_types", auth.AuthHandler, customer_ctlr.GetAllContentTypes)
+		r.Get("/cms/content_types", customer_ctlr.GetAllContentTypes)
 
 		// All Customer Content
-		r.Get("/cms", auth.AuthHandler, customer_ctlr.GetAllContent)
+		r.Get("/cms", customer_ctlr.GetAllContent)
 
 		// Customer Part Content
-		r.Get("/cms/part", auth.AuthHandler, customer_ctlr.AllPartContent)
-		r.Get("/cms/part/:id", auth.AuthHandler, customer_ctlr.UniquePartContent)
-		r.Post("/cms/part/:id", auth.AuthHandler, customer_ctlr.UpdatePartContent)
-		r.Delete("/cms/part/:id", auth.AuthHandler, customer_ctlr.DeletePartContent)
+		r.Get("/cms/part", customer_ctlr.AllPartContent)
+		r.Get("/cms/part/:id", customer_ctlr.UniquePartContent)
+		r.Post("/cms/part/:id", customer_ctlr.UpdatePartContent)
+		r.Delete("/cms/part/:id", customer_ctlr.DeletePartContent)
 
 		// Customer Category Content
-		r.Get("/cms/category", auth.AuthHandler, customer_ctlr.AllCategoryContent)
-		r.Get("/cms/category/:id", auth.AuthHandler, customer_ctlr.UniqueCategoryContent)
-		r.Post("/cms/category/:id", auth.AuthHandler, customer_ctlr.UpdateCategoryContent)
-		r.Delete("/cms/category/:id", auth.AuthHandler, customer_ctlr.DeleteCategoryContent)
+		r.Get("/cms/category", customer_ctlr.AllCategoryContent)
+		r.Get("/cms/category/:id", customer_ctlr.UniqueCategoryContent)
+		r.Post("/cms/category/:id", customer_ctlr.UpdateCategoryContent)
+		r.Delete("/cms/category/:id", customer_ctlr.DeleteCategoryContent)
 
 		// Customer Content By Content Id
-		r.Get("/cms/:id", auth.AuthHandler, customer_ctlr.GetContentById)
-		r.Get("/cms/:id/revisions", auth.AuthHandler, customer_ctlr.GetContentRevisionsById)
+		r.Get("/cms/:id", customer_ctlr.GetContentById)
+		r.Get("/cms/:id/revisions", customer_ctlr.GetContentRevisionsById)
 		r.Post("/auth", customer_ctlr.UserAuthentication)
 		r.Get("/auth", customer_ctlr.KeyedUserAuthentication)
 	})
 
-	m.Get("/search/part/:term", auth.AuthHandler, search_ctlr.SearchPart)
+	m.Get("/search/part/:term", search_ctlr.SearchPart)
 	m.Get("/videos", videos_ctlr.DistinctVideos)
 
 	/**** INTERNAL USE ONLY ****/

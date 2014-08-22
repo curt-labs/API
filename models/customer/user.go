@@ -2,12 +2,12 @@ package customer
 
 import (
 	"code.google.com/p/go.crypto/bcrypt"
-	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/api"
 	"github.com/curt-labs/GoAPI/helpers/database"
+	"github.com/curt-labs/GoAPI/helpers/redis"
 	"github.com/curt-labs/GoAPI/models/geography"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -616,12 +616,7 @@ func (u *CustomerUser) LogApiRequest(r *http.Request) {
 	ar.Query = r.URL.Query()
 	ar.Form = r.Form
 
-	js, err := json.Marshal(ar)
-	if err != nil {
-		return
-	}
-
-	log.Println(string(js))
+	redis.Lpush(fmt.Sprintf("%s", u.Id), ar)
 }
 
 // The disabling of the triggers is failing in this method.

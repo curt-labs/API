@@ -95,5 +95,25 @@ func Set(key string, obj interface{}) error {
 		return err
 	}
 
-	return conn.Send("SET", data)
+	_, err = conn.Do("SET", key, data)
+	return err
+}
+
+func Lpush(key string, obj interface{}) error {
+	pool := RedisPool(true)
+	if pool == nil {
+		return errors.New(PoolAllocationErr)
+	}
+	data, err := json.Marshal(obj)
+	if err != nil {
+		return err
+	}
+
+	conn := pool.Get()
+	if err := conn.Send("select", Db); err != nil {
+		return err
+	}
+
+	_, err = conn.Do("LPUSH", key, data)
+	return err
 }
