@@ -6,17 +6,31 @@ import (
 	"github.com/go-martini/martini"
 	"github.com/segmentio/analytics-go"
 	"net/http"
+	"strings"
 	"time"
+)
+
+var (
+	ExcusedRoutes = []string{"/customer/auth"}
 )
 
 func Meddler() martini.Handler {
 	return func(res http.ResponseWriter, r *http.Request, c martini.Context) {
 		start := time.Now()
 
-		authed := checkAuth(r)
-		if !authed {
-			http.Error(res, "Unauthorized", http.StatusUnauthorized)
-			return
+		excused := false
+		for _, route := range ExcusedRoutes {
+			if strings.Contains(r.URL.String(), route) {
+				excused = true
+			}
+		}
+
+		if !excused {
+			authed := checkAuth(r)
+			if !authed {
+				http.Error(res, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
 		}
 
 		c.Next()
