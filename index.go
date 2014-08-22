@@ -2,10 +2,13 @@ package main
 
 import (
 	"flag"
+	"github.com/curt-labs/GoAPI/controllers/blog"
 	"github.com/curt-labs/GoAPI/controllers/category"
 	"github.com/curt-labs/GoAPI/controllers/customer"
 	"github.com/curt-labs/GoAPI/controllers/dealers"
+	"github.com/curt-labs/GoAPI/controllers/faq"
 	"github.com/curt-labs/GoAPI/controllers/middleware"
+	"github.com/curt-labs/GoAPI/controllers/news"
 	"github.com/curt-labs/GoAPI/controllers/part"
 	"github.com/curt-labs/GoAPI/controllers/search"
 	"github.com/curt-labs/GoAPI/controllers/vehicle"
@@ -14,7 +17,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/cors"
-	"github.com/martini-contrib/gorelic"
+	// "github.com/martini-contrib/gorelic"
 	"github.com/martini-contrib/gzip"
 	"github.com/martini-contrib/sessions"
 	"log"
@@ -126,6 +129,41 @@ func main() {
 		r.Get("/cms/:id/revisions", customer_ctlr.GetContentRevisionsById)
 		r.Post("/auth", customer_ctlr.UserAuthentication)
 		r.Get("/auth", customer_ctlr.KeyedUserAuthentication)
+	})
+
+	m.Group("/faqs", func(r martini.Router) {
+		r.Get("/all", faq_controller.GetAll)                  //get all faqs; takes optional sort param {sort=true} to sort by question
+		r.Get("", faq_controller.Get)                         //get by id {id}
+		r.Put("", internalCors, faq_controller.Create)        //takes {question, answer}; returns object with new ID
+		r.Post("", internalCors, faq_controller.Update)       //{id, question and/or answer}
+		r.Delete("/:id", internalCors, faq_controller.Delete) //{id}
+		r.Delete("", internalCors, faq_controller.Delete)     //{?id=id}
+		r.Get("/questions", faq_controller.GetQuestions)      //get questions!{page, results} - all parameters are optional
+		r.Get("/answers", faq_controller.GetAnswers)          //get answers!{page, results} - all parameters are optional
+		r.Get("/search", faq_controller.Search)               //takes {question, answer, page, results} - all parameters are optional
+	})
+	m.Group("/blogs", func(r martini.Router) {
+		r.Get("/all", blog_controller.GetAll)                  //sort on any field e.g. ?sort=Name&direction=descending
+		r.Get("", blog_controller.GetBlog)                     //get blog by {id}
+		r.Get("/categories", blog_controller.GetAllCategories) //all categories; sort on any field e.g. ?sort=Name&direction=descending
+		r.Get("/category", blog_controller.GetBlogCategory)
+		r.Post("", internalCors, blog_controller.CreateBlog)       //create {post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active} returns new id
+		r.Put("", internalCors, blog_controller.UpdateBlog)        //update {post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active} required{id}
+		r.Delete("", internalCors, blog_controller.DeleteBlog)     //{id}
+		r.Delete("/:id", internalCors, blog_controller.DeleteBlog) //{?id=id}
+		r.Get("/search", blog_controller.Search)                   //search field = value e.g. /blogs/search?key=8AEE0620-412E-47FC-900A-947820EA1C1D&slug=cyclo
+		r.Post("/categories", internalCors, blog_controller.CreateBlogCategory)
+	})
+	m.Group("/news", func(r martini.Router) {
+		r.Get("/all", news_controller.GetAll)                  //get all news; takes optional sort param {sort=title||lead||content||startDate||endDate||active||slug} to sort by question
+		r.Get("", news_controller.Get)                         //get by id {id}
+		r.Put("", internalCors, news_controller.Create)        //takes {question, answer}; returns object with new ID
+		r.Post("", internalCors, news_controller.Update)       //{id, question and/or answer}
+		r.Delete("/:id", internalCors, news_controller.Delete) //{id}
+		r.Delete("", internalCors, news_controller.Delete)     //{?id=id}
+		r.Get("/titles", news_controller.GetTitles)            //get titles!{page, results} - all parameters are optional
+		r.Get("/leads", news_controller.GetLeads)              //get leads!{page, results} - all parameters are optional
+		r.Get("/search", news_controller.Search)               //takes {title, lead, content, publishStart, publishEnd, active, slug, page, results, page, results} - all parameters are optional
 	})
 
 	m.Get("/search/part/:term", search_ctlr.SearchPart)
