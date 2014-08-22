@@ -10,7 +10,6 @@ import (
 	"github.com/curt-labs/GoAPI/controllers/search"
 	"github.com/curt-labs/GoAPI/controllers/vehicle"
 	"github.com/curt-labs/GoAPI/controllers/videos"
-	// "github.com/curt-labs/GoAPI/helpers/auth"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/go-martini/martini"
