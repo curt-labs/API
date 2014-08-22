@@ -17,7 +17,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/cors"
-	// "github.com/martini-contrib/gorelic"
+	"github.com/martini-contrib/gorelic"
 	"github.com/martini-contrib/gzip"
 	"github.com/martini-contrib/sessions"
 	"log"
