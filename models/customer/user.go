@@ -616,7 +616,7 @@ func (u *CustomerUser) LogApiRequest(r *http.Request) {
 	ar.Query = r.URL.Query()
 	ar.Form = r.Form
 
-	redis.Lpush(fmt.Sprintf("%s", u.Id), ar)
+	redis.Lpush(fmt.Sprintf("goapi:log:%s", u.Id), ar)
 }
 
 // The disabling of the triggers is failing in this method.
