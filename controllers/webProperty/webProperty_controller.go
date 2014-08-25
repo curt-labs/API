@@ -504,6 +504,91 @@ func DeleteWebPropertyRequirement(rw http.ResponseWriter, r *http.Request, enc e
 	return encoding.Must(enc.Encode(req))
 }
 
+func GetWebPropertyType(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+	var t webProperty_model.WebPropertyType
+	var err error
+	idStr := r.FormValue("id")
+	if idStr != "" {
+		t.ID, err = strconv.Atoi(idStr)
+		if err != nil {
+			return err.Error()
+		}
+	} else {
+		t.ID, err = strconv.Atoi(params["id"])
+		if err != nil {
+			return err.Error()
+		}
+	}
+	err = t.Get()
+	if err != nil {
+		return err.Error()
+	}
+	return encoding.Must(enc.Encode(t))
+
+}
+
+func CreateUpdateWebPropertyType(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+	var t webProperty_model.WebPropertyType
+	var err error
+	idStr := r.FormValue("id")
+	if idStr != "" {
+		t.ID, err = strconv.Atoi(idStr)
+		if err != nil {
+			return err.Error()
+		}
+	}
+	if params["id"] != "" {
+		t.ID, err = strconv.Atoi(params["id"])
+		if err != nil {
+			return err.Error()
+		}
+	}
+	if t.ID > 0 {
+		err = t.Get()
+	}
+	typeID := r.FormValue("typeID")
+	theType := r.FormValue("type")
+
+	if typeID != "" {
+		t.TypeID, err = strconv.Atoi(typeID)
+	}
+	if theType != "" {
+		t.Type = theType
+	}
+	if t.ID > 0 {
+		err = t.Update()
+	} else {
+		err = t.Create()
+	}
+	if err != nil {
+		return err.Error()
+	}
+	return encoding.Must(enc.Encode(t))
+
+}
+
+func DeleteWebPropertyType(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+	var t webProperty_model.WebPropertyType
+	var err error
+	idStr := r.FormValue("id")
+	if idStr != "" {
+		t.ID, err = strconv.Atoi(idStr)
+		if err != nil {
+			return err.Error()
+		}
+	} else {
+		t.ID, err = strconv.Atoi(params["id"])
+		if err != nil {
+			return err.Error()
+		}
+	}
+	err = t.Delete()
+	if err != nil {
+		return err.Error()
+	}
+	return encoding.Must(enc.Encode(t))
+}
+
 func Search(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 	var err error
 
