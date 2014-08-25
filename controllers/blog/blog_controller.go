@@ -1,11 +1,10 @@
 package blog_controller
 
 import (
-	"errors"
-	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	"github.com/curt-labs/GoAPI/models/blog"
+	"github.com/go-martini/martini"
 	"net/http"
 	"strconv"
 	"strings"
@@ -52,12 +51,20 @@ func GetAllCategories(rw http.ResponseWriter, r *http.Request, enc encoding.Enco
 	return encoding.Must(enc.Encode(cats))
 }
 
-func GetBlog(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+func GetBlog(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var b blog_model.Blog
 	var err error
-	b.ID, err = strconv.Atoi(r.FormValue("id"))
-	if err != nil {
-		return err.Error()
+	idStr := r.FormValue("id")
+	if idStr != "" {
+		b.ID, err = strconv.Atoi(idStr)
+		if err != nil {
+			return err.Error()
+		}
+	} else {
+		b.ID, err = strconv.Atoi(params["id"])
+		if err != nil {
+			return err.Error()
+		}
 	}
 	err = b.Get()
 	if err != nil {
@@ -92,12 +99,20 @@ func CreateBlog(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) s
 	}
 	return encoding.Must(enc.Encode(b))
 }
-func GetBlogCategory(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+func GetBlogCategory(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var c blog_model.Category
 	var err error
-	c.ID, err = strconv.Atoi(r.FormValue("id"))
-	if err != nil {
-		return err.Error()
+	idStr := r.FormValue("id")
+	if idStr != "" {
+		c.ID, err = strconv.Atoi(idStr)
+		if err != nil {
+			return err.Error()
+		}
+	} else {
+		c.ID, err = strconv.Atoi(params["id"])
+		if err != nil {
+			return err.Error()
+		}
 	}
 	err = c.Get()
 	if err != nil {
@@ -120,15 +135,22 @@ func CreateBlogCategory(rw http.ResponseWriter, r *http.Request, enc encoding.En
 	return encoding.Must(enc.Encode(c))
 }
 
-func UpdateBlog(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+func UpdateBlog(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var b blog_model.Blog
 	var err error
 
-	id := r.FormValue("id")
-	if id == "" || err != nil {
-		return fmt.Sprint(errors.New("Invalid ID supplied."), err)
+	idStr := r.FormValue("id")
+	if idStr != "" {
+		b.ID, err = strconv.Atoi(idStr)
+		if err != nil {
+			return err.Error()
+		}
+	} else {
+		b.ID, err = strconv.Atoi(params["id"])
+		if err != nil {
+			return err.Error()
+		}
 	}
-	b.ID, err = strconv.Atoi(id)
 	b.Get()
 
 	var tempBC []blog_model.BlogCategory
@@ -190,12 +212,20 @@ func UpdateBlog(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) s
 	return encoding.Must(enc.Encode(b))
 }
 
-func DeleteBlog(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+func DeleteBlog(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var b blog_model.Blog
 	var err error
-	b.ID, err = strconv.Atoi(r.FormValue("id"))
-	if err != nil {
-		return err.Error()
+	idStr := r.FormValue("id")
+	if idStr != "" {
+		b.ID, err = strconv.Atoi(idStr)
+		if err != nil {
+			return err.Error()
+		}
+	} else {
+		b.ID, err = strconv.Atoi(params["id"])
+		if err != nil {
+			return err.Error()
+		}
 	}
 	err = b.Delete()
 	if err != nil {
