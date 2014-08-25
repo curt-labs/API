@@ -156,11 +156,10 @@ func main() {
 	})
 	m.Group("/news", func(r martini.Router) {
 		r.Get("/all", news_controller.GetAll)                  //get all news; takes optional sort param {sort=title||lead||content||startDate||endDate||active||slug} to sort by question
-		r.Get("", news_controller.Get)                         //get by id {id}
+		r.Get("/:id", news_controller.Get)                     //get by id {id}
 		r.Put("", internalCors, news_controller.Create)        //takes {question, answer}; returns object with new ID
-		r.Post("", internalCors, news_controller.Update)       //{id, question and/or answer}
+		r.Post("/:id", internalCors, news_controller.Update)   //{id, question and/or answer}
 		r.Delete("/:id", internalCors, news_controller.Delete) //{id}
-		r.Delete("", internalCors, news_controller.Delete)     //{?id=id}
 		r.Get("/titles", news_controller.GetTitles)            //get titles!{page, results} - all parameters are optional
 		r.Get("/leads", news_controller.GetLeads)              //get leads!{page, results} - all parameters are optional
 		r.Get("/search", news_controller.Search)               //takes {title, lead, content, publishStart, publishEnd, active, slug, page, results, page, results} - all parameters are optional
