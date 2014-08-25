@@ -69,7 +69,7 @@ func TestGetWebProperties(t *testing.T) {
 		})
 		Convey("Testing GetWebPropertyRequirementCheck()", func() {
 			var n WebPropertyRequirement
-			n.ID = 1
+			n.ID = 16
 			err := n.GetJoin()
 			So(n.WebPropID, ShouldNotBeNil)
 			So(err, ShouldBeNil)
@@ -96,7 +96,7 @@ func TestGetWebProperties(t *testing.T) {
 
 	})
 	Convey("Testing CUD", t, func() {
-		Convey("Testing Create()", func() {
+		Convey("Testing Create(), Update(), Delete()", func() {
 			var f WebProperty
 			var err error
 			f.Name = "testTitle"
@@ -128,60 +128,6 @@ func TestGetWebProperties(t *testing.T) {
 			So(f.IsEnabledDate, ShouldResemble, t)
 			u, err := time.Parse(timeFormat, "2004-03-03 09:15:00")
 			So(f.RequestedDate, ShouldResemble, u)
-		})
-		Convey("Testing Create WebPropNotes", func() {
-			var n WebPropertyNote
-			var f WebProperty
-			f.ID = 248
-			n.WebPropID = 248
-			n.Text = "test note"
-			c := make(chan int)
-			go func() {
-				n.Create()
-				c <- 1
-			}()
-			<-c
-			f.Get()
-			So(f.Name, ShouldEqual, "testTitle")
-			So(f.WebPropertyNotes, ShouldNotBeEmpty)
-
-		})
-		Convey("Testing CreateWebProperyRequirementsCheck", func() {
-			var r WebPropertyRequirement
-			var w WebProperty
-			w.ID = 248
-			r.WebPropID = 248
-			r.RequirementID = 1
-			r.Compliance = true
-			c := make(chan int)
-			go func() {
-				r.CreateJoin()
-				c <- 1
-			}()
-			<-c
-			w.Get()
-			So(w.WebPropertyRequirements, ShouldNotBeEmpty)
-		})
-		Convey("Testing Delete (WebProperty)", func() {
-			var w WebProperty
-			var err error
-			w.Name = "CreatedProp"
-
-			err = w.Create()
-			So(err, ShouldBeNil)
-
-			err = w.Get()
-
-			So(err, ShouldBeNil)
-			So(w.ID, ShouldBeGreaterThan, 0)
-			err = w.Delete()
-			So(err, ShouldBeNil)
-
-		})
-		Convey("Testing Update (WebProperty)", func() {
-			var f WebProperty
-			var err error
-			f.ID = 228
 			f.Name = "testTitle2"
 			f.CustID = 123452
 			f.BadgeID = strconv.Itoa(rand.Int())
@@ -206,91 +152,88 @@ func TestGetWebProperties(t *testing.T) {
 			So(f.WebPropertyType.ID, ShouldEqual, 22)
 			So(f.IsFinalApproved, ShouldBeFalse)
 			So(f.IsDenied, ShouldBeTrue)
-			t, err := time.Parse(timeFormat, "2004-03-03 09:15:22")
+			t, err = time.Parse(timeFormat, "2004-03-03 09:15:22")
 			So(f.IsEnabledDate, ShouldHaveSameTypeAs, t)
-			u, err := time.Parse(timeFormat, "2004-03-03 09:15:22")
+			u, err = time.Parse(timeFormat, "2004-03-03 09:15:22")
 			So(f.RequestedDate, ShouldHaveSameTypeAs, u)
-		})
-		Convey("Testing Create Note", func() {
-			var n WebPropertyNote
-			n.Text = "test note"
-			err := n.Create()
-			So(n.ID, ShouldBeGreaterThan, 0)
+			err = f.Delete()
 			So(err, ShouldBeNil)
 		})
-		Convey("Testing Create RequirementJoin", func() {
-			var n WebPropertyRequirement
-			n.RequirementID = 2
+		Convey("Testing Create(), Update(), Delete() WebPropNotes", func() {
+			var n WebPropertyNote
+			var f WebProperty
+			f.ID = 248
 			n.WebPropID = 248
-			err := n.CreateJoin()
-			So(err, ShouldBeNil)
-		})
-		Convey("Testing Update Note", func() {
-			var n WebPropertyNote
-			n.ID = 42
+			n.Text = "test note"
+			c := make(chan int)
+			go func() {
+				n.Create()
+				c <- 1
+			}()
+			<-c
+			f.Get()
+			So(f.Name, ShouldEqual, "testTitle")
+			So(f.WebPropertyNotes, ShouldNotBeEmpty)
+
 			n.Text = "Funk"
 			err := n.Update()
 			So(err, ShouldBeNil)
+
+			err = n.Delete()
+			So(err, ShouldBeNil)
+
 		})
-		Convey("Testing Update RequirementJoin", func() {
-			var n WebPropertyRequirement
-			n.ID = 888
-			n.Compliance = true
-			err := n.UpdateJoin()
+		Convey("Testing Create(), Update(), Delete() WebProperyRequirementsCheck", func() {
+			var r WebPropertyRequirement
+			var w WebProperty
+			var err error
+			w.ID = 248
+			r.WebPropID = 248
+			r.RequirementID = 1
+			r.Compliance = true
+			c := make(chan int)
+			go func() {
+				r.CreateJoin()
+				c <- 1
+			}()
+			<-c
+			err = w.Get()
+			So(w.WebPropertyRequirements, ShouldNotBeEmpty)
+			So(err, ShouldBeNil)
+
+			r.Compliance = true
+			err = r.UpdateJoin()
+			So(err, ShouldBeNil)
+
+			err = r.DeleteJoin()
 			So(err, ShouldBeNil)
 		})
-		Convey("Testing Delete Note", func() {
-			var n WebPropertyNote
-			n.ID = 66
-			err := n.Delete()
-			So(err, ShouldBeNil)
-		})
-		Convey("Testing Delete RequirementJoin", func() {
-			var n WebPropertyRequirement
-			n.ID = 892
-			err := n.DeleteJoin()
-			So(err, ShouldBeNil)
-		})
-		Convey("Testing Create Requirement", func() {
+
+		Convey("Testing Create(), Update(), Delete() Requirement", func() {
 			var n WebPropertyRequirement
 			n.ReqType = "Approved"
 			n.Requirement = "TEST"
 			err := n.Create()
 			So(err, ShouldBeNil)
-		})
-		Convey("Testing Update Requirement", func() {
-			var n WebPropertyRequirement
-			n.ID = 17
 			n.Requirement = "booger"
-			err := n.Update()
+			err = n.Update()
+			So(err, ShouldBeNil)
+			err = n.Delete()
 			So(err, ShouldBeNil)
 		})
-		Convey("Testing Delete Requirement", func() {
-			var n WebPropertyRequirement
-			n.ID = 17
-			err := n.Delete()
-			So(err, ShouldBeNil)
-		})
-		Convey("Testing Create Type", func() {
+
+		Convey("Testing Create(), Update(), Delete() Type", func() {
 			var n WebPropertyType
 			n.TypeID = 77
 			n.Type = "TEST"
 			err := n.Create()
 			So(err, ShouldBeNil)
-		})
-		Convey("Testing Update Type", func() {
-			var n WebPropertyType
-			n.ID = 6
 			n.Type = "booger"
-			err := n.Update()
+			err = n.Update()
 			So(err, ShouldBeNil)
-		})
-		Convey("Testing Delete Type", func() {
-			var n WebPropertyType
-			n.ID = 6
-			err := n.Delete()
+			err = n.Delete()
 			So(err, ShouldBeNil)
+
 		})
 	})
-
 }

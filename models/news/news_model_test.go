@@ -57,7 +57,7 @@ func TestNews(t *testing.T) {
 		})
 	})
 	Convey("Testing CUD", t, func() {
-		Convey("Testing Create", func() {
+		Convey("Testing Create/Delete", func() {
 			var n News
 			var err error
 			n.Title = "test"
@@ -68,7 +68,8 @@ func TestNews(t *testing.T) {
 			So(err, ShouldBeNil)
 			err = n.Create()
 			So(err, ShouldBeNil)
-			n.Delete()
+			err = n.Delete()
+			So(err, ShouldBeNil)
 		})
 		Convey("Testing update", func() {
 			var n News
@@ -83,7 +84,7 @@ func TestNews(t *testing.T) {
 		Convey("Testing Delete", func() {
 			var n News
 			n.Title = "Deletable News"
-			n.Get()
+			n.Create()
 			var err error
 			err = n.Delete()
 			So(err, ShouldBeNil)
