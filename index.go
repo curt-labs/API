@@ -130,6 +130,16 @@ func main() {
 		r.Get("/cms/:id/revisions", customer_ctlr.GetContentRevisionsById)
 		r.Post("/auth", customer_ctlr.UserAuthentication)
 		r.Get("/auth", customer_ctlr.KeyedUserAuthentication)
+		//Customer prices
+		r.Get("/prices/part/:id", customer_ctlr.GetPricesByPart)                       //{id}; id refers to partId
+		r.Get("/prices/sale", customer_ctlr.GetSales)                                  //{start}{end}{id} -all required params; id refers to customerId
+		r.Get("/prices/:id", customer_ctlr.GetPrice)                                   //{id}; id refers to {id} refers to customerPriceId
+		r.Get("/prices", customer_ctlr.GetAllPrices)                                   //returns all {sort=field&direction=dir}
+		r.Post("/prices/:id", internalCors, customer_ctlr.CreateUpdatePrice)           //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
+		r.Put("/prices", internalCors, customer_ctlr.CreateUpdatePrice)                //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
+		r.Delete("/prices/:id", internalCors, customer_ctlr.DeletePrice)               //{id} refers to customerPriceId
+		r.Get("/pricesByCustomer/:id", internalCors, customer_ctlr.GetPriceByCustomer) //{id} refers to customerId; returns CustomerPrices
+
 	})
 
 	m.Group("/faqs", func(r martini.Router) {
@@ -168,31 +178,31 @@ func main() {
 		r.Delete("", internalCors, news_controller.Delete)     //{id}
 	})
 	m.Group("/webProperties", func(r martini.Router) {
-		r.Post("/note/:id", webProperty_controller.CreateUpdateWebPropertyNote)                         //updates when an id is present; otherwise, creates
-		r.Put("/note", webProperty_controller.CreateUpdateWebPropertyNote)                              //updates when an id is present; otherwise, creates
-		r.Delete("/note/:id", webProperty_controller.DeleteWebPropertyNote)                             //{id}
-		r.Get("/note/:id", webProperty_controller.GetWebPropertyNote)                                   //{id}
-		r.Post("/requirementCheck/:id", webProperty_controller.CreateUpdateWebPropertyRequirementCheck) //updates when an id is present; otherwise, creates
-		r.Put("/requirementCheck", webProperty_controller.CreateUpdateWebPropertyRequirementCheck)      //updates when an id is present; otherwise, creates
-		r.Delete("/requirementCheck/:id", webProperty_controller.DeleteWebPropertyRequirementCheck)     //{id}
-		r.Get("/requirementCheck/:id", webProperty_controller.GetWebPropertyRequirementCheck)           //{id}
-		r.Post("/type/:id", webProperty_controller.CreateUpdateWebPropertyType)                         //updates when an id is present; otherwise, creates
-		r.Put("/type", webProperty_controller.CreateUpdateWebPropertyType)                              //updates when an id is present; otherwise, creates
-		r.Delete("/type/:id", webProperty_controller.DeleteWebPropertyType)                             //{id}
-		r.Get("/type/:id", webProperty_controller.GetWebPropertyType)                                   //{id}
-		r.Post("/requirement/:id", webProperty_controller.CreateUpdateWebPropertyRequirement)           //updates when an id is present; otherwise, creates
-		r.Put("/requirement", webProperty_controller.CreateUpdateWebPropertyRequirement)                //updates when an id is present; otherwise, creates
-		r.Delete("/requirement/:id", webProperty_controller.DeleteWebPropertyRequirement)               //{id}
-		r.Get("/requirement/:id", webProperty_controller.GetWebPropertyRequirement)                     //{id}
+		r.Post("/note/:id", internalCors, webProperty_controller.CreateUpdateWebPropertyNote)                                       //updates when an id is present; otherwise, creates
+		r.Put("/note", internalCors, webProperty_controller.CreateUpdateWebPropertyNote)                                            //updates when an id is present; otherwise, creates
+		r.Delete("/note/:id", internalCors, webProperty_controller.DeleteWebPropertyNote)                                           //{id}
+		r.Get("/note/:id", webProperty_controller.GetWebPropertyNote)                                                               //{id}
+		r.Post("/requirementCheck/:id", internalCors, internalCors, webProperty_controller.CreateUpdateWebPropertyRequirementCheck) //updates when an id is present; otherwise, creates
+		r.Put("/requirementCheck", internalCors, webProperty_controller.CreateUpdateWebPropertyRequirementCheck)                    //updates when an id is present; otherwise, creates
+		r.Delete("/requirementCheck/:id", internalCors, webProperty_controller.DeleteWebPropertyRequirementCheck)                   //{id}
+		r.Get("/requirementCheck/:id", webProperty_controller.GetWebPropertyRequirementCheck)                                       //{id}
+		r.Post("/type/:id", internalCors, webProperty_controller.CreateUpdateWebPropertyType)                                       //updates when an id is present; otherwise, creates
+		r.Put("/type", internalCors, webProperty_controller.CreateUpdateWebPropertyType)                                            //updates when an id is present; otherwise, creates
+		r.Delete("/type/:id", internalCors, webProperty_controller.DeleteWebPropertyType)                                           //{id}
+		r.Get("/type/:id", webProperty_controller.GetWebPropertyType)                                                               //{id}
+		r.Post("/requirement/:id", internalCors, webProperty_controller.CreateUpdateWebPropertyRequirement)                         //updates when an id is present; otherwise, creates
+		r.Put("/requirement", internalCors, webProperty_controller.CreateUpdateWebPropertyRequirement)                              //updates when an id is present; otherwise, creates
+		r.Delete("/requirement/:id", internalCors, webProperty_controller.DeleteWebPropertyRequirement)                             //{id}
+		r.Get("/requirement/:id", webProperty_controller.GetWebPropertyRequirement)                                                 //{id}
 		r.Get("/search", webProperty_controller.Search)
 		r.Get("/type", webProperty_controller.GetAllTypes)               //all tyeps
 		r.Get("/note", webProperty_controller.GetAllNotes)               //all notes
 		r.Get("/requirement", webProperty_controller.GetAllRequirements) //requirements
 		r.Get("", webProperty_controller.GetAll)
-		r.Get("/:id", webProperty_controller.Get)                      //?id=id
-		r.Delete("/:id", webProperty_controller.DeleteWebProperty)     //{id}
-		r.Post("/:id", webProperty_controller.CreateUpdateWebProperty) //
-		r.Put("", webProperty_controller.CreateUpdateWebProperty)      //can create notes(text) and requirements (requirement, by requirement=requirementID) while creating a property
+		r.Get("/:id", webProperty_controller.Get)                                    //?id=id
+		r.Delete("/:id", internalCors, webProperty_controller.DeleteWebProperty)     //{id}
+		r.Post("/:id", internalCors, webProperty_controller.CreateUpdateWebProperty) //
+		r.Put("", internalCors, webProperty_controller.CreateUpdateWebProperty)      //can create notes(text) and requirements (requirement, by requirement=requirementID) while creating a property
 
 	})
 
