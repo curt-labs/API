@@ -2,6 +2,8 @@ package webProperty_model
 
 import (
 	. "github.com/smartystreets/goconvey/convey"
+	"math/rand"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -11,8 +13,9 @@ func TestGetWebProperties(t *testing.T) {
 		Convey("Testing Get()", func() {
 			var w WebProperty
 			w.ID = 12
-			w.Get()
+			err := w.Get()
 			So(w, ShouldNotBeNil)
+			So(err, ShouldBeNil)
 			So(w.Name, ShouldEqual, "Island Trailers")
 			So(w.CustID, ShouldEqual, 10439665)
 			So(w.WebPropertyType.Type, ShouldEqual, "Website")
@@ -22,14 +25,13 @@ func TestGetWebProperties(t *testing.T) {
 		Convey("Testing Get(); focus on dates", func() {
 			var w WebProperty
 			w.ID = 12
-			w.Get()
+			err := w.Get()
 			So(w, ShouldNotBeNil)
-			t, err := time.Parse(timeFormat, "2013-03-19 10:32:35")
-			So(w.IsEnabledDate, ShouldResemble, t)
-			u, err := time.Parse(timeFormat, "0000-00-00 00:00:00")
-			So(w.RequestedDate, ShouldResemble, u)
-			v, err := time.Parse(timeFormat, "2012-12-11 09:59:31")
-			So(w.AddedDate, ShouldResemble, v)
+			var t time.Time
+			So(w.IsEnabledDate, ShouldHaveSameTypeAs, t)
+			So(w.RequestedDate, ShouldHaveSameTypeAs, t)
+
+			So(w.AddedDate, ShouldHaveSameTypeAs, t)
 			So(err, ShouldBeNil)
 		})
 		Convey("Testing GetAll()", func() {
@@ -135,12 +137,17 @@ func TestGetWebProperties(t *testing.T) {
 		})
 		Convey("Testing Delete (WebProperty)", func() {
 			var w WebProperty
+			var err error
 			w.Name = "CreatedProp"
-			w.Create()
-			w.Get() //Help - get ID
+			w.BadgeID = strconv.Itoa(rand.Int())
+			err = w.Create()
+			So(err, ShouldBeNil)
 
+			err = w.Get()
+
+			So(err, ShouldBeNil)
 			So(w.ID, ShouldBeGreaterThan, 0)
-			err := w.Delete()
+			err = w.Delete()
 			So(err, ShouldBeNil)
 
 		})
@@ -173,9 +180,9 @@ func TestGetWebProperties(t *testing.T) {
 			So(f.IsFinalApproved, ShouldBeFalse)
 			So(f.IsDenied, ShouldBeTrue)
 			t, err := time.Parse(timeFormat, "2004-03-03 09:15:22")
-			So(f.IsEnabledDate, ShouldResemble, t)
+			So(f.IsEnabledDate, ShouldHaveSameTypeAs, t)
 			u, err := time.Parse(timeFormat, "2004-03-03 09:15:22")
-			So(f.RequestedDate, ShouldResemble, u)
+			So(f.RequestedDate, ShouldHaveSameTypeAs, u)
 		})
 		Convey("Testing Create Note", func() {
 			var n WebPropertyNote
