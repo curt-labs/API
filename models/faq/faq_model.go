@@ -6,7 +6,6 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/pagination"
 	"github.com/curt-labs/GoAPI/helpers/redis"
-	// "sort"
 	"strconv"
 )
 
