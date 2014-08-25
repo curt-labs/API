@@ -1,7 +1,7 @@
 package news_model
 
 import (
-	"github.com/curt-labs/goacesapi/helpers/pagination"
+	"github.com/curt-labs/GoAPI/helpers/pagination"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 	"time"
@@ -11,8 +11,10 @@ func TestNews(t *testing.T) {
 	Convey("Testing Gets", t, func() {
 		Convey("Testing Get()", func() {
 			var f News
+			var err error
 			f.ID = 1
-			f.Get()
+			err = f.Get()
+			So(err, ShouldBeNil)
 			So(f, ShouldNotBeNil)
 			So(f.Title, ShouldEqual, "Growth & Expansion Continues at CURT Manufacturing ")
 			So(f.Lead, ShouldEqual, "Company Posts Record Sales in First-Half of 2011 - Set to Open New DC")
@@ -66,6 +68,7 @@ func TestNews(t *testing.T) {
 			So(err, ShouldBeNil)
 			err = n.Create()
 			So(err, ShouldBeNil)
+			n.Delete()
 		})
 		Convey("Testing update", func() {
 			var n News
@@ -78,10 +81,13 @@ func TestNews(t *testing.T) {
 			So(err, ShouldBeNil)
 		})
 		Convey("Testing Delete", func() {
-			n := News{ID: 14}
+			var n News
+			n.Title = "Deletable News"
+			n.Get()
 			var err error
 			err = n.Delete()
-			So(err, ShouldNotBeNil)
+			So(err, ShouldBeNil)
 		})
 	})
+
 }
