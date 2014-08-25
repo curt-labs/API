@@ -79,6 +79,7 @@ func TestGetBlogs(t *testing.T) {
 			So(f.Slug, ShouldEqual, "testSlug")
 			var t time.Time
 			So(f.PublishedDate, ShouldHaveSameTypeAs, t)
+			f.Delete()
 		})
 		Convey("Testing Update()", func() {
 			var f Blog
@@ -117,7 +118,7 @@ func TestGetBlogs(t *testing.T) {
 			So(f.LastModified, ShouldBeZeroValue)
 
 		})
-		Convey("Testing CreateCategory()", func() {
+		Convey("Testing CreateCategory()/DeleteCategory()", func() {
 			var c Category
 			var err error
 			c.Name = "testTitle"
@@ -130,6 +131,8 @@ func TestGetBlogs(t *testing.T) {
 			So(c.Name, ShouldEqual, "testTitle")
 			So(c.Slug, ShouldEqual, "testSlug")
 			So(c.Active, ShouldBeTrue)
+			err = c.Delete()
+			So(err, ShouldBeNil)
 
 		})
 
