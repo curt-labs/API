@@ -28,7 +28,7 @@ import (
 )
 
 var (
-	listenAddr  = flag.String("http", ":8081", "http listen address")
+	listenAddr  = flag.String("http", ":8080", "http listen address")
 	CorsHandler = func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Access-Control-Allow-Origin", "*")
 		return
@@ -149,6 +149,7 @@ func main() {
 		r.Get("/category/:id", blog_controller.GetBlogCategory)
 		r.Get("/search", blog_controller.Search) //search field = value e.g. /blogs/search?key=8AEE0620-412E-47FC-900A-947820EA1C1D&slug=cyclo
 		r.Post("/categories", internalCors, blog_controller.CreateBlogCategory)
+		r.Delete("/categories/:id", internalCors, blog_controller.DeleteBlogCategory)
 		r.Get("/:id", blog_controller.GetBlog)                     //get blog by {id}
 		r.Post("/:id", internalCors, blog_controller.UpdateBlog)   //create {post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active} returns new id
 		r.Put("", internalCors, blog_controller.CreateBlog)        //update {post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active} required{id}
