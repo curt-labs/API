@@ -97,7 +97,7 @@ func (w *WebProperty) Get() error {
 	var ws WebProperties
 	var err error
 
-	redis_key := "goacespi:webproperty:" + strconv.Itoa(w.ID)
+	redis_key := "goapi:webproperty:" + strconv.Itoa(w.ID)
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &ws)
@@ -175,7 +175,7 @@ func GetAll() (WebProperties, error) {
 	var ws WebProperties
 	var err error
 
-	redis_key := "goacespi:webproperties"
+	redis_key := "goapi:webproperties"
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &ws)
@@ -371,7 +371,7 @@ func GetAllWebPropertyTypes() (WebPropertyTypes, error) {
 	var ws WebPropertyTypes
 	var err error
 
-	redis_key := "goacespi:webpropertytypes"
+	redis_key := "goapi:webpropertytypes"
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &ws)
@@ -403,7 +403,7 @@ func GetAllWebPropertyNotes() (WebPropertyNotes, error) {
 	var ws WebPropertyNotes
 	var err error
 
-	redis_key := "goacespi:webpropertynotes"
+	redis_key := "goapi:webpropertynotes"
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &ws)
@@ -434,7 +434,7 @@ func GetAllWebPropertyRequirements() (WebPropertyRequirements, error) {
 	var ws WebPropertyRequirements
 	var err error
 
-	redis_key := "goacespi:webpropertyrequirements"
+	redis_key := "goapi:webpropertyrequirements"
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &ws)
@@ -463,7 +463,7 @@ func GetAllWebPropertyRequirements() (WebPropertyRequirements, error) {
 }
 
 func (n *WebPropertyNote) Get() error {
-	redis_key := "goacespi:webpropertynote:" + strconv.Itoa(n.ID)
+	redis_key := "goapi:webpropertynote:" + strconv.Itoa(n.ID)
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &n)
@@ -556,7 +556,7 @@ func (n *WebPropertyNote) Delete() error {
 }
 
 func (r *WebPropertyRequirement) GetJoin() error {
-	redis_key := "goacespi:webpropertyrequirementjoin:" + strconv.Itoa(r.ID)
+	redis_key := "goapi:webpropertyrequirementjoin:" + strconv.Itoa(r.ID)
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &r)
@@ -642,7 +642,7 @@ func (r *WebPropertyRequirement) DeleteJoin() error {
 }
 
 func (r *WebPropertyRequirement) Get() error {
-	redis_key := "goacespi:webpropertyrequirement:" + strconv.Itoa(r.RequirementID)
+	redis_key := "goapi:webpropertyrequirement:" + strconv.Itoa(r.RequirementID)
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &r)
@@ -734,7 +734,7 @@ func (r *WebPropertyRequirement) Delete() error {
 }
 
 func (t *WebPropertyType) Get() error {
-	redis_key := "goacespi:webpropertytype:" + strconv.Itoa(t.ID)
+	redis_key := "goapi:webpropertytype:" + strconv.Itoa(t.ID)
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &t)
