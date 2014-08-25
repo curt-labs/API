@@ -27,7 +27,7 @@ import (
 )
 
 var (
-	listenAddr = flag.String("http", ":8081", "http listen address")
+	listenAddr = flag.String("http", ":8080", "http listen address")
 )
 
 /**
@@ -138,6 +138,7 @@ func main() {
 		r.Get("/answers", faq_controller.GetAnswers)          //get answers!{page, results} - all parameters are optional
 		r.Get("/search", faq_controller.Search)               //takes {question, answer, page, results} - all parameters are optional
 	})
+
 	m.Group("/blogs", func(r martini.Router) {
 		r.Get("/all", blog_controller.GetAll)                  //sort on any field e.g. ?sort=Name&direction=descending
 		r.Get("", blog_controller.GetBlog)                     //get blog by {id}
@@ -150,6 +151,7 @@ func main() {
 		r.Get("/search", blog_controller.Search)                   //search field = value e.g. /blogs/search?key=8AEE0620-412E-47FC-900A-947820EA1C1D&slug=cyclo
 		r.Post("/categories", internalCors, blog_controller.CreateBlogCategory)
 	})
+
 	m.Group("/news", func(r martini.Router) {
 		r.Get("/all", news_controller.GetAll)                  //get all news; takes optional sort param {sort=title||lead||content||startDate||endDate||active||slug} to sort by question
 		r.Get("", news_controller.Get)                         //get by id {id}

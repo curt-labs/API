@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
+	"github.com/curt-labs/GoAPI/models/part"
 	_ "github.com/go-sql-driver/mysql"
-	"log"
 	"strings"
 )
 
@@ -67,9 +67,10 @@ type Lookup struct {
 	Submodels      []string              `json:"available_submodels,omitempty" xml:"available_submodels,omitempty"`
 	Configurations []ConfigurationOption `json:"available_configurations,omitempty" xml:"available_configurations,omitempty"`
 	Vehicle        Vehicle               `json:"vehicle" xml:"vehicle"`
-	Parts          []int                 `json:"parts" xml:"parts"`
+	Parts          []part.Part           `json:"parts" xml:"parts"`
 	Filter         interface{}           `json:"filter" xml:"filter"`
 	Pagination     Pagination            `json:"pagination" xml:"pagination"`
+	CustomerKey    string                `json:"-" xml:"-"`
 }
 
 type Pagination struct {
@@ -80,8 +81,8 @@ type Pagination struct {
 	TotalPages    int `json:"total_pages" xml:"total_pages"`
 }
 
-func (l *Lookup) LoadParts(ch chan []int) {
-	parts := make([]int, 0)
+func (l *Lookup) LoadParts(ch chan []part.Part) {
+	parts := make([]part.Part, 0)
 
 	vehicleChan := make(chan error)
 	baseVehicleChan := make(chan error)
@@ -90,7 +91,6 @@ func (l *Lookup) LoadParts(ch chan []int) {
 
 	if len(l.Vehicle.Configurations) > 0 {
 		configs, err := l.Vehicle.getDefinedConfigurations()
-		log.Println(err)
 		if err != nil || configs == nil {
 			ch <- parts
 			return
@@ -113,7 +113,10 @@ func (l *Lookup) LoadParts(ch chan []int) {
 				}
 			}
 			if matches {
-				l.Parts = append(l.Parts, config[0].Parts...)
+				for _, partID := range config[0].Parts {
+					p := part.Part{PartId: partID}
+					l.Parts = append(l.Parts, p)
+				}
 			}
 		}
 	}
@@ -121,7 +124,16 @@ func (l *Lookup) LoadParts(ch chan []int) {
 	<-vehicleChan
 	<-baseVehicleChan
 	removeDuplicates(&l.Parts)
-	sortutil.Asc(l.Parts)
+
+	parts = make([]part.Part, 0)
+	for _, p := range l.Parts {
+		if err := p.Get(l.CustomerKey); err == nil {
+			parts = append(parts, p)
+		}
+	}
+	l.Parts = parts
+
+	sortutil.AscByField(l.Parts, "PartId")
 
 	ch <- parts
 }
@@ -147,9 +159,9 @@ func (l *Lookup) loadVehicleParts(ch chan error) {
 	}
 
 	for rows.Next() {
-		var partID int
-		if err = rows.Scan(&partID); err == nil {
-			l.Parts = append(l.Parts, partID)
+		var p part.Part
+		if err = rows.Scan(&p.PartId); err == nil {
+			l.Parts = append(l.Parts, p)
 		}
 	}
 
@@ -178,9 +190,9 @@ func (l *Lookup) loadBaseVehicleParts(ch chan error) {
 	}
 
 	for rows.Next() {
-		var partID int
-		if err = rows.Scan(&partID); err == nil {
-			l.Parts = append(l.Parts, partID)
+		var p part.Part
+		if err = rows.Scan(&p.PartId); err == nil {
+			l.Parts = append(l.Parts, p)
 		}
 	}
 
@@ -188,12 +200,12 @@ func (l *Lookup) loadBaseVehicleParts(ch chan error) {
 	return
 }
 
-func removeDuplicates(xs *[]int) {
+func removeDuplicates(xs *[]part.Part) {
 	found := make(map[int]bool)
 	j := 0
 	for i, x := range *xs {
-		if !found[x] {
-			found[x] = true
+		if !found[x.PartId] {
+			found[x.PartId] = true
 			(*xs)[j] = (*xs)[i]
 			j++
 		}
