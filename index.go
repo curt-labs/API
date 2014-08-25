@@ -53,7 +53,7 @@ func main() {
 	m.Use(gzip.All())
 	m.Use(middleware.Meddler())
 	m.Use(cors.Allow(&cors.Options{
-		AllowOrigins:     []string{"*"},
+		AllowOrigins:     []string{"http://*", "https://*"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
 		AllowHeaders:     []string{"Origin"},
 		ExposeHeaders:    []string{"Content-Length"},
