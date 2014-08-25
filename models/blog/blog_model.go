@@ -7,7 +7,6 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/pagination"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
-	"log"
 	"strconv"
 	"time"
 )
@@ -78,14 +77,12 @@ func GetAll() (Blogs, error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 
 	if err != nil {
-		log.Print(err)
 		return bs, err
 	}
 	defer db.Close()
 
 	stmt, err := db.Prepare(getAllBlogs)
 	if err != nil {
-		log.Print(err)
 		return bs, err
 	}
 	defer stmt.Close()
@@ -119,14 +116,12 @@ func getAllBlogCategories() (BlogCategories, error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 
 	if err != nil {
-		log.Print(err)
 		return bcs, err
 	}
 	defer db.Close()
 
 	stmt, err := db.Prepare(stmtGetAllBlogCategories)
 	if err != nil {
-		log.Print(err)
 		return bcs, err
 	}
 	defer stmt.Close()
@@ -152,14 +147,12 @@ func GetAllCategories() (Categories, error) {
 
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		log.Print(err)
 		return cs, err
 	}
 	defer db.Close()
 
 	stmt, err := db.Prepare(getAllCategories)
 	if err != nil {
-		log.Print(err)
 		return cs, err
 	}
 	defer stmt.Close()
@@ -184,14 +177,12 @@ func (c *Category) Get() error {
 
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		log.Print(err)
 		return err
 	}
 	defer db.Close()
 
 	stmt, err := db.Prepare(getCategory)
 	if err != nil {
-		log.Print(err)
 		return err
 	}
 	defer stmt.Close()
@@ -214,14 +205,12 @@ func (b *Blog) Get() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 
 	if err != nil {
-		log.Print(err)
 		return err
 	}
 	defer db.Close()
 
 	stmt, err := db.Prepare(getBlog)
 	if err != nil {
-		log.Print(err)
 		return err
 	}
 	defer stmt.Close()

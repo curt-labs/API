@@ -144,11 +144,11 @@ func main() {
 	})
 	m.Group("/blogs", func(r martini.Router) {
 		r.Get("/all", blog_controller.GetAll)                  //sort on any field e.g. ?sort=Name&direction=descending
-		r.Get("", blog_controller.GetBlog)                     //get blog by {id}
+		r.Get("/:id", blog_controller.GetBlog)                 //get blog by {id}
 		r.Get("/categories", blog_controller.GetAllCategories) //all categories; sort on any field e.g. ?sort=Name&direction=descending
-		r.Get("/category", blog_controller.GetBlogCategory)
-		r.Post("", internalCors, blog_controller.CreateBlog)       //create {post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active} returns new id
-		r.Put("", internalCors, blog_controller.UpdateBlog)        //update {post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active} required{id}
+		r.Get("/category/:id", blog_controller.GetBlogCategory)
+		r.Post("/:id", internalCors, blog_controller.UpdateBlog)   //create {post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active} returns new id
+		r.Put("", internalCors, blog_controller.CreateBlog)        //update {post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active} required{id}
 		r.Delete("", internalCors, blog_controller.DeleteBlog)     //{id}
 		r.Delete("/:id", internalCors, blog_controller.DeleteBlog) //{?id=id}
 		r.Get("/search", blog_controller.Search)                   //search field = value e.g. /blogs/search?key=8AEE0620-412E-47FC-900A-947820EA1C1D&slug=cyclo
