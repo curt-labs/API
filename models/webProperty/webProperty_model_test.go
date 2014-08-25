@@ -46,6 +46,34 @@ func TestGetWebProperties(t *testing.T) {
 			So(qs, ShouldNotBeNil)
 			So(err, ShouldBeNil)
 		})
+		Convey("Testing GetNote()", func() {
+			var n WebPropertyNote
+			n.ID = 1
+			err := n.Get()
+			So(n.Text, ShouldNotBeNil)
+			So(err, ShouldBeNil)
+		})
+		Convey("Testing GetWebPropertyType()", func() {
+			var n WebPropertyType
+			n.ID = 1
+			err := n.Get()
+			So(n.Type, ShouldNotBeNil)
+			So(err, ShouldBeNil)
+		})
+		Convey("Testing GetWebPropertyRequirement()", func() {
+			var n WebPropertyRequirement
+			n.RequirementID = 1
+			err := n.Get()
+			So(n.Requirement, ShouldNotBeNil)
+			So(err, ShouldBeNil)
+		})
+		Convey("Testing GetWebPropertyRequirementCheck()", func() {
+			var n WebPropertyRequirement
+			n.ID = 1
+			err := n.GetJoin()
+			So(n.WebPropID, ShouldNotBeNil)
+			So(err, ShouldBeNil)
+		})
 		Convey("Testing GetAllWebPropertyNotes()", func() {
 			qs, err := GetAllWebPropertyNotes()
 			So(qs, ShouldNotBeNil)
@@ -70,11 +98,10 @@ func TestGetWebProperties(t *testing.T) {
 	Convey("Testing CUD", t, func() {
 		Convey("Testing Create()", func() {
 			var f WebProperty
-
 			var err error
 			f.Name = "testTitle"
 			f.CustID = 12345
-			f.BadgeID = "test"
+			f.BadgeID = strconv.Itoa(rand.Int())
 			f.IsEnabledDate, err = time.Parse(timeFormat, "2004-03-03 9:15:00")
 			f.Url = "www.test.com"
 			f.IsEnabled = true
@@ -91,7 +118,7 @@ func TestGetWebProperties(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(f.Name, ShouldEqual, "testTitle")
 			So(f.CustID, ShouldEqual, 12345)
-			So(f.BadgeID, ShouldEqual, "test")
+			So(f.BadgeID, ShouldNotBeNil)
 			So(f.Url, ShouldEqual, "www.test.com")
 			So(f.SellerID, ShouldEqual, "test")
 			So(f.WebPropertyType.ID, ShouldEqual, 2)
@@ -139,7 +166,7 @@ func TestGetWebProperties(t *testing.T) {
 			var w WebProperty
 			var err error
 			w.Name = "CreatedProp"
-			w.BadgeID = strconv.Itoa(rand.Int())
+
 			err = w.Create()
 			So(err, ShouldBeNil)
 
@@ -157,7 +184,7 @@ func TestGetWebProperties(t *testing.T) {
 			f.ID = 228
 			f.Name = "testTitle2"
 			f.CustID = 123452
-			f.BadgeID = "test2"
+			f.BadgeID = strconv.Itoa(rand.Int())
 			f.IsEnabledDate, err = time.Parse(timeFormat, "2004-03-03 9:15:22")
 			f.Url = "www.test.com2"
 			f.IsEnabled = false
@@ -173,7 +200,7 @@ func TestGetWebProperties(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(f.Name, ShouldEqual, "testTitle2")
 			So(f.CustID, ShouldEqual, 123452)
-			So(f.BadgeID, ShouldEqual, "test2")
+			So(f.BadgeID, ShouldNotBeNil)
 			So(f.Url, ShouldEqual, "www.test.com2")
 			So(f.SellerID, ShouldEqual, "test2")
 			So(f.WebPropertyType.ID, ShouldEqual, 22)
@@ -241,6 +268,26 @@ func TestGetWebProperties(t *testing.T) {
 		Convey("Testing Delete Requirement", func() {
 			var n WebPropertyRequirement
 			n.ID = 17
+			err := n.Delete()
+			So(err, ShouldBeNil)
+		})
+		Convey("Testing Create Type", func() {
+			var n WebPropertyType
+			n.TypeID = 77
+			n.Type = "TEST"
+			err := n.Create()
+			So(err, ShouldBeNil)
+		})
+		Convey("Testing Update Type", func() {
+			var n WebPropertyType
+			n.ID = 6
+			n.Type = "booger"
+			err := n.Update()
+			So(err, ShouldBeNil)
+		})
+		Convey("Testing Delete Type", func() {
+			var n WebPropertyType
+			n.ID = 6
 			err := n.Delete()
 			So(err, ShouldBeNil)
 		})

@@ -82,6 +82,10 @@ var (
 	getNote              = "SELECT id, webPropID, text, dateAdded FROM WebPropNotes WHERE id = ?"
 	getRequirement       = "SELECT ID, ReqType, Requirement FROM WebPropRequirements WHERE ID = ?"
 	getRequirementBridge = "SELECT ID, WebPropertiesID, Compliance, WebPropRequirementsID FROM WebPropRequirementCheck WHERE ID = ?"
+	getType              = "SELECT id, typeID, type FROM WebPropertyTypes WHERE id = ?"
+	createType           = "INSERT INTO WebPropertyTypes (typeID, type) VALUES (?,?)"
+	updateType           = "UPDATE WebPropertyTypes SET typeID = ?, type=? WHERE id = ?"
+	deleteType           = "DELETE FROM WebPropertyTypes WHERE id = ?"
 )
 
 const (
@@ -709,6 +713,86 @@ func (r *WebPropertyRequirement) Delete() error {
 
 	return nil
 }
+
+func (t *WebPropertyType) Get() error {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(getType)
+	err = stmt.QueryRow(t.ID).Scan(&t.ID, &t.TypeID, &t.Type)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (t *WebPropertyType) Update() error {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	stmt, err := tx.Prepare(updateType)
+	_, err = stmt.Exec(t.TypeID, t.Type, t.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+
+	return nil
+}
+
+func (t *WebPropertyType) Create() error {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	stmt, err := tx.Prepare(createType)
+	_, err = stmt.Exec(t.TypeID, t.Type)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+
+	return nil
+}
+
+func (t *WebPropertyType) Delete() error {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	stmt, err := tx.Prepare(deleteType)
+	_, err = stmt.Exec(t.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+
+	return nil
+}
+
 func Search(name, custID, badgeID, url, isEnabled, sellerID, webPropertyTypeID, isFinalApproved, isEnabledDate, isDenied, requestedDate, typeID, pageStr, resultsStr string) (pagination.Objects, error) {
 	var err error
 	var l pagination.Objects
