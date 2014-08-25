@@ -28,11 +28,7 @@ import (
 )
 
 var (
-	listenAddr  = flag.String("http", ":8080", "http listen address")
-	CorsHandler = func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Add("Access-Control-Allow-Origin", "*")
-		return
-	}
+	listenAddr = flag.String("http", ":8080", "http listen address")
 )
 
 /**
@@ -54,7 +50,7 @@ func main() {
 	m.Use(gzip.All())
 	m.Use(middleware.Meddler())
 	m.Use(cors.Allow(&cors.Options{
-		AllowOrigins:     []string{"*"},
+		AllowOrigins:     []string{"http://*", "https://*"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
 		AllowHeaders:     []string{"Origin"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -153,6 +149,7 @@ func main() {
 		r.Delete("/(:id)", internalCors, faq_controller.Delete) //{id}
 		r.Delete("", internalCors, faq_controller.Delete)       //{?id=id}
 	})
+
 	m.Group("/blogs", func(r martini.Router) {
 		r.Get("", blog_controller.GetAll)                      //sort on any field e.g. ?sort=Name&direction=descending
 		r.Get("/categories", blog_controller.GetAllCategories) //all categories; sort on any field e.g. ?sort=Name&direction=descending
@@ -166,6 +163,7 @@ func main() {
 		r.Delete("/:id", internalCors, blog_controller.DeleteBlog) //{?id=id}
 		r.Delete("", internalCors, blog_controller.DeleteBlog)     //{id}
 	})
+
 	m.Group("/news", func(r martini.Router) {
 		r.Get("", news_controller.GetAll)                      //get all news; takes optional sort param {sort=title||lead||content||startDate||endDate||active||slug} to sort by question
 		r.Get("/titles", news_controller.GetTitles)            //get titles!{page, results} - all parameters are optional

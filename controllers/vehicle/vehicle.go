@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/aces"
+	"github.com/curt-labs/GoAPI/models/part"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -18,6 +19,15 @@ import (
 func Query(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 	var l aces.Lookup
 	l.Vehicle = loadVehicle(r)
+
+	qs := r.URL.Query()
+	if qs.Get("key") != "" {
+		l.CustomerKey = qs.Get("key")
+	} else if r.FormValue("key") != "" {
+		l.CustomerKey = r.FormValue("key")
+	} else {
+		l.CustomerKey = r.Header.Get("key")
+	}
 
 	if l.Vehicle.Base.Year == 0 { // Get Years
 		if err := l.GetYears(); err != nil {
@@ -37,7 +47,7 @@ func Query(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string 
 	} else {
 
 		// Kick off part getter
-		partChan := make(chan []int)
+		partChan := make(chan []part.Part)
 		go l.LoadParts(partChan)
 
 		if l.Vehicle.Submodel == "" { // Get Submodels
