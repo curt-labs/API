@@ -13,6 +13,7 @@ import (
 	"github.com/curt-labs/GoAPI/controllers/search"
 	"github.com/curt-labs/GoAPI/controllers/vehicle"
 	"github.com/curt-labs/GoAPI/controllers/videos"
+	"github.com/curt-labs/GoAPI/controllers/webProperty"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/go-martini/martini"
@@ -141,7 +142,6 @@ func main() {
 		r.Post("/(:id)", internalCors, faq_controller.Update)   //{id, question and/or answer}
 		r.Delete("/(:id)", internalCors, faq_controller.Delete) //{id}
 		r.Delete("", internalCors, faq_controller.Delete)       //{?id=id}
-
 	})
 	m.Group("/blogs", func(r martini.Router) {
 		r.Get("", blog_controller.GetAll)                      //sort on any field e.g. ?sort=Name&direction=descending
@@ -165,6 +165,29 @@ func main() {
 		r.Post("/:id", internalCors, news_controller.Update)   //{id, question and/or answer}
 		r.Delete("/:id", internalCors, news_controller.Delete) //{id}
 		r.Delete("", internalCors, news_controller.Delete)     //{id}
+	})
+	m.Group("/webProperties", func(r martini.Router) {
+		r.Post("/note/:id", webProperty_controller.CreateUpdateWebPropertyNote)                         //updates when an id is present; otherwise, creates
+		r.Put("/note", webProperty_controller.CreateUpdateWebPropertyNote)                              //updates when an id is present; otherwise, creates
+		r.Delete("/note/:id", webProperty_controller.DeleteWebPropertyNote)                             //{id}
+		r.Get("/note/:id", webProperty_controller.GetWebPropertyNote)                                   //{id}
+		r.Post("/requirementCheck/:id", webProperty_controller.CreateUpdateWebPropertyRequirementCheck) //updates when an id is present; otherwise, creates
+		r.Put("/requirementCheck", webProperty_controller.CreateUpdateWebPropertyRequirementCheck)      //updates when an id is present; otherwise, creates
+		r.Delete("/requirementCheck/:id", webProperty_controller.DeleteWebPropertyRequirementCheck)     //{id}
+		r.Get("/requirementCheck/:id", webProperty_controller.GetWebPropertyRequirementCheck)           //{id}
+		r.Post("/requirement/:id", webProperty_controller.CreateUpdateWebPropertyRequirement)           //updates when an id is present; otherwise, creates
+		r.Put("/requirement", webProperty_controller.CreateUpdateWebPropertyRequirement)                //updates when an id is present; otherwise, creates
+		r.Delete("/requirement/:id", webProperty_controller.DeleteWebPropertyRequirement)               //{id}
+		r.Get("/requirement/:id", webProperty_controller.GetWebPropertyRequirement)                     //{id}
+		r.Get("/search", webProperty_controller.Search)
+		r.Get("/types", webProperty_controller.GetAllTypes)               //all tyeps
+		r.Get("/notes", webProperty_controller.GetAllNotes)               //all notes
+		r.Get("/requirements", webProperty_controller.GetAllRequirements) //requirements
+		r.Get("", webProperty_controller.GetAll)
+		r.Get("/:id", webProperty_controller.Get)                      //?id=id
+		r.Delete("/:id", webProperty_controller.DeleteWebProperty)     //{id}
+		r.Post("/:id", webProperty_controller.CreateUpdateWebProperty) //
+		r.Put("", webProperty_controller.CreateUpdateWebProperty)      //can create notes(text) and requirements (requirement, by requirement=requirementID) while creating a property
 
 	})
 
