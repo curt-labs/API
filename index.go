@@ -27,11 +27,7 @@ import (
 )
 
 var (
-	listenAddr  = flag.String("http", ":8080", "http listen address")
-	CorsHandler = func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Add("Access-Control-Allow-Origin", "*")
-		return
-	}
+	listenAddr = flag.String("http", ":8081", "http listen address")
 )
 
 /**
@@ -52,14 +48,13 @@ func main() {
 	m.Use(gorelic.Handler)
 	m.Use(gzip.All())
 	m.Use(middleware.Meddler())
-	// m.Use(cors.Allow(&cors.Options{
-	// 	AllowOrigins:     []string{"http://*", "https://*"},
-	// 	AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
-	// 	AllowHeaders:     []string{"Origin"},
-	// 	ExposeHeaders:    []string{"Content-Length"},
-	// 	AllowCredentials: true,
-	// }))
-	m.Use(CorsHandler)
+	m.Use(cors.Allow(&cors.Options{
+		AllowOrigins:     []string{"http://*", "https://*"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
+		AllowHeaders:     []string{"Origin"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+	}))
 	store := sessions.NewCookieStore([]byte("api_secret_session"))
 	m.Use(sessions.Sessions("api_sessions", store))
 	m.Use(MapEncoder)
