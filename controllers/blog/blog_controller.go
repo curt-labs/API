@@ -135,6 +135,30 @@ func CreateBlogCategory(rw http.ResponseWriter, r *http.Request, enc encoding.En
 	return encoding.Must(enc.Encode(c))
 }
 
+func DeleteBlogCategory(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+	var c blog_model.Category
+	var err error
+
+	idStr := r.FormValue("id")
+	if idStr != "" {
+		c.ID, err = strconv.Atoi(idStr)
+		if err != nil {
+			return err.Error()
+		}
+	} else {
+		c.ID, err = strconv.Atoi(params["id"])
+		if err != nil {
+			return err.Error()
+		}
+	}
+
+	err = c.Delete()
+	if err != nil {
+		return err.Error()
+	}
+	return encoding.Must(enc.Encode(c))
+}
+
 func UpdateBlog(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var b blog_model.Blog
 	var err error
