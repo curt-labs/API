@@ -28,7 +28,7 @@ import (
 )
 
 var (
-	listenAddr  = flag.String("http", ":8080", "http listen address")
+	listenAddr  = flag.String("http", ":8081", "http listen address")
 	CorsHandler = func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Access-Control-Allow-Origin", "*")
 		return
@@ -175,14 +175,18 @@ func main() {
 		r.Put("/requirementCheck", webProperty_controller.CreateUpdateWebPropertyRequirementCheck)      //updates when an id is present; otherwise, creates
 		r.Delete("/requirementCheck/:id", webProperty_controller.DeleteWebPropertyRequirementCheck)     //{id}
 		r.Get("/requirementCheck/:id", webProperty_controller.GetWebPropertyRequirementCheck)           //{id}
+		r.Post("/type/:id", webProperty_controller.CreateUpdateWebPropertyType)                         //updates when an id is present; otherwise, creates
+		r.Put("/type", webProperty_controller.CreateUpdateWebPropertyType)                              //updates when an id is present; otherwise, creates
+		r.Delete("/type/:id", webProperty_controller.DeleteWebPropertyType)                             //{id}
+		r.Get("/type/:id", webProperty_controller.GetWebPropertyType)                                   //{id}
 		r.Post("/requirement/:id", webProperty_controller.CreateUpdateWebPropertyRequirement)           //updates when an id is present; otherwise, creates
 		r.Put("/requirement", webProperty_controller.CreateUpdateWebPropertyRequirement)                //updates when an id is present; otherwise, creates
 		r.Delete("/requirement/:id", webProperty_controller.DeleteWebPropertyRequirement)               //{id}
 		r.Get("/requirement/:id", webProperty_controller.GetWebPropertyRequirement)                     //{id}
 		r.Get("/search", webProperty_controller.Search)
-		r.Get("/types", webProperty_controller.GetAllTypes)               //all tyeps
-		r.Get("/notes", webProperty_controller.GetAllNotes)               //all notes
-		r.Get("/requirements", webProperty_controller.GetAllRequirements) //requirements
+		r.Get("/type", webProperty_controller.GetAllTypes)               //all tyeps
+		r.Get("/note", webProperty_controller.GetAllNotes)               //all notes
+		r.Get("/requirement", webProperty_controller.GetAllRequirements) //requirements
 		r.Get("", webProperty_controller.GetAll)
 		r.Get("/:id", webProperty_controller.Get)                      //?id=id
 		r.Delete("/:id", webProperty_controller.DeleteWebProperty)     //{id}
