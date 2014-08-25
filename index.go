@@ -52,13 +52,14 @@ func main() {
 	m.Use(gorelic.Handler)
 	m.Use(gzip.All())
 	m.Use(middleware.Meddler())
-	m.Use(cors.Allow(&cors.Options{
-		AllowOrigins:     []string{"http://*", "https://*"},
-		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
-		AllowHeaders:     []string{"Origin"},
-		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: true,
-	}))
+	// m.Use(cors.Allow(&cors.Options{
+	// 	AllowOrigins:     []string{"http://*", "https://*"},
+	// 	AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
+	// 	AllowHeaders:     []string{"Origin"},
+	// 	ExposeHeaders:    []string{"Content-Length"},
+	// 	AllowCredentials: true,
+	// }))
+	m.Use(CorsHandler)
 	store := sessions.NewCookieStore([]byte("api_secret_session"))
 	m.Use(sessions.Sessions("api_sessions", store))
 	m.Use(MapEncoder)
