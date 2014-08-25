@@ -8,52 +8,53 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
+	"strconv"
 	"time"
 )
 
 type WebProperty struct {
-	ID                      int `json:"id,omitempty" xml:"id,omitempty"`
-	Name                    string
-	CustID                  int
-	BadgeID                 string
-	Url                     string
-	IsEnabled               bool
-	SellerID                string
+	ID                      int    `json:"id,omitempty" xml:"id,omitempty"`
+	Name                    string `json:"name,omitempty" xml:"name,omitempty"`
+	CustID                  int    `json:"custId,omitempty" xml:"custId,omitempty"`
+	BadgeID                 string `json:"badgeId,omitempty" xml:"badgeId,omitempty"`
+	Url                     string `json:"url,omitempty" xml:"url,omitempty"`
+	IsEnabled               bool   `json:"isEnabled,omitempty" xml:"isEnabled,omitempty"`
+	SellerID                string `json:"sellerId,omitempty" xml:"v,omitempty"`
 	WebPropertyNotes        WebPropertyNotes
 	WebPropertyType         WebPropertyType
 	WebPropertyRequirements WebPropertyRequirements
-	IsFinalApproved         bool
-	IsEnabledDate           time.Time
-	IsDenied                bool
-	RequestedDate           time.Time
-	AddedDate               time.Time
+	IsFinalApproved         bool      `json:"isFinalApproved,omitempty" xml:"isFinalApproved,omitempty"`
+	IsEnabledDate           time.Time `json:"isEnabledDate,omitempty" xml:"isEnabledDate,omitempty"`
+	IsDenied                bool      `json:"isDenied,omitempty" xml:"isDenied,omitempty"`
+	RequestedDate           time.Time `json:"requestedDate,omitempty" xml:"requestedDate,omitempty"`
+	AddedDate               time.Time `json:"addedDate,omitempty" xml:"addedDate,omitempty"`
 }
 
 type WebProperties []WebProperty
 
 type WebPropertyType struct {
-	ID     int
-	TypeID int
-	Type   string
+	ID     int    `json:"id,omitempty" xml:"id,omitempty"`
+	TypeID int    `json:"typeId,omitempty" xml:"typeId,omitempty"`
+	Type   string `json:"type,omitempty" xml:"type,omitempty"`
 }
 type WebPropertyTypes []WebPropertyType
 
 type WebPropertyNote struct {
-	ID        int
-	WebPropID int
-	Text      string
-	DateAdded time.Time
+	ID        int       `json:"id,omitempty" xml:"id,omitempty"`
+	WebPropID int       `json:"webPropId,omitempty" xml:"webPropId,omitempty"`
+	Text      string    `json:"text,omitempty" xml:"text,omitempty"`
+	DateAdded time.Time `json:"dateAdded,omitempty" xml:"dateAdded,omitempty"`
 }
 
 type WebPropertyNotes []WebPropertyNote
 
 type WebPropertyRequirement struct {
-	ID            int
-	ReqType       string
-	Requirement   string
-	RequirementID int
-	Compliance    bool
-	WebPropID     int
+	ID            int    `json:"id,omitempty" xml:"id,omitempty"`
+	ReqType       string `json:"reqType,omitempty" xml:"reqType,omitempty"`
+	Requirement   string `json:"requirement,omitempty" xml:"requirement,omitempty"`
+	RequirementID int    `json:"requirementId,omitempty" xml:"requirementId,omitempty"`
+	Compliance    bool   `json:"compliance,omitempty" xml:"compliance,omitempty"`
+	WebPropID     int    `json:"webPropId,omitempty" xml:"webPropId,omitempty"`
 }
 
 type WebPropertyRequirements []WebPropertyRequirement
@@ -96,7 +97,7 @@ func (w *WebProperty) Get() error {
 	var ws WebProperties
 	var err error
 
-	redis_key := "goacespi:webproperties"
+	redis_key := "goacespi:webproperty:" + strconv.Itoa(w.ID)
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &ws)
@@ -462,6 +463,12 @@ func GetAllWebPropertyRequirements() (WebPropertyRequirements, error) {
 }
 
 func (n *WebPropertyNote) Get() error {
+	redis_key := "goacespi:webpropertynote:" + strconv.Itoa(n.ID)
+	data, err := redis.Get(redis_key)
+	if err == nil && len(data) > 0 {
+		err = json.Unmarshal(data, &n)
+		return err
+	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -549,6 +556,12 @@ func (n *WebPropertyNote) Delete() error {
 }
 
 func (r *WebPropertyRequirement) GetJoin() error {
+	redis_key := "goacespi:webpropertyrequirementjoin:" + strconv.Itoa(r.ID)
+	data, err := redis.Get(redis_key)
+	if err == nil && len(data) > 0 {
+		err = json.Unmarshal(data, &r)
+		return err
+	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -629,6 +642,12 @@ func (r *WebPropertyRequirement) DeleteJoin() error {
 }
 
 func (r *WebPropertyRequirement) Get() error {
+	redis_key := "goacespi:webpropertyrequirement:" + strconv.Itoa(r.RequirementID)
+	data, err := redis.Get(redis_key)
+	if err == nil && len(data) > 0 {
+		err = json.Unmarshal(data, &r)
+		return err
+	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -715,6 +734,12 @@ func (r *WebPropertyRequirement) Delete() error {
 }
 
 func (t *WebPropertyType) Get() error {
+	redis_key := "goacespi:webpropertytype:" + strconv.Itoa(t.ID)
+	data, err := redis.Get(redis_key)
+	if err == nil && len(data) > 0 {
+		err = json.Unmarshal(data, &t)
+		return err
+	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
