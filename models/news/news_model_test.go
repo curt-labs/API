@@ -1,7 +1,7 @@
 package news_model
 
 import (
-	"github.com/curt-labs/goacesapi/helpers/pagination"
+	"github.com/curt-labs/GoAPI/helpers/pagination"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 	"time"
