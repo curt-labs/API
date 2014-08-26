@@ -51,6 +51,7 @@ var (
 								VALUES (?,?,?,?,?,?,?,?,?,?,?)`
 	getCategory     = "SELECT blogCategoryID, name, slug,active FROM BlogCategories WHERE blogCategoryID = ?"
 	createCategory  = "INSERT INTO BlogCategories (name,slug,active) VALUES (?,?,?)"
+	deleteCategory  = "DELETE FROM BlogCategories WHERE blogCategoryID = ?"
 	createCatBridge = `INSERT INTO BlogPost_BlogCategory (blogPostID, blogCategoryID) VALUES (?,?)`
 	deleteCatBridge = `DELETE FROM BlogPost_BlogCategory WHERE blogPostID = ?`
 	update          = `UPDATE BlogPosts SET post_title = ? ,slug = ? ,post_text = ?, publishedDate= ?, lastModified = ?,userID = ?, meta_title = ?, meta_description = ?, keywords = ?, active = ? WHERE blogPostID = ?`
@@ -308,7 +309,27 @@ func (c *Category) Create() error {
 	}
 	tx.Commit()
 	return nil
+}
 
+func (c *Category) Delete() error {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	stmt, err := tx.Prepare(deleteCategory)
+
+	_, err = stmt.Exec(c.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+	return nil
 }
 func (b *Blog) createCatBridge() error {
 	db, err := sql.Open("mysql", database.ConnectionString())

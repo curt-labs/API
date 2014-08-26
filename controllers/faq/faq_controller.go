@@ -1,14 +1,11 @@
 package faq_controller
 
 import (
-	"errors"
-	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/pagination"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	"github.com/curt-labs/GoAPI/models/faq"
 	"github.com/go-martini/martini"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -36,14 +33,21 @@ func GetAll(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) strin
 	return encoding.Must(enc.Encode(fs))
 }
 
-func Get(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+func Get(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var f faq_model.Faq
 	var err error
 
-	f.ID, err = strconv.Atoi(r.FormValue("id"))
-	if err != nil {
-		log.Print("HERE", f.ID, err)
-		return err.Error()
+	idStr := r.FormValue("id")
+	if idStr != "" {
+		f.ID, err = strconv.Atoi(idStr)
+		if err != nil {
+			return err.Error()
+		}
+	} else {
+		f.ID, err = strconv.Atoi(params["id"])
+		if err != nil {
+			return err.Error()
+		}
 	}
 
 	err = f.Get()
@@ -67,13 +71,21 @@ func Create(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) strin
 	return encoding.Must(enc.Encode(f))
 }
 
-func Update(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+func Update(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var f faq_model.Faq
 	var err error
 
-	f.ID, err = strconv.Atoi(r.FormValue("id"))
-	if f.ID < 1 || err != nil {
-		return fmt.Sprint(errors.New("Invalid ID supplied."), err)
+	idStr := r.FormValue("id")
+	if idStr != "" {
+		f.ID, err = strconv.Atoi(idStr)
+		if err != nil {
+			return err.Error()
+		}
+	} else {
+		f.ID, err = strconv.Atoi(params["id"])
+		if err != nil {
+			return err.Error()
+		}
 	}
 	f.Get()
 	question := r.FormValue("question")

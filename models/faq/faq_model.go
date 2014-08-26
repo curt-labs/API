@@ -7,7 +7,6 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/pagination"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
-	// "sort"
 	"strconv"
 )
 
