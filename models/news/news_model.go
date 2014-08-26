@@ -6,6 +6,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/pagination"
 	"github.com/curt-labs/GoAPI/helpers/redis"
+	_ "github.com/go-sql-driver/mysql"
 	"strconv"
 	"time"
 )
@@ -57,19 +58,10 @@ func (n *News) Get() error {
 		return err
 	}
 	defer stmt.Close()
-	var st, en *string
 	res, err := stmt.Query(n.ID)
 
 	for res.Next() { //Time scanning creates odd driver issue using QueryRow
-		res.Scan(&n.ID, &n.Title, &n.Lead, &n.Content, &st, &en, &n.Active, &n.Slug)
-		_, err = time.Parse(timeFormat, *st)
-		if err == nil {
-			n.PublishStart, err = time.Parse(timeFormat, *st)
-		}
-		_, err = time.Parse(timeFormat, *en)
-		if err == nil {
-			n.PublishEnd, err = time.Parse(timeFormat, *en)
-		}
+		res.Scan(&n.ID, &n.Title, &n.Lead, &n.Content, &n.PublishStart, &n.PublishEnd, &n.Active, &n.Slug)
 	}
 	if err != nil {
 		return err

@@ -1,8 +1,8 @@
 package news_controller
 
 import (
-	"errors"
-	"fmt"
+	// "errors"
+	// "fmt"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/pagination"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
@@ -39,13 +39,21 @@ func GetAll(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) strin
 	return encoding.Must(enc.Encode(fs))
 }
 
-func Get(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+func Get(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var f news_model.News
 	var err error
 
-	f.ID, err = strconv.Atoi(r.FormValue("id"))
-	if err != nil {
-		return err.Error()
+	idStr := r.FormValue("id")
+	if idStr != "" {
+		f.ID, err = strconv.Atoi(idStr)
+		if err != nil {
+			return err.Error()
+		}
+	} else {
+		f.ID, err = strconv.Atoi(params["id"])
+		if err != nil {
+			return err.Error()
+		}
 	}
 	err = f.Get()
 	if err != nil {
@@ -81,13 +89,21 @@ func Create(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) strin
 	return encoding.Must(enc.Encode(n))
 }
 
-func Update(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+func Update(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var n news_model.News
 	var err error
 
-	n.ID, err = strconv.Atoi(r.FormValue("id"))
-	if n.ID < 1 || err != nil {
-		return fmt.Sprint(errors.New("Invalid ID supplied."), err)
+	idStr := r.FormValue("id")
+	if idStr != "" {
+		n.ID, err = strconv.Atoi(idStr)
+		if err != nil {
+			return err.Error()
+		}
+	} else {
+		n.ID, err = strconv.Atoi(params["id"])
+		if err != nil {
+			return err.Error()
+		}
 	}
 	n.Get()
 	title := r.FormValue("title")

@@ -11,8 +11,10 @@ func TestNews(t *testing.T) {
 	Convey("Testing Gets", t, func() {
 		Convey("Testing Get()", func() {
 			var f News
+			var err error
 			f.ID = 1
-			f.Get()
+			err = f.Get()
+			So(err, ShouldBeNil)
 			So(f, ShouldNotBeNil)
 			So(f.Title, ShouldEqual, "Growth & Expansion Continues at CURT Manufacturing ")
 			So(f.Lead, ShouldEqual, "Company Posts Record Sales in First-Half of 2011 - Set to Open New DC")
@@ -55,7 +57,7 @@ func TestNews(t *testing.T) {
 		})
 	})
 	Convey("Testing CUD", t, func() {
-		Convey("Testing Create", func() {
+		Convey("Testing Create/Delete", func() {
 			var n News
 			var err error
 			n.Title = "test"
@@ -65,6 +67,8 @@ func TestNews(t *testing.T) {
 			n.PublishEnd, err = time.Parse(timeFormat, "2011-09-29 09:22:00")
 			So(err, ShouldBeNil)
 			err = n.Create()
+			So(err, ShouldBeNil)
+			err = n.Delete()
 			So(err, ShouldBeNil)
 		})
 		Convey("Testing update", func() {
@@ -78,10 +82,13 @@ func TestNews(t *testing.T) {
 			So(err, ShouldBeNil)
 		})
 		Convey("Testing Delete", func() {
-			n := News{ID: 14}
+			var n News
+			n.Title = "Deletable News"
+			n.Create()
 			var err error
 			err = n.Delete()
-			So(err, ShouldNotBeNil)
+			So(err, ShouldBeNil)
 		})
 	})
+
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/curt-labs/GoAPI/controllers/search"
 	"github.com/curt-labs/GoAPI/controllers/vehicle"
 	"github.com/curt-labs/GoAPI/controllers/videos"
+	"github.com/curt-labs/GoAPI/controllers/webProperty"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/go-martini/martini"
@@ -125,43 +126,82 @@ func main() {
 		r.Get("/cms/:id/revisions", customer_ctlr.GetContentRevisionsById)
 		r.Post("/auth", customer_ctlr.UserAuthentication)
 		r.Get("/auth", customer_ctlr.KeyedUserAuthentication)
+		//Customer prices
+		r.Get("/prices/part/:id", customer_ctlr.GetPricesByPart)                       //{id}; id refers to partId
+		r.Get("/prices/sale", customer_ctlr.GetSales)                                  //{start}{end}{id} -all required params; id refers to customerId
+		r.Get("/prices/:id", customer_ctlr.GetPrice)                                   //{id}; id refers to {id} refers to customerPriceId
+		r.Get("/prices", customer_ctlr.GetAllPrices)                                   //returns all {sort=field&direction=dir}
+		r.Post("/prices/:id", internalCors, customer_ctlr.CreateUpdatePrice)           //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
+		r.Put("/prices", internalCors, customer_ctlr.CreateUpdatePrice)                //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
+		r.Delete("/prices/:id", internalCors, customer_ctlr.DeletePrice)               //{id} refers to customerPriceId
+		r.Get("/pricesByCustomer/:id", internalCors, customer_ctlr.GetPriceByCustomer) //{id} refers to customerId; returns CustomerPrices
+
 	})
 
 	m.Group("/faqs", func(r martini.Router) {
-		r.Get("/all", faq_controller.GetAll)                  //get all faqs; takes optional sort param {sort=true} to sort by question
-		r.Get("", faq_controller.Get)                         //get by id {id}
-		r.Put("", internalCors, faq_controller.Create)        //takes {question, answer}; returns object with new ID
-		r.Post("", internalCors, faq_controller.Update)       //{id, question and/or answer}
-		r.Delete("/:id", internalCors, faq_controller.Delete) //{id}
-		r.Delete("", internalCors, faq_controller.Delete)     //{?id=id}
-		r.Get("/questions", faq_controller.GetQuestions)      //get questions!{page, results} - all parameters are optional
-		r.Get("/answers", faq_controller.GetAnswers)          //get answers!{page, results} - all parameters are optional
-		r.Get("/search", faq_controller.Search)               //takes {question, answer, page, results} - all parameters are optional
+		r.Get("", faq_controller.GetAll)                        //get all faqs; takes optional sort param {sort=true} to sort by question
+		r.Get("/questions", faq_controller.GetQuestions)        //get questions!{page, results} - all parameters are optional
+		r.Get("/answers", faq_controller.GetAnswers)            //get answers!{page, results} - all parameters are optional
+		r.Get("/search", faq_controller.Search)                 //takes {question, answer, page, results} - all parameters are optional
+		r.Get("/(:id)", faq_controller.Get)                     //get by id {id}
+		r.Put("", internalCors, faq_controller.Create)          //takes {question, answer}; returns object with new ID
+		r.Post("/(:id)", internalCors, faq_controller.Update)   //{id, question and/or answer}
+		r.Delete("/(:id)", internalCors, faq_controller.Delete) //{id}
+		r.Delete("", internalCors, faq_controller.Delete)       //{?id=id}
 	})
 
 	m.Group("/blogs", func(r martini.Router) {
-		r.Get("/all", blog_controller.GetAll)                  //sort on any field e.g. ?sort=Name&direction=descending
-		r.Get("", blog_controller.GetBlog)                     //get blog by {id}
+		r.Get("", blog_controller.GetAll)                      //sort on any field e.g. ?sort=Name&direction=descending
 		r.Get("/categories", blog_controller.GetAllCategories) //all categories; sort on any field e.g. ?sort=Name&direction=descending
-		r.Get("/category", blog_controller.GetBlogCategory)
-		r.Post("", internalCors, blog_controller.CreateBlog)       //create {post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active} returns new id
-		r.Put("", internalCors, blog_controller.UpdateBlog)        //update {post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active} required{id}
-		r.Delete("", internalCors, blog_controller.DeleteBlog)     //{id}
-		r.Delete("/:id", internalCors, blog_controller.DeleteBlog) //{?id=id}
-		r.Get("/search", blog_controller.Search)                   //search field = value e.g. /blogs/search?key=8AEE0620-412E-47FC-900A-947820EA1C1D&slug=cyclo
+		r.Get("/category/:id", blog_controller.GetBlogCategory)
+		r.Get("/search", blog_controller.Search) //search field = value e.g. /blogs/search?key=8AEE0620-412E-47FC-900A-947820EA1C1D&slug=cyclo
 		r.Post("/categories", internalCors, blog_controller.CreateBlogCategory)
+		r.Delete("/categories/:id", internalCors, blog_controller.DeleteBlogCategory)
+		r.Get("/:id", blog_controller.GetBlog)                     //get blog by {id}
+		r.Post("/:id", internalCors, blog_controller.UpdateBlog)   //create {post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active} returns new id
+		r.Put("", internalCors, blog_controller.CreateBlog)        //update {post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active} required{id}
+		r.Delete("/:id", internalCors, blog_controller.DeleteBlog) //{?id=id}
+		r.Delete("", internalCors, blog_controller.DeleteBlog)     //{id}
 	})
 
 	m.Group("/news", func(r martini.Router) {
-		r.Get("/all", news_controller.GetAll)                  //get all news; takes optional sort param {sort=title||lead||content||startDate||endDate||active||slug} to sort by question
-		r.Get("", news_controller.Get)                         //get by id {id}
-		r.Put("", internalCors, news_controller.Create)        //takes {question, answer}; returns object with new ID
-		r.Post("", internalCors, news_controller.Update)       //{id, question and/or answer}
-		r.Delete("/:id", internalCors, news_controller.Delete) //{id}
-		r.Delete("", internalCors, news_controller.Delete)     //{?id=id}
+		r.Get("", news_controller.GetAll)                      //get all news; takes optional sort param {sort=title||lead||content||startDate||endDate||active||slug} to sort by question
 		r.Get("/titles", news_controller.GetTitles)            //get titles!{page, results} - all parameters are optional
 		r.Get("/leads", news_controller.GetLeads)              //get leads!{page, results} - all parameters are optional
 		r.Get("/search", news_controller.Search)               //takes {title, lead, content, publishStart, publishEnd, active, slug, page, results, page, results} - all parameters are optional
+		r.Get("/:id", news_controller.Get)                     //get by id {id}
+		r.Put("", internalCors, news_controller.Create)        //takes {question, answer}; returns object with new ID
+		r.Post("/:id", internalCors, news_controller.Update)   //{id, question and/or answer}
+		r.Delete("/:id", internalCors, news_controller.Delete) //{id}
+		r.Delete("", internalCors, news_controller.Delete)     //{id}
+	})
+	m.Group("/webProperties", func(r martini.Router) {
+		r.Post("/note/:id", internalCors, webProperty_controller.CreateUpdateWebPropertyNote)                                       //updates when an id is present; otherwise, creates
+		r.Put("/note", internalCors, webProperty_controller.CreateUpdateWebPropertyNote)                                            //updates when an id is present; otherwise, creates
+		r.Delete("/note/:id", internalCors, webProperty_controller.DeleteWebPropertyNote)                                           //{id}
+		r.Get("/note/:id", webProperty_controller.GetWebPropertyNote)                                                               //{id}
+		r.Post("/requirementCheck/:id", internalCors, internalCors, webProperty_controller.CreateUpdateWebPropertyRequirementCheck) //updates when an id is present; otherwise, creates
+		r.Put("/requirementCheck", internalCors, webProperty_controller.CreateUpdateWebPropertyRequirementCheck)                    //updates when an id is present; otherwise, creates
+		r.Delete("/requirementCheck/:id", internalCors, webProperty_controller.DeleteWebPropertyRequirementCheck)                   //{id}
+		r.Get("/requirementCheck/:id", webProperty_controller.GetWebPropertyRequirementCheck)                                       //{id}
+		r.Post("/type/:id", internalCors, webProperty_controller.CreateUpdateWebPropertyType)                                       //updates when an id is present; otherwise, creates
+		r.Put("/type", internalCors, webProperty_controller.CreateUpdateWebPropertyType)                                            //updates when an id is present; otherwise, creates
+		r.Delete("/type/:id", internalCors, webProperty_controller.DeleteWebPropertyType)                                           //{id}
+		r.Get("/type/:id", webProperty_controller.GetWebPropertyType)                                                               //{id}
+		r.Post("/requirement/:id", internalCors, webProperty_controller.CreateUpdateWebPropertyRequirement)                         //updates when an id is present; otherwise, creates
+		r.Put("/requirement", internalCors, webProperty_controller.CreateUpdateWebPropertyRequirement)                              //updates when an id is present; otherwise, creates
+		r.Delete("/requirement/:id", internalCors, webProperty_controller.DeleteWebPropertyRequirement)                             //{id}
+		r.Get("/requirement/:id", webProperty_controller.GetWebPropertyRequirement)                                                 //{id}
+		r.Get("/search", webProperty_controller.Search)
+		r.Get("/type", webProperty_controller.GetAllTypes)               //all tyeps
+		r.Get("/note", webProperty_controller.GetAllNotes)               //all notes
+		r.Get("/requirement", webProperty_controller.GetAllRequirements) //requirements
+		r.Get("", webProperty_controller.GetAll)
+		r.Get("/:id", webProperty_controller.Get)                                    //?id=id
+		r.Delete("/:id", internalCors, webProperty_controller.DeleteWebProperty)     //{id}
+		r.Post("/:id", internalCors, webProperty_controller.CreateUpdateWebProperty) //
+		r.Put("", internalCors, webProperty_controller.CreateUpdateWebProperty)      //can create notes(text) and requirements (requirement, by requirement=requirementID) while creating a property
+
 	})
 
 	m.Get("/search/part/:term", search_ctlr.SearchPart)
