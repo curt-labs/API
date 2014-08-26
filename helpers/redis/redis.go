@@ -3,6 +3,7 @@ package redis
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	redix "github.com/garyburd/redigo/redis"
 	"os"
 	"time"
@@ -11,6 +12,7 @@ import (
 const (
 	Db                = 13
 	PoolAllocationErr = "failed to allocate pool"
+	Prefix            = "goapi"
 )
 
 func RedisPool(master bool) *redix.Pool {
@@ -77,7 +79,7 @@ func Setex(key string, obj interface{}, exp int) error {
 		return err
 	}
 
-	return conn.Send("SETEX", data, exp)
+	return conn.Send("SETEX", fmt.Sprintf("%s:%s", Prefix, key), data, exp)
 }
 
 func Set(key string, obj interface{}) error {
@@ -95,7 +97,7 @@ func Set(key string, obj interface{}) error {
 		return err
 	}
 
-	_, err = conn.Do("SET", key, data)
+	_, err = conn.Do("SET", fmt.Sprintf("%s:%s", Prefix, key), data)
 	return err
 }
 
@@ -114,6 +116,6 @@ func Lpush(key string, obj interface{}) error {
 		return err
 	}
 
-	_, err = conn.Do("LPUSH", key, data)
+	_, err = conn.Do("LPUSH", fmt.Sprintf("%s:%s", Prefix, key), data)
 	return err
 }
