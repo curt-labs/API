@@ -320,7 +320,7 @@ func PopulateCategory(row *sql.Row, ch chan Category) {
 // Returns: []Category, error
 func TopTierCategories() (cats []Category, err error) {
 
-	redis_key := "goapi:category:top"
+	redis_key := "category:top"
 
 	// First lets try to access the category:top endpoint in Redis
 	data, err := redis.Get(redis_key)
@@ -360,7 +360,7 @@ func TopTierCategories() (cats []Category, err error) {
 
 func GetByTitle(cat_title string) (cat Category, err error) {
 
-	redis_key := "goapi:category:title:" + cat_title
+	redis_key := "category:title:" + cat_title
 
 	// Attempt to get the category from Redis
 	data, err := redis.Get(redis_key)
@@ -400,7 +400,7 @@ func GetByTitle(cat_title string) (cat Category, err error) {
 
 func GetById(cat_id int) (cat Category, err error) {
 
-	redis_key := "goapi:category:id:" + strconv.Itoa(cat_id)
+	redis_key := "category:id:" + strconv.Itoa(cat_id)
 
 	// Attempt to get the category from Redis
 	data, err := redis.Get(redis_key)

@@ -389,7 +389,7 @@ func GetCustomerCartReference(api_key string, part_id int) (ref int, err error) 
 
 func GetEtailers() (dealers []Customer, err error) {
 
-	redis_key := "goapi:dealers:etailers"
+	redis_key := "dealers:etailers"
 	data, err := redis.Get(redis_key)
 	if len(data) > 0 && err != nil {
 		err = json.Unmarshal(data, &dealers)
@@ -769,7 +769,7 @@ type MapPolygon struct {
 
 func GetLocalRegions() (regions []StateRegion, err error) {
 
-	redis_key := "goapi:local:regions"
+	redis_key := "local:regions"
 
 	// Attempt to get the local regions from Redis
 	data, err := redis.Get(redis_key)
@@ -886,7 +886,7 @@ func getViewPortWidth(lat1 float64, lon1 float64, lat2 float64, long2 float64) f
 
 func GetLocalDealerTiers() (tiers []DealerTier) {
 
-	redis_key := "goapi:local:tiers"
+	redis_key := "local:tiers"
 
 	// Attempt to get the local tiers from Redis
 	data, err := redis.Get(redis_key)
@@ -927,7 +927,7 @@ func GetLocalDealerTiers() (tiers []DealerTier) {
 
 func GetLocalDealerTypes() (graphics []MapGraphics) {
 
-	redis_key := "goapi:local:types"
+	redis_key := "local:types"
 
 	// Attempt to get the local types from Redis
 	data, err := redis.Get(redis_key)
@@ -994,7 +994,7 @@ func GetLocalDealerTypes() (graphics []MapGraphics) {
 
 func GetWhereToBuyDealers() (customers []Customer) {
 
-	redis_key := "goapi:dealers:wheretobuy"
+	redis_key := "dealers:wheretobuy"
 
 	data, err := redis.Get(redis_key)
 	if len(data) > 0 && err != nil {
