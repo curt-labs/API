@@ -127,10 +127,10 @@ func main() {
 		r.Post("/auth", customer_ctlr.UserAuthentication)
 		r.Get("/auth", customer_ctlr.KeyedUserAuthentication)
 		//Customer prices
-		r.Get("/prices/part/:id", customer_ctlr.GetPricesByPart)                       //{id}; id refers to partId
-		r.Get("/prices/sale", customer_ctlr.GetSales)                                  //{start}{end}{id} -all required params; id refers to customerId
-		r.Get("/prices/:id", customer_ctlr.GetPrice)                                   //{id}; id refers to {id} refers to customerPriceId
-		r.Get("/prices", customer_ctlr.GetAllPrices)                                   //returns all {sort=field&direction=dir}
+		r.Get("/prices/part/:id", internalCors, customer_ctlr.GetPricesByPart)         //{id}; id refers to partId
+		r.Get("/prices/sale", internalCors, customer_ctlr.GetSales)                    //{start}{end}{id} -all required params; id refers to customerId
+		r.Get("/prices/:id", internalCors, customer_ctlr.GetPrice)                     //{id}; id refers to {id} refers to customerPriceId
+		r.Get("/prices", internalCors, customer_ctlr.GetAllPrices)                     //returns all {sort=field&direction=dir}
 		r.Post("/prices/:id", internalCors, customer_ctlr.CreateUpdatePrice)           //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
 		r.Put("/prices", internalCors, customer_ctlr.CreateUpdatePrice)                //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
 		r.Delete("/prices/:id", internalCors, customer_ctlr.DeletePrice)               //{id} refers to customerPriceId
@@ -192,12 +192,12 @@ func main() {
 		r.Put("/requirement", internalCors, webProperty_controller.CreateUpdateWebPropertyRequirement)                              //updates when an id is present; otherwise, creates
 		r.Delete("/requirement/:id", internalCors, webProperty_controller.DeleteWebPropertyRequirement)                             //{id}
 		r.Get("/requirement/:id", webProperty_controller.GetWebPropertyRequirement)                                                 //{id}
-		r.Get("/search", webProperty_controller.Search)
+		r.Get("/search", internalCors, webProperty_controller.Search)
 		r.Get("/type", webProperty_controller.GetAllTypes)               //all tyeps
 		r.Get("/note", webProperty_controller.GetAllNotes)               //all notes
 		r.Get("/requirement", webProperty_controller.GetAllRequirements) //requirements
-		r.Get("", webProperty_controller.GetAll)
-		r.Get("/:id", webProperty_controller.Get)                                    //?id=id
+		r.Get("", internalCors, webProperty_controller.GetAll)
+		r.Get("/:id", internalCors, webProperty_controller.Get)                      //?id=id
 		r.Delete("/:id", internalCors, webProperty_controller.DeleteWebProperty)     //{id}
 		r.Post("/:id", internalCors, webProperty_controller.CreateUpdateWebProperty) //
 		r.Put("", internalCors, webProperty_controller.CreateUpdateWebProperty)      //can create notes(text) and requirements (requirement, by requirement=requirementID) while creating a property
