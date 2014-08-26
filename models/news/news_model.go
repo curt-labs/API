@@ -40,7 +40,7 @@ const (
 func (n *News) Get() error {
 	var err error
 
-	redis_key := "goapi:news:" + strconv.Itoa(n.ID)
+	redis_key := "news:" + strconv.Itoa(n.ID)
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &n)
@@ -81,7 +81,7 @@ func (n *News) Get() error {
 func GetAll() (Newses, error) {
 	var fs Newses
 	var err error
-	redis_key := "goapi:news"
+	redis_key := "news"
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &fs)
@@ -118,7 +118,7 @@ func GetTitles(pageStr, resultsStr string) (pagination.Objects, error) {
 	var fs []interface{}
 	var l pagination.Objects
 
-	redis_key := "goapi:news:titles"
+	redis_key := "news:titles"
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &l)
@@ -153,7 +153,7 @@ func GetLeads(pageStr, resultsStr string) (pagination.Objects, error) {
 	var err error
 	var fs []interface{}
 	var l pagination.Objects
-	redis_key := "goapi:news:leads"
+	redis_key := "news:leads"
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &l)

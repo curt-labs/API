@@ -7,7 +7,6 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/pagination"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
-	"log"
 	"strconv"
 	"time"
 )
@@ -48,7 +47,7 @@ var (
 	getAllCategories         = "SELECT b.blogCategoryID, b.name, b.slug, b.active FROM BlogCategories AS b"
 	stmtGetAllBlogCategories = "SELECT bc.postCategoryID, bc.blogPostID, bc.blogCategoryID, b.blogCategoryID, b.name, b.slug, b.active FROM BlogPost_BlogCategory AS bc LEFT JOIN blogCategories AS b ON b.blogCategoryID = bc.blogCategoryID"
 	getBlog                  = "SELECT b.blogPostID, b.post_title ,b.slug, COALESCE(b.post_text,'') ,COALESCE(b.publishedDate,''), COALESCE(b.createdDate,''), COALESCE(b.lastModified,''), b.userID, COALESCE(b.meta_title,''), COALESCE(b.meta_description,''), COALESCE(b.keywords,''), b.active FROM  BlogPosts AS b WHERE b.blogPostID = ?"
-	create                   = `INSERT INTO BlogPosts (post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active) 
+	create                   = `INSERT INTO BlogPosts (post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active)
 								VALUES (?,?,?,?,?,?,?,?,?,?,?)`
 	getCategory     = "SELECT blogCategoryID, name, slug,active FROM BlogCategories WHERE blogCategoryID = ?"
 	createCategory  = "INSERT INTO BlogCategories (name,slug,active) VALUES (?,?,?)"
@@ -56,7 +55,7 @@ var (
 	deleteCatBridge = `DELETE FROM BlogPost_BlogCategory WHERE blogPostID = ?`
 	update          = `UPDATE BlogPosts SET post_title = ? ,slug = ? ,post_text = ?, publishedDate= ?, lastModified = ?,userID = ?, meta_title = ?, meta_description = ?, keywords = ?, active = ? WHERE blogPostID = ?`
 	deleteBlog      = "DELETE FROM BlogPosts WHERE blogPostID = ?"
-	search          = `SELECT b.blogPostID, b.post_title ,b.slug ,b.post_text ,b.publishedDate, b.createdDate, b.lastModified, b.userID, b.meta_title, b.meta_description, b.keywords, b.active FROM  BlogPosts AS b 
+	search          = `SELECT b.blogPostID, b.post_title ,b.slug ,b.post_text ,b.publishedDate, b.createdDate, b.lastModified, b.userID, b.meta_title, b.meta_description, b.keywords, b.active FROM  BlogPosts AS b
 						WHERE b.post_title LIKE ? AND b.slug LIKE ? AND b.post_text LIKE ? AND b.publishedDate LIKE ? AND b.createdDate LIKE ? AND b.lastModified LIKE ? AND b.userID LIKE ? AND b.meta_title LIKE ? AND b.meta_description LIKE ? AND b.keywords LIKE ? AND b.active LIKE ?`
 )
 
@@ -68,7 +67,7 @@ func GetAll() (Blogs, error) {
 	var bs Blogs
 	var err error
 
-	redis_key := "goapi:blogs"
+	redis_key := "blogs"
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &bs)
@@ -78,14 +77,12 @@ func GetAll() (Blogs, error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 
 	if err != nil {
-		log.Print(err)
 		return bs, err
 	}
 	defer db.Close()
 
 	stmt, err := db.Prepare(getAllBlogs)
 	if err != nil {
-		log.Print(err)
 		return bs, err
 	}
 	defer stmt.Close()
@@ -119,14 +116,12 @@ func getAllBlogCategories() (BlogCategories, error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 
 	if err != nil {
-		log.Print(err)
 		return bcs, err
 	}
 	defer db.Close()
 
 	stmt, err := db.Prepare(stmtGetAllBlogCategories)
 	if err != nil {
-		log.Print(err)
 		return bcs, err
 	}
 	defer stmt.Close()
@@ -143,7 +138,7 @@ func getAllBlogCategories() (BlogCategories, error) {
 func GetAllCategories() (Categories, error) {
 	var cs Categories
 	var err error
-	redis_key := "goapi:blogs:categories"
+	redis_key := "blogs:categories"
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &cs)
@@ -152,14 +147,12 @@ func GetAllCategories() (Categories, error) {
 
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		log.Print(err)
 		return cs, err
 	}
 	defer db.Close()
 
 	stmt, err := db.Prepare(getAllCategories)
 	if err != nil {
-		log.Print(err)
 		return cs, err
 	}
 	defer stmt.Close()
@@ -175,7 +168,7 @@ func GetAllCategories() (Categories, error) {
 }
 func (c *Category) Get() error {
 	var err error
-	redis_key := "goapi:blogs:category" + strconv.Itoa(c.ID)
+	redis_key := "blogs:category" + strconv.Itoa(c.ID)
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &c)
@@ -184,14 +177,12 @@ func (c *Category) Get() error {
 
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		log.Print(err)
 		return err
 	}
 	defer db.Close()
 
 	stmt, err := db.Prepare(getCategory)
 	if err != nil {
-		log.Print(err)
 		return err
 	}
 	defer stmt.Close()
@@ -204,7 +195,7 @@ func (c *Category) Get() error {
 func (b *Blog) Get() error {
 	var err error
 
-	redis_key := "goapi:blogs:" + strconv.Itoa(b.ID)
+	redis_key := "blogs:" + strconv.Itoa(b.ID)
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &b)
@@ -214,14 +205,12 @@ func (b *Blog) Get() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 
 	if err != nil {
-		log.Print(err)
 		return err
 	}
 	defer db.Close()
 
 	stmt, err := db.Prepare(getBlog)
 	if err != nil {
-		log.Print(err)
 		return err
 	}
 	defer stmt.Close()

@@ -200,14 +200,14 @@ func (p *Part) FromDatabase() error {
 	<-categoryChan
 	<-contentChan
 
-	go redis.Setex("goapi:part:"+strconv.Itoa(p.PartId), p, 86400)
+	go redis.Setex("part:"+strconv.Itoa(p.PartId), p, 86400)
 
 	return nil
 }
 
 func (p *Part) FromCache() error {
 
-	part_bytes, err := redis.Get("goapi:part:" + strconv.Itoa(p.PartId))
+	part_bytes, err := redis.Get("part:" + strconv.Itoa(p.PartId))
 	if err != nil {
 		return err
 	} else if len(part_bytes) == 0 {
@@ -593,7 +593,7 @@ func GetCategoryParts(c category.Category, key string, page int, count int) (par
 		page = count * page
 	}
 
-	redis_key := "goapi:category:" + strconv.Itoa(c.CategoryId) + ":tree:" + strconv.Itoa(page) + ":" + strconv.Itoa(count)
+	redis_key := "category:" + strconv.Itoa(c.CategoryId) + ":tree:" + strconv.Itoa(page) + ":" + strconv.Itoa(count)
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &parts)
