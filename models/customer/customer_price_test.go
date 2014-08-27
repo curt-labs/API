@@ -74,4 +74,37 @@ func TestCustomerPriceModel(t *testing.T) {
 		})
 
 	})
+
+	Convey("Testing Customer_New", t, func() {
+		Convey("Testing GetUsers_New()", func() {
+			var c Customer
+			var err error
+			c.Id = 108664501
+			err = c.GetCustomer_New()
+			So(err, ShouldBeNil)
+		})
+		Convey("Testing Basics_New()", func() {
+			var c Customer
+			var err error
+			c.Id = 108664501
+			err = c.Basics_New()
+			So(err, ShouldBeNil)
+		})
+		Convey("Testing GetLocations_New()", func() {
+			var c Customer
+			var err error
+			c.Id = 108664501
+			err = c.GetLocations_New()
+			So(err, ShouldBeNil)
+		})
+		Convey("Testing GetUsers_New()", func() {
+			var c Customer
+			var err error
+			c.Id = 10579901
+			users, err := c.GetUsers_New()
+			So(err, ShouldBeNil)
+			So(users, ShouldNotBeNil)
+		})
+		//key=8AEE0620-412E-47FC-900A-947820EA1C1D
+	})
 }

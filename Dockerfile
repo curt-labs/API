@@ -19,6 +19,7 @@ RUN apt-get install -y build-essential mercurial git-core subversion wget defaul
 # go 1.2 tarball
 RUN wget -qO- https://go.googlecode.com/files/go1.2.linux-amd64.tar.gz | tar -C /usr/local -xzf -
 
+<<<<<<< HEAD
 ENV REDIS_PASSWORD eC0mm3rc3
 ENV REDIS_CLIENT_ADDRESS 172.17.42.1:6379
 ENV REDIS_MASTER_ADDRESS 162.222.179.124:6379
@@ -45,6 +46,8 @@ ENV EMAIL_PASSWORD eC0mm3rc3
 ENV EMAIL_SSL true
 ENV EMAIL_PORT 587
 
+=======
+>>>>>>> 9b5c441e89d8a5945705f94d59016a6f00b82cd8
 RUN mkdir -p /home/deployer/logs
 
 WORKDIR /home/deployer/gosrc

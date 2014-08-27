@@ -18,7 +18,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/cors"
-	"github.com/martini-contrib/gorelic"
+	// "github.com/martini-contrib/gorelic"
 	"github.com/martini-contrib/gzip"
 	"github.com/martini-contrib/sessions"
 	"log"
@@ -28,7 +28,7 @@ import (
 )
 
 var (
-	listenAddr = flag.String("http", ":8080", "http listen address")
+	listenAddr = flag.String("http", ":8081", "http listen address")
 )
 
 /**
@@ -45,8 +45,8 @@ func main() {
 	}
 
 	m := martini.Classic()
-	gorelic.InitNewrelicAgent("5fbc49f51bd658d47b4d5517f7a9cb407099c08c", "GoAPI", false)
-	m.Use(gorelic.Handler)
+	// gorelic.InitNewrelicAgent("5fbc49f51bd658d47b4d5517f7a9cb407099c08c", "GoAPI", false)
+	// m.Use(gorelic.Handler)
 	m.Use(gzip.All())
 	m.Use(middleware.Meddler())
 	m.Use(cors.Allow(&cors.Options{
@@ -207,6 +207,21 @@ func main() {
 	m.Get("/search/part/:term", search_ctlr.SearchPart)
 	m.Get("/videos", videos_ctlr.DistinctVideos)
 
+	m.Group("/customerNew", func(r martini.Router) {
+		r.Get("", customer_ctlr.GetCustomer_New)
+		r.Get("/users", customer_ctlr.GetUsers_New)
+		r.Get("/locations", customer_ctlr.GetLocations_New)
+		r.Get("/price/:id", customer_ctlr.GetCustomerPrice_New)           //{part id}
+		r.Get("/cartRef/:id", customer_ctlr.GetCustomerCartReference_New) //{part id}
+		r.Get("/eTailers", customer_ctlr.GetEtailers_New)
+		r.Get("/local", customer_ctlr.GetLocalDealers_New)
+		r.Get("/local/regions", customer_ctlr.GetLocalRegions_New)        //move to dealers
+		r.Get("/local/tiers", customer_ctlr.GetLocalDealerTiers_New)      //move to dealers
+		r.Get("/local/types", customer_ctlr.GetLocalDealerTypes_New)      //move to dealers
+		r.Get("/etailer/platinum", customer_ctlr.PlatinumEtailers_New)    //move to dealers
+		r.Get("/dealers/location/:id", customer_ctlr.GetLocationById_New) //move to dealers
+		r.Get("/dealers/search/:search", customer_ctlr.SearchLocations_New)
+	})
 	/**** INTERNAL USE ONLY ****/
 	// These endpoints will not work to the public eye when deployed on CURT's
 	// servers. We will have restrictions in place to prevent access...sorry :/
