@@ -9,11 +9,11 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	"github.com/curt-labs/GoAPI/models/geography"
 	_ "github.com/go-sql-driver/mysql"
+	// "log"
 	"math"
 	"net/url"
 	"strconv"
 	"strings"
-	// "log"
 )
 
 type Customer_New struct {
@@ -27,7 +27,7 @@ type Customer_New struct {
 	Website                              url.URL
 	Parent                               Customer
 	SearchUrl, Logo                      url.URL
-	DealerType                           DealerType
+	DealerType                           DealerType_New
 	DealerTier                           DealerTier
 	SalesRepresentative                  string
 	SalesRepresentativeCode              string
@@ -50,7 +50,7 @@ type CustomerLocation_New struct {
 type DealerLocation_New struct {
 	Id, LocationId                       int
 	Name, Email, Address, Address2, City string
-	State                                geography.State
+	State                                geography.State_New
 	PostalCode                           string
 	Phone, Fax                           string
 	ContactPerson                        string
@@ -58,11 +58,22 @@ type DealerLocation_New struct {
 	Website                              url.URL
 	Parent                               Customer
 	SearchUrl, Logo                      url.URL
-	DealerType                           DealerType
+	DealerType                           DealerType_New
 	DealerTier                           DealerTier
 	SalesRepresentative                  string
 	SalesRepresentativeCode              string
 	MapixCode, MapixDescription          string
+}
+type DealerType_New struct {
+	Id           int
+	Type, Label  string
+	Online, Show bool
+	MapIcon      MapIcon_New
+}
+
+type MapIcon_New struct {
+	Id, TierId             int
+	MapIcon, MapIconShadow url.URL
 }
 
 var (
@@ -111,22 +122,22 @@ var (
 						where ak.api_key = ?
 						and ci.partID = ?`
 	etailers = `select c.customerID, c.name, c.email, c.address, c.address2, c.city, c.phone, c.fax, c.contact_person,
-				COALESCE(c.latitude,0), COALESCE(c.longitude,0), c.searchURL, c.logo, c.website,
-				c.postal_code, COALESCE(s.stateID,0), COALESCE(s.state,""), COALESCE(s.abbr,"") as state_abbr, COALESCE(cty.countryID,0), COALESCE(cty.name,"") as country_name, COALESCE(cty.abbr,"") as country_abbr,
-				dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
-				dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
-				COALESCE(mi.ID,0) as iconID, COALESCE(mi.mapicon,""), COALESCE(mi.mapiconshadow,""),
-				COALESCE(mpx.code,"") as mapix_code, COALESCE(mpx.description,"") as mapic_desc,
-				COALESCE(sr.name,"") as rep_name, COALESCE(sr.code,"") as rep_code, c.parentID
-				from Customer as c
-				join DealerTypes as dt on c.dealer_type = dt.dealer_type
-				join DealerTiers dtr on c.tier = dtr.ID
-				left join MapIcons as mi on dt.dealer_type = mi.dealer_type
-				left join States as s on c.stateID = s.stateID
-				left join Country as cty on s.countryID = cty.countryID
-				left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
-				left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
-				where dt.online = 1 && c.isDummy = 0`
+					COALESCE(c.latitude,0), COALESCE(c.longitude,0), c.searchURL, c.logo, c.website,
+					c.postal_code, COALESCE(s.stateID,0), COALESCE(s.state,""), COALESCE(s.abbr,"") as state_abbr, COALESCE(cty.countryID,0), COALESCE(cty.name,"") as country_name, COALESCE(cty.abbr,"") as country_abbr,
+					dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
+					dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
+					COALESCE(mi.ID,0) as iconID, COALESCE(mi.mapicon,""), COALESCE(mi.mapiconshadow,""),
+					COALESCE(mpx.code,"") as mapix_code, COALESCE(mpx.description,"") as mapic_desc,
+					COALESCE(sr.name,"") as rep_name, COALESCE(sr.code,"") as rep_code, c.parentID
+					from Customer as c
+					join DealerTypes as dt on c.dealer_type = dt.dealer_type
+					join DealerTiers dtr on c.tier = dtr.ID
+					left join MapIcons as mi on dt.dealer_type = mi.dealer_type
+					left join States as s on c.stateID = s.stateID
+					left join Country as cty on s.countryID = cty.countryID
+					left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
+					left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
+					where dt.online = 1 && c.isDummy = 0`
 	localDealers = `select cl.locationID, c.customerID, cl.name, c.email, cl.address, cl.city, cl.phone, cl.fax, cl.contact_person,
 						cl.latitude, cl.longitude, c.searchURL, c.logo, c.website,
 						cl.postalCode, s.stateID, s.state, s.abbr as state_abbr, cty.countryID, cty.name as country_name, cty.abbr as country_abbr,
@@ -135,6 +146,41 @@ var (
 						mi.ID as iconID, mi.mapicon, mi.mapiconshadow,
 						mpx.code as mapix_code, mpx.description as mapic_desc,
 						sr.name as rep_name, sr.code as rep_code, c.parentID
+						from CustomerLocations as cl
+						join Customer as c on cl.cust_id = c.cust_id
+						join DealerTypes as dt on c.dealer_type = dt.dealer_type
+						left join MapIcons as mi on dt.dealer_type = mi.dealer_type
+						join DealerTiers as dtr on c.tier = dtr.ID
+						left join States as s on cl.stateID = s.stateID
+						left join Country as cty on s.countryID = cty.countryID
+						left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
+						left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
+						where dt.online = 0 && c.isDummy = 0 && dt.show = 1 && dtr.ID = mi.tier &&
+						( ? * (
+							2 * ATAN2(
+								SQRT((SIN(((cl.latitude - ?) * (PI() / 180)) / 2) * SIN(((cl.latitude - ?) * (PI() / 180)) / 2)) + ((SIN(((cl.longitude - ?) * (PI() / 180)) / 2)) * (SIN(((cl.longitude - ?) * (PI() / 180)) / 2))) * COS(? * (PI() / 180)) * COS(cl.latitude * (PI() / 180))),
+								SQRT(1 - ((SIN(((cl.latitude - ?) * (PI() / 180)) / 2) * SIN(((cl.latitude - ?) * (PI() / 180)) / 2)) + ((SIN(((cl.longitude - ?) * (PI() / 180)) / 2)) * (SIN(((cl.longitude - ?) * (PI() / 180)) / 2))) * COS(? * (PI() / 180)) * COS(cl.latitude * (PI() / 180))))
+							)
+						) < ?)
+						&& (
+							(cl.latitude >= ? && cl.latitude <= ?)
+							&&
+							(cl.longitude >= ? && cl.longitude <= ?)
+							||
+							(cl.longitude >= ? && cl.longitude <= ?)
+						)
+						group by cl.locationID
+						order by dtr.sort desc`
+
+	//TODO delete ld before publishing - for reference
+	ld = `select cl.locationID, c.customerID, cl.name, c.email, cl.address, cl.city, cl.phone, cl.fax, cl.contact_person,
+						COALESCE(cl.latitude,0), COALESCE(cl.longitude,0), c.searchURL, c.logo, c.website,
+						COALESCE(c.postal_code,0), COALESCE(s.stateID,0), COALESCE(s.state,""), COALESCE(s.abbr,"") as state_abbr, COALESCE(cty.countryID,0),COALESCE(cty.name,"") as country_name, COALESCE(cty.abbr,"") as country_abbr,
+						dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
+						dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
+						COALESCE(mi.ID,0) as iconID, COALESCE(mi.mapicon,""), COALESCE(mi.mapiconshadow,""),
+						COALESCE(mpx.code,"") as mapix_code, COALESCE(mpx.description,"") as mapic_desc,
+						COALESCE(sr.name,"") as rep_name, COALESCE(sr.code,"") as rep_code, c.parentID
 						from CustomerLocations as cl
 						join Customer as c on cl.cust_id = c.cust_id
 						join DealerTypes as dt on c.dealer_type = dt.dealer_type
@@ -195,7 +241,6 @@ func (c *Customer_New) Basics_New() error {
 	defer stmt.Close()
 
 	var ur, logo, web, icon, shadow, lat, lon string
-
 	err = stmt.QueryRow(c.Id).Scan(
 		&c.Id,            //c.customerID,
 		&c.Name,          //c.name
@@ -238,48 +283,15 @@ func (c *Customer_New) Basics_New() error {
 	if err != nil {
 		return err
 	}
-
-	if lat != "" {
-		c.Latitude, err = strconv.ParseFloat(lat, 64)
-	}
-	if lon != "" {
-		c.Longitude, err = strconv.ParseFloat(lon, 64)
-	}
-
-	if ur != "" {
-		aa, err := url.Parse(ur)
-		c.SearchUrl = *aa
-		if err != nil {
-			return err
-		}
-	}
-	if logo != "" {
-		ab, err := url.Parse(logo)
-		c.Logo = *ab
-		if err != nil {
-			return err
-		}
-	}
-	if web != "" {
-		ac, err := url.Parse(web)
-		c.Website = *ac
-		if err != nil {
-			return err
-		}
-	}
-	if icon != "" {
-		ad, err := url.Parse(icon)
-		c.DealerType.MapIcon.MapIcon = ad
-		if err != nil {
-			return err
-		}
-	}
-	if shadow != "" {
-		ae, err := url.Parse(shadow)
-		c.DealerType.MapIcon.MapIconShadow = ae
-		if err != nil {
-			return err
-		}
+	c.Latitude, err = floatParse(lat)
+	c.Longitude, err = floatParse(lon)
+	c.SearchUrl, err = urlParse(ur)
+	c.Logo, err = urlParse(logo)
+	c.Website, err = urlParse(web)
+	c.DealerType.MapIcon.MapIcon, err = urlParse(icon)
+	c.DealerType.MapIcon.MapIconShadow, err = urlParse(shadow)
+	if err != nil {
+		return err
 	}
 
 	if c.Parent.Id != 0 {
@@ -291,6 +303,28 @@ func (c *Customer_New) Basics_New() error {
 		}
 	}
 	return nil
+}
+
+//helper funcs
+func floatParse(input string) (float64, error) {
+	var err error
+	if input != "" {
+		output, err := strconv.ParseFloat(input, 64)
+		return output, err
+	}
+	return 0.0, err
+}
+
+func urlParse(input string) (url.URL, error) {
+	var err error
+	if input != "" {
+		output, err := url.Parse(input)
+		output2 := *output
+		return output2, err
+	}
+	output, err := url.Parse("")
+	output2 := *output
+	return output2, err
 }
 
 func (c *Customer_New) GetLocations_New() error {
@@ -474,48 +508,15 @@ func GetEtailers_New() (dealers []Customer_New, err error) {
 			return dealers, err
 		}
 
-		if lat != "" {
-			c.Latitude, err = strconv.ParseFloat(lat, 64)
-		}
-		if lon != "" {
-			c.Longitude, err = strconv.ParseFloat(lon, 64)
-		}
-
-		//Very hacky, dude
-		if ur != "" {
-			aa, err := url.Parse(ur)
-			c.SearchUrl = *aa
-			if err != nil {
-				return dealers, err
-			}
-		}
-		if logo != "" {
-			ab, err := url.Parse(logo)
-			c.Logo = *ab
-			if err != nil {
-				return dealers, err
-			}
-		}
-		if web != "" {
-			ac, err := url.Parse(web)
-			c.Website = *ac
-			if err != nil {
-				return dealers, err
-			}
-		}
-		if icon != "" {
-			ad, err := url.Parse(icon)
-			c.DealerType.MapIcon.MapIcon = ad
-			if err != nil {
-				return dealers, err
-			}
-		}
-		if shadow != "" {
-			ae, err := url.Parse(shadow)
-			c.DealerType.MapIcon.MapIconShadow = ae
-			if err != nil {
-				return dealers, err
-			}
+		c.Latitude, err = floatParse(lat)
+		c.Longitude, err = floatParse(lon)
+		c.SearchUrl, err = urlParse(ur)
+		c.Logo, err = urlParse(logo)
+		c.Website, err = urlParse(web)
+		c.DealerType.MapIcon.MapIcon, err = urlParse(icon)
+		c.DealerType.MapIcon.MapIconShadow, err = urlParse(shadow)
+		if err != nil {
+			return dealers, err
 		}
 
 		dealers = append(dealers, c)
@@ -525,12 +526,6 @@ func GetEtailers_New() (dealers []Customer_New, err error) {
 }
 
 func GetLocalDealers_New(center string, latlng string) (dealers []DealerLocation_New, err error) {
-
-	// qry, err := database.GetStatement("LocalDealersStmt")
-	// if database.MysqlError(err) {
-	// 	return
-	// }
-
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return dealers, err
@@ -607,26 +602,7 @@ func GetLocalDealers_New(center string, latlng string) (dealers []DealerLocation
 		view_distance = distance_a
 	}
 
-	params := struct {
-		Earth        float64
-		Clat1        float64
-		Clat2        float64
-		Clong1       float64
-		Clong2       float64
-		Clat3        float64
-		Clat4        float64
-		Clat5        float64
-		Clong3       float64
-		Clong4       float64
-		Clat6        float64
-		ViewDistance float64
-		SWLat        float64
-		NELat        float64
-		SWLong       float64
-		NELong       float64
-		SWLong2      float64
-		NELong2      float64
-	}{
+	params := []interface{}{ //all are float64 type
 		api_helpers.EARTH,
 		clat,
 		clat,
@@ -644,18 +620,19 @@ func GetLocalDealers_New(center string, latlng string) (dealers []DealerLocation
 		swlong,
 		nelong,
 		swlong2,
-		nelong2,
+		nelong2}
+	res, err := stmt.Query(params...)
+	if err != nil {
+		return dealers, err
 	}
 
-	res, err := stmt.Query(params)
-
-	var ur, logo, web, icon, shadow, lat, lon string
+	var ur, logo, web, lat, lon, icon, shadow string
 
 	for res.Next() {
 		var cust DealerLocation_New
 		res.Scan(
-			&cust.Id,
 			&cust.LocationId,
+			&cust.Id,
 			&cust.Name,
 			&cust.Email,
 			&cust.Address,
@@ -692,23 +669,20 @@ func GetLocalDealers_New(center string, latlng string) (dealers []DealerLocation
 			&cust.SalesRepresentativeCode,
 			&cust.Parent.Id,
 		)
+		cust.Latitude, err = floatParse(lat)
+		cust.Longitude, err = floatParse(lon)
+		cust.SearchUrl, err = urlParse(ur)
+		cust.Logo, err = urlParse(logo)
+		cust.Website, err = urlParse(web)
+		cust.DealerType.MapIcon.MapIcon, err = urlParse(icon)
+		cust.DealerType.MapIcon.MapIconShadow, err = urlParse(shadow)
+		if err != nil {
+			return dealers, err
+		}
 
 		cust.Distance = api_helpers.EARTH * (2 * math.Atan2(
 			math.Sqrt((math.Sin(((cust.Latitude-clat)*(math.Pi/180))/2)*math.Sin(((cust.Latitude-clat)*(math.Pi/180))/2))+((math.Sin(((cust.Longitude-clong)*(math.Pi/180))/2))*(math.Sin(((cust.Longitude-clong)*(math.Pi/180))/2)))*math.Cos(clat*(math.Pi/180))*math.Cos(cust.Latitude*(math.Pi/180))),
 			math.Sqrt(1-((math.Sin(((cust.Latitude-clat)*(math.Pi/180))/2)*math.Sin(((cust.Latitude-clat)*(math.Pi/180))/2))+((math.Sin(((cust.Longitude-clong)*(math.Pi/180))/2))*(math.Sin(((cust.Longitude-clong)*(math.Pi/180))/2)))*math.Cos(clat*(math.Pi/180))*math.Cos(cust.Latitude*(math.Pi/180))))))
-
-		// ctry := geography.Country{
-		// 	Id:           r.Int(countryID),
-		// 	Country:      r.Str(country),
-		// 	Abbreviation: r.Str(country_abbr),
-		// }
-
-		// cust.State = &geography.State{
-		// 	Id:           r.Int(stateID),
-		// 	State:        r.Str(state),
-		// 	Abbreviation: r.Str(state_abbr),
-		// 	Country:      &ctry,
-		// }
 
 		dealers = append(dealers, cust)
 	}
