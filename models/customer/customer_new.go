@@ -6,12 +6,17 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/api"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	// "github.com/curt-labs/GoAPI/helpers/redis"
+
 	// "bytes"
-	"github.com/curt-labs/GoAPI/helpers/sortutil"
+
 	"github.com/curt-labs/GoAPI/models/geography"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
 	// "encoding/binary"
+
+	"github.com/curt-labs/GoAPI/helpers/sortutil"
+	_ "github.com/go-sql-driver/mysql"
+
 	"math"
 	"net/url"
 	"strconv"
@@ -29,13 +34,15 @@ type Customer_New struct {
 	Website                              url.URL
 	Parent                               Customer
 	SearchUrl, Logo                      url.URL
-	DealerType                           DealerType_New
-	DealerTier                           DealerTier
-	SalesRepresentative                  string
-	SalesRepresentativeCode              string
-	MapixCode, MapixDescription          string
-	Locations                            []CustomerLocation_New
-	Users                                []CustomerUser
+
+	DealerType DealerType_New
+
+	DealerTier                  DealerTier
+	SalesRepresentative         string
+	SalesRepresentativeCode     string
+	MapixCode, MapixDescription string
+	Locations                   []CustomerLocation_New
+	Users                       []CustomerUser
 }
 
 type CustomerLocation_New struct {
@@ -52,20 +59,25 @@ type CustomerLocation_New struct {
 type DealerLocation_New struct {
 	Id, LocationId                       int
 	Name, Email, Address, Address2, City string
-	State                                geography.State_New
-	PostalCode                           string
-	Phone, Fax                           string
-	ContactPerson                        string
-	Latitude, Longitude, Distance        float64
-	Website                              url.URL
-	Parent                               Customer
-	SearchUrl, Logo                      url.URL
-	DealerType                           DealerType_New
-	DealerTier                           DealerTier
-	SalesRepresentative                  string
-	SalesRepresentativeCode              string
-	MapixCode, MapixDescription          string
+
+	State geography.State_New
+
+	PostalCode                    string
+	Phone, Fax                    string
+	ContactPerson                 string
+	Latitude, Longitude, Distance float64
+	Website                       url.URL
+	Parent                        Customer
+	SearchUrl, Logo               url.URL
+
+	DealerType DealerType_New
+
+	DealerTier                  DealerTier
+	SalesRepresentative         string
+	SalesRepresentativeCode     string
+	MapixCode, MapixDescription string
 }
+
 type DealerType_New struct {
 	Id           int
 	Type, Label  string
@@ -146,6 +158,7 @@ var (
 					left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
 					left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
 					where dt.online = 1 && c.isDummy = 0`
+
 	localDealers = `select cl.locationID, c.customerID, cl.name, c.email, cl.address, cl.city, cl.phone, cl.fax, cl.contact_person,
 						cl.latitude, cl.longitude, c.searchURL, c.logo, c.website,
 						cl.postalCode, s.stateID, s.state, s.abbr as state_abbr, cty.countryID, cty.name as country_name, cty.abbr as country_abbr,
@@ -177,6 +190,7 @@ var (
 							||
 							(cl.longitude >= ? && cl.longitude <= ?)
 						)
+
 						group by cl.locationID`
 	polygon = `select s.stateID, s.state, s.abbr,
 					(
@@ -323,6 +337,7 @@ func (c *Customer_New) Basics_New() error {
 	defer stmt.Close()
 
 	var ur, logo, web, icon, shadow, lat, lon string
+
 	err = stmt.QueryRow(c.Id).Scan(
 		&c.Id,            //c.customerID,
 		&c.Name,          //c.name
@@ -365,6 +380,7 @@ func (c *Customer_New) Basics_New() error {
 	if err != nil {
 		return err
 	}
+
 	c.Latitude, err = floatParse(lat)
 	c.Longitude, err = floatParse(lon)
 	c.SearchUrl, err = urlParse(ur)
@@ -374,6 +390,7 @@ func (c *Customer_New) Basics_New() error {
 	c.DealerType.MapIcon.MapIconShadow, err = urlParse(shadow)
 	if err != nil {
 		return err
+
 	}
 
 	if c.Parent.Id != 0 {
@@ -599,6 +616,7 @@ func GetEtailers_New() (dealers []Customer_New, err error) {
 		c.DealerType.MapIcon.MapIconShadow, err = urlParse(shadow)
 		if err != nil {
 			return dealers, err
+
 		}
 
 		dealers = append(dealers, c)
@@ -608,6 +626,7 @@ func GetEtailers_New() (dealers []Customer_New, err error) {
 }
 
 func GetLocalDealers_New(center string, latlng string) (dealers []DealerLocation_New, err error) {
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return dealers, err
@@ -685,6 +704,7 @@ func GetLocalDealers_New(center string, latlng string) (dealers []DealerLocation
 	}
 
 	params := []interface{}{ //all are float64 type
+
 		api_helpers.EARTH,
 		clat,
 		clat,
@@ -713,6 +733,7 @@ func GetLocalDealers_New(center string, latlng string) (dealers []DealerLocation
 	for res.Next() {
 		var cust DealerLocation_New
 		res.Scan(
+
 			&cust.LocationId,
 			&cust.Id,
 			&cust.Name,
@@ -751,6 +772,7 @@ func GetLocalDealers_New(center string, latlng string) (dealers []DealerLocation
 			&cust.SalesRepresentativeCode,
 			&cust.Parent.Id,
 		)
+
 		cust.Latitude, err = floatParse(lat)
 		cust.Longitude, err = floatParse(lon)
 		cust.SearchUrl, err = urlParse(ur)

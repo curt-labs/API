@@ -179,6 +179,7 @@ func GetEtailers_New(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 //
 // Old Path: http://curtmfg.com/WhereToBuy/getLocalDealersJSON?latlng=43.853282,-95.571675,45.800981,-90.468526&center=44.83536,-93.0201
 // TODO - this method found in Dealers ctlr
+
 func GetLocalDealers_New(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var err error
 	qs := r.URL.Query()
@@ -192,14 +193,15 @@ func GetLocalDealers_New(w http.ResponseWriter, r *http.Request, enc encoding.En
 		return ""
 	}
 	// Get the latlng
-	latlng := qs.Get("latlng")
+
+	latlng := params["latlng"]
 	if latlng == "" {
-		latlng = r.FormValue("latlng")
+		latlng = qs.Get("latlng")
 	}
 	// Get the center
-	center := qs.Get("center")
+	center := params["center"]
 	if center == "" {
-		center = r.FormValue("center")
+		center = qs.Get("center")
 	}
 
 	dealers, err := customer.GetLocalDealers_New(center, latlng)
