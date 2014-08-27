@@ -246,3 +246,39 @@ func PlatinumEtailers_New(w http.ResponseWriter, r *http.Request, enc encoding.E
 	}
 	return encoding.Must(enc.Encode(cust))
 }
+
+func GetLocationById_New(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+	str_id := params["id"]
+	if str_id == "" {
+		http.Error(w, "You must supply a location identification number.", http.StatusInternalServerError)
+		return ""
+	}
+	id, err := strconv.Atoi(str_id)
+	if err != nil {
+		http.Error(w, "You must supply a location identification number.", http.StatusInternalServerError)
+		return ""
+	}
+
+	loc, err := customer.GetLocationById_New(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(loc))
+}
+
+func SearchLocations_New(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+	search_term := params["search"]
+	qs := r.URL.Query()
+	if search_term == "" {
+		search_term = qs.Get("search")
+	}
+	locs, err := customer.SearchLocations_New(search_term)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(locs))
+}
