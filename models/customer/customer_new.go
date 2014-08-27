@@ -9,7 +9,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	"github.com/curt-labs/GoAPI/models/geography"
 	_ "github.com/go-sql-driver/mysql"
-	// "log"
+	"log"
 	"math"
 	"net/url"
 	"strconv"
@@ -169,9 +169,27 @@ var (
 							||
 							(cl.longitude >= ? && cl.longitude <= ?)
 						)
-						group by cl.locationID
-						order by dtr.sort desc`
-
+						group by cl.locationID`
+	polygon = `select s.stateID, s.state, s.abbr,
+					(
+						select COUNT(cl.locationID) from CustomerLocations as cl
+						join Customer as c on cl.cust_id = c.cust_id
+						join DealerTypes as dt on c.dealer_type = dt.dealer_type
+						where dt.online = 0 && cl.stateID = s.stateID
+					) as count
+					from States as s
+					where (
+						select COUNT(cl.locationID) from CustomerLocations as cl
+						join Customer as c on cl.cust_id = c.cust_id
+						join DealerTypes as dt on c.dealer_type = dt.dealer_type
+						where dt.online = 0 && cl.stateID = s.stateID
+					) > 0
+					order by s.state`
+	MapPolygonCoordinatesForState = `select mp.ID, mpc.latitude,mpc.longitude
+										from MapPolygonCoordinates as mpc
+										join MapPolygon as mp on mpc.MapPolygonID = mp.ID
+										where mp.stateID = ?
+										`
 	//TODO delete ld before publishing - for reference
 	ld = `select cl.locationID, c.customerID, cl.name, c.email, cl.address, cl.city, cl.phone, cl.fax, cl.contact_person,
 						COALESCE(cl.latitude,0), COALESCE(cl.longitude,0), c.searchURL, c.logo, c.website,
@@ -688,4 +706,104 @@ func GetLocalDealers_New(center string, latlng string) (dealers []DealerLocation
 	}
 	sortutil.AscByField(dealers, "Distance")
 	return
+}
+
+//HERE
+
+func GetLocalRegions_New() (regions []StateRegion, err error) {
+
+	// redis_key := "goapi:local:regions"
+	// data, err := redis.Get(redis_key)
+	// if len(data) > 0 && err != nil {
+	// 	err = json.Unmarshal(data, &regions)
+	// 	if err == nil {
+	// 		return
+	// 	}
+	// }
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return regions, err
+	}
+	defer db.Close()
+
+	stmtPolygon, err := db.Prepare(polygon)
+	if err != nil {
+		return regions, err
+	}
+	stmtCoordinates, err := db.Prepare(MapPolygonCoordinatesForState)
+	if err != nil {
+		return regions, err
+	}
+
+	_, err = db.Exec("SET SESSION group_concat_max_len = 100024")
+	res, err := stmtPolygon.Query()
+	_, err = db.Exec("SET SESSION group_concat_max_len = 1024")
+
+	for res.Next() {
+		var reg StateRegion
+		res.Scan(
+			&reg.Id,
+			&reg.Name,
+			&reg.Abbreviation,
+			&reg.Count,
+		)
+		// log.Print("REG", reg)
+		//coor query
+		coorRes, err := stmtCoordinates.Query(reg.Id)
+		if err != nil {
+			return regions, err
+		}
+		polygons := make(map[int]MapPolygon, 0)
+		coordRows := make(map[int]GeoLocation)
+		for coorRes.Next() {
+			var tempMap MapPolygon
+			var tempGeo GeoLocation
+			err = coorRes.Scan(
+				&tempMap.Id,
+				&tempGeo.Latitude,
+				&tempGeo.Longitude,
+			)
+			coordRows[tempMap.Id] = tempGeo
+			for id, _ := range coordRows {
+				// Check if we have an index for this polygon created
+				if _, ok := polygons[id]; !ok {
+					// First time hitting this polygon
+					// so we'll create one
+					polygons[id] = MapPolygon{
+						Id:          tempMap.Id,
+						Coordinates: make([]GeoLocation, 0),
+					}
+				}
+
+				// Add the GeoLocartion info to our polygon
+				poly := polygons[tempMap.Id]
+				poly.Coordinates = append(poly.Coordinates, GeoLocation{tempGeo.Latitude, tempGeo.Longitude})
+				polygons[tempMap.Id] = poly
+			}
+			// We need to drop the key/value pair
+			// our end user doesn't need that
+			var polys []MapPolygon
+			for _, poly := range polygons {
+				polys = append(polys, poly)
+			}
+			reg.Polygons = polys
+		}
+
+		regions = append(regions, reg)
+	}
+	// go redis.Set(redis_key, regions)
+	return
+}
+
+//no db - same
+func getViewPortWidth_New(lat1 float64, lon1 float64, lat2 float64, long2 float64) float64 {
+	dlat := (lat2 - lat1) * (math.Pi / 180)
+	dlon := (long2 - lon1) * (math.Pi / 180)
+
+	lat1 = lat1 * (math.Pi / 180)
+	lat2 = lat2 * (math.Pi / 180)
+
+	a := (math.Sin(dlat/2) * math.Sin(dlat/2)) + ((math.Sin(dlon/2))*(math.Sin(dlon/2)))*math.Cos(lat1)*math.Cos(lat2)
+	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
+	return api_helpers.EARTH * c
 }
