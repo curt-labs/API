@@ -171,6 +171,7 @@ func GetEtailers_New(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 	return encoding.Must(enc.Encode(dealers))
 }
 
+//Goes in Dealers
 // Sample Data
 //
 // latlng: 43.853282,-95.571675,45.800981,-90.468526
@@ -207,4 +208,14 @@ func GetLocalDealers_New(w http.ResponseWriter, r *http.Request, enc encoding.En
 	}
 	return encoding.Must(enc.Encode(dealers))
 
+}
+
+//Goes in Dealers
+func GetLocalRegions_New(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+	regions, err := customer.GetLocalRegions_New()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+	return encoding.Must(enc.Encode(regions))
 }
