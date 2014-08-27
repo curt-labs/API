@@ -219,3 +219,30 @@ func GetLocalRegions_New(w http.ResponseWriter, r *http.Request, enc encoding.En
 	}
 	return encoding.Must(enc.Encode(regions))
 }
+
+func GetLocalDealerTiers_New(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+	tiers, err := customer.GetLocalDealerTiers_New()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+	return encoding.Must(enc.Encode(tiers))
+}
+
+func GetLocalDealerTypes_New(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+	types, err := customer.GetLocalDealerTypes_New()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+	return encoding.Must(enc.Encode(types))
+}
+
+func PlatinumEtailers_New(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+	cust, err := customer.GetWhereToBuyDealers_New()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+	return encoding.Must(enc.Encode(cust))
+}

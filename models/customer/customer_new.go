@@ -6,10 +6,12 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/api"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	// "github.com/curt-labs/GoAPI/helpers/redis"
+	// "bytes"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	"github.com/curt-labs/GoAPI/models/geography"
 	_ "github.com/go-sql-driver/mysql"
-	"log"
+	// "log"
+	// "encoding/binary"
 	"math"
 	"net/url"
 	"strconv"
@@ -74,6 +76,12 @@ type DealerType_New struct {
 type MapIcon_New struct {
 	Id, TierId             int
 	MapIcon, MapIconShadow url.URL
+}
+
+type MapGraphics_New struct {
+	DealerTier DealerTier
+	DealerType DealerType_New
+	MapIcon    MapIcon_New
 }
 
 var (
@@ -190,6 +198,36 @@ var (
 										join MapPolygon as mp on mpc.MapPolygonID = mp.ID
 										where mp.stateID = ?
 										`
+	localDealerTiers = `select distinct dtr.* from DealerTiers as dtr
+							join Customer as c on dtr.ID = c.tier
+							join DealerTypes as dt on c.dealer_type = dt.dealer_type
+							where dt.online = false and dt.show = true
+							order by dtr.sort`
+	localDealerTypes = `select m.ID as iconId, m.mapicon, m.mapiconshadow,
+							dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
+							dt.dealer_type as dealerTypeId, dt.type as dealerType, dt.online, dt.show, dt.label
+							from MapIcons as m
+							join DealerTypes as dt on m.dealer_type = dt.dealer_type
+							join DealerTiers as dtr on m.tier = dtr.ID
+							where dt.show = true
+							order by dtr.sort desc`
+	whereToBuyDealers = `select c.customerID, c.name, c.email, c.address, c.address2, c.city, c.phone, c.fax, c.contact_person,
+							c.latitude, c.longitude, c.searchURL, c.logo, c.website,
+							c.postal_code, s.stateID, s.state, s.abbr as state_abbr, cty.countryID, cty.name as country_name, cty.abbr as country_abbr,
+							dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
+							dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
+							mi.ID as iconID, mi.mapicon, mi.mapiconshadow,
+							mpx.code as mapix_code, mpx.description as mapic_desc,
+							sr.name as rep_name, sr.code as rep_code, c.parentID
+							from Customer as c
+							join DealerTypes as dt on c.dealer_type = dt.dealer_type
+							join DealerTiers dtr on c.tier = dtr.ID
+							left join MapIcons as mi on dt.dealer_type = mi.dealer_type
+							left join States as s on c.stateID = s.stateID
+							left join Country as cty on s.countryID = cty.countryID
+							left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
+							left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
+							where dt.dealer_type = 1 and dtr.ID = 4 and c.isDummy = false and length(c.searchURL) > 1`
 	//TODO delete ld before publishing - for reference
 	ld = `select cl.locationID, c.customerID, cl.name, c.email, cl.address, cl.city, cl.phone, cl.fax, cl.contact_person,
 						COALESCE(cl.latitude,0), COALESCE(cl.longitude,0), c.searchURL, c.logo, c.website,
@@ -806,4 +844,225 @@ func getViewPortWidth_New(lat1 float64, lon1 float64, lat2 float64, long2 float6
 	a := (math.Sin(dlat/2) * math.Sin(dlat/2)) + ((math.Sin(dlon/2))*(math.Sin(dlon/2)))*math.Cos(lat1)*math.Cos(lat2)
 	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
 	return api_helpers.EARTH * c
+}
+
+func GetLocalDealerTiers_New() (tiers []DealerTier, err error) {
+	// redis_key := "goapi:local:tiers"
+	// data, err := redis.Get(redis_key)
+	// if len(data) > 0 && err != nil {
+	// 	err = json.Unmarshal(data, &tiers)
+	// 	if err == nil {
+	// 		return
+	// 	}
+	// }
+
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return tiers, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(localDealerTiers)
+	if err != nil {
+		return tiers, err
+	}
+	res, err := stmt.Query()
+	for res.Next() {
+		var t DealerTier
+		err = res.Scan(&t.Id, &t.Tier, &t.Sort)
+		if err != nil {
+			return tiers, err
+		}
+		tiers = append(tiers, t)
+	}
+	// go redis.Setex(redis_key, tiers, 86400)
+	return
+}
+
+func GetLocalDealerTypes_New() (graphics []MapGraphics_New, err error) {
+	// redis_key := "goapi:local:types"
+	// data, err := redis.Get(redis_key)
+	// if len(data) > 0 && err != nil {
+	// 	err = json.Unmarshal(data, &graphics)
+	// 	if err == nil {
+	// 		return
+	// 	}
+	// }
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return graphics, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(localDealerTypes)
+	if err != nil {
+		return graphics, err
+	}
+	res, err := stmt.Query()
+	var icon, shadow string
+	for res.Next() {
+		var g MapGraphics_New
+		err = res.Scan(
+			&g.MapIcon.Id,
+			&icon,
+			&shadow,
+			&g.DealerTier.Id,
+			&g.DealerTier.Tier,
+			&g.DealerTier.Sort,
+			&g.DealerType.Id,
+			&g.DealerType.Type,
+			&g.DealerType.Online,
+			&g.DealerType.Show,
+			&g.DealerType.Label,
+		)
+		if err != nil {
+			return graphics, err
+		}
+		g.DealerType.MapIcon.MapIcon, err = urlParse(icon)
+		g.DealerType.MapIcon.MapIconShadow, err = urlParse(shadow)
+		graphics = append(graphics, g)
+	}
+	// go redis.Setex(redis_key, graphics, 86400)
+	return
+}
+
+func GetWhereToBuyDealers_New() (customers []Customer_New, err error) {
+	// redis_key := "goapi:dealers:wheretobuy"
+	// data, err := redis.Get(redis_key)
+	// if len(data) > 0 && err != nil {
+	// 	err = json.Unmarshal(data, &customers)
+	// 	if err == nil {
+	// 		return
+	// 	}
+	// }
+
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return customers, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(whereToBuyDealers)
+	if err != nil {
+		return customers, err
+	}
+	var ur, logo, web, icon, shadow, lat, lon, postalCode, mapixCode, mapixDesc, rep, repCode, parentId []byte
+	var stateId, state, stateAbbr, countryId, country, countryAbbr, mapIconId []byte
+
+	res, err := stmt.Query()
+	if err != nil {
+		return customers, err
+	}
+	for res.Next() {
+		var c Customer_New
+		err = res.Scan(
+			&c.Id,            //c.customerID,
+			&c.Name,          //c.name
+			&c.Email,         //c.email
+			&c.Address,       //c.address
+			&c.Address2,      //c.address2
+			&c.City,          //c.city,
+			&c.Phone,         //phone,
+			&c.Fax,           //c.fax
+			&c.ContactPerson, //c.contact_person,
+			&lat,
+			&lon,
+			&ur,
+			&logo,
+			&web,
+			&postalCode,          //c.postal_code
+			&stateId,             //s.stateID
+			&state,               //s.state
+			&stateAbbr,           //s.abbr as state_abbr
+			&countryId,           //cty.countryID,
+			&country,             //cty.name as country_name
+			&countryAbbr,         //cty.abbr as country_abbr,
+			&c.DealerType.Id,     //dt.dealer_type as typeID
+			&c.DealerType.Type,   // dt.type as dealerType
+			&c.DealerType.Online, // dt.online as typeOnline,
+			&c.DealerType.Show,   //dt.show as typeShow
+			&c.DealerType.Label,  //dt.label as typeLabel,
+			&c.DealerTier.Id,     //dtr.ID as tierID,
+			&c.DealerTier.Tier,   //dtr.tier as tier
+			&c.DealerTier.Sort,   //dtr.sort as tierSort
+			&mapIconId,
+			&icon,
+			&shadow,
+			&mapixCode, //mpx.code as mapix_code
+			&mapixDesc, //mpx.description as mapic_desc,
+			&rep,       //sr.name as rep_name
+			&repCode,   // sr.code as rep_code,
+			&parentId,  //c.parentID
+		)
+		if err != nil {
+			return customers, err
+		}
+
+		c.Latitude, err = byteToFloat(lat)
+		c.Longitude, err = byteToFloat(lon)
+		c.SearchUrl, err = byteToUrl(ur)
+		c.Logo, err = byteToUrl(logo)
+		c.Website, err = byteToUrl(web)
+		c.PostalCode, err = byteToString(postalCode)
+		c.State.Id, err = byteToInt(stateId)
+		c.State.State, err = byteToString(state)
+		c.State.Abbreviation, err = byteToString(stateAbbr)
+		c.DealerType.MapIcon.Id, err = byteToInt(mapIconId)
+		c.DealerType.MapIcon.MapIcon, err = byteToUrl(icon)
+		c.DealerType.MapIcon.MapIconShadow, err = byteToUrl(shadow)
+		c.MapixCode, err = byteToString(mapixCode)
+		c.MapixDescription, err = byteToString(mapixDesc)
+		c.SalesRepresentative, err = byteToString(rep)
+		c.SalesRepresentativeCode, err = byteToString(repCode)
+		c.Parent.Id, err = byteToInt(parentId)
+		if err != nil {
+			return customers, err
+		}
+		customers = append(customers, c)
+	}
+
+	// go redis.Setex(redis_key, customers, 86400)
+	return
+}
+
+//Conversion funcs
+func byteToString(input []byte) (string, error) {
+	var err error
+	if input != nil {
+		output := string(input)
+		return output, err
+	}
+	return "", err
+}
+
+func byteToInt(input []byte) (int, error) {
+	var err error
+	if input != nil {
+		temp, err := byteToString(input)
+		output, err := strconv.Atoi(temp)
+		return output, err
+	}
+	return 0, err
+}
+
+func byteToFloat(input []byte) (float64, error) {
+	var err error
+	if input != nil {
+		output, err := strconv.ParseFloat(string(input), 64)
+		return output, err
+	}
+	return 0.0, err
+}
+
+func byteToUrl(input []byte) (url.URL, error) {
+	var err error
+	if input != nil {
+		str := string(input[:])
+		output, err := url.Parse(str)
+		output2 := *output
+		return output2, err
+	}
+	output, err := url.Parse("")
+	output2 := *output
+	return output2, err
 }
