@@ -10,7 +10,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	"github.com/curt-labs/GoAPI/models/geography"
 	_ "github.com/go-sql-driver/mysql"
-	// "log"
+	"log"
 	// "encoding/binary"
 	"math"
 	"net/url"
@@ -228,6 +228,32 @@ var (
 							left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
 							left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
 							where dt.dealer_type = 1 and dtr.ID = 4 and c.isDummy = false and length(c.searchURL) > 1`
+
+	customerByLocation = `select cls.*, dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
+							dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
+							cl.locationID, cl.name, cl.address,cl.city,
+							cl.postalCode, cl.email, cl.phone,cl.fax,
+							cl.latitude, cl.longitude, cl.cust_id, cl.isPrimary, cl.ShippingDefault, cl.contact_person,
+							c.showWebsite, c.website, c.eLocalURL
+							from CustomerLocations as cl
+							join States as cls on cl.stateID = cls.stateID
+							join Customer as c on cl.cust_id = c.cust_id
+							join DealerTypes as dt on c.dealer_type = dt.dealer_type
+							join DealerTiers as dtr on c.tier = dtr.ID
+							where cl.locationID = ? limit 1`
+	searchDealerLocations = `select cls.*, dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
+								dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
+								cl.locationID, cl.name, cl.address,cl.city,
+								cl.postalCode, cl.email, cl.phone,cl.fax,
+								cl.latitude, cl.longitude, cl.cust_id, cl.isPrimary, cl.ShippingDefault, cl.contact_person,
+								c.showWebsite, c.website, c.eLocalURL
+								from CustomerLocations as cl
+								join States as cls on cl.stateID = cls.stateID
+								join Customer as c on cl.cust_id = c.cust_id
+								join DealerTypes as dt on c.dealer_type = dt.dealer_type
+								join DealerTiers as dtr on c.tier = dtr.ID
+								where (dt.dealer_type = 2 or dt.dealer_type = 3) and c.isDummy = false
+								and dt.show = true and (lower(cl.name) like ? || lower(c.name) like ?)`
 	//TODO delete ld before publishing - for reference
 	ld = `select cl.locationID, c.customerID, cl.name, c.email, cl.address, cl.city, cl.phone, cl.fax, cl.contact_person,
 						COALESCE(cl.latitude,0), COALESCE(cl.longitude,0), c.searchURL, c.logo, c.website,
@@ -1022,6 +1048,160 @@ func GetWhereToBuyDealers_New() (customers []Customer_New, err error) {
 	}
 
 	// go redis.Setex(redis_key, customers, 86400)
+	return
+}
+
+func GetLocationById_New(id int) (location DealerLocation_New, err error) {
+	// `select cls.*, dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
+	// 												dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
+	// 												cl.locationID, cl.name, cl.address,cl.city,
+	// 												cl.postalCode, cl.email, cl.phone,cl.fax,
+	// 												cl.latitude, cl.longitude, cl.cust_id, cl.isPrimary, cl.ShippingDefault, cl.contact_person,
+	// 												c.showWebsite, c.website, c.eLocalURL
+	// 												from CustomerLocations as cl
+	// 												join States as cls on cl.stateID = cls.stateID
+	// 												join Customer as c on cl.cust_id = c.cust_id
+	// 												join DealerTypes as dt on c.dealer_type = dt.dealer_type
+	// 												join DealerTiers as dtr on c.tier = dtr.ID
+	// 												where cl.locationID = ? limit 1`
+
+	type DealerLocation_New struct {
+		Id, LocationId                       int
+		Name, Email, Address, Address2, City string
+		State                                geography.State_New
+		PostalCode                           string
+		Phone, Fax                           string
+		ContactPerson                        string
+		Latitude, Longitude, Distance        float64
+		Website                              url.URL
+		Parent                               Customer
+		SearchUrl, Logo                      url.URL
+		DealerType                           DealerType_New
+		DealerTier                           DealerTier
+		SalesRepresentative                  string
+		SalesRepresentativeCode              string
+		MapixCode, MapixDescription          string
+	}
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return location, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(customerByLocation)
+	if err != nil {
+		return location, err
+	}
+
+	var stateId, state, stateAbbr, countryId []byte
+	var showWeb, website, eLocal, isPrimary, shippingDefault []byte //ununsed, but in the original query
+
+	err = stmt.QueryRow(id).Scan(
+		&stateId,                    //s.stateID
+		&state,                      //s.state
+		&stateAbbr,                  //s.abbr as state_abbr
+		&countryId,                  //cty.countryID,
+		&location.DealerType.Id,     //dt.dealer_type as typeID
+		&location.DealerType.Type,   // dt.type as dealerType
+		&location.DealerType.Online, // dt.online as typeOnline,
+		&location.DealerType.Show,   //dt.show as typeShow
+		&location.DealerType.Label,  //dt.label as typeLabel,
+		&location.DealerTier.Id,     //dtr.ID as tierID,
+		&location.DealerTier.Tier,   //dtr.tier as tier
+		&location.DealerTier.Sort,   //dtr.sort as tierSort
+		&location.LocationId,
+		&location.Name,
+		&location.Address,
+		&location.City,
+		&location.PostalCode,
+		&location.Email,
+		&location.Phone,
+		&location.Fax,
+		&location.Latitude,
+		&location.Longitude,
+		&location.Id,
+		&isPrimary,
+		&shippingDefault,
+		&location.ContactPerson,
+		&showWeb,
+		&website,
+		&eLocal,
+	)
+	location.State.Id, err = byteToInt(stateId)
+	location.State.State, err = byteToString(state)
+	location.State.Abbreviation, err = byteToString(stateAbbr)
+	location.State.Country.Id, err = byteToInt(countryId)
+	return
+}
+
+func SearchLocations_New(term string) (locations []DealerLocation, err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return locations, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(searchDealerLocations)
+	if err != nil {
+		return locations, err
+	}
+	term = "%" + term + "%"
+
+	res, err := stmt.Query(term, term)
+	if err != nil {
+		return locations, err
+	}
+	for res.Next() {
+		// var stateId, state, stateAbbr, countryId []byte
+		var stateId int
+		var state, stateAbbr, countryId string
+		var showWeb, website, eLocal, isPrimary, shippingDefault []byte //ununsed, but in the original query
+		var location DealerLocation
+		err = res.Scan(
+			&stateId,                    //s.stateID
+			&state,                      //s.state
+			&stateAbbr,                  //s.abbr as state_abbr
+			&countryId,                  //cty.countryID,
+			&location.DealerType.Id,     //dt.dealer_type as typeID
+			&location.DealerType.Type,   // dt.type as dealerType
+			&location.DealerType.Online, // dt.online as typeOnline,
+			&location.DealerType.Show,   //dt.show as typeShow
+			&location.DealerType.Label,  //dt.label as typeLabel,
+			&location.DealerTier.Id,     //dtr.ID as tierID,
+			&location.DealerTier.Tier,   //dtr.tier as tier
+			&location.DealerTier.Sort,   //dtr.sort as tierSort
+			&location.LocationId,
+			&location.Name,
+			&location.Address,
+			&location.City,
+			&location.PostalCode,
+			&location.Email,
+			&location.Phone,
+			&location.Fax,
+			&location.Latitude,
+			&location.Longitude,
+			&location.Id,
+			&isPrimary,
+			&shippingDefault,
+			&location.ContactPerson,
+			&showWeb,
+			&website,
+			&eLocal,
+		)
+		if err != nil {
+			return locations, err
+		}
+		//TODO - states not scanning correctly
+		log.Print("ID", stateId)
+		// location.State.Id = stateId
+		// location.State.State, err = byteToString(state)
+		// location.State.Abbreviation, err = byteToString(stateAbbr)
+		// location.State.Country.Id, err = byteToInt(countryId)
+		if err != nil {
+			return locations, err
+		}
+		locations = append(locations, location)
+	}
 	return
 }
 
