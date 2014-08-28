@@ -3,6 +3,7 @@ package customer
 import (
 	// "github.com/curt-labs/goacesapi/helpers/pagination"
 	. "github.com/smartystreets/goconvey/convey"
+
 	"testing"
 	"time"
 )
@@ -74,37 +75,173 @@ func TestCustomerPriceModel(t *testing.T) {
 		})
 
 	})
-
+	//From the NEW Customer Model
 	Convey("Testing Customer_New", t, func() {
-		Convey("Testing GetUsers_New()", func() {
-			var c Customer
+		Convey("Testing GetCustomer_New()", func() {
+			var c Customer_New
 			var err error
 			c.Id = 108664501
 			err = c.GetCustomer_New()
 			So(err, ShouldBeNil)
+			So(c.Name, ShouldNotBeNil)
 		})
 		Convey("Testing Basics_New()", func() {
-			var c Customer
+			var c Customer_New
 			var err error
 			c.Id = 108664501
 			err = c.Basics_New()
 			So(err, ShouldBeNil)
+			So(c.Name, ShouldNotBeNil)
 		})
 		Convey("Testing GetLocations_New()", func() {
-			var c Customer
+			var c Customer_New
 			var err error
-			c.Id = 108664501
+			c.Id = 1 //choose customer with locations
 			err = c.GetLocations_New()
 			So(err, ShouldBeNil)
+			So(len(c.Locations), ShouldBeGreaterThan, 0)
 		})
 		Convey("Testing GetUsers_New()", func() {
-			var c Customer
+			var c Customer_New
 			var err error
 			c.Id = 10579901
 			users, err := c.GetUsers_New()
 			So(err, ShouldBeNil)
 			So(users, ShouldNotBeNil)
 		})
+		Convey("Testing GetCustomerPrice_New()", func() {
+			var c Customer_New
+			var err error
+			c.Id = 1
+			partId := 11000
+			api := "8AEE0620-412E-47FC-900A-947820EA1C1D"
+			price, err := GetCustomerPrice_New(api, partId)
+			So(err, ShouldBeNil)
+			So(price, ShouldNotBeNil)
+		})
+		Convey("Testing GetCustomerCartReference_New()", func() {
+			var c Customer_New
+			var err error
+			c.Id = 1
+			partId := 11000
+			api := "8AEE0620-412E-47FC-900A-947820EA1C1D"
+			ref, err := GetCustomerCartReference_New(api, partId)
+			So(err, ShouldBeNil)
+			So(ref, ShouldNotBeNil)
+		})
+		Convey("Testing GetEtailers_New()", func() {
+			var err error
+			dealers, err := GetEtailers_New()
+			So(err, ShouldBeNil)
+			So(dealers, ShouldNotBeNil)
+			So(len(dealers), ShouldBeGreaterThan, 0)
+		})
+		Convey("Testing GetLocalDealers_New()", func() {
+			var err error
+			latlng := "43.853282,-95.571675,45.800981,-90.468526&"
+			center := "44.83536,-93.0201"
+			dealers, err := GetLocalDealers_New(center, latlng)
+			So(err, ShouldBeNil)
+			So(dealers, ShouldNotBeNil)
+			So(len(dealers), ShouldBeGreaterThan, 0)
+		})
+		Convey("Testing GetLocalRegions_New()", func() {
+			var err error
+			regions, err := GetLocalRegions_New()
+			So(err, ShouldBeNil)
+			So(regions, ShouldNotBeNil)
+			So(len(regions), ShouldBeGreaterThan, 0)
+		})
+		Convey("Testing GetLocalDealerTiers_New()", func() {
+			var err error
+			tiers, err := GetLocalDealerTiers_New()
+			So(err, ShouldBeNil)
+			So(tiers, ShouldNotBeNil)
+			So(len(tiers), ShouldBeGreaterThan, 0)
+		})
+		Convey("Testing GetLocalDealerTypes_New()", func() {
+			var err error
+			graphics, err := GetLocalDealerTypes_New()
+			So(err, ShouldBeNil)
+			So(graphics, ShouldNotBeNil)
+			So(len(graphics), ShouldBeGreaterThan, 0)
+		})
+		Convey("Testing GetWhereToBuyDealers_New()", func() {
+			var err error
+			customers, err := GetWhereToBuyDealers_New()
+			So(err, ShouldBeNil)
+			So(customers, ShouldNotBeNil)
+			So(len(customers), ShouldBeGreaterThan, 0)
+		})
+		Convey("Testing GetLocationById_New()", func() {
+			var err error
+			id := 1
+			location, err := GetLocationById_New(id)
+			So(err, ShouldBeNil)
+			So(location, ShouldNotBeNil)
+		})
+		Convey("Testing SearchLocationsByType_New()", func() {
+			var err error
+			term := "hitch"
+			locations, err := SearchLocationsByType_New(term)
+			So(err, ShouldBeNil)
+			So(locations, ShouldNotBeNil)
+			So(len(locations), ShouldBeGreaterThan, 0)
+		})
+		Convey("Testing SearchLocationsByLatLng_New()", func() {
+			var err error
+			latlng := GeoLocation{
+				Latitude:  43.853282,
+				Longitude: -95.571675,
+			}
+			locations, err := SearchLocationsByLatLng_New(latlng)
+			So(err, ShouldBeNil)
+			So(locations, ShouldNotBeNil)
+			So(len(locations), ShouldBeGreaterThan, 0)
+		})
 		//key=8AEE0620-412E-47FC-900A-947820EA1C1D
+		//&latitude=43.853282&longitude=-95.571675
+	})
+	Convey("Comparative Tests", t, func() {
+
+		Convey("GetLocations v GetLocations_New", func() {
+			var c Customer
+			var cn Customer_New
+			var err error
+			c.Id = 1
+			cn.Id = 1
+			err = c.GetLocations()
+			err = cn.GetLocations_New()
+			So(err, ShouldBeNil)
+
+			So(c.Name, ShouldEqual, cn.Name)
+			So(c.Email, ShouldEqual, cn.Email)
+			So(c.Address, ShouldEqual, cn.Address)
+			So(c.Address2, ShouldEqual, cn.Address2)
+			So(c.City, ShouldEqual, cn.City)
+			// So(c.State.Id, ShouldEqual, c.State.Id)
+			// So(c.State.State, ShouldEqual, c.State.State)
+			// So(c.State.Country.Id, ShouldEqual, c.State.Country.Id)
+			// So(c.State.Abbreviation, ShouldEqual, c.State.Abbreviation)
+			// So(c.State, ShouldResemble, cn.State)
+			So(c.PostalCode, ShouldEqual, cn.PostalCode)
+			So(c.Phone, ShouldEqual, cn.Phone)
+			So(c.Fax, ShouldEqual, cn.Fax)
+			So(c.ContactPerson, ShouldEqual, cn.ContactPerson)
+			So(c.Latitude, ShouldEqual, cn.Latitude)
+			So(c.Longitude, ShouldEqual, cn.Longitude)
+			// So(c.Website, ShouldResemble, cn.Website)
+			// So(c.Parent, ShouldResemble, cn.Parent)
+			// So(c.SearchUrl, ShouldResemble, cn.SearchUrl)
+			// So(c.Logo, ShouldResemble, cn.Logo)
+			// So(c.DealerType, ShouldResemble, cn.DealerType)
+			// So(c.DealerTier, ShouldResemble, cn.DealerTier)
+
+			//Trouble?
+			// So(cn.State.Id, ShouldEqual, 56)
+			// So(c.State, ShouldNotBeNil)
+			So(c.State, ShouldBeNil)
+		})
+
 	})
 }

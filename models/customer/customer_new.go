@@ -396,28 +396,6 @@ func (c *Customer_New) Basics_New() error {
 	return nil
 }
 
-//helper funcs
-// func floatParse(input string) (float64, error) {
-// 	var err error
-// 	if input != "" {
-// 		output, err := strconv.ParseFloat(input, 64)
-// 		return output, err
-// 	}
-// 	return 0.0, err
-// }
-
-// func urlParse(input string) (url.URL, error) {
-// 	var err error
-// 	if input != "" {
-// 		output, err := url.Parse(input)
-// 		output2 := *output
-// 		return output2, err
-// 	}
-// 	output, err := url.Parse("")
-// 	output2 := *output
-// 	return output2, err
-// }
-
 func (c *Customer_New) GetLocations_New() error {
 	var err error
 	var ls []CustomerLocation_New

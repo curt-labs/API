@@ -151,6 +151,7 @@ func GetCustomerCartReference_New(w http.ResponseWriter, r *http.Request, enc en
 	return encoding.Must(enc.Encode(ref))
 }
 
+//Goes in Dealers Controller
 func GetEtailers_New(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var err error
 	qs := r.URL.Query()
@@ -171,7 +172,6 @@ func GetEtailers_New(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 	return encoding.Must(enc.Encode(dealers))
 }
 
-//Goes in Dealers
 // Sample Data
 //
 // latlng: 43.853282,-95.571675,45.800981,-90.468526
