@@ -2,12 +2,14 @@ package customer_new
 
 import (
 	"code.google.com/p/go.crypto/bcrypt"
+	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/api"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	"github.com/curt-labs/GoAPI/models/geography"
+	// "log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -27,6 +29,34 @@ type ApiCredentials struct {
 	Key, Type string
 	DateAdded time.Time
 }
+
+var (
+	userCustomer = `select c.customerID, c.name, c.email, c.address, c.address2, c.city, c.phone, c.fax, c.contact_person,
+						c.latitude, c.longitude, c.searchURL, c.logo, c.website,
+						c.postal_code, s.stateID, s.state, s.abbr as state_abbr, cty.countryID, cty.name as country_name, cty.abbr as country_abbr,
+						dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
+						dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
+						mi.ID as iconID, mi.mapicon, mi.mapiconshadow,
+						mpx.code as mapix_code, mpx.description as mapic_desc,
+						sr.name as rep_name, sr.code as rep_code, c.parentID
+						from Customer as c
+						join CustomerUser as cu on c.cust_id = cu.cust_ID
+						left join States as s on c.stateID = s.stateID
+						left join Country as cty on s.countryID = cty.countryID
+						left join DealerTypes as dt on c.dealer_type = dt.dealer_type
+						left join MapIcons as mi on dt.dealer_type = mi.dealer_type
+						left join DealerTiers dtr on c.tier = dtr.ID
+						left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
+						left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
+						where cu.id = ?`
+
+	customerUserAuth = `select password, id, name, email, date_added, active, isSudo, passwordConverted from CustomerUser
+							where email = ?
+							&& active = 1
+							limit 1`
+	updateCustomerUserPass = `update CustomerUser set password = ?, passwordConverted = 1
+								where id = ? && active = 1`
+)
 
 func (u CustomerUser) UserAuthentication(password string) (cust Customer, err error) {
 
@@ -96,158 +126,135 @@ func UserAuthenticationByKey(key string) (cust Customer, err error) {
 }
 
 func (u CustomerUser) GetCustomer() (c Customer, err error) {
-
-	qry, err := database.GetStatement("UserCustomerStmt")
-	if database.MysqlError(err) {
-		return
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return c, err
 	}
+	defer db.Close()
 
-	row, res, err := qry.ExecFirst(u.Id)
-	if database.MysqlError(err) {
-		return
+	stmt, err := db.Prepare(userCustomer)
+	if err != nil {
+		return c, err
 	}
+	defer stmt.Close()
 
-	customerID := res.Map("customerID")
-	name := res.Map("name")
-	email := res.Map("email")
-	address := res.Map("address")
-	address2 := res.Map("address2")
-	city := res.Map("city")
-	phone := res.Map("phone")
-	fax := res.Map("fax")
-	contact := res.Map("contact_person")
-	lat := res.Map("latitude")
-	lon := res.Map("longitude")
-	search := res.Map("searchURL")
-	site := res.Map("website")
-	logo := res.Map("logo")
-	zip := res.Map("postal_code")
-	stateID := res.Map("stateID")
-	state := res.Map("state")
-	state_abbr := res.Map("state_abbr")
-	countryID := res.Map("countryID")
-	country := res.Map("country_name")
-	country_abbr := res.Map("country_abbr")
-	dealerTypeId := res.Map("typeID")
-	dealerType := res.Map("dealerType")
-	typeOnline := res.Map("typeOnline")
-	typeShow := res.Map("typeShow")
-	typeLabel := res.Map("typeLabel")
-	tierID := res.Map("tierID")
-	tier := res.Map("tier")
-	tierSort := res.Map("tierSort")
-	mpx_code := res.Map("mapix_code")
-	mpx_desc := res.Map("mapic_desc")
-	rep_name := res.Map("rep_name")
-	rep_code := res.Map("rep_code")
-	parentID := res.Map("parentID")
-
-	sURL, _ := url.Parse(row.Str(search))
-	websiteURL, _ := url.Parse(row.Str(site))
-	logoURL, _ := url.Parse(row.Str(logo))
-
-	c = Customer{
-		Id:            row.Int(customerID),
-		Name:          row.Str(name),
-		Email:         row.Str(email),
-		Address:       row.Str(address),
-		Address2:      row.Str(address2),
-		City:          row.Str(city),
-		PostalCode:    row.Str(zip),
-		Phone:         row.Str(phone),
-		Fax:           row.Str(fax),
-		ContactPerson: row.Str(contact),
-		Latitude:      row.ForceFloat(lat),
-		Longitude:     row.ForceFloat(lon),
-		Website:       *websiteURL,
-		SearchUrl:     *sURL,
-		Logo:          *logoURL,
-		DealerType: DealerType{
-			Id:     row.Int(dealerTypeId),
-			Type:   row.Str(dealerType),
-			Label:  row.Str(typeLabel),
-			Online: row.ForceBool(typeOnline),
-			Show:   row.ForceBool(typeShow),
-		},
-		DealerTier: DealerTier{
-			Id:   row.Int(tierID),
-			Tier: row.Str(tier),
-			Sort: row.Int(tierSort),
-		},
-		SalesRepresentative:     row.Str(rep_name),
-		SalesRepresentativeCode: row.Str(rep_code),
-		MapixCode:               row.Str(mpx_code),
-		MapixDescription:        row.Str(mpx_desc),
+	var logo, web, lat, lon, url, icon, shadow, mapIconId []byte
+	var stateId, state, stateAbbr, countryId, country, countryAbbr, parentId, postalCode, mapixCode, mapixDesc, rep, repCode []byte
+	err = stmt.QueryRow(c.Id).Scan(
+		&c.Id,            //c.customerID,
+		&c.Name,          //c.name
+		&c.Email,         //c.email
+		&c.Address,       //c.address
+		&c.Address2,      //c.address2
+		&c.City,          //c.city,
+		&c.Phone,         //phone,
+		&c.Fax,           //c.fax
+		&c.ContactPerson, //c.contact_person,
+		&lat,             //c.latitude
+		&lon,             //c.longitude
+		&url,
+		&logo,
+		&web,
+		&postalCode,          //c.postal_code
+		&stateId,             //s.stateID
+		&state,               //s.state
+		&stateAbbr,           //s.abbr as state_abbr
+		&countryId,           //cty.countryID,
+		&country,             //cty.name as country_name
+		&countryAbbr,         //cty.abbr as country_abbr,
+		&c.DealerType.Id,     //dt.dealer_type as typeID
+		&c.DealerType.Type,   // dt.type as dealerType
+		&c.DealerType.Online, // dt.online as typeOnline,
+		&c.DealerType.Show,   //dt.show as typeShow
+		&c.DealerType.Label,  //dt.label as typeLabel,
+		&c.DealerTier.Id,     //dtr.ID as tierID,
+		&c.DealerTier.Tier,   //dtr.tier as tier
+		&c.DealerTier.Sort,   //dtr.sort as tierSort
+		&mapIconId,
+		&icon,
+		&shadow,    //mi.ID as iconID
+		&mapixCode, //mpx.code as mapix_code
+		&mapixDesc, //mpx.description as mapic_desc,
+		&rep,       //sr.name as rep_name
+		&repCode,   // sr.code as rep_code,
+		&parentId,  //c.parentID
+	)
+	if err != nil {
+		return c, err
 	}
+	c.Latitude, err = byteToFloat(lat)
+	c.Longitude, err = byteToFloat(lon)
+	c.SearchUrl, err = byteToUrl(url)
+	c.Logo, err = byteToUrl(logo)
+	c.Website, err = byteToUrl(web)
+	c.DealerType.MapIcon.MapIcon, err = byteToUrl(icon)
+	c.DealerType.MapIcon.MapIconShadow, err = byteToUrl(shadow)
+	c.PostalCode, err = byteToString(postalCode)
+	c.State.Id, err = byteToInt(stateId)
+	c.State.State, err = byteToString(state)
+	c.State.Abbreviation, err = byteToString(stateAbbr)
+	c.State.Country.Id, err = byteToInt(countryId)
+	c.State.Country.Country, err = byteToString(country)
+	c.State.Country.Abbreviation, err = byteToString(countryAbbr)
+	c.DealerType.MapIcon.Id, err = byteToInt(mapIconId)
+	c.DealerType.MapIcon.MapIcon, err = byteToUrl(icon)
+	c.DealerType.MapIcon.MapIconShadow, err = byteToUrl(shadow)
+	c.MapixCode, err = byteToString(mapixCode)
+	c.MapixDescription, err = byteToString(mapixDesc)
+	c.SalesRepresentative, err = byteToString(rep)
+	c.SalesRepresentativeCode, err = byteToString(repCode)
 
-	ctry := geography.Country{
-		Id:           row.Int(countryID),
-		Country:      row.Str(country),
-		Abbreviation: row.Str(country_abbr),
+	parentInt, err := byteToInt(parentId)
+	if err != nil {
+		return c, err
 	}
-
-	c.State = geography.State_New{
-		Id:           row.Int(stateID),
-		State:        row.Str(state),
-		Abbreviation: row.Str(state_abbr),
-		Country:      ctry,
+	if parentInt != 0 {
+		par := Customer{Id: parentInt}
+		par.GetCustomer_New()
+		c.Parent = &par
 	}
-
-	locationChan := make(chan int)
-	go func() {
-		if locErr := c.GetLocations_New(); locErr != nil {
-			err = locErr
-		}
-		locationChan <- 1
-	}()
-
-	if row.Int(parentID) != 0 {
-		parent := Customer{
-			Id: row.Int(parentID),
-		}
-		if err = parent.GetCustomer_New(); err == nil {
-			c.Parent = &parent
-		}
-	}
-
-	<-locationChan
-
 	return
 }
 
 func (u *CustomerUser) AuthenticateUser(pass string) error {
 
-	qry, err := database.GetStatement("CustomerUserAuthStmt")
-	if database.MysqlError(err) {
+	// password, id, name, email, date_added, active, isSudo, passwordConverted from CustomerUser
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
 		return err
 	}
+	defer db.Close()
 
-	row, res, err := qry.ExecFirst(u.Email)
-	if database.MysqlError(err) || row == nil {
-		if err == nil {
-			err = errors.New("No user found that matches: " + u.Email)
-		}
+	stmt, err := db.Prepare(userCustomer)
+	if err != nil {
 		return err
 	}
-
-	pwd := res.Map("password")
-	user_id := res.Map("id")
-	name := res.Map("name")
-	mail := res.Map("email")
-	date := res.Map("date_added")
-	active := res.Map("active")
-	sudo := res.Map("isSudo")
-	passConversion := res.Map("passwordConverted")
+	defer stmt.Close()
+	var dbPass string
+	var passConversion bool
+	err = stmt.QueryRow(u.Email).Scan(
+		&dbPass,
+		&u.Id,
+		&u.Name,
+		&u.Email,
+		&u.DateAdded,
+		&u.Active,
+		&u.Active,
+		&u.Sudo,
+		&passConversion,
+	)
+	if err == nil {
+		err = errors.New("No user found that matches: " + u.Email)
+	}
 
 	// Attempt to compare bcrypt strings
-	dbPass := row.Str(pwd)
 	if bcrypt.CompareHashAndPassword([]byte(dbPass), []byte(pass)) != nil {
 		// Compare unsuccessful
 		enc_pass, err := api_helpers.Md5Encrypt(pass)
 		if err != nil {
 			return err
 		}
-		if len(enc_pass) != len(dbPass) || row.ForceBool(passConversion) {
+		if len(enc_pass) != len(dbPass) || passConversion { //bool
 			return errors.New("Invalid password")
 		}
 
@@ -256,14 +263,11 @@ func (u *CustomerUser) AuthenticateUser(pass string) error {
 			return errors.New("Failed to encode the password")
 		}
 
-		upd, err := database.GetStatement("UpdateCustomerUserPassStmt")
-		if database.MysqlError(err) {
+		stmtPass, err := db.Prepare(updateCustomerUserPass)
+		if err != nil {
 			return err
 		}
-		_, _, err = upd.Exec(hashedPass, row.Str(user_id))
-		if database.MysqlError(err) {
-			return err
-		}
+		_, err = stmtPass.Exec(hashedPass, u.Id)
 	}
 
 	resetChan := make(chan int)
@@ -273,15 +277,6 @@ func (u *CustomerUser) AuthenticateUser(pass string) error {
 		}
 		resetChan <- 1
 	}()
-
-	u.Name = row.Str(name)
-	u.Email = row.Str(mail)
-	u.Active = row.Int(active) == 1
-	u.Sudo = row.Int(sudo) == 1
-	u.Current = true
-	u.Id = row.Str(user_id)
-
-	u.DateAdded = row.ForceLocaltime(date)
 
 	<-resetChan
 

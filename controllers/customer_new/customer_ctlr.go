@@ -10,6 +10,22 @@ import (
 	"strconv"
 )
 
+func UserAuthentication(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+	email := r.FormValue("email")
+	pass := r.FormValue("password")
+
+	user := customer_new.CustomerUser{
+		Email: email,
+	}
+	cust, err := user.UserAuthentication(pass)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(cust))
+}
+
 func GetCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 	qs := r.URL.Query()
 	key := qs.Get("key")

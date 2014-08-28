@@ -563,7 +563,8 @@ func GetEtailers_New() (dealers []Customer, err error) {
 	if err != nil {
 		return dealers, err
 	}
-	var ur, logo, web, icon, shadow, lat, lon []byte
+	var url, logo, web, icon, shadow, lat, lon []byte
+	var stateId, state, stateAbbr, countryId, country, countryAbbr, parentId, postalCode, mapixCode, mapixDesc, rep, repCode []byte
 	res, err := stmt.Query()
 	for res.Next() {
 		var c Customer
@@ -577,34 +578,34 @@ func GetEtailers_New() (dealers []Customer, err error) {
 			&c.Phone,         //phone,
 			&c.Fax,           //c.fax
 			&c.ContactPerson, //c.contact_person,
-			&lat,
-			&lon,
-			&ur,
+			&lat,             //c.latitude
+			&lon,             //c.longitude
+			&url,
 			&logo,
 			&web,
-			&c.PostalCode,                 //c.postal_code
-			&c.State.Id,                   //s.stateID
-			&c.State.State,                //s.state
-			&c.State.Abbreviation,         //s.abbr as state_abbr
-			&c.State.Country.Id,           //cty.countryID,
-			&c.State.Country.Country,      //cty.name as country_name
-			&c.State.Country.Abbreviation, //cty.abbr as country_abbr,
-			&c.DealerType.Id,              //dt.dealer_type as typeID
-			&c.DealerType.Type,            // dt.type as dealerType
-			&c.DealerType.Online,          // dt.online as typeOnline,
-			&c.DealerType.Show,            //dt.show as typeShow
-			&c.DealerType.Label,           //dt.label as typeLabel,
-			&c.DealerTier.Id,              //dtr.ID as tierID,
-			&c.DealerTier.Tier,            //dtr.tier as tier
-			&c.DealerTier.Sort,            //dtr.sort as tierSort
+			&postalCode,          //c.postal_code
+			&stateId,             //s.stateID
+			&state,               //s.state
+			&stateAbbr,           //s.abbr as state_abbr
+			&countryId,           //cty.countryID,
+			&country,             //cty.name as country_name
+			&countryAbbr,         //cty.abbr as country_abbr,
+			&c.DealerType.Id,     //dt.dealer_type as typeID
+			&c.DealerType.Type,   // dt.type as dealerType
+			&c.DealerType.Online, // dt.online as typeOnline,
+			&c.DealerType.Show,   //dt.show as typeShow
+			&c.DealerType.Label,  //dt.label as typeLabel,
+			&c.DealerTier.Id,     //dtr.ID as tierID,
+			&c.DealerTier.Tier,   //dtr.tier as tier
+			&c.DealerTier.Sort,   //dtr.sort as tierSort
 			&c.DealerType.MapIcon.Id,
 			&icon,
 			&shadow,
-			&c.MapixCode,               //mpx.code as mapix_code
-			&c.MapixDescription,        //mpx.description as mapic_desc,
-			&c.SalesRepresentative,     //sr.name as rep_name
-			&c.SalesRepresentativeCode, // sr.code as rep_code,
-			&c.Parent.Id,               //c.parentID
+			&mapixCode, //mpx.code as mapix_code
+			&mapixDesc, //mpx.description as mapic_desc,
+			&rep,       //sr.name as rep_name
+			&repCode,   // sr.code as rep_code,
+			&parentId,  //c.parentID
 		)
 		if err != nil {
 			return dealers, err
@@ -612,23 +613,29 @@ func GetEtailers_New() (dealers []Customer, err error) {
 
 		c.Latitude, err = byteToFloat(lat)
 		c.Longitude, err = byteToFloat(lon)
-		c.SearchUrl, err = byteToUrl(ur)
+		c.SearchUrl, err = byteToUrl(url)
 		c.Logo, err = byteToUrl(logo)
 		c.Website, err = byteToUrl(web)
 		c.DealerType.MapIcon.MapIcon, err = byteToUrl(icon)
 		c.DealerType.MapIcon.MapIconShadow, err = byteToUrl(shadow)
+		c.MapixCode, err = byteToString(mapixCode)
+		c.MapixDescription, err = byteToString(mapixDesc)
+		c.SalesRepresentative, err = byteToString(rep)
+		c.SalesRepresentativeCode, err = byteToString(repCode)
 		if err != nil {
 			return dealers, err
 		}
 		err = c.GetLocations_New()
-		if c.Parent.Id != 0 {
-			parent := Customer{
-				Id: c.Parent.Id,
-			}
-			if err = parent.GetCustomer_New(); err == nil {
-				c.Parent = &parent
-			}
+		parentInt, err := byteToInt(parentId)
+		if err != nil {
+			return dealers, err
 		}
+		if parentInt != 0 {
+			par := Customer{Id: parentInt}
+			par.GetCustomer_New()
+			c.Parent = &par
+		}
+
 		dealers = append(dealers, c)
 	}
 	// go redis.Setex(redis_key, dealers, 86400)
@@ -1057,20 +1064,17 @@ func GetWhereToBuyDealers_New() (customers []Customer, err error) {
 		c.MapixDescription, err = byteToString(mapixDesc)
 		c.SalesRepresentative, err = byteToString(rep)
 		c.SalesRepresentativeCode, err = byteToString(repCode)
-		c.Parent.Id, err = byteToInt(parentId)
+		_ = c.GetLocations_New()
+		parentInt, err := byteToInt(parentId)
 		if err != nil {
 			return customers, err
 		}
-		_ = c.GetLocations_New()
-
-		if c.Parent.Id != 0 {
-			parent := Customer{
-				Id: c.Parent.Id,
-			}
-			if err = parent.GetCustomer_New(); err == nil {
-				*c.Parent = parent
-			}
+		if parentInt != 0 {
+			par := Customer{Id: parentInt}
+			par.GetCustomer_New()
+			c.Parent = &par
 		}
+
 		customers = append(customers, c)
 	}
 
