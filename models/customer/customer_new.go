@@ -2,15 +2,12 @@ package customer
 
 import (
 	"database/sql"
-	// "encoding/json"
 	"github.com/curt-labs/GoAPI/helpers/api"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	// "github.com/curt-labs/GoAPI/helpers/redis"
-	// "bytes"
 	"github.com/curt-labs/GoAPI/models/geography"
 	_ "github.com/go-sql-driver/mysql"
 	// "log"
-	// "encoding/binary"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	_ "github.com/go-sql-driver/mysql"
 	"math"
@@ -295,16 +292,23 @@ var (
 func (c *Customer_New) GetCustomer_New() (err error) {
 
 	locationChan := make(chan int)
+	basicsChan := make(chan int)
+
 	go func() {
 		if locErr := c.GetLocations_New(); locErr != nil {
 			err = locErr
 		}
 		locationChan <- 1
 	}()
-
-	err = c.Basics_New()
+	go func() {
+		if basErr := c.Basics_New(); basErr != nil {
+			err = basErr
+		}
+		basicsChan <- 1
+	}()
 
 	<-locationChan
+	<-basicsChan
 
 	return err
 }
@@ -324,7 +328,8 @@ func (c *Customer_New) Basics_New() error {
 	}
 	defer stmt.Close()
 
-	var ur, logo, web, icon, shadow, lat, lon string
+	var logo, web, icon, shadow, lat, lon []byte
+	var url []byte
 
 	err = stmt.QueryRow(c.Id).Scan(
 		&c.Id,            //c.customerID,
@@ -338,7 +343,7 @@ func (c *Customer_New) Basics_New() error {
 		&c.ContactPerson, //c.contact_person,
 		&lat,             //c.latitude
 		&lon,             //c.longitude
-		&ur,
+		&url,
 		&logo,
 		&web,
 		&c.PostalCode,                 //c.postal_code
@@ -368,14 +373,13 @@ func (c *Customer_New) Basics_New() error {
 	if err != nil {
 		return err
 	}
-
-	c.Latitude, err = floatParse(lat)
-	c.Longitude, err = floatParse(lon)
-	c.SearchUrl, err = urlParse(ur)
-	c.Logo, err = urlParse(logo)
-	c.Website, err = urlParse(web)
-	c.DealerType.MapIcon.MapIcon, err = urlParse(icon)
-	c.DealerType.MapIcon.MapIconShadow, err = urlParse(shadow)
+	c.Latitude, err = byteToFloat(lat)
+	c.Longitude, err = byteToFloat(lon)
+	c.SearchUrl, err = byteToUrl(url)
+	c.Logo, err = byteToUrl(logo)
+	c.Website, err = byteToUrl(web)
+	c.DealerType.MapIcon.MapIcon, err = byteToUrl(icon)
+	c.DealerType.MapIcon.MapIconShadow, err = byteToUrl(shadow)
 	if err != nil {
 		return err
 
@@ -393,26 +397,26 @@ func (c *Customer_New) Basics_New() error {
 }
 
 //helper funcs
-func floatParse(input string) (float64, error) {
-	var err error
-	if input != "" {
-		output, err := strconv.ParseFloat(input, 64)
-		return output, err
-	}
-	return 0.0, err
-}
+// func floatParse(input string) (float64, error) {
+// 	var err error
+// 	if input != "" {
+// 		output, err := strconv.ParseFloat(input, 64)
+// 		return output, err
+// 	}
+// 	return 0.0, err
+// }
 
-func urlParse(input string) (url.URL, error) {
-	var err error
-	if input != "" {
-		output, err := url.Parse(input)
-		output2 := *output
-		return output2, err
-	}
-	output, err := url.Parse("")
-	output2 := *output
-	return output2, err
-}
+// func urlParse(input string) (url.URL, error) {
+// 	var err error
+// 	if input != "" {
+// 		output, err := url.Parse(input)
+// 		output2 := *output
+// 		return output2, err
+// 	}
+// 	output, err := url.Parse("")
+// 	output2 := *output
+// 	return output2, err
+// }
 
 func (c *Customer_New) GetLocations_New() error {
 	var err error
@@ -548,7 +552,7 @@ func GetEtailers_New() (dealers []Customer_New, err error) {
 	if err != nil {
 		return dealers, err
 	}
-	var ur, logo, web, icon, shadow, lat, lon string
+	var ur, logo, web, icon, shadow, lat, lon []byte
 	res, err := stmt.Query()
 	for res.Next() {
 		var c Customer_New
@@ -595,16 +599,15 @@ func GetEtailers_New() (dealers []Customer_New, err error) {
 			return dealers, err
 		}
 
-		c.Latitude, err = floatParse(lat)
-		c.Longitude, err = floatParse(lon)
-		c.SearchUrl, err = urlParse(ur)
-		c.Logo, err = urlParse(logo)
-		c.Website, err = urlParse(web)
-		c.DealerType.MapIcon.MapIcon, err = urlParse(icon)
-		c.DealerType.MapIcon.MapIconShadow, err = urlParse(shadow)
+		c.Latitude, err = byteToFloat(lat)
+		c.Longitude, err = byteToFloat(lon)
+		c.SearchUrl, err = byteToUrl(ur)
+		c.Logo, err = byteToUrl(logo)
+		c.Website, err = byteToUrl(web)
+		c.DealerType.MapIcon.MapIcon, err = byteToUrl(icon)
+		c.DealerType.MapIcon.MapIconShadow, err = byteToUrl(shadow)
 		if err != nil {
 			return dealers, err
-
 		}
 
 		dealers = append(dealers, c)
@@ -716,7 +719,7 @@ func GetLocalDealers_New(center string, latlng string) (dealers []DealerLocation
 		return dealers, err
 	}
 
-	var ur, logo, web, lat, lon, icon, shadow string
+	var ur, logo, web, lat, lon, icon, shadow []byte
 
 	for res.Next() {
 		var cust DealerLocation_New
@@ -761,13 +764,13 @@ func GetLocalDealers_New(center string, latlng string) (dealers []DealerLocation
 			&cust.Parent.Id,
 		)
 
-		cust.Latitude, err = floatParse(lat)
-		cust.Longitude, err = floatParse(lon)
-		cust.SearchUrl, err = urlParse(ur)
-		cust.Logo, err = urlParse(logo)
-		cust.Website, err = urlParse(web)
-		cust.DealerType.MapIcon.MapIcon, err = urlParse(icon)
-		cust.DealerType.MapIcon.MapIconShadow, err = urlParse(shadow)
+		cust.Latitude, err = byteToFloat(lat)
+		cust.Longitude, err = byteToFloat(lon)
+		cust.SearchUrl, err = byteToUrl(ur)
+		cust.Logo, err = byteToUrl(logo)
+		cust.Website, err = byteToUrl(web)
+		cust.DealerType.MapIcon.MapIcon, err = byteToUrl(icon)
+		cust.DealerType.MapIcon.MapIconShadow, err = byteToUrl(shadow)
 		if err != nil {
 			return dealers, err
 		}
@@ -781,8 +784,6 @@ func GetLocalDealers_New(center string, latlng string) (dealers []DealerLocation
 	sortutil.AscByField(dealers, "Distance")
 	return
 }
-
-//HERE
 
 func GetLocalRegions_New() (regions []StateRegion, err error) {
 
@@ -870,17 +871,6 @@ func GetLocalRegions_New() (regions []StateRegion, err error) {
 }
 
 //no db - same
-func getViewPortWidth_New(lat1 float64, lon1 float64, lat2 float64, long2 float64) float64 {
-	dlat := (lat2 - lat1) * (math.Pi / 180)
-	dlon := (long2 - lon1) * (math.Pi / 180)
-
-	lat1 = lat1 * (math.Pi / 180)
-	lat2 = lat2 * (math.Pi / 180)
-
-	a := (math.Sin(dlat/2) * math.Sin(dlat/2)) + ((math.Sin(dlon/2))*(math.Sin(dlon/2)))*math.Cos(lat1)*math.Cos(lat2)
-	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
-	return api_helpers.EARTH * c
-}
 
 func GetLocalDealerTiers_New() (tiers []DealerTier, err error) {
 	// redis_key := "goapi:local:tiers"
@@ -935,7 +925,7 @@ func GetLocalDealerTypes_New() (graphics []MapGraphics_New, err error) {
 		return graphics, err
 	}
 	res, err := stmt.Query()
-	var icon, shadow string
+	var icon, shadow []byte
 	for res.Next() {
 		var g MapGraphics_New
 		err = res.Scan(
@@ -954,8 +944,8 @@ func GetLocalDealerTypes_New() (graphics []MapGraphics_New, err error) {
 		if err != nil {
 			return graphics, err
 		}
-		g.DealerType.MapIcon.MapIcon, err = urlParse(icon)
-		g.DealerType.MapIcon.MapIconShadow, err = urlParse(shadow)
+		g.DealerType.MapIcon.MapIcon, err = byteToUrl(icon)
+		g.DealerType.MapIcon.MapIconShadow, err = byteToUrl(shadow)
 		graphics = append(graphics, g)
 	}
 	// go redis.Setex(redis_key, graphics, 86400)
@@ -1396,3 +1386,24 @@ func byteToUrl(input []byte) (url.URL, error) {
 	output2 := *output
 	return output2, err
 }
+
+//...For later
+// func (g *GeoLocation) LatitudeRadians() float64 {
+// 	return (g.Latitude * (math.Pi / 180))
+// }
+
+// func (g *GeoLocation) LongitudeRadians() float64 {
+// 	return (g.Longitude * (math.Pi / 180))
+// }
+
+// func getViewPortWidth(lat1 float64, lon1 float64, lat2 float64, long2 float64) float64 {
+// 	dlat := (lat2 - lat1) * (math.Pi / 180)
+// 	dlon := (long2 - lon1) * (math.Pi / 180)
+
+// 	lat1 = lat1 * (math.Pi / 180)
+// 	lat2 = lat2 * (math.Pi / 180)
+
+// 	a := (math.Sin(dlat/2) * math.Sin(dlat/2)) + ((math.Sin(dlon/2))*(math.Sin(dlon/2)))*math.Cos(lat1)*math.Cos(lat2)
+// 	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
+// 	return api_helpers.EARTH * c
+// }
