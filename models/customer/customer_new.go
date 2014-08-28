@@ -258,40 +258,38 @@ var (
 								join DealerTiers as dtr on c.tier = dtr.ID
 								where (dt.dealer_type = 2 or dt.dealer_type = 3) and c.isDummy = false
 								and dt.show = true and (lower(cl.name) like ? || lower(c.name) like ?)`
-	//TODO delete ld before publishing - for reference
-	ld = `select cl.locationID, c.customerID, cl.name, c.email, cl.address, cl.city, cl.phone, cl.fax, cl.contact_person,
-						COALESCE(cl.latitude,0), COALESCE(cl.longitude,0), c.searchURL, c.logo, c.website,
-						COALESCE(c.postal_code,0), COALESCE(s.stateID,0), COALESCE(s.state,""), COALESCE(s.abbr,"") as state_abbr, COALESCE(cty.countryID,0),COALESCE(cty.name,"") as country_name, COALESCE(cty.abbr,"") as country_abbr,
-						dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
-						dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
-						COALESCE(mi.ID,0) as iconID, COALESCE(mi.mapicon,""), COALESCE(mi.mapiconshadow,""),
-						COALESCE(mpx.code,"") as mapix_code, COALESCE(mpx.description,"") as mapic_desc,
-						COALESCE(sr.name,"") as rep_name, COALESCE(sr.code,"") as rep_code, c.parentID
-						from CustomerLocations as cl
-						join Customer as c on cl.cust_id = c.cust_id
-						join DealerTypes as dt on c.dealer_type = dt.dealer_type
-						left join MapIcons as mi on dt.dealer_type = mi.dealer_type
-						join DealerTiers as dtr on c.tier = dtr.ID
-						left join States as s on cl.stateID = s.stateID
-						left join Country as cty on s.countryID = cty.countryID
-						left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
-						left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
-						where dt.online = 0 && c.isDummy = 0 && dt.show = 1 && dtr.ID = mi.tier &&
-						( ? * (
-							2 * ATAN2(
-								SQRT((SIN(((cl.latitude - ?) * (PI() / 180)) / 2) * SIN(((cl.latitude - ?) * (PI() / 180)) / 2)) + ((SIN(((cl.longitude - ?) * (PI() / 180)) / 2)) * (SIN(((cl.longitude - ?) * (PI() / 180)) / 2))) * COS(? * (PI() / 180)) * COS(cl.latitude * (PI() / 180))),
-								SQRT(1 - ((SIN(((cl.latitude - ?) * (PI() / 180)) / 2) * SIN(((cl.latitude - ?) * (PI() / 180)) / 2)) + ((SIN(((cl.longitude - ?) * (PI() / 180)) / 2)) * (SIN(((cl.longitude - ?) * (PI() / 180)) / 2))) * COS(? * (PI() / 180)) * COS(cl.latitude * (PI() / 180))))
-							)
-						) < ?)
-						&& (
-							(cl.latitude >= ? && cl.latitude <= ?)
-							&&
-							(cl.longitude >= ? && cl.longitude <= ?)
-							||
-							(cl.longitude >= ? && cl.longitude <= ?)
-						)
-						group by cl.locationID
-						order by dtr.sort desc`
+	dealerLocationsByType = `select cls.*, dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
+								dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
+								cl.locationID, cl.name, cl.address,cl.city,
+								cl.postalCode, cl.email, cl.phone,cl.fax,
+								cl.latitude, cl.longitude, cl.cust_id, cl.isPrimary, cl.ShippingDefault, cl.contact_person,
+								c.showWebsite, c.website, c.eLocalURL
+								from CustomerLocations as cl
+								join States as cls on cl.stateID = cls.stateID
+								join Customer as c on cl.cust_id = c.cust_id
+								join DealerTypes as dt on c.dealer_type = dt.dealer_type
+								join DealerTiers as dtr on c.tier = dtr.ID
+								where dt.online = false and c.isDummy = false
+								and dt.show = true and (lower(cl.name) like ? || lower(c.name) like ?)`
+	searchDealerLocationsByLatLng = `select cls.*, dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
+										dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
+										cl.locationID, cl.name, cl.address,cl.city,
+										cl.postalCode, cl.email, cl.phone,cl.fax,
+										cl.latitude, cl.longitude, cl.cust_id, cl.isPrimary, cl.ShippingDefault, cl.contact_person,
+										c.showWebsite, c.website, c.eLocalURL
+										from CustomerLocations as cl
+										join States as cls on cl.stateID = cls.stateID
+										join Customer as c on cl.cust_id = c.cust_id
+										join DealerTypes as dt on c.dealer_type = dt.dealer_type
+										join DealerTiers as dtr on c.tier = dtr.ID
+										where dt.online = false and c.isDummy = false
+										and dt.show = true and
+										( ? * (
+											2 * ATAN2(
+												SQRT((SIN(((cl.latitude - ?) * (PI() / 180)) / 2) * SIN(((cl.latitude - ?) * (PI() / 180)) / 2)) + ((SIN(((cl.longitude - ?) * (PI() / 180)) / 2)) * (SIN(((cl.longitude - ?) * (PI() / 180)) / 2))) * COS(? * (PI() / 180)) * COS(cl.latitude * (PI() / 180))),
+												SQRT(1 - ((SIN(((cl.latitude - ?) * (PI() / 180)) / 2) * SIN(((cl.latitude - ?) * (PI() / 180)) / 2)) + ((SIN(((cl.longitude - ?) * (PI() / 180)) / 2)) * (SIN(((cl.longitude - ?) * (PI() / 180)) / 2))) * COS(? * (PI() / 180)) * COS(cl.latitude * (PI() / 180))))
+											)
+										) < 100.0)`
 )
 
 func (c *Customer_New) GetCustomer_New() (err error) {
@@ -1056,6 +1054,16 @@ func GetWhereToBuyDealers_New() (customers []Customer_New, err error) {
 		if err != nil {
 			return customers, err
 		}
+		_ = c.GetLocations_New()
+
+		if c.Parent.Id != 0 {
+			parent := Customer{
+				Id: c.Parent.Id,
+			}
+			if err = parent.GetCustomer(); err == nil {
+				c.Parent = parent
+			}
+		}
 		customers = append(customers, c)
 	}
 
@@ -1074,8 +1082,8 @@ func GetLocationById_New(id int) (location DealerLocation_New, err error) {
 	if err != nil {
 		return location, err
 	}
-	var showWeb, website, eLocal, isPrimary, shippingDefault []byte //ununsed, but in the original query
-
+	var website, eLocal, isPrimary, shippingDefault []byte //ununsed, but in the original query
+	var showWeb bool
 	err = stmt.QueryRow(id).Scan(
 		&location.State.Id,           //s.stateID
 		&location.State.State,        //s.state
@@ -1100,13 +1108,24 @@ func GetLocationById_New(id int) (location DealerLocation_New, err error) {
 		&location.Latitude,
 		&location.Longitude,
 		&location.Id,
-		&isPrimary,
-		&shippingDefault,
+		&isPrimary,       //Unused
+		&shippingDefault, //Unused
 		&location.ContactPerson,
-		&showWeb,
-		&website,
-		&eLocal,
+		&showWeb, //Unused
+		&website, //Unused
+		&eLocal,  //Unused
 	)
+	if showWeb {
+		if website == nil {
+			website = eLocal
+		}
+		if website != nil {
+			location.Website, err = byteToUrl(website)
+			if err != nil {
+				return location, err
+			}
+		}
+	}
 	return
 }
 
@@ -1128,7 +1147,8 @@ func SearchLocations_New(term string) (locations []DealerLocation_New, err error
 		return locations, err
 	}
 	for res.Next() {
-		var showWeb, website, eLocal, isPrimary, shippingDefault []byte //ununsed, but in the original query
+		var website, eLocal, isPrimary, shippingDefault []byte //ununsed, but in the original query
+		var showWeb bool
 		var location DealerLocation_New
 		err = res.Scan(
 			&location.State.Id,           //s.stateID
@@ -1154,8 +1174,162 @@ func SearchLocations_New(term string) (locations []DealerLocation_New, err error
 			&location.Latitude,
 			&location.Longitude,
 			&location.Id,
-			&isPrimary,
-			&shippingDefault,
+			&isPrimary,       //Unused
+			&shippingDefault, //Unused
+			&location.ContactPerson,
+			&showWeb, //Unused
+			&website, //Unused
+			&eLocal,  //Unused
+		)
+		if err != nil {
+			return locations, err
+		}
+		if showWeb {
+			if website == nil {
+				website = eLocal
+			}
+			if website != nil {
+				location.Website, err = byteToUrl(website)
+				if err != nil {
+					return locations, err
+				}
+			}
+		}
+		locations = append(locations, location)
+	}
+	return
+}
+
+func SearchLocationsByType_New(term string) (locations []DealerLocation_New, err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return locations, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(dealerLocationsByType)
+	if err != nil {
+		return locations, err
+	}
+	term = "%" + term + "%"
+
+	res, err := stmt.Query(term, term)
+	if err != nil {
+		return locations, err
+	}
+	for res.Next() {
+		var website, eLocal, isPrimary, shippingDefault []byte //ununsed, but in the original query
+		var showWeb bool
+		var location DealerLocation_New
+		err = res.Scan(
+			&location.State.Id,           //s.stateID
+			&location.State.State,        //s.state
+			&location.State.Abbreviation, //s.abbr as state_abbr
+			&location.State.Country.Id,   //cty.countryID,
+			&location.DealerType.Id,      //dt.dealer_type as typeID
+			&location.DealerType.Type,    // dt.type as dealerType
+			&location.DealerType.Online,  // dt.online as typeOnline,
+			&location.DealerType.Show,    //dt.show as typeShow
+			&location.DealerType.Label,   //dt.label as typeLabel,
+			&location.DealerTier.Id,      //dtr.ID as tierID,
+			&location.DealerTier.Tier,    //dtr.tier as tier
+			&location.DealerTier.Sort,    //dtr.sort as tierSort
+			&location.LocationId,
+			&location.Name,
+			&location.Address,
+			&location.City,
+			&location.PostalCode,
+			&location.Email,
+			&location.Phone,
+			&location.Fax,
+			&location.Latitude,
+			&location.Longitude,
+			&location.Id,
+			&isPrimary,       //Unused
+			&shippingDefault, //Unused
+			&location.ContactPerson,
+			&showWeb, //Unused
+			&website, //Unused
+			&eLocal,  //Unused
+		)
+		if err != nil {
+			return locations, err
+		}
+		if showWeb {
+			if website == nil {
+				website = eLocal
+			}
+			if website != nil {
+				location.Website, err = byteToUrl(website)
+				if err != nil {
+					return locations, err
+				}
+			}
+		}
+		locations = append(locations, location)
+	}
+	return
+}
+
+func SearchLocationsByLatLng_New(loc GeoLocation) (locations []DealerLocation_New, err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return locations, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(searchDealerLocationsByLatLng)
+	if err != nil {
+		return locations, err
+	}
+	params := []interface{}{ //all are float64
+		api_helpers.EARTH,
+		loc.Latitude,
+		loc.Latitude,
+		loc.Longitude,
+		loc.Longitude,
+		loc.LatitudeRadians(),
+		loc.Latitude,
+		loc.Latitude,
+		loc.Longitude,
+		loc.Longitude,
+		loc.LatitudeRadians(),
+	}
+	res, err := stmt.Query(params...)
+	if err != nil {
+		return locations, err
+	}
+
+	var website, eLocal, isPrimary, shippingDefault []byte //ununsed, but in the original query
+	var showWeb bool
+	for res.Next() {
+		var location DealerLocation_New
+		err = res.Scan(
+			&location.State.Id,
+			&location.State.State,        //s.state
+			&location.State.Abbreviation, //s.abbr as state_abbr
+			&location.State.Country.Id,   //cty.countryID,
+			&location.DealerType.Id,      //dt.dealer_type as typeID
+			&location.DealerType.Type,    // dt.type as dealerType
+			&location.DealerType.Online,  // dt.online as typeOnline,
+			&location.DealerType.Show,    //dt.show as typeShow
+			&location.DealerType.Label,   //dt.label as typeLabel,
+			&location.DealerTier.Id,      //dtr.ID as tierID,
+			&location.DealerTier.Tier,    //dtr.tier as tier
+			&location.DealerTier.Sort,    //dtr.sort as tierSort
+			&location.LocationId,
+			&location.Name,
+			&location.Address,
+			&location.City,
+			&location.PostalCode,
+			&location.Email,
+			&location.Phone,
+			&location.Fax,
+			&location.Latitude,
+			&location.Longitude,
+			&location.Id,
+			&isPrimary,       //Unused
+			&shippingDefault, //Unused
 			&location.ContactPerson,
 			&showWeb,
 			&website,
@@ -1163,6 +1337,18 @@ func SearchLocations_New(term string) (locations []DealerLocation_New, err error
 		)
 		if err != nil {
 			return locations, err
+		}
+
+		if showWeb {
+			if website == nil {
+				website = eLocal
+			}
+			if website != nil {
+				location.Website, err = byteToUrl(website)
+				if err != nil {
+					return locations, err
+				}
+			}
 		}
 		locations = append(locations, location)
 	}

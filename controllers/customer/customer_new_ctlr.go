@@ -284,3 +284,48 @@ func SearchLocations_New(w http.ResponseWriter, r *http.Request, params martini.
 
 	return encoding.Must(enc.Encode(locs))
 }
+
+func SearchLocationsByType_New(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+	qs := r.URL.Query()
+	search_term := params["search"]
+	if search_term == "" {
+		search_term = qs.Get("search")
+	}
+	locs, err := customer.SearchLocationsByType_New(search_term)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(locs))
+}
+func SearchLocationsByLatLng_New(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+	qs := r.URL.Query()
+
+	// Get the latitude
+	latitude := params["latitude"]
+	if latitude == "" {
+		latitude = qs.Get("latitude")
+	}
+	// Get the longitude
+	longitude := params["longitude"]
+	if longitude == "" {
+		longitude = qs.Get("longitude")
+	}
+
+	latFloat, _ := strconv.ParseFloat(latitude, 64)
+	lngFloat, _ := strconv.ParseFloat(longitude, 64)
+
+	latlng := customer.GeoLocation{
+		Latitude:  latFloat,
+		Longitude: lngFloat,
+	}
+
+	locs, err := customer.SearchLocationsByLatLng_New(latlng)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(locs))
+}
