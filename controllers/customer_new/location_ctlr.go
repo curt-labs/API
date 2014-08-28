@@ -3,7 +3,7 @@ package customer_ctlr_new
 import (
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
-	"github.com/curt-labs/GoAPI/models/customer"
+	"github.com/curt-labs/GoAPI/models/customer_new"
 	"github.com/go-martini/martini"
 	"net/http"
 	"strconv"
@@ -15,7 +15,7 @@ const (
 )
 
 func GetLocation(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	var c customer.CustomerLocation
+	var c customer_new.CustomerLocation
 	var err error
 	c.Id, err = strconv.Atoi(r.FormValue("id"))
 	if err != nil {
@@ -29,10 +29,10 @@ func GetLocation(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 	return encoding.Must(enc.Encode(c))
 }
 func GetAllLocations(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
-	var c customer.CustomerLocations
+	var c customer_new.CustomerLocations
 	var err error
 
-	c, err = customer.GetAllLocations()
+	c, err = customer_new.GetAllLocations()
 	if err != nil {
 		return err.Error()
 	}
@@ -49,7 +49,7 @@ func GetAllLocations(rw http.ResponseWriter, r *http.Request, enc encoding.Encod
 }
 
 func CreateUpdateLocation(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
-	var w customer.CustomerLocation
+	var w customer_new.CustomerLocation
 	var err error
 
 	id := r.FormValue("id")
@@ -129,7 +129,7 @@ func CreateUpdateLocation(rw http.ResponseWriter, r *http.Request, enc encoding.
 }
 
 func DeleteLocation(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
-	var w customer.CustomerLocation
+	var w customer_new.CustomerLocation
 	var err error
 
 	id := r.FormValue("id")

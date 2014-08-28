@@ -2,7 +2,7 @@ package dealers_ctlr_new
 
 import (
 	"github.com/curt-labs/GoAPI/helpers/encoding"
-	"github.com/curt-labs/GoAPI/models/customer"
+	"github.com/curt-labs/GoAPI/models/customer_new"
 	"github.com/go-martini/martini"
 	"net/http"
 	"strconv"
@@ -21,7 +21,7 @@ func GetEtailers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 		return ""
 	}
 
-	dealers, err := customer.GetEtailers_New()
+	dealers, err := customer_new.GetEtailers_New()
 	if err != nil {
 		return err.Error()
 	}
@@ -60,7 +60,7 @@ func GetLocalDealers(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 		center = qs.Get("center")
 	}
 
-	dealers, err := customer.GetLocalDealers_New(center, latlng)
+	dealers, err := customer_new.GetLocalDealers_New(center, latlng)
 	if err != nil {
 		return err.Error()
 	}
@@ -69,7 +69,7 @@ func GetLocalDealers(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 }
 
 func GetLocalRegions(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	regions, err := customer.GetLocalRegions_New()
+	regions, err := customer_new.GetLocalRegions_New()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -78,7 +78,7 @@ func GetLocalRegions(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 }
 
 func GetLocalDealerTiers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	tiers, err := customer.GetLocalDealerTiers_New()
+	tiers, err := customer_new.GetLocalDealerTiers_New()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -87,7 +87,7 @@ func GetLocalDealerTiers(w http.ResponseWriter, r *http.Request, enc encoding.En
 }
 
 func GetLocalDealerTypes(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	types, err := customer.GetLocalDealerTypes_New()
+	types, err := customer_new.GetLocalDealerTypes_New()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -96,7 +96,7 @@ func GetLocalDealerTypes(w http.ResponseWriter, r *http.Request, enc encoding.En
 }
 
 func PlatinumEtailers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	cust, err := customer.GetWhereToBuyDealers_New()
+	cust, err := customer_new.GetWhereToBuyDealers_New()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -116,7 +116,7 @@ func GetLocationById(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 		return ""
 	}
 
-	loc, err := customer.GetLocationById_New(id)
+	loc, err := customer_new.GetLocationById_New(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -131,7 +131,7 @@ func SearchLocations(w http.ResponseWriter, r *http.Request, params martini.Para
 	if search_term == "" {
 		search_term = qs.Get("search")
 	}
-	locs, err := customer.SearchLocations_New(search_term)
+	locs, err := customer_new.SearchLocations_New(search_term)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -146,7 +146,7 @@ func SearchLocationsByType(w http.ResponseWriter, r *http.Request, params martin
 	if search_term == "" {
 		search_term = qs.Get("search")
 	}
-	locs, err := customer.SearchLocationsByType_New(search_term)
+	locs, err := customer_new.SearchLocationsByType_New(search_term)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -171,12 +171,12 @@ func SearchLocationsByLatLng(w http.ResponseWriter, r *http.Request, params mart
 	latFloat, _ := strconv.ParseFloat(latitude, 64)
 	lngFloat, _ := strconv.ParseFloat(longitude, 64)
 
-	latlng := customer.GeoLocation{
+	latlng := customer_new.GeoLocation{
 		Latitude:  latFloat,
 		Longitude: lngFloat,
 	}
 
-	locs, err := customer.SearchLocationsByLatLng_New(latlng)
+	locs, err := customer_new.SearchLocationsByLatLng_New(latlng)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""

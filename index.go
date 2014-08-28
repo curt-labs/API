@@ -5,7 +5,9 @@ import (
 	"github.com/curt-labs/GoAPI/controllers/blog"
 	"github.com/curt-labs/GoAPI/controllers/category"
 	"github.com/curt-labs/GoAPI/controllers/customer"
+	"github.com/curt-labs/GoAPI/controllers/customer_new"
 	"github.com/curt-labs/GoAPI/controllers/dealers"
+	"github.com/curt-labs/GoAPI/controllers/dealers_new"
 	"github.com/curt-labs/GoAPI/controllers/faq"
 	"github.com/curt-labs/GoAPI/controllers/middleware"
 	"github.com/curt-labs/GoAPI/controllers/news"
@@ -127,14 +129,14 @@ func main() {
 		r.Post("/auth", customer_ctlr.UserAuthentication)
 		r.Get("/auth", customer_ctlr.KeyedUserAuthentication)
 		//Customer prices
-		r.Get("/prices/part/:id", internalCors, customer_ctlr.GetPricesByPart)         //{id}; id refers to partId
-		r.Get("/prices/sale", internalCors, customer_ctlr.GetSales)                    //{start}{end}{id} -all required params; id refers to customerId
-		r.Get("/prices/:id", internalCors, customer_ctlr.GetPrice)                     //{id}; id refers to {id} refers to customerPriceId
-		r.Get("/prices", internalCors, customer_ctlr.GetAllPrices)                     //returns all {sort=field&direction=dir}
-		r.Post("/prices/:id", internalCors, customer_ctlr.CreateUpdatePrice)           //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
-		r.Put("/prices", internalCors, customer_ctlr.CreateUpdatePrice)                //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
-		r.Delete("/prices/:id", internalCors, customer_ctlr.DeletePrice)               //{id} refers to customerPriceId
-		r.Get("/pricesByCustomer/:id", internalCors, customer_ctlr.GetPriceByCustomer) //{id} refers to customerId; returns CustomerPrices
+		r.Get("/prices/part/:id", internalCors, customer_ctlr_new.GetPricesByPart)         //{id}; id refers to partId
+		r.Get("/prices/sale", internalCors, customer_ctlr_new.GetSales)                    //{start}{end}{id} -all required params; id refers to customerId
+		r.Get("/prices/:id", internalCors, customer_ctlr_new.GetPrice)                     //{id}; id refers to {id} refers to customerPriceId
+		r.Get("/prices", internalCors, customer_ctlr_new.GetAllPrices)                     //returns all {sort=field&direction=dir}
+		r.Post("/prices/:id", internalCors, customer_ctlr_new.CreateUpdatePrice)           //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
+		r.Put("/prices", internalCors, customer_ctlr_new.CreateUpdatePrice)                //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
+		r.Delete("/prices/:id", internalCors, customer_ctlr_new.DeletePrice)               //{id} refers to customerPriceId
+		r.Get("/pricesByCustomer/:id", internalCors, customer_ctlr_new.GetPriceByCustomer) //{id} refers to customerId; returns CustomerPrices
 
 	})
 
@@ -207,20 +209,33 @@ func main() {
 	m.Get("/search/part/:term", search_ctlr.SearchPart)
 	m.Get("/videos", videos_ctlr.DistinctVideos)
 
-	m.Group("/customerNew", func(r martini.Router) {
-		r.Get("", customer_ctlr.GetCustomer_New)
-		r.Get("/users", customer_ctlr.GetUsers_New)
-		r.Get("/locations", customer_ctlr.GetLocations_New)
-		r.Get("/price/:id", customer_ctlr.GetCustomerPrice_New)           //{part id}
-		r.Get("/cartRef/:id", customer_ctlr.GetCustomerCartReference_New) //{part id}
-		r.Get("/eTailers", customer_ctlr.GetEtailers_New)
-		r.Get("/local", customer_ctlr.GetLocalDealers_New)
-		r.Get("/local/regions", customer_ctlr.GetLocalRegions_New)        //move to dealers
-		r.Get("/local/tiers", customer_ctlr.GetLocalDealerTiers_New)      //move to dealers
-		r.Get("/local/types", customer_ctlr.GetLocalDealerTypes_New)      //move to dealers
-		r.Get("/etailer/platinum", customer_ctlr.PlatinumEtailers_New)    //move to dealers
-		r.Get("/dealers/location/:id", customer_ctlr.GetLocationById_New) //move to dealers
-		r.Get("/dealers/search/:search", customer_ctlr.SearchLocations_New)
+	m.Group("/new", func(r martini.Router) {
+		m.Group("/customer", func(r martini.Router) {
+			r.Get("", internalCors, customer_ctlr_new.GetCustomer)
+			r.Post("", internalCors, customer_ctlr_new.GetCustomer)
+			r.Get("/users", customer_ctlr_new.GetUsers)
+			r.Post("/users", customer_ctlr_new.GetUsers)
+			r.Get("/locations", internalCors, customer_ctlr_new.GetLocations)
+			r.Post("/locations", internalCors, customer_ctlr_new.GetLocations)
+			r.Get("/price/:id", internalCors, customer_ctlr_new.GetCustomerPrice)           //{part id}
+			r.Get("/cartRef/:id", internalCors, customer_ctlr_new.GetCustomerCartReference) //{part id}
+
+		})
+		m.Group("/dealers", func(r martini.Router) {
+			r.Get("/etailer", internalCors, dealers_ctlr_new.GetEtailers)
+			r.Get("/local", internalCors, dealers_ctlr_new.GetLocalDealers)
+			r.Get("/local/regions", internalCors, dealers_ctlr_new.GetLocalRegions)     //move to dealers
+			r.Get("/local/tiers", internalCors, dealers_ctlr_new.GetLocalDealerTiers)   //move to dealers
+			r.Get("/local/types", internalCors, dealers_ctlr_new.GetLocalDealerTypes)   //move to dealers
+			r.Get("/etailer/platinum", internalCors, dealers_ctlr_new.PlatinumEtailers) //move to dealers
+			r.Get("/location/:id", internalCors, dealers_ctlr_new.GetLocationById)      //move to dealers
+			r.Get("/search/:search", internalCors, dealers_ctlr_new.SearchLocations)
+			r.Get("/search/type", internalCors, dealers_ctlr_new.SearchLocationsByType)
+			r.Get("/search/type/:search", internalCors, dealers_ctlr_new.SearchLocationsByType)
+			r.Get("/search/geo", internalCors, dealers_ctlr_new.SearchLocationsByLatLng)
+			r.Get("/search/geo/:latitude/:longitude", internalCors, dealers_ctlr_new.SearchLocationsByLatLng)
+		})
+
 	})
 	/**** INTERNAL USE ONLY ****/
 	// These endpoints will not work to the public eye when deployed on CURT's
