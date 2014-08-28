@@ -20,7 +20,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/cors"
-	// "github.com/martini-contrib/gorelic"
+	"github.com/martini-contrib/gorelic"
 	"github.com/martini-contrib/gzip"
 	"github.com/martini-contrib/sessions"
 	"log"
@@ -30,7 +30,7 @@ import (
 )
 
 var (
-	listenAddr = flag.String("http", ":8081", "http listen address")
+	listenAddr = flag.String("http", ":8080", "http listen address")
 )
 
 /**
@@ -47,8 +47,8 @@ func main() {
 	}
 
 	m := martini.Classic()
-	// gorelic.InitNewrelicAgent("5fbc49f51bd658d47b4d5517f7a9cb407099c08c", "GoAPI", false)
-	// m.Use(gorelic.Handler)
+	gorelic.InitNewrelicAgent("5fbc49f51bd658d47b4d5517f7a9cb407099c08c", "GoAPI", false)
+	m.Use(gorelic.Handler)
 	m.Use(gzip.All())
 	m.Use(middleware.Meddler())
 	m.Use(cors.Allow(&cors.Options{
