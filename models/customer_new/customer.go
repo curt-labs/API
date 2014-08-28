@@ -8,7 +8,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	"github.com/curt-labs/GoAPI/models/geography"
 	_ "github.com/go-sql-driver/mysql"
-	"log"
+
 	"math"
 	"net/url"
 	"strconv"
@@ -113,23 +113,6 @@ var (
 				COALESCE(mi.ID,0) as iconID, COALESCE(mi.mapicon,""), COALESCE(mi.mapiconshadow,""),
 				COALESCE(mpx.code,"") as mapix_code, COALESCE(mpx.description,"") as mapic_desc,
 				COALESCE(sr.name,"") as rep_name, COALESCE(sr.code,"") as rep_code, c.parentID
-				from Customer as c
-				left join States as s on c.stateID = s.stateID
-				left join Country as cty on s.countryID = cty.countryID
-				left join DealerTypes as dt on c.dealer_type = dt.dealer_type
-				left join MapIcons as mi on dt.dealer_type = mi.dealer_type
-				left join DealerTiers as dtr on c.tier = dtr.ID
-				left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
-				left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
-				where c.customerID = ? ` //TODO - clumsy, shoud use cust_ID, not customerID
-	b = `select c.customerID, c.name, c.email, c.address, c.address2, c.city, c.phone, c.fax, c.contact_person,
-COALESCE(c.latitude,0), COALESCE(c.longitude,0), c.searchURL, c.logo, c.website,
-c.postal_code, COALESCE(s.stateID,0), COALESCE(s.state,""), COALESCE(s.abbr,"") as state_abbr, COALESCE(cty.countryID,0), COALESCE(cty.name,"") as country_name, COALESCE(cty.abbr,"") as country_abbr,
-				dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
-	dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
-	COALESCE(mi.ID,0) as iconID, COALESCE(mi.mapicon,""), COALESCE(mi.mapiconshadow,""),
-	COALESCE(mpx.code,"") as mapix_code, COALESCE(mpx.description,"") as mapic_desc,
-	COALESCE(sr.name,"") as rep_name, COALESCE(sr.code,"") as rep_code
 				from Customer as c
 				left join States as s on c.stateID = s.stateID
 				left join Country as cty on s.countryID = cty.countryID
@@ -1421,7 +1404,6 @@ func byteToUrl(input []byte) (url.URL, error) {
 	return output2, err
 }
 
-//...For later
 func (g *GeoLocation) LatitudeRadians() float64 {
 	return (g.Latitude * (math.Pi / 180))
 }
