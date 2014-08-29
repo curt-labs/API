@@ -21,7 +21,7 @@ func GetEtailers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 		return ""
 	}
 
-	dealers, err := customer_new.GetEtailers_New()
+	dealers, err := customer_new.GetEtailers()
 	if err != nil {
 		return err.Error()
 	}
@@ -60,7 +60,7 @@ func GetLocalDealers(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 		center = qs.Get("center")
 	}
 
-	dealers, err := customer_new.GetLocalDealers_New(center, latlng)
+	dealers, err := customer_new.GetLocalDealers(center, latlng)
 	if err != nil {
 		return err.Error()
 	}
@@ -69,7 +69,7 @@ func GetLocalDealers(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 }
 
 func GetLocalRegions(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	regions, err := customer_new.GetLocalRegions_New()
+	regions, err := customer_new.GetLocalRegions()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -78,7 +78,7 @@ func GetLocalRegions(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 }
 
 func GetLocalDealerTiers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	tiers, err := customer_new.GetLocalDealerTiers_New()
+	tiers, err := customer_new.GetLocalDealerTiers()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -87,7 +87,7 @@ func GetLocalDealerTiers(w http.ResponseWriter, r *http.Request, enc encoding.En
 }
 
 func GetLocalDealerTypes(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	types, err := customer_new.GetLocalDealerTypes_New()
+	types, err := customer_new.GetLocalDealerTypes()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -96,7 +96,7 @@ func GetLocalDealerTypes(w http.ResponseWriter, r *http.Request, enc encoding.En
 }
 
 func PlatinumEtailers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	cust, err := customer_new.GetWhereToBuyDealers_New()
+	cust, err := customer_new.GetWhereToBuyDealers()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -116,7 +116,7 @@ func GetLocationById(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 		return ""
 	}
 
-	loc, err := customer_new.GetLocationById_New(id)
+	loc, err := customer_new.GetLocationById(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -131,7 +131,7 @@ func SearchLocations(w http.ResponseWriter, r *http.Request, params martini.Para
 	if search_term == "" {
 		search_term = qs.Get("search")
 	}
-	locs, err := customer_new.SearchLocations_New(search_term)
+	locs, err := customer_new.SearchLocations(search_term)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -146,7 +146,7 @@ func SearchLocationsByType(w http.ResponseWriter, r *http.Request, params martin
 	if search_term == "" {
 		search_term = qs.Get("search")
 	}
-	locs, err := customer_new.SearchLocationsByType_New(search_term)
+	locs, err := customer_new.SearchLocationsByType(search_term)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -176,7 +176,7 @@ func SearchLocationsByLatLng(w http.ResponseWriter, r *http.Request, params mart
 		Longitude: lngFloat,
 	}
 
-	locs, err := customer_new.SearchLocationsByLatLng_New(latlng)
+	locs, err := customer_new.SearchLocationsByLatLng(latlng)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""

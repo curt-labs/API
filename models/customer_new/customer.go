@@ -8,7 +8,6 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	"github.com/curt-labs/GoAPI/models/geography"
 	_ "github.com/go-sql-driver/mysql"
-
 	"math"
 	"net/url"
 	"strconv"
@@ -310,19 +309,19 @@ var (
 										) < 100.0)`
 )
 
-func (c *Customer) GetCustomer_New() (err error) {
+func (c *Customer) GetCustomer() (err error) {
 
 	locationChan := make(chan int)
 	basicsChan := make(chan int)
 
 	go func() {
-		if locErr := c.GetLocations_New(); locErr != nil {
+		if locErr := c.GetLocations(); locErr != nil {
 			err = locErr
 		}
 		locationChan <- 1
 	}()
 	go func() {
-		if basErr := c.Basics_New(); basErr != nil {
+		if basErr := c.Basics(); basErr != nil {
 			err = basErr
 		}
 		basicsChan <- 1
@@ -335,7 +334,7 @@ func (c *Customer) GetCustomer_New() (err error) {
 }
 
 //TODO - I hate the hacks in this scan/query!!!
-func (c *Customer) Basics_New() error {
+func (c *Customer) Basics() error {
 	var err error
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -422,14 +421,14 @@ func (c *Customer) Basics_New() error {
 	}
 	if parentInt != 0 {
 		par := Customer{Id: parentInt}
-		par.GetCustomer_New()
+		par.GetCustomer()
 		c.Parent = &par
 	}
 
 	return nil
 }
 
-func (c *Customer) GetLocations_New() error {
+func (c *Customer) GetLocations() error {
 	var err error
 	var ls []CustomerLocation
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -478,7 +477,7 @@ func (c *Customer) GetLocations_New() error {
 	return nil
 }
 
-func (c *Customer) GetUsers_New() (users []CustomerUser, err error) {
+func (c *Customer) GetUsers() (users []CustomerUser, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return users, err
@@ -510,7 +509,7 @@ func (c *Customer) GetUsers_New() (users []CustomerUser, err error) {
 	return users, err
 }
 
-func GetCustomerPrice_New(api_key string, part_id int) (price float64, err error) {
+func GetCustomerPrice(api_key string, part_id int) (price float64, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return price, err
@@ -526,7 +525,7 @@ func GetCustomerPrice_New(api_key string, part_id int) (price float64, err error
 	return price, err
 }
 
-func GetCustomerCartReference_New(api_key string, part_id int) (ref int, err error) {
+func GetCustomerCartReference(api_key string, part_id int) (ref int, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return ref, err
@@ -543,7 +542,7 @@ func GetCustomerCartReference_New(api_key string, part_id int) (ref int, err err
 }
 
 /* Internal Use Only */
-func GetEtailers_New() (dealers []Customer, err error) {
+func GetEtailers() (dealers []Customer, err error) {
 
 	// redis_key := "goapi:dealers:etailers"
 	// data, err := redis.Get(redis_key)
@@ -625,14 +624,14 @@ func GetEtailers_New() (dealers []Customer, err error) {
 		if err != nil {
 			return dealers, err
 		}
-		err = c.GetLocations_New()
+		err = c.GetLocations()
 		parentInt, err := byteToInt(parentId)
 		if err != nil {
 			return dealers, err
 		}
 		if parentInt != 0 {
 			par := Customer{Id: parentInt}
-			par.GetCustomer_New()
+			par.GetCustomer()
 			c.Parent = &par
 		}
 
@@ -642,7 +641,7 @@ func GetEtailers_New() (dealers []Customer, err error) {
 	return dealers, err
 }
 
-func GetLocalDealers_New(center string, latlng string) (dealers []DealerLocation, err error) {
+func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, err error) {
 
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -811,7 +810,7 @@ func GetLocalDealers_New(center string, latlng string) (dealers []DealerLocation
 	return
 }
 
-func GetLocalRegions_New() (regions []StateRegion, err error) {
+func GetLocalRegions() (regions []StateRegion, err error) {
 
 	// redis_key := "goapi:local:regions"
 	// data, err := redis.Get(redis_key)
@@ -896,7 +895,7 @@ func GetLocalRegions_New() (regions []StateRegion, err error) {
 
 //no db - same
 
-func GetLocalDealerTiers_New() (tiers []DealerTier, err error) {
+func GetLocalDealerTiers() (tiers []DealerTier, err error) {
 	// redis_key := "goapi:local:tiers"
 	// data, err := redis.Get(redis_key)
 	// if len(data) > 0 && err != nil {
@@ -929,7 +928,7 @@ func GetLocalDealerTiers_New() (tiers []DealerTier, err error) {
 	return
 }
 
-func GetLocalDealerTypes_New() (graphics []MapGraphics, err error) {
+func GetLocalDealerTypes() (graphics []MapGraphics, err error) {
 	// redis_key := "goapi:local:types"
 	// data, err := redis.Get(redis_key)
 	// if len(data) > 0 && err != nil {
@@ -976,7 +975,7 @@ func GetLocalDealerTypes_New() (graphics []MapGraphics, err error) {
 	return
 }
 
-func GetWhereToBuyDealers_New() (customers []Customer, err error) {
+func GetWhereToBuyDealers() (customers []Customer, err error) {
 	// redis_key := "goapi:dealers:wheretobuy"
 	// data, err := redis.Get(redis_key)
 	// if len(data) > 0 && err != nil {
@@ -1064,14 +1063,14 @@ func GetWhereToBuyDealers_New() (customers []Customer, err error) {
 		c.MapixDescription, err = byteToString(mapixDesc)
 		c.SalesRepresentative, err = byteToString(rep)
 		c.SalesRepresentativeCode, err = byteToString(repCode)
-		_ = c.GetLocations_New()
+		_ = c.GetLocations()
 		parentInt, err := byteToInt(parentId)
 		if err != nil {
 			return customers, err
 		}
 		if parentInt != 0 {
 			par := Customer{Id: parentInt}
-			par.GetCustomer_New()
+			par.GetCustomer()
 			c.Parent = &par
 		}
 
@@ -1082,7 +1081,7 @@ func GetWhereToBuyDealers_New() (customers []Customer, err error) {
 	return
 }
 
-func GetLocationById_New(id int) (location DealerLocation, err error) {
+func GetLocationById(id int) (location DealerLocation, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return location, err
@@ -1140,7 +1139,7 @@ func GetLocationById_New(id int) (location DealerLocation, err error) {
 	return
 }
 
-func SearchLocations_New(term string) (locations []DealerLocation, err error) {
+func SearchLocations(term string) (locations []DealerLocation, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return locations, err
@@ -1211,7 +1210,7 @@ func SearchLocations_New(term string) (locations []DealerLocation, err error) {
 	return
 }
 
-func SearchLocationsByType_New(term string) (locations []DealerLocation, err error) {
+func SearchLocationsByType(term string) (locations []DealerLocation, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return locations, err
@@ -1282,7 +1281,7 @@ func SearchLocationsByType_New(term string) (locations []DealerLocation, err err
 	return
 }
 
-func SearchLocationsByLatLng_New(loc GeoLocation) (locations []DealerLocation, err error) {
+func SearchLocationsByLatLng(loc GeoLocation) (locations []DealerLocation, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return locations, err
