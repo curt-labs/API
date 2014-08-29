@@ -2,7 +2,10 @@ package part
 
 import (
 	"database/sql"
+	"encoding/json"
+	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/database"
+	"github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -26,6 +29,15 @@ type Package struct {
 }
 
 func (p *Part) GetPartPackaging() error {
+	redis_key := fmt.Sprintf("part:%d:packages", p.PartId)
+
+	data, err := redis.Get(redis_key)
+	if err == nil && len(data) > 0 {
+		if err = json.Unmarshal(data, &p.Packages); err != nil {
+			return nil
+		}
+	}
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -64,5 +76,8 @@ func (p *Part) GetPartPackaging() error {
 	}
 
 	p.Packages = pkgs
+
+	go redis.Setex(redis_key, p.Packages, redis.CacheTimeout)
+
 	return nil
 }

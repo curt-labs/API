@@ -96,6 +96,7 @@ func main() {
 		r.Get("/:part/:year/:make/:model/:submodel", part_ctlr.GetWithVehicle)
 		r.Get("/:part/:year/:make/:model/:submodel/:config(.+)", part_ctlr.GetWithVehicle)
 		r.Get("/:part", part_ctlr.Get)
+		r.Get("", part_ctlr.All)
 	})
 
 	m.Group("/customer", func(r martini.Router) {

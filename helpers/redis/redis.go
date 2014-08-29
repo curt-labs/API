@@ -13,6 +13,7 @@ const (
 	Db                = 13
 	PoolAllocationErr = "failed to allocate pool"
 	Prefix            = "goapi"
+	CacheTimeout      = 86400
 )
 
 func RedisPool(master bool) *redix.Pool {
@@ -79,7 +80,8 @@ func Setex(key string, obj interface{}, exp int) error {
 		return err
 	}
 
-	return conn.Send("SETEX", fmt.Sprintf("%s:%s", Prefix, key), data, exp)
+	_, err = conn.Do("SETEX", fmt.Sprintf("%s:%s", Prefix, key), exp, data)
+	return err
 }
 
 func Set(key string, obj interface{}) error {

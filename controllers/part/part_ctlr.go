@@ -2,6 +2,7 @@ package part_ctlr
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/curt-labs/GoAPI/models/part"
@@ -33,6 +34,39 @@ func track(endpoint string, params map[string]string, r *http.Request) {
 		"referrer": r.URL.RequestURI(),
 		"params":   js,
 	})
+}
+
+func All(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+
+	page := 0
+	count := 10
+	qs := r.URL.Query()
+	key := qs.Get("key")
+	if qs.Get("page") != "" {
+		if pg, err := strconv.Atoi(qs.Get("page")); err == nil {
+			if pg == 0 {
+				pg = 1
+			}
+			page = pg - 1
+		}
+	}
+	if qs.Get("count") != "" {
+		if ct, err := strconv.Atoi(qs.Get("count")); err == nil {
+			if ct > 50 {
+				http.Error(w, fmt.Sprintf("maximum request size is 50, you requested: %d", ct), http.StatusInternalServerError)
+				return ""
+			}
+			count = ct
+		}
+	}
+
+	parts, err := part.All(key, page, count)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(parts))
 }
 
 func Get(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
