@@ -9,6 +9,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	"github.com/curt-labs/GoAPI/helpers/rest"
+	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	"github.com/curt-labs/GoAPI/models/category"
 	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/curt-labs/GoAPI/models/customer/content"
@@ -23,6 +24,11 @@ import (
 )
 
 var (
+	GetPaginatedPartNumbers = `select distinct p.partID
+															from Part as p
+															where p.status = 800 || p.status = 900
+															order by p.partID
+															limit ?,?`
 	SubCategoryPartIdStmt = `select distinct cp.partID
 								from CatPart as cp
 								join Part as p on cp.partID = p.partID
@@ -219,27 +225,78 @@ func (p *Part) FromCache() error {
 
 func (p *Part) Get(key string) error {
 
-	partChan := make(chan int)
+	// partChan := make(chan int)
 	customerChan := make(chan int)
 
 	var err error
 
-	go func() {
-		if err = p.FromCache(); err != nil {
-			err = p.FromDatabase()
-		}
-		partChan <- 1
-	}()
+	// go func() {
+	// 	if err = p.FromCache(); err != nil {
+	// 		err = p.FromDatabase()
+	// 	}
+	// 	partChan <- 1
+	// }()
 
 	go func(api_key string) {
 		err = p.BindCustomer(api_key)
 		customerChan <- 1
 	}(key)
 
-	<-partChan
+	if err := p.FromDatabase(); err != nil {
+		return err
+	}
+
+	// <-partChan
 	<-customerChan
 
 	return err
+}
+
+func All(key string, page, count int) ([]Part, error) {
+
+	parts := make([]Part, 0)
+
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return parts, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(GetPaginatedPartNumbers)
+	if err != nil {
+		return parts, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(page, count)
+	if err != nil {
+		return parts, err
+	}
+
+	iter := 0
+	partChan := make(chan int)
+	for rows.Next() {
+		var partID int
+		if err = rows.Scan(&partID); err != nil {
+			return parts, err
+		}
+
+		go func(id int) {
+			p := Part{PartId: id}
+			p.Get(key)
+			parts = append(parts, p)
+			partChan <- 1
+		}(partID)
+		iter++
+	}
+
+	for i := 0; i < iter; i++ {
+		<-partChan
+	}
+
+	sortutil.AscByField(parts, "PartId")
+
+	return parts, nil
 }
 
 func (p *Part) GetWithVehicle(vehicle *vehicle.Vehicle, api_key string) error {
