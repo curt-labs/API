@@ -214,9 +214,7 @@ func (p *Part) FromCache() error {
 		return errors.New("Part does not exist in cache")
 	}
 
-	err = json.Unmarshal(part_bytes, &p)
-
-	return err
+	return json.Unmarshal(part_bytes, &p)
 }
 
 func (p *Part) Get(key string) error {
