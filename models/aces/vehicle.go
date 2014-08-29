@@ -135,6 +135,14 @@ func (l *Lookup) LoadParts(ch chan []part.Part) {
 
 	sortutil.AscByField(l.Parts, "PartId")
 
+	l.Pagination = Pagination{
+		TotalItems:    len(l.Parts),
+		ReturnedCount: len(l.Parts),
+		Page:          1,
+		PerPage:       len(l.Parts),
+		TotalPages:    1,
+	}
+
 	ch <- parts
 }
 

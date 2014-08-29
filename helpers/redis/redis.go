@@ -13,6 +13,7 @@ const (
 	Db                = 13
 	PoolAllocationErr = "failed to allocate pool"
 	Prefix            = "goapi"
+	CacheTimeout      = 86400
 )
 
 func RedisPool(master bool) *redix.Pool {

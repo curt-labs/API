@@ -200,7 +200,7 @@ func (p *Part) FromDatabase() error {
 	<-categoryChan
 	<-contentChan
 
-	go redis.Setex("part:"+strconv.Itoa(p.PartId), p, 86400)
+	go redis.Setex("part:"+strconv.Itoa(p.PartId), p, redis.CacheTimeout)
 
 	return nil
 }
@@ -279,6 +279,15 @@ func (p *Part) GetById(id int, key string) {
 }
 
 func (p *Part) Basics() error {
+	redis_key := fmt.Sprintf("part:%d:basics", p.PartId)
+
+	data, err := redis.Get(redis_key)
+	if err == nil && len(data) > 0 {
+		if err = json.Unmarshal(data, &p); err != nil {
+			return nil
+		}
+	}
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -307,10 +316,21 @@ func (p *Part) Basics() error {
 
 	p.ShortDesc = fmt.Sprintf("CURT %s %d", p.ShortDesc, p.PartId)
 
+	go redis.Setex(redis_key, p, redis.CacheTimeout)
+
 	return nil
 }
 
 func (p *Part) GetRelated() error {
+	redis_key := fmt.Sprintf("part:%d:related", p.PartId)
+
+	data, err := redis.Get(redis_key)
+	if err == nil && len(data) > 0 {
+		if err = json.Unmarshal(data, &p.Related); err != nil {
+			return nil
+		}
+	}
+
 	qry, err := database.Db.Prepare(relatedPartStmt)
 	if err != nil {
 		return err
@@ -329,10 +349,22 @@ func (p *Part) GetRelated() error {
 	}
 	p.Related = related
 	p.RelatedCount = len(related)
+
+	go redis.Setex(redis_key, p.Related, redis.CacheTimeout)
+
 	return nil
 }
 
 func (p *Part) GetContent() error {
+	redis_key := fmt.Sprintf("part:%d:content", p.PartId)
+
+	data, err := redis.Get(redis_key)
+	if err == nil && len(data) > 0 {
+		if err = json.Unmarshal(data, &p.Content); err != nil {
+			return nil
+		}
+	}
+
 	qry, err := database.Db.Prepare(partContentStmt)
 	if err != nil {
 		return err
@@ -360,6 +392,9 @@ func (p *Part) GetContent() error {
 		}
 	}
 	p.Content = content
+
+	go redis.Setex(redis_key, p.Content, redis.CacheTimeout)
+
 	return nil
 }
 
@@ -411,6 +446,13 @@ func (p *Part) BindCustomer(key string) error {
 }
 
 func (p *Part) GetInstallSheet(r *http.Request) (data []byte, err error) {
+	redis_key := fmt.Sprintf("part:%d:installsheet", p.PartId)
+
+	data, err = redis.Get(redis_key)
+	if err == nil && len(data) > 0 {
+		return data, nil
+	}
+
 	qry, err := database.Db.Prepare(partInstallSheetStmt)
 	if err != nil {
 		return
@@ -423,6 +465,8 @@ func (p *Part) GetInstallSheet(r *http.Request) (data []byte, err error) {
 
 	data, err = rest.GetPDF(row.Str(0), r)
 
+	go redis.Setex(redis_key, data, redis.CacheTimeout)
+
 	return
 }
 
@@ -432,9 +476,18 @@ func (p *Part) GetInstallSheet(r *http.Request) (data []byte, err error) {
 //
 // Inherited: part Part
 // Returns: error
-func (part *Part) PartBreadcrumbs() error {
+func (p *Part) PartBreadcrumbs() error {
 
-	if part.PartId == 0 {
+	redis_key := fmt.Sprintf("part:%d:breadcrumbs", p.PartId)
+
+	data, err := redis.Get(redis_key)
+	if err == nil && len(data) > 0 {
+		if err = json.Unmarshal(data, &p.Categories); err == nil {
+			return nil
+		}
+	}
+
+	if p.PartId == 0 {
 		return errors.New("Invalid Part Number")
 	}
 
@@ -457,9 +510,9 @@ func (part *Part) PartBreadcrumbs() error {
 	defer parentQuery.Close()
 
 	// Execute SQL Query against current PartId
-	catRow := qry.QueryRow(part.PartId)
+	catRow := qry.QueryRow(p.PartId)
 	if catRow == nil {
-		return errors.New("No part found for " + string(part.PartId))
+		return errors.New("No part found for " + string(p.PartId))
 	}
 
 	ch := make(chan category.ExtendedCategory)
@@ -497,13 +550,25 @@ func (part *Part) PartBreadcrumbs() error {
 	}
 
 	// Apply breadcrumbs to our part object and return
-	part.Categories = cats
+	p.Categories = cats
+
+	go redis.Setex(redis_key, p.Categories, redis.CacheTimeout)
+
 	return nil
 }
 
-func (part *Part) GetPartCategories(key string) (cats []category.ExtendedCategory, err error) {
+func (p *Part) GetPartCategories(key string) (cats []category.ExtendedCategory, err error) {
 
-	if part.PartId == 0 {
+	redis_key := fmt.Sprintf("part:%d:categories", p.PartId)
+
+	data, err := redis.Get(redis_key)
+	if err == nil && len(data) > 0 {
+		if err := json.Unmarshal(data, &cats); err == nil {
+			return cats, nil
+		}
+	}
+
+	if p.PartId == 0 {
 		return
 	}
 
@@ -520,7 +585,7 @@ func (part *Part) GetPartCategories(key string) (cats []category.ExtendedCategor
 	defer qry.Close()
 
 	// Execute SQL Query against current PartId
-	catRows, err := qry.Query(part.PartId)
+	catRows, err := qry.Query(p.PartId)
 	if err != nil || catRows == nil { // Error occurred while executing query
 		return
 	}
@@ -577,6 +642,8 @@ func (part *Part) GetPartCategories(key string) (cats []category.ExtendedCategor
 
 		cats = append(cats, cat)
 	}
+
+	go redis.Setex(redis_key, cats, redis.CacheTimeout)
 
 	return
 }
@@ -651,7 +718,7 @@ func GetCategoryParts(c category.Category, key string, page int, count int) (par
 		<-chans
 	}
 
-	go redis.Setex(redis_key, parts, 86400)
+	go redis.Setex(redis_key, parts, redis.CacheTimeout)
 
 	return
 }
