@@ -30,7 +30,7 @@ import (
 )
 
 var (
-	listenAddr = flag.String("http", ":8081", "http listen address")
+	listenAddr = flag.String("http", ":8080", "http listen address")
 )
 
 /**
