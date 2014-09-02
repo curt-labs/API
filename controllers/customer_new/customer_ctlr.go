@@ -36,6 +36,19 @@ func KeyedUserAuthentication(w http.ResponseWriter, r *http.Request, enc encodin
 
 	return encoding.Must(enc.Encode(cust))
 }
+func ResetAuthentication(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string { //Testing only
+	qs := r.URL.Query()
+	id := qs.Get("id")
+	var u customer_new.CustomerUser
+	u.Id = id
+	err := u.ResetAuthentication()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+
+	return "Success"
+}
 
 func GetCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 	qs := r.URL.Query()
