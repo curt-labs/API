@@ -2,7 +2,7 @@ package custcontent
 
 import (
 	"github.com/curt-labs/GoAPI/helpers/database"
-	// "github.com/curt-labs/GoAPI/models/customer_new/content"
+	// "github.com/curt-labs/GoAPI/models/customer/content"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 	// "time"
@@ -117,6 +117,24 @@ func TestContent(t *testing.T) {
 			So(ct, ShouldNotBeNil)
 
 		})
+		Convey("AllCustomerContentTypes()", func() {
+			cts, err := AllCustomerContentTypes()
+			So(err, ShouldBeNil)
+			So(cts, ShouldNotBeNil)
+		})
+	})
+	Convey("ComparativeTests", t, func() {
+		err := database.PrepareAll()
+		So(err, ShouldBeNil)
 
+		//Works, but dateModifed does not work in original model
+		// Convey("AllContent v AllContent", func() {
+		// 	_, key := getApiKey(allCustContent)
+		// 	content, err := AllCustomerContent(key)
+		// 	So(err, ShouldBeNil)
+		// 	oldContent, err := custcontent.AllCustomerContent(key)
+		// 	So(err, ShouldBeNil)
+		// 	So(content, ShouldResemble, oldContent)
+		// })
 	})
 }

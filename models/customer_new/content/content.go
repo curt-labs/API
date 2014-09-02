@@ -9,6 +9,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"html"
 	// "log"
+	// "strconv"
 	"strings"
 	"time"
 )
@@ -83,7 +84,8 @@ var (
 	createCustomerContentBridge = `insert into CustomerContentBridge
 										(partID, catID, contentID)
 										values (?,?,?)`
-	getContentTypeId = `select cTypeID, type, allowHTML from ContentType where type = ? limit 1`
+	getContentTypeId   = `select cTypeID, type, allowHTML from ContentType where type = ? limit 1`
+	getAllContentTypes = `select type, allowHTML from ContentType order by type`
 )
 
 const (
@@ -103,7 +105,7 @@ func AllCustomerContent(key string) (content []CustomerContent, err error) {
 	if err != nil {
 		return content, err
 	}
-	var deleted, added, modified, pId, cId []byte
+	var deleted, added, pId, cId, modified []byte
 	var contentType string
 	var partId, catId int
 	res, err := stmt.Query(key)
@@ -135,7 +137,7 @@ func AllCustomerContent(key string) (content []CustomerContent, err error) {
 		}
 		if modified != nil {
 			m, err := conversions.ByteToString(modified)
-			c.Modified, err = time.Parse(timeYearFormat, m)
+			c.Modified, err = time.Parse("2006", m)
 			if err != nil {
 				return content, err
 			}
@@ -299,7 +301,6 @@ func (content *CustomerContent) insert(partID, catID int, key string) error {
 }
 
 func (content CustomerContent) bridge(partID, catID int) error {
-
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -347,6 +348,29 @@ func (content CustomerContent) GetContentType() (ct IndexedContentType, err erro
 	err = stmt.QueryRow(cType).Scan(&ct.Id, &ct.Type, &ct.AllowHtml)
 	if err != nil {
 		return ct, err
+	}
+	return
+}
+
+func AllCustomerContentTypes() (types []ContentType, err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return types, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(getAllContentTypes)
+	if err != nil {
+		return types, err
+	}
+	res, err := stmt.Query()
+	for res.Next() {
+		var ct ContentType
+		err = res.Scan(&ct.Type, &ct.AllowHtml)
+		if err != nil {
+			return types, err
+		}
+		types = append(types, ct)
 	}
 	return
 }

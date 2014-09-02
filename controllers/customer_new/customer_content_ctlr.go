@@ -7,7 +7,7 @@ import (
 	// "github.com/go-martini/martini"
 	// "io/ioutil"
 	"net/http"
-	// "strconv"
+	"strconv"
 )
 
 // Get it all
@@ -42,4 +42,15 @@ func GetContentById(w http.ResponseWriter, r *http.Request, enc encoding.Encoder
 	}
 
 	return encoding.Must(enc.Encode(content))
+}
+
+// Content Types
+func GetAllContentTypes(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+	types, err := custcontent.AllCustomerContentTypes()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(types))
 }
