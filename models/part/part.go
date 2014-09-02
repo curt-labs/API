@@ -42,7 +42,6 @@ var (
 	relatedPartStmt = `select distinct relatedID from RelatedPart
 				where partID = ?
 				order by relatedID`
-
 	partContentStmt = `select ct.type, con.text
 				from Content as con
 				join ContentBridge as cb on con.contentID = cb.contentID

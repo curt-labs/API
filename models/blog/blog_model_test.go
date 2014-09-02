@@ -35,32 +35,36 @@ func getRandomBlog() (blog Blog) {
 
 func TestGetBlogs(t *testing.T) {
 	Convey("Testing Gets", t, func() {
-		Convey("Testing Get()", func() {
-			var b Blog
-			b.ID = 1
-			b.Get()
-			So(b, ShouldNotBeNil)
-			So(b.Title, ShouldEqual, "Cyclocross for Hunger")
-			So(b.Slug, ShouldEqual, "cyclocross_for_hunger")
-		})
-		Convey("Testing Get()", func() {
-			var b Blog
-			var err error
-			b.ID = 2
-			err = b.Get()
-			So(b, ShouldNotBeNil)
-			var t time.Time
-			So(b.PublishedDate, ShouldHaveSameTypeAs, t)
-			So(err, ShouldBeNil)
-		})
 		Convey("Testing GetAll()", func() {
-			var b Blogs
+			var bs Blogs
 			var err error
-			b, err = GetAll()
-			So(b, ShouldNotBeNil)
+			bs, err = GetAll()
+			So(bs, ShouldNotBeNil)
 			So(err, ShouldBeNil)
-			So(len(b), ShouldNotBeNil)
+			So(len(bs), ShouldNotBeNil)
+
+			if len(bs) > 0 {
+				Convey("Testing Get()", func() {
+					b := Blog{
+						ID: bs[0].ID,
+					}
+					err = b.Get()
+					So(err, ShouldBeNil)
+					So(b.Title, ShouldNotEqual, "")
+					So(b.Slug, ShouldNotEqual, "")
+					So(b.PublishedDate, ShouldHaveSameTypeAs, time.Time{})
+
+					b = Blog{
+						ID: bs[len(bs)-1].ID + 1,
+					}
+					err = b.Get()
+					So(err, ShouldBeNil)
+					So(b.Title, ShouldEqual, "")
+				})
+
+			}
 		})
+
 		Convey("Testing GetAllCategories()", func() {
 			qs, err := GetAllCategories()
 			So(qs, ShouldNotBeNil)
