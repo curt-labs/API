@@ -1,6 +1,8 @@
 package webProperty_model
 
 import (
+	"database/sql"
+	"github.com/curt-labs/GoAPI/helpers/database"
 	. "github.com/smartystreets/goconvey/convey"
 	"math/rand"
 	"strconv"
@@ -8,23 +10,136 @@ import (
 	"time"
 )
 
+func getRandomWebProperty() (wp WebProperty) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return wp
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare("SELECT * FROM WebProperties")
+	if err != nil {
+		return wp
+	}
+
+	var wps []WebProperty
+
+	res, err := stmt.Query()
+	for res.Next() {
+		var w WebProperty
+		err = res.Scan(&w.ID, &w.Name, &w.CustID, &w.BadgeID, &w.Url, &w.IsEnabled, &w.SellerID, &w.WebPropertyType.ID, &w.IsFinalApproved, &w.IsEnabledDate, &w.IsDenied, &w.RequestedDate, &w.AddedDate)
+		if err != nil {
+			return wp
+		}
+		wps = append(wps, w)
+	}
+	x := rand.Intn(len(wps))
+	wp = wps[x]
+	return
+}
+
+func getRandomNote() (wp WebPropertyNote) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return wp
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare("SELECT * FROM WebPropNotes")
+	if err != nil {
+		return wp
+	}
+
+	var wps []WebPropertyNote
+
+	res, err := stmt.Query()
+	for res.Next() {
+		var w WebPropertyNote
+		err = res.Scan(&w.ID, &w.WebPropID, &w.Text, &w.DateAdded)
+		if err != nil {
+			return wp
+		}
+		wps = append(wps, w)
+	}
+	x := rand.Intn(len(wps))
+	wp = wps[x]
+	return
+}
+
+func getRandomType() (wp WebPropertyType) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return wp
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare("SELECT * FROM WebPropertyTypes")
+	if err != nil {
+		return wp
+	}
+
+	var wps []WebPropertyType
+
+	res, err := stmt.Query()
+	for res.Next() {
+		var w WebPropertyType
+		err = res.Scan(&w.ID, &w.TypeID, &w.Type)
+		if err != nil {
+			return wp
+		}
+		wps = append(wps, w)
+	}
+	x := rand.Intn(len(wps))
+	wp = wps[x]
+	return
+}
+
+func getRandomRequirement() (wp WebPropertyRequirement) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return wp
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare("SELECT * FROM WebPropRequirements")
+	if err != nil {
+		return wp
+	}
+
+	var wps []WebPropertyRequirement
+
+	res, err := stmt.Query()
+	for res.Next() {
+		var w WebPropertyRequirement
+		err = res.Scan(&w.ID, &w.ReqType, &w.Requirement)
+		if err != nil {
+			return wp
+		}
+		wps = append(wps, w)
+	}
+	x := rand.Intn(len(wps))
+	wp = wps[x]
+	return
+}
+
 func TestGetWebProperties(t *testing.T) {
 	Convey("Testing Gets", t, func() {
 		Convey("Testing Get()", func() {
+			wp := getRandomWebProperty()
 			var w WebProperty
-			w.ID = 12
+			w.ID = wp.ID
 			err := w.Get()
 			So(w, ShouldNotBeNil)
 			So(err, ShouldBeNil)
-			So(w.Name, ShouldEqual, "Island Trailers")
-			So(w.CustID, ShouldEqual, 10439665)
-			So(w.WebPropertyType.Type, ShouldEqual, "Website")
-			So(w.WebPropertyNotes, ShouldNotBeNil)
-			So(len(w.WebPropertyRequirements), ShouldEqual, 2)
+			So(w.Name, ShouldEqual, wp.Name)
+			So(w.CustID, ShouldEqual, wp.CustID)
+			So(w.WebPropertyType.ID, ShouldEqual, wp.WebPropertyType.ID)
+
 		})
 		Convey("Testing Get(); focus on dates", func() {
+			wp := getRandomWebProperty()
 			var w WebProperty
-			w.ID = 12
+			w.ID = wp.ID
 			err := w.Get()
 			So(w, ShouldNotBeNil)
 			var t time.Time
@@ -47,29 +162,33 @@ func TestGetWebProperties(t *testing.T) {
 			So(err, ShouldBeNil)
 		})
 		Convey("Testing GetNote()", func() {
+			testNote := getRandomNote()
 			var n WebPropertyNote
-			n.ID = 1
+			n.ID = testNote.ID
 			err := n.Get()
-			So(n.Text, ShouldNotBeNil)
+			So(n.Text, ShouldEqual, testNote.Text)
 			So(err, ShouldBeNil)
 		})
 		Convey("Testing GetWebPropertyType()", func() {
+			testType := getRandomType()
 			var n WebPropertyType
-			n.ID = 1
+			n.ID = testType.ID
 			err := n.Get()
 			So(n.Type, ShouldNotBeNil)
 			So(err, ShouldBeNil)
+			So(n.Type, ShouldEqual, testType.Type)
 		})
 		Convey("Testing GetWebPropertyRequirement()", func() {
+			testReq := getRandomRequirement()
 			var n WebPropertyRequirement
-			n.RequirementID = 1
+			n.RequirementID = testReq.ID
 			err := n.Get()
 			So(n.Requirement, ShouldNotBeNil)
 			So(err, ShouldBeNil)
+			So(n.Requirement, ShouldEqual, testReq.Requirement)
 		})
 		Convey("Testing GetWebPropertyRequirementCheck()", func() {
-			var n WebPropertyRequirement
-			n.ID = 16
+			n := getRandomRequirement()
 			err := n.GetJoin()
 			So(n.WebPropID, ShouldNotBeNil)
 			So(err, ShouldBeNil)
@@ -85,7 +204,8 @@ func TestGetWebProperties(t *testing.T) {
 			So(err, ShouldBeNil)
 		})
 		Convey("Testing Search()", func() {
-			as, err := Search("test", "", "", "", "", "", "", "", "", "", "", "", "1", "0")
+			testProp := getRandomWebProperty()
+			as, err := Search(testProp.Name, "", "", "", "", "", "", "", "", "", "", "", "1", "0")
 			So(as, ShouldNotBeNil)
 			So(err, ShouldBeNil)
 			So(as.Pagination.Page, ShouldEqual, 1)
@@ -161,9 +281,8 @@ func TestGetWebProperties(t *testing.T) {
 		})
 		Convey("Testing Create(), Update(), Delete() WebPropNotes", func() {
 			var n WebPropertyNote
-			var f WebProperty
-			f.ID = 248
-			n.WebPropID = 248
+			f := getRandomWebProperty()
+			n.WebPropID = f.ID
 			n.Text = "test note"
 			c := make(chan int)
 			go func() {
@@ -172,7 +291,6 @@ func TestGetWebProperties(t *testing.T) {
 			}()
 			<-c
 			f.Get()
-			So(f.Name, ShouldEqual, "testTitle")
 			So(f.WebPropertyNotes, ShouldNotBeEmpty)
 
 			n.Text = "Funk"
@@ -184,12 +302,11 @@ func TestGetWebProperties(t *testing.T) {
 
 		})
 		Convey("Testing Create(), Update(), Delete() WebProperyRequirementsCheck", func() {
-			var r WebPropertyRequirement
-			var w WebProperty
+			w := getRandomWebProperty()
+			r := getRandomRequirement()
 			var err error
-			w.ID = 248
-			r.WebPropID = 248
-			r.RequirementID = 1
+			r.WebPropID = w.ID
+			r.RequirementID = r.ID
 			r.Compliance = true
 			c := make(chan int)
 			go func() {
@@ -223,8 +340,7 @@ func TestGetWebProperties(t *testing.T) {
 		})
 
 		Convey("Testing Create(), Update(), Delete() Type", func() {
-			var n WebPropertyType
-			n.TypeID = 77
+			n := getRandomType()
 			n.Type = "TEST"
 			err := n.Create()
 			So(err, ShouldBeNil)
