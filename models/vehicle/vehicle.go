@@ -1,7 +1,11 @@
 package vehicle
 
 import (
+	"database/sql"
+
+	"github.com/curt-labs/GoAPI/helpers/api"
 	"github.com/curt-labs/GoAPI/helpers/database"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type ConfigOption struct {
@@ -10,6 +14,7 @@ type ConfigOption struct {
 }
 
 type Vehicle struct {
+	ID                    int
 	Year                  float64
 	Make, Model, Submodel string
 	Configuration         []string
@@ -171,91 +176,88 @@ func (vehicle *Vehicle) GetGroupsByConfig() (groups []int) {
 }
 
 func (v *Vehicle) GetNotes(partId int) (notes []string, err error) {
-
-	stmt := vehicleNotesStmt
+	qrystmt := vehicleNotesStmt
 	if len(v.Configuration) > 0 {
 		for i, c := range v.Configuration {
-			stmt = stmt + "'" + database.Db.Escape(c) + "'"
+			qrystmt = qrystmt + "'" + api_helpers.Escape(c) + "'"
 			if i < len(v.Configuration)-1 {
-				stmt = stmt + ","
+				qrystmt = qrystmt + ","
 			}
 		}
-		stmt = stmt + vehicleNotesStmtEnd
+		qrystmt = qrystmt + vehicleNotesStmtEnd
 	}
 
-	qry, err := database.Db.Prepare(stmt)
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(qrystmt)
+	if err != nil {
+		return
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(v.Year, v.Make, v.Model, v.Submodel, partId)
 	if err != nil {
 		return
 	}
 
-	params := struct {
-		Year     float64
-		Make     string
-		Model    string
-		Submodel string
-		Part     int
-	}{
-		v.Year,
-		v.Make,
-		v.Model,
-		v.Submodel,
-		partId,
+	for rows.Next() {
+		var note string
+		if err = rows.Scan(&note); err == nil {
+			notes = append(notes, note)
+		}
 	}
 
-	rows, _, err := qry.Exec(params)
-	if database.MysqlError(err) || len(rows) == 0 {
-		return
-	}
-
-	for _, row := range rows {
-		notes = append(notes, row.Str(0))
-	}
 	return
 }
 
 func ReverseLookup(partId int) (vehicles []Vehicle, err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return
+	}
+	defer db.Close()
 
-	qry, err := database.Db.Prepare(reverseLookupStmt)
+	stmt, err := db.Prepare(reverseLookupStmt)
+	if err != nil {
+		return
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(partId)
 	if err != nil {
 		return
 	}
 
-	rows, res, err := qry.Exec(partId)
-	if database.MysqlError(err) {
-		return
-	}
-
-	id := res.Map("ID")
-	year := res.Map("YearID")
-	vMake := res.Map("MakeName")
-	model := res.Map("ModelName")
-	submodel := res.Map("SubmodelName")
-	config_val := res.Map("value")
-
 	vehicleArray := make(map[int]Vehicle, 0)
 
-	for _, row := range rows {
+	for rows.Next() {
+		var tmp Vehicle
+		var configValue string
 
-		if database.MysqlError(err) || row == nil {
+		if err = rows.Scan(&tmp.ID, &tmp.Year, &tmp.Make, &tmp.Model, &tmp.Submodel, &configValue); err != nil {
 			break
 		}
 
-		v, ok := vehicleArray[row.Int(id)]
+		v, ok := vehicleArray[tmp.ID]
 		if ok {
 			// Vehicle Record exists for this ID
 			// so we'll simply append this configuration variable
-			v.Configuration = append(v.Configuration, row.Str(config_val))
+			v.Configuration = append(v.Configuration, configValue)
 		} else {
-			// New Vehicle record
 			v = Vehicle{
-				Year:          row.Float(year),
-				Make:          row.Str(vMake),
-				Model:         row.Str(model),
-				Submodel:      row.Str(submodel),
-				Configuration: []string{row.Str(config_val)},
+				ID:            tmp.ID,
+				Year:          tmp.Year,
+				Make:          tmp.Make,
+				Model:         tmp.Model,
+				Submodel:      tmp.Submodel,
+				Configuration: []string{configValue},
 			}
 		}
-		vehicleArray[row.Int(id)] = v
+		vehicleArray[v.ID] = v
 	}
 
 	for _, v := range vehicleArray {
