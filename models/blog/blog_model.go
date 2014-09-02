@@ -133,7 +133,6 @@ func getAllBlogCategories() (BlogCategories, error) {
 		bcs = append(bcs, temp)
 	}
 	return bcs, err
-
 }
 
 func GetAllCategories() (Categories, error) {
@@ -413,7 +412,6 @@ func (b *Blog) deleteCatBridge() error {
 	tx.Commit()
 
 	return nil
-
 }
 
 func (b *Blog) Delete() error {
