@@ -335,6 +335,7 @@ func TestGetWebProperties(t *testing.T) {
 			n.Requirement = "booger"
 			err = n.Update()
 			So(err, ShouldBeNil)
+			So(n.Requirement, ShouldEqual, "booger")
 			err = n.Delete()
 			So(err, ShouldBeNil)
 		})
@@ -347,6 +348,7 @@ func TestGetWebProperties(t *testing.T) {
 			n.Type = "booger"
 			err = n.Update()
 			So(err, ShouldBeNil)
+			So(n.Type, ShouldEqual, "booger")
 			err = n.Delete()
 			So(err, ShouldBeNil)
 
