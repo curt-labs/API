@@ -220,6 +220,8 @@ func main() {
 			r.Post("/locations", internalCors, customer_ctlr_new.GetLocations)
 			r.Get("/price/:id", internalCors, customer_ctlr_new.GetCustomerPrice)           //{part id}
 			r.Get("/cartRef/:id", internalCors, customer_ctlr_new.GetCustomerCartReference) //{part id}
+			r.Post("/auth", customer_ctlr_new.UserAuthentication)
+			r.Get("/auth", customer_ctlr_new.KeyedUserAuthentication)
 
 		})
 		m.Group("/dealers", func(r martini.Router) {
@@ -238,6 +240,7 @@ func main() {
 		})
 
 	})
+	m.Post("/keyedUser", customer_ctlr_new.KeyedUserAuthentication)
 	/**** INTERNAL USE ONLY ****/
 	// These endpoints will not work to the public eye when deployed on CURT's
 	// servers. We will have restrictions in place to prevent access...sorry :/

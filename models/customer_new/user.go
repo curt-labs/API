@@ -8,8 +8,6 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/api"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
-	"github.com/curt-labs/GoAPI/models/geography"
-	// "log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -21,8 +19,8 @@ type CustomerUser struct {
 	Name, Email           string
 	DateAdded             time.Time
 	Active, Sudo, Current bool
-	Location              *CustomerLocation
-	Keys                  *[]ApiCredentials
+	Location              CustomerLocation
+	Keys                  []ApiCredentials
 }
 
 type ApiCredentials struct {
@@ -56,6 +54,50 @@ var (
 							limit 1`
 	updateCustomerUserPass = `update CustomerUser set password = ?, passwordConverted = 1
 								where id = ? && active = 1`
+	customerUserKeyAuth = `select cu.* from CustomerUser as cu
+								join ApiKey as ak on cu.id = ak.user_id
+								join ApiKeyType as akt on ak.type_id = akt.id
+								where UPPER(akt.type) = ?
+								&& ak.api_key = ?
+								&& cu.active = 1 && ak.date_added >= ?`
+	customerUserKeys = `select ak.api_key, akt.type, ak.date_added from ApiKey as ak
+								join ApiKeyType as akt on ak.type_id = akt.id
+								where user_id = ? && UPPER(akt.type) NOT IN (?)`
+	userLocation = `select cl.locationID, cl.name, cl.email, cl.address, cl.city,
+						cl.postalCode, cl.phone, cl.fax, cl.latitude, cl.longitude,
+						cl.cust_id, cl.contact_person, cl.isprimary, cl.ShippingDefault,
+						s.stateID, s.state, s.abbr as state_abbr, cty.countryID, cty.name as cty_name, cty.abbr as cty_abbr
+						from CustomerLocations as cl
+						left join States as s on cl.stateID = s.stateID
+						left join Country as cty on s.countryID = cty.countryID
+						join CustomerUser as cu on cl.locationID = cu.locationID
+						where cu.id = ?`
+
+	userAuthenticationKey = `select ak.api_key, akt.type, ak.date_added from ApiKey as ak
+									join ApiKeyType as akt on ak.type_id = akt.id
+									where UPPER(akt.type) = ?
+									&& ak.user_id = ?`
+
+	resetUserAuthentication = `update ApiKey as ak
+									set ak.date_added = ?
+									where ak.type_id = ?
+									&& ak.user_id = ?`
+	customerIDFromKey = `select c.customerID from Customer as c
+								join CustomerUser as cu on c.cust_id = cu.cust_ID
+								join ApiKey as ak on cu.id = ak.user_id
+								where ak.api_key = ?
+								limit 1`
+	customerUserFromKey = `select cu.* from CustomerUser as cu
+								join ApiKey as ak on cu.id = ak.user_id
+								join ApiKeyType as akt on ak.type_id = akt.id
+								where akt.type != ? && ak.api_key = ?
+								limit 1`
+
+	customerUserFromId = `select cu.* from CustomerUser as cu
+							join ApiKey as ak on cu.id = ak.user_id
+							join ApiKeyType as akt on ak.type_id = akt.id
+							where cu.id = ?
+							limit 1`
 )
 
 func (u CustomerUser) UserAuthentication(password string) (cust Customer, err error) {
@@ -140,7 +182,7 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 
 	var logo, web, lat, lon, url, icon, shadow, mapIconId []byte
 	var stateId, state, stateAbbr, countryId, country, countryAbbr, parentId, postalCode, mapixCode, mapixDesc, rep, repCode []byte
-	err = stmt.QueryRow(c.Id).Scan(
+	err = stmt.QueryRow(u.Id).Scan(
 		&c.Id,            //c.customerID,
 		&c.Name,          //c.name
 		&c.Email,         //c.email
@@ -210,7 +252,7 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 	}
 	if parentInt != 0 {
 		par := Customer{Id: parentInt}
-		par.GetCustomer_New()
+		par.GetCustomer()
 		c.Parent = &par
 	}
 	return
@@ -218,14 +260,13 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 
 func (u *CustomerUser) AuthenticateUser(pass string) error {
 
-	// password, id, name, email, date_added, active, isSudo, passwordConverted from CustomerUser
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
 	}
 	defer db.Close()
 
-	stmt, err := db.Prepare(userCustomer)
+	stmt, err := db.Prepare(customerUserAuth)
 	if err != nil {
 		return err
 	}
@@ -238,7 +279,6 @@ func (u *CustomerUser) AuthenticateUser(pass string) error {
 		&u.Name,
 		&u.Email,
 		&u.DateAdded,
-		&u.Active,
 		&u.Active,
 		&u.Sudo,
 		&passConversion,
@@ -279,48 +319,50 @@ func (u *CustomerUser) AuthenticateUser(pass string) error {
 	}()
 
 	<-resetChan
-
 	return nil
 }
 
 func AuthenticateUserByKey(key string) (u CustomerUser, err error) {
-
-	qry, err := database.GetStatement("CustomerUserKeyAuthStmt")
-	if database.MysqlError(err) {
-		return
-	}
-
-	params := struct {
-		KeyType string
-		Key     string
-		Timer   string
-	}{}
-	params.KeyType = api_helpers.AUTH_KEY_TYPE
-	params.Key = key
-
-	t := time.Now()
-	t1 := t.Add(time.Duration(-6) * time.Hour)
-	params.Timer = t1.String()
-
-	row, res, err := qry.ExecFirst(params)
-	if database.MysqlError(err) {
-		return
-	}
-	user_id := res.Map("id")
-	name := res.Map("name")
-	mail := res.Map("email")
-	date := res.Map("date_added")
-	active := res.Map("active")
-	sudo := res.Map("isSudo")
-
+	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		return
-	} else if row == nil {
-		err = errors.New("Invalid password")
-		return
+		return u, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(customerUserKeyAuth)
+	if err != nil {
+		return u, err
+	}
+	defer stmt.Close()
+	t := time.Now()
+	t1 := t.Add(time.Duration(-6) * time.Hour) //6 hours ago
+	Timer := t1.String()
+	KeyType := api_helpers.AUTH_KEY_TYPE
+	params := []interface{}{
+		KeyType,
+		key,
+		Timer,
+	}
+	var dbPass, custId string
+	var passConversion, notCustomer bool
+	err = stmt.QueryRow(params...).Scan(
+		&u.Id,
+		&u.Name,
+		&u.Email,
+		&dbPass, //Not Used
+		&u.DateAdded,
+		&u.Active,
+		&u.Location.Id,
+		&u.Sudo,
+		&custId,         //Not Used
+		&notCustomer,    //Not Used
+		&passConversion, //Not Used
+	)
+	if err != nil {
+		return u, err
+		// err = errors.New("Invalid password")
 	}
 
-	//
 	// DISABLED: See RenewAuthentication() below
 	//
 	// resetChan := make(chan int)
@@ -330,169 +372,110 @@ func AuthenticateUserByKey(key string) (u CustomerUser, err error) {
 	// 	}
 	// 	resetChan <- 1
 	// }()
-
-	u.Name = row.Str(name)
-	u.Email = row.Str(mail)
-	u.Active = row.Int(active) == 1
-	u.Sudo = row.Int(sudo) == 1
-	u.Current = true
-	u.Id = row.Str(user_id)
-
-	//da, _ := time.Parse("2006-01-02 15:04:15", row.Str(date))
-	u.DateAdded = row.ForceLocaltime(date)
-
-	//<-resetChan
-
 	return
 }
 
 func (u *CustomerUser) GetKeys() error {
-
-	qry, err := database.GetStatement("CustomerUserKeysStmt")
-	if database.MysqlError(err) {
-		return err
-	}
-	params := struct {
-		User   string
-		Except string
-	}{}
-
-	params.User = u.Id
-	params.Except = strings.Join([]string{api_helpers.AUTH_KEY_TYPE}, ",")
-
-	rows, res, err := qry.Exec(params)
-	if database.MysqlError(err) {
-		return err
-	}
-
-	key := res.Map("api_key")
-	typ := res.Map("type")
-	dAdded := res.Map("date_added")
-
+	//ak.api_key, akt.type, ak.date_added
 	var keys []ApiCredentials
-	for _, row := range rows {
-		k := ApiCredentials{
-			Key:       row.Str(key),
-			Type:      row.Str(typ),
-			DateAdded: row.ForceLocaltime(dAdded),
-		}
-		keys = append(keys, k)
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
 	}
-	u.Keys = &keys
+	defer db.Close()
 
+	stmt, err := db.Prepare(customerUserKeys)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	params := []interface{}{
+		u.Id,
+		strings.Join([]string{api_helpers.AUTH_KEY_TYPE}, ","),
+	}
+	res, err := stmt.Query(params...)
+	for res.Next() {
+		var a ApiCredentials
+		res.Scan(&a.Key, &a.Type, &a.DateAdded)
+		keys = append(keys, a)
+	}
+	u.Keys = keys
 	return nil
 }
 
 func (u *CustomerUser) GetLocation() error {
-
-	qry, err := database.GetStatement("UserLocationStmt")
-	if database.MysqlError(err) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
 		return err
 	}
+	defer db.Close()
 
-	row, res, err := qry.ExecFirst(u.Id)
-	if database.MysqlError(err) {
+	stmt, err := db.Prepare(userLocation)
+	if err != nil {
 		return err
-	} else if row == nil {
-		return nil
 	}
+	defer stmt.Close()
 
-	locationID := res.Map("locationID")
-	name := res.Map("name")
-	email := res.Map("email")
-	address := res.Map("address")
-	city := res.Map("city")
-	phone := res.Map("phone")
-	fax := res.Map("fax")
-	contact := res.Map("contact_person")
-	lat := res.Map("latitude")
-	lon := res.Map("longitude")
-	zip := res.Map("postalCode")
-	stateID := res.Map("stateID")
-	state := res.Map("state")
-	state_abbr := res.Map("state_abbr")
-	countryID := res.Map("countryID")
-	country := res.Map("cty_name")
-	country_abbr := res.Map("cty_abbr")
-	customerID := res.Map("cust_id")
-	isPrimary := res.Map("isprimary")
-	shipDefault := res.Map("ShippingDefault")
-
-	l := CustomerLocation{
-		Id:              row.Int(locationID),
-		Name:            row.Str(name),
-		Email:           row.Str(email),
-		Address:         row.Str(address),
-		City:            row.Str(city),
-		PostalCode:      row.Str(zip),
-		Phone:           row.Str(phone),
-		Fax:             row.Str(fax),
-		ContactPerson:   row.Str(contact),
-		CustomerId:      row.Int(customerID),
-		Latitude:        row.ForceFloat(lat),
-		Longitude:       row.ForceFloat(lon),
-		IsPrimary:       row.ForceBool(isPrimary),
-		ShippingDefault: row.ForceBool(shipDefault),
+	err = stmt.QueryRow(u.Id).Scan(
+		&u.Location.Id,
+		&u.Name,
+		&u.Email,
+		&u.Location.Address,
+		&u.Location.City,
+		&u.Location.PostalCode,
+		&u.Location.Phone,
+		&u.Location.Fax,
+		&u.Location.Latitude,
+		&u.Location.Longitude,
+		&u.Location.CustomerId,
+		&u.Location.ContactPerson,
+		&u.Location.IsPrimary,
+		&u.Location.ShippingDefault,
+		&u.Location.State.Id,
+		&u.Location.State.State,
+		&u.Location.State.Abbreviation,
+		&u.Location.State.Country.Id,
+		&u.Location.State.Country.Country,
+		&u.Location.State.Country.Abbreviation,
+	)
+	if err != nil {
+		return err
 	}
-
-	ctry := geography.Country{
-		Id:           row.Int(countryID),
-		Country:      row.Str(country),
-		Abbreviation: row.Str(country_abbr),
-	}
-
-	l.State = geography.State_New{
-		Id:           row.Int(stateID),
-		State:        row.Str(state),
-		Abbreviation: row.Str(state_abbr),
-		Country:      ctry,
-	}
-
-	u.Location = &l
-
 	return nil
 }
 
 func (u *CustomerUser) ResetAuthentication() error {
-
-	oldQry, err := database.GetStatement("UserAuthenticationKeyStmt")
-	if database.MysqlError(err) {
+	var err error
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
 		return err
 	}
+	defer db.Close()
 
-	params := struct {
-		KeyType string
-		User    string
-	}{}
-	params.KeyType = api_helpers.AUTH_KEY_TYPE
-	params.User = u.Id
-
-	// Retrieve the previously declared authentication key for this user
-	oldRow, oldRes, err := oldQry.ExecFirst(params)
-
-	if err != nil { // Must be something wrong with the db, lets bail
+	stmt, err := db.Prepare(userAuthenticationKey)
+	if err != nil {
 		return err
-	} else if oldRow != nil { // Update the existing with a new date added and key
-		old_type_id := oldRes.Map("type_id")
+	}
+	defer stmt.Close()
 
-		updateQry, err := database.GetStatement("ResetUserAuthenticationStmt")
-		if database.MysqlError(err) {
-			return err
+	params := []interface{}{
+		api_helpers.AUTH_KEY_TYPE,
+		u.Id,
+	}
+	var a ApiCredentials
+	err = stmt.QueryRow(params...).Scan(&a.Key, &a.Type, &a.DateAdded)
+	if err != nil {
+		return err
+	} else {
+		paramsNew := []interface{}{
+			time.Now().String(),
+			a.Type,
+			u.Id,
 		}
 
-		params := struct {
-			Now     string
-			OldType string
-			User    string
-		}{}
-		updateQry.Bind(&params)
-
-		params.Now = time.Now().String()
-		params.OldType = oldRow.Str(old_type_id)
-		params.User = u.Id
-
-		// Excecute the update statement
-		_, err = updateQry.Raw.Run()
+		stmtNew, err := db.Prepare(resetUserAuthentication)
+		_, err = stmtNew.Exec(paramsNew...)
 		if err != nil {
 			return err
 		}
@@ -501,97 +484,97 @@ func (u *CustomerUser) ResetAuthentication() error {
 }
 
 func GetCustomerIdFromKey(key string) (id int, err error) {
-	qry, err := database.GetStatement("CustomerIDFromKeyStmt")
-	if database.MysqlError(err) {
-		return
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return id, err
 	}
+	defer db.Close()
 
-	row, _, err := qry.ExecFirst(key)
-	if database.MysqlError(err) {
-		return 0, err
-	} else if row == nil {
-		return 0, errors.New("Invalid API Key")
+	stmt, err := db.Prepare(customerIDFromKey)
+	if err != nil {
+		return id, err
 	}
+	defer stmt.Close()
 
-	return row.Int(0), nil
+	err = stmt.QueryRow(key).Scan(&id)
+	if err != nil {
+		return id, err
+	}
+	return id, err
 }
 
 func GetCustomerUserFromKey(key string) (u CustomerUser, err error) {
-
-	qry, err := database.GetStatement("CustomerUserFromKeyStmt")
-	if database.MysqlError(err) {
-		return
-	}
-
-	params := struct {
-		KeyType string
-		Key     string
-	}{}
-
-	params.KeyType = api_helpers.AUTH_KEY_TYPE
-	params.Key = key
-
-	row, res, err := qry.ExecFirst(params)
-	if database.MysqlError(err) {
-		return
-	}
-	user_id := res.Map("id")
-	name := res.Map("name")
-	mail := res.Map("email")
-	date := res.Map("date_added")
-	active := res.Map("active")
-	sudo := res.Map("isSudo")
-
+	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		return
-	} else if row == nil {
+		return u, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(customerUserFromKey)
+	if err != nil {
+		return u, err
+	}
+	defer stmt.Close()
+
+	params := []interface{}{
+		api_helpers.AUTH_KEY_TYPE,
+		key,
+	}
+	var dbPass, custId, notCustomer, passConversion, customerId string
+	err = stmt.QueryRow(params...).Scan(
+		&u.Id,
+		&u.Name,
+		&u.Email,
+		&dbPass, //Not Used
+		&custId, //Not Used
+		&u.DateAdded,
+		&u.Active,
+		&u.Location.Id,
+		&u.Sudo,
+		&customerId,     //Not Used
+		&notCustomer,    //Not Used
+		&passConversion, //Not Used
+	)
+	if err != nil {
 		err = errors.New("Invalid key")
 		return
 	}
-
-	u.Name = row.Str(name)
-	u.Email = row.Str(mail)
-	u.Active = row.Int(active) == 1
-	u.Sudo = row.Int(sudo) == 1
-	u.Current = true
-	u.Id = row.Str(user_id)
-	u.DateAdded = row.ForceLocaltime(date)
-
 	return
 }
 
 func GetCustomerUserById(id string) (u CustomerUser, err error) {
-	qry, err := database.GetStatement("CustomerUserFromId")
-	if database.MysqlError(err) {
-		return
-	}
-
-	row, res, err := qry.ExecFirst(id)
-	if database.MysqlError(err) {
-		return
-	}
-	user_id := res.Map("id")
-	name := res.Map("name")
-	mail := res.Map("email")
-	date := res.Map("date_added")
-	active := res.Map("active")
-	sudo := res.Map("isSudo")
-
+	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		return
-	} else if row == nil {
-		err = errors.New("Invalid key")
+		return u, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(customerUserFromId)
+	if err != nil {
+		return u, err
+	}
+	defer stmt.Close()
+
+	var dbPass, custId, customerId, notCustomer, passConversion string
+	err = stmt.QueryRow(id).Scan(
+		&u.Id,
+		&u.Name,
+		&u.Email,
+		&dbPass, //Not Used
+		&custId, //Not User
+		&u.DateAdded,
+		&u.Active,
+		&u.Location.Id,
+		&u.Sudo,
+		&customerId,     //Not Used
+		&notCustomer,    //Not Used
+		&passConversion, //Not Used
+	)
+	if err != nil {
+		return u, err
+		// err = errors.New("Invalid key")
 		return
 	}
-
-	u.Name = row.Str(name)
-	u.Email = row.Str(mail)
-	u.Active = row.Int(active) == 1
-	u.Sudo = row.Int(sudo) == 1
-	u.Current = true
-	u.Id = row.Str(user_id)
-	u.DateAdded = row.ForceLocaltime(date)
-
 	return
 }
 
