@@ -314,7 +314,6 @@ func TestGetWebProperties(t *testing.T) {
 			r := getRandomRequirement()
 			var err error
 			r.WebPropID = w.ID
-			// r.RequirementID = r.ID
 			r.Compliance = true
 			c := make(chan int)
 			go func() {
