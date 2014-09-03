@@ -1,9 +1,12 @@
 package customer_new
 
 import (
+	"database/sql"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/models/customer"
+	_ "github.com/go-sql-driver/mysql"
 	. "github.com/smartystreets/goconvey/convey"
+	"math/rand"
 	"strings"
 	"testing"
 	"time"
@@ -13,69 +16,129 @@ const (
 	inputTimeFormat = "01/02/2006"
 )
 
-func TestCustomerModel(t *testing.T) {
+var (
+	getCustWithLocationAndParts = `SELECT customerID, cp.partID, apiKey FROM Customer AS c
+								LEFT JOIN CustomerLocations AS cl on cl.cust_id = c.CustomerID
+								LEFT JOIN CustomerPricing AS cp ON cp.cust_id = c.CustomerID
+								WHERE cl.locationID IS NOT NULL
+								AND cp.partID IS NOT NULL`
+)
+
+func getRandomCustWithLocParts() (cust Customer, partID int, apiKey string, err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return cust, partID, apiKey, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(getCustWithLocationAndParts)
+	if err != nil {
+		return cust, partID, apiKey, err
+	}
+	defer stmt.Close()
+	var cs []Customer
+	var api string
+	res, err := stmt.Query()
+	for res.Next() {
+		var c Customer
+		err = res.Scan(&c.Id, &partID, &api)
+		cs = append(cs, c)
+	}
+	if len(cs) > 0 {
+		x := rand.Intn(len(cs))
+		cust = cs[x]
+	}
+
+	users, err := cust.GetUsers()
+	if err == nil && len(users) > 0 {
+		if err = users[0].GetKeys(); err == nil {
+			for _, k := range users[0].Keys {
+				if strings.ToLower(k.Type) == "public" {
+					apiKey = k.Key
+					break
+				}
+			}
+		}
+	}
+
+	return cust, partID, apiKey, err
+}
+
+func TestCustomerPriceModel(t *testing.T) {
 	Convey("Testing Price - Gets", t, func() {
-		Convey("Testing Get()", func() {
-			var p Price
-			p.ID = 50
-			err := p.Get()
-			So(p, ShouldNotBeNil)
-			So(err, ShouldBeNil)
-		})
 		Convey("Testing GetAllPrices()", func() {
 			ps, err := GetAllPrices()
 			So(len(ps), ShouldBeGreaterThan, 200000)
 			So(err, ShouldBeNil)
 		})
-		Convey("Testing GetPricesByCustomer()", func() {
-			var c Customer
-			c.Id = 10439386
-			custPrices, err := c.GetPricesByCustomer()
-			So(custPrices, ShouldNotBeNil)
+		Convey("Gets random CustomerPrice", func() {
+			ps, err := GetAllPrices()
 			So(err, ShouldBeNil)
-		})
-		Convey("Testing GetPricesByPart()", func() {
-			partID := 11000
-			prices, err := GetPricesByPart(partID)
-			So(len(prices), ShouldNotBeNil)
-			So(err, ShouldBeNil)
-		})
-		Convey("Testing GetPricesBySaleRange", func() {
-			var s time.Time
-			var e time.Time
-			c := Customer{Id: 10439386}
-			var err error
-			s, err = time.Parse(inputTimeFormat, "2006-01-02 15:04:05")
-			e, err = time.Parse(inputTimeFormat, "2016-01-02 15:04:05")
-			prices, err := c.GetPricesBySaleRange(s, e)
-			So(err, ShouldBeNil)
-			So(len(prices), ShouldBeGreaterThan, 0)
-			So(prices, ShouldNotBeNil)
+			if len(ps) > 0 {
+				x := rand.Intn(len(ps))
+				p := ps[x]
 
+				Convey("Testing Get()", func() {
+					err := p.Get()
+					So(p.Price, ShouldHaveSameTypeAs, 0.00)
+					So(p, ShouldNotBeNil)
+					So(err, ShouldBeNil)
+				})
+
+				Convey("Testing GetPricesByCustomer()", func() {
+					var c Customer
+					c.Id = p.CustID
+					custPrices, err := c.GetPricesByCustomer()
+					So(custPrices, ShouldNotBeNil)
+					So(err, ShouldBeNil)
+				})
+				Convey("Testing GetPricesByPart()", func() {
+					partID := p.PartID
+					prices, err := GetPricesByPart(partID)
+					So(len(prices), ShouldNotBeNil)
+					So(err, ShouldBeNil)
+				})
+				Convey("Testing GetPricesBySaleRange", func() {
+					var s time.Time
+					var e time.Time
+					c := Customer{Id: p.CustID}
+					var err error
+					s, err = time.Parse(inputTimeFormat, "2006-01-02 15:04:05")
+					e, err = time.Parse(inputTimeFormat, "2016-01-02 15:04:05")
+					prices, err := c.GetPricesBySaleRange(s, e)
+					So(err, ShouldBeNil)
+					So(len(prices), ShouldBeGreaterThan, 0)
+					So(prices, ShouldNotBeNil)
+				})
+
+				Convey("Testing Price -  CUD", func() {
+					Convey("Testing Create() Update() Delete() Price", func() {
+						var pr Price
+						var err error
+						pr.CustID = p.CustID
+						pr.SaleEnd, err = time.Parse(inputTimeFormat, "02/12/2006")
+						pr.IsSale = 1
+						pr.Price = 666.00
+						err = pr.Create()
+						So(err, ShouldBeNil)
+						pr.SaleStart, err = time.Parse(inputTimeFormat, "01/02/2007")
+						err = pr.Update()
+						So(err, ShouldBeNil)
+						err = pr.Get()
+						So(err, ShouldBeNil)
+						t, err := time.Parse(inputTimeFormat, "02/12/2006")
+						So(pr.SaleStart, ShouldHaveSameTypeAs, t)
+						err = pr.Delete()
+						So(err, ShouldBeNil)
+					})
+
+				})
+			}
 		})
 	})
-	Convey("Testing Price -  CUD", t, func() {
-		Convey("Testing Create() Update() Delete() Price", func() {
-			var p Price
-			var err error
-			p.CustID = 666
-			p.SaleEnd, err = time.Parse(inputTimeFormat, "02/12/2006")
-			p.IsSale = 1
-			p.Price = 666.00
-			err = p.Create()
-			So(err, ShouldBeNil)
-			p.SaleStart, err = time.Parse(inputTimeFormat, "01/02/2007")
-			err = p.Update()
-			So(err, ShouldBeNil)
-			err = p.Get()
-			So(err, ShouldBeNil)
-			t, err := time.Parse(inputTimeFormat, "02/12/2006")
-			So(p.SaleStart, ShouldHaveSameTypeAs, t)
-			err = p.Delete()
-			So(err, ShouldBeNil)
-		})
+}
 
-	})
+func TestCustomerModel(t *testing.T) {
 	//From the NEW Customer Model
 	Convey("Testing Customer", t, func() {
 		var c Customer
@@ -84,18 +147,10 @@ func TestCustomerModel(t *testing.T) {
 			c = dealers[0]
 		}
 
-		api := "8AEE0620-412E-47FC-900A-947820EA1C1D"
-		users, err := c.GetUsers()
-		if err == nil && len(users) > 0 {
-			if err = users[0].GetKeys(); err == nil {
-				for _, k := range users[0].Keys {
-					if strings.ToLower(k.Type) == "public" {
-						api = k.Key
-						break
-					}
-				}
-			}
-		}
+		randCust, partID, apiKey, err := getRandomCustWithLocParts()
+		So(err, ShouldBeNil)
+		So(partID, ShouldNotBeNil)
+
 		Convey("Testing GetCustomer()", func() {
 			err := c.GetCustomer()
 			So(err, ShouldBeNil)
@@ -107,10 +162,9 @@ func TestCustomerModel(t *testing.T) {
 			So(c.Name, ShouldNotBeNil)
 		})
 		Convey("Testing GetLocations()", func() {
-			c.Id = 1 //choose customer with locations
-			err := c.GetLocations()
+			err := randCust.GetLocations()
 			So(err, ShouldBeNil)
-			So(len(c.Locations), ShouldBeGreaterThan, 0)
+			So(len(randCust.Locations), ShouldBeGreaterThan, 0)
 		})
 		Convey("Testing GetUsers()", func() {
 			users, err := c.GetUsers()
@@ -118,18 +172,14 @@ func TestCustomerModel(t *testing.T) {
 			So(users, ShouldNotBeNil)
 		})
 		Convey("Testing GetCustomerPrice()", func() {
-			c.Id = 1
 
-			price, err := GetCustomerPrice(api, 11000)
+			price, err := GetCustomerPrice(apiKey, partID)
 			So(err, ShouldBeNil)
 			So(price, ShouldNotBeNil)
 		})
 		Convey("Testing GetCustomerCartReference())", func() {
-			var c Customer
 			var err error
-			c.Id = 1
-			partId := 11000
-			ref, err := GetCustomerCartReference(api, partId)
+			ref, err := GetCustomerCartReference(apiKey, partID)
 			if ref > 0 {
 				So(err, ShouldBeNil)
 			}
@@ -318,7 +368,7 @@ func TestCustomerModel(t *testing.T) {
 			So(err, ShouldBeNil)
 		})
 	})
-
+	//Comparative Tests - Old Customer Model to New One
 	Convey("Testing Existing User object to the New One", t, func() {
 		err := database.PrepareAll()
 		So(err, ShouldBeNil)
