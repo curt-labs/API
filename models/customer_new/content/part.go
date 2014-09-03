@@ -70,6 +70,7 @@ func GetAllPartContent(key string) (content []PartContent, err error) {
 	rawContent := make(map[int][]CustomerContent, 0)
 	var partId int
 	var added, modified, deleted []byte
+	var ctype string
 	for res.Next() {
 		var cc CustomerContent
 		err = res.Scan(
@@ -78,13 +79,14 @@ func GetAllPartContent(key string) (content []PartContent, err error) {
 			&added,
 			&modified,
 			&deleted, //Not Used
-			&cc.ContentType.Type,
+			&ctype,
 			&cc.ContentType.AllowHtml,
 			&partId,
 		)
 		if err != nil {
 			return content, err
 		}
+		cc.ContentType.Type = "Part:" + ctype
 		cc.Added, _ = conversions.ByteToTime(added, timeYearFormat)
 		cc.Modified, _ = conversions.ByteToTime(modified, timeYearFormat)
 		part_id := partId
@@ -120,6 +122,7 @@ func GetPartContent(partID int, key string) (content []CustomerContent, err erro
 	res, err := stmt.Query(key, partID)
 	var partId int
 	var added, modified, deleted []byte
+	var ctype string
 	for res.Next() {
 		var cc CustomerContent
 		err = res.Scan(
@@ -128,13 +131,14 @@ func GetPartContent(partID int, key string) (content []CustomerContent, err erro
 			&added,
 			&modified,
 			&deleted, //Not Used
-			&cc.ContentType.Type,
+			&ctype,
 			&cc.ContentType.AllowHtml,
 			&partId,
 		)
 		if err != nil {
 			return content, err
 		}
+		cc.ContentType.Type = "Part:" + ctype
 		cc.Added, _ = conversions.ByteToTime(added, timeYearFormat)
 		cc.Modified, _ = conversions.ByteToTime(modified, timeYearFormat)
 		content = append(content, cc)
@@ -165,6 +169,7 @@ func GetGroupedPartContent(ids []string, key string) (content map[int][]Customer
 	}
 	var partId int
 	var added, modified, deleted []byte
+	var ctype string
 
 	res, err := stmt.Query(escaped_key, strings.Join(ids, ","))
 	for res.Next() {
@@ -175,13 +180,14 @@ func GetGroupedPartContent(ids []string, key string) (content map[int][]Customer
 			&added,
 			&modified,
 			&deleted, //Not Used
-			&cc.ContentType.Type,
+			&ctype,
 			&cc.ContentType.AllowHtml,
 			&partId,
 		)
 		if err != nil {
 			return content, err
 		}
+		cc.ContentType.Type = "Part:" + ctype
 		cc.Added, _ = conversions.ByteToTime(added, timeYearFormat)
 		cc.Modified, _ = conversions.ByteToTime(modified, timeYearFormat)
 		content[partId] = append(content[partId], cc)
