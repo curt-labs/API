@@ -3,6 +3,7 @@ package conversions
 import (
 	"net/url"
 	"strconv"
+	"time"
 )
 
 //Conversion funcs
@@ -45,4 +46,14 @@ func ByteToUrl(input []byte) (url.URL, error) {
 	output, err := url.Parse("")
 	output2 := *output
 	return output2, err
+}
+func ByteToTime(input []byte, timeFormat string) (time.Time, error) {
+	var err error
+	if input != nil {
+		str := string(input[:])
+		output, err := time.Parse(timeFormat, str)
+		return output, err
+	}
+	output, err := time.Parse(timeFormat, "")
+	return output, err
 }

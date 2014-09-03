@@ -1,13 +1,11 @@
 package custcontent
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/database"
-	// "github.com/curt-labs/GoAPI/models/customer/content"
-	. "github.com/smartystreets/goconvey/convey"
-	"testing"
-	// "time"
 	"database/sql"
+	"github.com/curt-labs/GoAPI/helpers/database"
+	. "github.com/smartystreets/goconvey/convey"
 	"math/rand"
+	"testing"
 )
 
 const (
@@ -107,6 +105,13 @@ func TestContent(t *testing.T) {
 			So(content, ShouldNotBeNil)
 			So(err, ShouldBeNil)
 		})
+		Convey("Testing GetCustomerContentRevisions()", func() {
+			var con []CustomerContentRevision
+			id, key := getApiKey(allCustContent)
+			content, err := GetCustomerContentRevisions(id, key)
+			So(content, ShouldHaveSameTypeAs, con)
+			So(err, ShouldBeNil)
+		})
 		Convey("Testing Save()", func() {
 			var err error
 			partID, catID := easyCatPart()
@@ -115,6 +120,8 @@ func TestContent(t *testing.T) {
 			content.Text = "test text"
 			content.ContentType.Type = getRandType()
 			err = content.Save(partID, catID, key)
+			So(err, ShouldBeNil)
+			err = content.Delete(partID, catID, key)
 			So(err, ShouldBeNil)
 		})
 		Convey("Testing Save()Update", func() {
@@ -126,13 +133,17 @@ func TestContent(t *testing.T) {
 			content.Id = 1
 			err := content.Save(partID, catID, key)
 			So(err, ShouldBeNil)
+			err = content.Delete(partID, catID, key)
+			So(err, ShouldBeNil)
 		})
 		Convey("Testing GetContentType()", func() {
 			var c CustomerContent
+			var t ContentType
 			c.ContentType.Type = getRandType()
 			ct, err := c.GetContentType()
 			So(err, ShouldBeNil)
 			So(ct, ShouldNotBeNil)
+			So(ct, ShouldHaveSameTypeAs, t)
 
 		})
 		Convey("AllCustomerContentTypes()", func() {
@@ -141,6 +152,9 @@ func TestContent(t *testing.T) {
 			So(cts, ShouldNotBeNil)
 		})
 	})
+}
+
+func TestContentComparedToOldModel(t *testing.T) {
 	Convey("ComparativeTests", t, func() {
 		err := database.PrepareAll()
 		So(err, ShouldBeNil)

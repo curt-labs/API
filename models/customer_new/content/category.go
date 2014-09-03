@@ -2,6 +2,7 @@ package custcontent
 
 import (
 	"database/sql"
+	"github.com/curt-labs/GoAPI/helpers/conversions"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	// "time"
 )
@@ -52,14 +53,15 @@ func GetAllCategoryContent(key string) (content []CategoryContent, err error) {
 	res, err := stmt.Query(key)
 	var deleted bool
 	var catID int
+	var added, modified []byte
 	rawContent := make(map[int][]CustomerContent, 0)
 	for res.Next() {
 		var c CustomerContent
 		err = res.Scan(
 			&c.Id,
 			&c.Text,
-			&c.Added,
-			&c.Modified,
+			&added,
+			&modified,
 			&deleted,
 			&c.ContentType.Type,
 			&c.ContentType.AllowHtml,
@@ -69,6 +71,8 @@ func GetAllCategoryContent(key string) (content []CategoryContent, err error) {
 		if catID > 0 {
 			rawContent[catID] = append(rawContent[catID], c)
 		}
+		c.Added, err = conversions.ByteToTime(added, timeYearFormat)
+		c.Modified, err = conversions.ByteToTime(modified, timeYearFormat)
 	}
 
 	for k, _ := range rawContent {
@@ -95,19 +99,22 @@ func GetCategoryContent(catID int, key string) (content []CustomerContent, err e
 	}
 	res, err := stmt.Query(key, catID)
 	var deleted bool
+	var added, modified []byte
 
 	for res.Next() {
 		var c CustomerContent
 		err = res.Scan(
 			&c.Id,
 			&c.Text,
-			&c.Added,
-			&c.Modified,
+			&added,
+			&modified,
 			&deleted,
 			&c.ContentType.Type,
 			&c.ContentType.AllowHtml,
 			&catID,
 		)
+		c.Added, err = conversions.ByteToTime(added, timeYearFormat)
+		c.Modified, err = conversions.ByteToTime(modified, timeYearFormat)
 		content = append(content, c)
 	}
 	return
