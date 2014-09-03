@@ -588,13 +588,14 @@ func (r *WebPropertyRequirement) CreateJoin() error {
 		return err
 	}
 	stmt, err := tx.Prepare(createRequirementsBridge)
-	_, err = stmt.Exec(r.WebPropID, r.Compliance, r.RequirementID)
+	res, err := stmt.Exec(r.WebPropID, r.Compliance, r.RequirementID)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 	tx.Commit()
-
+	id, err := res.LastInsertId()
+	r.ID = int(id)
 	return nil
 }
 
@@ -680,7 +681,7 @@ func (r *WebPropertyRequirement) Create() error {
 		return err
 	}
 	id, err := res.LastInsertId()
-	r.ID = int(id)
+	r.RequirementID = int(id)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -729,6 +730,7 @@ func (r *WebPropertyRequirement) Delete() error {
 		return err
 	}
 	tx.Commit()
+	r.DeleteJoin()
 
 	return nil
 }
@@ -787,11 +789,13 @@ func (t *WebPropertyType) Create() error {
 		return err
 	}
 	stmt, err := tx.Prepare(createType)
-	_, err = stmt.Exec(t.TypeID, t.Type)
+	res, err := stmt.Exec(t.TypeID, t.Type)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
+	id, err := res.LastInsertId()
+	t.ID = int(id)
 	tx.Commit()
 
 	return nil

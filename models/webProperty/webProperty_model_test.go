@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"github.com/curt-labs/GoAPI/helpers/api"
 	"github.com/curt-labs/GoAPI/helpers/database"
-
 	. "github.com/smartystreets/goconvey/convey"
 	"math/rand"
 	"strconv"
@@ -194,12 +193,12 @@ func TestGetWebProperties(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(n.Requirement, ShouldEqual, testReq.Requirement)
 		})
-		Convey("Testing GetWebPropertyRequirementCheck()", func() {
-			n := getRandomRequirement()
-			err := n.GetJoin()
-			So(n.WebPropID, ShouldNotBeNil)
-			So(err, ShouldBeNil)
-		})
+		// Convey("Testing GetWebPropertyRequirementCheck()", func() {
+		// 	n := getRandomRequirement()
+		// 	err := n.GetJoin()
+		// 	So(n.WebPropID, ShouldNotBeNil)
+		// 	So(err, ShouldBeNil)
+		// })
 		Convey("Testing GetAllWebPropertyNotes()", func() {
 			qs, err := GetAllWebPropertyNotes()
 			So(qs, ShouldNotBeNil)
@@ -220,7 +219,6 @@ func TestGetWebProperties(t *testing.T) {
 			So(as.Pagination.PerPage, ShouldNotBeNil)
 			So(as.Pagination.PerPage, ShouldEqual, len(as.Objects))
 		})
-
 	})
 	Convey("Testing CUD", t, func() {
 		Convey("Testing Create(), Update(), Delete()", func() {
@@ -283,6 +281,7 @@ func TestGetWebProperties(t *testing.T) {
 			So(f.IsEnabledDate, ShouldHaveSameTypeAs, t)
 			u, err = time.Parse(timeFormat, "2004-03-03 09:15:22")
 			So(f.RequestedDate, ShouldHaveSameTypeAs, u)
+			err = f.Get()
 			err = f.Delete()
 			So(err, ShouldBeNil)
 		})
@@ -315,7 +314,7 @@ func TestGetWebProperties(t *testing.T) {
 			r := getRandomRequirement()
 			var err error
 			r.WebPropID = w.ID
-			r.RequirementID = r.ID
+			// r.RequirementID = r.ID
 			r.Compliance = true
 			c := make(chan int)
 			go func() {
@@ -339,26 +338,30 @@ func TestGetWebProperties(t *testing.T) {
 		Convey("Testing Create(), Update(), Delete() Requirement", func() {
 			var n WebPropertyRequirement
 			n.ReqType = "Approved"
-			n.Requirement = "TEST"
+			n.Requirement = "TEST Requirement"
 			err := n.Create()
 			So(err, ShouldBeNil)
+			err = n.Get()
 			n.Requirement = "booger"
 			err = n.Update()
 			So(err, ShouldBeNil)
 			So(n.Requirement, ShouldEqual, "booger")
+			err = n.Get()
 			err = n.Delete()
 			So(err, ShouldBeNil)
 		})
 
 		Convey("Testing Create(), Update(), Delete() Type", func() {
-			n := getRandomType()
-			n.Type = "TEST"
+			var n WebPropertyType
+			n.Type = "TEST Type"
 			err := n.Create()
 			So(err, ShouldBeNil)
+			err = n.Get()
 			n.Type = "booger"
 			err = n.Update()
 			So(err, ShouldBeNil)
 			So(n.Type, ShouldEqual, "booger")
+			err = n.Get()
 			err = n.Delete()
 			So(err, ShouldBeNil)
 
