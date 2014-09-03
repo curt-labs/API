@@ -8,6 +8,7 @@ import (
 	"github.com/curt-labs/GoAPI/models/customer"
 	_ "github.com/go-sql-driver/mysql"
 	"html"
+	"log"
 	// "log"
 	// "strconv"
 	"strings"
@@ -170,20 +171,34 @@ func GetCustomerContent(id int, key string) (c CustomerContent, err error) {
 	if err != nil {
 		return c, err
 	}
+
+	log.Println("calling")
+	rows, err := stmt.Query(key)
+	if err != nil {
+		return c, err
+	}
+
 	var deleted, added, modified, pId, cId []byte
 	var contentType string
 	var partId, catId int
-	err = stmt.QueryRow(key).Scan(
-		&c.Id,
-		&c.Text,
-		&added,
-		&modified,
-		&deleted,
-		&contentType,
-		&c.ContentType.AllowHtml,
-		&pId,
-		&cId,
-	)
+
+	for rows.Next() {
+		err = rows.Scan(
+			&c.Id,
+			&c.Text,
+			&added,
+			&modified,
+			&deleted,
+			&contentType,
+			&c.ContentType.AllowHtml,
+			&pId,
+			&cId,
+		)
+		if err != nil {
+			return c, err
+		}
+	}
+
 	if pId != nil {
 		partId, err = conversions.ByteToInt(pId)
 	}

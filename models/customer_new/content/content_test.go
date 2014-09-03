@@ -78,17 +78,19 @@ func getRandType() (t string) {
 }
 func TestContent(t *testing.T) {
 	Convey("Testing Content", t, func() {
+
 		Convey("Testing AllCustomerContent()", func() {
 			_, key := getApiKey(allCustContent)
 			content, err := AllCustomerContent(key)
-			So(len(content), ShouldBeGreaterThan, 0)
-			So(content, ShouldNotBeNil)
+			var allCn []CustomerContent
+			So(content, ShouldHaveSameTypeAs, allCn)
 			So(err, ShouldBeNil)
 		})
 		Convey("Testing GetCustomerContent()", func() {
 			id, key := getApiKey(allCustContent)
 			content, err := GetCustomerContent(id, key)
-			So(content, ShouldNotBeNil)
+			var cn CustomerContent
+			So(content, ShouldHaveSameTypeAs, cn)
 			So(err, ShouldBeNil)
 		})
 		Convey("Testing Save()", func() {
