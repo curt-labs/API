@@ -1,6 +1,8 @@
 package faq_model
 
 import (
+	"database/sql"
+	"github.com/curt-labs/GoAPI/helpers/database"
 	. "github.com/smartystreets/goconvey/convey"
 	"math/rand"
 	"strconv"
@@ -31,6 +33,17 @@ func TestGetFaqs(t *testing.T) {
 					So(f, ShouldNotBeNil)
 					So(f.Question, ShouldHaveSameTypeAs, "str")
 					So(f.Answer, ShouldHaveSameTypeAs, "str")
+				})
+				Convey("Testing Bad Get()", func() {
+					getFaq = "Bad Query Stmt"
+					err = f.Get()
+					So(err, ShouldNotBeNil)
+				})
+				Convey("Testing Bad DB Connection()", func() {
+					_, err := sql.Open("mysqlOOOPS", database.ConnectionString())
+					So(err, ShouldNotBeNil)
+					err = f.Get()
+					So(err, ShouldNotBeNil)
 				})
 
 				Convey("Testing GetQuestions()", func() {
