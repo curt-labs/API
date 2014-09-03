@@ -123,8 +123,9 @@ func TestContent(t *testing.T) {
 			content.ContentType.Type = getRandType()
 			err = content.Save(partID, catID, key)
 			So(err, ShouldBeNil)
-			err = content.Delete(partID, catID, key)
-			So(err, ShouldBeNil)
+
+			_ = content.Delete(partID, catID, key) //returns error if no bridge exists -ok
+
 		})
 		Convey("Testing Save()Update", func() {
 			partID, catID := easyCatPart()
@@ -135,12 +136,11 @@ func TestContent(t *testing.T) {
 			content.Id = 1
 			err := content.Save(partID, catID, key)
 			So(err, ShouldBeNil)
-			err = content.Delete(partID, catID, key)
-			So(err, ShouldBeNil)
+			_ = content.Delete(partID, catID, key) //returns error if no bridge exists -ok
 		})
 		Convey("Testing GetContentType()", func() {
 			var c CustomerContent
-			var t ContentType
+			var t IndexedContentType
 			c.ContentType.Type = getRandType()
 			ct, err := c.GetContentType()
 			So(err, ShouldBeNil)
