@@ -22,9 +22,9 @@ var (
 							join Customer as c on cc.custID = c.cust_id
 							join CustomerUser as cu on c.cust_id = cu.cust_ID
 							join ApiKey as ak on cu.id = ak.user_id
-							/* where api_key = "73271AF4-4513-4725-AF29-034E8686F5C3" */
 							group by cc.id`
-	randomType = `SELECT type FROM ContentType ORDER BY RAND() LIMIT 1`
+	randomType     = `SELECT type FROM ContentType ORDER BY RAND() LIMIT 1`
+	easyCatAndPart = `SELECT catID, partID FROM CustomerContentBridge ORDER BY RAND() LIMIT 1`
 )
 
 type Output struct {
@@ -76,6 +76,22 @@ func getRandType() (t string) {
 	err = stmt.QueryRow().Scan(&t)
 	return
 }
+
+func easyCatPart() (partID, catID int) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(easyCatAndPart)
+	if err != nil {
+		return
+	}
+	err = stmt.QueryRow().Scan(&partID, &catID)
+	return
+}
+
 func TestContent(t *testing.T) {
 	Convey("Testing Content", t, func() {
 		Convey("Testing AllCustomerContent()", func() {
@@ -93,8 +109,7 @@ func TestContent(t *testing.T) {
 		})
 		Convey("Testing Save()", func() {
 			var err error
-			partID := 11001
-			catID := 4
+			partID, catID := easyCatPart()
 			_, key := getApiKey(allCustContent)
 			var content CustomerContent
 			content.Text = "test text"
@@ -103,8 +118,7 @@ func TestContent(t *testing.T) {
 			So(err, ShouldBeNil)
 		})
 		Convey("Testing Save()Update", func() {
-			partID := 11001
-			catID := 3
+			partID, catID := easyCatPart()
 			_, key := getApiKey(allCustContent)
 			var content CustomerContent
 			content.Text = "test text"
