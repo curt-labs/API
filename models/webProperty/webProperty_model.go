@@ -7,7 +7,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/pagination"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
-	"log"
+	// "log"
 	"strconv"
 	"time"
 )
@@ -701,7 +701,6 @@ func (r *WebPropertyRequirement) Update() error {
 	if err != nil {
 		return err
 	}
-	log.Print("ID: ", r.RequirementID, " TYPE:", r.ReqType, " REQ:", r.Requirement)
 	stmt, err := tx.Prepare(updateRequirement)
 	_, err = stmt.Exec(r.ReqType, r.Requirement, r.RequirementID)
 	if err != nil {
