@@ -84,8 +84,38 @@ var (
 	createCustomerContentBridge = `insert into CustomerContentBridge
 										(partID, catID, contentID)
 										values (?,?,?)`
-	getContentTypeId   = `select cTypeID, type, allowHTML from ContentType where type = ? limit 1`
-	getAllContentTypes = `select type, allowHTML from ContentType order by type`
+	getContentTypeId         = `select cTypeID, type, allowHTML from ContentType where type = ? limit 1`
+	getAllContentTypes       = `select type, allowHTML from ContentType order by type`
+	customerContentRevisions = `select ccr.old_text, ccr.new_text, ccr.date, ccr.changeType,
+									ct1.type as newType, ct1.allowHTML as newAllowHtml,
+									ct2.type as oldType, ct2.allowHTML as oldAllowHtml,
+									ccr.userID as userId
+									from CustomerContent_Revisions ccr
+									left join ContentType ct1 on ccr.new_type = ct1.cTypeId
+									left join ContentType ct2 on ccr.old_type = ct2.cTypeId
+									join CustomerContent cc on ccr.contentID = cc.id
+									join Customer as c on cc.custID = c.cust_id
+									join CustomerUser as cu on c.cust_id = cu.cust_ID
+									join ApiKey as ak on cu.id = ak.user_id
+									where ak.api_key = ? and ccr.contentID = ?
+									order by ccr.date`
+
+	deleteCustomerContentBridge = `delete from CustomerContentBridge
+									where contentID in(
+										select cc.id from CustomerContent as cc
+										join Customer as c on cc.custID = c.cust_id
+										join CustomerUser as cu on c.cust_id = cu.cust_ID
+										join ApiKey ak on cu.id = ak.user_id
+										where api_key = ? and contentID = ?
+									) and partID = ? and catID = ?`
+
+	markCustomerContentDeleted = `update CustomerContent as cc
+									join Customer as c on cc.custID = c.cust_id
+									join CustomerUser as cu on c.cust_id = cu.cust_ID
+									join ApiKey as ak on cu.id = ak.user_id
+									set cc.deleted = 1, cc.modified = now(),
+									cc.userID = cu.id where ak.api_key = ?
+									and cc.id = ?`
 )
 
 const (
@@ -214,6 +244,50 @@ func GetCustomerContent(id int, key string) (c CustomerContent, err error) {
 	return c, err
 }
 
+func GetCustomerContentRevisions(id int, key string) (revs []CustomerContentRevision, err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return revs, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(customerContentRevisions)
+	if err != nil {
+		return revs, err
+	}
+	res, err := stmt.Query(key, id)
+
+	users := make(map[string]customer.CustomerUser, 0)
+
+	for res.Next() {
+		var ccr CustomerContentRevision
+		err = res.Scan(
+			&ccr.OldText,
+			&ccr.NewText,
+			&ccr.Date,
+			&ccr.ChangeType,
+			&ccr.NewContentType.Type,
+			&ccr.NewContentType.AllowHtml,
+			&ccr.OldContentType.Type,
+			&ccr.OldContentType.AllowHtml,
+			&ccr.User.Id,
+		)
+		if err != nil {
+			return revs, err
+		}
+
+		if _, ok := users[ccr.User.Id]; !ok {
+			u, err := customer.GetCustomerUserById(ccr.User.Id)
+			if err == nil {
+				users[ccr.User.Id] = u
+			}
+		}
+		ccr.User = users[ccr.User.Id]
+		revs = append(revs, ccr)
+	}
+	return
+}
+
 func (content *CustomerContent) Save(partID, catID int, key string) error { //TODO - I would determine create/update in the controller
 	// If the Id is 0, we're adding a new
 	// content piece; so we'll invoke that
@@ -249,10 +323,6 @@ func (content *CustomerContent) Save(partID, catID int, key string) error { //TO
 	}
 	_, err = stmt.Exec(content.Text, key, content.Id, contentType.Id, hidden) //TODO this right?
 	if err != nil {
-		return err
-	}
-
-	if err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -263,6 +333,39 @@ func (content *CustomerContent) Save(partID, catID int, key string) error { //TO
 	// and the customer is re-enabling it
 	err = content.bridge(partID, catID)
 	return err
+}
+func (content *CustomerContent) Delete(partID, catID int, key string) error {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+
+	stmt, err := tx.Prepare(deleteCustomerContentBridge)
+	if err != nil {
+		return err
+	}
+	_, err = stmt.Exec(key, content.Id, partID, catID)
+	if err != nil {
+		tx.Rollback()
+		return errors.New("Failed to delete content bridge.")
+	}
+	tx.Commit()
+
+	stmt, err = tx.Prepare(markCustomerContentDeleted)
+	if err != nil {
+		return err
+	}
+	_, err = stmt.Exec(key, content.Id)
+	if err != nil {
+		tx.Rollback()
+		return errors.New("Failed to mark content as deleted.")
+	}
+	tx.Commit()
+	content.Hidden = true
+
+	return nil
 }
 
 func (content *CustomerContent) insert(partID, catID int, key string) error {
