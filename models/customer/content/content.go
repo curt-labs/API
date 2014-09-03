@@ -88,6 +88,7 @@ func AllCustomerContent(key string) (content []CustomerContent, err error) {
 	return
 }
 
+//Copied from existing GoAPI - what? it grabs a random piece of content? Great.
 func GetCustomerContent(id int, key string) (content CustomerContent, err error) {
 	qry, err := database.GetStatement("CustomerContent")
 	if database.MysqlError(err) {

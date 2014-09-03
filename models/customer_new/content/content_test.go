@@ -3,6 +3,7 @@ package custcontent
 import (
 	"database/sql"
 	"github.com/curt-labs/GoAPI/helpers/database"
+	"github.com/curt-labs/GoAPI/models/customer/content"
 	. "github.com/smartystreets/goconvey/convey"
 	"math/rand"
 	"testing"
@@ -160,15 +161,43 @@ func TestContentComparedToOldModel(t *testing.T) {
 	Convey("ComparativeTests", t, func() {
 		err := database.PrepareAll()
 		So(err, ShouldBeNil)
+		id, key := getApiKey(allCustContent)
 
-		//Works, but dateModifed does not work in original model
-		// Convey("AllContent v AllContent", func() {
-		// 	_, key := getApiKey(allCustContent)
-		// 	content, err := AllCustomerContent(key)
-		// 	So(err, ShouldBeNil)
-		// 	oldContent, err := custcontent.AllCustomerContent(key)
-		// 	So(err, ShouldBeNil)
-		// 	So(content, ShouldResemble, oldContent)
-		// })
+		allCon, err := AllCustomerContent(key)
+		x := rand.Intn(len(allCon))
+		c := allCon[x]
+
+		allCon2, err := custcontent.AllCustomerContent(key)
+		x2 := rand.Intn(len(allCon2))
+		c2 := allCon[x2]
+
+		Convey("AllContent", func() {
+			content, err := AllCustomerContent(key)
+			So(err, ShouldBeNil)
+			oldContent, err := custcontent.AllCustomerContent(key)
+			So(err, ShouldBeNil)
+			So(len(content), ShouldEqual, len(oldContent))
+		})
+		Convey("Content Revisions", func() {
+			content, err := GetCustomerContentRevisions(id, key)
+			So(err, ShouldBeNil)
+			oldContent, err := custcontent.GetCustomerContentRevisions(id, key)
+			So(err, ShouldBeNil)
+			So(len(content), ShouldEqual, len(oldContent))
+		})
+		Convey("ContentType", func() {
+			indexedType, err := c.GetContentType()
+			So(err, ShouldBeNil)
+			oldindexedType, err := c2.GetContentType()
+			So(err, ShouldBeNil)
+			So(indexedType.Type, ShouldEqual, oldindexedType.Type)
+		})
+		Convey("AllCustContentTypes", func() {
+			types, err := AllCustomerContentTypes()
+			So(err, ShouldBeNil)
+			oldTypes, err := custcontent.AllCustomerContentTypes()
+			So(err, ShouldBeNil)
+			So(len(types), ShouldEqual, len(oldTypes))
+		})
 	})
 }
