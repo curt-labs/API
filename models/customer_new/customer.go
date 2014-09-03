@@ -520,6 +520,7 @@ func GetCustomerPrice(api_key string, part_id int) (price float64, err error) {
 	if err != nil {
 		return price, err
 	}
+	defer stmt.Close()
 
 	err = stmt.QueryRow(api_key, part_id).Scan(&price)
 	return price, err

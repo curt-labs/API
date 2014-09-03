@@ -1,6 +1,7 @@
 package webProperty_model
 
 import (
+	"github.com/curt-labs/GoAPI/helpers/api"
 	. "github.com/smartystreets/goconvey/convey"
 	"math/rand"
 	"strconv"
@@ -10,37 +11,43 @@ import (
 
 func TestGetWebProperties(t *testing.T) {
 	Convey("Testing Gets", t, func() {
-		Convey("Testing Get()", func() {
-			var w WebProperty
-			w.ID = 12
-			err := w.Get()
-			So(w, ShouldNotBeNil)
-			So(err, ShouldBeNil)
-			So(w.Name, ShouldEqual, "Island Trailers")
-			So(w.CustID, ShouldEqual, 10439665)
-			So(w.WebPropertyType.Type, ShouldEqual, "Website")
-			So(w.WebPropertyNotes, ShouldNotBeNil)
-			So(len(w.WebPropertyRequirements), ShouldEqual, 2)
-		})
-		Convey("Testing Get(); focus on dates", func() {
-			var w WebProperty
-			w.ID = 12
-			err := w.Get()
-			So(w, ShouldNotBeNil)
-			var t time.Time
-			So(w.IsEnabledDate, ShouldHaveSameTypeAs, t)
-			So(w.RequestedDate, ShouldHaveSameTypeAs, t)
-
-			So(w.AddedDate, ShouldHaveSameTypeAs, t)
-			So(err, ShouldBeNil)
-		})
 		Convey("Testing GetAll()", func() {
-			var w WebProperties
-			w, err := GetAll()
-			So(w, ShouldNotBeNil)
+			var ws WebProperties
+			ws, err := GetAll()
+			So(ws, ShouldNotBeNil)
 			So(err, ShouldBeNil)
-			So(len(w), ShouldNotBeNil)
+			So(len(ws), ShouldNotBeNil)
+			if len(ws) > 0 {
+				Convey("Testing Get()", func() {
+					var w WebProperty
+					w = ws[api_helpers.RandGenerator(len(ws)-1)]
+					err = w.Get()
+					So(w, ShouldNotBeNil)
+					So(err, ShouldBeNil)
+					So(w.Name, ShouldNotEqual, "")
+					So(w.CustID, ShouldNotEqual, 0)
+					So(w.WebPropertyType.Type, ShouldNotEqual, "")
+					t.Logf("Web Property Notes: %v", w.WebPropertyNotes)
+					var ns WebPropertyNotes
+					So(w.WebPropertyNotes, ShouldHaveSameTypeAs, ns)
+					So(len(w.WebPropertyRequirements), ShouldNotEqual, 0)
+				})
+				Convey("Testing Get(); focus on dates", func() {
+					var w WebProperty
+					w = ws[api_helpers.RandGenerator(len(ws)-1)]
+					err = w.Get()
+					So(w, ShouldNotBeNil)
+					var t time.Time
+					So(w.IsEnabledDate, ShouldHaveSameTypeAs, t)
+					So(w.RequestedDate, ShouldHaveSameTypeAs, t)
+
+					So(w.AddedDate, ShouldHaveSameTypeAs, t)
+					So(err, ShouldBeNil)
+				})
+			}
+
 		})
+
 		Convey("Testing GetAllWebPropertyTypes()", func() {
 			qs, err := GetAllWebPropertyTypes()
 			So(qs, ShouldNotBeNil)
@@ -172,8 +179,9 @@ func TestGetWebProperties(t *testing.T) {
 			}()
 			<-c
 			f.Get()
-			So(f.Name, ShouldEqual, "testTitle")
-			So(f.WebPropertyNotes, ShouldNotBeEmpty)
+			So(f.Name, ShouldHaveSameTypeAs, "")
+			var ns WebPropertyNotes
+			So(f.WebPropertyNotes, ShouldHaveSameTypeAs, ns)
 
 			n.Text = "Funk"
 			err := n.Update()
@@ -198,7 +206,8 @@ func TestGetWebProperties(t *testing.T) {
 			}()
 			<-c
 			err = w.Get()
-			So(w.WebPropertyRequirements, ShouldNotBeEmpty)
+			var rs WebPropertyRequirements
+			So(w.WebPropertyRequirements, ShouldHaveSameTypeAs, rs)
 			So(err, ShouldBeNil)
 
 			r.Compliance = true
