@@ -24,8 +24,8 @@ type CustomerUser struct {
 }
 
 type ApiCredentials struct {
-	Key, Type string
-	DateAdded time.Time
+	Key, Type, TypeId string
+	DateAdded         time.Time
 }
 
 var (
@@ -73,7 +73,7 @@ var (
 						join CustomerUser as cu on cl.locationID = cu.locationID
 						where cu.id = ?`
 
-	userAuthenticationKey = `select ak.api_key, akt.type, ak.date_added from ApiKey as ak
+	userAuthenticationKey = `select ak.api_key, akt.type, akt.id, ak.date_added from ApiKey as ak
 									join ApiKeyType as akt on ak.type_id = akt.id
 									where UPPER(akt.type) = ?
 									&& ak.user_id = ?`
@@ -258,6 +258,7 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 	return
 }
 
+//TODO - does this method work the way the original author wanted it? Seems to reset a password when there is not a match. Odd.
 func (u *CustomerUser) AuthenticateUser(pass string) error {
 
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -343,13 +344,14 @@ func AuthenticateUserByKey(key string) (u CustomerUser, err error) {
 		key,
 		Timer,
 	}
-	var dbPass, custId string
-	var passConversion, notCustomer bool
+	var dbPass, custId, customerId string
+	var passConversion, notCustomer []byte //bools
 	err = stmt.QueryRow(params...).Scan(
 		&u.Id,
 		&u.Name,
 		&u.Email,
-		&dbPass, //Not Used
+		&dbPass,     //Not Used
+		&customerId, //Not Used
 		&u.DateAdded,
 		&u.Active,
 		&u.Location.Id,
@@ -464,13 +466,13 @@ func (u *CustomerUser) ResetAuthentication() error {
 		u.Id,
 	}
 	var a ApiCredentials
-	err = stmt.QueryRow(params...).Scan(&a.Key, &a.Type, &a.DateAdded)
+	err = stmt.QueryRow(params...).Scan(&a.Key, &a.Type, &a.TypeId, &a.DateAdded)
 	if err != nil {
 		return err
 	} else {
 		paramsNew := []interface{}{
 			time.Now().String(),
-			a.Type,
+			a.TypeId,
 			u.Id,
 		}
 

@@ -1,10 +1,37 @@
 package blog_model
 
 import (
+	"database/sql"
+	"github.com/curt-labs/GoAPI/helpers/database"
 	. "github.com/smartystreets/goconvey/convey"
+	"math/rand"
 	"testing"
 	"time"
 )
+
+var ()
+
+func getRandomBlog() (blog Blog) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return blog
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare("SELECT * FROM BlogPosts")
+	if err != nil {
+		return blog
+	}
+	var bs []Blog
+	res, err := stmt.Query()
+	for res.Next() {
+		var b Blog
+		res.Scan(&b.ID, &b.Title, &b.Slug, &b.Text, &b.PublishedDate, &b.CreatedDate, &b.LastModified, &b.UserID, &b.MetaTitle, &b.MetaDescription, &b.Keywords, &b.Active)
+		bs = append(bs, b)
+	}
+	x := rand.Intn(len(bs))
+	return bs[x]
+}
 
 func TestGetBlogs(t *testing.T) {
 	Convey("Testing Gets", t, func() {

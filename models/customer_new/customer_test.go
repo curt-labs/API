@@ -269,11 +269,18 @@ func TestCustomerModel(t *testing.T) {
 			So(err, ShouldNotBeNil) //TODO - update user and auth
 
 		})
+		Convey("Testing ResetAuthentication()", func() {
+			var u CustomerUser
+			var err error
+			u.Id = "F43F5B82-D7AF-4905-BD07-FC8BCF4C82FE"
+			err = u.ResetAuthentication()
+			So(err, ShouldBeNil)
+		})
 		Convey("Testing AuthenticateUserByKey()", func() {
 			var err error
-			key := "18601BD3-CD77-4D1D-943A-DAEF91FB9C1F" //auth type
+			key := "DE0A3046-380F-4816-AECC-1D239A0FF1D0" //auth type
 			u, err := AuthenticateUserByKey(key)
-			So(err, ShouldNotBeNil)
+			So(err, ShouldBeNil)
 			So(u, ShouldNotBeNil)
 		})
 		Convey("GetKeys()", func() {
@@ -292,14 +299,7 @@ func TestCustomerModel(t *testing.T) {
 			So(u.Location, ShouldNotBeNil)
 			So(err, ShouldBeNil)
 		})
-		Convey("ResetAuthentication()", func() {
-			var u CustomerUser
-			var err error
-			u.Id = "66167921-6376-4712-85D2-55D1C3511657"
-			err = u.ResetAuthentication()
-			So(u.Location, ShouldNotBeNil)
-			So(err, ShouldBeNil)
-		})
+
 		Convey("GetCustomerIdFromKey()", func() {
 			var err error
 			id, err := GetCustomerIdFromKey(api)
