@@ -136,6 +136,23 @@ func GetUsers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, para
 	return encoding.Must(enc.Encode(users))
 }
 
+func GetUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+	key := r.FormValue("key")
+
+	if key == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return ""
+	}
+
+	user, err := customer_new.GetCustomerUserFromKey(key)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(user))
+}
+
 func GetCustomerPrice(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var err error
 	qs := r.URL.Query()
