@@ -82,7 +82,7 @@ func TestGetBlogs(t *testing.T) {
 
 	})
 	Convey("Testing CUD", t, func() {
-		Convey("Testing Create()", func() {
+		Convey("Testing Create()/Delete()", func() {
 			var f Blog
 			var cs BlogCategories
 			var c BlogCategory
@@ -110,45 +110,27 @@ func TestGetBlogs(t *testing.T) {
 			So(f.Slug, ShouldEqual, "testSlug")
 			var t time.Time
 			So(f.PublishedDate, ShouldHaveSameTypeAs, t)
-			f.Delete()
-		})
-		Convey("Testing Update()", func() {
-			var f Blog
-			var err error
-			f.ID = 17
+
 			f.Title = "testTitle222"
 			f.Slug = "testSlug222"
 			f.PublishedDate, err = time.Parse(timeFormat, "2004-03-03 09:15:00")
 
-			c := make(chan int)
+			ch := make(chan int)
 			go func() {
 				f.Update()
-				c <- 1
+				ch <- 1
 			}()
-			<-c
+			<-ch
 			f.Get()
 			So(err, ShouldBeNil)
 			So(f, ShouldNotBeNil)
 			So(f.Title, ShouldEqual, "testTitle222")
 			So(f.Slug, ShouldEqual, "testSlug222")
 
+			err = f.Delete()
+			So(err, ShouldBeNil)
 		})
-		Convey("Testing Delete()", func() {
-			var f Blog
-			f.ID = 15
-			c := make(chan int)
-			go func() {
-				f.Delete()
-				c <- 1
-			}()
-			<-c
-			go f.Get()
-			So(f.Title, ShouldBeBlank)
-			So(f.Text, ShouldBeBlank)
-			So(f.CreatedDate, ShouldBeZeroValue)
-			So(f.LastModified, ShouldBeZeroValue)
 
-		})
 		Convey("Testing CreateCategory()/DeleteCategory()", func() {
 			var c Category
 			var err error

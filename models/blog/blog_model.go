@@ -49,14 +49,15 @@ var (
 	getBlog                  = "SELECT b.blogPostID, b.post_title ,b.slug, COALESCE(b.post_text,'') ,COALESCE(b.publishedDate,''), COALESCE(b.createdDate,''), COALESCE(b.lastModified,''), b.userID, COALESCE(b.meta_title,''), COALESCE(b.meta_description,''), COALESCE(b.keywords,''), b.active FROM  BlogPosts AS b WHERE b.blogPostID = ?"
 	create                   = `INSERT INTO BlogPosts (post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active)
 								VALUES (?,?,?,?,?,?,?,?,?,?,?)`
-	getCategory     = "SELECT blogCategoryID, name, slug,active FROM BlogCategories WHERE blogCategoryID = ?"
-	createCategory  = "INSERT INTO BlogCategories (name,slug,active) VALUES (?,?,?)"
-	deleteCategory  = "DELETE FROM BlogCategories WHERE blogCategoryID = ?"
-	createCatBridge = `INSERT INTO BlogPost_BlogCategory (blogPostID, blogCategoryID) VALUES (?,?)`
-	deleteCatBridge = `DELETE FROM BlogPost_BlogCategory WHERE blogPostID = ?`
-	update          = `UPDATE BlogPosts SET post_title = ? ,slug = ? ,post_text = ?, publishedDate= ?, lastModified = ?,userID = ?, meta_title = ?, meta_description = ?, keywords = ?, active = ? WHERE blogPostID = ?`
-	deleteBlog      = "DELETE FROM BlogPosts WHERE blogPostID = ?"
-	search          = `SELECT b.blogPostID, b.post_title ,b.slug ,b.post_text ,b.publishedDate, b.createdDate, b.lastModified, b.userID, b.meta_title, b.meta_description, b.keywords, b.active FROM  BlogPosts AS b
+	getCategory            = "SELECT blogCategoryID, name, slug,active FROM BlogCategories WHERE blogCategoryID = ?"
+	createCategory         = "INSERT INTO BlogCategories (name,slug,active) VALUES (?,?,?)"
+	deleteCategory         = "DELETE FROM BlogCategories WHERE blogCategoryID = ?"
+	createCatBridge        = `INSERT INTO BlogPost_BlogCategory (blogPostID, blogCategoryID) VALUES (?,?)`
+	deleteCatBridge        = `DELETE FROM BlogPost_BlogCategory WHERE blogPostID = ?`
+	deleteCatBridgeByCatID = `DELETE FROM BlogPost_BlogCategory WHERE blogCategoryID = ?`
+	update                 = `UPDATE BlogPosts SET post_title = ? ,slug = ? ,post_text = ?, publishedDate= ?, lastModified = ?,userID = ?, meta_title = ?, meta_description = ?, keywords = ?, active = ? WHERE blogPostID = ?`
+	deleteBlog             = "DELETE FROM BlogPosts WHERE blogPostID = ?"
+	search                 = `SELECT b.blogPostID, b.post_title ,b.slug ,b.post_text ,b.publishedDate, b.createdDate, b.lastModified, b.userID, b.meta_title, b.meta_description, b.keywords, b.active FROM  BlogPosts AS b
 						WHERE b.post_title LIKE ? AND b.slug LIKE ? AND b.post_text LIKE ? AND b.publishedDate LIKE ? AND b.createdDate LIKE ? AND b.lastModified LIKE ? AND b.userID LIKE ? AND b.meta_title LIKE ? AND b.meta_description LIKE ? AND b.keywords LIKE ? AND b.active LIKE ?`
 )
 
@@ -328,7 +329,8 @@ func (c *Category) Delete() error {
 		return err
 	}
 	tx.Commit()
-	return nil
+	err = c.deleteCatBridgeByCategory()
+	return err
 }
 func (b *Blog) createCatBridge() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -414,6 +416,27 @@ func (b *Blog) deleteCatBridge() error {
 	return nil
 }
 
+func (c *Category) deleteCatBridgeByCategory() error {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	stmt, err := tx.Prepare(deleteCatBridgeByCatID)
+	_, err = stmt.Exec(c.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+
+	return nil
+}
+
 func (b *Blog) Delete() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -431,7 +454,8 @@ func (b *Blog) Delete() error {
 		return err
 	}
 	tx.Commit()
-	return nil
+	err = b.deleteCatBridge()
+	return err
 }
 
 func Search(title, slug, text, publishedDate, createdDate, lastModified, userID, metaTitle, metaDescription, keywords, active, pageStr, resultsStr string) (pagination.Objects, error) {
