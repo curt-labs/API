@@ -8,6 +8,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/api"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
+	_ "github.com/go-sql-driver/mysql"
 	"net/http"
 	"net/url"
 	"strings"
@@ -64,22 +65,22 @@ var (
 								join ApiKeyType as akt on ak.type_id = akt.id
 								where user_id = ? && UPPER(akt.type) NOT IN (?)`
 	userLocation = `select cl.locationID, cl.name, cl.email, cl.address, cl.city,
-						cl.postalCode, cl.phone, cl.fax, cl.latitude, cl.longitude,
-						cl.cust_id, cl.contact_person, cl.isprimary, cl.ShippingDefault,
-						s.stateID, s.state, s.abbr as state_abbr, cty.countryID, cty.name as cty_name, cty.abbr as cty_abbr
-						from CustomerLocations as cl
-						left join States as s on cl.stateID = s.stateID
-						left join Country as cty on s.countryID = cty.countryID
-						join CustomerUser as cu on cl.locationID = cu.locationID
-						where cu.id = ?`
+									cl.postalCode, cl.phone, cl.fax, cl.latitude, cl.longitude,
+									cl.cust_id, cl.contact_person, cl.isprimary, cl.ShippingDefault,
+									s.stateID, s.state, s.abbr as state_abbr, cty.countryID, cty.name as cty_name, cty.abbr as cty_abbr
+									from CustomerUser as cu
+									join CustomerLocations as cl on cu.cust_ID = cl.cust_id
+									left join States as s on cl.stateID = s.stateID
+									left join Country as cty on s.countryID = cty.countryID
+									where cu.id = ?`
 
-	userAuthenticationKey = `select ak.api_key, akt.type, akt.id, ak.date_added from ApiKey as ak
+	userAuthenticationKey = `select ak.api_key, akt.type, akt.id, CAST(ak.date_added as char(255)) as date_added from ApiKey as ak
 									join ApiKeyType as akt on ak.type_id = akt.id
 									where UPPER(akt.type) = ?
 									&& ak.user_id = ?`
 
 	resetUserAuthentication = `update ApiKey as ak
-									set ak.date_added = ?
+									set ak.date_added = NOW()
 									where ak.type_id = ?
 									&& ak.user_id = ?`
 	customerIDFromKey = `select c.customerID from Customer as c
@@ -100,11 +101,15 @@ var (
 							limit 1`
 )
 
+var (
+	AuthError = errors.New("failed to authenticate")
+)
+
 func (u CustomerUser) UserAuthentication(password string) (cust Customer, err error) {
 
 	err = u.AuthenticateUser(password)
 	if err != nil {
-		return
+		return cust, AuthError
 	}
 
 	keyChan := make(chan int)
@@ -125,19 +130,22 @@ func (u CustomerUser) UserAuthentication(password string) (cust Customer, err er
 	}()
 
 	cust, err = u.GetCustomer()
+	if err != nil {
+		return cust, AuthError
+	}
 
 	<-keyChan
 	<-locChan
 
 	cust.Users = append(cust.Users, u)
 
-	return
+	return cust, nil
 }
 
 func UserAuthenticationByKey(key string) (cust Customer, err error) {
 	u, err := AuthenticateUserByKey(key)
 	if err != nil {
-		return
+		return cust, AuthError
 	}
 
 	keyChan := make(chan int)
@@ -158,13 +166,16 @@ func UserAuthenticationByKey(key string) (cust Customer, err error) {
 	}()
 
 	cust, err = u.GetCustomer()
+	if err != nil {
+		return cust, AuthError
+	}
 
 	<-keyChan
 	<-locChan
 
 	cust.Users = append(cust.Users, u)
 
-	return
+	return cust, nil
 }
 
 func (u CustomerUser) GetCustomer() (c Customer, err error) {
@@ -263,13 +274,13 @@ func (u *CustomerUser) AuthenticateUser(pass string) error {
 
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		return err
+		return AuthError
 	}
 	defer db.Close()
 
 	stmt, err := db.Prepare(customerUserAuth)
 	if err != nil {
-		return err
+		return AuthError
 	}
 	defer stmt.Close()
 	var dbPass string
@@ -284,7 +295,7 @@ func (u *CustomerUser) AuthenticateUser(pass string) error {
 		&u.Sudo,
 		&passConversion,
 	)
-	if err == nil {
+	if err != nil {
 		err = errors.New("No user found that matches: " + u.Email)
 	}
 
@@ -326,13 +337,13 @@ func (u *CustomerUser) AuthenticateUser(pass string) error {
 func AuthenticateUserByKey(key string) (u CustomerUser, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		return u, err
+		return u, AuthError
 	}
 	defer db.Close()
 
 	stmt, err := db.Prepare(customerUserKeyAuth)
 	if err != nil {
-		return u, err
+		return u, AuthError
 	}
 	defer stmt.Close()
 	t := time.Now()
@@ -361,7 +372,7 @@ func AuthenticateUserByKey(key string) (u CustomerUser, err error) {
 		&passConversion, //Not Used
 	)
 	if err != nil {
-		return u, err
+		return u, AuthError
 		// err = errors.New("Invalid password")
 	}
 
@@ -466,12 +477,15 @@ func (u *CustomerUser) ResetAuthentication() error {
 		u.Id,
 	}
 	var a ApiCredentials
-	err = stmt.QueryRow(params...).Scan(&a.Key, &a.Type, &a.TypeId, &a.DateAdded)
+
+	var dateAdded string
+	err = stmt.QueryRow(params...).Scan(&a.Key, &a.Type, &a.TypeId, &dateAdded)
 	if err != nil {
 		return err
 	} else {
+		loc, _ := time.LoadLocation("US/Central")
+		a.DateAdded, _ = time.ParseInLocation(time.RFC3339Nano, dateAdded, loc)
 		paramsNew := []interface{}{
-			time.Now().String(),
 			a.TypeId,
 			u.Id,
 		}

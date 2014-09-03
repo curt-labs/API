@@ -18,7 +18,7 @@ func getRandomWebProperty() (wp WebProperty) {
 	}
 	defer db.Close()
 
-	stmt, err := db.Prepare("SELECT * FROM WebProperties")
+	stmt, err := db.Prepare("select id, name, cust_ID, badgeID, url, isEnabled,sellerID, typeID, isFinalApproved, isEnabledDate,isDenied, requestedDate, addedDate from WebProperties")
 	if err != nil {
 		return wp
 	}
@@ -28,7 +28,20 @@ func getRandomWebProperty() (wp WebProperty) {
 	res, err := stmt.Query()
 	for res.Next() {
 		var w WebProperty
-		err = res.Scan(&w.ID, &w.Name, &w.CustID, &w.BadgeID, &w.Url, &w.IsEnabled, &w.SellerID, &w.WebPropertyType.ID, &w.IsFinalApproved, &w.IsEnabledDate, &w.IsDenied, &w.RequestedDate, &w.AddedDate)
+		err = res.Scan(
+			&w.ID,
+			&w.Name,
+			&w.CustID,
+			&w.BadgeID,
+			&w.Url,
+			&w.IsEnabled,
+			&w.SellerID,
+			&w.WebPropertyType.ID,
+			&w.IsFinalApproved,
+			&w.IsEnabledDate,
+			&w.IsDenied,
+			&w.RequestedDate,
+			&w.AddedDate)
 		if err != nil {
 			return wp
 		}
@@ -124,6 +137,8 @@ func getRandomRequirement() (wp WebPropertyRequirement) {
 }
 
 func TestGetWebProperties(t *testing.T) {
+	var wp WebProperty
+	var rs WebPropertyRequirement
 	Convey("Testing Gets", t, func() {
 		Convey("Testing GetAll()", func() {
 			var ws WebProperties
@@ -132,6 +147,7 @@ func TestGetWebProperties(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(len(ws), ShouldNotBeNil)
 			if len(ws) > 0 {
+				wp = ws[0]
 				Convey("Testing Get()", func() {
 					var w WebProperty
 					w = ws[api_helpers.RandGenerator(len(ws)-1)]
@@ -141,10 +157,10 @@ func TestGetWebProperties(t *testing.T) {
 					So(w.Name, ShouldNotEqual, "")
 					So(w.CustID, ShouldNotEqual, 0)
 					So(w.WebPropertyType.Type, ShouldNotEqual, "")
-					t.Logf("Web Property Notes: %v", w.WebPropertyNotes)
 					var ns WebPropertyNotes
+					var rs WebPropertyRequirements
 					So(w.WebPropertyNotes, ShouldHaveSameTypeAs, ns)
-					So(len(w.WebPropertyRequirements), ShouldNotEqual, 0)
+					So(w.WebPropertyRequirements, ShouldHaveSameTypeAs, rs)
 				})
 				Convey("Testing Get(); focus on dates", func() {
 					var w WebProperty
@@ -160,6 +176,14 @@ func TestGetWebProperties(t *testing.T) {
 				})
 			}
 
+			Convey("Testing GetAllWebPropertyRequirements()", func() {
+				qs, err := GetAllWebPropertyRequirements()
+				if len(qs) > 0 {
+					rs = qs[0]
+				}
+				So(qs, ShouldNotBeNil)
+				So(err, ShouldBeNil)
+			})
 		})
 
 		Convey("Testing GetAllWebPropertyTypes()", func() {
@@ -201,11 +225,6 @@ func TestGetWebProperties(t *testing.T) {
 		// })
 		Convey("Testing GetAllWebPropertyNotes()", func() {
 			qs, err := GetAllWebPropertyNotes()
-			So(qs, ShouldNotBeNil)
-			So(err, ShouldBeNil)
-		})
-		Convey("Testing GetAllWebPropertyRequirements()", func() {
-			qs, err := GetAllWebPropertyRequirements()
 			So(qs, ShouldNotBeNil)
 			So(err, ShouldBeNil)
 		})
@@ -310,27 +329,29 @@ func TestGetWebProperties(t *testing.T) {
 
 		})
 		Convey("Testing Create(), Update(), Delete() WebProperyRequirementsCheck", func() {
-			w := getRandomWebProperty()
-			r := getRandomRequirement()
+
 			var err error
-			r.WebPropID = w.ID
-			r.Compliance = true
+
+			rs.WebPropID = wp.ID
+			rs.RequirementID = rs.ID
+			rs.Compliance = true
+
 			c := make(chan int)
 			go func() {
-				r.CreateJoin()
+				rs.CreateJoin()
 				c <- 1
 			}()
 			<-c
-			err = w.Get()
-			var rs WebPropertyRequirements
-			So(w.WebPropertyRequirements, ShouldHaveSameTypeAs, rs)
+			err = wp.Get()
+			var tmpReq WebPropertyRequirements
+			So(wp.WebPropertyRequirements, ShouldHaveSameTypeAs, tmpReq)
 			So(err, ShouldBeNil)
 
-			r.Compliance = true
-			err = r.UpdateJoin()
+			rs.Compliance = true
+			err = rs.UpdateJoin()
 			So(err, ShouldBeNil)
 
-			err = r.DeleteJoin()
+			err = rs.DeleteJoin()
 			So(err, ShouldBeNil)
 		})
 
