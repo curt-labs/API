@@ -3,28 +3,14 @@ package news_model
 import (
 	"github.com/curt-labs/GoAPI/helpers/pagination"
 	. "github.com/smartystreets/goconvey/convey"
+	"math/rand"
+	"strconv"
 	"testing"
 	"time"
 )
 
 func TestNews(t *testing.T) {
 	Convey("Testing Gets", t, func() {
-		Convey("Testing Get()", func() {
-			var f News
-			var err error
-			f.ID = 1
-			err = f.Get()
-			So(err, ShouldBeNil)
-			So(f, ShouldNotBeNil)
-			So(f.Title, ShouldEqual, "Growth & Expansion Continues at CURT Manufacturing ")
-			So(f.Lead, ShouldEqual, "Company Posts Record Sales in First-Half of 2011 - Set to Open New DC")
-			So(f.Content, ShouldNotBeNil)
-
-			strTime := f.PublishStart.String()
-			So(strTime, ShouldContainSubstring, "2011-09-29 09:22:00")
-			strTime2 := f.PublishEnd.String()
-			So(strTime2, ShouldContainSubstring, "0001-01-01 00:00:00")
-		})
 		Convey("Testing GetAll()", func() {
 			var fs Newses
 			var err error
@@ -32,31 +18,54 @@ func TestNews(t *testing.T) {
 			So(len(fs), ShouldBeGreaterThan, 0)
 			So(err, ShouldBeNil)
 		})
-		Convey("Testing GetTitles()", func() {
-			var l pagination.Objects
-			var err error
-			l, err = GetTitles("1", "4")
-			So(len(l.Objects), ShouldEqual, 4)
+		Convey("Gets News and a random News, page, resultsperpage", func() {
+			fs, err := GetAll()
 			So(err, ShouldBeNil)
-		})
-		Convey("Testing GetLeads()", func() {
-			var l pagination.Objects
-			var err error
-			l, err = GetLeads("1", "2")
-			So(len(l.Objects), ShouldEqual, 2)
-			So(err, ShouldBeNil)
-		})
-		Convey("Testing Search()", func() {
-			var err error
-			var n News
-			var l pagination.Objects
-			n.Lead = "Curt"
-			l, err = Search("", "", n.Lead, "", "", "", "", "1", "3")
-			So(len(l.Objects), ShouldEqual, 3)
-			So(err, ShouldBeNil)
+			if len(fs) > 0 {
+				x := rand.Intn(len(fs))
+				f := fs[x]
+				page := "2"
+				resultsperpage := strconv.Itoa(len(fs) / 2)
+				Convey("Testing Get()", func() {
+					var err error
+					err = f.Get()
+					So(err, ShouldBeNil)
+					So(f, ShouldNotBeNil)
+					So(f.Title, ShouldHaveSameTypeAs, "")
+					So(f.Lead, ShouldHaveSameTypeAs, "")
+					So(f.Content, ShouldHaveSameTypeAs, "")
+					aTime := time.Now()
+					So(f.PublishStart, ShouldHaveSameTypeAs, aTime)
+					So(f.PublishEnd, ShouldHaveSameTypeAs, aTime)
+				})
+
+				Convey("Testing GetTitles()", func() {
+					var l pagination.Objects
+					var err error
+					l, err = GetTitles(page, resultsperpage)
+					num, err := strconv.Atoi(resultsperpage)
+					So(len(l.Objects), ShouldEqual, num)
+					So(err, ShouldBeNil)
+				})
+				Convey("Testing GetLeads()", func() {
+					var l pagination.Objects
+					var err error
+					l, err = GetLeads(page, resultsperpage)
+					num, err := strconv.Atoi(resultsperpage)
+					So(len(l.Objects), ShouldEqual, num)
+					So(err, ShouldBeNil)
+				})
+				Convey("Testing Search()", func() {
+					var err error
+					var l pagination.Objects
+					l, err = Search("", "", f.Content, "", "", "", "", "1", "3")
+					So(len(l.Objects), ShouldBeGreaterThan, 0)
+					So(err, ShouldBeNil)
+				})
+			}
 		})
 	})
-	Convey("Testing CUD", t, func() {
+	Convey("Testing C_UD", t, func() {
 		Convey("Testing Create/Delete", func() {
 			var n News
 			var err error
@@ -68,26 +77,20 @@ func TestNews(t *testing.T) {
 			So(err, ShouldBeNil)
 			err = n.Create()
 			So(err, ShouldBeNil)
-			err = n.Delete()
-			So(err, ShouldBeNil)
-		})
-		Convey("Testing update", func() {
-			var n News
-			var err error
-			n.ID = 13
-			n.Lead = "Pickles"
-			err = n.Update()
-			err = n.Get()
-			So(n.Lead, ShouldEqual, "Pickles")
-			So(err, ShouldBeNil)
-		})
-		Convey("Testing Delete", func() {
-			var n News
-			n.Title = "Deletable News"
-			n.Create()
-			var err error
-			err = n.Delete()
-			So(err, ShouldBeNil)
+
+			Convey("Testing update", func() {
+				n.Lead = "Pickles"
+				err = n.Update()
+				err = n.Get()
+				So(n.Lead, ShouldEqual, "Pickles")
+				So(err, ShouldBeNil)
+
+				Convey("Testing Delete", func() {
+					var err error
+					err = n.Delete()
+					So(err, ShouldBeNil)
+				})
+			})
 		})
 	})
 
