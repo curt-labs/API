@@ -1,8 +1,8 @@
 package faq_model
 
 import (
-	"database/sql"
-	"github.com/curt-labs/GoAPI/helpers/database"
+	// "database/sql"
+	// "github.com/curt-labs/GoAPI/helpers/database"
 	. "github.com/smartystreets/goconvey/convey"
 	"math/rand"
 	"strconv"
@@ -33,17 +33,11 @@ func TestGetFaqs(t *testing.T) {
 					So(f, ShouldNotBeNil)
 					So(f.Question, ShouldHaveSameTypeAs, "str")
 					So(f.Answer, ShouldHaveSameTypeAs, "str")
-				})
-				Convey("Testing Bad Get()", func() {
-					getFaq = "Bad Query Stmt"
-					err = f.Get()
-					So(err, ShouldNotBeNil)
-				})
-				Convey("Testing Bad DB Connection()", func() {
-					_, err := sql.Open("mysqlOOOPS", database.ConnectionString())
-					So(err, ShouldNotBeNil)
-					err = f.Get()
-					So(err, ShouldNotBeNil)
+					Convey("Testing Bad Get()", func() {
+						getFaq = "Bad Query Stmt"
+						err = f.Get()
+						So(err, ShouldNotBeNil)
+					})
 				})
 
 				Convey("Testing GetQuestions()", func() {
@@ -54,6 +48,11 @@ func TestGetFaqs(t *testing.T) {
 					So(qs.Pagination.Page, ShouldEqual, 3)
 					So(qs.Pagination.ReturnedCount, ShouldNotBeNil)
 					So(qs.Pagination.PerPage, ShouldEqual, len(qs.Objects))
+					Convey("Testing Bad Stmt()", func() {
+						getQuestions = "Bad Query Stmt"
+						qs, err = GetQuestions(page, result)
+						So(err, ShouldNotBeNil)
+					})
 				})
 				Convey("Testing GetAnswers()", func() {
 					as, err := GetAnswers(page, result)
@@ -63,6 +62,11 @@ func TestGetFaqs(t *testing.T) {
 					So(as.Pagination.ReturnedCount, ShouldNotBeNil)
 					So(as.Pagination.PerPage, ShouldNotBeNil)
 					So(as.Pagination.PerPage, ShouldEqual, len(as.Objects))
+					Convey("Testing Bad Stmt()", func() {
+						getAnswers = "Bad Query Stmt"
+						as, err = GetAnswers(page, result)
+						So(err, ShouldNotBeNil)
+					})
 				})
 				Convey("Testing Search()", func() {
 					as, err := Search(f.Question, "", "1", "0")
@@ -72,6 +76,11 @@ func TestGetFaqs(t *testing.T) {
 					So(as.Pagination.ReturnedCount, ShouldNotBeNil)
 					So(as.Pagination.PerPage, ShouldNotBeNil)
 					So(as.Pagination.PerPage, ShouldEqual, len(as.Objects))
+					Convey("Testing Bad Stmt()", func() {
+						search = "Bad Query Stmt"
+						as, err = Search(f.Question, "", "1", "0")
+						So(err, ShouldNotBeNil)
+					})
 				})
 			}
 		})
@@ -99,6 +108,7 @@ func TestGetFaqs(t *testing.T) {
 					f.Get()
 					err := f.Delete()
 					So(err, ShouldBeNil)
+
 				})
 			})
 		})
