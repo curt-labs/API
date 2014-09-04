@@ -112,7 +112,8 @@ var (
 	getCustomerUserKeysWithoutAuth = `select ak.api_key, akt.type from ApiKey as ak
 										join ApiKeyType as akt on ak.type_id = akt.id
 										where ak.user_id = ? && UPPER(akt.type) = ?`
-	getAPIKeyTypeID = `select id from ApiKeyType where UPPER(type) = UPPER(?) limit 1`
+	getAPIKeyTypeID               = `select id from ApiKeyType where UPPER(type) = UPPER(?) limit 1`
+	updateCustomerUserPassByEmail = `update CustomerUser set password = ?, passwordConverted = 1 where email = ? && customerID = ?`
 )
 
 var (
@@ -721,6 +722,37 @@ func getAPIKeyTypeReference(keyType string) (string, error) {
 		return uuid.NIL.String(), errors.New("failed to retrieve auth type")
 	}
 	return apiKeyTypeId, nil
+}
+
+func (cu *CustomerUser) ResetPass(email string, customerID int) (string, error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return "", err
+	}
+	defer db.Close()
+	tx := db.Begin()
+	stmt, err := tx.Prepare(updateCustomerUserPassByEmail)
+
+	randPass := encryption.GeneratePassword()
+
+	// upd, err := database.GetStatement("UpdateCustomerUserPassByEmail")
+	// if database.MysqlError(err) {
+	// 	return "", err
+	// }
+	// encrypt the random password:
+	encryptPass, err := bcrypt.GenerateFromPassword([]byte(randPass), bcrypt.DefaultCost)
+
+	_, err = stmt.Exec(encryptPass, email, customerID)
+	if err != nil {
+		return "", err
+	}
+
+	// _, _, err = upd.Exec(encryptPass, email, customerID)
+	// if database.MysqlError(err) {
+	// 	return "", err
+	// }
+
+	return randPass, nil
 }
 
 type ApiRequest struct {
