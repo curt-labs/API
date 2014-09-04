@@ -51,8 +51,10 @@ func ByteToTime(input []byte, timeFormat string) (time.Time, error) {
 	var err error
 	if input != nil {
 		str := string(input[:])
-		output, err := time.Parse(timeFormat, str)
-		return output, err
+		if str != "" {
+			output, err := time.Parse(timeFormat, str)
+			return output, err
+		}
 	}
 	output, err := time.Parse(timeFormat, "")
 	return output, err

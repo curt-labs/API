@@ -197,13 +197,13 @@ func GetCustomerContent(id int, key string) (c CustomerContent, err error) {
 	}
 	defer db.Close()
 
-	stmt, err := db.Prepare(allCustomerContent)
+	stmt, err := db.Prepare(customerContent)
 	if err != nil {
 		return c, err
 	}
 
 	log.Println("calling")
-	rows, err := stmt.Query(key)
+	rows, err := stmt.Query(key, id)
 	if err != nil {
 		return c, err
 	}
@@ -359,7 +359,7 @@ func (content *CustomerContent) Delete(partID, catID int, key string) error {
 
 	stmt, err := tx.Prepare(deleteCustomerContentBridge)
 	if err != nil {
-		return err
+		return errors.New("Content Bridge already deleted.")
 	}
 	_, err = stmt.Exec(key, content.Id, partID, catID)
 	if err != nil {
@@ -370,7 +370,7 @@ func (content *CustomerContent) Delete(partID, catID int, key string) error {
 
 	stmt, err = tx.Prepare(markCustomerContentDeleted)
 	if err != nil {
-		return err
+		return errors.New("Content already deleted.")
 	}
 	_, err = stmt.Exec(key, content.Id)
 	if err != nil {
@@ -432,6 +432,9 @@ func (content CustomerContent) bridge(partID, catID int) error {
 
 	var count int
 	err = stmt.QueryRow(partID, catID, content.Id).Scan(&count)
+	if count == 0 {
+		return err
+	}
 
 	tx, err := db.Begin()
 

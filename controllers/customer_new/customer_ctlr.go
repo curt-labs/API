@@ -119,21 +119,43 @@ func GetUsers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, para
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return ""
 	}
-	//TODO getCustmerUserFromKey - check if Sudo
-	id, err := customer_new.GetCustomerIdFromKey(key)
+	user, err := customer_new.GetCustomerUserFromKey(key)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+	if !user.Sudo {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return ""
+	}
+
+	cust, err := user.GetCustomer()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+	users, err := cust.GetUsers()
+	if err != nil {
+		return err.Error()
+	}
+	return encoding.Must(enc.Encode(users))
+}
+
+func GetUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+	key := r.FormValue("key")
+
+	if key == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return ""
+	}
+
+	user, err := customer_new.GetCustomerUserFromKey(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
 
-	c := customer_new.Customer{
-		Id: id,
-	}
-	users, err := c.GetUsers()
-	if err != nil {
-		return err.Error()
-	}
-	return encoding.Must(enc.Encode(users))
+	return encoding.Must(enc.Encode(user))
 }
 
 func GetCustomerPrice(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {

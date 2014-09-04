@@ -37,6 +37,11 @@ func TestNews(t *testing.T) {
 					aTime := time.Now()
 					So(f.PublishStart, ShouldHaveSameTypeAs, aTime)
 					So(f.PublishEnd, ShouldHaveSameTypeAs, aTime)
+					Convey("Tests bad stmt", func() {
+						getNews = "Bad Stmt"
+						err = f.Get()
+						So(err, ShouldNotBeNil)
+					})
 				})
 
 				Convey("Testing GetTitles()", func() {
@@ -46,6 +51,11 @@ func TestNews(t *testing.T) {
 					num, err := strconv.Atoi(resultsperpage)
 					So(len(l.Objects), ShouldEqual, num)
 					So(err, ShouldBeNil)
+					Convey("Tests bad stmt", func() {
+						getTitles = "Bad Stmt"
+						_, err = GetTitles(page, resultsperpage)
+						So(err, ShouldNotBeNil)
+					})
 				})
 				Convey("Testing GetLeads()", func() {
 					var l pagination.Objects
@@ -54,6 +64,12 @@ func TestNews(t *testing.T) {
 					num, err := strconv.Atoi(resultsperpage)
 					So(len(l.Objects), ShouldEqual, num)
 					So(err, ShouldBeNil)
+					Convey("Tests bad stmt", func() {
+						getLeads = "Bad Stmt"
+						_, err = GetLeads(page, resultsperpage)
+						So(err, ShouldNotBeNil)
+					})
+
 				})
 				Convey("Testing Search()", func() {
 					var err error
@@ -61,6 +77,16 @@ func TestNews(t *testing.T) {
 					l, err = Search("", "", f.Content, "", "", "", "", "1", "3")
 					So(len(l.Objects), ShouldBeGreaterThan, 0)
 					So(err, ShouldBeNil)
+					Convey("Tests bad stmt", func() {
+						search = "Bad Stmt"
+						_, err = Search("", "", f.Content, "", "", "", "", "1", "3")
+						So(err, ShouldNotBeNil)
+					})
+				})
+				Convey("Tests bad stmt", func() {
+					getAll = "Bad Stmt"
+					_, err = GetAll()
+					So(err, ShouldNotBeNil)
 				})
 			}
 		})
@@ -81,7 +107,6 @@ func TestNews(t *testing.T) {
 			Convey("Testing update", func() {
 				n.Lead = "Pickles"
 				err = n.Update()
-				err = n.Get()
 				So(n.Lead, ShouldEqual, "Pickles")
 				So(err, ShouldBeNil)
 
