@@ -2,6 +2,7 @@ package vehicle
 
 import (
 	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/apifilter"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/aces"
 	"github.com/curt-labs/GoAPI/models/part"
@@ -66,6 +67,7 @@ func Query(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string 
 		case parts := <-partChan:
 			if len(parts) > 0 {
 				l.Parts = parts
+				l.Filter, _ = apifilter.PartFilter(l.Parts, nil)
 			}
 		case <-time.After(5 * time.Second):
 			log.Println("LoadParts timed out")
