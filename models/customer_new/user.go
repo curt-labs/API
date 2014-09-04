@@ -118,6 +118,8 @@ var (
 	getAPIKeyTypeID               = `select id from ApiKeyType where UPPER(type) = UPPER(?) limit 1`
 	updateCustomerUserPassByEmail = `update CustomerUser set password = ?, passwordConverted = 1 WHERE email = ? AND customerID = ?`
 	SetCustomerUserPassword       = `update CustomerUser set password = ?, passwordConverted = 1 WHERE email = ?`
+	deleteCustomerUser            = `DELETE FROM CustomerUsers WHERE id = ?`
+	deleteAPIkey                  = `DELETE FROM ApiKey WHERE user_id = ? AND type_id = ?`
 )
 
 var (
@@ -362,47 +364,6 @@ func (u *CustomerUser) AuthenticateUser(pass string) error {
 	return nil
 }
 
-// func (u *CustomerUser) AuthUser(pass string) error {
-// 	db, err := sql.Open("mysql", database.ConnectionString())
-// 	if err != nil {
-// 		return AuthError
-// 	}
-// 	defer db.Close()
-// 	log.Print("here")
-// 	stmt, err := db.Prepare(getUserPassword)
-// 	if err != nil {
-// 		return errors.New("Error preparing statemement.")
-// 	}
-// 	defer stmt.Close()
-
-// 	var dbPass []byte
-// 	var count int
-// 	err = stmt.QueryRow(u.Email).Scan(&dbPass, &count)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	if count > 1 {
-// 		return errors.New("More than one user with that email addres.")
-// 	}
-// 	log.Print("DBPASS ", dbPass, "  pass-", pass)
-// 	err = bcrypt.CompareHashAndPassword(dbPass, []byte(pass))
-// 	if err != nil {
-// 		log.Print(err)
-// 		return errors.New("Passwords don't match.")
-// 	}
-// 	resetChan := make(chan int)
-// 	go func() {
-// 		if resetErr := u.ResetAuthentication(); resetErr != nil {
-// 			err = resetErr
-// 		}
-// 		resetChan <- 1
-// 	}()
-
-// 	<-resetChan
-
-// 	return nil
-// }
-
 func AuthenticateUserByKey(key string) (u CustomerUser, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -458,7 +419,6 @@ func AuthenticateUserByKey(key string) (u CustomerUser, err error) {
 }
 
 func (u *CustomerUser) GetKeys() error {
-	//ak.api_key, akt.type, ak.date_added
 	var keys []ApiCredentials
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -827,6 +787,76 @@ func (cu *CustomerUser) ChangePass(oldPass, newPass string, custID int) (string,
 	}
 	tx.Commit()
 	return "success", nil
+}
+
+func (cu *CustomerUser) Delete() error {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(deleteCustomerUser)
+	_, err = stmt.Exec(cu.Id)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+	//delete api keys
+	pubChan := make(chan int)
+	privChan := make(chan int)
+	authChan := make(chan int)
+
+	// Public key:
+	go func() {
+		cu.deleteApiKey(PUBLIC_KEY_TYPE)
+		pubChan <- 1
+	}()
+
+	// Private key:
+	go func() {
+		cu.deleteApiKey(PRIVATE_KEY_TYPE)
+		privChan <- 1
+	}()
+
+	// Auth Key:
+	go func() {
+		cu.deleteApiKey(AUTH_KEY_TYPE)
+		authChan <- 1
+	}()
+	<-pubChan
+	<-privChan
+	<-authChan
+	return nil
+}
+
+func (cu *CustomerUser) deleteApiKey(keyType string) error {
+
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+
+	stmt, err := tx.Prepare(deleteAPIkey)
+	if err != nil {
+		return err
+	}
+
+	typeID, err := getAPIKeyTypeReference(keyType)
+	if err != nil {
+		return err
+	}
+	_, err = stmt.Exec(cu.Id, typeID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+
+	return nil
 }
 
 type ApiRequest struct {

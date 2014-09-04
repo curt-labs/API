@@ -28,6 +28,7 @@ func TestCustomerUser(t *testing.T) {
 			So(custUser, ShouldNotBeNil)
 			So(err, ShouldBeNil)
 			Convey("Changing Password", func() {
+				So(cu.Id, ShouldNotBeNil)
 				oldPass := "test"
 				newPass := "jerk"
 				str, err := cu.ChangePass(oldPass, newPass, customerID)
@@ -38,6 +39,10 @@ func TestCustomerUser(t *testing.T) {
 					cust, err := cu.UserAuthentication(password)
 					So(err, ShouldBeNil)
 					So(cust, ShouldNotBeNil)
+					Convey("Deleting CustomerUser", func() {
+						err = cu.Delete()
+						So(err, ShouldBeNil)
+					})
 				})
 			})
 		})

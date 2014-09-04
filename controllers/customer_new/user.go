@@ -4,7 +4,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/customer_new"
 	// "github.com/curt-labs/GoAPI/models/part"
-	// "github.com/go-martini/martini"
+	"github.com/go-martini/martini"
 	"log"
 	"net/http"
 	"strconv"
@@ -67,6 +67,21 @@ func RegisterUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) 
 	}
 
 	return encoding.Must(enc.Encode(user))
+}
+func DeleteCustomerUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+	id, err := strconv.Atoi(params["id"])
+	if err != nil {
+		http.Error(w, err.Error(), http.Error(w, error, code))
+	}
+	var user customer_new.CustomerUser
+	cu.Id = id
+	err = cu.Delete()
+	if err != nil || cu == nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(cu))
 }
 
 func AuthenticateUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
