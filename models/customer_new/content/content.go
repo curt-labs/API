@@ -197,13 +197,13 @@ func GetCustomerContent(id int, key string) (c CustomerContent, err error) {
 	}
 	defer db.Close()
 
-	stmt, err := db.Prepare(allCustomerContent)
+	stmt, err := db.Prepare(customerContent)
 	if err != nil {
 		return c, err
 	}
 
 	log.Println("calling")
-	rows, err := stmt.Query(key)
+	rows, err := stmt.Query(key, id)
 	if err != nil {
 		return c, err
 	}

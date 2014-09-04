@@ -210,18 +210,52 @@ func main() {
 	m.Get("/search/part/:term", search_ctlr.SearchPart)
 	m.Get("/videos", videos_ctlr.DistinctVideos)
 
+	//NEW Customer & Dealer endpoints - Seems to work. Feeling brave?
 	m.Group("/new", func(r martini.Router) {
 		m.Group("/customer", func(r martini.Router) {
-			r.Get("", internalCors, customer_ctlr_new.GetCustomer)
+			// r.Get("", internalCors, customer_ctlr_new.GetCustomer)
 			r.Post("", internalCors, customer_ctlr_new.GetCustomer)
+			r.Post("/user", customer_ctlr.GetUser)
 			r.Get("/users", customer_ctlr_new.GetUsers)
 			r.Post("/users", customer_ctlr_new.GetUsers)
-			r.Get("/locations", internalCors, customer_ctlr_new.GetLocations)
+			// r.Get("/locations", internalCors, customer_ctlr_new.GetLocations)
 			r.Post("/locations", internalCors, customer_ctlr_new.GetLocations)
 			r.Get("/price/:id", internalCors, customer_ctlr_new.GetCustomerPrice)           //{part id}
 			r.Get("/cartRef/:id", internalCors, customer_ctlr_new.GetCustomerCartReference) //{part id}
 			r.Post("/auth", customer_ctlr_new.UserAuthentication)
 			r.Get("/auth", customer_ctlr_new.KeyedUserAuthentication)
+
+			// Customer CMS endpoints
+			// All Customer Content
+			r.Get("/cms", customer_ctlr_new.GetAllContent)
+			// Content Types
+			r.Get("/cms/content_types", customer_ctlr.GetAllContentTypes)
+
+			// Customer Part Content
+			r.Get("/cms/part", customer_ctlr_new.AllPartContent)
+			r.Get("/cms/part/:id", customer_ctlr_new.UniquePartContent)
+			r.Post("/cms/part/:id", customer_ctlr_new.UpdatePartContent)
+			r.Delete("/cms/part/:id", customer_ctlr_new.DeletePartContent)
+
+			// Customer Category Content
+			r.Get("/cms/category", customer_ctlr_new.AllCategoryContent)
+			r.Get("/cms/category/:id", customer_ctlr_new.UniqueCategoryContent)
+			r.Post("/cms/category/:id", customer_ctlr_new.UpdateCategoryContent)
+			r.Delete("/cms/category/:id", customer_ctlr_new.DeleteCategoryContent)
+
+			// Customer Content By Content Id
+			r.Get("/cms/:id", customer_ctlr_new.GetContentById)
+			r.Get("/cms/:id/revisions", customer_ctlr_new.GetContentRevisionsById)
+
+			//Customer prices
+			r.Get("/prices/part/:id", internalCors, customer_ctlr_new.GetPricesByPart)         //{id}; id refers to partId
+			r.Get("/prices/sale", internalCors, customer_ctlr_new.GetSales)                    //{start}{end}{id} -all required params; id refers to customerId
+			r.Get("/prices/:id", internalCors, customer_ctlr_new.GetPrice)                     //{id}; id refers to {id} refers to customerPriceId
+			r.Get("/prices", internalCors, customer_ctlr_new.GetAllPrices)                     //returns all {sort=field&direction=dir}
+			r.Post("/prices/:id", internalCors, customer_ctlr_new.CreateUpdatePrice)           //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
+			r.Put("/prices", internalCors, customer_ctlr_new.CreateUpdatePrice)                //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
+			r.Delete("/prices/:id", internalCors, customer_ctlr_new.DeletePrice)               //{id} refers to customerPriceId
+			r.Get("/pricesByCustomer/:id", internalCors, customer_ctlr_new.GetPriceByCustomer) //{id} refers to customerId; returns CustomerPrices
 
 		})
 		m.Group("/dealers", func(r martini.Router) {
@@ -240,7 +274,11 @@ func main() {
 		})
 
 	})
-	m.Post("/keyedUser", customer_ctlr_new.KeyedUserAuthentication)
+	// m.Get("/customer/auth/keyedUser", internalCors, customer_ctlr_new.KeyedUserAuthentication)
+	// m.Post("/customer/auth/new", internalCors, customer_ctlr_new.UserAuthentication)
+	// // m.Get("/customer/auth/oldKeyedUser", internalCors, customer_ctlr.KeyedUserAuthentication)
+	// m.Get("/customer/auth/resetAuth", internalCors, customer_ctlr_new.ResetAuthentication)
+
 	/**** INTERNAL USE ONLY ****/
 	// These endpoints will not work to the public eye when deployed on CURT's
 	// servers. We will have restrictions in place to prevent access...sorry :/
