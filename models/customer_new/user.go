@@ -10,8 +10,10 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/api"
 	"github.com/curt-labs/GoAPI/helpers/conversions"
 	"github.com/curt-labs/GoAPI/helpers/database"
+	"github.com/curt-labs/GoAPI/helpers/encryption"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
+	// "log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -56,6 +58,7 @@ var (
 							where email = ?
 							&& active = 1
 							limit 1`
+	getUserPassword        = `SELECT password, COUNT(password) AS quantity from CustomerUser where email = ?`
 	updateCustomerUserPass = `update CustomerUser set password = ?, passwordConverted = 1
 								where id = ? && active = 1`
 	customerUserKeyAuth = `select cu.* from CustomerUser as cu
@@ -113,7 +116,8 @@ var (
 										join ApiKeyType as akt on ak.type_id = akt.id
 										where ak.user_id = ? && UPPER(akt.type) = ?`
 	getAPIKeyTypeID               = `select id from ApiKeyType where UPPER(type) = UPPER(?) limit 1`
-	updateCustomerUserPassByEmail = `update CustomerUser set password = ?, passwordConverted = 1 where email = ? && customerID = ?`
+	updateCustomerUserPassByEmail = `update CustomerUser set password = ?, passwordConverted = 1 WHERE email = ? AND customerID = ?`
+	SetCustomerUserPassword       = `update CustomerUser set password = ?, passwordConverted = 1 WHERE email = ?`
 )
 
 var (
@@ -321,8 +325,10 @@ func (u *CustomerUser) AuthenticateUser(pass string) error {
 	}
 
 	// Attempt to compare bcrypt strings
-	if bcrypt.CompareHashAndPassword([]byte(dbPass), []byte(pass)) != nil {
+	err = bcrypt.CompareHashAndPassword([]byte(dbPass), []byte(pass))
+	if err != nil {
 		// Compare unsuccessful
+
 		enc_pass, err := api_helpers.Md5Encrypt(pass)
 		if err != nil {
 			return err
@@ -331,7 +337,7 @@ func (u *CustomerUser) AuthenticateUser(pass string) error {
 			return errors.New("Invalid password")
 		}
 
-		hashedPass, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
+		hashedPass, _ := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
 		if err != nil {
 			return errors.New("Failed to encode the password")
 		}
@@ -341,6 +347,7 @@ func (u *CustomerUser) AuthenticateUser(pass string) error {
 			return err
 		}
 		_, err = stmtPass.Exec(hashedPass, u.Id)
+		return errors.New("Incorrect password.")
 	}
 
 	resetChan := make(chan int)
@@ -354,6 +361,47 @@ func (u *CustomerUser) AuthenticateUser(pass string) error {
 	<-resetChan
 	return nil
 }
+
+// func (u *CustomerUser) AuthUser(pass string) error {
+// 	db, err := sql.Open("mysql", database.ConnectionString())
+// 	if err != nil {
+// 		return AuthError
+// 	}
+// 	defer db.Close()
+// 	log.Print("here")
+// 	stmt, err := db.Prepare(getUserPassword)
+// 	if err != nil {
+// 		return errors.New("Error preparing statemement.")
+// 	}
+// 	defer stmt.Close()
+
+// 	var dbPass []byte
+// 	var count int
+// 	err = stmt.QueryRow(u.Email).Scan(&dbPass, &count)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	if count > 1 {
+// 		return errors.New("More than one user with that email addres.")
+// 	}
+// 	log.Print("DBPASS ", dbPass, "  pass-", pass)
+// 	err = bcrypt.CompareHashAndPassword(dbPass, []byte(pass))
+// 	if err != nil {
+// 		log.Print(err)
+// 		return errors.New("Passwords don't match.")
+// 	}
+// 	resetChan := make(chan int)
+// 	go func() {
+// 		if resetErr := u.ResetAuthentication(); resetErr != nil {
+// 			err = resetErr
+// 		}
+// 		resetChan <- 1
+// 	}()
+
+// 	<-resetChan
+
+// 	return nil
+// }
 
 func AuthenticateUserByKey(key string) (u CustomerUser, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -616,7 +664,7 @@ func GetCustomerUserById(id string) (u CustomerUser, err error) {
 }
 
 //Create CustomerUser
-func (cu *CustomerUser) Register(pass string, customerID int, isActive int, locationID int, isSudo int, cust_ID int, notCustomer int) (*CustomerUser, error) {
+func (cu *CustomerUser) Register(pass string, customerID int, isActive bool, locationID int, isSudo bool, cust_ID int, notCustomer bool) (*CustomerUser, error) {
 
 	encryptPass, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
 	UserId := uuid.NewRandom()
@@ -724,35 +772,61 @@ func getAPIKeyTypeReference(keyType string) (string, error) {
 	return apiKeyTypeId, nil
 }
 
-func (cu *CustomerUser) ResetPass(email string, customerID int) (string, error) {
+func (cu *CustomerUser) ResetPass(custID int) (string, error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return "", err
 	}
 	defer db.Close()
-	tx := db.Begin()
+	tx, err := db.Begin()
+	if err != nil {
+		return "", err
+	}
 	stmt, err := tx.Prepare(updateCustomerUserPassByEmail)
-
-	randPass := encryption.GeneratePassword()
-
-	// upd, err := database.GetStatement("UpdateCustomerUserPassByEmail")
-	// if database.MysqlError(err) {
-	// 	return "", err
-	// }
-	// encrypt the random password:
-	encryptPass, err := bcrypt.GenerateFromPassword([]byte(randPass), bcrypt.DefaultCost)
-
-	_, err = stmt.Exec(encryptPass, email, customerID)
 	if err != nil {
 		return "", err
 	}
 
-	// _, _, err = upd.Exec(encryptPass, email, customerID)
-	// if database.MysqlError(err) {
-	// 	return "", err
-	// }
+	randPass := encryption.GeneratePassword()
 
+	// encrypt the random password:
+	encryptPass, err := bcrypt.GenerateFromPassword([]byte(randPass), bcrypt.DefaultCost)
+	e, err := conversions.ByteToString(encryptPass)
+	if err != nil {
+		return "", err
+	}
+
+	_, err = stmt.Exec(e, cu.Email, custID)
+	if err != nil {
+		tx.Rollback()
+		return "", err
+	}
+	tx.Commit()
 	return randPass, nil
+}
+
+func (cu *CustomerUser) ChangePass(oldPass, newPass string, custID int) (string, error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return "", err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(SetCustomerUserPassword)
+	encryptNewPass, err := bcrypt.GenerateFromPassword([]byte(newPass), bcrypt.DefaultCost)
+
+	err = cu.AuthenticateUser(oldPass)
+	if err != nil {
+		return "", errors.New("Old password is incorrect.")
+	}
+
+	_, err = stmt.Exec(encryptNewPass, cu.Email)
+	if err != nil {
+		tx.Rollback()
+		return "", err
+	}
+	tx.Commit()
+	return "success", nil
 }
 
 type ApiRequest struct {
