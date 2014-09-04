@@ -5,6 +5,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/conversions"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	// "time"
+	// "log"
 )
 
 type CategoryContent struct {
@@ -36,8 +37,6 @@ var (
 									group by cc.id`
 )
 
-//TODO test me!
-
 // Retrieves all category content for this customer
 func GetAllCategoryContent(key string) (content []CategoryContent, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -51,9 +50,8 @@ func GetAllCategoryContent(key string) (content []CategoryContent, err error) {
 		return content, err
 	}
 	res, err := stmt.Query(key)
-	var deleted bool
 	var catID int
-	var added, modified []byte
+	var added, modified, deleted []byte
 	rawContent := make(map[int][]CustomerContent, 0)
 	for res.Next() {
 		var c CustomerContent
@@ -67,11 +65,15 @@ func GetAllCategoryContent(key string) (content []CategoryContent, err error) {
 			&c.ContentType.AllowHtml,
 			&catID,
 		)
+		if err != nil {
+			return content, err
+		}
 
 		if catID > 0 {
 			rawContent[catID] = append(rawContent[catID], c)
 		}
-		c.Added, err = conversions.ByteToTime(added, timeYearFormat)
+		//TODO "added" is a bool field in DB, time field in customerContent struct
+		// c.Added, err = conversions.ByteToTime(added, timeYearFormat)
 		c.Modified, err = conversions.ByteToTime(modified, timeYearFormat)
 	}
 
@@ -98,8 +100,7 @@ func GetCategoryContent(catID int, key string) (content []CustomerContent, err e
 		return content, err
 	}
 	res, err := stmt.Query(key, catID)
-	var deleted bool
-	var added, modified []byte
+	var added, modified, deleted []byte
 
 	for res.Next() {
 		var c CustomerContent
@@ -113,7 +114,11 @@ func GetCategoryContent(catID int, key string) (content []CustomerContent, err e
 			&c.ContentType.AllowHtml,
 			&catID,
 		)
-		c.Added, err = conversions.ByteToTime(added, timeYearFormat)
+		if err != nil {
+			return content, err
+		}
+		//TODO "added" is a bool field in DB, time field in customerContent struct
+		// c.Added, err = conversions.ByteToTime(added, timeYearFormat)
 		c.Modified, err = conversions.ByteToTime(modified, timeYearFormat)
 		content = append(content, c)
 	}
