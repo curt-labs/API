@@ -39,7 +39,7 @@ func TestCustomerUser(t *testing.T) {
 					cust, err := cu.UserAuthentication(password)
 					So(err, ShouldBeNil)
 					So(cust, ShouldNotBeNil)
-					Convey("Deleting CustomerUser", func() {
+					Convey("Deleting CustomerUser", func() { //Watch - seems to delete; is it true?
 						err = cu.Delete()
 						So(err, ShouldBeNil)
 					})

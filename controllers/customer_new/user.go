@@ -69,14 +69,12 @@ func RegisterUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) 
 	return encoding.Must(enc.Encode(user))
 }
 func DeleteCustomerUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	id, err := strconv.Atoi(params["id"])
-	if err != nil {
-		http.Error(w, err.Error(), http.Error(w, error, code))
-	}
-	var user customer_new.CustomerUser
+	id := params["id"]
+
+	var cu customer_new.CustomerUser
 	cu.Id = id
-	err = cu.Delete()
-	if err != nil || cu == nil {
+	err := cu.Delete()
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return ""
 	}

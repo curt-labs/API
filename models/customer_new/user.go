@@ -118,7 +118,7 @@ var (
 	getAPIKeyTypeID               = `select id from ApiKeyType where UPPER(type) = UPPER(?) limit 1`
 	updateCustomerUserPassByEmail = `update CustomerUser set password = ?, passwordConverted = 1 WHERE email = ? AND customerID = ?`
 	SetCustomerUserPassword       = `update CustomerUser set password = ?, passwordConverted = 1 WHERE email = ?`
-	deleteCustomerUser            = `DELETE FROM CustomerUsers WHERE id = ?`
+	deleteCustomerUser            = `DELETE FROM CustomerUser WHERE id = ?`
 	deleteAPIkey                  = `DELETE FROM ApiKey WHERE user_id = ? AND type_id = ?`
 )
 
@@ -790,19 +790,6 @@ func (cu *CustomerUser) ChangePass(oldPass, newPass string, custID int) (string,
 }
 
 func (cu *CustomerUser) Delete() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	tx, err := db.Begin()
-	stmt, err := tx.Prepare(deleteCustomerUser)
-	_, err = stmt.Exec(cu.Id)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	tx.Commit()
 	//delete api keys
 	pubChan := make(chan int)
 	privChan := make(chan int)
@@ -828,6 +815,21 @@ func (cu *CustomerUser) Delete() error {
 	<-pubChan
 	<-privChan
 	<-authChan
+
+	//delete CustomerUser
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(deleteCustomerUser)
+	_, err = stmt.Exec(cu.Id)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
 	return nil
 }
 
