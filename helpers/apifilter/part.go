@@ -3,16 +3,12 @@ package apifilter
 import (
 	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
+	"github.com/curt-labs/GoAPI/models/part"
 	"log"
 	"sort"
-
-	// "math"
 	"strconv"
 	"strings"
 	"time"
-
-	// "github.com/curt-labs/GoAPI/models/category"
-	"github.com/curt-labs/GoAPI/models/part"
 )
 
 var (
@@ -29,6 +25,7 @@ type Options struct {
 type Option struct {
 	Value    string
 	Selected bool
+	Products []int
 }
 
 type Decision struct {
@@ -42,6 +39,8 @@ func PartFilter(parts []part.Part, specs []interface{}) ([]Options, error) {
 
 	attrChan := make(chan error)
 	priceChan := make(chan error)
+	catChan := make(chan error)
+	classChan := make(chan error)
 	go func() {
 		filtered = append(filtered, filtered.attributes(parts)...)
 		attrChan <- nil
@@ -50,18 +49,34 @@ func PartFilter(parts []part.Part, specs []interface{}) ([]Options, error) {
 		filtered = append(filtered, filtered.prices(parts))
 		priceChan <- nil
 	}()
+	go func() {
+		filtered = append(filtered, filtered.category(parts))
+		catChan <- nil
+	}()
+	go func() {
+		filtered = append(filtered, filtered.class(parts))
+		classChan <- nil
+	}()
 
 	select {
 	case err := <-attrChan:
 		if err != nil {
-			log.Println("filter error: %s", err.Error())
+			log.Printf("filter error: %s\n", err.Error())
 		}
 	case err := <-priceChan:
 		if err != nil {
-			log.Println("filter error: %s", err.Error())
+			log.Printf("filter error: %s\n", err.Error())
+		}
+	case err := <-catChan:
+		if err != nil {
+			log.Printf("filter error: %s\n", err.Error())
+		}
+	case err := <-classChan:
+		if err != nil {
+			log.Printf("filter error: %s\n", err.Error())
 		}
 	case <-time.After(1 * time.Second):
-		log.Println("filter attributes timed out")
+		log.Println("filter generation timed out")
 	}
 
 	sortutil.AscByField(filtered, "Key")
@@ -103,9 +118,17 @@ func (filtered FilteredOptions) attributes(parts []part.Part) FilteredOptions {
 				newOption := Option{
 					Value:    attr.Value,
 					Selected: false,
+					Products: []int{part.PartId},
 				}
 				vals.Options = append(vals.Options, newOption)
 				attributeDefinitions[attr.Key] = vals
+			} else {
+				for i, _ := range attributeDefinitions[attr.Key].Options {
+					prods := attributeDefinitions[attr.Key].Options[i].Products
+					prods = append(prods, part.PartId)
+					sort.Ints(prods)
+					attributeDefinitions[attr.Key].Options[i].Products = prods
+				}
 			}
 		}
 	}
@@ -113,6 +136,7 @@ func (filtered FilteredOptions) attributes(parts []part.Part) FilteredOptions {
 	var f FilteredOptions
 	for _, vals := range attributeDefinitions {
 		if len(vals.Options) > 1 {
+			sortutil.AscByField(vals.Options, "Value")
 			f = append(f, vals)
 		}
 	}
@@ -167,17 +191,94 @@ func (filtered FilteredOptions) prices(parts []part.Part) Options {
 	sort.Ints(lows)
 	existing := make(map[int]int, 0)
 	for _, low := range lows {
-		if _, ok := existing[low]; !ok {
-			val := fmt.Sprintf("$%d - $%d", low, low+50)
-			opt := Option{
-				Value:    val,
-				Selected: false,
-			}
-			priceDefinitions.Options = append(priceDefinitions.Options, opt)
-			existing[low] = low
+		if _, ok := existing[low]; ok {
+			continue
 		}
+		val := fmt.Sprintf("$%d - $%d", low, low+50)
+		opt := Option{
+			Value:    val,
+			Selected: false,
+		}
+
+		for _, p := range parts {
+			for _, pr := range p.Pricing {
+				if pr.Type == "List" && (int(pr.Price) >= low && int(pr.Price) <= (low+50)) {
+					opt.Products = append(opt.Products, p.PartId)
+					break
+				}
+			}
+		}
+
+		priceDefinitions.Options = append(priceDefinitions.Options, opt)
+		existing[low] = low
 	}
-	// sortutil.AscByField(priceDefinitions.Options, "Value")
 
 	return priceDefinitions
+}
+
+func (filtered FilteredOptions) category(parts []part.Part) Options {
+	var opt Options
+
+	existing := make(map[string]string, 0)
+	for _, p := range parts {
+		if len(p.Categories) > 0 {
+			opt.Key = "Category"
+			cat := p.Categories[0]
+
+			if _, ok := existing[cat.Title]; !ok {
+				newOption := Option{
+					Value:    cat.Title,
+					Products: []int{p.PartId},
+				}
+				opt.Options = append(opt.Options, newOption)
+				existing[cat.Title] = cat.Title
+				continue
+			}
+
+			for i, o := range opt.Options {
+				if o.Value == cat.Title {
+					prods := opt.Options[i].Products
+					prods = append(prods, p.PartId)
+					sort.Ints(prods)
+					opt.Options[i].Products = prods
+				}
+			}
+		}
+	}
+
+	sortutil.AscByField(opt.Options, "Value")
+
+	return opt
+}
+
+func (filtered FilteredOptions) class(parts []part.Part) Options {
+	opt := Options{
+		Key: "Class",
+	}
+
+	existing := make(map[string]string, 0)
+	for _, p := range parts {
+		if p.PartClass == "" {
+			p.PartClass = "Other"
+		}
+
+		if _, ok := existing[p.PartClass]; !ok {
+			newOption := Option{
+				Value: p.PartClass,
+			}
+			opt.Options = append(opt.Options, newOption)
+			existing[p.PartClass] = p.PartClass
+		}
+
+		for i, o := range opt.Options {
+			if p.PartClass == o.Value {
+				o.Products = append(o.Products, p.PartId)
+				opt.Options[i] = o
+			}
+		}
+	}
+
+	sortutil.AscByField(opt.Options, "Value")
+
+	return opt
 }
