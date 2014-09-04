@@ -53,8 +53,8 @@ func main() {
 	m.Use(middleware.Meddler())
 	m.Use(cors.Allow(&cors.Options{
 		AllowOrigins:     []string{"http://*", "https://*"},
-		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
-		AllowHeaders:     []string{"Origin"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 	}))
@@ -310,7 +310,7 @@ func main() {
 	})
 
 	m.Any("/*", func(w http.ResponseWriter, r *http.Request) {
-		log.Println("hit any")
+		// log.Println("hit any")
 	})
 
 	srv := &http.Server{
