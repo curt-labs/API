@@ -1,6 +1,8 @@
 package customer_new
 
 import (
+	"code.google.com/p/go-uuid/uuid"
+	// "crypto/md5"
 	"code.google.com/p/go.crypto/bcrypt"
 	"database/sql"
 	"errors"
@@ -100,10 +102,27 @@ var (
 							join ApiKeyType as akt on ak.type_id = akt.id
 							where cu.id = ?
 							limit 1`
+
+	insertCustomerUser = `INSERT into CustomerUser(id, name, email, password, customerID, date_added, active, locationID, isSudo, cust_ID, NotCustomer, passwordConverted)
+							VALUES(?,?,?,?,?,NOW(),?,?,?,?,?,1)`
+
+	insertAPIKey = `insert into ApiKey(user_id, type_id, api_key, date_added)
+						values(?,?,UUID(),NOW())`
+
+	getCustomerUserKeysWithoutAuth = `select ak.api_key, akt.type from ApiKey as ak
+										join ApiKeyType as akt on ak.type_id = akt.id
+										where ak.user_id = ? && UPPER(akt.type) = ?`
+	getAPIKeyTypeID = `select id from ApiKeyType where UPPER(type) = UPPER(?) limit 1`
 )
 
 var (
 	AuthError = errors.New("failed to authenticate")
+)
+
+const (
+	AUTH_KEY_TYPE    = "AUTHENTICATION"
+	PUBLIC_KEY_TYPE  = "PUBLIC"
+	PRIVATE_KEY_TYPE = "PRIVATE"
 )
 
 func (u CustomerUser) UserAuthentication(password string) (cust Customer, err error) {
@@ -593,6 +612,117 @@ func GetCustomerUserById(id string) (u CustomerUser, err error) {
 		return
 	}
 	return
+}
+
+//Create CustomerUser
+func (cu *CustomerUser) Register(pass string, customerID int, isActive int, locationID int, isSudo int, cust_ID int, notCustomer int) (*CustomerUser, error) {
+
+	encryptPass, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
+	UserId := uuid.NewRandom()
+	if err != nil {
+		return nil, errors.New("Failed to generate UUID.")
+	}
+
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+
+	stmt, err := tx.Prepare(insertCustomerUser)
+	if err != nil {
+		return nil, err
+	}
+	_, err = stmt.Exec(UserId.String(), cu.Name, cu.Email, encryptPass, customerID, isActive, locationID, isSudo, cust_ID, notCustomer)
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+	tx.Commit()
+	cu.Id = UserId.String() // needs to be set on the customer user object in order to generate the keys
+
+	// then create API keys for the user
+	pubChan := make(chan int)
+	privChan := make(chan int)
+	authChan := make(chan int)
+
+	// Public key:
+	go func() {
+		cu.generateAPIKey(PUBLIC_KEY_TYPE)
+		pubChan <- 1
+	}()
+
+	// Private key:
+	go func() {
+		cu.generateAPIKey(PRIVATE_KEY_TYPE)
+		privChan <- 1
+	}()
+
+	// Auth Key:
+	go func() {
+		cu.generateAPIKey(AUTH_KEY_TYPE)
+		authChan <- 1
+	}()
+	<-pubChan
+	<-privChan
+	<-authChan
+
+	return cu, nil
+}
+
+func (cu *CustomerUser) generateAPIKey(keyType string) (string, error) {
+
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return "", err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+
+	stmt, err := tx.Prepare(insertAPIKey)
+	if err != nil {
+		return "", err
+	}
+
+	typeID, err := getAPIKeyTypeReference(keyType)
+	if err != nil {
+		return "", err
+	}
+
+	_, err = stmt.Exec(cu.Id, typeID)
+	if err != nil {
+		tx.Rollback()
+		return "", err
+	}
+	tx.Commit()
+
+	var apiKey string
+	stmt, err = db.Prepare(getCustomerUserKeysWithoutAuth)
+	if err != nil {
+		return "", err
+	}
+	err = stmt.QueryRow(cu.Id, keyType).Scan(&apiKey, &keyType)
+	if err != nil {
+		return "", err
+	}
+	return apiKey, nil
+}
+
+func getAPIKeyTypeReference(keyType string) (string, error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return "", err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(getAPIKeyTypeID)
+	var apiKeyTypeId string
+	err = stmt.QueryRow(keyType).Scan(apiKeyTypeId)
+	if err != nil {
+		return uuid.NIL.String(), errors.New("failed to retrieve auth type")
+	}
+	return apiKeyTypeId, nil
 }
 
 type ApiRequest struct {
