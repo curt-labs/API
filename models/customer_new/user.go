@@ -106,8 +106,8 @@ var (
 	insertCustomerUser = `INSERT into CustomerUser(id, name, email, password, customerID, date_added, active, locationID, isSudo, cust_ID, NotCustomer, passwordConverted)
 							VALUES(?,?,?,?,?,NOW(),?,?,?,?,?,1)`
 
-	insertAPIKey = `insert into ApiKey(user_id, type_id, api_key, date_added)
-						values(?,?,UUID(),NOW())`
+	insertAPIKey = `insert into ApiKey(id, user_id, type_id, api_key, date_added)
+						values(UUID(),?,?,UUID(),NOW())` //DB schema does not auto increment table id
 
 	getCustomerUserKeysWithoutAuth = `select ak.api_key, akt.type from ApiKey as ak
 										join ApiKeyType as akt on ak.type_id = akt.id
@@ -641,7 +641,6 @@ func (cu *CustomerUser) Register(pass string, customerID int, isActive int, loca
 	}
 	tx.Commit()
 	cu.Id = UserId.String() // needs to be set on the customer user object in order to generate the keys
-
 	// then create API keys for the user
 	pubChan := make(chan int)
 	privChan := make(chan int)
@@ -689,7 +688,6 @@ func (cu *CustomerUser) generateAPIKey(keyType string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
 	_, err = stmt.Exec(cu.Id, typeID)
 	if err != nil {
 		tx.Rollback()
@@ -702,6 +700,7 @@ func (cu *CustomerUser) generateAPIKey(keyType string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	err = stmt.QueryRow(cu.Id, keyType).Scan(&apiKey, &keyType)
 	if err != nil {
 		return "", err
@@ -715,10 +714,9 @@ func getAPIKeyTypeReference(keyType string) (string, error) {
 		return "", err
 	}
 	defer db.Close()
-
 	stmt, err := db.Prepare(getAPIKeyTypeID)
 	var apiKeyTypeId string
-	err = stmt.QueryRow(keyType).Scan(apiKeyTypeId)
+	err = stmt.QueryRow(keyType).Scan(&apiKeyTypeId)
 	if err != nil {
 		return uuid.NIL.String(), errors.New("failed to retrieve auth type")
 	}
