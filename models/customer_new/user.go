@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/api"
+	"github.com/curt-labs/GoAPI/helpers/conversions"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
@@ -235,29 +236,29 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 	if err != nil {
 		return c, err
 	}
-	c.Latitude, err = byteToFloat(lat)
-	c.Longitude, err = byteToFloat(lon)
-	c.SearchUrl, err = byteToUrl(url)
-	c.Logo, err = byteToUrl(logo)
-	c.Website, err = byteToUrl(web)
-	c.DealerType.MapIcon.MapIcon, err = byteToUrl(icon)
-	c.DealerType.MapIcon.MapIconShadow, err = byteToUrl(shadow)
-	c.PostalCode, err = byteToString(postalCode)
-	c.State.Id, err = byteToInt(stateId)
-	c.State.State, err = byteToString(state)
-	c.State.Abbreviation, err = byteToString(stateAbbr)
-	c.State.Country.Id, err = byteToInt(countryId)
-	c.State.Country.Country, err = byteToString(country)
-	c.State.Country.Abbreviation, err = byteToString(countryAbbr)
-	c.DealerType.MapIcon.Id, err = byteToInt(mapIconId)
-	c.DealerType.MapIcon.MapIcon, err = byteToUrl(icon)
-	c.DealerType.MapIcon.MapIconShadow, err = byteToUrl(shadow)
-	c.MapixCode, err = byteToString(mapixCode)
-	c.MapixDescription, err = byteToString(mapixDesc)
-	c.SalesRepresentative, err = byteToString(rep)
-	c.SalesRepresentativeCode, err = byteToString(repCode)
+	c.Latitude, err = conversions.ByteToFloat(lat)
+	c.Longitude, err = conversions.ByteToFloat(lon)
+	c.SearchUrl, err = conversions.ByteToUrl(url)
+	c.Logo, err = conversions.ByteToUrl(logo)
+	c.Website, err = conversions.ByteToUrl(web)
+	c.DealerType.MapIcon.MapIcon, err = conversions.ByteToUrl(icon)
+	c.DealerType.MapIcon.MapIconShadow, err = conversions.ByteToUrl(shadow)
+	c.PostalCode, err = conversions.ByteToString(postalCode)
+	c.State.Id, err = conversions.ByteToInt(stateId)
+	c.State.State, err = conversions.ByteToString(state)
+	c.State.Abbreviation, err = conversions.ByteToString(stateAbbr)
+	c.State.Country.Id, err = conversions.ByteToInt(countryId)
+	c.State.Country.Country, err = conversions.ByteToString(country)
+	c.State.Country.Abbreviation, err = conversions.ByteToString(countryAbbr)
+	c.DealerType.MapIcon.Id, err = conversions.ByteToInt(mapIconId)
+	c.DealerType.MapIcon.MapIcon, err = conversions.ByteToUrl(icon)
+	c.DealerType.MapIcon.MapIconShadow, err = conversions.ByteToUrl(shadow)
+	c.MapixCode, err = conversions.ByteToString(mapixCode)
+	c.MapixDescription, err = conversions.ByteToString(mapixDesc)
+	c.SalesRepresentative, err = conversions.ByteToString(rep)
+	c.SalesRepresentativeCode, err = conversions.ByteToString(repCode)
 
-	parentInt, err := byteToInt(parentId)
+	parentInt, err := conversions.ByteToInt(parentId)
 	if err != nil {
 		return c, err
 	}

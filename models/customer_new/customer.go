@@ -3,6 +3,7 @@ package customer_new
 import (
 	"database/sql"
 	"github.com/curt-labs/GoAPI/helpers/api"
+	"github.com/curt-labs/GoAPI/helpers/conversions"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	// "github.com/curt-labs/GoAPI/helpers/redis"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
@@ -392,30 +393,30 @@ func (c *Customer) Basics() error {
 	if err != nil {
 		return err
 	}
-	c.Latitude, err = byteToFloat(lat)
-	c.Longitude, err = byteToFloat(lon)
-	c.SearchUrl, err = byteToUrl(url)
-	c.Logo, err = byteToUrl(logo)
-	c.Website, err = byteToUrl(web)
-	c.DealerType.MapIcon.MapIcon, err = byteToUrl(icon)
-	c.DealerType.MapIcon.MapIconShadow, err = byteToUrl(shadow)
+	c.Latitude, err = conversions.ByteToFloat(lat)
+	c.Longitude, err = conversions.ByteToFloat(lon)
+	c.SearchUrl, err = conversions.ByteToUrl(url)
+	c.Logo, err = conversions.ByteToUrl(logo)
+	c.Website, err = conversions.ByteToUrl(web)
+	c.DealerType.MapIcon.MapIcon, err = conversions.ByteToUrl(icon)
+	c.DealerType.MapIcon.MapIconShadow, err = conversions.ByteToUrl(shadow)
 
-	c.PostalCode, err = byteToString(postalCode)
-	c.State.Id, err = byteToInt(stateId)
-	c.State.State, err = byteToString(state)
-	c.State.Abbreviation, err = byteToString(stateAbbr)
-	c.State.Country.Id, err = byteToInt(countryId)
-	c.State.Country.Country, err = byteToString(country)
-	c.State.Country.Abbreviation, err = byteToString(countryAbbr)
-	c.DealerType.MapIcon.Id, err = byteToInt(mapIconId)
-	c.DealerType.MapIcon.MapIcon, err = byteToUrl(icon)
-	c.DealerType.MapIcon.MapIconShadow, err = byteToUrl(shadow)
-	c.MapixCode, err = byteToString(mapixCode)
-	c.MapixDescription, err = byteToString(mapixDesc)
-	c.SalesRepresentative, err = byteToString(rep)
-	c.SalesRepresentativeCode, err = byteToString(repCode)
+	c.PostalCode, err = conversions.ByteToString(postalCode)
+	c.State.Id, err = conversions.ByteToInt(stateId)
+	c.State.State, err = conversions.ByteToString(state)
+	c.State.Abbreviation, err = conversions.ByteToString(stateAbbr)
+	c.State.Country.Id, err = conversions.ByteToInt(countryId)
+	c.State.Country.Country, err = conversions.ByteToString(country)
+	c.State.Country.Abbreviation, err = conversions.ByteToString(countryAbbr)
+	c.DealerType.MapIcon.Id, err = conversions.ByteToInt(mapIconId)
+	c.DealerType.MapIcon.MapIcon, err = conversions.ByteToUrl(icon)
+	c.DealerType.MapIcon.MapIconShadow, err = conversions.ByteToUrl(shadow)
+	c.MapixCode, err = conversions.ByteToString(mapixCode)
+	c.MapixDescription, err = conversions.ByteToString(mapixDesc)
+	c.SalesRepresentative, err = conversions.ByteToString(rep)
+	c.SalesRepresentativeCode, err = conversions.ByteToString(repCode)
 
-	parentInt, err := byteToInt(parentId)
+	parentInt, err := conversions.ByteToInt(parentId)
 	if err != nil {
 		return err
 	}
@@ -611,22 +612,22 @@ func GetEtailers() (dealers []Customer, err error) {
 			return dealers, err
 		}
 
-		c.Latitude, err = byteToFloat(lat)
-		c.Longitude, err = byteToFloat(lon)
-		c.SearchUrl, err = byteToUrl(url)
-		c.Logo, err = byteToUrl(logo)
-		c.Website, err = byteToUrl(web)
-		c.DealerType.MapIcon.MapIcon, err = byteToUrl(icon)
-		c.DealerType.MapIcon.MapIconShadow, err = byteToUrl(shadow)
-		c.MapixCode, err = byteToString(mapixCode)
-		c.MapixDescription, err = byteToString(mapixDesc)
-		c.SalesRepresentative, err = byteToString(rep)
-		c.SalesRepresentativeCode, err = byteToString(repCode)
+		c.Latitude, err = conversions.ByteToFloat(lat)
+		c.Longitude, err = conversions.ByteToFloat(lon)
+		c.SearchUrl, err = conversions.ByteToUrl(url)
+		c.Logo, err = conversions.ByteToUrl(logo)
+		c.Website, err = conversions.ByteToUrl(web)
+		c.DealerType.MapIcon.MapIcon, err = conversions.ByteToUrl(icon)
+		c.DealerType.MapIcon.MapIconShadow, err = conversions.ByteToUrl(shadow)
+		c.MapixCode, err = conversions.ByteToString(mapixCode)
+		c.MapixDescription, err = conversions.ByteToString(mapixDesc)
+		c.SalesRepresentative, err = conversions.ByteToString(rep)
+		c.SalesRepresentativeCode, err = conversions.ByteToString(repCode)
 		if err != nil {
 			return dealers, err
 		}
 		err = c.GetLocations()
-		parentInt, err := byteToInt(parentId)
+		parentInt, err := conversions.ByteToInt(parentId)
 		if err != nil {
 			return dealers, err
 		}
@@ -790,13 +791,13 @@ func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, er
 			&cust.Parent.Id,
 		)
 
-		cust.Latitude, err = byteToFloat(lat)
-		cust.Longitude, err = byteToFloat(lon)
-		cust.SearchUrl, err = byteToUrl(ur)
-		cust.Logo, err = byteToUrl(logo)
-		cust.Website, err = byteToUrl(web)
-		cust.DealerType.MapIcon.MapIcon, err = byteToUrl(icon)
-		cust.DealerType.MapIcon.MapIconShadow, err = byteToUrl(shadow)
+		cust.Latitude, err = conversions.ByteToFloat(lat)
+		cust.Longitude, err = conversions.ByteToFloat(lon)
+		cust.SearchUrl, err = conversions.ByteToUrl(ur)
+		cust.Logo, err = conversions.ByteToUrl(logo)
+		cust.Website, err = conversions.ByteToUrl(web)
+		cust.DealerType.MapIcon.MapIcon, err = conversions.ByteToUrl(icon)
+		cust.DealerType.MapIcon.MapIconShadow, err = conversions.ByteToUrl(shadow)
 		if err != nil {
 			return dealers, err
 		}
@@ -968,8 +969,8 @@ func GetLocalDealerTypes() (graphics []MapGraphics, err error) {
 		if err != nil {
 			return graphics, err
 		}
-		g.DealerType.MapIcon.MapIcon, err = byteToUrl(icon)
-		g.DealerType.MapIcon.MapIconShadow, err = byteToUrl(shadow)
+		g.DealerType.MapIcon.MapIcon, err = conversions.ByteToUrl(icon)
+		g.DealerType.MapIcon.MapIconShadow, err = conversions.ByteToUrl(shadow)
 		graphics = append(graphics, g)
 	}
 	// go redis.Setex(redis_key, graphics, 86400)
@@ -1048,24 +1049,24 @@ func GetWhereToBuyDealers() (customers []Customer, err error) {
 			return customers, err
 		}
 
-		c.Latitude, err = byteToFloat(lat)
-		c.Longitude, err = byteToFloat(lon)
-		c.SearchUrl, err = byteToUrl(ur)
-		c.Logo, err = byteToUrl(logo)
-		c.Website, err = byteToUrl(web)
-		c.PostalCode, err = byteToString(postalCode)
-		c.State.Id, err = byteToInt(stateId)
-		c.State.State, err = byteToString(state)
-		c.State.Abbreviation, err = byteToString(stateAbbr)
-		c.DealerType.MapIcon.Id, err = byteToInt(mapIconId)
-		c.DealerType.MapIcon.MapIcon, err = byteToUrl(icon)
-		c.DealerType.MapIcon.MapIconShadow, err = byteToUrl(shadow)
-		c.MapixCode, err = byteToString(mapixCode)
-		c.MapixDescription, err = byteToString(mapixDesc)
-		c.SalesRepresentative, err = byteToString(rep)
-		c.SalesRepresentativeCode, err = byteToString(repCode)
+		c.Latitude, err = conversions.ByteToFloat(lat)
+		c.Longitude, err = conversions.ByteToFloat(lon)
+		c.SearchUrl, err = conversions.ByteToUrl(ur)
+		c.Logo, err = conversions.ByteToUrl(logo)
+		c.Website, err = conversions.ByteToUrl(web)
+		c.PostalCode, err = conversions.ByteToString(postalCode)
+		c.State.Id, err = conversions.ByteToInt(stateId)
+		c.State.State, err = conversions.ByteToString(state)
+		c.State.Abbreviation, err = conversions.ByteToString(stateAbbr)
+		c.DealerType.MapIcon.Id, err = conversions.ByteToInt(mapIconId)
+		c.DealerType.MapIcon.MapIcon, err = conversions.ByteToUrl(icon)
+		c.DealerType.MapIcon.MapIconShadow, err = conversions.ByteToUrl(shadow)
+		c.MapixCode, err = conversions.ByteToString(mapixCode)
+		c.MapixDescription, err = conversions.ByteToString(mapixDesc)
+		c.SalesRepresentative, err = conversions.ByteToString(rep)
+		c.SalesRepresentativeCode, err = conversions.ByteToString(repCode)
 		_ = c.GetLocations()
-		parentInt, err := byteToInt(parentId)
+		parentInt, err := conversions.ByteToInt(parentId)
 		if err != nil {
 			return customers, err
 		}
@@ -1131,7 +1132,7 @@ func GetLocationById(id int) (location DealerLocation, err error) {
 			website = eLocal
 		}
 		if website != nil {
-			location.Website, err = byteToUrl(website)
+			location.Website, err = conversions.ByteToUrl(website)
 			if err != nil {
 				return location, err
 			}
@@ -1200,7 +1201,7 @@ func SearchLocations(term string) (locations []DealerLocation, err error) {
 				website = eLocal
 			}
 			if website != nil {
-				location.Website, err = byteToUrl(website)
+				location.Website, err = conversions.ByteToUrl(website)
 				if err != nil {
 					return locations, err
 				}
@@ -1271,7 +1272,7 @@ func SearchLocationsByType(term string) (locations []DealerLocation, err error) 
 				website = eLocal
 			}
 			if website != nil {
-				location.Website, err = byteToUrl(website)
+				location.Website, err = conversions.ByteToUrl(website)
 				if err != nil {
 					return locations, err
 				}
@@ -1355,7 +1356,7 @@ func SearchLocationsByLatLng(loc GeoLocation) (locations []DealerLocation, err e
 				website = eLocal
 			}
 			if website != nil {
-				location.Website, err = byteToUrl(website)
+				location.Website, err = conversions.ByteToUrl(website)
 				if err != nil {
 					return locations, err
 				}
@@ -1364,48 +1365,6 @@ func SearchLocationsByLatLng(loc GeoLocation) (locations []DealerLocation, err e
 		locations = append(locations, location)
 	}
 	return
-}
-
-//Conversion funcs
-func byteToString(input []byte) (string, error) {
-	var err error
-	if input != nil {
-		output := string(input)
-		return output, err
-	}
-	return "", err
-}
-
-func byteToInt(input []byte) (int, error) {
-	var err error
-	if input != nil {
-		temp, err := byteToString(input)
-		output, err := strconv.Atoi(temp)
-		return output, err
-	}
-	return 0, err
-}
-
-func byteToFloat(input []byte) (float64, error) {
-	var err error
-	if input != nil {
-		output, err := strconv.ParseFloat(string(input), 64)
-		return output, err
-	}
-	return 0.0, err
-}
-
-func byteToUrl(input []byte) (url.URL, error) {
-	var err error
-	if input != nil {
-		str := string(input[:])
-		output, err := url.Parse(str)
-		output2 := *output
-		return output2, err
-	}
-	output, err := url.Parse("")
-	output2 := *output
-	return output2, err
 }
 
 func (g *GeoLocation) LatitudeRadians() float64 {
