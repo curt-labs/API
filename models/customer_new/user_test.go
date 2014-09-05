@@ -27,6 +27,16 @@ func TestCustomerUser(t *testing.T) {
 			custUser, err := cu.Register(pass, customerID, isActive, locationID, isSudo, cust_ID, notCustomer)
 			So(custUser, ShouldNotBeNil)
 			So(err, ShouldBeNil)
+			Convey("BindAPIAccess", func() {
+				err = cu.BindApiAccess()
+				So(err, ShouldBeNil)
+				So(len(cu.Keys), ShouldEqual, 3)
+			})
+			Convey("BindLocation", func() {
+				err = cu.BindLocation()
+				So(err, ShouldBeNil)
+				So(cu.Location, ShouldNotBeNil)
+			})
 			Convey("Changing Password", func() {
 				So(cu.Id, ShouldNotBeNil)
 				oldPass := "test"
@@ -39,10 +49,17 @@ func TestCustomerUser(t *testing.T) {
 					cust, err := cu.UserAuthentication(password)
 					So(err, ShouldBeNil)
 					So(cust, ShouldNotBeNil)
-					Convey("Deleting CustomerUser", func() { //Watch - seems to delete; is it true?
-						err = cu.Delete()
+					Convey("Reset Password", func() {
+						newPass, err := cu.ResetPass(cu.Id)
 						So(err, ShouldBeNil)
+						So(newPass, ShouldNotEqual, password)
+
+						Convey("Deleting CustomerUser", func() { //Watch - seems to delete; is it true?
+							err = cu.Delete()
+							So(err, ShouldBeNil)
+						})
 					})
+
 				})
 			})
 		})

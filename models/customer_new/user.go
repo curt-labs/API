@@ -120,6 +120,19 @@ var (
 	SetCustomerUserPassword       = `update CustomerUser set password = ?, passwordConverted = 1 WHERE email = ?`
 	deleteCustomerUser            = `DELETE FROM CustomerUser WHERE id = ?`
 	deleteAPIkey                  = `DELETE FROM ApiKey WHERE user_id = ? AND type_id = ?`
+	getCustomerUserKeysWithAuth   = `select ak.api_key, akt.type from ApiKey as ak
+										join ApiKeyType as akt on ak.type_id = akt.id
+										where ak.user_id = ? && (UPPER(akt.type) = ? || UPPER(akt.type) = ? || UPPER(akt.type) = ?)`
+	getCustomerUserLocation = `select cl.locationID, cl.name, cl.address, cl.city,
+								s.Id, s.state,s.abbr, cun.Id, cun.name as countryName, cun.abbr as countryAbbr,
+								cl.email, cl.phone, cl.fax, cl.latitude, cl.longitude,
+								cl.cust_id, cl.contact_person, cl.isprimary, cl.postalCode,
+								cl.ShippingDefault from CustomerLocations as cl
+								join CustomerUser as cu on cl.locationID = cu.locationID
+								left join States as s on cl.stateID = s.stateID
+								left join Country as cun on s.countryID = cun.countryID
+								where cu.id = ?
+								limit 1`
 )
 
 var (
@@ -732,7 +745,7 @@ func getAPIKeyTypeReference(keyType string) (string, error) {
 	return apiKeyTypeId, nil
 }
 
-func (cu *CustomerUser) ResetPass(custID int) (string, error) {
+func (cu *CustomerUser) ResetPass(custID string) (string, error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return "", err
@@ -834,7 +847,6 @@ func (cu *CustomerUser) Delete() error {
 }
 
 func (cu *CustomerUser) deleteApiKey(keyType string) error {
-
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -858,6 +870,79 @@ func (cu *CustomerUser) deleteApiKey(keyType string) error {
 	}
 	tx.Commit()
 
+	return nil
+}
+
+func (cu *CustomerUser) BindApiAccess() error {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(getCustomerUserKeysWithAuth)
+	if err != nil {
+		return err
+	}
+
+	var keys []ApiCredentials
+
+	res, err := stmt.Query(cu.Id, PUBLIC_KEY_TYPE, PRIVATE_KEY_TYPE, AUTH_KEY_TYPE)
+	for res.Next() {
+		var k ApiCredentials
+		err = res.Scan(&k.Key, &k.Type)
+		if err != nil {
+			return err
+		}
+		keys = append(keys, k)
+	}
+	cu.Keys = keys
+	return nil
+}
+
+func (cu *CustomerUser) BindLocation() error {
+	// select cl.locationID, cl.name, cl.address, cl.city,
+	// 							s.abbr, s.state, cun.name as countryName, cun.abbr as countryAbbr,
+	// 							cl.email, cl.phone, cl.fax, cl.latitude, cl.longitude,
+	// 							cl.cust_id, cl.contact_person, cl.isprimary, cl.postalCode,
+	// 							cl.ShippingDefault from CustomerLocations as cl
+
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(getCustomerUserLocation)
+	if err != nil {
+		return err
+	}
+	err = stmt.QueryRow(cu.Id).Scan(
+		&cu.Location.Id,
+		&cu.Location.Name,
+		&cu.Location.Address,
+		&cu.Location.City,
+		&cu.Location.State.Id,
+		&cu.Location.State.State,
+		&cu.Location.State.Abbreviation,
+		&cu.Location.State.Country.Id,
+		&cu.Location.State.Country.Country,
+		&cu.Location.State.Country.Abbreviation,
+		&cu.Location.Email,
+		&cu.Location.Phone,
+		&cu.Location.Fax,
+		&cu.Location.Latitude,
+		&cu.Location.Longitude,
+		&cu.Location.CustomerId,
+		&cu.Location.ContactPerson,
+		&cu.Location.IsPrimary,
+		&cu.Location.PostalCode,
+		&cu.Location.ShippingDefault,
+	)
+
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
