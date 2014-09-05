@@ -367,8 +367,8 @@ func TestCustomerModel(t *testing.T) {
 			So(err, ShouldBeNil)
 		})
 		Convey("GetCustomerUserFromId()", func() {
-			user, err := GetCustomerUserById(users[0].Id)
-			So(user, ShouldNotBeNil)
+			err = users[0].Get()
+			So(users[0], ShouldNotBeNil)
 			So(err, ShouldBeNil)
 		})
 	})

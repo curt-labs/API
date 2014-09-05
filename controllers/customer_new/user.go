@@ -10,6 +10,28 @@ import (
 	"strconv"
 )
 
+func GetUserById(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+	var err error
+	id := params["id"]
+	if id == "" {
+		id = r.FormValue("id")
+		if id == "" {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return ""
+		}
+	}
+
+	var user customer_new.CustomerUser
+	user.Id = id
+
+	err = user.Get()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return ""
+	}
+	return encoding.Must(enc.Encode(user))
+}
+
 func ResetPassword(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 	email := r.FormValue("email")
 	custID := r.FormValue("customerID")
@@ -46,6 +68,7 @@ func ChangePassword(w http.ResponseWriter, r *http.Request, enc encoding.Encoder
 	return encoding.Must(enc.Encode(resp))
 }
 
+//a/k/a CreateUser
 func RegisterUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 	name := r.FormValue("name")
 	email := r.FormValue("email")

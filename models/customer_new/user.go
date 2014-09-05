@@ -117,7 +117,7 @@ var (
 										where ak.user_id = ? && UPPER(akt.type) = ?`
 	getAPIKeyTypeID               = `select id from ApiKeyType where UPPER(type) = UPPER(?) limit 1`
 	updateCustomerUserPassByEmail = `update CustomerUser set password = ?, passwordConverted = 1 WHERE email = ? AND customerID = ?`
-	SetCustomerUserPassword       = `update CustomerUser set password = ?, passwordConverted = 1 WHERE email = ?`
+	setCustomerUserPassword       = `update CustomerUser set password = ?, passwordConverted = 1 WHERE email = ?`
 	deleteCustomerUser            = `DELETE FROM CustomerUser WHERE id = ?`
 	deleteAPIkey                  = `DELETE FROM ApiKey WHERE user_id = ? AND type_id = ?`
 	getCustomerUserKeysWithAuth   = `select ak.api_key, akt.type from ApiKey as ak
@@ -313,7 +313,6 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 	return
 }
 
-//TODO - does this method work the way the original author wanted it? Seems to reset a password when there is not a match. Odd.
 func (u *CustomerUser) AuthenticateUser(pass string) error {
 
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -420,18 +419,17 @@ func AuthenticateUserByKey(key string) (u CustomerUser, err error) {
 	)
 	if err != nil {
 		return u, AuthError
-		// err = errors.New("Invalid password")
 	}
 
-	// DISABLED: See RenewAuthentication() below
-	//
-	// resetChan := make(chan int)
-	// go func() {
-	// 	if resetErr := u.RenewAuthentication(); resetErr != nil {
-	// 		err = resetErr
-	// 	}
-	// 	resetChan <- 1
-	// }()
+	resetChan := make(chan int)
+	go func() {
+		if resetErr := u.ResetAuthentication(); resetErr != nil {
+			err = resetErr
+		}
+		resetChan <- 1
+	}()
+
+	<-resetChan
 	return
 }
 
@@ -600,40 +598,6 @@ func GetCustomerUserFromKey(key string) (u CustomerUser, err error) {
 	if err != nil {
 		err = errors.New("Invalid key")
 		return
-	}
-	return
-}
-
-func GetCustomerUserById(id string) (u CustomerUser, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return u, err
-	}
-	defer db.Close()
-
-	stmt, err := db.Prepare(customerUserFromId)
-	if err != nil {
-		return u, err
-	}
-	defer stmt.Close()
-
-	var dbPass, custId, customerId, passConversion string
-	err = stmt.QueryRow(id).Scan(
-		&u.Id,
-		&u.Name,
-		&u.Email,
-		&dbPass, //Not Used
-		&custId, //Not User
-		&u.DateAdded,
-		&u.Active,
-		&u.Location.Id,
-		&u.Sudo,
-		&customerId, //Not Used
-		&u.Current,
-		&passConversion, //Not Used
-	)
-	if err != nil {
-		return u, err
 	}
 	return
 }
@@ -851,7 +815,7 @@ func (cu *CustomerUser) ChangePass(oldPass, newPass string, custID int) (string,
 	}
 	defer db.Close()
 	tx, err := db.Begin()
-	stmt, err := tx.Prepare(SetCustomerUserPassword)
+	stmt, err := tx.Prepare(setCustomerUserPassword)
 	encryptNewPass, err := bcrypt.GenerateFromPassword([]byte(newPass), bcrypt.DefaultCost)
 
 	err = cu.AuthenticateUser(oldPass)

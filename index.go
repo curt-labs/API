@@ -215,7 +215,8 @@ func main() {
 		m.Group("/customer", func(r martini.Router) {
 			// r.Get("", internalCors, customer_ctlr_new.GetCustomer)
 			r.Post("", internalCors, customer_ctlr_new.GetCustomer)
-			r.Post("/user", customer_ctlr.GetUser)
+			r.Post("/user", customer_ctlr_new.GetUser)
+			r.Get("/user/:id", customer_ctlr_new.GetUserById)
 			r.Get("/users", customer_ctlr_new.GetUsers)
 			r.Post("/users", customer_ctlr_new.GetUsers)
 			r.Post("/user/register", customer_ctlr_new.RegisterUser)
