@@ -9,6 +9,7 @@ import (
 	// "math/rand"
 	// "strings"
 	"testing"
+
 	// "time"
 )
 
@@ -37,6 +38,16 @@ func TestCustomerUser(t *testing.T) {
 				So(err, ShouldBeNil)
 				So(cu.Location, ShouldNotBeNil)
 			})
+			Convey("Update CustomerUser", func() {
+				cu.Name = "Peanut"
+				cu.Email = "tim@bob.com"
+				cu.Active = false
+				cu.Location.Id = 2
+				cu.Sudo = false
+				cu.Current = true
+				err = cu.UpdateCustomerUser()
+				So(err, ShouldBeNil)
+			})
 			Convey("Changing Password", func() {
 				So(cu.Id, ShouldNotBeNil)
 				oldPass := "test"
@@ -55,7 +66,12 @@ func TestCustomerUser(t *testing.T) {
 						So(newPass, ShouldNotEqual, password)
 
 						Convey("Deleting CustomerUser", func() { //Watch - seems to delete; is it true?
+							t.Log("cuid", cu.Id)
 							err = cu.Delete()
+							So(err, ShouldBeNil)
+						})
+						Convey("Delete CustUsers by CustomerID", func() {
+							err = DeleteCustomerUsersByCustomerID(customerID)
 							So(err, ShouldBeNil)
 						})
 					})

@@ -124,7 +124,8 @@ var (
 										join ApiKeyType as akt on ak.type_id = akt.id
 										where ak.user_id = ? && (UPPER(akt.type) = ? || UPPER(akt.type) = ? || UPPER(akt.type) = ?)`
 	getCustomerUserLocation = `select cl.locationID, cl.name, cl.address, cl.city,
-								s.Id, s.state,s.abbr, cun.Id, cun.name as countryName, cun.abbr as countryAbbr,
+								s.stateID, s.state,
+								s.abbr, cun.countryID, cun.name as countryName, cun.abbr as countryAbbr,
 								cl.email, cl.phone, cl.fax, cl.latitude, cl.longitude,
 								cl.cust_id, cl.contact_person, cl.isprimary, cl.postalCode,
 								cl.ShippingDefault from CustomerLocations as cl
@@ -133,6 +134,9 @@ var (
 								left join Country as cun on s.countryID = cun.countryID
 								where cu.id = ?
 								limit 1`
+
+	updateCustomerUser   = `UPDATE CustomerUser SET name = ?, email = ?, active = ?, locationID = ?, isSudo = ?, NotCustomer = ? WHERE id = ?`
+	getUsersByCustomerID = `SELECT id FROM CustomerUser WHERE customerID = ?`
 )
 
 var (
@@ -399,7 +403,7 @@ func AuthenticateUserByKey(key string) (u CustomerUser, err error) {
 		Timer,
 	}
 	var dbPass, custId, customerId string
-	var passConversion, notCustomer []byte //bools
+	var passConversion []byte //bools
 	err = stmt.QueryRow(params...).Scan(
 		&u.Id,
 		&u.Name,
@@ -410,8 +414,8 @@ func AuthenticateUserByKey(key string) (u CustomerUser, err error) {
 		&u.Active,
 		&u.Location.Id,
 		&u.Sudo,
-		&custId,         //Not Used
-		&notCustomer,    //Not Used
+		&custId, //Not Used
+		&u.Current,
 		&passConversion, //Not Used
 	)
 	if err != nil {
@@ -578,7 +582,7 @@ func GetCustomerUserFromKey(key string) (u CustomerUser, err error) {
 		api_helpers.AUTH_KEY_TYPE,
 		key,
 	}
-	var dbPass, custId, notCustomer, passConversion, customerId string
+	var dbPass, custId, passConversion, customerId string
 	err = stmt.QueryRow(params...).Scan(
 		&u.Id,
 		&u.Name,
@@ -590,7 +594,7 @@ func GetCustomerUserFromKey(key string) (u CustomerUser, err error) {
 		&u.Location.Id,
 		&u.Sudo,
 		&customerId,     //Not Used
-		&notCustomer,    //Not Used
+		&u.Current,      //Not Used
 		&passConversion, //Not Used
 	)
 	if err != nil {
@@ -613,7 +617,7 @@ func GetCustomerUserById(id string) (u CustomerUser, err error) {
 	}
 	defer stmt.Close()
 
-	var dbPass, custId, customerId, notCustomer, passConversion string
+	var dbPass, custId, customerId, passConversion string
 	err = stmt.QueryRow(id).Scan(
 		&u.Id,
 		&u.Name,
@@ -624,16 +628,78 @@ func GetCustomerUserById(id string) (u CustomerUser, err error) {
 		&u.Active,
 		&u.Location.Id,
 		&u.Sudo,
-		&customerId,     //Not Used
-		&notCustomer,    //Not Used
+		&customerId, //Not Used
+		&u.Current,
 		&passConversion, //Not Used
 	)
 	if err != nil {
 		return u, err
-		// err = errors.New("Invalid key")
-		return
 	}
 	return
+}
+
+func (cu *CustomerUser) Get() error {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(customerUserFromId)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	var dbPass, custId, customerId, passConversion string
+	err = stmt.QueryRow(cu.Id).Scan(
+		&cu.Id,
+		&cu.Name,
+		&cu.Email,
+		&dbPass, //Not Used
+		&custId, //Not User
+		&cu.DateAdded,
+		&cu.Active,
+		&cu.Location.Id,
+		&cu.Sudo,
+		&customerId, //Not Used
+		&cu.Current,
+		&passConversion, //Not Used
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+//Update customerUser
+func (cu *CustomerUser) UpdateCustomerUser() error {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+
+	stmt, err := tx.Prepare(updateCustomerUser)
+	if err != nil {
+		return err
+	}
+	_, err = stmt.Exec(
+		cu.Name,
+		cu.Email,
+		cu.Active,
+		cu.Location.Id,
+		cu.Sudo,
+		cu.Current,
+		cu.Id,
+	)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+	return nil
 }
 
 //Create CustomerUser
@@ -803,6 +869,7 @@ func (cu *CustomerUser) ChangePass(oldPass, newPass string, custID int) (string,
 }
 
 func (cu *CustomerUser) Delete() error {
+
 	//delete api keys
 	pubChan := make(chan int)
 	privChan := make(chan int)
@@ -838,12 +905,43 @@ func (cu *CustomerUser) Delete() error {
 	tx, err := db.Begin()
 	stmt, err := tx.Prepare(deleteCustomerUser)
 	_, err = stmt.Exec(cu.Id)
+
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 	tx.Commit()
 	return nil
+}
+
+//Takes UUID CustomerID; deletes all CustomerUser with that CustID and their API Keys
+func DeleteCustomerUsersByCustomerID(customerID int) error {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(getUsersByCustomerID)
+	if err != nil {
+		return err
+	}
+	res, err := stmt.Query(customerID)
+	if err != nil {
+		return err
+	}
+	for res.Next() {
+		var tempCustUser CustomerUser
+		err = res.Scan(&tempCustUser.Id)
+		if err != nil {
+			return err
+		}
+		err = tempCustUser.Delete()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+
 }
 
 func (cu *CustomerUser) deleteApiKey(keyType string) error {
@@ -901,12 +999,6 @@ func (cu *CustomerUser) BindApiAccess() error {
 }
 
 func (cu *CustomerUser) BindLocation() error {
-	// select cl.locationID, cl.name, cl.address, cl.city,
-	// 							s.abbr, s.state, cun.name as countryName, cun.abbr as countryAbbr,
-	// 							cl.email, cl.phone, cl.fax, cl.latitude, cl.longitude,
-	// 							cl.cust_id, cl.contact_person, cl.isprimary, cl.postalCode,
-	// 							cl.ShippingDefault from CustomerLocations as cl
-
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err

@@ -12,12 +12,12 @@ import (
 
 func ResetPassword(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 	email := r.FormValue("email")
-	custID, err := strconv.Atoi(r.FormValue("customerID"))
+	custID := r.FormValue("customerID")
 	if email == "" {
-		log.Print("Email err")
+		log.Print("No email provided.")
 	}
-	if custID == 0 {
-		log.Print("custid is zero")
+	if custID == "" {
+		log.Print("customerID is null.")
 	}
 
 	var user customer_new.CustomerUser
@@ -74,6 +74,70 @@ func DeleteCustomerUser(w http.ResponseWriter, r *http.Request, enc encoding.Enc
 	var cu customer_new.CustomerUser
 	cu.Id = id
 	err := cu.Delete()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(cu))
+}
+func DeleteCustomerUsersByCustomerID(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+	customerID, err := strconv.Atoi(params["id"])
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return ""
+	}
+
+	err = customer_new.DeleteCustomerUsersByCustomerID(customerID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode("Success."))
+}
+
+func UpdateCustomerUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+	var err error
+	id := params["id"]
+	if id == "" {
+		id = r.FormValue("id")
+		if id == "" {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return ""
+		}
+	}
+	name := r.FormValue("name")
+	email := r.FormValue("email")
+	isActive := r.FormValue("isActive")
+	locationID := r.FormValue("locationID")
+	isSudo := r.FormValue("isSudo")
+	notCustomer := r.FormValue("notCustomer")
+
+	var cu customer_new.CustomerUser
+	cu.Id = id
+	err = cu.Get()
+
+	if name != "" {
+		cu.Name = name
+	}
+	if email != "" {
+		cu.Email = email
+	}
+	if isActive != "" {
+		cu.Active, err = strconv.ParseBool(isActive)
+	}
+	if locationID != "" {
+		cu.Location.Id, err = strconv.Atoi(locationID)
+	}
+	if isSudo != "" {
+		cu.Sudo, err = strconv.ParseBool(isSudo)
+	}
+	if notCustomer != "" {
+		cu.Current, err = strconv.ParseBool(notCustomer)
+	}
+
+	err = cu.UpdateCustomerUser()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return ""
