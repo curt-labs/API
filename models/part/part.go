@@ -46,7 +46,7 @@ var (
 				from Content as con
 				join ContentBridge as cb on con.contentID = cb.contentID
 				join ContentType as ct on con.cTypeID = ct.cTypeID
-				where cb.partID = ?
+				where cb.partID = ? && LOWER(ct.type) != 'appguide'
 				order by ct.type`
 	partInstallSheetStmt = `select c.text from ContentBridge as cb
 					join Content as c on cb.contentID = c.contentID
