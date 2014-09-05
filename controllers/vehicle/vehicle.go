@@ -26,6 +26,7 @@ func Query(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string 
 		l.CustomerKey = qs.Get("key")
 	} else if r.FormValue("key") != "" {
 		l.CustomerKey = r.FormValue("key")
+		delete(r.Form, "key")
 	} else {
 		l.CustomerKey = r.Header.Get("key")
 	}
