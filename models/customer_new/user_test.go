@@ -70,13 +70,15 @@ func TestCustomerUser(t *testing.T) {
 							err = cu.Delete()
 							So(err, ShouldBeNil)
 						})
-						Convey("Delete CustUsers by CustomerID", func() {
-							err = DeleteCustomerUsersByCustomerID(customerID)
-							So(err, ShouldBeNil)
-						})
+
 					})
 
 				})
+			})
+			Convey("Delete CustUsers by CustomerID", func() {
+				t.Log(customerID)
+				err = DeleteCustomerUsersByCustomerID(customerID)
+				So(err, ShouldBeNil)
 			})
 		})
 
