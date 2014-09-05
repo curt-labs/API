@@ -1,8 +1,8 @@
 package customer_new
 
 import (
-	// "database/sql"
-	// "github.com/curt-labs/GoAPI/helpers/database"
+	"database/sql"
+	"github.com/curt-labs/GoAPI/helpers/database"
 	// "github.com/curt-labs/GoAPI/models/customer"
 	_ "github.com/go-sql-driver/mysql"
 	. "github.com/smartystreets/goconvey/convey"
@@ -12,6 +12,36 @@ import (
 
 	// "time"
 )
+
+func getRandomKey() string {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return ""
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare("SELECT api_key FROM ApiKey WHERE type_id = (SELECT id FROM ApiKeyType WHERE Type = 'Authentication') ORDER BY RAND() LIMIT 1")
+	if err != nil {
+		return ""
+	}
+	var key string
+	_ = stmt.QueryRow().Scan(&key)
+	return key
+}
+func updateApiTime(apiKey string) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare("UPDATE ApiKey SET date_added = NOW() WHERE api_key = ?")
+	if err != nil {
+		return
+	}
+	_, _ = stmt.Exec(apiKey)
+	return
+}
 
 func TestCustomerUser(t *testing.T) {
 	Convey("Testing User Registration/ChangePass/Auth ", t, func() {
@@ -80,6 +110,17 @@ func TestCustomerUser(t *testing.T) {
 				err = DeleteCustomerUsersByCustomerID(customerID)
 				So(err, ShouldBeNil)
 			})
+		})
+		Convey("UserAutByKey", func() {
+			key := getRandomKey()
+			cust, err := UserAuthenticationByKey(key)
+			So(err, ShouldNotBeNil)
+			//update timestamp
+			updateApiTime(key)
+			cust, err = UserAuthenticationByKey(key)
+			So(err, ShouldBeNil)
+			So(cust, ShouldNotBeNil)
+
 		})
 
 	})
