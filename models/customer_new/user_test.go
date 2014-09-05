@@ -20,12 +20,17 @@ func getRandomKey() string {
 	}
 	defer db.Close()
 
-	stmt, err := db.Prepare("SELECT api_key FROM ApiKey WHERE type_id = (SELECT id FROM ApiKeyType WHERE Type = 'Authentication') ORDER BY RAND() LIMIT 1")
+	stmt, err := db.Prepare("SELECT api_key FROM ApiKey WHERE type_id = 'EA181F86-3F74-4AD6-8884-829B4558B99D' ORDER BY RAND() LIMIT 1")
+	// stmt, err := db.Prepare("SELECT api_key FROM ApiKey WHERE type_id = (SELECT id FROM ApiKeyType WHERE Type = 'Authentication') ORDER BY RAND() LIMIT 1")
 	if err != nil {
 		return ""
 	}
+	defer stmt.Close()
 	var key string
-	_ = stmt.QueryRow().Scan(&key)
+	err = stmt.QueryRow().Scan(&key)
+	if err != nil {
+		return ""
+	}
 	return key
 }
 func updateApiTime(apiKey string) {
@@ -111,13 +116,15 @@ func TestCustomerUser(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 		})
+		key := getRandomKey()
 		Convey("UserAutByKey", func() {
-			key := getRandomKey()
+			t.Log(key)
 			cust, err := UserAuthenticationByKey(key)
 			So(err, ShouldNotBeNil)
 			//update timestamp
 			updateApiTime(key)
 			cust, err = UserAuthenticationByKey(key)
+			t.Log("Cust", cust)
 			So(err, ShouldBeNil)
 			So(cust, ShouldNotBeNil)
 

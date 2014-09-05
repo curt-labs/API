@@ -349,20 +349,21 @@ func (c *Customer) Basics() error {
 	}
 	defer stmt.Close()
 
+	var name, email, address, address2, city, phone, fax, contactPerson []byte
 	var logo, web, lat, lon, url, icon, shadow, mapIconId []byte
 	var stateId, state, stateAbbr, countryId, country, countryAbbr, parentId, postalCode, mapixCode, mapixDesc, rep, repCode []byte
 	err = stmt.QueryRow(c.Id).Scan(
-		&c.Id,            //c.customerID,
-		&c.Name,          //c.name
-		&c.Email,         //c.email
-		&c.Address,       //c.address
-		&c.Address2,      //c.address2
-		&c.City,          //c.city,
-		&c.Phone,         //phone,
-		&c.Fax,           //c.fax
-		&c.ContactPerson, //c.contact_person,
-		&lat,             //c.latitude
-		&lon,             //c.longitude
+		&c.Id,          //c.customerID,
+		&name,          //c.name
+		&email,         //c.email
+		&address,       //c.address
+		&address2,      //c.address2
+		&city,          //c.city,
+		&phone,         //phone,
+		&fax,           //c.fax
+		&contactPerson, //c.contact_person,
+		&lat,           //c.latitude
+		&lon,           //c.longitude
 		&url,
 		&logo,
 		&web,
@@ -393,6 +394,14 @@ func (c *Customer) Basics() error {
 	if err != nil {
 		return err
 	}
+	c.Name, err = conversions.ByteToString(name)
+	c.Address, err = conversions.ByteToString(address)
+	c.City, err = conversions.ByteToString(city)
+	c.Email, err = conversions.ByteToString(email)
+	c.Phone, err = conversions.ByteToString(phone)
+	c.Fax, err = conversions.ByteToString(fax)
+	c.ContactPerson, err = conversions.ByteToString(contactPerson)
+
 	c.Latitude, err = conversions.ByteToFloat(lat)
 	c.Longitude, err = conversions.ByteToFloat(lon)
 	c.SearchUrl, err = conversions.ByteToUrl(url)
@@ -443,31 +452,33 @@ func (c *Customer) GetLocations() error {
 		return err
 	}
 	defer stmt.Close()
-	// var stateId, state, stateAbbr, countryId, country, countryAbbr []byte
+	var stateId, state, stateAbbr, countryId, country, countryAbbr, postalCode []byte
+	var name, email, address, city, phone, fax, contactPerson []byte
 	res, err := stmt.Query(c.Id)
 	for res.Next() {
 		var l CustomerLocation
 		err = res.Scan(
 			&l.Id,
-			&l.Name,
-			&l.Email,
-			&l.Address,
-			&l.City,
-			&l.PostalCode,
-			&l.Phone,
-			&l.Fax,
+			&name,       //c.name
+			&email,      //c.email
+			&address,    //c.address
+			&city,       //c.city,
+			&postalCode, //c.postal_code
+			&phone,      //phone,
+			&fax,        //c.fax
 			&l.Latitude,
 			&l.Longitude,
 			&l.CustomerId,
-			&l.ContactPerson,
+			&contactPerson, //c.contact_person,
 			&l.IsPrimary,
 			&l.ShippingDefault,
-			&l.State.Id,
-			&l.State.State,
-			&l.State.Abbreviation,
-			&l.State.Country.Id,
-			&l.State.Country.Country,
-			&l.State.Country.Abbreviation,
+			&stateId,     //s.stateID
+			&state,       //s.state
+			&stateAbbr,   //s.abbr as state_abbr
+			&countryId,   //cty.countryID,
+			&country,     //cty.name as country_name
+			&countryAbbr, //cty.abbr as country_ab
+
 		)
 		if err != nil {
 			return err
@@ -492,16 +503,21 @@ func (c *Customer) GetUsers() (users []CustomerUser, err error) {
 	defer stmt.Close()
 
 	res, err := stmt.Query(c.Id)
+	var name []byte
 	for res.Next() {
 		var u CustomerUser
-		res.Scan(
+		err = res.Scan(
 			&u.Id,
-			&u.Name,
+			&name,
 			&u.Email,
 			&u.DateAdded,
 			&u.Active,
 			&u.Sudo,
 		)
+		if err != nil {
+			return users, err
+		}
+		u.Name, err = conversions.ByteToString(name)
 		users = append(users, u)
 	}
 	if err != nil {
@@ -564,23 +580,24 @@ func GetEtailers() (dealers []Customer, err error) {
 	if err != nil {
 		return dealers, err
 	}
+	var name, email, address, address2, city, phone, fax, contactPerson []byte
 	var url, logo, web, icon, shadow, lat, lon []byte
 	var stateId, state, stateAbbr, countryId, country, countryAbbr, parentId, postalCode, mapixCode, mapixDesc, rep, repCode []byte
 	res, err := stmt.Query()
 	for res.Next() {
 		var c Customer
 		err = res.Scan(
-			&c.Id,            //c.customerID,
-			&c.Name,          //c.name
-			&c.Email,         //c.email
-			&c.Address,       //c.address
-			&c.Address2,      //c.address2
-			&c.City,          //c.city,
-			&c.Phone,         //phone,
-			&c.Fax,           //c.fax
-			&c.ContactPerson, //c.contact_person,
-			&lat,             //c.latitude
-			&lon,             //c.longitude
+			&c.Id,          //c.customerID,
+			&name,          //c.name
+			&email,         //c.email
+			&address,       //c.address
+			&address2,      //c.address2
+			&city,          //c.city,
+			&phone,         //phone,
+			&fax,           //c.fax
+			&contactPerson, //c.contact_person,
+			&lat,           //c.latitude
+			&lon,           //c.longitude
 			&url,
 			&logo,
 			&web,
@@ -611,6 +628,15 @@ func GetEtailers() (dealers []Customer, err error) {
 		if err != nil {
 			return dealers, err
 		}
+
+		c.Name, err = conversions.ByteToString(name)
+		c.Address, err = conversions.ByteToString(address)
+		c.Address2, err = conversions.ByteToString(address2)
+		c.City, err = conversions.ByteToString(city)
+		c.Email, err = conversions.ByteToString(email)
+		c.Phone, err = conversions.ByteToString(phone)
+		c.Fax, err = conversions.ByteToString(fax)
+		c.ContactPerson, err = conversions.ByteToString(contactPerson)
 
 		c.Latitude, err = conversions.ByteToFloat(lat)
 		c.Longitude, err = conversions.ByteToFloat(lon)
@@ -746,21 +772,21 @@ func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, er
 		return dealers, err
 	}
 
-	var ur, logo, web, lat, lon, icon, shadow []byte
-
+	var ur, logo, web, lat, lon, icon, shadow, mapixCode, mapixDesc, rep, repCode []byte
+	var name, email, address, city, phone, fax, contactPerson []byte
 	for res.Next() {
 		var cust DealerLocation
 		res.Scan(
 
 			&cust.LocationId,
 			&cust.Id,
-			&cust.Name,
-			&cust.Email,
-			&cust.Address,
-			&cust.City,
-			&cust.Phone,
-			&cust.Fax,
-			&cust.ContactPerson,
+			&name,          //c.name
+			&email,         //c.email
+			&address,       //c.address
+			&city,          //c.city,
+			&phone,         //phone,
+			&fax,           //c.fax
+			&contactPerson, //c.contact_person,
 			&lat,
 			&lon,
 			&ur,
@@ -784,12 +810,20 @@ func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, er
 			&cust.DealerType.MapIcon.Id,
 			&icon,
 			&shadow,
-			&cust.MapixCode,
-			&cust.MapixDescription,
-			&cust.SalesRepresentative,
-			&cust.SalesRepresentativeCode,
+			&mapixCode, //mpx.code as mapix_code
+			&mapixDesc, //mpx.description as mapic_desc,
+			&rep,       //sr.name as rep_name
+			&repCode,   // sr.code as rep_code,
 			&cust.Parent.Id,
 		)
+
+		cust.Name, err = conversions.ByteToString(name)
+		cust.Address, err = conversions.ByteToString(address)
+		cust.City, err = conversions.ByteToString(city)
+		cust.Email, err = conversions.ByteToString(email)
+		cust.Phone, err = conversions.ByteToString(phone)
+		cust.Fax, err = conversions.ByteToString(fax)
+		cust.ContactPerson, err = conversions.ByteToString(contactPerson)
 
 		cust.Latitude, err = conversions.ByteToFloat(lat)
 		cust.Longitude, err = conversions.ByteToFloat(lon)
@@ -798,6 +832,11 @@ func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, er
 		cust.Website, err = conversions.ByteToUrl(web)
 		cust.DealerType.MapIcon.MapIcon, err = conversions.ByteToUrl(icon)
 		cust.DealerType.MapIcon.MapIconShadow, err = conversions.ByteToUrl(shadow)
+
+		cust.MapixCode, err = conversions.ByteToString(mapixCode)
+		cust.MapixDescription, err = conversions.ByteToString(mapixDesc)
+		cust.SalesRepresentative, err = conversions.ByteToString(rep)
+		cust.SalesRepresentativeCode, err = conversions.ByteToString(repCode)
 		if err != nil {
 			return dealers, err
 		}
@@ -999,6 +1038,7 @@ func GetWhereToBuyDealers() (customers []Customer, err error) {
 	}
 	var ur, logo, web, icon, shadow, lat, lon, postalCode, mapixCode, mapixDesc, rep, repCode, parentId []byte
 	var stateId, state, stateAbbr, countryId, country, countryAbbr, mapIconId []byte
+	var name, email, address, address2, city, phone, fax, contactPerson []byte
 
 	res, err := stmt.Query()
 	if err != nil {
@@ -1007,15 +1047,15 @@ func GetWhereToBuyDealers() (customers []Customer, err error) {
 	for res.Next() {
 		var c Customer
 		err = res.Scan(
-			&c.Id,            //c.customerID,
-			&c.Name,          //c.name
-			&c.Email,         //c.email
-			&c.Address,       //c.address
-			&c.Address2,      //c.address2
-			&c.City,          //c.city,
-			&c.Phone,         //phone,
-			&c.Fax,           //c.fax
-			&c.ContactPerson, //c.contact_person,
+			&c.Id,    //c.customerID,
+			&name,    //c.name
+			&email,   //c.email
+			&address, //c.address
+			&address2,
+			&city,          //c.city,
+			&phone,         //phone,
+			&fax,           //c.fax
+			&contactPerson, //c.contact_person
 			&lat,
 			&lon,
 			&ur,
@@ -1048,6 +1088,14 @@ func GetWhereToBuyDealers() (customers []Customer, err error) {
 		if err != nil {
 			return customers, err
 		}
+
+		c.Name, err = conversions.ByteToString(name)
+		c.Address, err = conversions.ByteToString(address)
+		c.City, err = conversions.ByteToString(city)
+		c.Email, err = conversions.ByteToString(email)
+		c.Phone, err = conversions.ByteToString(phone)
+		c.Fax, err = conversions.ByteToString(fax)
+		c.ContactPerson, err = conversions.ByteToString(contactPerson)
 
 		c.Latitude, err = conversions.ByteToFloat(lat)
 		c.Longitude, err = conversions.ByteToFloat(lon)
@@ -1095,6 +1143,7 @@ func GetLocationById(id int) (location DealerLocation, err error) {
 		return location, err
 	}
 	var website, eLocal, isPrimary, shippingDefault []byte //ununsed, but in the original query
+	var name, email, address, city, phone, fax, contactPerson, postalCode []byte
 	var showWeb bool
 	err = stmt.QueryRow(id).Scan(
 		&location.State.Id,           //s.stateID
@@ -1110,13 +1159,13 @@ func GetLocationById(id int) (location DealerLocation, err error) {
 		&location.DealerTier.Tier,    //dtr.tier as tier
 		&location.DealerTier.Sort,    //dtr.sort as tierSort
 		&location.LocationId,
-		&location.Name,
-		&location.Address,
-		&location.City,
-		&location.PostalCode,
-		&location.Email,
-		&location.Phone,
-		&location.Fax,
+		&name,    //c.name
+		&email,   //c.email
+		&address, //c.address
+		&city,    //c.city,
+		&postalCode,
+		&phone, //phone,
+		&fax,   //c.fax
 		&location.Latitude,
 		&location.Longitude,
 		&location.Id,
@@ -1127,6 +1176,14 @@ func GetLocationById(id int) (location DealerLocation, err error) {
 		&website,
 		&eLocal,
 	)
+	location.Name, err = conversions.ByteToString(name)
+	location.Address, err = conversions.ByteToString(address)
+	location.City, err = conversions.ByteToString(city)
+	location.PostalCode, err = conversions.ByteToString(postalCode)
+	location.Email, err = conversions.ByteToString(email)
+	location.Phone, err = conversions.ByteToString(phone)
+	location.Fax, err = conversions.ByteToString(fax)
+	location.ContactPerson, err = conversions.ByteToString(contactPerson)
 	if showWeb {
 		if website == nil {
 			website = eLocal
@@ -1158,9 +1215,10 @@ func SearchLocations(term string) (locations []DealerLocation, err error) {
 	if err != nil {
 		return locations, err
 	}
+	var name, email, address, city, phone, fax, contactPerson, postalCode []byte
+	var website, eLocal, isPrimary, shippingDefault []byte //ununsed, but in the original query
+	var showWeb bool
 	for res.Next() {
-		var website, eLocal, isPrimary, shippingDefault []byte //ununsed, but in the original query
-		var showWeb bool
 		var location DealerLocation
 		err = res.Scan(
 			&location.State.Id,           //s.stateID
@@ -1176,19 +1234,19 @@ func SearchLocations(term string) (locations []DealerLocation, err error) {
 			&location.DealerTier.Tier,    //dtr.tier as tier
 			&location.DealerTier.Sort,    //dtr.sort as tierSort
 			&location.LocationId,
-			&location.Name,
-			&location.Address,
-			&location.City,
-			&location.PostalCode,
-			&location.Email,
-			&location.Phone,
-			&location.Fax,
+			&name,    //c.name
+			&address, //c.address
+			&city,    //c.city,
+			&postalCode,
+			&email, //c.email
+			&phone, //phone,
+			&fax,   //c.fax
 			&location.Latitude,
 			&location.Longitude,
 			&location.Id,
 			&isPrimary,       //Unused
 			&shippingDefault, //Unused
-			&location.ContactPerson,
+			&contactPerson,   //c.contact_person
 			&showWeb,
 			&website,
 			&eLocal,
@@ -1196,6 +1254,14 @@ func SearchLocations(term string) (locations []DealerLocation, err error) {
 		if err != nil {
 			return locations, err
 		}
+		location.Name, err = conversions.ByteToString(name)
+		location.Address, err = conversions.ByteToString(address)
+		location.City, err = conversions.ByteToString(city)
+		location.PostalCode, err = conversions.ByteToString(postalCode)
+		location.Email, err = conversions.ByteToString(email)
+		location.Phone, err = conversions.ByteToString(phone)
+		location.Fax, err = conversions.ByteToString(fax)
+		location.ContactPerson, err = conversions.ByteToString(contactPerson)
 		if showWeb {
 			if website == nil {
 				website = eLocal
@@ -1229,9 +1295,11 @@ func SearchLocationsByType(term string) (locations []DealerLocation, err error) 
 	if err != nil {
 		return locations, err
 	}
+	var name, email, address, city, phone, fax, contactPerson, postalCode []byte
+	var website, eLocal, isPrimary, shippingDefault []byte //ununsed, but in the original query
+	var showWeb bool
 	for res.Next() {
-		var website, eLocal, isPrimary, shippingDefault []byte //ununsed, but in the original query
-		var showWeb bool
+
 		var location DealerLocation
 		err = res.Scan(
 			&location.State.Id,           //s.stateID
@@ -1247,19 +1315,19 @@ func SearchLocationsByType(term string) (locations []DealerLocation, err error) 
 			&location.DealerTier.Tier,    //dtr.tier as tier
 			&location.DealerTier.Sort,    //dtr.sort as tierSort
 			&location.LocationId,
-			&location.Name,
-			&location.Address,
-			&location.City,
-			&location.PostalCode,
-			&location.Email,
-			&location.Phone,
-			&location.Fax,
+			&name,    //c.name
+			&address, //c.address
+			&city,    //c.city,
+			&postalCode,
+			&email, //c.email
+			&phone, //phone,
+			&fax,   //c.fax
 			&location.Latitude,
 			&location.Longitude,
 			&location.Id,
 			&isPrimary,       //Unused
 			&shippingDefault, //Unused
-			&location.ContactPerson,
+			&contactPerson,   //c.contact_person
 			&showWeb,
 			&website,
 			&eLocal,
@@ -1267,6 +1335,14 @@ func SearchLocationsByType(term string) (locations []DealerLocation, err error) 
 		if err != nil {
 			return locations, err
 		}
+		location.Name, err = conversions.ByteToString(name)
+		location.Address, err = conversions.ByteToString(address)
+		location.City, err = conversions.ByteToString(city)
+		location.PostalCode, err = conversions.ByteToString(postalCode)
+		location.Email, err = conversions.ByteToString(email)
+		location.Phone, err = conversions.ByteToString(phone)
+		location.Fax, err = conversions.ByteToString(fax)
+		location.ContactPerson, err = conversions.ByteToString(contactPerson)
 		if showWeb {
 			if website == nil {
 				website = eLocal
@@ -1311,7 +1387,7 @@ func SearchLocationsByLatLng(loc GeoLocation) (locations []DealerLocation, err e
 	if err != nil {
 		return locations, err
 	}
-
+	var name, email, address, city, phone, fax, contactPerson, postalCode []byte
 	var website, eLocal, isPrimary, shippingDefault []byte //ununsed, but in the original query
 	var showWeb bool
 	for res.Next() {
@@ -1330,19 +1406,19 @@ func SearchLocationsByLatLng(loc GeoLocation) (locations []DealerLocation, err e
 			&location.DealerTier.Tier,    //dtr.tier as tier
 			&location.DealerTier.Sort,    //dtr.sort as tierSort
 			&location.LocationId,
-			&location.Name,
-			&location.Address,
-			&location.City,
-			&location.PostalCode,
-			&location.Email,
-			&location.Phone,
-			&location.Fax,
+			&name,    //c.name
+			&address, //c.address
+			&city,    //c.city,
+			&postalCode,
+			&email, //c.email
+			&phone, //phone,
+			&fax,   //c.fax
 			&location.Latitude,
 			&location.Longitude,
 			&location.Id,
 			&isPrimary,       //Unused
 			&shippingDefault, //Unused
-			&location.ContactPerson,
+			&contactPerson,   //c.contact_person
 			&showWeb,
 			&website,
 			&eLocal,
@@ -1350,6 +1426,14 @@ func SearchLocationsByLatLng(loc GeoLocation) (locations []DealerLocation, err e
 		if err != nil {
 			return locations, err
 		}
+		location.Name, err = conversions.ByteToString(name)
+		location.Address, err = conversions.ByteToString(address)
+		location.City, err = conversions.ByteToString(city)
+		location.PostalCode, err = conversions.ByteToString(postalCode)
+		location.Email, err = conversions.ByteToString(email)
+		location.Phone, err = conversions.ByteToString(phone)
+		location.Fax, err = conversions.ByteToString(fax)
+		location.ContactPerson, err = conversions.ByteToString(contactPerson)
 
 		if showWeb {
 			if website == nil {

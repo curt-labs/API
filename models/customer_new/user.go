@@ -13,9 +13,10 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/encryption"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
-	// "log"
+	"log"
 	"net/http"
 	"net/url"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -219,6 +220,9 @@ func UserAuthenticationByKey(key string) (cust Customer, err error) {
 
 	cust.Users = append(cust.Users, u)
 
+	var m *runtime.MemStats = new(runtime.MemStats)
+	runtime.ReadMemStats(m)
+	log.Println("Memory", m.Alloc, m.StackInuse, m.HeapAlloc)
 	return cust, nil
 }
 

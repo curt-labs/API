@@ -3,6 +3,7 @@ package customer_new
 import (
 	"database/sql"
 	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/conversions"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	// "github.com/curt-labs/goacesapi/helpers/pagination"
 	"github.com/curt-labs/GoAPI/helpers/redis"
@@ -10,36 +11,16 @@ import (
 	"strconv"
 )
 
-// type Location struct {
-// 	ID            int
-// 	Name          string
-// 	Email         string
-// 	Address       string
-// 	City          string
-// 	StateID       int
-// 	Phone         string
-// 	Fax           string
-// 	ContactPerson string
-// 	GeoLocation
-// 	CustomerID      int
-// 	PostalCode      string
-// 	IsPrimary       bool
-// 	ShippingDefault bool
-// }
-// type Locations []Location
-
-// type GeoLocation struct {
-// 	Latitude, Longitude, Distance float64
-// }
-
 type CustomerLocations []CustomerLocation
 
 var (
 	getLocation    = "SELECT locationID, name, address, city, stateID, email, phone, fax, latitude, longitude, cust_id, contact_person, isprimary, postalCode, ShippingDefault FROM CustomerLocations WHERE locationID= ? "
 	getLocations   = "SELECT locationID, name, address, city, stateID, email, phone, fax, latitude, longitude, cust_id, contact_person, isprimary, postalCode, ShippingDefault FROM CustomerLocations"
 	createLocation = "INSERT INTO CustomerLocations (name, address, city, stateID, email, phone, fax, latitude, longitude, cust_id, contact_person, isprimary, postalCode, ShippingDefault) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-	updateLocation = "UPDATE CustomerLocations SET name = ?, address = ?,  city = ?,  stateID = ?, email = ?,  phone = ?,  fax = ?,  latitude = ?,  longitude = ?,  cust_id = ?, contact_person = ?,  isprimary = ?, postalCode = ?, ShippingDefault = ? WHERE locationID = ?"
-	deleteLocation = "DELETE FROM CustomerLocations WHERE locationID = ?"
+	c              = "INSERT INTO CustomerLocations (name, address, city, stateID, email, phone, fax,latitude, longitude, cust_id, contact_person, isprimary, postalCode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)"
+	updateLocation = "UPDATE CustomerLocations SET name = ?, address = ?,  city = ?,  stateID = ?, email = ?,  phone = ?,  fax = ?,  latitude = ?,  longitude = ?,  cust_id = ?, contact_person = ?,  isprimary = ?, postalCode = ? WHERE locationID = ?"
+	u              = "UPDATE CustomerLocations SET name = ?, address = ?,  city = ?,  stateID = ?, email = ?,  phone = ?,  fax = ? WHERE locationID = ?"
+	deleteLocation = "DELETE FROM CustomerLocations WHERE locationID = ? "
 )
 
 func (l *CustomerLocation) Get() error {
@@ -61,7 +42,35 @@ func (l *CustomerLocation) Get() error {
 		return err
 	}
 	defer stmt.Close()
-	err = stmt.QueryRow(l.Id).Scan(&l.Id, &l.Name, &l.Address, &l.City, &l.State, &l.Email, &l.Phone, &l.Fax, &l.Latitude, &l.Longitude, &l.CustomerId, &l.ContactPerson, &l.IsPrimary, &l.PostalCode, &l.ShippingDefault)
+	var name, address, city, email, phone, fax, contactPerson, postal []byte
+	err = stmt.QueryRow(l.Id).Scan(
+		&l.Id,
+		&name,
+		&address,
+		&city,
+		&l.State.Id,
+		&email,
+		&phone,
+		&fax,
+		&l.Latitude,
+		&l.Longitude,
+		&l.CustomerId,
+		&contactPerson,
+		&l.IsPrimary,
+		&postal,
+		&l.ShippingDefault,
+	)
+	if err != nil {
+		return err
+	}
+	l.Name, err = conversions.ByteToString(name)
+	l.Address, err = conversions.ByteToString(address)
+	l.City, err = conversions.ByteToString(city)
+	l.Email, err = conversions.ByteToString(email)
+	l.Phone, err = conversions.ByteToString(phone)
+	l.Fax, err = conversions.ByteToString(fax)
+	l.ContactPerson, err = conversions.ByteToString(contactPerson)
+	l.PostalCode, err = conversions.ByteToString(postal)
 	if err != nil {
 		return err
 	}
@@ -93,9 +102,37 @@ func GetAllLocations() (CustomerLocations, error) {
 	}
 	defer stmt.Close()
 	res, err := stmt.Query()
+	var name, address, city, email, phone, fax, contactPerson, postal []byte
 	for res.Next() {
 		var l CustomerLocation
-		err = res.Scan(&l.Id, &l.Name, &l.Address, &l.City, &l.State, &l.Email, &l.Phone, &l.Fax, &l.Latitude, &l.Longitude, &l.CustomerId, &l.ContactPerson, &l.IsPrimary, &l.PostalCode, &l.ShippingDefault)
+		err = res.Scan(
+			&l.Id,
+			&name,
+			&address,
+			&city,
+			&l.State.Id,
+			&email,
+			&phone,
+			&fax,
+			&l.Latitude,
+			&l.Longitude,
+			&l.CustomerId,
+			&contactPerson,
+			&l.IsPrimary,
+			&postal,
+			&l.ShippingDefault,
+		)
+		if err != nil {
+			return ls, err
+		}
+		l.Name, err = conversions.ByteToString(name)
+		l.Address, err = conversions.ByteToString(address)
+		l.City, err = conversions.ByteToString(city)
+		l.Email, err = conversions.ByteToString(email)
+		l.Phone, err = conversions.ByteToString(phone)
+		l.Fax, err = conversions.ByteToString(fax)
+		l.ContactPerson, err = conversions.ByteToString(contactPerson)
+		l.PostalCode, err = conversions.ByteToString(postal)
 		if err != nil {
 			return ls, err
 		}
@@ -115,8 +152,23 @@ func (l *CustomerLocation) Create() error {
 	if err != nil {
 		return err
 	}
-	stmt, err := tx.Prepare(createLocation)
-	res, err := stmt.Exec(l.Name, l.Address, l.City, l.State, l.Email, l.Phone, l.Fax, l.Latitude, l.Longitude, l.CustomerId, l.ContactPerson, l.IsPrimary, l.PostalCode, l.ShippingDefault)
+	stmt, err := tx.Prepare(c)
+	res, err := stmt.Exec(
+		l.Name,
+		l.Address,
+		l.City,
+		l.State.Id,
+		l.Email,
+		l.Phone,
+		l.Fax,
+		l.Latitude,
+		l.Longitude,
+		l.CustomerId,
+		l.ContactPerson,
+		l.IsPrimary,
+		l.PostalCode,
+		// l.ShippingDefault,
+	)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -140,9 +192,25 @@ func (l *CustomerLocation) Update() error {
 	if err != nil {
 		return err
 	}
-	stmt, err := tx.Prepare(updateLocation)
+	stmt, err := tx.Prepare(u)
 
-	_, err = stmt.Exec(l.Name, l.Address, l.City, l.State, l.Email, l.Phone, l.Fax, l.Latitude, l.Longitude, l.CustomerId, l.ContactPerson, l.IsPrimary, l.PostalCode, l.ShippingDefault, l.Id)
+	_, err = stmt.Exec(
+		l.Name,
+		l.Address,
+		l.City,
+		l.State.Id,
+		l.Email,
+		l.Phone,
+		l.Fax,
+		// l.Latitude,
+		// l.Longitude,
+		// l.CustomerId,
+		// l.ContactPerson,
+		// l.IsPrimary,
+		// l.PostalCode,
+		// l.ShippingDefault,
+		l.Id,
+	)
 	if err != nil {
 		tx.Rollback()
 		return err

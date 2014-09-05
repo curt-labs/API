@@ -114,6 +114,8 @@ func CreateUpdateLocation(rw http.ResponseWriter, r *http.Request, enc encoding.
 	}
 	if shippingDefault != "" {
 		w.ShippingDefault, err = strconv.ParseBool(shippingDefault)
+	} else {
+		w.ShippingDefault = false
 	}
 
 	if id != "" {

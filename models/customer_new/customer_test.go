@@ -2,6 +2,7 @@ package customer_new
 
 import (
 	"database/sql"
+	// "errors"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/models/customer"
 	_ "github.com/go-sql-driver/mysql"
@@ -21,7 +22,7 @@ var (
 								LEFT JOIN CustomerLocations AS cl on cl.cust_id = c.CustomerID
 								LEFT JOIN CustomerPricing AS cp ON cp.cust_id = c.CustomerID
 								WHERE cl.locationID IS NOT NULL
-								AND cp.partID IS NOT NULL`
+								AND cp.partID IS NOT NULL ORDER BY RAND()LIMIT 1`
 )
 
 func getRandomCustWithLocParts() (cust Customer, partID int, apiKey string, err error) {
@@ -36,18 +37,9 @@ func getRandomCustWithLocParts() (cust Customer, partID int, apiKey string, err 
 		return cust, partID, apiKey, err
 	}
 	defer stmt.Close()
-	var cs []Customer
+	var c Customer
 	var api string
-	res, err := stmt.Query()
-	for res.Next() {
-		var c Customer
-		err = res.Scan(&c.Id, &partID, &api)
-		cs = append(cs, c)
-	}
-	if len(cs) > 0 {
-		x := rand.Intn(len(cs))
-		cust = cs[x]
-	}
+	err = stmt.QueryRow().Scan(&c.Id, &partID, &api)
 
 	users, err := cust.GetUsers()
 	if err == nil && len(users) > 0 {
@@ -172,10 +164,14 @@ func TestCustomerModel(t *testing.T) {
 			So(users, ShouldNotBeNil)
 		})
 		Convey("Testing GetCustomerPrice()", func() {
-
 			price, err := GetCustomerPrice(apiKey, partID)
-			So(err, ShouldBeNil)
-			So(price, ShouldNotBeNil)
+			if err == nil {
+				So(err, ShouldBeNil)
+				So(price, ShouldNotBeNil)
+			} else {
+				So(err.Error(), ShouldResemble, "sql: no rows in result set")
+			}
+
 		})
 		Convey("Testing GetCustomerCartReference())", func() {
 			var err error
