@@ -17,9 +17,7 @@ var (
 	getLocation    = "SELECT locationID, name, address, city, stateID, email, phone, fax, latitude, longitude, cust_id, contact_person, isprimary, postalCode, ShippingDefault FROM CustomerLocations WHERE locationID= ? "
 	getLocations   = "SELECT locationID, name, address, city, stateID, email, phone, fax, latitude, longitude, cust_id, contact_person, isprimary, postalCode, ShippingDefault FROM CustomerLocations"
 	createLocation = "INSERT INTO CustomerLocations (name, address, city, stateID, email, phone, fax, latitude, longitude, cust_id, contact_person, isprimary, postalCode, ShippingDefault) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-	c              = "INSERT INTO CustomerLocations (name, address, city, stateID, email, phone, fax,latitude, longitude, cust_id, contact_person, isprimary, postalCode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)"
-	updateLocation = "UPDATE CustomerLocations SET name = ?, address = ?,  city = ?,  stateID = ?, email = ?,  phone = ?,  fax = ?,  latitude = ?,  longitude = ?,  cust_id = ?, contact_person = ?,  isprimary = ?, postalCode = ? WHERE locationID = ?"
-	u              = "UPDATE CustomerLocations SET name = ?, address = ?,  city = ?,  stateID = ?, email = ?,  phone = ?,  fax = ? WHERE locationID = ?"
+	updateLocation = "UPDATE CustomerLocations SET name = ?, address = ?,  city = ?,  stateID = ?, email = ?,  phone = ?,  fax = ?,  latitude = ?,  longitude = ?,  cust_id = ?, contact_person = ?,  isprimary = ?, postalCode = ?, ShippingDefault = ? WHERE locationID = ?"
 	deleteLocation = "DELETE FROM CustomerLocations WHERE locationID = ? "
 )
 
@@ -152,7 +150,11 @@ func (l *CustomerLocation) Create() error {
 	if err != nil {
 		return err
 	}
-	stmt, err := tx.Prepare(c)
+	stmt, err := tx.Prepare(createLocation)
+	if err != nil {
+		return err
+	}
+
 	res, err := stmt.Exec(
 		l.Name,
 		l.Address,
@@ -167,7 +169,7 @@ func (l *CustomerLocation) Create() error {
 		l.ContactPerson,
 		l.IsPrimary,
 		l.PostalCode,
-		// l.ShippingDefault,
+		l.ShippingDefault,
 	)
 	if err != nil {
 		tx.Rollback()
@@ -176,7 +178,6 @@ func (l *CustomerLocation) Create() error {
 	id, err := res.LastInsertId()
 	l.Id = int(id)
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
 	tx.Commit()
@@ -192,7 +193,10 @@ func (l *CustomerLocation) Update() error {
 	if err != nil {
 		return err
 	}
-	stmt, err := tx.Prepare(u)
+	stmt, err := tx.Prepare(updateLocation)
+	if err != nil {
+		return err
+	}
 
 	_, err = stmt.Exec(
 		l.Name,
@@ -202,13 +206,13 @@ func (l *CustomerLocation) Update() error {
 		l.Email,
 		l.Phone,
 		l.Fax,
-		// l.Latitude,
-		// l.Longitude,
-		// l.CustomerId,
-		// l.ContactPerson,
-		// l.IsPrimary,
-		// l.PostalCode,
-		// l.ShippingDefault,
+		l.Latitude,
+		l.Longitude,
+		l.CustomerId,
+		l.ContactPerson,
+		l.IsPrimary,
+		l.PostalCode,
+		l.ShippingDefault,
 		l.Id,
 	)
 	if err != nil {
@@ -230,6 +234,9 @@ func (l *CustomerLocation) Delete() error {
 		return err
 	}
 	stmt, err := tx.Prepare(deleteLocation)
+	if err != nil {
+		return err
+	}
 	_, err = stmt.Exec(l.Id)
 	if err != nil {
 		tx.Rollback()
