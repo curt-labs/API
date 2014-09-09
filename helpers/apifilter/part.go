@@ -111,6 +111,7 @@ func (filtered FilteredOptions) attributes(parts []part.Part) FilteredOptions {
 			for _, val := range vals.Options {
 				if vals.Key == attr.Key && val.Value == attr.Value {
 					exists = true
+					break
 				}
 			}
 
@@ -123,11 +124,13 @@ func (filtered FilteredOptions) attributes(parts []part.Part) FilteredOptions {
 				vals.Options = append(vals.Options, newOption)
 				attributeDefinitions[attr.Key] = vals
 			} else {
-				for i, _ := range attributeDefinitions[attr.Key].Options {
-					prods := attributeDefinitions[attr.Key].Options[i].Products
-					prods = append(prods, part.PartId)
-					sort.Ints(prods)
-					attributeDefinitions[attr.Key].Options[i].Products = prods
+				for i, opt := range attributeDefinitions[attr.Key].Options {
+					if opt.Value == attr.Value {
+						prods := attributeDefinitions[attr.Key].Options[i].Products
+						prods = append(prods, part.PartId)
+						sort.Ints(prods)
+						attributeDefinitions[attr.Key].Options[i].Products = prods
+					}
 				}
 			}
 		}
