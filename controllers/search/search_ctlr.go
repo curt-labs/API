@@ -5,23 +5,16 @@ import (
 	"github.com/curt-labs/GoAPI/models/search"
 	"github.com/go-martini/martini"
 	"net/http"
-	"strings"
 )
 
-func SearchPart(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
-	qs := r.URL.Query()
+func Search(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
 	terms := params["term"]
-	key := qs.Get("key")
 
-	qry := search.PartSearchResult{
-		Request: search.SearchQuery{
-			SearchTerms: strings.Replace(terms, ",", " ", -1),
-			StartIndex:  0,
-			Count:       0,
-		},
+	res, err := search.Dsl(terms, []string{})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
 	}
 
-	qry.SearchParts(key)
-
-	return encoding.Must(enc.Encode(qry))
+	return encoding.Must(enc.Encode(res))
 }

@@ -207,7 +207,7 @@ func main() {
 
 	})
 
-	m.Get("/search/part/:term", search_ctlr.SearchPart)
+	m.Get("/search/:term", search_ctlr.Search)
 	m.Get("/videos", videos_ctlr.DistinctVideos)
 
 	//NEW Customer & Dealer endpoints - Seems to work. Feeling brave?

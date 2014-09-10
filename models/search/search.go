@@ -1,86 +1,41 @@
 package search
 
 import (
-	"github.com/curt-labs/GoAPI/models/part"
-	"net/url"
+	"errors"
+	"github.com/mattbaird/elastigo/lib"
+	"os"
 )
 
-type SearchResult struct {
-	NextPage, Request SearchQuery
-	Items             []SearchResultItem
-}
+func Dsl(query string, fields []string) (interface{}, error) {
 
-type PartSearchResult struct {
-	NextPage, Request SearchQuery
-	Items             []*part.Part
-}
+	var con *elastigo.Conn
+	if host := os.Getenv("ELASTICSEARCH_HOST"); host != "" {
+		con = &elastigo.Conn{
+			Protocol: elastigo.DefaultProtocol,
+			Domain:   host,
+			Port:     os.Getenv("ELASTICSEARCH_PORT"),
+			Username: os.Getenv("ELASTICSEARCH_USERNAME"),
+			Password: os.Getenv("ELASTICSEARCH_PASSWORD"),
+		}
+	}
+	if con == nil {
+		return nil, errors.New("failed to connect to elasticsearch")
+	}
 
-type SearchQuery struct {
-	Title                         string
-	TotalResults                  int
-	SearchTerms                   string
-	Count, StartIndex             int
-	InputEncoding, OutputEncoding string
-}
+	qry := map[string]interface{}{
+		"query": map[string]interface{}{
+			"query_string": map[string]interface{}{
+				"query":  query,
+				"fields": fields,
+			},
+		},
+	}
 
-type SearchResultItem struct {
-	Kind                 string
-	Title, HtmlTitle     string
-	Link                 string
-	Snippet, HtmlSnippet string
-	Image                *url.URL
-}
+	var args map[string]interface{}
+	res, e := con.Search("curt", "", args, qry)
+	if e != nil {
+		return nil, e
+	}
 
-// This sucks, will need to be re-implemented using
-// ElasticSearch.
-func (q *PartSearchResult) SearchParts(key string) error {
-
-	q.Request.StartIndex = 1
-	q.Request.Count = 10
-
-	// partChan := make(chan int)
-
-	parts := make([]*part.Part, 0)
-
-	// go func() {
-	// 	qry, err := database.GetStatement("SearchPart")
-	// 	if !database.MysqlError(err) {
-	// 		rows, res, err := qry.Exec(q.Request.SearchTerms, q.Request.SearchTerms, q.Request.SearchTerms, q.Request.StartIndex, q.Request.Count)
-	// 		if !database.MysqlError(err) {
-	// 			pId := res.Map("partID")
-	// 			var lookup models.Lookup
-
-	// 			for _, row := range rows {
-	// 				lookup.Parts = append(lookup.Parts, &models.Part{
-	// 					PartId: row.Int(pId),
-	// 				})
-	// 			}
-	// 			lookup.Get(key)
-	// 			parts = append(parts, lookup.Parts...)
-	// 		}
-	// 	}
-	// 	partChan <- 1
-	// }()
-
-	// qry, err := database.GetStatement("SearchPartAttributes")
-	// if !database.MysqlError(err) {
-	// 	rows, res, err := qry.Exec(q.Request.SearchTerms, q.Request.SearchTerms, q.Request.StartIndex, q.Request.Count)
-	// 	if !database.MysqlError(err) {
-	// 		pId := res.Map("partID")
-	// 		var lookup models.Lookup
-
-	// 		for _, row := range rows {
-	// 			lookup.Parts = append(lookup.Parts, &models.Part{
-	// 				PartId: row.Int(pId),
-	// 			})
-	// 		}
-	// 		lookup.Get(key)
-	// 		parts = append(parts, lookup.Parts...)
-	// 	}
-	// }
-
-	// <-partChan
-
-	q.Items = append(q.Items, parts...)
-	return nil
+	return res, nil
 }
