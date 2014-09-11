@@ -63,6 +63,7 @@ type Part struct {
 	InstallSheet                            *url.URL
 	Attributes                              []Attribute
 	VehicleAttributes                       []string
+	Vehicles                                []vehicle.Vehicle `json:",omitempty" xml:",omitempty"`
 	Content                                 []Content
 	Pricing                                 []Price
 	Reviews                                 []Review

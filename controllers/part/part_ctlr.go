@@ -77,11 +77,24 @@ func Get(w http.ResponseWriter, r *http.Request, params martini.Params, enc enco
 		PartId: id,
 	}
 
+	vehicleChan := make(chan error)
+	go func() {
+		vs, err := vehicle.ReverseLookup(part.PartId)
+		if err != nil {
+			vehicleChan <- err
+		} else {
+			part.Vehicles = vs
+			vehicleChan <- nil
+		}
+	}()
+
 	err := part.Get(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
+
+	<-vehicleChan
 
 	return encoding.Must(enc.Encode(part))
 }

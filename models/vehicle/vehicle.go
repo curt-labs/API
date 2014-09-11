@@ -15,7 +15,7 @@ type ConfigOption struct {
 
 type Vehicle struct {
 	ID                    int
-	Year                  float64
+	Year                  int
 	Make, Model, Submodel string
 	Configuration         []string
 }
@@ -121,17 +121,21 @@ var (
 						(bv.YearID = ? and ma.MakeName = ?
 						and mo.ModelName = ? and sm.SubmodelName = ? and vca.ID is null)) order by part`
 
-	reverseLookupStmt = `select v.ID,bv.YearID, ma.MakeName, mo.ModelName, sm.SubmodelName, ca.value
-				from BaseVehicle bv
-				join vcdb_Vehicle v on bv.ID = v.BaseVehicleID
-				join vcdb_VehiclePart vp on v.ID = vp.VehicleID
-				left join Submodel sm on v.SubModelID = sm.ID
-				left join vcdb_Make ma on bv.MakeID = ma.ID
-				left join vcdb_Model mo on bv.ModelID = mo.ID
-				left join VehicleConfigAttribute vca on v.ConfigID = vca.VehicleConfigID
-				left join ConfigAttribute ca on vca.AttributeID = ca.ID
-				where vp.PartNumber = ?
-				order by bv.YearID desc, ma.MakeName, mo.ModelName, sm.SubmodelName`
+	reverseLookupStmt = `select
+												v.ID,bv.YearID, ma.MakeName, mo.ModelName,
+												IFNULL(sm.SubmodelName, "") as SubmodelName,
+												IFNULL(ca.value, "") as value
+												from BaseVehicle bv
+												join vcdb_Vehicle v on bv.ID = v.BaseVehicleID
+												join vcdb_VehiclePart vp on v.ID = vp.VehicleID
+												left join Submodel sm on v.SubModelID = sm.ID
+												left join vcdb_Make ma on bv.MakeID = ma.ID
+												left join vcdb_Model mo on bv.ModelID = mo.ID
+												left join VehicleConfigAttribute vca on v.ConfigID = vca.VehicleConfigID
+												left join ConfigAttribute ca on vca.AttributeID = ca.ID
+												where vp.PartNumber = ?
+												group by bv.YearID, ma.MakeName, mo.ModelName, sm.SubmodelName, ca.value
+												order by bv.YearID desc, ma.MakeName, mo.ModelName, sm.SubmodelName`
 
 	vehicleNotesStmt = `select distinct n.note from vcdb_VehiclePart vp
 					left join Note n on vp.ID = n.vehiclePartID
@@ -232,29 +236,34 @@ func ReverseLookup(partId int) (vehicles []Vehicle, err error) {
 		return
 	}
 
+	defer rows.Close()
 	vehicleArray := make(map[int]Vehicle, 0)
 
 	for rows.Next() {
-		var tmp Vehicle
-		var configValue string
+		var id int
+		var year int
+		var ma string
+		var mo string
+		var sm string
+		var configVal string
 
-		if err = rows.Scan(&tmp.ID, &tmp.Year, &tmp.Make, &tmp.Model, &tmp.Submodel, &configValue); err != nil {
+		if err = rows.Scan(&id, &year, &ma, &mo, &sm, &configVal); err != nil {
 			break
 		}
 
-		v, ok := vehicleArray[tmp.ID]
+		v, ok := vehicleArray[id]
 		if ok {
 			// Vehicle Record exists for this ID
 			// so we'll simply append this configuration variable
-			v.Configuration = append(v.Configuration, configValue)
+			v.Configuration = append(v.Configuration, configVal)
 		} else {
 			v = Vehicle{
-				ID:            tmp.ID,
-				Year:          tmp.Year,
-				Make:          tmp.Make,
-				Model:         tmp.Model,
-				Submodel:      tmp.Submodel,
-				Configuration: []string{configValue},
+				ID:            id,
+				Year:          year,
+				Make:          ma,
+				Model:         mo,
+				Submodel:      sm,
+				Configuration: []string{configVal},
 			}
 		}
 		vehicleArray[v.ID] = v
