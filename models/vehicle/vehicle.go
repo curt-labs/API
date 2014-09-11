@@ -2,6 +2,9 @@ package vehicle
 
 import (
 	"database/sql"
+	"encoding/json"
+	"fmt"
+	"github.com/curt-labs/GoAPI/helpers/redis"
 
 	"github.com/curt-labs/GoAPI/helpers/api"
 	"github.com/curt-labs/GoAPI/helpers/database"
@@ -219,6 +222,16 @@ func (v *Vehicle) GetNotes(partId int) (notes []string, err error) {
 }
 
 func ReverseLookup(partId int) (vehicles []Vehicle, err error) {
+
+	redis_key := fmt.Sprintf("part:%d:vehicles", partId)
+
+	data, err := redis.Get(redis_key)
+	if err == nil && len(data) > 0 {
+		if err = json.Unmarshal(data, vehicles); err != nil {
+			return
+		}
+	}
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return
@@ -272,6 +285,9 @@ func ReverseLookup(partId int) (vehicles []Vehicle, err error) {
 	for _, v := range vehicleArray {
 		vehicles = append(vehicles, v)
 	}
+
+	go redis.Setex(redis_key, vehicles, redis.CacheTimeout)
+
 	return
 }
 
