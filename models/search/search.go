@@ -9,7 +9,7 @@ import (
 func Dsl(query string, fields []string) (interface{}, error) {
 
 	var con *elastigo.Conn
-	if host := os.Getenv("ELASTICSEARCH_HOST"); host != "" {
+	if host := os.Getenv("ELASTICSEARCH_IP"); host != "" {
 		con = &elastigo.Conn{
 			Protocol: elastigo.DefaultProtocol,
 			Domain:   host,
