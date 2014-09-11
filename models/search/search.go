@@ -14,8 +14,8 @@ func Dsl(query string, fields []string) (interface{}, error) {
 			Protocol: elastigo.DefaultProtocol,
 			Domain:   host,
 			Port:     os.Getenv("ELASTICSEARCH_PORT"),
-			Username: os.Getenv("ELASTICSEARCH_USERNAME"),
-			Password: os.Getenv("ELASTICSEARCH_PASSWORD"),
+			Username: os.Getenv("ELASTICSEARCH_USER"),
+			Password: os.Getenv("ELASTICSEARCH_PASS"),
 		}
 	}
 	if con == nil {
