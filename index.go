@@ -9,6 +9,7 @@ import (
 	"github.com/curt-labs/GoAPI/controllers/dealers"
 	"github.com/curt-labs/GoAPI/controllers/dealers_new"
 	"github.com/curt-labs/GoAPI/controllers/faq"
+	"github.com/curt-labs/GoAPI/controllers/forum"
 	"github.com/curt-labs/GoAPI/controllers/middleware"
 	"github.com/curt-labs/GoAPI/controllers/news"
 	"github.com/curt-labs/GoAPI/controllers/part"
@@ -165,6 +166,17 @@ func main() {
 		r.Put("", internalCors, blog_controller.CreateBlog)        //update {post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active} required{id}
 		r.Delete("/:id", internalCors, blog_controller.DeleteBlog) //{?id=id}
 		r.Delete("", internalCors, blog_controller.DeleteBlog)     //{id}
+	})
+
+	m.Group("/forum", func(r martini.Router) {
+		r.Get("/groups", forum_ctlr.GetAllGroups)
+		r.Get("/groups/:id", forum_ctlr.GetGroup)
+		r.Get("/topics", forum_ctlr.GetAllTopics)
+		r.Get("/topics/:id", forum_ctlr.GetTopic)
+		r.Get("/threads", forum_ctlr.GetAllThreads)
+		r.Get("/threads/:id", forum_ctlr.GetThread)
+		r.Get("/posts", forum_ctlr.GetAllPosts)
+		r.Get("/posts/:id", forum_ctlr.GetPost)
 	})
 
 	m.Group("/news", func(r martini.Router) {
