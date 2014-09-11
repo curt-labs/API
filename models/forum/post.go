@@ -13,6 +13,9 @@ var (
 	getAllForumPosts    = `select * from ForumPost`
 	getForumPost        = `select * from ForumPost where postID = ?`
 	getForumThreadPosts = `select * from ForumPost where threadID = ?`
+	addForumPost        = `insert into ForumPost(parentID,threadID,createdDate,title,post,name,email,company,notify,approved,active,IPAddress,flag,sticky) values(?,?,UTC_TIMESTAMP(),?,?,?,?,?,?,?,1,?,?,?)`
+	updateForumPost     = `update ForumPost set parentID = ?, threadID = ?, title = ?, post = ?, name = ?, email = ?, company = ?, notify = ?, approved = ?, IPAddress = ?, flag = ?, sticky = ? where postID = ?`
+	deleteForumPost     = `delete from ForumPost where postID = ?`
 )
 
 type Posts []Post
@@ -124,6 +127,77 @@ func (t *Thread) GetPosts() error {
 		if err = rows.Scan(&post.ID, &post.ParentID, &post.ThreadID, &post.Created, &post.Title, &post.Post, &post.Name, &post.Email, &post.Company, &post.Notify, &post.Approved, &post.Active, &post.IPAddress, &post.Flag, &post.Sticky); err == nil {
 			t.Posts = append(t.Posts, post)
 		}
+	}
+
+	return nil
+}
+
+func (p *Post) Add() error {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(addForumPost)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	res, err := stmt.Exec(p.ParentID, p.ThreadID, p.Title, p.Post, p.Name, p.Email, p.Company, p.Notify, p.Approved, p.IPAddress, p.Flag, p.Sticky)
+	if err != nil {
+		return err
+	}
+
+	if id, err := res.LastInsertId(); err != nil {
+		return err
+	} else {
+		p.ID = int(id)
+	}
+
+	return nil
+}
+
+func (p *Post) Update() error {
+	if p.ID == 0 {
+		return errors.New("Invalid Post ID")
+	}
+
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(updateForumPost)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	if _, err := stmt.Exec(p.ParentID, p.ThreadID, p.Title, p.Post, p.Name, p.Email, p.Company, p.Notify, p.Approved, p.IPAddress, p.Flag, p.Sticky, p.ID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (p *Post) Delete() error {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(deleteForumPost)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	if _, err = stmt.Exec(p.ID); err != nil {
+		return err
 	}
 
 	return nil

@@ -169,14 +169,28 @@ func main() {
 	})
 
 	m.Group("/forum", func(r martini.Router) {
+		//groups
 		r.Get("/groups", forum_ctlr.GetAllGroups)
 		r.Get("/groups/:id", forum_ctlr.GetGroup)
+		r.Post("/groups", forum_ctlr.AddGroup)
+		r.Put("/groups/:id", forum_ctlr.UpdateGroup)
+		r.Delete("/groups/:id", forum_ctlr.DeleteGroup)
+		//topics
 		r.Get("/topics", forum_ctlr.GetAllTopics)
 		r.Get("/topics/:id", forum_ctlr.GetTopic)
+		r.Post("/topics", forum_ctlr.AddTopic)
+		r.Put("/topics/:id", forum_ctlr.UpdateTopic)
+		r.Delete("/topics/:id", forum_ctlr.DeleteTopic)
+		//threads
 		r.Get("/threads", forum_ctlr.GetAllThreads)
 		r.Get("/threads/:id", forum_ctlr.GetThread)
+		r.Delete("/threads/:id", forum_ctlr.DeleteThread)
+		//posts
 		r.Get("/posts", forum_ctlr.GetAllPosts)
 		r.Get("/posts/:id", forum_ctlr.GetPost)
+		r.Post("/posts", forum_ctlr.AddPost)
+		r.Put("/posts/:id", forum_ctlr.UpdatePost)
+		r.Delete("/posts/:id", forum_ctlr.DeletePost)
 	})
 
 	m.Group("/news", func(r martini.Router) {

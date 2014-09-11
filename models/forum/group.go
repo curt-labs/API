@@ -3,6 +3,7 @@ package forum
 import (
 	"database/sql"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/curt-labs/GoAPI/helpers/database"
@@ -12,6 +13,9 @@ import (
 var (
 	getAllForumGroups = `select * from ForumGroup`
 	getForumGroup     = `select * from ForumGroup where forumGroupID = ?`
+	addForumGroup     = `insert ForumGroup(name,description,createdDate) values(?,?,UTC_TIMESTAMP())`
+	updateForumGroup  = `update ForumGroup set name = ?, description = ? where forumGroupID = ?`
+	deleteForumGroup  = `delete from ForumGroup where forumGroupID = ?`
 )
 
 type Groups []Group
@@ -90,6 +94,85 @@ func (g *Group) Get() error {
 	g.Created = group.Created
 
 	if err = g.GetTopics(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (g *Group) Add() error {
+	if len(strings.TrimSpace(g.Name)) == 0 {
+		return errors.New("Group must have a name")
+	}
+
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(addForumGroup)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	res, err := stmt.Exec(g.Name, g.Description)
+	if err != nil {
+		return err
+	}
+
+	if id, err := res.LastInsertId(); err != nil {
+		return err
+	} else {
+		g.ID = int(id)
+	}
+
+	return nil
+}
+
+func (g *Group) Update() error {
+	if g.ID == 0 {
+		return errors.New("Invalid Group ID")
+	}
+
+	if len(strings.TrimSpace(g.Name)) == 0 {
+		return errors.New("Group must have a name")
+	}
+
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(updateForumGroup)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	if _, err := stmt.Exec(g.Name, g.Description, g.ID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (g *Group) Delete() error {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(deleteForumGroup)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	if _, err = stmt.Exec(g.ID); err != nil {
 		return err
 	}
 

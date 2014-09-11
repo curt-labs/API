@@ -13,8 +13,11 @@ var (
 	getAllForumTopics   = `select * from ForumTopic`
 	getForumTopic       = `select * from ForumTopic where topicID = ?`
 	getForumGroupTopics = `select ft.* from ForumTopic ft
-						   inner join ForumGroup fg on ft.TopicGroupID = fg.forumGroupID
+	                       inner join ForumGroup fg on ft.TopicGroupID = fg.forumGroupID
 						   where ft.TopicGroupID = ?`
+	addForumTopic    = `insert into ForumTopic(TopicGroupID, name, description, image, createdDate, active, closed) values (?,?,?,?,UTC_TIMESTAMP(),?,?)`
+	updateForumTopic = `update ForumTopic set TopicGroupID = ?, name = ?, description = ?, image = ?, active = ?, closed = ? where topicID = ?`
+	deleteForumTopic = `delete from ForumTopic where topicID = ?`
 )
 
 type Topics []Topic
@@ -125,6 +128,77 @@ func (g *Group) GetTopics() error {
 		if err = rows.Scan(&topic.ID, &topic.GroupID, &topic.Name, &topic.Description, &topic.Image, &topic.Created, &topic.Active, &topic.Closed); err == nil {
 			g.Topics = append(g.Topics, topic)
 		}
+	}
+
+	return nil
+}
+
+func (t *Topic) Add() error {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(addForumTopic)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	res, err := stmt.Exec(t.GroupID, t.Name, t.Description, t.Image, t.Active, t.Closed)
+	if err != nil {
+		return err
+	}
+
+	if id, err := res.LastInsertId(); err != nil {
+		return err
+	} else {
+		t.ID = int(id)
+	}
+
+	return nil
+}
+
+func (t *Topic) Update() error {
+	if t.ID == 0 {
+		return errors.New("Invalid Thread ID")
+	}
+
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(updateForumTopic)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	if _, err := stmt.Exec(t.GroupID, t.Name, t.Description, t.Image, t.Active, t.Closed, t.ID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (t *Topic) Delete() error {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(deleteForumTopic)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	if _, err = stmt.Exec(t.ID); err != nil {
+		return err
 	}
 
 	return nil
