@@ -105,6 +105,7 @@ type Category struct {
 	ColorCode, FontCode          string
 	Image                        *url.URL
 	IsLifestyle, VehicleSpecific bool
+	Content                      []Content
 }
 
 type ExtendedCategory struct {
@@ -249,7 +250,6 @@ func PopulateCategoryMulti(rows *sql.Rows, ch chan []Category) {
 			&colorCode,
 			&fontCode)
 		if err != nil {
-			log.Println(err)
 			ch <- cats
 			return
 		}
@@ -265,6 +265,12 @@ func PopulateCategoryMulti(rows *sql.Rows, ch chan []Category) {
 			initCat.ColorCode = fmt.Sprintf("rgb(%s,%s,%s)", cc[0:3], cc[3:6], cc[6:9])
 			initCat.FontCode = fmt.Sprintf("#%s", *fontCode)
 		}
+
+		con, err := initCat.GetContent()
+		if err == nil {
+			initCat.Content = con
+		}
+
 		cats = append(cats, initCat)
 	}
 

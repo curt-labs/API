@@ -29,6 +29,11 @@ func Dsl(query string, fields []string) (interface{}, error) {
 				"fields": fields,
 			},
 		},
+		"highlight": map[string]interface{}{
+			"fields": map[string]interface{}{
+				"*": map[string]interface{}{},
+			},
+		},
 	}
 
 	var args map[string]interface{}
