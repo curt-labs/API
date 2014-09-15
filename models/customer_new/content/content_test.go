@@ -164,12 +164,16 @@ func TestContentComparedToOldModel(t *testing.T) {
 		id, key := getApiKey(allCustContent)
 
 		allCon, err := AllCustomerContent(key)
-		x := rand.Intn(len(allCon))
-		c := allCon[x]
+		var c CustomerContent
+		if len(allCon) > 0 {
+			c = allCon[rand.Intn(len(allCon))]
+		}
 
 		allCon2, err := custcontent.AllCustomerContent(key)
-		x2 := rand.Intn(len(allCon2))
-		c2 := allCon[x2]
+		var c2 CustomerContent
+		if len(allCon2) > 0 {
+			c2 = allCon2[rand.Intn(len(allCon2))]
+		}
 
 		Convey("AllContent", func() {
 			content, err := AllCustomerContent(key)

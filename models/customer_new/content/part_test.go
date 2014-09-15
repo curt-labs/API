@@ -17,10 +17,12 @@ func TestPart(t *testing.T) {
 			content, err := GetAllPartContent(key)
 			So(err, ShouldBeNil)
 			So(content, ShouldHaveSameTypeAs, con)
-			x := rand.Intn(len(content))
-			c := content[x]
-			x2 := rand.Intn(len(content))
-			c2 := content[x2]
+			var c PartContent
+			var c2 PartContent
+			if len(content) > 0 {
+				c = content[rand.Intn(len(content))]
+				c2 = content[rand.Intn(len(content))]
+			}
 			id1 := strconv.Itoa(c.PartId)
 			id2 := strconv.Itoa(c2.PartId)
 			ids := []string{id1, id2}

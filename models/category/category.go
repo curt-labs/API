@@ -20,7 +20,7 @@ var (
 	PartCategoryStmt = `
 		select c.catID, c.parentID, c.sort, c.dateAdded,
 		c.catTitle, c.shortDesc, c.longDesc,
-		c.image, c.isLifestyle, c.vehicleSpecific,
+		c.image, c.icon, c.isLifestyle, c.vehicleSpecific,
 		cc.code, cc.font from Categories as c
 		join CatPart as cp on c.catID = cp.catID
 		left join ColorCode as cc on c.codeID = cc.codeID
@@ -30,7 +30,7 @@ var (
 	PartAllCategoryStmt = `
 		select c.catID, c.parentID, c.sort, c.dateAdded,
 		c.catTitle, c.shortDesc, c.longDesc,
-		c.image, c.isLifestyle, c.vehicleSpecific,
+		c.image, c.icon, c.isLifestyle, c.vehicleSpecific,
 		cc.code, cc.font
 		from Categories as c
 		join CatPart as cp on c.catID = cp.catID
@@ -40,7 +40,7 @@ var (
 	ParentCategoryStmt = `
 		select c.catID, c.parentID, c.sort, c.dateAdded,
 		c.catTitle, c.shortDesc, c.longDesc,
-		c.image, c.isLifestyle, c.vehicleSpecific,
+		c.image, c.icon, c.isLifestyle, c.vehicleSpecific,
 		cc.code, cc.font from Categories as c
 		left join ColorCode as cc on c.codeID = cc.codeID
 		where c.catID = ?
@@ -49,7 +49,7 @@ var (
 	TopCategoriesStmt = `
 		select c.catID, c.parentID, c.sort, c.dateAdded,
 		c.catTitle, c.shortDesc, c.longDesc,
-		c.image, c.isLifestyle, c.vehicleSpecific,
+		c.image, c.icon, c.isLifestyle, c.vehicleSpecific,
 		cc.code, cc.font from Categories as c
 		left join ColorCode as cc on c.codeID = cc.codeID
 		where c.parentID IS NULL or c.parentID = 0
@@ -58,7 +58,7 @@ var (
 	SubCategoriesStmt = `
 		select c.catID, c.parentID, c.sort, c.dateAdded,
 		c.catTitle, c.shortDesc, c.longDesc,
-		c.image, c.isLifestyle, c.vehicleSpecific,
+		c.image, c.icon, c.isLifestyle, c.vehicleSpecific,
 		cc.code, cc.font from Categories as c
 		left join ColorCode as cc on c.codeID = cc.codeID
 		where c.parentID = ?
@@ -67,7 +67,7 @@ var (
 	CategoryByNameStmt = `
 		select c.catID, c.parentID, c.sort, c.dateAdded,
 		c.catTitle, c.shortDesc, c.longDesc,
-		c.image, c.isLifestyle, c.vehicleSpecific,
+		c.image, c.icon, c.isLifestyle, c.vehicleSpecific,
 		cc.code, cc.font from Categories as c
 		left join ColorCode as cc on c.codeID = cc.codeID
 		where c.catTitle = ?
@@ -75,7 +75,7 @@ var (
 	CategoryByIdStmt = `
 		select c.catID, c.parentID, c.sort, c.dateAdded,
 		c.catTitle, c.shortDesc, c.longDesc,
-		c.image, c.isLifestyle, c.vehicleSpecific,
+		c.image, c.icon, c.isLifestyle, c.vehicleSpecific,
 		cc.code, cc.font from Categories as c
 		left join ColorCode as cc on c.codeID = cc.codeID
 		where c.catID = ?
@@ -103,7 +103,7 @@ type Category struct {
 	DateAdded                    time.Time
 	Title, ShortDesc, LongDesc   string
 	ColorCode, FontCode          string
-	Image                        *url.URL
+	Image, Icon                  *url.URL
 	IsLifestyle, VehicleSpecific bool
 	Content                      []Content
 }
@@ -115,7 +115,7 @@ type ExtendedCategory struct {
 	DateAdded                    time.Time
 	Title, ShortDesc, LongDesc   string
 	ColorCode, FontCode          string
-	Image                        *url.URL
+	Image, Icon                  *url.URL
 	IsLifestyle, VehicleSpecific bool
 
 	// Extension for more detail
@@ -142,6 +142,7 @@ func PopulateExtendedCategoryMulti(rows *sql.Rows, ch chan []ExtendedCategory) {
 	for rows.Next() {
 		var initCat ExtendedCategory
 		var catImg *string
+		var catIcon *string
 		var colorCode *string
 		var fontCode *string
 		err := rows.Scan(
@@ -153,6 +154,7 @@ func PopulateExtendedCategoryMulti(rows *sql.Rows, ch chan []ExtendedCategory) {
 			&initCat.ShortDesc,
 			&initCat.LongDesc,
 			&catImg,
+			&catIcon,
 			&initCat.IsLifestyle,
 			&initCat.VehicleSpecific,
 			&colorCode,
@@ -166,6 +168,9 @@ func PopulateExtendedCategoryMulti(rows *sql.Rows, ch chan []ExtendedCategory) {
 		// Attempt to parse out the image Url
 		if catImg != nil {
 			initCat.Image, _ = url.Parse(*catImg)
+		}
+		if catIcon != nil {
+			initCat.Icon, _ = url.Parse(*catIcon)
 		}
 
 		// Build out RGB value for color coding
@@ -188,6 +193,7 @@ func PopulateExtendedCategory(row *sql.Row, ch chan ExtendedCategory) {
 
 	var initCat ExtendedCategory
 	var catImg *string
+	var catIcon *string
 	var colorCode *string
 	var fontCode *string
 	err := row.Scan(
@@ -199,6 +205,7 @@ func PopulateExtendedCategory(row *sql.Row, ch chan ExtendedCategory) {
 		&initCat.ShortDesc,
 		&initCat.LongDesc,
 		&catImg,
+		&catIcon,
 		&initCat.IsLifestyle,
 		&initCat.VehicleSpecific,
 		&colorCode,
@@ -212,6 +219,9 @@ func PopulateExtendedCategory(row *sql.Row, ch chan ExtendedCategory) {
 	// Attempt to parse out the image Url
 	if catImg != nil {
 		initCat.Image, _ = url.Parse(*catImg)
+	}
+	if catIcon != nil {
+		initCat.Icon, _ = url.Parse(*catIcon)
 	}
 
 	// Build out RGB value for color coding
@@ -234,6 +244,7 @@ func PopulateCategoryMulti(rows *sql.Rows, ch chan []Category) {
 	for rows.Next() {
 		var initCat Category
 		var catImg *string
+		var catIcon *string
 		var colorCode *string
 		var fontCode *string
 		err := rows.Scan(
@@ -245,6 +256,7 @@ func PopulateCategoryMulti(rows *sql.Rows, ch chan []Category) {
 			&initCat.ShortDesc,
 			&initCat.LongDesc,
 			&catImg,
+			&catIcon,
 			&initCat.IsLifestyle,
 			&initCat.VehicleSpecific,
 			&colorCode,
@@ -257,6 +269,9 @@ func PopulateCategoryMulti(rows *sql.Rows, ch chan []Category) {
 		// Attempt to parse out the image Url
 		if catImg != nil {
 			initCat.Image, _ = url.Parse(*catImg)
+		}
+		if catIcon != nil {
+			initCat.Icon, _ = url.Parse(*catIcon)
 		}
 
 		// Build out RGB value for color coding
@@ -285,6 +300,7 @@ func PopulateCategory(row *sql.Row, ch chan Category) {
 
 	var initCat Category
 	var catImg *string
+	var catIcon *string
 	var colorCode *string
 	var fontCode *string
 	err := row.Scan(
@@ -296,6 +312,7 @@ func PopulateCategory(row *sql.Row, ch chan Category) {
 		&initCat.ShortDesc,
 		&initCat.LongDesc,
 		&catImg,
+		&catIcon,
 		&initCat.IsLifestyle,
 		&initCat.VehicleSpecific,
 		&colorCode,
@@ -309,6 +326,9 @@ func PopulateCategory(row *sql.Row, ch chan Category) {
 	// Attempt to parse out the image Url
 	if catImg != nil {
 		initCat.Image, _ = url.Parse(*catImg)
+	}
+	if catIcon != nil {
+		initCat.Icon, _ = url.Parse(*catIcon)
 	}
 
 	// Build out RGB value for color coding

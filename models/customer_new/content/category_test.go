@@ -16,8 +16,10 @@ func TestCategory(t *testing.T) {
 
 			So(err, ShouldBeNil)
 			So(content, ShouldHaveSameTypeAs, con)
-			x := rand.Intn(len(content))
-			c := content[x]
+			var c CategoryContent
+			if len(content) > 0 {
+				c = content[rand.Intn(len(content))]
+			}
 
 			Convey("Testing GetCategoryContent", func() {
 				var cus []CustomerContent
