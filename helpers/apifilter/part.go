@@ -3,7 +3,7 @@ package apifilter
 import (
 	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
-	"github.com/curt-labs/GoAPI/models/part"
+	"github.com/curt-labs/GoAPI/models/products"
 	"log"
 	"sort"
 	"strconv"
@@ -33,7 +33,7 @@ type Decision struct {
 	Values map[string]interface{}
 }
 
-func PartFilter(parts []part.Part, specs []interface{}) ([]Options, error) {
+func PartFilter(parts []products.Part, specs []interface{}) ([]Options, error) {
 
 	var filtered FilteredOptions
 
@@ -84,7 +84,7 @@ func PartFilter(parts []part.Part, specs []interface{}) ([]Options, error) {
 	return filtered, nil
 }
 
-func (filtered FilteredOptions) attributes(parts []part.Part) FilteredOptions {
+func (filtered FilteredOptions) attributes(parts []products.Part) FilteredOptions {
 	attributeDefinitions := make(map[string]Options, 0)
 	for _, part := range parts {
 		for _, attr := range part.Attributes {
@@ -146,7 +146,7 @@ func (filtered FilteredOptions) attributes(parts []part.Part) FilteredOptions {
 	return f
 }
 
-func (filtered FilteredOptions) prices(parts []part.Part) Options {
+func (filtered FilteredOptions) prices(parts []products.Part) Options {
 	priceDefinitions := Options{
 		Key:     "Price",
 		Options: make([]Option, 0),
@@ -219,7 +219,7 @@ func (filtered FilteredOptions) prices(parts []part.Part) Options {
 	return priceDefinitions
 }
 
-func (filtered FilteredOptions) category(parts []part.Part) Options {
+func (filtered FilteredOptions) category(parts []products.Part) Options {
 	var opt Options
 
 	existing := make(map[string]string, 0)
@@ -254,7 +254,7 @@ func (filtered FilteredOptions) category(parts []part.Part) Options {
 	return opt
 }
 
-func (filtered FilteredOptions) class(parts []part.Part) Options {
+func (filtered FilteredOptions) class(parts []products.Part) Options {
 	opt := Options{
 		Key: "Class",
 	}

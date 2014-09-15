@@ -3,7 +3,7 @@ package customer_ctlr_new
 import (
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/customer_new"
-	"github.com/curt-labs/GoAPI/models/part"
+	"github.com/curt-labs/GoAPI/models/products"
 	"github.com/go-martini/martini"
 	"net/http"
 	"strconv"
@@ -172,7 +172,7 @@ func GetCustomerPrice(w http.ResponseWriter, r *http.Request, enc encoding.Encod
 	}
 
 	id := params["id"]
-	var p part.Part
+	var p products.Part
 	if id != "" {
 		p.PartId, err = strconv.Atoi(params["id"])
 	}
@@ -198,7 +198,7 @@ func GetCustomerCartReference(w http.ResponseWriter, r *http.Request, enc encodi
 	}
 
 	id := params["id"]
-	var p part.Part
+	var p products.Part
 	if id != "" {
 		p.PartId, err = strconv.Atoi(params["id"])
 	}

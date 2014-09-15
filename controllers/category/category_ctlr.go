@@ -2,8 +2,7 @@ package category_ctlr
 
 import (
 	"github.com/curt-labs/GoAPI/helpers/encoding"
-	"github.com/curt-labs/GoAPI/models/category"
-	"github.com/curt-labs/GoAPI/models/part"
+	"github.com/curt-labs/GoAPI/models/products"
 	"github.com/go-martini/martini"
 	"net/http"
 	"strconv"
@@ -14,9 +13,9 @@ func GetCategory(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 	key := qs.Get("key")
 	id, err := strconv.Atoi(params["id"])
 
-	var cat category.Category
+	var cat products.Category
 	if err != nil {
-		cat, err = category.GetByTitle(params["id"])
+		cat, err = products.GetCategoryByTitle(params["id"])
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return ""
@@ -36,7 +35,7 @@ func GetCategory(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 
 func Parents(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 
-	cats, err := category.TopTierCategories()
+	cats, err := products.TopTierCategories()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -49,9 +48,9 @@ func SubCategories(w http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 	params := r.URL.Query()
 	id, err := strconv.Atoi(params.Get(":id"))
 
-	var cat category.Category
+	var cat products.Category
 	if err != nil {
-		cat, err = category.GetByTitle(params.Get(":id"))
+		cat, err = products.GetCategoryByTitle(params.Get(":id"))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return ""
@@ -74,14 +73,14 @@ func GetParts(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) stri
 	key := params.Get("key")
 	catID, err := strconv.Atoi(params.Get(":id"))
 
-	var cat category.Category
+	var cat products.Category
 	if err != nil {
 		title := params.Get(":id")
 		if title == "" {
 			http.Error(w, "Invalid Category", http.StatusInternalServerError)
 			return ""
 		}
-		cat, err = category.GetByTitle(title)
+		cat, err = products.GetCategoryByTitle(title)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return ""
@@ -102,14 +101,14 @@ func GetParts(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) stri
 		page = page - 1
 	}
 
-	parts, err := part.GetCategoryParts(cat, key, page, count)
+	parts, err := products.GetCategoryParts(cat, key, page, count)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
 
 	if parts == nil {
-		parts = make([]part.Part, 0)
+		parts = make([]products.Part, 0)
 	}
 
 	return encoding.Must(enc.Encode(parts))

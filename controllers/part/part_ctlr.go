@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/customer"
-	"github.com/curt-labs/GoAPI/models/part"
+	"github.com/curt-labs/GoAPI/models/products"
 	"github.com/curt-labs/GoAPI/models/vehicle"
 	"github.com/go-martini/martini"
 	"github.com/ninnemana/analytics-go"
@@ -60,7 +60,7 @@ func All(w http.ResponseWriter, r *http.Request, params martini.Params, enc enco
 		}
 	}
 
-	parts, err := part.All(key, page, count)
+	parts, err := products.All(key, page, count)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -73,22 +73,22 @@ func Get(w http.ResponseWriter, r *http.Request, params martini.Params, enc enco
 	qs := r.URL.Query()
 	id, _ := strconv.Atoi(params["part"])
 	key := qs.Get("key")
-	part := part.Part{
+	p := products.Part{
 		PartId: id,
 	}
 
 	vehicleChan := make(chan error)
 	go func() {
-		vs, err := vehicle.ReverseLookup(part.PartId)
+		vs, err := vehicle.ReverseLookup(p.PartId)
 		if err != nil {
 			vehicleChan <- err
 		} else {
-			part.Vehicles = vs
+			p.Vehicles = vs
 			vehicleChan <- nil
 		}
 	}()
 
-	err := part.Get(key)
+	err := p.Get(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -96,23 +96,23 @@ func Get(w http.ResponseWriter, r *http.Request, params martini.Params, enc enco
 
 	<-vehicleChan
 
-	return encoding.Must(enc.Encode(part))
+	return encoding.Must(enc.Encode(p))
 }
 
 func GetRelated(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
 	qs := r.URL.Query()
 	id, _ := strconv.Atoi(params["part"])
 	key := qs.Get("key")
-	p := part.Part{
+	p := products.Part{
 		PartId: id,
 	}
 
 	err := p.GetRelated()
-	var parts []part.Part
+	var parts []products.Part
 	c := make(chan int, len(p.Related))
 	for _, rel := range p.Related {
 		go func(partId int) {
-			relPart := part.Part{PartId: partId}
+			relPart := products.Part{PartId: partId}
 			if err = relPart.Get(key); err == nil {
 				parts = append(parts, relPart)
 			}
@@ -155,11 +155,11 @@ func GetWithVehicle(w http.ResponseWriter, r *http.Request, params martini.Param
 	// 	Configuration: config_vals,
 	// }
 
-	// p := part.Part{
+	// p := products.Part{
 	// 	PartId: partID,
 	// }
 
-	// err = part.GetWithVehicle(&vehicle, key)
+	// err = products.GetWithVehicle(&vehicle, key)
 	// if err != nil {
 	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
 	// 	return ""
@@ -185,7 +185,7 @@ func Vehicles(w http.ResponseWriter, r *http.Request, params martini.Params, enc
 
 func Images(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
 	id, _ := strconv.Atoi(params["part"])
-	p := part.Part{
+	p := products.Part{
 		PartId: id,
 	}
 
@@ -201,7 +201,7 @@ func Images(w http.ResponseWriter, r *http.Request, params martini.Params, enc e
 func Attributes(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
 
 	id, _ := strconv.Atoi(params["part"])
-	p := part.Part{
+	p := products.Part{
 		PartId: id,
 	}
 
@@ -216,7 +216,7 @@ func Attributes(w http.ResponseWriter, r *http.Request, params martini.Params, e
 
 func GetContent(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
 	id, _ := strconv.Atoi(params["part"])
-	p := part.Part{
+	p := products.Part{
 		PartId: id,
 	}
 
@@ -231,7 +231,7 @@ func GetContent(w http.ResponseWriter, r *http.Request, params martini.Params, e
 
 func Packaging(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
 	id, _ := strconv.Atoi(params["part"])
-	p := part.Part{
+	p := products.Part{
 		PartId: id,
 	}
 
@@ -246,7 +246,7 @@ func Packaging(w http.ResponseWriter, r *http.Request, params martini.Params, en
 
 func Reviews(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
 	id, _ := strconv.Atoi(params["part"])
-	p := part.Part{
+	p := products.Part{
 		PartId: id,
 	}
 
@@ -261,7 +261,7 @@ func Reviews(w http.ResponseWriter, r *http.Request, params martini.Params, enc 
 
 func Videos(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
 	id, _ := strconv.Atoi(params["part"])
-	p := part.Part{
+	p := products.Part{
 		PartId: id,
 	}
 
@@ -276,7 +276,7 @@ func Videos(w http.ResponseWriter, r *http.Request, params martini.Params, enc e
 
 func InstallSheet(w http.ResponseWriter, r *http.Request, params martini.Params) {
 	id, _ := strconv.Atoi(strings.Split(params["part"], ".")[0])
-	p := part.Part{
+	p := products.Part{
 		PartId: id,
 	}
 
@@ -301,7 +301,7 @@ func Categories(w http.ResponseWriter, r *http.Request, params martini.Params, e
 	qs := r.URL.Query()
 	id, _ := strconv.Atoi(params["part"])
 	key := qs.Get("key")
-	p := part.Part{
+	p := products.Part{
 		PartId: id,
 	}
 
@@ -318,7 +318,7 @@ func Prices(w http.ResponseWriter, r *http.Request, params martini.Params, enc e
 	qs := r.URL.Query()
 	id, _ := strconv.Atoi(params["part"])
 	key := qs.Get("key")
-	p := part.Part{
+	p := products.Part{
 		PartId: id,
 	}
 
@@ -337,7 +337,7 @@ func Prices(w http.ResponseWriter, r *http.Request, params martini.Params, enc e
 			err = custErr
 		}
 
-		p.Pricing = append(p.Pricing, part.Price{"Customer", price, false})
+		p.Pricing = append(p.Pricing, products.Price{"Customer", price, false})
 		custChan <- 1
 	}()
 

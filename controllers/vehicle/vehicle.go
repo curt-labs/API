@@ -5,7 +5,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/apifilter"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/aces"
-	"github.com/curt-labs/GoAPI/models/part"
+	"github.com/curt-labs/GoAPI/models/products"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -49,7 +49,7 @@ func Query(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string 
 	} else {
 
 		// Kick off part getter
-		partChan := make(chan []part.Part)
+		partChan := make(chan []products.Part)
 		go l.LoadParts(partChan)
 
 		if l.Vehicle.Submodel == "" { // Get Submodels
