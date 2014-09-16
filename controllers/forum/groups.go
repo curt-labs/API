@@ -48,16 +48,25 @@ func AddGroup(rw http.ResponseWriter, req *http.Request, params martini.Params, 
 }
 
 func UpdateGroup(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
-	groupID, err := strconv.Atoi(params["id"])
-	if err != nil {
+	var err error
+	var group forum.Group
+
+	if group.ID, err = strconv.Atoi(params["id"]); err != nil {
 		http.Error(rw, "Invalid Group ID", http.StatusInternalServerError)
 		return "Invalid Group ID"
 	}
 
-	group := forum.Group{
-		ID:          groupID,
-		Name:        req.FormValue("name"),
-		Description: req.FormValue("description"),
+	if err = group.Get(); err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return err.Error()
+	}
+
+	if req.FormValue("name") != "" {
+		group.Name = req.FormValue("name")
+	}
+
+	if req.FormValue("description") != "" {
+		group.Description = req.FormValue("description")
 	}
 
 	if err := group.Update(); err != nil {

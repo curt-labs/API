@@ -191,6 +191,10 @@ func (t *Thread) Update() error {
 }
 
 func (t *Thread) Delete() error {
+	if err := t.DeletePosts(); err != nil {
+		return err
+	}
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -205,6 +209,23 @@ func (t *Thread) Delete() error {
 
 	if _, err = stmt.Exec(t.ID); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (t *Topic) DeleteThreads() error {
+	var err error
+	if len(t.Threads) == 0 {
+		//try getting
+		if err = t.Get(); err != nil {
+			return err
+		}
+	}
+	for _, thread := range t.Threads {
+		if err = thread.Delete(); err != nil {
+			return err
+		}
 	}
 
 	return nil

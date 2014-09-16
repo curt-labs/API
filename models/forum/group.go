@@ -160,6 +160,10 @@ func (g *Group) Update() error {
 }
 
 func (g *Group) Delete() error {
+	if err := g.DeleteTopics(); err != nil {
+		return err
+	}
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err

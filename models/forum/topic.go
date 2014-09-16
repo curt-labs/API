@@ -213,6 +213,10 @@ func (t *Topic) Update() error {
 }
 
 func (t *Topic) Delete() error {
+	if err := t.DeleteThreads(); err != nil {
+		return err
+	}
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -229,5 +233,21 @@ func (t *Topic) Delete() error {
 		return err
 	}
 
+	return nil
+}
+
+func (g *Group) DeleteTopics() error {
+	var err error
+	if len(g.Topics) == 0 {
+		//try getting
+		if err = g.Get(); err != nil {
+			return err
+		}
+	}
+	for _, topic := range g.Topics {
+		if err = topic.Delete(); err != nil {
+			return err
+		}
+	}
 	return nil
 }

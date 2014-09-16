@@ -66,9 +66,21 @@ func UpdateTopic(rw http.ResponseWriter, req *http.Request, params martini.Param
 	var err error
 	var topic forum.Topic
 
-	if topic.GroupID, err = strconv.Atoi(req.FormValue("groupID")); err != nil {
-		http.Error(rw, "Invalid Group ID", http.StatusInternalServerError)
-		return "Invalid Group ID"
+	if topic.ID, err = strconv.Atoi(params["id"]); err != nil {
+		http.Error(rw, "Invalid Topic ID", http.StatusInternalServerError)
+		return "Invalid Topic ID"
+	}
+
+	if err = topic.Get(); err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return err.Error()
+	}
+
+	if req.FormValue("groupID") != "" {
+		if topic.GroupID, err = strconv.Atoi(req.FormValue("groupID")); err != nil {
+			http.Error(rw, "Invalid Group ID", http.StatusInternalServerError)
+			return "Invalid Group ID"
+		}
 	}
 
 	if req.FormValue("closed") != "" {
@@ -78,7 +90,6 @@ func UpdateTopic(rw http.ResponseWriter, req *http.Request, params martini.Param
 		}
 	}
 
-	topic.Active = true
 	if req.FormValue("active") != "" {
 		if topic.Active, err = strconv.ParseBool(req.FormValue("active")); err != nil {
 			http.Error(rw, "Invalid boolean for topic.Active", http.StatusInternalServerError)
@@ -86,9 +97,17 @@ func UpdateTopic(rw http.ResponseWriter, req *http.Request, params martini.Param
 		}
 	}
 
-	topic.Name = req.FormValue("name")
-	topic.Description = req.FormValue("description")
-	topic.Image = req.FormValue("image")
+	if req.FormValue("name") != "" {
+		topic.Name = req.FormValue("name")
+	}
+
+	if req.FormValue("description") != "" {
+		topic.Description = req.FormValue("description")
+	}
+
+	if req.FormValue("image") != "" {
+		topic.Image = req.FormValue("image")
+	}
 
 	if err = topic.Update(); err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
@@ -100,7 +119,7 @@ func UpdateTopic(rw http.ResponseWriter, req *http.Request, params martini.Param
 
 func DeleteTopic(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
 	var err error
-	var topic forum.Thread
+	var topic forum.Topic
 
 	if topic.ID, err = strconv.Atoi(params["id"]); err != nil {
 		http.Error(rw, "Invalid Topic ID", http.StatusInternalServerError)

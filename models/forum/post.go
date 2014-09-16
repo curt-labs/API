@@ -11,12 +11,13 @@ import (
 )
 
 var (
-	getAllForumPosts    = `select * from ForumPost`
-	getForumPost        = `select * from ForumPost where postID = ?`
-	getForumThreadPosts = `select * from ForumPost where threadID = ?`
-	addForumPost        = `insert into ForumPost(parentID,threadID,createdDate,title,post,name,email,company,notify,approved,active,IPAddress,flag,sticky) values(?,?,UTC_TIMESTAMP(),?,?,?,?,?,?,?,1,?,?,?)`
-	updateForumPost     = `update ForumPost set parentID = ?, threadID = ?, title = ?, post = ?, name = ?, email = ?, company = ?, notify = ?, approved = ?, IPAddress = ?, flag = ?, sticky = ? where postID = ?`
-	deleteForumPost     = `delete from ForumPost where postID = ?`
+	getAllForumPosts       = `select * from ForumPost`
+	getForumPost           = `select * from ForumPost where postID = ?`
+	getForumThreadPosts    = `select * from ForumPost where threadID = ?`
+	addForumPost           = `insert into ForumPost(parentID,threadID,createdDate,title,post,name,email,company,notify,approved,active,IPAddress,flag,sticky) values(?,?,UTC_TIMESTAMP(),?,?,?,?,?,?,?,1,?,?,?)`
+	updateForumPost        = `update ForumPost set parentID = ?, threadID = ?, title = ?, post = ?, name = ?, email = ?, company = ?, notify = ?, approved = ?, IPAddress = ?, flag = ?, sticky = ? where postID = ?`
+	deleteForumPost        = `delete from ForumPost where postID = ?`
+	deleteForumThreadPosts = `delete from ForumPost where threadID = ?`
 )
 
 type Posts []Post
@@ -230,6 +231,26 @@ func (p *Post) Delete() error {
 	defer stmt.Close()
 
 	if _, err = stmt.Exec(p.ID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (t *Thread) DeletePosts() error {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(deleteForumThreadPosts)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	if _, err = stmt.Exec(t.ID); err != nil {
 		return err
 	}
 

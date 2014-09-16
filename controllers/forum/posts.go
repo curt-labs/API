@@ -188,11 +188,25 @@ func UpdatePost(rw http.ResponseWriter, req *http.Request, params martini.Params
 		}
 	}
 
-	post.Title = req.FormValue("title")
-	post.Post = req.FormValue("post")
-	post.Name = req.FormValue("name")
-	post.Email = req.FormValue("email")
-	post.Company = req.FormValue("company")
+	if req.FormValue("title") != "" {
+		post.Title = req.FormValue("title")
+	}
+
+	if req.FormValue("post") != "" {
+		post.Post = req.FormValue("post")
+	}
+
+	if req.FormValue("name") != "" {
+		post.Name = req.FormValue("name")
+	}
+
+	if req.FormValue("email") != "" {
+		post.Email = req.FormValue("email")
+	}
+
+	if req.FormValue("company") != "" {
+		post.Company = req.FormValue("company")
+	}
 	//post.IPAddress = ""
 
 	if err = post.Update(); err != nil {
