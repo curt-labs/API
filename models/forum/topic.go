@@ -3,6 +3,7 @@ package forum
 import (
 	"database/sql"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/curt-labs/GoAPI/helpers/database"
@@ -13,8 +14,8 @@ var (
 	getAllForumTopics   = `select * from ForumTopic`
 	getForumTopic       = `select * from ForumTopic where topicID = ?`
 	getForumGroupTopics = `select ft.* from ForumTopic ft
-	                       inner join ForumGroup fg on ft.TopicGroupID = fg.forumGroupID
-						   where ft.TopicGroupID = ?`
+                              inner join ForumGroup fg on ft.TopicGroupID = fg.forumGroupID
+                              where ft.TopicGroupID = ?`
 	addForumTopic    = `insert into ForumTopic(TopicGroupID, name, description, image, createdDate, active, closed) values (?,?,?,?,UTC_TIMESTAMP(),?,?)`
 	updateForumTopic = `update ForumTopic set TopicGroupID = ?, name = ?, description = ?, image = ?, active = ?, closed = ? where topicID = ?`
 	deleteForumTopic = `delete from ForumTopic where topicID = ?`
@@ -122,10 +123,23 @@ func (g *Group) GetTopics() error {
 	}
 	defer stmt.Close()
 
+	allThreads, err := GetAllThreads()
+	allThreadsMap := allThreads.ToMap(MapToTopicID)
+	if err != nil {
+		return err
+	}
+
 	rows, err := stmt.Query(g.ID)
+	if err != nil {
+		return err
+	}
+
 	for rows.Next() {
 		var topic Topic
 		if err = rows.Scan(&topic.ID, &topic.GroupID, &topic.Name, &topic.Description, &topic.Image, &topic.Created, &topic.Active, &topic.Closed); err == nil {
+			if threads, ok := allThreadsMap[topic.ID]; ok {
+				topic.Threads = threads.(Threads)
+			}
 			g.Topics = append(g.Topics, topic)
 		}
 	}
@@ -134,6 +148,13 @@ func (g *Group) GetTopics() error {
 }
 
 func (t *Topic) Add() error {
+	if t.GroupID <= 0 {
+		return errors.New("Topic must have a Group ID")
+	}
+	if len(strings.TrimSpace(t.Name)) == 0 {
+		return errors.New("Topic must have a name")
+	}
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -163,6 +184,13 @@ func (t *Topic) Add() error {
 func (t *Topic) Update() error {
 	if t.ID == 0 {
 		return errors.New("Invalid Thread ID")
+	}
+
+	if t.GroupID == 0 {
+		return errors.New("Topic must have a Group ID")
+	}
+	if len(strings.TrimSpace(t.Name)) == 0 {
+		return errors.New("Topic must have a name")
 	}
 
 	db, err := sql.Open("mysql", database.ConnectionString())

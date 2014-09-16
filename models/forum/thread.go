@@ -115,10 +115,23 @@ func (t *Topic) GetThreads() error {
 	}
 	defer stmt.Close()
 
+	allPosts, err := GetAllPosts()
+	allPostsMap := allPosts.ToMap(MapToThreadID)
+	if err != nil {
+		return err
+	}
+
 	rows, err := stmt.Query(t.ID)
+	if err != nil {
+		return err
+	}
+
 	for rows.Next() {
 		var thread Thread
 		if err = rows.Scan(&thread.ID, &thread.TopicID, &thread.Created, &thread.Active, &thread.Closed); err == nil {
+			if posts, ok := allPostsMap[thread.ID]; ok {
+				thread.Posts = posts.(Posts)
+			}
 			t.Threads = append(t.Threads, thread)
 		}
 	}

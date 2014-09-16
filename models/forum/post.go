@@ -3,6 +3,7 @@ package forum
 import (
 	"database/sql"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/curt-labs/GoAPI/helpers/database"
@@ -133,6 +134,22 @@ func (t *Thread) GetPosts() error {
 }
 
 func (p *Post) Add() error {
+	if p.ThreadID == 0 {
+		return errors.New("Invalid Thread ID")
+	}
+
+	if len(strings.TrimSpace(p.Title)) == 0 {
+		return errors.New("Post must have a title")
+	}
+
+	if len(strings.TrimSpace(p.Post)) == 0 {
+		return errors.New("Post must have a message")
+	}
+
+	if p.Notify && len(strings.TrimSpace(p.Email)) == 0 {
+		return errors.New("Must have an email address in order to be notified")
+	}
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -162,6 +179,22 @@ func (p *Post) Add() error {
 func (p *Post) Update() error {
 	if p.ID == 0 {
 		return errors.New("Invalid Post ID")
+	}
+
+	if p.ThreadID == 0 {
+		return errors.New("Invalid Thread ID")
+	}
+
+	if len(strings.TrimSpace(p.Title)) == 0 {
+		return errors.New("Post must have a title")
+	}
+
+	if len(strings.TrimSpace(p.Post)) == 0 {
+		return errors.New("Post must have a message")
+	}
+
+	if p.Notify && len(strings.TrimSpace(p.Email)) == 0 {
+		return errors.New("Must have an email address in order to be notified")
 	}
 
 	db, err := sql.Open("mysql", database.ConnectionString())
