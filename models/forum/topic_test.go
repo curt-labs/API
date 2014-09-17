@@ -124,7 +124,7 @@ func TestTopics(t *testing.T) {
 
 		Convey("Last Added Topic", func() {
 			top = Topic{ID: lastTopicID}
-			top.GroupID = 1
+			top.GroupID = g.ID
 			top.Name = "test-topic"
 			top.Description = "This is a updated test topic"
 
