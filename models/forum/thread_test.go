@@ -10,6 +10,23 @@ func TestThreads(t *testing.T) {
 	var lastThreadID int
 	var err error
 
+	//setup a testing group, a topic, and an existing thread
+	g := Group{}
+	g.Name = "Test Group"
+	g.Description = "This is a test group."
+	g.Add()
+
+	top := Topic{}
+	top.GroupID = g.ID
+	top.Name = "test-topic"
+	top.Description = "This is a updated test topic"
+	top.Add()
+
+	thready := Thread{}
+	thready.TopicID = top.ID
+	thready.Add()
+
+	//run our tests
 	Convey("Testing Gets", t, func() {
 		Convey("Testing GetAll()", func() {
 			threads, err := GetAllThreads()
@@ -26,18 +43,8 @@ func TestThreads(t *testing.T) {
 			})
 
 			Convey("Thread with non-zero ID", func() {
-				//create a bogus thread
-				th = Thread{}
-				th.TopicID = 1
-				th.Add()
-				id := th.ID
-
-				//lets try getting
-				th = Thread{ID: id}
+				th = Thread{ID: thready.ID}
 				err = th.Get()
-
-				//let's remove it...we're done with it
-				th.Delete()
 
 				So(th.ID, ShouldNotEqual, 0)
 				So(err, ShouldBeNil)
@@ -55,7 +62,7 @@ func TestThreads(t *testing.T) {
 		})
 		Convey("Add Valid Thread", func() {
 			th = Thread{}
-			th.TopicID = 1
+			th.TopicID = top.ID
 
 			err = th.Add()
 
@@ -77,7 +84,7 @@ func TestThreads(t *testing.T) {
 
 		Convey("Last Added Thread", func() {
 			th = Thread{ID: lastThreadID}
-			th.TopicID = 1
+			th.TopicID = top.ID
 
 			err = th.Update()
 
@@ -102,4 +109,7 @@ func TestThreads(t *testing.T) {
 			So(err, ShouldBeNil)
 		})
 	})
+
+	//destroy the group and everything tied to it
+	g.Delete()
 }

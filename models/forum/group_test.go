@@ -10,6 +10,13 @@ func TestGroups(t *testing.T) {
 	var lastGroupID int
 	var err error
 
+	//setup an existing groupy
+	groupy := Group{}
+	groupy.Name = "Test Group"
+	groupy.Description = "This is a test group."
+	groupy.Add()
+
+	//run our tests
 	Convey("Testing Gets", t, func() {
 		Convey("Testing GetAll()", func() {
 			groups, err := GetAllGroups()
@@ -27,8 +34,8 @@ func TestGroups(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 
-			Convey("Group with ID of 1", func() {
-				g.ID = 1
+			Convey("Group with non-zero ID", func() {
+				g = Group{ID: groupy.ID}
 				err = g.Get()
 
 				So(g.ID, ShouldNotEqual, 0)
@@ -111,4 +118,7 @@ func TestGroups(t *testing.T) {
 			So(err, ShouldBeNil)
 		})
 	})
+
+	//destroy the test group, we're done with it
+	groupy.Delete()
 }

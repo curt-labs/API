@@ -10,17 +10,29 @@ func TestTopics(t *testing.T) {
 	var lastTopicID int
 	var err error
 
+	//setup a test group
+	g := Group{}
+	g.Name = "Test Group"
+	g.Description = "This is a test group."
+	g.Add()
+
+	toppy := Topic{}
+	toppy.GroupID = g.ID
+	toppy.Name = "test-topic"
+	toppy.Description = "This is a test topic"
+	toppy.Add()
+
 	Convey("Testing Gets", t, func() {
 		Convey("Testing GetAll()", func() {
 			topics, err := GetAllTopics()
 
-			So(topics, ShouldNotBeNil)
 			So(len(topics), ShouldBeGreaterThanOrEqualTo, 0)
 			So(err, ShouldBeNil)
 		})
 
 		Convey("Testing Get()", func() {
-			Convey("Topic with ID of 0", func() {
+			Convey("Empty Topic", func() {
+				top = Topic{}
 				err = top.Get()
 				So(top.ID, ShouldEqual, 0)
 				So(top.GroupID, ShouldEqual, 0)
@@ -31,8 +43,8 @@ func TestTopics(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 
-			Convey("Topic with ID of 1", func() {
-				top.ID = 1
+			Convey("Topic with non-zero ID", func() {
+				top = Topic{ID: toppy.ID}
 				err = top.Get()
 
 				So(top.ID, ShouldNotEqual, 0)
@@ -52,7 +64,7 @@ func TestTopics(t *testing.T) {
 		})
 		Convey("Add Valid Topic", func() {
 			top = Topic{}
-			top.GroupID = 1
+			top.GroupID = g.ID
 			top.Name = "test-topic"
 			top.Description = "This is a test topic."
 
@@ -82,7 +94,7 @@ func TestTopics(t *testing.T) {
 
 		Convey("Missing Name", func() {
 			top = Topic{ID: lastTopicID}
-			top.GroupID = 1
+			top.GroupID = g.ID
 			top.Description = "This is a updated test topic."
 			top.Name = ""
 
@@ -141,4 +153,6 @@ func TestTopics(t *testing.T) {
 			So(err, ShouldBeNil)
 		})
 	})
+
+	g.Delete()
 }
