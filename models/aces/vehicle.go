@@ -58,7 +58,7 @@ var (
 type Vehicle struct {
 	Base           BaseVehicle     `json:"base" xml:"base"`
 	Submodel       string          `json:"submodel" xml:"submodel"`
-	Configurations []Configuration `json:"config_options" xml:"config_options"`
+	Configurations []Configuration `json:"configurations" xml:"configurations"`
 }
 
 type Lookup struct {
