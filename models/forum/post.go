@@ -68,6 +68,10 @@ func GetAllPosts() (posts Posts, err error) {
 }
 
 func (p *Post) Get() error {
+	if p.ID == 0 {
+		return errors.New("Invalid Post ID")
+	}
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -82,12 +86,7 @@ func (p *Post) Get() error {
 
 	var post Post
 	row := stmt.QueryRow(p.ID)
-	err = row.Scan(&post.ID, &post.ParentID, &post.ThreadID, &post.Created, &post.Title, &post.Post, &post.Name, &post.Email, &post.Company, &post.Notify, &post.Approved, &post.Active, &post.IPAddress, &post.Flag, &post.Sticky)
-
-	if row == nil || err != nil {
-		if row == nil {
-			return errors.New("Invalid reference to Forum Post")
-		}
+	if err = row.Scan(&post.ID, &post.ParentID, &post.ThreadID, &post.Created, &post.Title, &post.Post, &post.Name, &post.Email, &post.Company, &post.Notify, &post.Approved, &post.Active, &post.IPAddress, &post.Flag, &post.Sticky); err != nil {
 		return err
 	}
 
@@ -111,6 +110,10 @@ func (p *Post) Get() error {
 }
 
 func (t *Thread) GetPosts() error {
+	if t.ID == 0 {
+		return errors.New("Invalid Thread ID")
+	}
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -218,6 +221,10 @@ func (p *Post) Update() error {
 }
 
 func (p *Post) Delete() error {
+	if p.ID == 0 {
+		return errors.New("Invalid Post ID")
+	}
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err

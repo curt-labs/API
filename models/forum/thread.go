@@ -66,6 +66,10 @@ func GetAllThreads() (threads Threads, err error) {
 }
 
 func (t *Thread) Get() error {
+	if t.ID == 0 {
+		return errors.New("Invalid Thread ID")
+	}
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -80,12 +84,7 @@ func (t *Thread) Get() error {
 
 	var thread Thread
 	row := stmt.QueryRow(t.ID)
-	err = row.Scan(&thread.ID, &thread.TopicID, &thread.Created, &thread.Active, &thread.Closed)
-
-	if row == nil || err != nil {
-		if row == nil {
-			return errors.New("Invalid reference to Forum Thread")
-		}
+	if err = row.Scan(&thread.ID, &thread.TopicID, &thread.Created, &thread.Active, &thread.Closed); err != nil {
 		return err
 	}
 
@@ -103,6 +102,10 @@ func (t *Thread) Get() error {
 }
 
 func (t *Topic) GetThreads() error {
+	if t.ID == 0 {
+		return errors.New("Invalid Topic ID")
+	}
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -171,6 +174,10 @@ func (t *Thread) Update() error {
 		return errors.New("Invalid Thread ID")
 	}
 
+	if t.TopicID == 0 {
+		return errors.New("Invalid Topic ID")
+	}
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -191,6 +198,10 @@ func (t *Thread) Update() error {
 }
 
 func (t *Thread) Delete() error {
+	if t.ID == 0 {
+		return errors.New("Invalid Thread ID")
+	}
+
 	if err := t.DeletePosts(); err != nil {
 		return err
 	}

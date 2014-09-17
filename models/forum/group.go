@@ -65,6 +65,10 @@ func GetAllGroups() (groups Groups, err error) {
 }
 
 func (g *Group) Get() error {
+	if g.ID == 0 {
+		return errors.New("Invalid Group ID")
+	}
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -79,12 +83,7 @@ func (g *Group) Get() error {
 
 	var group Group
 	row := stmt.QueryRow(g.ID)
-	err = row.Scan(&group.ID, &group.Name, &group.Description, &group.Created)
-
-	if row == nil || err != nil {
-		if row == nil {
-			return errors.New("Invalid reference to Forum Group")
-		}
+	if err = row.Scan(&group.ID, &group.Name, &group.Description, &group.Created); err != nil {
 		return err
 	}
 
@@ -160,6 +159,10 @@ func (g *Group) Update() error {
 }
 
 func (g *Group) Delete() error {
+	if g.ID == 0 {
+		return errors.New("Invalid Group ID")
+	}
+
 	if err := g.DeleteTopics(); err != nil {
 		return err
 	}

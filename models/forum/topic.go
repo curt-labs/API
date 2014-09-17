@@ -72,6 +72,9 @@ func GetAllTopics() (topics Topics, err error) {
 }
 
 func (t *Topic) Get() error {
+	if t.ID == 0 {
+		return errors.New("Invalid Topic ID")
+	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -86,11 +89,7 @@ func (t *Topic) Get() error {
 
 	var topic Topic
 	row := stmt.QueryRow(t.ID)
-	err = row.Scan(&topic.ID, &topic.GroupID, &topic.Name, &topic.Description, &topic.Image, &topic.Created, &topic.Active, &topic.Closed)
-	if row == nil || err != nil {
-		if row == nil {
-			return errors.New("Invalid reference to Forum Topic")
-		}
+	if err = row.Scan(&topic.ID, &topic.GroupID, &topic.Name, &topic.Description, &topic.Image, &topic.Created, &topic.Active, &topic.Closed); err != nil {
 		return err
 	}
 
@@ -111,6 +110,10 @@ func (t *Topic) Get() error {
 }
 
 func (g *Group) GetTopics() error {
+	if g.ID == 0 {
+		return errors.New("Invalid Group ID")
+	}
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -148,7 +151,7 @@ func (g *Group) GetTopics() error {
 }
 
 func (t *Topic) Add() error {
-	if t.GroupID <= 0 {
+	if t.GroupID == 0 {
 		return errors.New("Topic must have a Group ID")
 	}
 	if len(strings.TrimSpace(t.Name)) == 0 {
@@ -183,7 +186,7 @@ func (t *Topic) Add() error {
 
 func (t *Topic) Update() error {
 	if t.ID == 0 {
-		return errors.New("Invalid Thread ID")
+		return errors.New("Invalid Topic ID")
 	}
 
 	if t.GroupID == 0 {
@@ -213,6 +216,10 @@ func (t *Topic) Update() error {
 }
 
 func (t *Topic) Delete() error {
+	if t.ID == 0 {
+		return errors.New("Invalid Topic ID")
+	}
+
 	if err := t.DeleteThreads(); err != nil {
 		return err
 	}
