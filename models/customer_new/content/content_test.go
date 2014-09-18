@@ -61,6 +61,7 @@ func getApiKey(query string) (int, string) {
 	x := rand.Intn(len(outputs))
 	return outputs[x].id, outputs[x].apiKey
 }
+
 func getRandType() (t string) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -170,7 +171,7 @@ func TestContentComparedToOldModel(t *testing.T) {
 		}
 
 		allCon2, err := custcontent.AllCustomerContent(key)
-		var c2 CustomerContent
+		var c2 custcontent.CustomerContent
 		if len(allCon2) > 0 {
 			c2 = allCon2[rand.Intn(len(allCon2))]
 		}

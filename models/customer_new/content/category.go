@@ -89,6 +89,8 @@ func GetAllCategoryContent(key string) (content []CategoryContent, err error) {
 
 // Retrieves specific category content for this customer
 func GetCategoryContent(catID int, key string) (content []CustomerContent, err error) {
+	content = make([]CustomerContent, 0) // initializer
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return content, err

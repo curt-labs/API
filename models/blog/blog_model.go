@@ -26,20 +26,24 @@ type Blog struct {
 	Active          bool           `json:"active,omitempty" xml:"active,omitempty"`
 	BlogCategories  BlogCategories `json:"blogCategories,omitempty" xml:"blogCategories,omitempty"`
 }
+
 type Blogs []Blog
 type Categories []Category
+
 type Category struct {
 	ID     int    `json:"id,omitempty" xml:"id,omitempty"`
 	Name   string `json:"name,omitempty" xml:"name,omitempty"`
 	Slug   string `json:"slug,omitempty" xml:"slug,omitempty"`
 	Active bool   `json:"active,omitempty" xml:"active,omitempty"`
 }
+
 type BlogCategory struct {
 	ID             int      `json:"id,omitempty" xml:"id,omitempty"`
 	BlogPostID     int      `json:"blogPostID,omitempty" xml:"blogPostID,omitempty"`
 	BlogCategoryID int      `json:"blogCategoryID,omitempty" xml:"blogCategoryID,omitempty"`
 	Category       Category `json:"category,omitempty" xml:"category,omitempty"`
 }
+
 type BlogCategories []BlogCategory
 
 var (
@@ -226,14 +230,18 @@ func (b *Blog) Get() error {
 		if err != nil {
 			return err
 		}
+		if b.ID == 0 {
+			continue
+		}
+
 		if p != nil {
-			b.PublishedDate, err = time.Parse(timeFormat, *p)
+			b.PublishedDate, _ = time.Parse(timeFormat, *p)
 		}
 		if c != nil {
-			b.CreatedDate, err = time.Parse(timeFormat, *c)
+			b.CreatedDate, _ = time.Parse(timeFormat, *c)
 		}
 		if l != nil {
-			b.LastModified, err = time.Parse(timeFormat, *l)
+			b.LastModified, _ = time.Parse(timeFormat, *l)
 
 		}
 

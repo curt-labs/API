@@ -451,13 +451,13 @@ func (content CustomerContent) bridge(partID, catID int) error {
 func (content CustomerContent) GetContentType() (ct IndexedContentType, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		return ct, err
+		return
 	}
 	defer db.Close()
 
 	stmt, err := db.Prepare(getContentTypeId)
 	if err != nil {
-		return ct, err
+		return
 	}
 	cType := content.ContentType.Type
 
@@ -467,9 +467,10 @@ func (content CustomerContent) GetContentType() (ct IndexedContentType, err erro
 	}
 
 	err = stmt.QueryRow(cType).Scan(&ct.Id, &ct.Type, &ct.AllowHtml)
-	if err != nil {
-		return ct, err
+	if err == sql.ErrNoRows {
+		err = nil
 	}
+
 	return
 }
 

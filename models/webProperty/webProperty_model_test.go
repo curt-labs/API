@@ -349,7 +349,11 @@ func TestGetWebProperties(t *testing.T) {
 
 			rs.Compliance = true
 			err = rs.UpdateJoin()
-			So(err, ShouldBeNil)
+			if rs.ID > 0 {
+				So(err, ShouldNotBeNil)
+			} else {
+				So(err, ShouldBeNil)
+			}
 
 			err = rs.DeleteJoin()
 			So(err, ShouldBeNil)

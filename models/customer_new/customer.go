@@ -440,7 +440,7 @@ func (c *Customer) Basics() error {
 
 func (c *Customer) GetLocations() error {
 	var err error
-	var ls []CustomerLocation
+	c.Locations = make([]CustomerLocation, 0)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -483,9 +483,9 @@ func (c *Customer) GetLocations() error {
 		if err != nil {
 			return err
 		}
-		ls = append(ls, l)
+		c.Locations = append(c.Locations, l)
 	}
-	c.Locations = ls
+
 	return nil
 }
 

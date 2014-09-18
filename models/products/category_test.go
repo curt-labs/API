@@ -14,23 +14,23 @@ func TestTopTierCategories(t *testing.T) {
 	})
 }
 
-func TestGetByTitle(t *testing.T) {
+func TestGetCategoryByTitle(t *testing.T) {
 
-	Convey("Test GetByTitle", t, func() {
+	Convey("Test GetCategoryByTitle", t, func() {
 		Convey("with ``", func() {
-			cat, err := GetByTitle("")
+			cat, err := GetCategoryByTitle("")
 			So(cat, ShouldNotBeNil)
 			So(cat.CategoryId, ShouldEqual, 0)
 			So(err, ShouldBeNil)
 		})
 		Convey("with `test`", func() {
-			cat, err := GetByTitle("test")
+			cat, err := GetCategoryByTitle("test")
 			So(cat, ShouldNotBeNil)
 			So(cat.CategoryId, ShouldEqual, 0)
 			So(err, ShouldBeNil)
 		})
 		Convey("with `Trailer Hitches`", func() {
-			cat, err := GetByTitle("Trailer Hitches")
+			cat, err := GetCategoryByTitle("Trailer Hitches")
 			So(cat, ShouldNotBeNil)
 			So(cat.CategoryId, ShouldNotEqual, 0)
 			So(err, ShouldBeNil)
@@ -39,17 +39,17 @@ func TestGetByTitle(t *testing.T) {
 
 }
 
-func TestGetById(t *testing.T) {
-	Convey("Test GetById", t, func() {
+func TestGetCategoryById(t *testing.T) {
+	Convey("Test GetCategoryById", t, func() {
 		Convey("with 0", func() {
-			cat, err := GetById(0)
+			cat, err := GetCategoryById(0)
 			So(cat, ShouldNotBeNil)
 			So(cat.CategoryId, ShouldEqual, 0)
 			So(err, ShouldBeNil)
 		})
 
 		Convey("with 1", func() {
-			cat, err := GetById(1)
+			cat, err := GetCategoryById(1)
 			So(cat, ShouldNotBeNil)
 			So(cat.CategoryId, ShouldNotEqual, 0)
 			So(err, ShouldBeNil)
@@ -66,7 +66,7 @@ func TestSubCategories(t *testing.T) {
 			So(err, ShouldBeNil)
 		})
 		Convey("with valid category `1`", func() {
-			cat, err := GetById(1)
+			cat, err := GetCategoryById(1)
 			So(cat, ShouldNotBeNil)
 			So(cat.CategoryId, ShouldNotEqual, 0)
 			So(err, ShouldBeNil)

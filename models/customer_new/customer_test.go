@@ -79,7 +79,7 @@ func TestCustomerModel(t *testing.T) {
 		Convey("Testing GetLocations()", func() {
 			err := randCust.GetLocations()
 			So(err, ShouldBeNil)
-			So(len(randCust.Locations), ShouldBeGreaterThan, 0)
+			So(randCust.Locations, ShouldNotBeNil)
 		})
 		Convey("Testing GetUsers()", func() {
 			users, err := c.GetUsers()

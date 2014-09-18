@@ -2,7 +2,7 @@ package aces
 
 import (
 	"github.com/curt-labs/GoAPI/helpers/api"
-	"github.com/curt-labs/GoAPI/models/part"
+	"github.com/curt-labs/GoAPI/models/products"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
@@ -12,7 +12,7 @@ func TestLoadParts(t *testing.T) {
 	Convey("Testing LoadParts()", t, func() {
 
 		Convey("without year/make/model", func() {
-			ch := make(chan []part.Part)
+			ch := make(chan []products.Part)
 			go l.LoadParts(ch)
 			parts := <-ch
 			So(parts, ShouldNotEqual, nil)
@@ -24,7 +24,7 @@ func TestLoadParts(t *testing.T) {
 			l.Vehicle.Base.Make = "KD"
 			l.Vehicle.Base.Model = "123"
 			l.Vehicle.Submodel = "LKJ"
-			ch := make(chan []part.Part)
+			ch := make(chan []products.Part)
 			go l.LoadParts(ch)
 			parts := <-ch
 			So(parts, ShouldNotEqual, nil)
@@ -39,7 +39,7 @@ func TestLoadParts(t *testing.T) {
 			}
 			l.Vehicle.Base.Year = l.Years[api_helpers.RandGenerator(len(l.Years)-1)]
 
-			ch := make(chan []part.Part)
+			ch := make(chan []products.Part)
 			go l.LoadParts(ch)
 			parts := <-ch
 			So(parts, ShouldNotEqual, nil)
@@ -60,7 +60,7 @@ func TestLoadParts(t *testing.T) {
 			}
 			l.Vehicle.Base.Make = l.Makes[api_helpers.RandGenerator(len(l.Makes)-1)]
 
-			ch := make(chan []part.Part)
+			ch := make(chan []products.Part)
 			go l.LoadParts(ch)
 			parts := <-ch
 			So(parts, ShouldNotEqual, nil)
@@ -90,7 +90,7 @@ func TestLoadParts(t *testing.T) {
 			}
 			l.Vehicle.Base.Model = l.Models[api_helpers.RandGenerator(len(l.Models)-1)]
 
-			ch := make(chan []part.Part)
+			ch := make(chan []products.Part)
 			go l.LoadParts(ch)
 			parts := <-ch
 			So(parts, ShouldNotEqual, nil)
@@ -127,7 +127,7 @@ func TestLoadParts(t *testing.T) {
 			}
 			l.Vehicle.Submodel = l.Submodels[api_helpers.RandGenerator(len(l.Submodels)-1)]
 
-			ch := make(chan []part.Part)
+			ch := make(chan []products.Part)
 			go l.LoadParts(ch)
 			parts := <-ch
 			So(parts, ShouldNotEqual, nil)

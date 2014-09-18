@@ -54,6 +54,10 @@ var (
 						left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
 						left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
 						where cu.id = ?`
+	getRegisteredUsersId = `
+		select cu.id from CustomerUser as cu
+		where cu.email = ? && cu.password = ?
+		limit 1`
 
 	customerUserAuth = `select password, id, name, email, date_added, active, isSudo, passwordConverted from CustomerUser
 							where email = ?
@@ -108,10 +112,10 @@ var (
 							limit 1`
 
 	insertCustomerUser = `INSERT into CustomerUser(id, name, email, password, customerID, date_added, active, locationID, isSudo, cust_ID, NotCustomer, passwordConverted)
-							VALUES(?,?,?,?,?,NOW(),?,?,?,?,?,1)`
+							VALUES(UUID(),?,?,?,?,NOW(),?,?,?,?,?,1)`
 
-	insertAPIKey = `insert into ApiKey(id, user_id, type_id, api_key, date_added)
-						values(UUID(),?,?,UUID(),NOW())` //DB schema does not auto increment table id
+	insertAPIKey = `insert into ApiKey(user_id, type_id, api_key, date_added)
+						values(?,?,UUID(),NOW())` //DB schema DOES auto increment table id
 
 	getCustomerUserKeysWithoutAuth = `select ak.api_key, akt.type from ApiKey as ak
 										join ApiKeyType as akt on ak.type_id = akt.id
@@ -674,7 +678,6 @@ func (cu *CustomerUser) UpdateCustomerUser() error {
 func (cu *CustomerUser) Register(pass string, customerID int, isActive bool, locationID int, isSudo bool, cust_ID int, notCustomer bool) (*CustomerUser, error) {
 
 	encryptPass, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
-	UserId := uuid.NewRandom()
 	if err != nil {
 		return nil, errors.New("Failed to generate UUID.")
 	}
@@ -690,38 +693,58 @@ func (cu *CustomerUser) Register(pass string, customerID int, isActive bool, loc
 	if err != nil {
 		return nil, err
 	}
-	_, err = stmt.Exec(UserId.String(), cu.Name, cu.Email, encryptPass, customerID, isActive, locationID, isSudo, cust_ID, notCustomer)
+
+	_, err = stmt.Exec(cu.Name, cu.Email, encryptPass, customerID, isActive, locationID, isSudo, cust_ID, notCustomer)
 	if err != nil {
 		tx.Rollback()
 		return nil, err
 	}
-	tx.Commit()
-	cu.Id = UserId.String() // needs to be set on the customer user object in order to generate the keys
+	if err = tx.Commit(); err != nil {
+		return nil, err
+	}
+	stmt, err = db.Prepare(getRegisteredUsersId) // needs to be set on the customer user object in order to generate the keys
+	if err != nil {
+		return nil, err
+	}
+
+	var userID *string
+	if err = stmt.QueryRow(cu.Email, encryptPass).Scan(&userID); err != nil || userID == nil {
+		return nil, err
+	}
+
+	cu.Id = *userID
+
 	// then create API keys for the user
-	pubChan := make(chan int)
-	privChan := make(chan int)
-	authChan := make(chan int)
+	pubChan := make(chan error)
+	privChan := make(chan error)
+	authChan := make(chan error)
 
 	// Public key:
 	go func() {
-		cu.generateAPIKey(PUBLIC_KEY_TYPE)
-		pubChan <- 1
+		_, err := cu.generateAPIKey(PUBLIC_KEY_TYPE)
+		pubChan <- err
 	}()
 
 	// Private key:
 	go func() {
-		cu.generateAPIKey(PRIVATE_KEY_TYPE)
-		privChan <- 1
+		_, err := cu.generateAPIKey(PRIVATE_KEY_TYPE)
+		privChan <- err
 	}()
 
 	// Auth Key:
 	go func() {
-		cu.generateAPIKey(AUTH_KEY_TYPE)
-		authChan <- 1
+		_, err := cu.generateAPIKey(AUTH_KEY_TYPE)
+		authChan <- err
 	}()
-	<-pubChan
-	<-privChan
-	<-authChan
+	if e := <-pubChan; e != nil {
+		return cu, e
+	}
+	if e := <-privChan; e != nil {
+		return cu, e
+	}
+	if e := <-authChan; e != nil {
+		return cu, e
+	}
 
 	return cu, nil
 }
@@ -751,7 +774,7 @@ func (cu *CustomerUser) generateAPIKey(keyType string) (string, error) {
 	}
 	tx.Commit()
 
-	var apiKey string
+	var apiKey *string
 	stmt, err = db.Prepare(getCustomerUserKeysWithoutAuth)
 	if err != nil {
 		return "", err
@@ -761,7 +784,7 @@ func (cu *CustomerUser) generateAPIKey(keyType string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return apiKey, nil
+	return *apiKey, nil
 }
 
 func getAPIKeyTypeReference(keyType string) (string, error) {
