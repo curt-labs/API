@@ -14,6 +14,9 @@ func ConnectionString() string {
 		return fmt.Sprintf("%s:%s@%s(%s)/%s?parseTime=true&loc=%s", user, pass, proto, addr, db, "America%2FChicago")
 	}
 
+	if EmptyDb != nil {
+		return "root:@tcp(127.0.0.1:3306)/CurtDev_Empty?parseTime=true&loc=America%2FChicago"
+	}
 	return "root:@tcp(127.0.0.1:3306)/CurtDev?parseTime=true&loc=America%2FChicago"
 }
 

@@ -1,6 +1,7 @@
 package database
 
 import (
+	"flag"
 	"github.com/ziutek/mymysql/autorc"
 	_ "github.com/ziutek/mymysql/thrsafe"
 	"log"
@@ -10,7 +11,8 @@ import (
 var (
 
 	// MySQL Connection Handler
-	Db = autorc.New("tcp", "", "127.0.0.1:3306", "root", "", "CurtDev")
+	Db      = autorc.New("tcp", "", "127.0.0.1:3306", "root", "", "CurtDev")
+	EmptyDb = flag.String("clean", "", "bind empty database with structure defined")
 )
 
 func BindDatabase() {
@@ -20,6 +22,13 @@ func BindDatabase() {
 		pass := os.Getenv("DATABASE_PASSWORD")
 		name := os.Getenv("CURT_DEV_NAME")
 		Db = autorc.New(proto, "", addr, user, pass, name)
+		return
+	}
+
+	// flag.Parse()
+	if EmptyDb != nil {
+		log.Println("empty db")
+		Db = autorc.New("tcp", "", "127.0.0.1:3306", "root", "", "CurtDev_Empty")
 	}
 }
 
