@@ -13,6 +13,7 @@ import (
 	"github.com/curt-labs/GoAPI/controllers/middleware"
 	"github.com/curt-labs/GoAPI/controllers/news"
 	"github.com/curt-labs/GoAPI/controllers/part"
+	"github.com/curt-labs/GoAPI/controllers/salesrep"
 	"github.com/curt-labs/GoAPI/controllers/search"
 	"github.com/curt-labs/GoAPI/controllers/vehicle"
 	"github.com/curt-labs/GoAPI/controllers/videos"
@@ -231,6 +232,14 @@ func main() {
 		r.Post("/:id", internalCors, webProperty_controller.CreateUpdateWebProperty) //
 		r.Put("", internalCors, webProperty_controller.CreateUpdateWebProperty)      //can create notes(text) and requirements (requirement, by requirement=requirementID) while creating a property
 
+	})
+
+	m.Group("/salesrep", func(r martini.Router) {
+		r.Get("", salesrep.GetAllSalesReps)
+		r.Post("", salesrep.AddSalesRep)
+		r.Get("/:id", salesrep.GetSalesRep)
+		r.Put("/:id", salesrep.UpdateSalesRep)
+		r.Delete("/:id", salesrep.DeleteSalesRep)
 	})
 
 	m.Get("/search/:term", search_ctlr.Search)
