@@ -542,6 +542,7 @@ func (c Category) GetCategory(key string) (extended ExtendedCategory, err error)
 			extended.DateAdded = cat.DateAdded
 			extended.FontCode = cat.FontCode
 			extended.Image = cat.Image
+			extended.Icon = cat.Icon
 			extended.IsLifestyle = cat.IsLifestyle
 			extended.LongDesc = cat.LongDesc
 			extended.ParentId = cat.ParentId

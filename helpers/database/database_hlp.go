@@ -26,8 +26,7 @@ func BindDatabase() {
 	}
 
 	// flag.Parse()
-	if EmptyDb != nil {
-		log.Println("empty db")
+	if EmptyDb != nil && *EmptyDb != "" {
 		Db = autorc.New("tcp", "", "127.0.0.1:3306", "root", "", "CurtDev_Empty")
 	}
 }
