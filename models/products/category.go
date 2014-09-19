@@ -500,9 +500,13 @@ func (c *Category) SubCategories() (cats []Category, err error) {
 	return
 }
 
+// This whole function feels quite redundant to me, I'd like to get it where
+// we can put all category functionality into one data structure, so we
+// don't end up implementing different methods that do the same thing
+// for different structures.
 func (c Category) GetCategory(key string) (extended ExtendedCategory, err error) {
 
-	redis_key := "gopapi:category:" + strconv.Itoa(c.CategoryId)
+	redis_key := "category:" + strconv.Itoa(c.CategoryId)
 
 	// First lets try to access the category:top endpoint in Redis
 	cat_bytes, err := redis.Get(redis_key)
