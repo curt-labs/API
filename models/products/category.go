@@ -346,7 +346,7 @@ func TopTierCategories() (cats []Category, err error) {
 
 	// First lets try to access the category:top endpoint in Redis
 	data, err := redis.Get(redis_key)
-	if len(data) > 0 && err != nil {
+	if len(data) > 0 && err == nil {
 		err = json.Unmarshal(data, &cats)
 		if err == nil {
 			return
@@ -386,7 +386,7 @@ func GetCategoryByTitle(cat_title string) (cat Category, err error) {
 
 	// Attempt to get the category from Redis
 	data, err := redis.Get(redis_key)
-	if len(data) > 0 && err != nil {
+	if len(data) > 0 && err == nil {
 		err = json.Unmarshal(data, &cat)
 		if err == nil {
 			return
@@ -426,7 +426,7 @@ func GetCategoryById(cat_id int) (cat Category, err error) {
 
 	// Attempt to get the category from Redis
 	data, err := redis.Get(redis_key)
-	if len(data) > 0 && err != nil {
+	if len(data) > 0 && err == nil {
 		err = json.Unmarshal(data, &cat)
 		if err == nil {
 			return
@@ -470,7 +470,7 @@ func (c *Category) GetSubCategories() (cats []Category, err error) {
 
 	// First lets try to access the category:top endpoint in Redis
 	data, err := redis.Get(redis_key)
-	if len(data) > 0 && err != nil {
+	if len(data) > 0 && err == nil {
 		err = json.Unmarshal(data, &cats)
 		if err == nil {
 			return
