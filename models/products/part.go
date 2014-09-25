@@ -669,7 +669,7 @@ func (p *Part) GetPartCategories(key string) (cats []ExtendedCategory, err error
 		}()
 
 		go func() {
-			subs, subErr := c.SubCategories()
+			subs, subErr := c.GetSubCategories()
 			if subErr == nil {
 				cat.SubCategories = subs
 			}

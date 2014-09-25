@@ -59,7 +59,7 @@ func SubCategories(w http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 		cat.CategoryId = id
 	}
 
-	subs, err := cat.SubCategories()
+	subs, err := cat.GetSubCategories()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""

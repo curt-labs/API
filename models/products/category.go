@@ -106,6 +106,7 @@ type Category struct {
 	Image, Icon                  *url.URL
 	IsLifestyle, VehicleSpecific bool
 	Content                      []Content
+	SubCategories                []Category
 }
 
 type ExtendedCategory struct {
@@ -117,11 +118,10 @@ type ExtendedCategory struct {
 	ColorCode, FontCode          string
 	Image, Icon                  *url.URL
 	IsLifestyle, VehicleSpecific bool
-
+	SubCategories                []Category
+	Content                      []Content
 	// Extension for more detail
-	SubCategories []Category
-	Content       []Content
-	Parts         []Part
+	Parts []Part
 }
 
 func PopulateExtendedCategoryMulti(rows *sql.Rows, ch chan []ExtendedCategory) {
@@ -276,6 +276,10 @@ func PopulateCategoryMulti(rows *sql.Rows, ch chan []Category) {
 		con, err := initCat.GetContent()
 		if err == nil {
 			initCat.Content = con
+		}
+
+		if subCats, err := initCat.GetSubCategories(); err == nil {
+			initCat.SubCategories = subCats
 		}
 
 		cats = append(cats, initCat)
@@ -456,7 +460,7 @@ func GetCategoryById(cat_id int) (cat Category, err error) {
 	return
 }
 
-func (c *Category) SubCategories() (cats []Category, err error) {
+func (c *Category) GetSubCategories() (cats []Category, err error) {
 
 	if c.CategoryId == 0 {
 		return
@@ -560,7 +564,7 @@ func (c Category) GetCategory(key string) (extended ExtendedCategory, err error)
 	}()
 
 	go func() {
-		subs, subErr := c.SubCategories()
+		subs, subErr := c.GetSubCategories()
 		extended.SubCategories = subs
 		if subErr != nil {
 			errs = append(errs, subErr)
