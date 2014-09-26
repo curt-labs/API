@@ -1,23 +1,47 @@
 package custcontent
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/database"
+	"database/sql"
 	"strconv"
 	"strings"
-	"time"
+
+	"github.com/curt-labs/GoAPI/helpers/api"
+	"github.com/curt-labs/GoAPI/helpers/database"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 var (
-	CustomerPartContent_Grouped = `select cc.id, cc.text,cc.added,cc.modified,cc.deleted,
-									ct.type,ct.allowHTML,ccb.partID
-									from CustomerContent as cc
-									join CustomerContentBridge as ccb on cc.id = ccb.contentID
-									join ContentType as ct on cc.typeID = ct.cTypeID
-									join Customer as c on cc.custID = c.cust_id
-									join CustomerUser as cu on c.cust_id = cu.cust_ID
-									join ApiKey as ak on cu.id = ak.user_id
-									where api_key = '%s' and ccb.partID IN (%s)
-									group by cc.id, ccb.partID`
+	getAllCustomerPartContentStmt = `select cc.id, cc.text,cc.added,cc.modified,cc.deleted,
+                                    ct.type,ct.allowHTML,ccb.partID
+                                    from CustomerContent as cc
+                                    join CustomerContentBridge as ccb on cc.id = ccb.contentID
+                                    join ContentType as ct on cc.typeID = ct.cTypeID
+                                    join Customer as c on cc.custID = c.cust_id
+                                    join CustomerUser as cu on c.cust_id = cu.cust_ID
+                                    join ApiKey as ak on cu.id = ak.user_id
+                                    where api_key = ? and ccb.partID > 0
+                                    group by ccb.partID, cc.id
+                                    order by ccb.partID`
+	getPartContentStmt = `select cc.id, cc.text,cc.added,cc.modified,cc.deleted,
+                         ct.type,ct.allowHTML,ccb.partID
+                         from CustomerContent as cc
+                         join CustomerContentBridge as ccb on cc.id = ccb.contentID
+                         join ContentType as ct on cc.typeID = ct.cTypeID
+                         join Customer as c on cc.custID = c.cust_id
+                         join CustomerUser as cu on c.cust_id = cu.cust_ID
+                         join ApiKey as ak on cu.id = ak.user_id
+                         where api_key = ? and ccb.partID = ?
+                         group by cc.id`
+	getGroupedCustomerPartContentStmt = `select cc.id, cc.text,cc.added,cc.modified,cc.deleted,
+                                        ct.type,ct.allowHTML,ccb.partID
+                                        from CustomerContent as cc
+                                        join CustomerContentBridge as ccb on cc.id = ccb.contentID
+                                        join ContentType as ct on cc.typeID = ct.cTypeID
+                                        join Customer as c on cc.custID = c.cust_id
+                                        join CustomerUser as cu on c.cust_id = cu.cust_ID
+                                        join ApiKey as ak on cu.id = ak.user_id
+                                        where api_key = ? and ccb.partID IN (?)
+                                        group by cc.id, ccb.partID`
 )
 
 type PartContent struct {
@@ -27,44 +51,44 @@ type PartContent struct {
 
 // Retrieves all part content for this customer
 func GetAllPartContent(key string) (content []PartContent, err error) {
-
-	qry, err := database.GetStatement("AllCustomerPartContent")
-	if database.MysqlError(err) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
 		return
 	}
+	defer db.Close()
 
-	rows, res, err := qry.Exec(key)
-	if database.MysqlError(err) {
+	stmt, err := db.Prepare(getAllCustomerPartContentStmt)
+	if err != nil {
 		return
 	}
+	defer stmt.Close()
 
-	id := res.Map("id")
-	text := res.Map("text")
-	added := res.Map("added")
-	mod := res.Map("modified")
-	deleted := res.Map("deleted")
-	cType := res.Map("type")
-	html := res.Map("allowHTML")
-	partID := res.Map("partID")
+	rows, err := stmt.Query(key)
+	if err != nil {
+		return
+	}
 
 	rawContent := make(map[int][]CustomerContent, 0)
 
-	for _, row := range rows {
-		c := CustomerContent{
-			Id:       row.Int(id),
-			Text:     row.Str(text),
-			Added:    row.ForceTime(added, time.UTC),
-			Modified: row.ForceTime(mod, time.UTC),
-			Hidden:   row.ForceBool(deleted),
-			ContentType: ContentType{
-				Type:      "Part:" + row.Str(cType),
-				AllowHtml: row.ForceBool(html),
-			},
+	for rows.Next() {
+		var c CustomerContent
+		var partID int
+		err = rows.Scan(
+			&c.Id,
+			&c.Text,
+			&c.Added,
+			&c.Modified,
+			&c.Hidden,
+			&c.ContentType.Type,
+			&c.ContentType.AllowHtml,
+			&partID,
+		)
+		if err != nil {
+			return
 		}
 
-		part_id := row.Int(partID)
-		if part_id > 0 {
-			rawContent[part_id] = append(rawContent[part_id], c)
+		if partID > 0 {
+			rawContent[partID] = append(rawContent[partID], c)
 		}
 	}
 
@@ -81,36 +105,36 @@ func GetAllPartContent(key string) (content []PartContent, err error) {
 
 // Retrieves specific part content for this customer
 func GetPartContent(partID int, key string) (content []CustomerContent, err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return
+	}
+	defer db.Close()
 
-	qry, err := database.GetStatement("CustomerPartContent")
-	if database.MysqlError(err) {
+	stmt, err := db.Prepare(getPartContentStmt)
+	if err != nil {
+		return
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(key, partID)
+	if err != nil {
 		return
 	}
 
-	rows, res, err := qry.Exec(key, partID)
-	if database.MysqlError(err) {
-		return
-	}
-
-	id := res.Map("id")
-	text := res.Map("text")
-	added := res.Map("added")
-	mod := res.Map("modified")
-	deleted := res.Map("deleted")
-	cType := res.Map("type")
-	html := res.Map("allowHTML")
-
-	for _, row := range rows {
-		c := CustomerContent{
-			Id:       row.Int(id),
-			Text:     row.Str(text),
-			Added:    row.ForceTime(added, time.UTC),
-			Modified: row.ForceTime(mod, time.UTC),
-			Hidden:   row.ForceBool(deleted),
-			ContentType: ContentType{
-				Type:      "Part:" + row.Str(cType),
-				AllowHtml: row.ForceBool(html),
-			},
+	for rows.Next() {
+		var c CustomerContent
+		err = rows.Scan(
+			&c.Id,
+			&c.Text,
+			&c.Added,
+			&c.Modified,
+			&c.Hidden,
+			&c.ContentType.Type,
+			&c.ContentType.AllowHtml,
+		)
+		if err != nil {
+			return
 		}
 		content = append(content, c)
 	}
@@ -119,8 +143,8 @@ func GetPartContent(partID int, key string) (content []CustomerContent, err erro
 }
 
 func GetGroupedPartContent(ids []string, key string) (content map[int][]CustomerContent, err error) {
-
 	content = make(map[int][]CustomerContent, len(ids))
+	escaped_key := api_helpers.Escape(key)
 
 	for i := 0; i < len(ids); i++ {
 		intId, err := strconv.Atoi(ids[i])
@@ -129,37 +153,42 @@ func GetGroupedPartContent(ids []string, key string) (content map[int][]Customer
 		}
 	}
 
-	escaped_key := database.Db.Escape(key)
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return
+	}
+	defer db.Close()
 
-	rows, res, err := database.Db.Query(CustomerPartContent_Grouped, escaped_key, strings.Join(ids, ","))
-	if database.MysqlError(err) {
+	stmt, err := db.Prepare(getGroupedCustomerPartContentStmt)
+	if err != nil {
+		return
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(escaped_key, strings.Join(ids, ","))
+	if err != nil {
 		return
 	}
 
-	id := res.Map("id")
-	text := res.Map("text")
-	added := res.Map("added")
-	mod := res.Map("modified")
-	deleted := res.Map("deleted")
-	cType := res.Map("type")
-	html := res.Map("allowHTML")
-	partID := res.Map("partID")
-
-	for _, row := range rows {
-		c := CustomerContent{
-			Id:       row.Int(id),
-			Text:     row.Str(text),
-			Added:    row.ForceTime(added, time.UTC),
-			Modified: row.ForceTime(mod, time.UTC),
-			Hidden:   row.ForceBool(deleted),
-			ContentType: ContentType{
-				Type:      "Part:" + row.Str(cType),
-				AllowHtml: row.ForceBool(html),
-			},
+	for rows.Next() {
+		var c CustomerContent
+		var partID int
+		err = rows.Scan(
+			&c.Id,
+			&c.Text,
+			&c.Added,
+			&c.Modified,
+			&c.Hidden,
+			&c.ContentType.Type,
+			&c.ContentType.AllowHtml,
+			&partID,
+		)
+		if err != nil {
+			return
 		}
-		content[row.Int(partID)] = append(content[row.Int(partID)], c)
+		c.ContentType.Type = "Part:" + c.ContentType.Type
+		content[partID] = append(content[partID], c)
 	}
 
 	return
-
 }

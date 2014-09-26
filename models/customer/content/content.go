@@ -1,13 +1,85 @@
 package custcontent
 
 import (
+	"database/sql"
 	"errors"
-	"github.com/curt-labs/GoAPI/helpers/database"
-	"github.com/curt-labs/GoAPI/models/customer"
 	"html"
-	"log"
 	"strings"
 	"time"
+
+	"github.com/curt-labs/GoAPI/helpers/database"
+	"github.com/curt-labs/GoAPI/models/customer"
+	_ "github.com/go-sql-driver/mysql"
+)
+
+var (
+	getAllCustomerContentStmt = `select cc.id, cc.text,cc.added,cc.modified,cc.deleted,
+                                ct.type,ct.allowHTML,
+                                ccb.partID, ccb.catID
+                                from CustomerContent as cc
+                                left join CustomerContentBridge as ccb on cc.id = ccb.contentID
+                                join ContentType as ct on cc.typeID = ct.cTypeID
+                                join Customer as c on cc.custID = c.cust_id
+                                join CustomerUser as cu on c.cust_id = cu.cust_ID
+                                join ApiKey as ak on cu.id = ak.user_id
+                                where api_key = ?
+                                group by cc.id`
+	getCustomerContentStmt = `select cc.id, cc.text,cc.added,cc.modified,cc.deleted,
+                             ct.type,ct.allowHTML,ccb.partID,ccb.catID
+                             from CustomerContent as cc
+                             join CustomerContentBridge as ccb on cc.id = ccb.contentID
+                             join ContentType as ct on cc.typeID = ct.cTypeID
+                             join Customer as c on cc.custID = c.cust_id
+                             join CustomerUser as cu on c.cust_id = cu.cust_ID
+                             join ApiKey as ak on cu.id = ak.user_id
+                             where api_key = ? and cc.id = ? limit 1`
+	getCustomerContentRevisionsStmt = `select ccr.old_text, ccr.new_text, ccr.date, ccr.changeType,
+                                      ct1.type as newType, ct1.allowHTML as newAllowHtml,
+                                      ct2.type as oldType, ct2.allowHTML as oldAllowHtml,
+                                      ccr.userID as userId
+                                      from CustomerContent_Revisions ccr
+                                      left join ContentType ct1 on ccr.new_type = ct1.cTypeId
+                                      left join ContentType ct2 on ccr.old_type = ct2.cTypeId
+                                      join CustomerContent cc on ccr.contentID = cc.id
+                                      join Customer as c on cc.custID = c.cust_id
+                                      join CustomerUser as cu on c.cust_id = cu.cust_ID
+                                      join ApiKey as ak on cu.id = ak.user_id
+                                      where ak.api_key = ? and ccr.contentID = ?
+                                      order by ccr.date`
+	getContentTypeIdStmt      = `select cTypeID, type, allowHTML from ContentType where type = ? limit 1`
+	getAllContentTypesStmt    = `select type, allowHTML from ContentType order by type`
+	updateCustomerContentStmt = `update CustomerContent as cc
+                                join Customer as c on cc.custID = c.cust_id
+                                join CustomerUser as cu on c.cust_id = cu.cust_ID
+                                join ApiKey as ak on cu.id = ak.user_id
+                                set cc.text = ?, cc.modified = now(),
+                                cc.userID = cu.id, cc.typeID = ?, cc.deleted = ?
+                                where ak.api_key = ? and cc.id = ?`
+	insertCustomerContentStmt = `insert into CustomerContent (
+                                    text, custID, modified, userID, typeID, deleted
+                                )
+                                select ?, c.cust_id, now(), cu.id, ?, 0
+                                from Customer as c
+                                join CustomerUser as cu on c.cust_id = cu.cust_ID
+                                join ApiKey as ak on cu.id = ak.user_id
+                                where ak.api_key = ?`
+	checkExistingCustomerContentBridgeStmt = `select count(id) from CustomerContentBridge
+                                             where partID = ? and catID = ? and contentID = ?`
+	createCustomerContentBridgeStmt = `insert into CustomerContentBridge(partID, catID, contentID) values (?,?,?)`
+	deleteCustomerContentBridgeStmt = `delete from CustomerContentBridge
+                                      where contentID in(
+                                            select cc.id from CustomerContent as cc
+                                            join Customer as c on cc.custID = c.cust_id
+                                            join CustomerUser as cu on c.cust_id = cu.cust_ID
+                                            join ApiKey ak on cu.id = ak.user_id
+                                            where api_key = ? and contentID = ?
+                                      ) and partID = ? and catID = ?`
+	markCustomerContentDeletedStmt = `update CustomerContent as cc
+                                     join Customer as c on cc.custID = c.cust_id
+                                     join CustomerUser as cu on c.cust_id = cu.cust_ID
+                                     join ApiKey as ak on cu.id = ak.user_id
+                                     set cc.deleted = 1, cc.modified = now(),
+                                     cc.userID = cu.id where ak.api_key = ? and cc.id = ?`
 )
 
 type CustomerContent struct {
@@ -39,47 +111,47 @@ type CustomerContentRevision struct {
 
 // Retrieves all content for this customer
 func AllCustomerContent(key string) (content []CustomerContent, err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return
+	}
+	defer db.Close()
 
-	qry, err := database.GetStatement("AllCustomerContent")
-	if database.MysqlError(err) {
+	stmt, err := db.Prepare(getAllCustomerContentStmt)
+	if err != nil {
+		return
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(key)
+	if err != nil {
 		return
 	}
 
-	rows, res, err := qry.Exec(key)
-	if database.MysqlError(err) {
-		return
-	}
+	var partID, catID *int
 
-	id := res.Map("id")
-	text := res.Map("text")
-	added := res.Map("added")
-	mod := res.Map("modified")
-	deleted := res.Map("deleted")
-	cType := res.Map("type")
-	html := res.Map("allowHTML")
-	partID := res.Map("partID")
-	catID := res.Map("catID")
+	for rows.Next() {
+		var c CustomerContent
+		err = rows.Scan(
+			&c.Id,
+			&c.Text,
+			&c.Added,
+			&c.Modified,
+			&c.Hidden,
+			&c.ContentType.Type,
+			&c.ContentType.AllowHtml,
+			&partID,
+			&catID,
+		)
 
-	for _, row := range rows {
-		c := CustomerContent{
-			Id:       row.Int(id),
-			Text:     row.Str(text),
-			Added:    row.ForceTime(added, time.UTC),
-			Modified: row.ForceTime(mod, time.UTC),
-			Hidden:   row.ForceBool(deleted),
-			ContentType: ContentType{
-				AllowHtml: row.ForceBool(html),
-			},
+		if err != nil {
+			return
 		}
 
-		part_id := row.Int(partID)
-		cat_id := row.Int(catID)
-		if part_id > 0 {
-			c.ContentType.Type = "Part:" + row.Str(cType)
-		} else if cat_id > 0 {
-			c.ContentType.Type = "Category:" + row.Str(cType)
-		} else {
-			c.ContentType.Type = row.Str(cType)
+		if partID != nil && *partID > 0 {
+			c.ContentType.Type = "Part: " + c.ContentType.Type
+		} else if catID != nil && *catID > 0 {
+			c.ContentType.Type = "Category: " + c.ContentType.Type
 		}
 
 		content = append(content, c)
@@ -90,97 +162,89 @@ func AllCustomerContent(key string) (content []CustomerContent, err error) {
 
 //Copied from existing GoAPI - what? it grabs a random piece of content? Great.
 func GetCustomerContent(id int, key string) (content CustomerContent, err error) {
-	qry, err := database.GetStatement("CustomerContent")
-	if database.MysqlError(err) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(getCustomerContentStmt)
+	if err != nil {
+		return
+	}
+	defer stmt.Close()
+
+	var partID, catID *int
+
+	err = stmt.QueryRow(key, id).Scan(
+		&content.Id,
+		&content.Text,
+		&content.Added,
+		&content.Modified,
+		&content.Hidden,
+		&content.ContentType.Type,
+		&content.ContentType.AllowHtml,
+		&partID,
+		&catID,
+	)
+	if err != nil {
 		return
 	}
 
-	row, res, err := qry.ExecFirst(key, id)
-	if database.MysqlError(err) {
-		return
-	}
-
-	text := res.Map("text")
-	added := res.Map("added")
-	mod := res.Map("modified")
-	deleted := res.Map("deleted")
-	cType := res.Map("type")
-	html := res.Map("allowHTML")
-	partID := res.Map("partID")
-	catID := res.Map("catID")
-
-	content = CustomerContent{
-		Id:       id,
-		Text:     row.Str(text),
-		Added:    row.ForceTime(added, time.UTC),
-		Modified: row.ForceTime(mod, time.UTC),
-		Hidden:   row.ForceBool(deleted),
-		ContentType: ContentType{
-			AllowHtml: row.ForceBool(html),
-		},
-	}
-
-	part_id := row.Int(partID)
-	cat_id := row.Int(catID)
-	if part_id > 0 {
-		content.ContentType.Type = "Part:" + row.Str(cType)
-	} else if cat_id > 0 {
-		content.ContentType.Type = "Category:" + row.Str(cType)
-	} else {
-		content.ContentType.Type = row.Str(cType)
+	if partID != nil && *partID > 0 {
+		content.ContentType.Type = "Part: " + content.ContentType.Type
+	} else if catID != nil && *catID > 0 {
+		content.ContentType.Type = "Category: " + content.ContentType.Type
 	}
 
 	return
 }
 
 func GetCustomerContentRevisions(id int, key string) (revs []CustomerContentRevision, err error) {
-	qry, err := database.GetStatement("CustomerContentRevisions")
-	if database.MysqlError(err) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
 		return
 	}
+	defer db.Close()
 
-	rows, res, err := qry.Exec(key, id)
-	if database.MysqlError(err) {
+	stmt, err := db.Prepare(getCustomerContentRevisionsStmt)
+	if err != nil {
 		return
 	}
+	defer stmt.Close()
 
-	txtOld := res.Map("old_text")
-	txtNew := res.Map("new_text")
-	date := res.Map("date")
-	change := res.Map("changeType")
-	newType := res.Map("newType")
-	oldType := res.Map("oldType")
-	newHTML := res.Map("newAllowHtml")
-	oldHTML := res.Map("oldAllowHtml")
-	userId := res.Map("userId")
+	rows, err := stmt.Query(key, id)
+	if err != nil {
+		return
+	}
 
 	users := make(map[string]customer.CustomerUser, 0)
 
-	for _, row := range rows {
-		ccr := CustomerContentRevision{
-			OldText:    row.Str(txtOld),
-			NewText:    row.Str(txtNew),
-			Date:       row.ForceTime(date, time.UTC),
-			ChangeType: row.Str(change),
-			OldContentType: ContentType{
-				Type:      row.Str(oldType),
-				AllowHtml: row.ForceBool(oldHTML),
-			},
-			NewContentType: ContentType{
-				Type:      row.Str(newType),
-				AllowHtml: row.ForceBool(newHTML),
-			},
+	for rows.Next() {
+		var rev CustomerContentRevision
+		err = rows.Scan(
+			&rev.OldText,
+			&rev.NewText,
+			&rev.Date,
+			&rev.ChangeType,
+			&rev.NewContentType.Type,
+			&rev.NewContentType.AllowHtml,
+			&rev.OldContentType.Type,
+			&rev.OldContentType.AllowHtml,
+			&rev.User.Id,
+		)
+		if err != nil {
+			return
 		}
 
-		if _, ok := users[row.Str(userId)]; !ok {
-			u, err := customer.GetCustomerUserById(row.Str(userId))
+		if _, ok := users[rev.User.Id]; !ok {
+			u, err := customer.GetCustomerUserById(rev.User.Id)
 			if err == nil {
-				users[row.Str(userId)] = u
+				users[rev.User.Id] = u
 			}
 		}
-		ccr.User = users[row.Str(userId)]
-
-		revs = append(revs, ccr)
+		rev.User = users[rev.User.Id]
+		revs = append(revs, rev)
 	}
 
 	return
@@ -205,11 +269,6 @@ func (content *CustomerContent) Save(partID, catID int, key string) error {
 		return errors.New("Failed to match up to a content type.")
 	}
 
-	qry, err := database.GetStatement("UpdateCustomerContent")
-	if database.MysqlError(err) {
-		return err
-	}
-
 	// We need to escape any possible HTML
 	// if this content type doesn't allow
 	// HTML
@@ -217,14 +276,20 @@ func (content *CustomerContent) Save(partID, catID int, key string) error {
 		content.Text = html.EscapeString(content.Text)
 	}
 
-	hidden := 0
-	if content.Hidden {
-		hidden = 1
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
 	}
+	defer db.Close()
 
-	qry.Bind(content.Text, key, content.Id, contentType.Id, hidden)
-	_, _, err = qry.Exec()
-	if database.MysqlError(err) {
+	stmt, err := db.Prepare(updateCustomerContentStmt)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(content.Text, key, content.Id, contentType.Id, content.Hidden)
+	if err != nil {
 		return err
 	}
 
@@ -237,26 +302,33 @@ func (content *CustomerContent) Save(partID, catID int, key string) error {
 }
 
 func (content *CustomerContent) Delete(partID, catID int, key string) error {
-
-	// First we need to delete the reference
-	qry, err := database.GetStatement("DeleteCustomerContentBridge")
-	if database.MysqlError(err) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
 		return err
 	}
+	defer db.Close()
 
-	_, _, err = qry.Exec(key, content.Id, partID, catID)
-	if database.MysqlError(err) {
+	// First we need to delete the reference
+	stmt, err := db.Prepare(deleteCustomerContentBridgeStmt)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(key, content.Id, partID, catID)
+	if err != nil {
 		return errors.New("Failed to delete content bridge.")
 	}
 
 	// Mark the content piece as deleted
-	qry, err = database.GetStatement("MarkCustomerContentDeleted")
-	if database.MysqlError(err) {
+	stmt, err = db.Prepare(markCustomerContentDeletedStmt)
+	if err != nil {
 		return err
 	}
+	defer stmt.Close()
 
-	_, _, err = qry.Exec(key, content.Id)
-	if database.MysqlError(err) {
+	_, err = stmt.Exec(key, content.Id)
+	if err != nil {
 		return errors.New("Failed to mark content as deleted.")
 	}
 
@@ -266,16 +338,22 @@ func (content *CustomerContent) Delete(partID, catID int, key string) error {
 }
 
 func (content *CustomerContent) insert(partID, catID int, key string) error {
-
 	contentType, err := content.GetContentType()
 	if err != nil {
 		return err
 	}
 
-	qry, err := database.GetStatement("InsertCustomerContent")
-	if database.MysqlError(err) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
 		return err
 	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(insertCustomerContentStmt)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 
 	// We need to escape any possible HTML
 	// if this content type doesn't allow
@@ -284,16 +362,14 @@ func (content *CustomerContent) insert(partID, catID int, key string) error {
 		content.Text = html.EscapeString(content.Text)
 	}
 
-	log.Println(contentType)
-
-	qry.Bind(content.Text, contentType.Id, key)
-	_, res, err := qry.Exec()
-	if database.MysqlError(err) {
+	res, err := stmt.Exec(content.Text, contentType.Id, key)
+	if err != nil {
 		return err
 	}
 
 	// Get the id of the record that was just inserted
-	content.Id = int(res.InsertId())
+	id, _ := res.LastInsertId()
+	content.Id = int(id)
 
 	// We need to bind this to a part or a category
 	err = content.bridge(partID, catID)
@@ -302,17 +378,23 @@ func (content *CustomerContent) insert(partID, catID int, key string) error {
 }
 
 func (content CustomerContent) bridge(partID, catID int) error {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
 
 	// Get the query to check if
 	// there's already a record with this info
-	qry, err := database.GetStatement("CheckExistingCustomerContentBridge")
-	if database.MysqlError(err) {
+	stmt, err := db.Prepare(checkExistingCustomerContentBridgeStmt)
+	if err != nil {
 		return err
 	}
+	defer stmt.Close()
 
 	// Execute the check
-	row, _, err := qry.ExecFirst(partID, catID, content.Id)
-	if err != nil || row.Int(0) > 0 {
+	res, err := stmt.Exec(partID, catID, content.Id)
+	if err != nil || res == nil {
 		// Either the query errored
 		// or we already have a reference for this
 		return err
@@ -320,27 +402,29 @@ func (content CustomerContent) bridge(partID, catID int) error {
 
 	// Create a bridge between the content
 	// and the part/category
-	qry, err = database.GetStatement("CreateCustomerContentBridge")
-	if database.MysqlError(err) {
+	stmt, err = db.Prepare(createCustomerContentBridgeStmt)
+	if err != nil {
 		return err
 	}
+	defer stmt.Close()
 
-	qry.Bind(partID, catID, content.Id)
-	_, _, err = qry.Exec()
-	if database.MysqlError(err) {
-		return err
-	}
+	_, err = stmt.Exec(partID, catID, content.Id)
 
 	return err
-
 }
 
 func (content CustomerContent) GetContentType() (ct IndexedContentType, err error) {
-
-	qry, err := database.GetStatement("GetContentTypeId")
-	if database.MysqlError(err) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
 		return
 	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(getContentTypeIdStmt)
+	if err != nil {
+		return
+	}
+	defer stmt.Close()
 
 	cType := content.ContentType.Type
 
@@ -349,40 +433,40 @@ func (content CustomerContent) GetContentType() (ct IndexedContentType, err erro
 		cType = typeArr[1]
 	}
 
-	row, _, err := qry.ExecFirst(cType)
-	if database.MysqlError(err) || row == nil {
-		return
-	}
-
-	ct = IndexedContentType{
-		Id:        row.Int(0),
-		Type:      row.Str(1),
-		AllowHtml: row.ForceBool(2),
+	err = stmt.QueryRow(cType).Scan(&ct.Id, &ct.Type, &ct.AllowHtml)
+	if err == sql.ErrNoRows {
+		err = nil
 	}
 
 	return
 }
 
 func AllCustomerContentTypes() (types []ContentType, err error) {
-	qry, err := database.GetStatement("GetAllContentTypes")
-	if database.MysqlError(err) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(getAllContentTypesStmt)
+	if err != nil {
+		return
+	}
+	defer stmt.Close()
+
+	res, err := stmt.Query()
+	if err != nil {
 		return
 	}
 
-	rows, res, err := qry.Exec()
-	if database.MysqlError(err) || rows == nil {
-		return
-	}
-
-	typ := res.Map("type")
-	html := res.Map("allowHTML")
-
-	for _, row := range rows {
-		ct := ContentType{
-			Type:      row.Str(typ),
-			AllowHtml: row.ForceBool(html),
+	for res.Next() {
+		var c ContentType
+		err = res.Scan(&c.Type, &c.AllowHtml)
+		if err != nil {
+			return
 		}
-		types = append(types, ct)
+		types = append(types, c)
 	}
+
 	return
 }

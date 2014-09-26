@@ -1,8 +1,34 @@
 package custcontent
 
 import (
+	"database/sql"
+
 	"github.com/curt-labs/GoAPI/helpers/database"
-	"time"
+	_ "github.com/go-sql-driver/mysql"
+)
+
+var (
+	getAllCustomerCategoryContentStmt = `select cc.id, cc.text,cc.added,cc.modified,cc.deleted,
+                                        ct.type,ct.allowHTML,ccb.catID
+                                        from CustomerContent as cc
+                                        join CustomerContentBridge as ccb on cc.id = ccb.contentID
+                                        join ContentType as ct on cc.typeID = ct.cTypeID
+                                        join Customer as c on cc.custID = c.cust_id
+                                        join CustomerUser as cu on c.cust_id = cu.cust_ID
+                                        join ApiKey as ak on cu.id = ak.user_id
+                                        where api_key = ? and ccb.catID > 0
+                                        group by ccb.catID, cc.id
+                                        order by ccb.catID`
+	getCategoryContentStmt = `select cc.id, cc.text,cc.added,cc.modified,cc.deleted,
+                             ct.type,ct.allowHTML,ccb.catID
+                             from CustomerContent as cc
+                             join CustomerContentBridge as ccb on cc.id = ccb.contentID
+                             join ContentType as ct on cc.typeID = ct.cTypeID
+                             join Customer as c on cc.custID = c.cust_id
+                             join CustomerUser as cu on c.cust_id = cu.cust_ID
+                             join ApiKey as ak on cu.id = ak.user_id
+                             where api_key = ? and ccb.catID = ?
+                             group by cc.id`
 )
 
 type CategoryContent struct {
@@ -12,43 +38,45 @@ type CategoryContent struct {
 
 // Retrieves all category content for this customer
 func GetAllCategoryContent(key string) (content []CategoryContent, err error) {
-	qry, err := database.GetStatement("AllCustomerCategoryContent")
-	if database.MysqlError(err) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(getAllCustomerCategoryContentStmt)
+	if err != nil {
+		return
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(key)
+	if err != nil {
 		return
 	}
 
-	rows, res, err := qry.Exec(key)
-	if database.MysqlError(err) {
-		return
-	}
-
-	id := res.Map("id")
-	text := res.Map("text")
-	added := res.Map("added")
-	mod := res.Map("modified")
-	deleted := res.Map("deleted")
-	cType := res.Map("type")
-	html := res.Map("allowHTML")
-	catID := res.Map("catID")
+	var catID int
 
 	rawContent := make(map[int][]CustomerContent, 0)
 
-	for _, row := range rows {
-		c := CustomerContent{
-			Id:       row.Int(id),
-			Text:     row.Str(text),
-			Added:    row.ForceTime(added, time.UTC),
-			Modified: row.ForceTime(mod, time.UTC),
-			Hidden:   row.ForceBool(deleted),
-			ContentType: ContentType{
-				Type:      "Category:" + row.Str(cType),
-				AllowHtml: row.ForceBool(html),
-			},
+	for rows.Next() {
+		var c CustomerContent
+		err = rows.Scan(
+			&c.Id,
+			&c.Text,
+			&c.Added,
+			&c.Modified,
+			&c.Hidden,
+			&c.ContentType.Type,
+			&c.ContentType.AllowHtml,
+			&catID,
+		)
+		if err != nil {
+			return
 		}
 
-		cat_id := row.Int(catID)
-		if cat_id > 0 {
-			rawContent[cat_id] = append(rawContent[cat_id], c)
+		if catID > 0 {
+			rawContent[catID] = append(rawContent[catID], c)
 		}
 	}
 
@@ -65,36 +93,39 @@ func GetAllCategoryContent(key string) (content []CategoryContent, err error) {
 
 // Retrieves specific category content for this customer
 func GetCategoryContent(catID int, key string) (content []CustomerContent, err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return
+	}
+	defer db.Close()
 
-	qry, err := database.GetStatement("CustomerCategoryContent")
-	if database.MysqlError(err) {
+	stmt, err := db.Prepare(getCategoryContentStmt)
+	if err != nil {
+		return
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(key, catID)
+	if err != nil {
 		return
 	}
 
-	rows, res, err := qry.Exec(key, catID)
-	if database.MysqlError(err) {
-		return
-	}
+	for rows.Next() {
+		var c CustomerContent
+		var categoryID int
 
-	id := res.Map("id")
-	text := res.Map("text")
-	added := res.Map("added")
-	mod := res.Map("modified")
-	deleted := res.Map("deleted")
-	cType := res.Map("type")
-	html := res.Map("allowHTML")
-
-	for _, row := range rows {
-		c := CustomerContent{
-			Id:       row.Int(id),
-			Text:     row.Str(text),
-			Added:    row.ForceTime(added, time.UTC),
-			Modified: row.ForceTime(mod, time.UTC),
-			Hidden:   row.ForceBool(deleted),
-			ContentType: ContentType{
-				Type:      "Category:" + row.Str(cType),
-				AllowHtml: row.ForceBool(html),
-			},
+		err = rows.Scan(
+			&c.Id,
+			&c.Text,
+			&c.Added,
+			&c.Modified,
+			&c.Hidden,
+			&c.ContentType.Type,
+			&c.ContentType.AllowHtml,
+			&categoryID,
+		)
+		if err != nil {
+			return
 		}
 		content = append(content, c)
 	}
