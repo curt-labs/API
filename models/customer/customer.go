@@ -458,22 +458,22 @@ func (c *Customer) GetLocations() error {
 	return nil
 }
 
-func (c *Customer) GetUsers() (users []CustomerUser, err error) {
+func (c *Customer) GetUsers() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		return
+		return err
 	}
 	defer db.Close()
 
 	stmt, err := db.Prepare(getCustomerUsersStmt)
 	if err != nil {
-		return
+		return err
 	}
 	defer stmt.Close()
 
 	rows, err := stmt.Query(c.Id)
 	if err != nil {
-		return
+		return err
 	}
 
 	var dbpass string
@@ -499,10 +499,14 @@ func (c *Customer) GetUsers() (users []CustomerUser, err error) {
 			&passConverted,
 		)
 
+		if err != nil {
+			return err
+		}
+
 		c.Users = append(c.Users, u)
 	}
 
-	return
+	return nil
 }
 
 func GetCustomerPrice(api_key string, part_id int) (price float64, err error) {

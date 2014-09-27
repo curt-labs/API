@@ -125,13 +125,12 @@ func GetUsers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) stri
 		return ""
 	}
 
-	users, err := cust.GetUsers()
-	if err != nil {
+	if err = cust.GetUsers(); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
 
-	return encoding.Must(enc.Encode(users))
+	return encoding.Must(enc.Encode(cust.Users))
 }
 
 func GetUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
