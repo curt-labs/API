@@ -56,7 +56,7 @@ var (
                                   where cl.locationID = ? limit 1`
 	getCustomerUsersStmt = `select cu.* from CustomerUser as cu
                             join Customer as c on cu.cust_ID = c.cust_id
-                            where c.customerID = '?' && cu.active = 1`
+                            where c.customerID = ? && cu.active = 1`
 	getCustomerPriceStmt = `select distinct cp.price from ApiKey as ak
                             join CustomerUser cu on ak.user_id = cu.id
                             join Customer c on cu.cust_ID = c.cust_id
