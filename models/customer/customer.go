@@ -476,15 +476,27 @@ func (c *Customer) GetUsers() (users []CustomerUser, err error) {
 		return
 	}
 
+	var dbpass string
+	var customerID, custID, notCustomer, passConverted int
+
 	for rows.Next() {
 		var u CustomerUser
+
+		u.Location = &CustomerLocation{}
+
 		err = rows.Scan(
 			&u.Id,
 			&u.Name,
 			&u.Email,
+			&dbpass,
+			&customerID,
 			&u.DateAdded,
 			&u.Active,
+			&u.Location.Id,
 			&u.Sudo,
+			&custID,
+			&notCustomer,
+			&passConverted,
 		)
 
 		c.Users = append(c.Users, u)
