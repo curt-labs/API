@@ -9,6 +9,10 @@ import (
 	"strconv"
 )
 
+var (
+	NoFilterCategories = map[int]int{1: 1, 3: 3, 4: 4, 5: 5, 8: 8, 9: 9, 254: 254, 2: 2, 11: 11, 12: 12, 13: 13, 14: 14, 273: 273}
+)
+
 func GetCategory(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	qs := r.URL.Query()
 	key := qs.Get("key")
@@ -31,9 +35,10 @@ func GetCategory(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 		return ""
 	}
 
-	filters, err := apifilter.CategoryFilter(ext, nil)
-	if err == nil {
-		ext.Filter = filters
+	if _, ignore := NoFilterCategories[ext.CategoryId]; !ignore {
+		if filters, err := apifilter.CategoryFilter(ext, nil); err == nil {
+			ext.Filter = filters
+		}
 	}
 
 	return encoding.Must(enc.Encode(ext))

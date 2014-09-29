@@ -8,6 +8,7 @@ import (
 	"github.com/curt-labs/GoAPI/models/products"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -24,6 +25,13 @@ var (
 		cp.catID = ?
 		group by pa.field, pa.value
 		order by pa.field, pa.value`
+	GetCategoryPrices = `
+		select distinct pr.price, GROUP_CONCAT(pr.partID) as parts from Price as pr
+		join Part as p on pr.partID = p.partID
+		join CatPart as cp on p.partID = cp.partID
+		where cp.catID = ? && lower(pr.priceType) = 'list' &&
+		(p.status = 800 || p.status = 900)
+		group by pr.price`
 	GetCategoryGroup = `select bottom_category_ids(?) as cats`
 )
 
@@ -36,10 +44,7 @@ func CategoryFilter(cat products.ExtendedCategory, specs []interface{}) ([]Optio
 	go func() {
 		if results, err := filtered.categoryGroupAttributes(cat); err == nil {
 			filtered = append(filtered, results...)
-		} else {
-			log.Println(err)
 		}
-
 		attrChan <- nil
 	}()
 
@@ -48,14 +53,13 @@ func CategoryFilter(cat products.ExtendedCategory, specs []interface{}) ([]Optio
 		if err != nil {
 			log.Printf("filter error: %s\n", err.Error())
 		}
-	case <-time.After(5 * time.Second):
+	case <-time.After(50 * time.Second):
 		log.Println("filter generation timed out")
 	}
 
 	sortutil.AscByField(filtered, "Key")
 
 	return filtered, nil
-
 }
 
 func (filtered FilteredOptions) categoryGroupAttributes(cat products.ExtendedCategory) (FilteredOptions, error) {
@@ -79,7 +83,7 @@ func (filtered FilteredOptions) categoryGroupAttributes(cat products.ExtendedCat
 	defer idRows.Close()
 
 	ids := make([]int, 0)
-	ids = append(ids, cat.CategoryId) // don' forget the given category
+	ids = append(ids, cat.CategoryId) // don't forget the given category
 	for idRows.Next() {
 		var strIds *string
 		if err := idRows.Scan(&strIds); err == nil && strIds != nil {
@@ -92,25 +96,84 @@ func (filtered FilteredOptions) categoryGroupAttributes(cat products.ExtendedCat
 		}
 	}
 
-	ch := make(chan error)
+	filterResults := make(map[string]Options, 0)
+	attrCh := make(chan error)
 	for _, id := range ids {
 		go func(catID int) {
 			if results, err := categoryAttributes(catID); err == nil {
-				filtered = append(filtered, results...)
+				for key, result := range results {
+					filterResults[key] = result
+				}
 			}
-			ch <- nil
+			attrCh <- nil
+		}(id)
+	}
+
+	priceCh := make(chan error)
+	filterResults["Price"] = Options{
+		Key:     "Price",
+		Options: make([]Option, 0),
+	}
+	for _, id := range ids {
+		go func(catID int) {
+			if results, err := categoryPrices(catID); err == nil {
+				opts := make([]Option, 0)
+				for _, res := range results {
+					opts = append(opts, res.Options...)
+				}
+
+				fr := filterResults["Price"]
+				fr.Options = append(fr.Options, opts...)
+				filterResults["Price"] = fr
+			}
+			priceCh <- nil
 		}(id)
 	}
 
 	for _, _ = range ids {
-		<-ch
+		<-attrCh
+		<-priceCh
 	}
-	close(ch)
+	close(attrCh)
+	close(priceCh)
 
+	for _, res := range filterResults {
+		indexed := make(map[string]int, 0)
+		opts := make(map[string]Option, 0)
+		for i, opt := range res.Options {
+			if _, ok := indexed[opt.Value]; ok {
+				idxOpt := opts[opt.Value]
+				idxOpt.Products = append(idxOpt.Products, opt.Products...)
+				curOpt := opts[opt.Value]
+				curOpt.Products = removeDuplicates(idxOpt.Products)
+				opts[opt.Value] = curOpt
+			} else {
+				res.Options = append(res.Options, opt)
+				opts[opt.Value] = opt
+				indexed[opt.Value] = i
+			}
+		}
+
+		res.Options = make([]Option, 0)
+		mapped := make(map[string]string, 0)
+		for _, opt := range opts {
+			if _, ok := mapped[opt.Value]; !ok {
+				sort.Ints(opt.Products)
+				res.Options = append(res.Options, opt)
+				mapped[opt.Value] = opt.Value
+			}
+		}
+		if len(res.Options) > 1 {
+			sortutil.AscByField(res.Options, "Value")
+			filtered = append(filtered, res)
+		}
+	}
+
+	sortutil.AscByField(filtered, "Key")
 	return filtered, nil
 }
 
-func categoryAttributes(catID int) (FilteredOptions, error) {
+func categoryAttributes(catID int) (map[string]Options, error) {
 
 	mapped := make(map[string]Options, 0)
 
@@ -125,19 +188,19 @@ func categoryAttributes(catID int) (FilteredOptions, error) {
 
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		return FilteredOptions{}, err
+		return map[string]Options{}, err
 	}
 	defer db.Close()
 
 	stmt, err := db.Prepare(GetCategoryAttributes)
 	if err != nil {
-		return FilteredOptions{}, err
+		return map[string]Options{}, err
 	}
 	defer stmt.Close()
 
 	rows, err := stmt.Query(catID)
 	if err != nil {
-		return FilteredOptions{}, err
+		return map[string]Options{}, err
 	}
 	defer rows.Close()
 
@@ -155,10 +218,10 @@ func categoryAttributes(catID int) (FilteredOptions, error) {
 			continue
 		}
 
-		var fOption Options
+		var opts Options
 		var ok bool
-		if fOption, ok = mapped[*key]; !ok {
-			fOption = Options{
+		if opts, ok = mapped[*key]; !ok {
+			opts = Options{
 				Key:     *key,
 				Options: make([]Option, 0),
 			}
@@ -175,15 +238,124 @@ func categoryAttributes(catID int) (FilteredOptions, error) {
 				opt.Products = append(opt.Products, p)
 			}
 		}
-
-		fOption.Options = append(fOption.Options, opt)
-		mapped[fOption.Key] = fOption
+		opts.AppendValue(opt)
+		mapped[opts.Key] = opts
 	}
 
-	f := make(FilteredOptions, 0)
-	for _, o := range mapped {
-		f = append(f, o)
+	return mapped, nil
+}
+
+func categoryPrices(catID int) (map[string]Options, error) {
+	mapped := make(map[string]Options, 0)
+	opt := Options{
+		Key:     "Price",
+		Options: make([]Option, 0),
 	}
 
-	return f, nil
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return mapped, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(GetCategoryPrices)
+	if err != nil {
+		return mapped, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(catID)
+	if err != nil {
+		return mapped, err
+	}
+	defer rows.Close()
+
+	priceMap := make(map[float64][]int, 0)
+
+	lows := make([]int, 0)
+	exists := false
+	for rows.Next() {
+		var price *float64
+		var parts *string
+		err = rows.Scan(&price, &parts)
+		if err != nil || price == nil || parts == nil {
+			// We're including the parts nil check here
+			// so we don't display attributes when there
+			// are no parts, although in theory, if that were
+			// the case, the attributes wouldn't be here
+			// in the first place.
+			continue
+		}
+
+		partIDS := make([]int, 0)
+		strParts := strings.Split(*parts, ",")
+		for _, strPart := range strParts {
+			if pID, err := strconv.Atoi(strPart); err == nil {
+				partIDS = append(partIDS, pID)
+			}
+		}
+		if _, ok := priceMap[*price]; !ok {
+			priceMap[*price] = partIDS
+		} else {
+			ids := priceMap[*price]
+			ids = append(ids, partIDS...)
+			priceMap[*price] = ids
+		}
+
+		for _, def := range opt.Options {
+			val := strings.Replace(def.Value, "$", "", -1)
+			segs := strings.Split(val, " - ")
+			if len(segs) < 2 {
+				continue
+			}
+
+			low, err := strconv.ParseFloat(segs[0], 64)
+			if err != nil {
+				continue
+			}
+			high, err := strconv.ParseFloat(segs[1], 64)
+			if err != nil {
+				continue
+			}
+
+			if *price >= low && *price <= high {
+				exists = true
+			}
+		}
+
+		if !exists {
+			lows = append(lows, (int(*price)/50)*50)
+		}
+	}
+
+	sort.Ints(lows)
+	existing := make(map[string]Option, 0)
+	for _, low := range lows {
+		val := fmt.Sprintf("$%d - $%d", low, low+50)
+		o := Option{
+			Value:    val,
+			Selected: false,
+		}
+		for key, pm := range priceMap {
+			if key >= float64(low) && key <= float64(low+50) {
+				o.Products = append(o.Products, pm...)
+			}
+		}
+
+		o.Products = removeDuplicates(o.Products)
+		if ex, ok := existing[val]; !ok {
+			existing[val] = o
+		} else {
+			ex.Products = append(ex.Products, o.Products...)
+			ex.Products = removeDuplicates(ex.Products)
+			existing[val] = ex
+		}
+	}
+
+	for _, ex := range existing {
+		opt.Options = append(opt.Options, ex)
+	}
+
+	mapped["Price"] = opt
+	return mapped, nil
 }
