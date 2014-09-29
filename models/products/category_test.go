@@ -61,7 +61,7 @@ func TestSubCategories(t *testing.T) {
 	Convey("Test Subcategories()", t, func() {
 		Convey("with invalid category", func() {
 			var cat Category
-			subs, err := cat.SubCategories()
+			subs, err := cat.GetSubCategories()
 			So(subs, ShouldBeNil)
 			So(err, ShouldBeNil)
 		})
@@ -71,7 +71,7 @@ func TestSubCategories(t *testing.T) {
 			So(cat.CategoryId, ShouldNotEqual, 0)
 			So(err, ShouldBeNil)
 
-			subs, err := cat.SubCategories()
+			subs, err := cat.GetSubCategories()
 			So(subs, ShouldNotBeNil)
 			So(err, ShouldBeNil)
 		})
