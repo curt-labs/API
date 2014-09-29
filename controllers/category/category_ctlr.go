@@ -1,6 +1,7 @@
 package category_ctlr
 
 import (
+	"github.com/curt-labs/GoAPI/helpers/apifilter"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/products"
 	"github.com/go-martini/martini"
@@ -28,6 +29,11 @@ func GetCategory(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
+	}
+
+	filters, err := apifilter.CategoryFilter(ext, nil)
+	if err == nil {
+		ext.Filter = filters
 	}
 
 	return encoding.Must(enc.Encode(ext))

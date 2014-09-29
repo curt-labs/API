@@ -121,7 +121,8 @@ type ExtendedCategory struct {
 	SubCategories                []Category
 	Content                      []Content
 	// Extension for more detail
-	Parts []Part
+	Parts  []Part
+	Filter interface{} `json:"filter" xml:"filter"`
 }
 
 func PopulateExtendedCategoryMulti(rows *sql.Rows, ch chan []ExtendedCategory) {

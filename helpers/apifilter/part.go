@@ -12,26 +12,8 @@ import (
 )
 
 var (
-	ExcludedAttributes = []string{"UPC"}
+	ExcludedPartAttributes = []string{"UPC"}
 )
-
-type FilteredOptions []Options
-
-type Options struct {
-	Key     string
-	Options []Option
-}
-
-type Option struct {
-	Value    string
-	Selected bool
-	Products []int
-}
-
-type Decision struct {
-	Field  string
-	Values map[string]interface{}
-}
 
 func PartFilter(parts []products.Part, specs []interface{}) ([]Options, error) {
 
@@ -42,19 +24,19 @@ func PartFilter(parts []products.Part, specs []interface{}) ([]Options, error) {
 	catChan := make(chan error)
 	classChan := make(chan error)
 	go func() {
-		filtered = append(filtered, filtered.attributes(parts)...)
+		filtered = append(filtered, filtered.partAttributes(parts)...)
 		attrChan <- nil
 	}()
 	go func() {
-		filtered = append(filtered, filtered.prices(parts))
+		filtered = append(filtered, filtered.partPrices(parts))
 		priceChan <- nil
 	}()
 	go func() {
-		filtered = append(filtered, filtered.category(parts))
+		filtered = append(filtered, filtered.partCategory(parts))
 		catChan <- nil
 	}()
 	go func() {
-		filtered = append(filtered, filtered.class(parts))
+		filtered = append(filtered, filtered.partClass(parts))
 		classChan <- nil
 	}()
 
@@ -84,14 +66,14 @@ func PartFilter(parts []products.Part, specs []interface{}) ([]Options, error) {
 	return filtered, nil
 }
 
-func (filtered FilteredOptions) attributes(parts []products.Part) FilteredOptions {
+func (filtered FilteredOptions) partAttributes(parts []products.Part) FilteredOptions {
 	attributeDefinitions := make(map[string]Options, 0)
 	for _, part := range parts {
 		for _, attr := range part.Attributes {
 
 			// Check Excluded attributes
 			exclude := false
-			for _, ex := range ExcludedAttributes {
+			for _, ex := range ExcludedPartAttributes {
 				if ex == attr.Key {
 					exclude = true
 				}
@@ -146,7 +128,7 @@ func (filtered FilteredOptions) attributes(parts []products.Part) FilteredOption
 	return f
 }
 
-func (filtered FilteredOptions) prices(parts []products.Part) Options {
+func (filtered FilteredOptions) partPrices(parts []products.Part) Options {
 	priceDefinitions := Options{
 		Key:     "Price",
 		Options: make([]Option, 0),
@@ -219,7 +201,7 @@ func (filtered FilteredOptions) prices(parts []products.Part) Options {
 	return priceDefinitions
 }
 
-func (filtered FilteredOptions) category(parts []products.Part) Options {
+func (filtered FilteredOptions) partCategory(parts []products.Part) Options {
 	var opt Options
 
 	existing := make(map[string]string, 0)
@@ -254,7 +236,7 @@ func (filtered FilteredOptions) category(parts []products.Part) Options {
 	return opt
 }
 
-func (filtered FilteredOptions) class(parts []products.Part) Options {
+func (filtered FilteredOptions) partClass(parts []products.Part) Options {
 	opt := Options{
 		Key: "Class",
 	}
