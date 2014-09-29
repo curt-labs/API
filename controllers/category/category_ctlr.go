@@ -55,14 +55,14 @@ func Parents(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) strin
 	return encoding.Must(enc.Encode(cats))
 }
 
-func SubCategories(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
-	params := r.URL.Query()
-	id, err := strconv.Atoi(params.Get(":id"))
+func SubCategories(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+	id, err := strconv.Atoi(params["id"])
 
 	var cat products.Category
 	if err != nil {
-		cat, err = products.GetCategoryByTitle(params.Get(":id"))
+		cat, err = products.GetCategoryByTitle(params["id"])
 		if err != nil {
+
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return ""
 		}
@@ -79,14 +79,13 @@ func SubCategories(w http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 	return encoding.Must(enc.Encode(subs))
 }
 
-func GetParts(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
-	params := r.URL.Query()
-	key := params.Get("key")
-	catID, err := strconv.Atoi(params.Get(":id"))
+func GetParts(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+	key := params["key"]
+	catID, err := strconv.Atoi(params["id"])
 
 	var cat products.Category
 	if err != nil {
-		title := params.Get(":id")
+		title := params["id"]
 		if title == "" {
 			http.Error(w, "Invalid Category", http.StatusInternalServerError)
 			return ""
@@ -100,12 +99,12 @@ func GetParts(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) stri
 		cat.CategoryId = catID
 	}
 
-	count, err := strconv.Atoi(params.Get(":count"))
+	count, err := strconv.Atoi(params["count"])
 	if err != nil {
 		count = 5
 	}
 
-	page, err := strconv.Atoi(params.Get(":page"))
+	page, err := strconv.Atoi(params["page"])
 	if err != nil {
 		page = 0
 	} else {
