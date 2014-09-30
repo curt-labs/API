@@ -24,7 +24,6 @@ var (
 	createReview  = `INSERT INTO Review (partID, rating, subject, review_text, name, email, active, approved, createdDate, cust_id) VALUES (?,?,?,?,?,?,?,?,?,?)`
 	updateReview  = `UPDATE Review SET partID = ?, rating = ?, subject = ?, review_text = ?, name = ?, email = ?, active = ?, approved = ?, createdDate = ?, cust_id = ? WHERE reviewID = ?`
 	deleteReview  = `DELETE FROM Review WHERE reviewID = ?`
-	insertPart    = `INSERT INTO part (partID) VALUES (?)`
 )
 
 type Review struct {
