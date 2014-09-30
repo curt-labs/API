@@ -102,7 +102,7 @@ var (
 
 type Category struct {
 	ID              int         `json:"id" xml:"id"`
-	ParentID        int         `json:"ParentID" xml:"ParentID"`
+	ParentID        int         `json:"parent_id" xml:"parent_id"`
 	Sort            int         `json:"sort" xml:"sort"`
 	DateAdded       time.Time   `json:"date_added" xml:"date_added"`
 	Title           string      `json:"title" xml:"title"`
