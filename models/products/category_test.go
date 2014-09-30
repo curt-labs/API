@@ -7,7 +7,7 @@ import (
 
 func TestTopTierCategories(t *testing.T) {
 	Convey("Test TopTierCategories()", t, func() {
-		cats, err := TopTierCategories()
+		cats, err := TopTierCategories("9300f7bc-2ca6-11e4-8758-42010af0fd79")
 		So(cats, ShouldNotBeNil)
 		So(err, ShouldBeNil)
 		So(cats, ShouldNotBeEmpty)
@@ -20,19 +20,19 @@ func TestGetCategoryByTitle(t *testing.T) {
 		Convey("with ``", func() {
 			cat, err := GetCategoryByTitle("")
 			So(cat, ShouldNotBeNil)
-			So(cat.CategoryId, ShouldEqual, 0)
+			So(cat.ID, ShouldEqual, 0)
 			So(err, ShouldBeNil)
 		})
 		Convey("with `test`", func() {
 			cat, err := GetCategoryByTitle("test")
 			So(cat, ShouldNotBeNil)
-			So(cat.CategoryId, ShouldEqual, 0)
+			So(cat.ID, ShouldEqual, 0)
 			So(err, ShouldBeNil)
 		})
 		Convey("with `Trailer Hitches`", func() {
 			cat, err := GetCategoryByTitle("Trailer Hitches")
 			So(cat, ShouldNotBeNil)
-			So(cat.CategoryId, ShouldNotEqual, 0)
+			So(cat.ID, ShouldNotEqual, 0)
 			So(err, ShouldBeNil)
 		})
 	})
@@ -44,14 +44,14 @@ func TestGetCategoryById(t *testing.T) {
 		Convey("with 0", func() {
 			cat, err := GetCategoryById(0)
 			So(cat, ShouldNotBeNil)
-			So(cat.CategoryId, ShouldEqual, 0)
+			So(cat.ID, ShouldEqual, 0)
 			So(err, ShouldBeNil)
 		})
 
 		Convey("with 1", func() {
 			cat, err := GetCategoryById(1)
 			So(cat, ShouldNotBeNil)
-			So(cat.CategoryId, ShouldNotEqual, 0)
+			So(cat.ID, ShouldNotEqual, 0)
 			So(err, ShouldBeNil)
 		})
 	})
@@ -68,7 +68,7 @@ func TestSubCategories(t *testing.T) {
 		Convey("with valid category `1`", func() {
 			cat, err := GetCategoryById(1)
 			So(cat, ShouldNotBeNil)
-			So(cat.CategoryId, ShouldNotEqual, 0)
+			So(cat.ID, ShouldNotEqual, 0)
 			So(err, ShouldBeNil)
 
 			subs, err := cat.GetSubCategories()
@@ -83,23 +83,23 @@ func TestGetCategory(t *testing.T) {
 	Convey("Test GetCategory()", t, func() {
 		Convey("with empty category", func() {
 			cat := Category{
-				CategoryId: 0,
+				ID: 0,
 			}
 
-			ext, err := cat.GetCategory("")
-			So(ext, ShouldNotBeNil)
-			So(ext.CategoryId, ShouldEqual, 0)
+			err := cat.GetCategory("")
+			So(cat, ShouldNotBeNil)
+			So(cat.ID, ShouldEqual, 0)
 			So(err, ShouldNotBeNil)
 		})
 
 		Convey("with `1` category", func() {
 			cat := Category{
-				CategoryId: 1,
+				ID: 1,
 			}
 
-			ext, err := cat.GetCategory("8AEE0620-412E-47FC-900A-947820EA1C1D")
-			So(ext, ShouldNotBeNil)
-			So(ext.CategoryId, ShouldNotEqual, 0)
+			err := cat.GetCategory("9300f7bc-2ca6-11e4-8758-42010af0fd79")
+			So(cat, ShouldNotBeNil)
+			So(cat.ID, ShouldNotEqual, 0)
 			So(err, ShouldNotBeNil)
 		})
 

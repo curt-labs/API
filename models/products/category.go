@@ -3,10 +3,10 @@ package products
 import (
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
+	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	"github.com/curt-labs/GoAPI/models/customer/content"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
@@ -18,9 +18,10 @@ import (
 
 var (
 	PartCategoryStmt = `
-		select c.catID, c.parentID, c.sort, c.dateAdded,
+		select c.catID, c.ParentID, c.sort, c.dateAdded,
 		c.catTitle, c.shortDesc, c.longDesc,
 		c.image, c.icon, c.isLifestyle, c.vehicleSpecific,
+		c.vehicleRequired,
 		cc.code, cc.font from Categories as c
 		join CatPart as cp on c.catID = cp.catID
 		left join ColorCode as cc on c.codeID = cc.codeID
@@ -28,9 +29,10 @@ var (
 		order by c.sort
 		limit 1`
 	PartAllCategoryStmt = `
-		select c.catID, c.parentID, c.sort, c.dateAdded,
+		select c.catID, c.ParentID, c.sort, c.dateAdded,
 		c.catTitle, c.shortDesc, c.longDesc,
 		c.image, c.icon, c.isLifestyle, c.vehicleSpecific,
+		c.vehicleRequired,
 		cc.code, cc.font
 		from Categories as c
 		join CatPart as cp on c.catID = cp.catID
@@ -38,44 +40,44 @@ var (
 		where cp.partID = ?
 		order by c.catID`
 	ParentCategoryStmt = `
-		select c.catID, c.parentID, c.sort, c.dateAdded,
+		select c.catID, c.ParentID, c.sort, c.dateAdded,
 		c.catTitle, c.shortDesc, c.longDesc,
 		c.image, c.icon, c.isLifestyle, c.vehicleSpecific,
+		c.vehicleRequired,
 		cc.code, cc.font from Categories as c
 		left join ColorCode as cc on c.codeID = cc.codeID
 		where c.catID = ?
 		order by c.sort
 		limit 1`
 	TopCategoriesStmt = `
-		select c.catID, c.parentID, c.sort, c.dateAdded,
-		c.catTitle, c.shortDesc, c.longDesc,
-		c.image, c.icon, c.isLifestyle, c.vehicleSpecific,
-		cc.code, cc.font from Categories as c
-		left join ColorCode as cc on c.codeID = cc.codeID
-		where c.parentID IS NULL or c.parentID = 0
+		select c.catID from Categories as c
+		where c.ParentID IS NULL or c.ParentID = 0
 		and isLifestyle = 0
 		order by c.sort`
 	SubCategoriesStmt = `
-		select c.catID, c.parentID, c.sort, c.dateAdded,
+		select c.catID, c.ParentID, c.sort, c.dateAdded,
 		c.catTitle, c.shortDesc, c.longDesc,
 		c.image, c.icon, c.isLifestyle, c.vehicleSpecific,
+		c.vehicleRequired,
 		cc.code, cc.font from Categories as c
 		left join ColorCode as cc on c.codeID = cc.codeID
-		where c.parentID = ?
+		where c.ParentID = ?
 		and isLifestyle = 0
 		order by c.sort`
 	CategoryByNameStmt = `
-		select c.catID, c.parentID, c.sort, c.dateAdded,
+		select c.catID, c.ParentID, c.sort, c.dateAdded,
 		c.catTitle, c.shortDesc, c.longDesc,
 		c.image, c.icon, c.isLifestyle, c.vehicleSpecific,
+		c.vehicleRequired,
 		cc.code, cc.font from Categories as c
 		left join ColorCode as cc on c.codeID = cc.codeID
 		where c.catTitle = ?
 		order by c.sort`
 	CategoryByIdStmt = `
-		select c.catID, c.parentID, c.sort, c.dateAdded,
+		select c.catID, c.ParentID, c.sort, c.dateAdded,
 		c.catTitle, c.shortDesc, c.longDesc,
 		c.image, c.icon, c.isLifestyle, c.vehicleSpecific,
+		c.vehicleRequired,
 		cc.code, cc.font from Categories as c
 		left join ColorCode as cc on c.codeID = cc.codeID
 		where c.catID = ?
@@ -86,11 +88,11 @@ var (
 		where cp.catID = ?
 		order by cp.partID
 		limit ?,?`
-	SubCategoryIdStmt = `
+	SubIDStmt = `
 		select c.catID, group_concat(p.partID) as parts from Categories as c
 		left join CatPart as cp on c.catID = cp.catID
 		left join Part as p on cp.partID = p.partID
-		where c.parentID = ? && (p.status = null || (p.status = 800 || p.status = 900))`
+		where c.ParentID = ? && (p.status = null || (p.status = 800 || p.status = 900))`
 	CategoryContentStmt = `
 		select ct.type, c.text from ContentBridge cb
 		join Content as c on cb.contentID = c.contentID
@@ -99,132 +101,24 @@ var (
 )
 
 type Category struct {
-	CategoryId, ParentId, Sort   int
-	DateAdded                    time.Time
-	Title, ShortDesc, LongDesc   string
-	ColorCode, FontCode          string
-	Image, Icon                  *url.URL
-	IsLifestyle, VehicleSpecific bool
-	Content                      []Content
-	SubCategories                []Category
-}
-
-type ExtendedCategory struct {
-
-	// Replicate of the Category struct
-	CategoryId, ParentId, Sort   int
-	DateAdded                    time.Time
-	Title, ShortDesc, LongDesc   string
-	ColorCode, FontCode          string
-	Image, Icon                  *url.URL
-	IsLifestyle, VehicleSpecific bool
-	SubCategories                []Category
-	Content                      []Content
-	// Extension for more detail
-	Parts  []Part
-	Filter interface{} `json:"filter" xml:"filter"`
-}
-
-func PopulateExtendedCategoryMulti(rows *sql.Rows, ch chan []ExtendedCategory) {
-	cats := make([]ExtendedCategory, 0)
-	if rows == nil {
-		ch <- cats
-		return
-	}
-
-	for rows.Next() {
-		var initCat ExtendedCategory
-		var catImg *string
-		var catIcon *string
-		var colorCode *string
-		var fontCode *string
-		err := rows.Scan(
-			&initCat.CategoryId,
-			&initCat.ParentId,
-			&initCat.Sort,
-			&initCat.DateAdded,
-			&initCat.Title,
-			&initCat.ShortDesc,
-			&initCat.LongDesc,
-			&catImg,
-			&catIcon,
-			&initCat.IsLifestyle,
-			&initCat.VehicleSpecific,
-			&colorCode,
-			&fontCode)
-		if err != nil {
-			log.Println(err)
-			ch <- cats
-			return
-		}
-
-		// Attempt to parse out the image Url
-		if catImg != nil {
-			initCat.Image, _ = url.Parse(*catImg)
-		}
-		if catIcon != nil {
-			initCat.Icon, _ = url.Parse(*catIcon)
-		}
-
-		// Build out RGB value for color coding
-		if colorCode != nil && fontCode != nil && len(*colorCode) == 9 {
-			cc := fmt.Sprintf("%s", *colorCode)
-			initCat.ColorCode = fmt.Sprintf("rgb(%s,%s,%s)", cc[0:3], cc[3:6], cc[6:9])
-			initCat.FontCode = fmt.Sprintf("#%s", *fontCode)
-		}
-		cats = append(cats, initCat)
-	}
-
-	ch <- cats
-}
-
-func PopulateExtendedCategory(row *sql.Row, ch chan ExtendedCategory) {
-	if row == nil {
-		ch <- ExtendedCategory{}
-		return
-	}
-
-	var initCat ExtendedCategory
-	var catImg *string
-	var catIcon *string
-	var colorCode *string
-	var fontCode *string
-	err := row.Scan(
-		&initCat.CategoryId,
-		&initCat.ParentId,
-		&initCat.Sort,
-		&initCat.DateAdded,
-		&initCat.Title,
-		&initCat.ShortDesc,
-		&initCat.LongDesc,
-		&catImg,
-		&catIcon,
-		&initCat.IsLifestyle,
-		&initCat.VehicleSpecific,
-		&colorCode,
-		&fontCode)
-	if err != nil {
-		log.Println(err)
-		ch <- ExtendedCategory{}
-		return
-	}
-
-	// Attempt to parse out the image Url
-	if catImg != nil {
-		initCat.Image, _ = url.Parse(*catImg)
-	}
-	if catIcon != nil {
-		initCat.Icon, _ = url.Parse(*catIcon)
-	}
-
-	// Build out RGB value for color coding
-	if colorCode != nil && fontCode != nil && len(*colorCode) == 9 {
-		cc := fmt.Sprintf("%s", *colorCode)
-		initCat.ColorCode = fmt.Sprintf("rgb(%s,%s,%s)", cc[0:3], cc[3:6], cc[6:9])
-		initCat.FontCode = fmt.Sprintf("#%s", *fontCode)
-	}
-
-	ch <- initCat
+	ID              int         `json:"id" xml:"id"`
+	ParentID        int         `json:"ParentID" xml:"ParentID"`
+	Sort            int         `json:"sort" xml:"sort"`
+	DateAdded       time.Time   `json:"date_added" xml:"date_added"`
+	Title           string      `json:"title" xml:"title"`
+	ShortDesc       string      `json:"short_description" xml:"short_description"`
+	LongDesc        string      `json:"long_description" xml:"long_description"`
+	ColorCode       string      `json:"color_code" xml:"color_code"`
+	FontCode        string      `json:"font_code" xml:"font_code"`
+	Image           *url.URL    `json:"image" xml:"image"`
+	Icon            *url.URL    `json:"icon" xml:"icon"`
+	IsLifestyle     bool        `json:"lifestyle" xml:"lifestyle"`
+	VehicleSpecific bool        `json:"vehicle_specific" xml:"vehicle_specific"`
+	VehicleRequired bool        `json:"vehicle_required" xml:"vehicle_required"`
+	Content         []Content   `json:"content,omitempty" xml:"content,omitempty"`
+	SubCategories   []Category  `json:"sub_categories,omitempty" xml:"sub_categoroies,omitempty"`
+	Parts           []Part      `json:"parts,omitempty" xml:"parts,omitempty"`
+	Filter          interface{} `json:"filter,omitempty" xml:"filter,omitempty"`
 }
 
 func PopulateCategoryMulti(rows *sql.Rows, ch chan []Category) {
@@ -241,8 +135,8 @@ func PopulateCategoryMulti(rows *sql.Rows, ch chan []Category) {
 		var colorCode *string
 		var fontCode *string
 		err := rows.Scan(
-			&initCat.CategoryId,
-			&initCat.ParentId,
+			&initCat.ID,
+			&initCat.ParentID,
 			&initCat.Sort,
 			&initCat.DateAdded,
 			&initCat.Title,
@@ -252,6 +146,7 @@ func PopulateCategoryMulti(rows *sql.Rows, ch chan []Category) {
 			&catIcon,
 			&initCat.IsLifestyle,
 			&initCat.VehicleSpecific,
+			&initCat.VehicleRequired,
 			&colorCode,
 			&fontCode)
 		if err != nil {
@@ -274,14 +169,14 @@ func PopulateCategoryMulti(rows *sql.Rows, ch chan []Category) {
 			initCat.FontCode = fmt.Sprintf("#%s", *fontCode)
 		}
 
-		con, err := initCat.GetContent()
-		if err == nil {
-			initCat.Content = con
-		}
+		// con, err := initCat.GetContent()
+		// if err == nil {
+		// 	initCat.Content = con
+		// }
 
-		if subCats, err := initCat.GetSubCategories(); err == nil {
-			initCat.SubCategories = subCats
-		}
+		// if subCats, err := initCat.GetSubCategories(); err == nil {
+		// 	initCat.SubCategories = subCats
+		// }
 
 		cats = append(cats, initCat)
 	}
@@ -301,8 +196,8 @@ func PopulateCategory(row *sql.Row, ch chan Category) {
 	var colorCode *string
 	var fontCode *string
 	err := row.Scan(
-		&initCat.CategoryId,
-		&initCat.ParentId,
+		&initCat.ID,
+		&initCat.ParentID,
 		&initCat.Sort,
 		&initCat.DateAdded,
 		&initCat.Title,
@@ -312,6 +207,7 @@ func PopulateCategory(row *sql.Row, ch chan Category) {
 		&catIcon,
 		&initCat.IsLifestyle,
 		&initCat.VehicleSpecific,
+		&initCat.VehicleRequired,
 		&colorCode,
 		&fontCode)
 	if err != nil {
@@ -335,13 +231,22 @@ func PopulateCategory(row *sql.Row, ch chan Category) {
 		initCat.FontCode = fmt.Sprintf("#%s", *fontCode)
 	}
 
+	con, err := initCat.GetContent()
+	if err == nil {
+		initCat.Content = con
+	}
+
+	if subCats, err := initCat.GetSubCategories(); err == nil {
+		initCat.SubCategories = subCats
+	}
+
 	ch <- initCat
 }
 
 // TopTierCategories
 // Description: Returns the top tier categories
 // Returns: []Category, error
-func TopTierCategories() (cats []Category, err error) {
+func TopTierCategories(key string) (cats []Category, err error) {
 
 	redis_key := "category:top"
 
@@ -372,9 +277,28 @@ func TopTierCategories() (cats []Category, err error) {
 		return
 	}
 
-	ch := make(chan []Category, 0)
-	go PopulateCategoryMulti(catRows, ch)
-	cats = <-ch
+	var iter int
+	ch := make(chan error)
+	for catRows.Next() {
+		var cat Category
+		err := catRows.Scan(&cat.ID)
+		if err == nil {
+			go func(c Category) {
+				err := c.GetCategory(key)
+				if err == nil {
+					cats = append(cats, c)
+				}
+				ch <- err
+			}(cat)
+			iter++
+		}
+	}
+
+	for i := 0; i < iter; i++ {
+		<-ch
+	}
+
+	sortutil.AscByField(cats, "Sort")
 
 	go redis.Setex(redis_key, cats, 86400)
 
@@ -463,11 +387,11 @@ func GetCategoryById(cat_id int) (cat Category, err error) {
 
 func (c *Category) GetSubCategories() (cats []Category, err error) {
 
-	if c.CategoryId == 0 {
+	if c.ID == 0 {
 		return
 	}
 
-	redis_key := "category:" + strconv.Itoa(c.CategoryId) + ":subs"
+	redis_key := "category:" + strconv.Itoa(c.ID) + ":subs"
 
 	// First lets try to access the category:top endpoint in Redis
 	data, err := redis.Get(redis_key)
@@ -491,7 +415,7 @@ func (c *Category) GetSubCategories() (cats []Category, err error) {
 	defer qry.Close()
 
 	// Execute SQL Query against current PartId
-	catRows, err := qry.Query(c.CategoryId)
+	catRows, err := qry.Query(c.ID)
 	if err != nil || catRows == nil { // Error occurred while executing query
 		return
 	}
@@ -509,111 +433,76 @@ func (c *Category) GetSubCategories() (cats []Category, err error) {
 // we can put all category functionality into one data structure, so we
 // don't end up implementing different methods that do the same thing
 // for different structures.
-func (c Category) GetCategory(key string) (extended ExtendedCategory, err error) {
+func (c *Category) GetCategory(key string) error {
 
-	redis_key := "category:" + strconv.Itoa(c.CategoryId)
+	redis_key := "category:" + strconv.Itoa(c.ID)
 
 	// First lets try to access the category:top endpoint in Redis
 	cat_bytes, err := redis.Get(redis_key)
 	if len(cat_bytes) > 0 {
-		err = json.Unmarshal(cat_bytes, &extended)
+		err = json.Unmarshal(cat_bytes, &c)
 		if err == nil {
-			content, err := custcontent.GetCategoryContent(extended.CategoryId, key)
+			content, err := custcontent.GetCategoryContent(c.ID, key)
 			for _, con := range content {
 				strArr := strings.Split(con.ContentType.Type, ":")
 				cType := con.ContentType.Type
 				if len(strArr) > 1 {
 					cType = strArr[1]
 				}
-				extended.Content = append(extended.Content, Content{
+				c.Content = append(c.Content, Content{
 					Key:   cType,
 					Value: con.Text,
 				})
 			}
-			return extended, err
+			return err
 		}
 	}
 
-	var errs []error
-	catChan := make(chan int)
-	subChan := make(chan int)
-	conChan := make(chan int)
-
-	// Build out generalized category properties
-	go func() {
-		cat, catErr := GetCategoryById(c.CategoryId)
-
-		if catErr != nil {
-			errs = append(errs, catErr)
-		} else {
-			extended.CategoryId = cat.CategoryId
-			extended.ColorCode = cat.ColorCode
-			extended.DateAdded = cat.DateAdded
-			extended.FontCode = cat.FontCode
-			extended.Image = cat.Image
-			extended.Icon = cat.Icon
-			extended.IsLifestyle = cat.IsLifestyle
-			extended.LongDesc = cat.LongDesc
-			extended.ParentId = cat.ParentId
-			extended.ShortDesc = cat.ShortDesc
-			extended.Sort = cat.Sort
-			extended.Title = cat.Title
-			extended.VehicleSpecific = cat.VehicleSpecific
-		}
-
-		catChan <- 1
-	}()
-
-	go func() {
-		subs, subErr := c.GetSubCategories()
-		extended.SubCategories = subs
-		if subErr != nil {
-			errs = append(errs, subErr)
-		}
-		subChan <- 1
-	}()
-
-	go func() {
-		cons, conErr := c.GetContent()
-		if conErr != nil {
-			errs = append(errs, conErr)
-		} else {
-			extended.Content = cons
-		}
-		conChan <- 1
-	}()
-
-	<-catChan
-	<-subChan
-	<-conChan
-
-	if len(errs) > 1 {
-		err = errs[0]
-	} else if extended.CategoryId == 0 {
-		return extended, errors.New("Invalid Category")
+	cat, catErr := GetCategoryById(c.ID)
+	if catErr != nil {
+		return catErr
 	}
 
-	go redis.Setex(redis_key, extended, 86400)
+	c.ID = cat.ID
+	c.ColorCode = cat.ColorCode
+	c.DateAdded = cat.DateAdded
+	c.FontCode = cat.FontCode
+	c.Image = cat.Image
+	c.Icon = cat.Icon
+	c.IsLifestyle = cat.IsLifestyle
+	c.LongDesc = cat.LongDesc
+	c.ParentID = cat.ParentID
+	c.ShortDesc = cat.ShortDesc
+	c.Sort = cat.Sort
+	c.Title = cat.Title
+	c.VehicleSpecific = cat.VehicleSpecific
+	c.VehicleRequired = cat.VehicleRequired
+	c.Content = cat.Content
+	c.SubCategories = cat.SubCategories
+	c.Parts = cat.Parts
+	c.Filter = cat.Filter
 
-	content, err := custcontent.GetCategoryContent(extended.CategoryId, key)
+	go redis.Setex(redis_key, c, 86400)
+
+	content, err := custcontent.GetCategoryContent(c.ID, key)
 	for _, con := range content {
 		strArr := strings.Split(con.ContentType.Type, ":")
 		cType := con.ContentType.Type
 		if len(strArr) > 1 {
 			cType = strArr[1]
 		}
-		extended.Content = append(extended.Content, Content{
+		c.Content = append(c.Content, Content{
 			Key:   cType,
 			Value: con.Text,
 		})
 	}
 
-	return
+	return nil
 }
 
 func (c *Category) GetContent() (content []Content, err error) {
 
-	if c.CategoryId == 0 {
+	if c.ID == 0 {
 		return
 	}
 
@@ -629,8 +518,8 @@ func (c *Category) GetContent() (content []Content, err error) {
 	}
 	defer qry.Close()
 
-	// Execute SQL Query against current CategoryId
-	conRows, err := qry.Query(c.CategoryId)
+	// Execute SQL Query against current ID
+	conRows, err := qry.Query(c.ID)
 	if err != nil || conRows == nil {
 		return
 	}

@@ -68,7 +68,7 @@ type Part struct {
 	Reviews                                 []Review
 	Images                                  []Image
 	Related                                 []int
-	Categories                              []ExtendedCategory
+	Categories                              []Category
 	Videos                                  []PartVideo
 	Packages                                []Package
 	Customer                                CustomerPart
@@ -80,7 +80,7 @@ type PagedParts struct {
 }
 
 type CategoryTree struct {
-	CategoryId    int
+	ID            int
 	SubCategories []int
 	Parts         []Part
 }
@@ -571,37 +571,37 @@ func (p *Part) PartBreadcrumbs() error {
 		return errors.New("No part found for " + string(p.PartId))
 	}
 
-	ch := make(chan ExtendedCategory)
-	go PopulateExtendedCategory(catRow, ch)
+	ch := make(chan Category)
+	go PopulateCategory(catRow, ch)
 	initCat := <-ch
 
 	// Instantiate our array with the initial category
-	var cats []ExtendedCategory
+	var cats []Category
 	cats = append(cats, initCat)
 
-	if initCat.ParentId > 0 { // Not top level category
+	if initCat.ParentID > 0 { // Not top level category
 
 		// Loop through the categories retrieving parents until we
 		// hit the top-tier category
-		parent := initCat.ParentId
+		parent := initCat.ParentID
 		for {
 			if parent == 0 {
 				break
 			}
 
-			// Execute out SQL query to retrieve a category by ParentId
+			// Execute out SQL query to retrieve a category by ParentID
 			catRow = parentQuery.QueryRow(parent)
 			if catRow == nil {
 				break
 			}
 
-			ch := make(chan ExtendedCategory)
-			go PopulateExtendedCategory(catRow, ch)
+			ch := make(chan Category)
+			go PopulateCategory(catRow, ch)
 
 			// Append new Category onto array
 			subCat := <-ch
 			cats = append(cats, subCat)
-			parent = subCat.ParentId
+			parent = subCat.ParentID
 		}
 	}
 
@@ -613,7 +613,7 @@ func (p *Part) PartBreadcrumbs() error {
 	return nil
 }
 
-func (p *Part) GetPartCategories(key string) (cats []ExtendedCategory, err error) {
+func (p *Part) GetPartCategories(key string) (cats []Category, err error) {
 
 	redis_key := fmt.Sprintf("part:%d:categories", p.PartId)
 
@@ -646,8 +646,8 @@ func (p *Part) GetPartCategories(key string) (cats []ExtendedCategory, err error
 		return
 	}
 
-	ch := make(chan []ExtendedCategory, 0)
-	go PopulateExtendedCategoryMulti(catRows, ch)
+	ch := make(chan []Category, 0)
+	go PopulateCategoryMulti(catRows, ch)
 	cats = <-ch
 
 	for _, cat := range cats {
@@ -657,7 +657,7 @@ func (p *Part) GetPartCategories(key string) (cats []ExtendedCategory, err error
 		customerChan := make(chan int)
 
 		c := Category{
-			CategoryId: cat.CategoryId,
+			ID: cat.ID,
 		}
 
 		go func() {
@@ -677,7 +677,7 @@ func (p *Part) GetPartCategories(key string) (cats []ExtendedCategory, err error
 		}()
 
 		go func() {
-			content, _ := custcontent.GetCategoryContent(cat.CategoryId, key)
+			content, _ := custcontent.GetCategoryContent(cat.ID, key)
 			for _, con := range content {
 				strArr := strings.Split(con.ContentType.Type, ":")
 				cType := con.ContentType.Type
@@ -706,7 +706,7 @@ func (p *Part) GetPartCategories(key string) (cats []ExtendedCategory, err error
 
 func GetCategoryParts(c Category, key string, page int, count int) (parts []Part, err error) {
 
-	if c.CategoryId == 0 {
+	if c.ID == 0 {
 		return
 	}
 
@@ -714,7 +714,7 @@ func GetCategoryParts(c Category, key string, page int, count int) (parts []Part
 		page = count * page
 	}
 
-	redis_key := "category:" + strconv.Itoa(c.CategoryId) + ":tree:" + strconv.Itoa(page) + ":" + strconv.Itoa(count)
+	redis_key := "category:" + strconv.Itoa(c.ID) + ":tree:" + strconv.Itoa(page) + ":" + strconv.Itoa(count)
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &parts)
@@ -739,11 +739,11 @@ func GetCategoryParts(c Category, key string, page int, count int) (parts []Part
 	log.Println("missed redis")
 
 	tree := CategoryTree{
-		CategoryId: c.CategoryId,
+		ID: c.ID,
 	}
 
 	tree.CategoryTreeBuilder()
-	catIdStr := strconv.Itoa(tree.CategoryId)
+	catIdStr := strconv.Itoa(tree.ID)
 	for _, treeId := range tree.SubCategories {
 		catIdStr = catIdStr + "," + strconv.Itoa(treeId)
 	}
@@ -787,7 +787,7 @@ func (tree *CategoryTree) CategoryTreeBuilder() {
 	}
 	defer db.Close()
 
-	subQry, err := db.Prepare(SubCategoryIdStmt)
+	subQry, err := db.Prepare(SubIDStmt)
 	if err != nil {
 		return
 	}
@@ -795,7 +795,7 @@ func (tree *CategoryTree) CategoryTreeBuilder() {
 
 	// Execute against current Category Id
 	// to retrieve all category Ids that are children.
-	rows, err := subQry.Query(tree.CategoryId)
+	rows, err := subQry.Query(tree.ID)
 	if err != nil {
 		return
 	}
@@ -812,11 +812,11 @@ func (tree *CategoryTree) CategoryTreeBuilder() {
 
 			// Need to parse out string array into ints and populate
 			cat := Category{
-				CategoryId: catID,
+				ID: catID,
 			}
-			tree.SubCategories = append(tree.SubCategories, cat.CategoryId)
+			tree.SubCategories = append(tree.SubCategories, cat.ID)
 
-			subRows, err := subQry.Query(cat.CategoryId)
+			subRows, err := subQry.Query(cat.ID)
 			if err == nil && subRows != nil {
 				for subRows.Next() {
 					var subID int

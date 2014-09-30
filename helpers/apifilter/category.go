@@ -35,7 +35,7 @@ var (
 	GetCategoryGroup = `select bottom_category_ids(?) as cats`
 )
 
-func CategoryFilter(cat products.ExtendedCategory, specs []interface{}) ([]Options, error) {
+func CategoryFilter(cat products.Category, specs []interface{}) ([]Options, error) {
 
 	var filtered FilteredOptions
 
@@ -62,7 +62,7 @@ func CategoryFilter(cat products.ExtendedCategory, specs []interface{}) ([]Optio
 	return filtered, nil
 }
 
-func (filtered FilteredOptions) categoryGroupAttributes(cat products.ExtendedCategory) (FilteredOptions, error) {
+func (filtered FilteredOptions) categoryGroupAttributes(cat products.Category) (FilteredOptions, error) {
 
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -76,14 +76,14 @@ func (filtered FilteredOptions) categoryGroupAttributes(cat products.ExtendedCat
 	}
 	defer idQry.Close()
 
-	idRows, err := idQry.Query(cat.CategoryId)
+	idRows, err := idQry.Query(cat.ID)
 	if err != nil {
 		return FilteredOptions{}, err
 	}
 	defer idRows.Close()
 
 	ids := make([]int, 0)
-	ids = append(ids, cat.CategoryId) // don't forget the given category
+	ids = append(ids, cat.ID) // don't forget the given category
 	for idRows.Next() {
 		var strIds *string
 		if err := idRows.Scan(&strIds); err == nil && strIds != nil {

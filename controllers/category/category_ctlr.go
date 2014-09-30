@@ -26,27 +26,28 @@ func GetCategory(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 			return ""
 		}
 	} else {
-		cat.CategoryId = id
+		cat.ID = id
 	}
 
-	ext, err := cat.GetCategory(key)
-	if err != nil {
+	if err = cat.GetCategory(key); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
 
-	if _, ignore := NoFilterCategories[ext.CategoryId]; !ignore {
-		if filters, err := apifilter.CategoryFilter(ext, nil); err == nil {
-			ext.Filter = filters
+	if _, ignore := NoFilterCategories[cat.ID]; !ignore {
+		if filters, err := apifilter.CategoryFilter(cat, nil); err == nil {
+			cat.Filter = filters
 		}
 	}
 
-	return encoding.Must(enc.Encode(ext))
+	return encoding.Must(enc.Encode(cat))
 }
 
 func Parents(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+	qs := r.URL.Query()
+	key := qs.Get("key")
 
-	cats, err := products.TopTierCategories()
+	cats, err := products.TopTierCategories(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -67,7 +68,7 @@ func SubCategories(w http.ResponseWriter, r *http.Request, enc encoding.Encoder,
 			return ""
 		}
 	} else {
-		cat.CategoryId = id
+		cat.ID = id
 	}
 
 	subs, err := cat.GetSubCategories()
@@ -96,7 +97,7 @@ func GetParts(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, para
 			return ""
 		}
 	} else {
-		cat.CategoryId = catID
+		cat.ID = catID
 	}
 
 	count, err := strconv.Atoi(params["count"])
