@@ -74,20 +74,10 @@ type Part struct {
 	Customer                                CustomerPart
 }
 
-type PagedParts struct {
-	Parts  []Part
-	Paging []Paging
-}
-
 type CategoryTree struct {
 	ID            int
 	SubCategories []int
 	Parts         []Part
-}
-
-type Paging struct {
-	CurrentIndex int
-	PageCount    int
 }
 
 type CustomerPart struct {
@@ -97,6 +87,15 @@ type CustomerPart struct {
 
 type Content struct {
 	Key, Value string
+}
+
+type PaginatedProductListing struct {
+	Parts         []Part `json:"parts" xml:"parts"`
+	TotalItems    int    `json:"total_items" xml:"total_items"`
+	ReturnedCount int    `json:"returned_count" xml:"returned_count"`
+	Page          int    `json:"page" xml:"page"`
+	PerPage       int    `json:"per_page" xml:"per_page"`
+	TotalPages    int    `json:"total_pages" xml:"total_pages"`
 }
 
 func (p *Part) FromDatabase() error {

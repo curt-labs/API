@@ -8,6 +8,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	"github.com/curt-labs/GoAPI/models/customer/content"
+	"github.com/curt-labs/GoAPI/models/vehicle"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"net/url"
@@ -101,24 +102,24 @@ var (
 )
 
 type Category struct {
-	ID              int         `json:"id" xml:"id"`
-	ParentID        int         `json:"parent_id" xml:"parent_id"`
-	Sort            int         `json:"sort" xml:"sort"`
-	DateAdded       time.Time   `json:"date_added" xml:"date_added"`
-	Title           string      `json:"title" xml:"title"`
-	ShortDesc       string      `json:"short_description" xml:"short_description"`
-	LongDesc        string      `json:"long_description" xml:"long_description"`
-	ColorCode       string      `json:"color_code" xml:"color_code"`
-	FontCode        string      `json:"font_code" xml:"font_code"`
-	Image           *url.URL    `json:"image" xml:"image"`
-	Icon            *url.URL    `json:"icon" xml:"icon"`
-	IsLifestyle     bool        `json:"lifestyle" xml:"lifestyle"`
-	VehicleSpecific bool        `json:"vehicle_specific" xml:"vehicle_specific"`
-	VehicleRequired bool        `json:"vehicle_required" xml:"vehicle_required"`
-	Content         []Content   `json:"content,omitempty" xml:"content,omitempty"`
-	SubCategories   []Category  `json:"sub_categories,omitempty" xml:"sub_categories,omitempty"`
-	Parts           []Part      `json:"parts,omitempty" xml:"parts,omitempty"`
-	Filter          interface{} `json:"filter,omitempty" xml:"filter,omitempty"`
+	ID              int                     `json:"id" xml:"id"`
+	ParentID        int                     `json:"parent_id" xml:"parent_id"`
+	Sort            int                     `json:"sort" xml:"sort"`
+	DateAdded       time.Time               `json:"date_added" xml:"date_added"`
+	Title           string                  `json:"title" xml:"title"`
+	ShortDesc       string                  `json:"short_description" xml:"short_description"`
+	LongDesc        string                  `json:"long_description" xml:"long_description"`
+	ColorCode       string                  `json:"color_code" xml:"color_code"`
+	FontCode        string                  `json:"font_code" xml:"font_code"`
+	Image           *url.URL                `json:"image" xml:"image"`
+	Icon            *url.URL                `json:"icon" xml:"icon"`
+	IsLifestyle     bool                    `json:"lifestyle" xml:"lifestyle"`
+	VehicleSpecific bool                    `json:"vehicle_specific" xml:"vehicle_specific"`
+	VehicleRequired bool                    `json:"vehicle_required" xml:"vehicle_required"`
+	Content         []Content               `json:"content,omitempty" xml:"content,omitempty"`
+	SubCategories   []Category              `json:"sub_categories,omitempty" xml:"sub_categories,omitempty"`
+	ProductListing  PaginatedProductListing `json:"product_listing,omitempty" xml:"product_listing,omitempty"`
+	Filter          interface{}             `json:"filter,omitempty" xml:"filter,omitempty"`
 }
 
 func PopulateCategoryMulti(rows *sql.Rows, ch chan []Category) {
@@ -429,10 +430,6 @@ func (c *Category) GetSubCategories() (cats []Category, err error) {
 	return
 }
 
-// This whole function feels quite redundant to me, I'd like to get it where
-// we can put all category functionality into one data structure, so we
-// don't end up implementing different methods that do the same thing
-// for different structures.
 func (c *Category) GetCategory(key string) error {
 
 	redis_key := "category:" + strconv.Itoa(c.ID)
@@ -479,7 +476,7 @@ func (c *Category) GetCategory(key string) error {
 	c.VehicleRequired = cat.VehicleRequired
 	c.Content = cat.Content
 	c.SubCategories = cat.SubCategories
-	c.Parts = cat.Parts
+	c.ProductListing = cat.ProductListing
 	c.Filter = cat.Filter
 
 	go redis.Setex(redis_key, c, 86400)
@@ -532,4 +529,20 @@ func (c *Category) GetContent() (content []Content, err error) {
 	}
 
 	return
+}
+
+func (c *Category) GetParts(page int, count int, v vehicle.Vehicle) error {
+	redis_key := fmt.Sprintf("category:%d:parts:%d:%d", c.ID, page, count)
+
+	parts := make([]Part, 0)
+	// First lets try to access the category:top endpoint in Redis
+	part_bytes, err := redis.Get(redis_key)
+	if len(part_bytes) > 0 {
+		err = json.Unmarshal(part_bytes, &parts)
+		if err == nil {
+			return nil
+		}
+	}
+
+	return nil
 }

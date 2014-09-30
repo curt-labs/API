@@ -73,9 +73,16 @@ func logRequest(r *http.Request, reqTime time.Duration) {
 		key = r.FormValue("key")
 	}
 
+	vals := r.URL.Query()
+	props := make(map[string]interface{}, 0)
+	for k, v := range vals {
+		props[k] = v
+	}
+
 	err := client.Track(map[string]interface{}{
 		"event":       r.URL.String(),
 		"userId":      key,
+		"properties":  props,
 		"method":      r.Method,
 		"header":      r.Header,
 		"query":       r.URL.Query().Encode(),
