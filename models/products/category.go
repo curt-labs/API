@@ -116,7 +116,7 @@ type Category struct {
 	VehicleSpecific bool        `json:"vehicle_specific" xml:"vehicle_specific"`
 	VehicleRequired bool        `json:"vehicle_required" xml:"vehicle_required"`
 	Content         []Content   `json:"content,omitempty" xml:"content,omitempty"`
-	SubCategories   []Category  `json:"sub_categories,omitempty" xml:"sub_categoroies,omitempty"`
+	SubCategories   []Category  `json:"sub_categories,omitempty" xml:"sub_categories,omitempty"`
 	Parts           []Part      `json:"parts,omitempty" xml:"parts,omitempty"`
 	Filter          interface{} `json:"filter,omitempty" xml:"filter,omitempty"`
 }
