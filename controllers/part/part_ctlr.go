@@ -244,13 +244,13 @@ func Packaging(w http.ResponseWriter, r *http.Request, params martini.Params, en
 	return encoding.Must(enc.Encode(p.Packages))
 }
 
-func Reviews(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+func ActiveApprovedReviews(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
 	id, _ := strconv.Atoi(params["part"])
 	p := products.Part{
 		PartId: id,
 	}
 
-	err := p.GetReviews()
+	err := p.GetActiveApprovedReviews()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""

@@ -138,7 +138,7 @@ func (p *Part) FromDatabase() error {
 	}()
 
 	go func() {
-		reviewErr := p.GetReviews()
+		reviewErr := p.GetActiveApprovedReviews()
 		if reviewErr != nil {
 			errs = append(errs, reviewErr.Error())
 		}

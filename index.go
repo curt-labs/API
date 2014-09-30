@@ -10,6 +10,7 @@ import (
 	"github.com/curt-labs/GoAPI/controllers/dealers_new"
 	"github.com/curt-labs/GoAPI/controllers/faq"
 	"github.com/curt-labs/GoAPI/controllers/forum"
+	"github.com/curt-labs/GoAPI/controllers/lifestyle"
 	"github.com/curt-labs/GoAPI/controllers/middleware"
 	"github.com/curt-labs/GoAPI/controllers/news"
 	"github.com/curt-labs/GoAPI/controllers/part"
@@ -85,7 +86,7 @@ func main() {
 	m.Group("/part", func(r martini.Router) {
 		r.Get("/:part/vehicles", part_ctlr.Vehicles)
 		r.Get("/:part/attributes", part_ctlr.Attributes)
-		r.Get("/:part/reviews", part_ctlr.Reviews)
+		r.Get("/:part/reviews", part_ctlr.ActiveApprovedReviews)
 		r.Get("/:part/categories", part_ctlr.Categories)
 		r.Get("/:part/content", part_ctlr.GetContent)
 		r.Get("/:part/images", part_ctlr.Images)
@@ -193,6 +194,13 @@ func main() {
 		r.Put("/posts/:id", forum_ctlr.UpdatePost)
 		r.Delete("/posts/:id", forum_ctlr.DeletePost)
 	})
+	m.Group("/lifestyles", func(r martini.Router) {
+		r.Get("", lifestyle.GetAll)
+		r.Get("/:id", lifestyle.Get)
+		r.Put("", lifestyle.Save)
+		r.Post("/:id", lifestyle.Save)
+		r.Delete("/:id", lifestyle.Delete)
+	})
 
 	m.Group("/news", func(r martini.Router) {
 		r.Get("", news_controller.GetAll)                      //get all news; takes optional sort param {sort=title||lead||content||startDate||endDate||active||slug} to sort by question
@@ -204,6 +212,14 @@ func main() {
 		r.Post("/:id", internalCors, news_controller.Update)   //{id, question and/or answer}
 		r.Delete("/:id", internalCors, news_controller.Delete) //{id}
 		r.Delete("", internalCors, news_controller.Delete)     //{id}
+	})
+
+	m.Group("/reviews", func(r martini.Router) {
+		r.Get("", part_ctlr.GetAllReviews)
+		r.Get("/:id", part_ctlr.GetReview)
+		r.Put("", part_ctlr.SaveReview)
+		r.Post("/:id", part_ctlr.SaveReview)
+		r.Delete("/:id", part_ctlr.DeleteReview)
 	})
 	m.Group("/webProperties", func(r martini.Router) {
 		r.Post("/note/:id", internalCors, webProperty_controller.CreateUpdateWebPropertyNote)                                       //updates when an id is present; otherwise, creates
