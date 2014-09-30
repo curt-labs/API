@@ -10,7 +10,6 @@ import (
 	"github.com/curt-labs/GoAPI/controllers/dealers_new"
 	"github.com/curt-labs/GoAPI/controllers/faq"
 	"github.com/curt-labs/GoAPI/controllers/forum"
-	"github.com/curt-labs/GoAPI/controllers/lifestyle"
 	"github.com/curt-labs/GoAPI/controllers/middleware"
 	"github.com/curt-labs/GoAPI/controllers/news"
 	"github.com/curt-labs/GoAPI/controllers/part"
@@ -193,13 +192,6 @@ func main() {
 		r.Post("/posts", forum_ctlr.AddPost)
 		r.Put("/posts/:id", forum_ctlr.UpdatePost)
 		r.Delete("/posts/:id", forum_ctlr.DeletePost)
-	})
-	m.Group("/lifestyles", func(r martini.Router) {
-		r.Get("", lifestyle.GetAll)
-		r.Get("/:id", lifestyle.Get)
-		r.Put("", lifestyle.Save)
-		r.Post("/:id", lifestyle.Save)
-		r.Delete("/:id", lifestyle.Delete)
 	})
 
 	m.Group("/news", func(r martini.Router) {
