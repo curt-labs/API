@@ -74,12 +74,12 @@ func Get(w http.ResponseWriter, r *http.Request, params martini.Params, enc enco
 	id, _ := strconv.Atoi(params["part"])
 	key := qs.Get("key")
 	p := products.Part{
-		PartId: id,
+		ID: id,
 	}
 
 	vehicleChan := make(chan error)
 	go func() {
-		vs, err := vehicle.ReverseLookup(p.PartId)
+		vs, err := vehicle.ReverseLookup(p.ID)
 		if err != nil {
 			vehicleChan <- err
 		} else {
@@ -104,7 +104,7 @@ func GetRelated(w http.ResponseWriter, r *http.Request, params martini.Params, e
 	id, _ := strconv.Atoi(params["part"])
 	key := qs.Get("key")
 	p := products.Part{
-		PartId: id,
+		ID: id,
 	}
 
 	err := p.GetRelated()
@@ -112,7 +112,7 @@ func GetRelated(w http.ResponseWriter, r *http.Request, params martini.Params, e
 	c := make(chan int, len(p.Related))
 	for _, rel := range p.Related {
 		go func(partId int) {
-			relPart := products.Part{PartId: partId}
+			relPart := products.Part{ID: partId}
 			if err = relPart.Get(key); err == nil {
 				parts = append(parts, relPart)
 			}
@@ -156,7 +156,7 @@ func GetWithVehicle(w http.ResponseWriter, r *http.Request, params martini.Param
 	// }
 
 	// p := products.Part{
-	// 	PartId: partID,
+	// 	ID: partID,
 	// }
 
 	// err = products.GetWithVehicle(&vehicle, key)
@@ -186,7 +186,7 @@ func Vehicles(w http.ResponseWriter, r *http.Request, params martini.Params, enc
 func Images(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
 	id, _ := strconv.Atoi(params["part"])
 	p := products.Part{
-		PartId: id,
+		ID: id,
 	}
 
 	err := p.GetImages()
@@ -202,7 +202,7 @@ func Attributes(w http.ResponseWriter, r *http.Request, params martini.Params, e
 
 	id, _ := strconv.Atoi(params["part"])
 	p := products.Part{
-		PartId: id,
+		ID: id,
 	}
 
 	err := p.GetAttributes()
@@ -217,7 +217,7 @@ func Attributes(w http.ResponseWriter, r *http.Request, params martini.Params, e
 func GetContent(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
 	id, _ := strconv.Atoi(params["part"])
 	p := products.Part{
-		PartId: id,
+		ID: id,
 	}
 
 	err := p.GetContent()
@@ -232,7 +232,7 @@ func GetContent(w http.ResponseWriter, r *http.Request, params martini.Params, e
 func Packaging(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
 	id, _ := strconv.Atoi(params["part"])
 	p := products.Part{
-		PartId: id,
+		ID: id,
 	}
 
 	err := p.GetPartPackaging()
@@ -247,7 +247,7 @@ func Packaging(w http.ResponseWriter, r *http.Request, params martini.Params, en
 func ActiveApprovedReviews(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
 	id, _ := strconv.Atoi(params["part"])
 	p := products.Part{
-		PartId: id,
+		ID: id,
 	}
 
 	err := p.GetActiveApprovedReviews()
@@ -262,7 +262,7 @@ func ActiveApprovedReviews(w http.ResponseWriter, r *http.Request, params martin
 func Videos(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
 	id, _ := strconv.Atoi(params["part"])
 	p := products.Part{
-		PartId: id,
+		ID: id,
 	}
 
 	err := p.GetVideos()
@@ -277,7 +277,7 @@ func Videos(w http.ResponseWriter, r *http.Request, params martini.Params, enc e
 func InstallSheet(w http.ResponseWriter, r *http.Request, params martini.Params) {
 	id, _ := strconv.Atoi(strings.Split(params["part"], ".")[0])
 	p := products.Part{
-		PartId: id,
+		ID: id,
 	}
 
 	data, err := p.GetInstallSheet(r)
@@ -302,7 +302,7 @@ func Categories(w http.ResponseWriter, r *http.Request, params martini.Params, e
 	id, _ := strconv.Atoi(params["part"])
 	key := qs.Get("key")
 	p := products.Part{
-		PartId: id,
+		ID: id,
 	}
 
 	cats, err := p.GetPartCategories(key)
@@ -319,7 +319,7 @@ func Prices(w http.ResponseWriter, r *http.Request, params martini.Params, enc e
 	id, _ := strconv.Atoi(params["part"])
 	key := qs.Get("key")
 	p := products.Part{
-		PartId: id,
+		ID: id,
 	}
 
 	priceChan := make(chan int)
@@ -332,7 +332,7 @@ func Prices(w http.ResponseWriter, r *http.Request, params martini.Params, enc e
 	}()
 
 	go func() {
-		price, custErr := customer.GetCustomerPrice(key, p.PartId)
+		price, custErr := customer.GetCustomerPrice(key, p.ID)
 		if custErr != nil {
 			err = custErr
 		}

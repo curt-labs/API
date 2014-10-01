@@ -28,7 +28,7 @@ var (
 
 type Review struct {
 	Id          int               `json:"id,omitempty" xml:"id,omitempty"`
-	PartId      int               `json:"partId,omitempty" xml:"partId,omitempty"`
+	ID          int               `json:"partId,omitempty" xml:"partId,omitempty"`
 	Rating      int               `json:"rating,omitempty" xml:"rating,omitempty"`
 	Subject     string            `json:"subject,omitempty" xml:"subject,omitempty"`
 	ReviewText  string            `json:"reviewText,omitempty" xml:"reviewText,omitempty"`
@@ -43,7 +43,7 @@ type Reviews []Review
 
 //gets kosher reviews by part
 func (p *Part) GetActiveApprovedReviews() error {
-	redis_key := fmt.Sprintf("part:%d:reviews", p.PartId)
+	redis_key := fmt.Sprintf("part:%d:reviews", p.ID)
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -64,7 +64,7 @@ func (p *Part) GetActiveApprovedReviews() error {
 	}
 	defer qry.Close()
 
-	rows, err := qry.Query(p.PartId)
+	rows, err := qry.Query(p.ID)
 	if err != nil {
 		return err
 	}
@@ -126,7 +126,7 @@ func GetAll() (revs Reviews, err error) {
 
 	for res.Next() {
 		var r Review
-		err = res.Scan(&r.Id, &r.PartId, &r.Rating, &subject, &text, &name, &email, &r.Active, &r.Approved, &r.CreatedDate, &r.Customer.Id)
+		err = res.Scan(&r.Id, &r.ID, &r.Rating, &subject, &text, &name, &email, &r.Active, &r.Approved, &r.CreatedDate, &r.Customer.Id)
 		if err != nil {
 			return revs, err
 		}
@@ -186,7 +186,7 @@ func (r *Review) Get() (err error) {
 		r.Email = *email
 	}
 	if partId != nil {
-		r.PartId = *partId
+		r.ID = *partId
 	}
 
 	if err != nil {
@@ -211,7 +211,7 @@ func (r *Review) Create() (err error) {
 	defer stmt.Close()
 
 	r.CreatedDate = time.Now()
-	res, err := stmt.Exec(r.PartId, r.Rating, r.Subject, r.ReviewText, r.Name, r.Email, r.Active, r.Approved, r.CreatedDate, r.Customer.Id)
+	res, err := stmt.Exec(r.ID, r.Rating, r.Subject, r.ReviewText, r.Name, r.Email, r.Active, r.Approved, r.CreatedDate, r.Customer.Id)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -238,7 +238,7 @@ func (r *Review) Update() (err error) {
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(r.PartId, r.Rating, r.Subject, r.ReviewText, r.Name, r.Email, r.Active, r.Approved, r.CreatedDate, r.Customer.Id, r.Id)
+	_, err = stmt.Exec(r.ID, r.Rating, r.Subject, r.ReviewText, r.Name, r.Email, r.Active, r.Approved, r.CreatedDate, r.Customer.Id, r.Id)
 	if err != nil {
 		tx.Rollback()
 		return err

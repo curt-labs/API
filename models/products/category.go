@@ -83,12 +83,17 @@ var (
 		left join ColorCode as cc on c.codeID = cc.codeID
 		where c.catID = ?
 		order by c.sort`
-	CategoryPartBasicStmt = `
-		select cp.partID
-		from CatPart as cp
-		where cp.catID = ?
-		order by cp.partID
+	CategoryPartsStmt = `
+		select p.partID from Part as p
+		join CatPart as cp on p.partID = cp.partID
+		where (p.status = 800 || p.status = 900) && FIND_IN_SET(cp.catID,bottom_category_ids(?))
+		order by p.partID
 		limit ?,?`
+	CategoryPartCountStmt = `
+		select count(p.partID) as count from Part as p
+		join CatPart as cp on p.partID = cp.partID
+		where (p.status = 800 || p.status = 900) && FIND_IN_SET(cp.catID,bottom_category_ids(?))
+		order by p.partID`
 	SubIDStmt = `
 		select c.catID, group_concat(p.partID) as parts from Categories as c
 		left join CatPart as cp on c.catID = cp.catID
@@ -101,25 +106,29 @@ var (
 		where cb.catID = ?`
 )
 
+const (
+	DefaultPageCount = 20
+)
+
 type Category struct {
-	ID              int                     `json:"id" xml:"id"`
-	ParentID        int                     `json:"parent_id" xml:"parent_id"`
-	Sort            int                     `json:"sort" xml:"sort"`
-	DateAdded       time.Time               `json:"date_added" xml:"date_added"`
-	Title           string                  `json:"title" xml:"title"`
-	ShortDesc       string                  `json:"short_description" xml:"short_description"`
-	LongDesc        string                  `json:"long_description" xml:"long_description"`
-	ColorCode       string                  `json:"color_code" xml:"color_code"`
-	FontCode        string                  `json:"font_code" xml:"font_code"`
-	Image           *url.URL                `json:"image" xml:"image"`
-	Icon            *url.URL                `json:"icon" xml:"icon"`
-	IsLifestyle     bool                    `json:"lifestyle" xml:"lifestyle"`
-	VehicleSpecific bool                    `json:"vehicle_specific" xml:"vehicle_specific"`
-	VehicleRequired bool                    `json:"vehicle_required" xml:"vehicle_required"`
-	Content         []Content               `json:"content,omitempty" xml:"content,omitempty"`
-	SubCategories   []Category              `json:"sub_categories,omitempty" xml:"sub_categories,omitempty"`
-	ProductListing  PaginatedProductListing `json:"product_listing,omitempty" xml:"product_listing,omitempty"`
-	Filter          interface{}             `json:"filter,omitempty" xml:"filter,omitempty"`
+	ID              int                      `json:"id" xml:"id,attr"`
+	ParentID        int                      `json:"parent_id" xml:"parent_id,attr"`
+	Sort            int                      `json:"sort" xml:"sort,attr"`
+	DateAdded       time.Time                `json:"date_added" xml:"date_added,attr"`
+	Title           string                   `json:"title" xml:"title,attr"`
+	ShortDesc       string                   `json:"short_description" xml:"short_description"`
+	LongDesc        string                   `json:"long_description" xml:"long_description"`
+	ColorCode       string                   `json:"color_code" xml:"color_code,attr"`
+	FontCode        string                   `json:"font_code" xml:"font_code,attr"`
+	Image           *url.URL                 `json:"image" xml:"image"`
+	Icon            *url.URL                 `json:"icon" xml:"icon"`
+	IsLifestyle     bool                     `json:"lifestyle" xml:"lifestyle,attr"`
+	VehicleSpecific bool                     `json:"vehicle_specific" xml:"vehicle_specific,attr"`
+	VehicleRequired bool                     `json:"vehicle_required" xml:"vehicle_required,attr"`
+	Content         []Content                `json:"content,omitempty" xml:"content,omitempty"`
+	SubCategories   []Category               `json:"sub_categories,omitempty" xml:"sub_categories,omitempty"`
+	ProductListing  *PaginatedProductListing `json:"product_listing,omitempty" xml:"product_listing,omitempty"`
+	Filter          interface{}              `json:"filter,omitempty" xml:"filter,omitempty"`
 }
 
 func PopulateCategoryMulti(rows *sql.Rows, ch chan []Category) {
@@ -169,15 +178,6 @@ func PopulateCategoryMulti(rows *sql.Rows, ch chan []Category) {
 			initCat.ColorCode = fmt.Sprintf("rgb(%s,%s,%s)", cc[0:3], cc[3:6], cc[6:9])
 			initCat.FontCode = fmt.Sprintf("#%s", *fontCode)
 		}
-
-		// con, err := initCat.GetContent()
-		// if err == nil {
-		// 	initCat.Content = con
-		// }
-
-		// if subCats, err := initCat.GetSubCategories(); err == nil {
-		// 	initCat.SubCategories = subCats
-		// }
 
 		cats = append(cats, initCat)
 	}
@@ -285,7 +285,7 @@ func TopTierCategories(key string) (cats []Category, err error) {
 		err := catRows.Scan(&cat.ID)
 		if err == nil {
 			go func(c Category) {
-				err := c.GetCategory(key)
+				err := c.GetCategory(key, 0, 0, true)
 				if err == nil {
 					cats = append(cats, c)
 				}
@@ -430,7 +430,7 @@ func (c *Category) GetSubCategories() (cats []Category, err error) {
 	return
 }
 
-func (c *Category) GetCategory(key string) error {
+func (c *Category) GetCategory(key string, page int, count int, ignoreParts bool) error {
 
 	redis_key := "category:" + strconv.Itoa(c.ID)
 
@@ -438,48 +438,45 @@ func (c *Category) GetCategory(key string) error {
 	cat_bytes, err := redis.Get(redis_key)
 	if len(cat_bytes) > 0 {
 		err = json.Unmarshal(cat_bytes, &c)
-		if err == nil {
-			content, err := custcontent.GetCategoryContent(c.ID, key)
-			for _, con := range content {
-				strArr := strings.Split(con.ContentType.Type, ":")
-				cType := con.ContentType.Type
-				if len(strArr) > 1 {
-					cType = strArr[1]
-				}
-				c.Content = append(c.Content, Content{
-					Key:   cType,
-					Value: con.Text,
-				})
-			}
-			return err
+	}
+
+	if err != nil || c.ShortDesc == "" {
+		cat, catErr := GetCategoryById(c.ID)
+		if catErr != nil {
+			return catErr
 		}
+
+		c.ID = cat.ID
+		c.ColorCode = cat.ColorCode
+		c.DateAdded = cat.DateAdded
+		c.FontCode = cat.FontCode
+		c.Image = cat.Image
+		c.Icon = cat.Icon
+		c.IsLifestyle = cat.IsLifestyle
+		c.LongDesc = cat.LongDesc
+		c.ParentID = cat.ParentID
+		c.ShortDesc = cat.ShortDesc
+		c.Sort = cat.Sort
+		c.Title = cat.Title
+		c.VehicleSpecific = cat.VehicleSpecific
+		c.VehicleRequired = cat.VehicleRequired
+		c.Content = cat.Content
+		c.SubCategories = cat.SubCategories
+		c.ProductListing = cat.ProductListing
+		c.Filter = cat.Filter
+
+		go redis.Setex(redis_key, c, 86400)
 	}
 
-	cat, catErr := GetCategoryById(c.ID)
-	if catErr != nil {
-		return catErr
+	partChan := make(chan *PaginatedProductListing)
+	if !ignoreParts {
+		go func() {
+			c.GetParts(key, page, count, nil)
+			partChan <- c.ProductListing
+		}()
+	} else {
+		close(partChan)
 	}
-
-	c.ID = cat.ID
-	c.ColorCode = cat.ColorCode
-	c.DateAdded = cat.DateAdded
-	c.FontCode = cat.FontCode
-	c.Image = cat.Image
-	c.Icon = cat.Icon
-	c.IsLifestyle = cat.IsLifestyle
-	c.LongDesc = cat.LongDesc
-	c.ParentID = cat.ParentID
-	c.ShortDesc = cat.ShortDesc
-	c.Sort = cat.Sort
-	c.Title = cat.Title
-	c.VehicleSpecific = cat.VehicleSpecific
-	c.VehicleRequired = cat.VehicleRequired
-	c.Content = cat.Content
-	c.SubCategories = cat.SubCategories
-	c.ProductListing = cat.ProductListing
-	c.Filter = cat.Filter
-
-	go redis.Setex(redis_key, c, 86400)
 
 	content, err := custcontent.GetCategoryContent(c.ID, key)
 	for _, con := range content {
@@ -494,7 +491,12 @@ func (c *Category) GetCategory(key string) error {
 		})
 	}
 
-	return nil
+	prods := <-partChan
+	if !ignoreParts {
+		c.ProductListing = prods
+		close(partChan)
+	}
+	return err
 }
 
 func (c *Category) GetContent() (content []Content, err error) {
@@ -531,7 +533,18 @@ func (c *Category) GetContent() (content []Content, err error) {
 	return
 }
 
-func (c *Category) GetParts(page int, count int, v vehicle.Vehicle) error {
+func (c *Category) GetParts(key string, page int, count int, v *vehicle.Vehicle) error {
+	if c.ID == 0 {
+		return fmt.Errorf("error: %s %d", "invalid category reference", c.ID)
+	}
+
+	if count == 0 {
+		count = DefaultPageCount
+	}
+	if page > 0 {
+		page = count * page
+	}
+
 	redis_key := fmt.Sprintf("category:%d:parts:%d:%d", c.ID, page, count)
 
 	parts := make([]Part, 0)
@@ -539,10 +552,96 @@ func (c *Category) GetParts(page int, count int, v vehicle.Vehicle) error {
 	part_bytes, err := redis.Get(redis_key)
 	if len(part_bytes) > 0 {
 		err = json.Unmarshal(part_bytes, &parts)
-		if err == nil {
-			return nil
+	}
+
+	if err != nil || len(parts) == 0 {
+		ids := make([]int, 0)
+		db, err := sql.Open("mysql", database.ConnectionString())
+		if err != nil {
+			return err
+		}
+		defer db.Close()
+
+		stmt, err := db.Prepare(CategoryPartsStmt)
+		if err != nil {
+			return err
+		}
+		defer stmt.Close()
+
+		rows, err := stmt.Query(c.ID, page, count)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var id *int
+			if err := rows.Scan(&id); err == nil && id != nil {
+				ids = append(ids, *id)
+			}
+		}
+
+		ch := make(chan error)
+		for _, id := range ids {
+			go func(i int) {
+				p := Part{
+					ID: i,
+				}
+				err := p.Get(key)
+				if err == nil {
+					c.ProductListing.Parts = append(c.ProductListing.Parts, p)
+				}
+				ch <- err
+			}(id)
+		}
+
+		for i := 0; i < len(ids); i++ {
+			if err := <-ch; err != nil {
+				log.Println(err)
+			}
 		}
 	}
+
+	sortutil.AscByField(c.ProductListing.Parts, "ID")
+
+	c.ProductListing.PerPage = count
+	if page == 0 {
+		page = 1
+	}
+	c.ProductListing.Page = page
+	c.GetPartCount(key, v)
+	c.ProductListing.TotalPages = c.ProductListing.TotalItems / count
+	c.ProductListing.ReturnedCount = len(c.ProductListing.Parts)
+
+	go redis.Setex(redis_key, parts, redis.CacheTimeout)
+
+	return nil
+}
+
+func (c *Category) GetPartCount(key string, v *vehicle.Vehicle) error {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(CategoryPartCountStmt)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	row := stmt.QueryRow(c.ID)
+	if row == nil {
+		return fmt.Errorf("error: %s", "failed to retrieve part count")
+	}
+
+	var total *int
+	if err := row.Scan(&total); err != nil || total == nil {
+		return err
+	}
+
+	c.ProductListing.TotalItems = *total
 
 	return nil
 }

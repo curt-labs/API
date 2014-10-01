@@ -115,7 +115,7 @@ func (l *Lookup) LoadParts(ch chan []products.Part) {
 			}
 			if matches {
 				for _, partID := range config[0].Parts {
-					p := products.Part{PartId: partID}
+					p := products.Part{ID: partID}
 					l.Parts = append(l.Parts, p)
 				}
 			}
@@ -137,7 +137,7 @@ func (l *Lookup) LoadParts(ch chan []products.Part) {
 	}
 	l.Parts = parts
 
-	sortutil.AscByField(l.Parts, "PartId")
+	sortutil.AscByField(l.Parts, "ID")
 
 	l.Pagination = Pagination{
 		TotalItems:    len(l.Parts),
@@ -172,7 +172,7 @@ func (l *Lookup) loadVehicleParts(ch chan error) {
 
 	for rows.Next() {
 		var p products.Part
-		if err = rows.Scan(&p.PartId); err == nil {
+		if err = rows.Scan(&p.ID); err == nil {
 			l.Parts = append(l.Parts, p)
 		}
 	}
@@ -203,7 +203,7 @@ func (l *Lookup) loadBaseVehicleParts(ch chan error) {
 
 	for rows.Next() {
 		var p products.Part
-		if err = rows.Scan(&p.PartId); err == nil {
+		if err = rows.Scan(&p.ID); err == nil {
 			l.Parts = append(l.Parts, p)
 		}
 	}
@@ -216,8 +216,8 @@ func removeDuplicates(xs *[]products.Part) {
 	found := make(map[int]bool)
 	j := 0
 	for i, x := range *xs {
-		if !found[x.PartId] {
-			found[x.PartId] = true
+		if !found[x.ID] {
+			found[x.ID] = true
 			(*xs)[j] = (*xs)[i]
 			j++
 		}

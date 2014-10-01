@@ -10,7 +10,8 @@ import (
 )
 
 type Attribute struct {
-	Key, Value string
+	Key   string `json:"key" xml:"key,attr"`
+	Value string `json:"value" xml:",chardata"`
 }
 
 var (
@@ -18,7 +19,7 @@ var (
 )
 
 func (p *Part) GetAttributes() (err error) {
-	redis_key := fmt.Sprintf("part:%d:attributes", p.PartId)
+	redis_key := fmt.Sprintf("part:%d:attributes", p.ID)
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -39,10 +40,11 @@ func (p *Part) GetAttributes() (err error) {
 	}
 	defer qry.Close()
 
-	rows, err := qry.Query(p.PartId)
+	rows, err := qry.Query(p.ID)
 	if err != nil || rows == nil {
 		return err
 	}
+	defer rows.Close()
 
 	var attrs []Attribute
 	for rows.Next() {

@@ -101,7 +101,7 @@ func (filtered FilteredOptions) partAttributes(parts []products.Part) FilteredOp
 				newOption := Option{
 					Value:    attr.Value,
 					Selected: false,
-					Products: []int{part.PartId},
+					Products: []int{part.ID},
 				}
 				vals.Options = append(vals.Options, newOption)
 				attributeDefinitions[attr.Key] = vals
@@ -109,7 +109,7 @@ func (filtered FilteredOptions) partAttributes(parts []products.Part) FilteredOp
 				for i, opt := range attributeDefinitions[attr.Key].Options {
 					if opt.Value == attr.Value {
 						prods := attributeDefinitions[attr.Key].Options[i].Products
-						prods = append(prods, part.PartId)
+						prods = append(prods, part.ID)
 						sort.Ints(prods)
 						attributeDefinitions[attr.Key].Options[i].Products = prods
 					}
@@ -188,7 +188,7 @@ func (filtered FilteredOptions) partPrices(parts []products.Part) Options {
 		for _, p := range parts {
 			for _, pr := range p.Pricing {
 				if pr.Type == "List" && (int(pr.Price) >= low && int(pr.Price) <= (low+50)) {
-					opt.Products = append(opt.Products, p.PartId)
+					opt.Products = append(opt.Products, p.ID)
 					break
 				}
 			}
@@ -213,7 +213,7 @@ func (filtered FilteredOptions) partCategory(parts []products.Part) Options {
 			if _, ok := existing[cat.Title]; !ok {
 				newOption := Option{
 					Value:    cat.Title,
-					Products: []int{p.PartId},
+					Products: []int{p.ID},
 				}
 				opt.Options = append(opt.Options, newOption)
 				existing[cat.Title] = cat.Title
@@ -223,7 +223,7 @@ func (filtered FilteredOptions) partCategory(parts []products.Part) Options {
 			for i, o := range opt.Options {
 				if o.Value == cat.Title {
 					prods := opt.Options[i].Products
-					prods = append(prods, p.PartId)
+					prods = append(prods, p.ID)
 					sort.Ints(prods)
 					opt.Options[i].Products = prods
 				}
@@ -257,7 +257,7 @@ func (filtered FilteredOptions) partClass(parts []products.Part) Options {
 
 		for i, o := range opt.Options {
 			if p.PartClass == o.Value {
-				o.Products = append(o.Products, p.PartId)
+				o.Products = append(o.Products, p.ID)
 				opt.Options[i] = o
 			}
 		}
