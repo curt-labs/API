@@ -111,24 +111,24 @@ const (
 )
 
 type Category struct {
-	ID              int                     `json:"id" xml:"id,attr"`
-	ParentID        int                     `json:"parent_id" xml:"parent_id,attr"`
-	Sort            int                     `json:"sort" xml:"sort,attr"`
-	DateAdded       time.Time               `json:"date_added" xml:"date_added,attr"`
-	Title           string                  `json:"title" xml:"title,attr"`
-	ShortDesc       string                  `json:"short_description" xml:"short_description"`
-	LongDesc        string                  `json:"long_description" xml:"long_description"`
-	ColorCode       string                  `json:"color_code" xml:"color_code,attr"`
-	FontCode        string                  `json:"font_code" xml:"font_code,attr"`
-	Image           *url.URL                `json:"image" xml:"image"`
-	Icon            *url.URL                `json:"icon" xml:"icon"`
-	IsLifestyle     bool                    `json:"lifestyle" xml:"lifestyle,attr"`
-	VehicleSpecific bool                    `json:"vehicle_specific" xml:"vehicle_specific,attr"`
-	VehicleRequired bool                    `json:"vehicle_required" xml:"vehicle_required,attr"`
-	Content         []Content               `json:"content,omitempty" xml:"content,omitempty"`
-	SubCategories   []Category              `json:"sub_categories,omitempty" xml:"sub_categories,omitempty"`
-	ProductListing  PaginatedProductListing `json:"product_listing,omitempty" xml:"product_listing,omitempty"`
-	Filter          interface{}             `json:"filter,omitempty" xml:"filter,omitempty"`
+	ID              int                      `json:"id" xml:"id,attr"`
+	ParentID        int                      `json:"parent_id" xml:"parent_id,attr"`
+	Sort            int                      `json:"sort" xml:"sort,attr"`
+	DateAdded       time.Time                `json:"date_added" xml:"date_added,attr"`
+	Title           string                   `json:"title" xml:"title,attr"`
+	ShortDesc       string                   `json:"short_description" xml:"short_description"`
+	LongDesc        string                   `json:"long_description" xml:"long_description"`
+	ColorCode       string                   `json:"color_code" xml:"color_code,attr"`
+	FontCode        string                   `json:"font_code" xml:"font_code,attr"`
+	Image           *url.URL                 `json:"image" xml:"image"`
+	Icon            *url.URL                 `json:"icon" xml:"icon"`
+	IsLifestyle     bool                     `json:"lifestyle" xml:"lifestyle,attr"`
+	VehicleSpecific bool                     `json:"vehicle_specific" xml:"vehicle_specific,attr"`
+	VehicleRequired bool                     `json:"vehicle_required" xml:"vehicle_required,attr"`
+	Content         []Content                `json:"content,omitempty" xml:"content,omitempty"`
+	SubCategories   []Category               `json:"sub_categories,omitempty" xml:"sub_categories,omitempty"`
+	ProductListing  *PaginatedProductListing `json:"product_listing,omitempty" xml:"product_listing,omitempty"`
+	Filter          interface{}              `json:"filter,omitempty" xml:"filter,omitempty"`
 }
 
 func PopulateCategoryMulti(rows *sql.Rows, ch chan []Category) {
@@ -468,10 +468,11 @@ func (c *Category) GetCategory(key string, page int, count int, ignoreParts bool
 		go redis.Setex(redis_key, c, 86400)
 	}
 
-	partChan := make(chan error)
+	partChan := make(chan *PaginatedProductListing)
 	if !ignoreParts {
 		go func() {
-			partChan <- c.GetParts(key, page, count, nil)
+			c.GetParts(key, page, count, nil)
+			partChan <- c.ProductListing
 		}()
 	} else {
 		close(partChan)
@@ -490,8 +491,9 @@ func (c *Category) GetCategory(key string, page int, count int, ignoreParts bool
 		})
 	}
 
-	err = <-partChan
+	prods := <-partChan
 	if !ignoreParts {
+		c.ProductListing = prods
 		close(partChan)
 	}
 	return err
@@ -550,56 +552,57 @@ func (c *Category) GetParts(key string, page int, count int, v *vehicle.Vehicle)
 	part_bytes, err := redis.Get(redis_key)
 	if len(part_bytes) > 0 {
 		err = json.Unmarshal(part_bytes, &parts)
-		if err == nil {
-			return nil
+	}
+
+	if err != nil || len(parts) == 0 {
+		ids := make([]int, 0)
+		db, err := sql.Open("mysql", database.ConnectionString())
+		if err != nil {
+			return err
 		}
-	}
+		defer db.Close()
 
-	ids := make([]int, 0)
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	stmt, err := db.Prepare(CategoryPartsStmt)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-
-	rows, err := stmt.Query(c.ID, page, count)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var id *int
-		if err := rows.Scan(&id); err == nil && id != nil {
-			ids = append(ids, *id)
+		stmt, err := db.Prepare(CategoryPartsStmt)
+		if err != nil {
+			return err
 		}
-	}
+		defer stmt.Close()
 
-	ch := make(chan error)
-	for _, id := range ids {
-		go func(i int) {
-			p := Part{
-				ID: i,
+		rows, err := stmt.Query(c.ID, page, count)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var id *int
+			if err := rows.Scan(&id); err == nil && id != nil {
+				ids = append(ids, *id)
 			}
-			err := p.Get(key)
-			if err == nil {
-				c.ProductListing.Parts = append(c.ProductListing.Parts, p)
-			}
-			ch <- err
-		}(id)
-	}
+		}
 
-	for i := 0; i < len(ids); i++ {
-		if err := <-ch; err != nil {
-			log.Println(err)
+		ch := make(chan error)
+		for _, id := range ids {
+			go func(i int) {
+				p := Part{
+					ID: i,
+				}
+				err := p.Get(key)
+				if err == nil {
+					c.ProductListing.Parts = append(c.ProductListing.Parts, p)
+				}
+				ch <- err
+			}(id)
+		}
+
+		for i := 0; i < len(ids); i++ {
+			if err := <-ch; err != nil {
+				log.Println(err)
+			}
 		}
 	}
+
+	sortutil.AscByField(c.ProductListing.Parts, "ID")
 
 	c.ProductListing.PerPage = count
 	if page == 0 {
