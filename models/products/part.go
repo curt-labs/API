@@ -28,7 +28,7 @@ var (
 															where p.status = 800 || p.status = 900
 															order by p.partID
 															limit ?,?`
-	SubCategoryPartIdStmt = `select distinct cp.partID
+	SubCategoryIDStmt = `select distinct cp.partID
 								from CatPart as cp
 								join Part as p on cp.partID = p.partID
 								where cp.catID IN(%s) and (p.status = 800 || p.status = 900)
@@ -55,54 +55,53 @@ var (
 )
 
 type Part struct {
-	PartId, Status, PriceCode, RelatedCount int
-	AverageReview                           float64
-	DateModified, DateAdded                 time.Time
-	ShortDesc, PartClass                    string
-	InstallSheet                            *url.URL
-	Attributes                              []Attribute
-	VehicleAttributes                       []string
-	Vehicles                                []vehicle.Vehicle `json:",omitempty" xml:",omitempty"`
-	Content                                 []Content
-	Pricing                                 []Price
-	Reviews                                 []Review
-	Images                                  []Image
-	Related                                 []int
-	Categories                              []Category
-	Videos                                  []PartVideo
-	Packages                                []Package
-	Customer                                CustomerPart
-}
-
-type CategoryTree struct {
-	ID            int
-	SubCategories []int
-	Parts         []Part
+	ID                int               `json:"id" xml:"id,attr"`
+	Status            int               `json:"status" xml:"status,attr"`
+	PriceCode         int               `json:"price_code" xml:"price_code,attr"`
+	RelatedCount      int               `json:"related_count" xml:"related_count,attr"`
+	AverageReview     float64           `json:"average_review" xml:"average_review,attr"`
+	DateModified      time.Time         `json:"date_modified" xml:"date_modified,attr"`
+	DateAdded         time.Time         `json:"date_added" xml:"date_added,attr"`
+	ShortDesc         string            `json:"short_description" xml:"short_description,attr"`
+	PartClass         string            `json:"part_class" xml:"part_class,attr"`
+	InstallSheet      *url.URL          `json:"install_sheet" xml:"install_sheet"`
+	Attributes        []Attribute       `json:"attributes" xml:"attributes"`
+	VehicleAttributes []string          `json:"vehicle_atttributes" xml:"vehicle_attributes"`
+	Vehicles          []vehicle.Vehicle `json:"vehicles,omitempty" xml:"vehicles,omitempty"`
+	Content           []Content         `json:"content" xml:"content"`
+	Pricing           []Price           `json:"pricing" xml:"pricing"`
+	Reviews           []Review          `json:"reviews" xml:"reviews"`
+	Images            []Image           `json:"images" xml:"images"`
+	Related           []int             `json:"related" xml:"related"`
+	Categories        []Category        `json:"categories" xml:"categories"`
+	Videos            []PartVideo       `json:"videos" xml:"videos"`
+	Packages          []Package         `json:"packages" xml:"packages"`
+	Customer          CustomerPart      `json:"customer,omitempty" xml:"customer,omitempty"`
 }
 
 type CustomerPart struct {
-	Price         float64
-	CartReference int
+	Price         float64 `json:"price" xml:"price,attr"`
+	CartReference int     `json:"cart_reference" xml:"cart_reference,attr"`
 }
 
 type Content struct {
-	Key, Value string
+	Key   string `json:"key" xml:"key,attr"`
+	Value string `json:"value" xml:",chardata"`
 }
 
 type PaginatedProductListing struct {
 	Parts         []Part `json:"parts" xml:"parts"`
-	TotalItems    int    `json:"total_items" xml:"total_items"`
-	ReturnedCount int    `json:"returned_count" xml:"returned_count"`
-	Page          int    `json:"page" xml:"page"`
-	PerPage       int    `json:"per_page" xml:"per_page"`
-	TotalPages    int    `json:"total_pages" xml:"total_pages"`
+	TotalItems    int    `json:"total_items" xml:"total_items,attr"`
+	ReturnedCount int    `json:"returned_count" xml:"returned_count,attr"`
+	Page          int    `json:"page" xml:"page,attr"`
+	PerPage       int    `json:"per_page" xml:"per_page,attr"`
+	TotalPages    int    `json:"total_pages" xml:"total_pages,attr"`
 }
 
 func (p *Part) FromDatabase() error {
 
 	var errs []string
 
-	basicChan := make(chan int)
 	attrChan := make(chan int)
 	priceChan := make(chan int)
 	reviewChan := make(chan int)
@@ -114,16 +113,9 @@ func (p *Part) FromDatabase() error {
 	contentChan := make(chan int)
 
 	go func() {
-		basicErr := p.Basics()
-		if basicErr != nil {
-			errs = append(errs, basicErr.Error())
-		}
-		basicChan <- 1
-	}()
-
-	go func() {
 		attrErr := p.GetAttributes()
 		if attrErr != nil {
+			log.Printf("Attribute Error: %s", attrErr.Error())
 			errs = append(errs, attrErr.Error())
 		}
 		attrChan <- 1
@@ -193,7 +185,10 @@ func (p *Part) FromDatabase() error {
 		contentChan <- 1
 	}()
 
-	<-basicChan
+	if basicErr := p.Basics(); basicErr != nil {
+		errs = append(errs, basicErr.Error())
+	}
+
 	<-attrChan
 	<-priceChan
 	<-reviewChan
@@ -204,14 +199,14 @@ func (p *Part) FromDatabase() error {
 	<-categoryChan
 	<-contentChan
 
-	go redis.Setex("part:"+strconv.Itoa(p.PartId), p, redis.CacheTimeout)
+	go redis.Setex("part:"+strconv.Itoa(p.ID), p, redis.CacheTimeout)
 
 	return nil
 }
 
 func (p *Part) FromCache() error {
 
-	part_bytes, err := redis.Get("part:" + strconv.Itoa(p.PartId))
+	part_bytes, err := redis.Get("part:" + strconv.Itoa(p.ID))
 	if err != nil {
 		return err
 	} else if len(part_bytes) == 0 {
@@ -223,29 +218,32 @@ func (p *Part) FromCache() error {
 
 func (p *Part) Get(key string) error {
 
-	// partChan := make(chan int)
 	customerChan := make(chan int)
 
 	var err error
-
-	// go func() {
-	// 	if err = p.FromCache(); err != nil {
-	// 		err = p.FromDatabase()
-	// 	}
-	// 	partChan <- 1
-	// }()
 
 	go func(api_key string) {
 		err = p.BindCustomer(api_key)
 		customerChan <- 1
 	}(key)
 
-	if err := p.FromDatabase(); err != nil {
-		return err
+	redis_key := fmt.Sprintf("part:%d", p.ID)
+
+	part_bytes, err := redis.Get(redis_key)
+	if len(part_bytes) > 0 {
+		json.Unmarshal(part_bytes, &p)
 	}
 
-	// <-partChan
+	if p.Status == 0 {
+		if err := p.FromDatabase(); err != nil {
+			customerChan <- 1
+			close(customerChan)
+			return err
+		}
+	}
+
 	<-customerChan
+	close(customerChan)
 
 	return err
 }
@@ -280,7 +278,7 @@ func All(key string, page, count int) ([]Part, error) {
 		}
 
 		go func(id int) {
-			p := Part{PartId: id}
+			p := Part{ID: id}
 			p.Get(key)
 			parts = append(parts, p)
 			partChan <- 1
@@ -292,7 +290,7 @@ func All(key string, page, count int) ([]Part, error) {
 		<-partChan
 	}
 
-	sortutil.AscByField(parts, "PartId")
+	sortutil.AscByField(parts, "ID")
 
 	return parts, nil
 }
@@ -308,7 +306,7 @@ func (p *Part) GetWithVehicle(vehicle *vehicle.Vehicle, api_key string) error {
 		superChan <- 1
 	}(api_key)
 	go func() {
-		notes, nErr := vehicle.GetNotes(p.PartId)
+		notes, nErr := vehicle.GetNotes(p.ID)
 		if nErr != nil && notes != nil {
 			errs = append(errs, nErr.Error())
 			p.VehicleAttributes = []string{}
@@ -328,13 +326,13 @@ func (p *Part) GetWithVehicle(vehicle *vehicle.Vehicle, api_key string) error {
 }
 
 func (p *Part) GetById(id int, key string) {
-	p.PartId = id
+	p.ID = id
 
 	p.Get(key)
 }
 
 func (p *Part) Basics() error {
-	redis_key := fmt.Sprintf("part:%d:basics", p.PartId)
+	redis_key := fmt.Sprintf("part:%d:basics", p.ID)
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -355,9 +353,9 @@ func (p *Part) Basics() error {
 	}
 	defer qry.Close()
 
-	row := qry.QueryRow(p.PartId)
+	row := qry.QueryRow(p.ID)
 	if row == nil {
-		return errors.New("No Part Found for:" + string(p.PartId))
+		return errors.New("No Part Found for:" + string(p.ID))
 	}
 
 	row.Scan(
@@ -365,11 +363,11 @@ func (p *Part) Basics() error {
 		&p.DateAdded,
 		&p.DateModified,
 		&p.ShortDesc,
-		&p.PartId,
+		&p.ID,
 		&p.PriceCode,
 		&p.PartClass)
 
-	p.ShortDesc = fmt.Sprintf("CURT %s %d", p.ShortDesc, p.PartId)
+	p.ShortDesc = fmt.Sprintf("CURT %s %d", p.ShortDesc, p.ID)
 
 	go redis.Setex(redis_key, p, redis.CacheTimeout)
 
@@ -377,7 +375,7 @@ func (p *Part) Basics() error {
 }
 
 func (p *Part) GetRelated() error {
-	redis_key := fmt.Sprintf("part:%d:related", p.PartId)
+	redis_key := fmt.Sprintf("part:%d:related", p.ID)
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -391,11 +389,11 @@ func (p *Part) GetRelated() error {
 		return err
 	}
 
-	rows, _, err := qry.Exec(p.PartId)
+	rows, _, err := qry.Exec(p.ID)
 	if err != nil {
 		return err
 	} else if rows == nil {
-		return errors.New("No related found for part: " + string(p.PartId))
+		return errors.New("No related found for part: " + string(p.ID))
 	}
 
 	var related []int
@@ -411,7 +409,7 @@ func (p *Part) GetRelated() error {
 }
 
 func (p *Part) GetContent() error {
-	redis_key := fmt.Sprintf("part:%d:content", p.PartId)
+	redis_key := fmt.Sprintf("part:%d:content", p.ID)
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -425,11 +423,11 @@ func (p *Part) GetContent() error {
 		return err
 	}
 
-	rows, _, err := qry.Exec(p.PartId)
+	rows, _, err := qry.Exec(p.ID)
 	if err != nil {
 		return err
 	} else if rows == nil {
-		return errors.New("No content found for part: " + string(p.PartId))
+		return errors.New("No content found for part: " + string(p.ID))
 	}
 
 	var content []Content
@@ -441,7 +439,7 @@ func (p *Part) GetContent() error {
 
 		if strings.Contains(strings.ToLower(con.Key), "install") {
 			//sheetUrl, _ := url.Parse(con.Value)
-			p.InstallSheet, _ = url.Parse(api_helpers.API_DOMAIN + "/part/" + strconv.Itoa(p.PartId) + ".pdf")
+			p.InstallSheet, _ = url.Parse(api_helpers.API_DOMAIN + "/part/" + strconv.Itoa(p.ID) + ".pdf")
 		} else {
 			content = append(content, con)
 		}
@@ -462,17 +460,17 @@ func (p *Part) BindCustomer(key string) error {
 	contentChan := make(chan int)
 
 	go func() {
-		price, _ = customer.GetCustomerPrice(key, p.PartId)
+		price, _ = customer.GetCustomerPrice(key, p.ID)
 		priceChan <- 1
 	}()
 
 	go func() {
-		ref, _ = customer.GetCustomerCartReference(key, p.PartId)
+		ref, _ = customer.GetCustomerCartReference(key, p.ID)
 		refChan <- 1
 	}()
 
 	go func() {
-		content, _ := custcontent.GetPartContent(p.PartId, key)
+		content, _ := custcontent.GetPartContent(p.ID, key)
 		for _, con := range content {
 
 			strArr := strings.Split(con.ContentType.Type, ":")
@@ -501,7 +499,7 @@ func (p *Part) BindCustomer(key string) error {
 }
 
 func (p *Part) GetInstallSheet(r *http.Request) (data []byte, err error) {
-	redis_key := fmt.Sprintf("part:%d:installsheet", p.PartId)
+	redis_key := fmt.Sprintf("part:%d:installsheet", p.ID)
 
 	data, err = redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -513,7 +511,7 @@ func (p *Part) GetInstallSheet(r *http.Request) (data []byte, err error) {
 		return
 	}
 
-	row, _, err := qry.ExecFirst(p.PartId)
+	row, _, err := qry.ExecFirst(p.ID)
 	if err != nil || row == nil {
 		return
 	}
@@ -533,7 +531,7 @@ func (p *Part) GetInstallSheet(r *http.Request) (data []byte, err error) {
 // Returns: error
 func (p *Part) PartBreadcrumbs() error {
 
-	redis_key := fmt.Sprintf("part:%d:breadcrumbs", p.PartId)
+	redis_key := fmt.Sprintf("part:%d:breadcrumbs", p.ID)
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -542,7 +540,7 @@ func (p *Part) PartBreadcrumbs() error {
 		}
 	}
 
-	if p.PartId == 0 {
+	if p.ID == 0 {
 		return errors.New("Invalid Part Number")
 	}
 
@@ -564,10 +562,10 @@ func (p *Part) PartBreadcrumbs() error {
 	}
 	defer parentQuery.Close()
 
-	// Execute SQL Query against current PartId
-	catRow := qry.QueryRow(p.PartId)
+	// Execute SQL Query against current ID
+	catRow := qry.QueryRow(p.ID)
 	if catRow == nil {
-		return errors.New("No part found for " + string(p.PartId))
+		return errors.New("No part found for " + string(p.ID))
 	}
 
 	ch := make(chan Category)
@@ -614,7 +612,7 @@ func (p *Part) PartBreadcrumbs() error {
 
 func (p *Part) GetPartCategories(key string) (cats []Category, err error) {
 
-	redis_key := fmt.Sprintf("part:%d:categories", p.PartId)
+	redis_key := fmt.Sprintf("part:%d:categories", p.ID)
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -623,7 +621,7 @@ func (p *Part) GetPartCategories(key string) (cats []Category, err error) {
 		}
 	}
 
-	if p.PartId == 0 {
+	if p.ID == 0 {
 		return
 	}
 
@@ -639,8 +637,8 @@ func (p *Part) GetPartCategories(key string) (cats []Category, err error) {
 	}
 	defer qry.Close()
 
-	// Execute SQL Query against current PartId
-	catRows, err := qry.Query(p.PartId)
+	// Execute SQL Query against current ID
+	catRows, err := qry.Query(p.ID)
 	if err != nil || catRows == nil { // Error occurred while executing query
 		return
 	}
@@ -703,138 +701,63 @@ func (p *Part) GetPartCategories(key string) (cats []Category, err error) {
 	return
 }
 
-func GetCategoryParts(c Category, key string, page int, count int) (parts []Part, err error) {
+// func (tree *CategoryTree) CategoryTreeBuilder() {
 
-	if c.ID == 0 {
-		return
-	}
+// 	db, err := sql.Open("mysql", database.ConnectionString())
+// 	if err != nil {
+// 		return
+// 	}
+// 	defer db.Close()
 
-	if page > 0 {
-		page = count * page
-	}
+// 	subQry, err := db.Prepare(SubIDStmt)
+// 	if err != nil {
+// 		return
+// 	}
+// 	defer subQry.Close()
 
-	redis_key := "category:" + strconv.Itoa(c.ID) + ":tree:" + strconv.Itoa(page) + ":" + strconv.Itoa(count)
-	data, err := redis.Get(redis_key)
-	if err == nil && len(data) > 0 {
-		err = json.Unmarshal(data, &parts)
-		if err != nil {
-			return
-		}
+// 	// Execute against current Category Id
+// 	// to retrieve all category Ids that are children.
+// 	rows, err := subQry.Query(tree.ID)
+// 	if err != nil {
+// 		return
+// 	}
 
-		chans := make(chan int, len(parts))
-		for _, part := range parts {
-			go func(p Part, k string) {
-				p.BindCustomer(k)
-				chans <- 1
-			}(part, key)
-		}
+// 	chans := make(chan int, 0)
+// 	var rowCount int
+// 	for rows.Next() {
+// 		var catID int
+// 		if err := rows.Scan(&catID); err != nil {
+// 			continue
+// 		}
 
-		for i := 0; i < len(parts); i++ {
-			<-chans
-		}
+// 		go func(catID int) {
 
-		return
-	}
-	log.Println("missed redis")
+// 			// Need to parse out string array into ints and populate
+// 			cat := Category{
+// 				ID: catID,
+// 			}
+// 			tree.SubCategories = append(tree.SubCategories, cat.ID)
 
-	tree := CategoryTree{
-		ID: c.ID,
-	}
+// 			subRows, err := subQry.Query(cat.ID)
+// 			if err == nil && subRows != nil {
+// 				for subRows.Next() {
+// 					var subID int
+// 					if err := subRows.Scan(&subID); err == nil {
+// 						tree.SubCategories = append(tree.SubCategories, subID)
+// 					}
 
-	tree.CategoryTreeBuilder()
-	catIdStr := strconv.Itoa(tree.ID)
-	for _, treeId := range tree.SubCategories {
-		catIdStr = catIdStr + "," + strconv.Itoa(treeId)
-	}
+// 					// subTree.CategoryTreeBuilder()
+// 					// tree.SubCategories = append(tree.SubCategories, subTree.SubCategories...)
+// 				}
+// 			}
+// 			chans <- 1
+// 		}(catID)
+// 		rowCount++
+// 	}
 
-	rows, _, err := database.Db.Query(SubCategoryPartIdStmt, catIdStr, page, count)
-	if err != nil {
-		return nil, err
-	}
+// 	for i := 0; i < rowCount; i++ {
+// 		<-chans
+// 	}
 
-	for _, row := range rows {
-		tree.Parts = append(tree.Parts, Part{PartId: row.Int(0)})
-	}
-
-	// This will work for populating the
-	// parts that match this exact
-	chans := make(chan int, len(tree.Parts))
-
-	for _, part := range tree.Parts {
-		go func(p Part) {
-			p.Get(key)
-			parts = append(parts, p)
-			chans <- 1
-		}(part)
-
-	}
-
-	for i := 0; i < len(tree.Parts); i++ {
-		<-chans
-	}
-
-	go redis.Setex(redis_key, parts, redis.CacheTimeout)
-
-	return
-}
-
-func (tree *CategoryTree) CategoryTreeBuilder() {
-
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return
-	}
-	defer db.Close()
-
-	subQry, err := db.Prepare(SubIDStmt)
-	if err != nil {
-		return
-	}
-	defer subQry.Close()
-
-	// Execute against current Category Id
-	// to retrieve all category Ids that are children.
-	rows, err := subQry.Query(tree.ID)
-	if err != nil {
-		return
-	}
-
-	chans := make(chan int, 0)
-	var rowCount int
-	for rows.Next() {
-		var catID int
-		if err := rows.Scan(&catID); err != nil {
-			continue
-		}
-
-		go func(catID int) {
-
-			// Need to parse out string array into ints and populate
-			cat := Category{
-				ID: catID,
-			}
-			tree.SubCategories = append(tree.SubCategories, cat.ID)
-
-			subRows, err := subQry.Query(cat.ID)
-			if err == nil && subRows != nil {
-				for subRows.Next() {
-					var subID int
-					if err := subRows.Scan(&subID); err == nil {
-						tree.SubCategories = append(tree.SubCategories, subID)
-					}
-
-					// subTree.CategoryTreeBuilder()
-					// tree.SubCategories = append(tree.SubCategories, subTree.SubCategories...)
-				}
-			}
-			chans <- 1
-		}(catID)
-		rowCount++
-	}
-
-	for i := 0; i < rowCount; i++ {
-		<-chans
-	}
-
-	return
-}
+// 	return
+// }

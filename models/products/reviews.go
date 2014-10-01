@@ -26,7 +26,7 @@ type Review struct {
 }
 
 func (p *Part) GetReviews() error {
-	redis_key := fmt.Sprintf("part:%d:reviews", p.PartId)
+	redis_key := fmt.Sprintf("part:%d:reviews", p.ID)
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -47,7 +47,7 @@ func (p *Part) GetReviews() error {
 	}
 	defer qry.Close()
 
-	rows, err := qry.Query(p.PartId)
+	rows, err := qry.Query(p.ID)
 	if err != nil {
 		return err
 	}

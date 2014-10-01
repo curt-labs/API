@@ -174,10 +174,10 @@ func GetCustomerPrice(w http.ResponseWriter, r *http.Request, enc encoding.Encod
 	id := params["id"]
 	var p products.Part
 	if id != "" {
-		p.PartId, err = strconv.Atoi(params["id"])
+		p.ID, err = strconv.Atoi(params["id"])
 	}
 
-	part, err := customer_new.GetCustomerPrice(key, p.PartId)
+	part, err := customer_new.GetCustomerPrice(key, p.ID)
 	if err != nil {
 		return err.Error()
 	}
@@ -200,10 +200,10 @@ func GetCustomerCartReference(w http.ResponseWriter, r *http.Request, enc encodi
 	id := params["id"]
 	var p products.Part
 	if id != "" {
-		p.PartId, err = strconv.Atoi(params["id"])
+		p.ID, err = strconv.Atoi(params["id"])
 	}
 
-	ref, err := customer_new.GetCustomerCartReference(key, p.PartId)
+	ref, err := customer_new.GetCustomerCartReference(key, p.ID)
 	if err != nil {
 		return err.Error()
 	}

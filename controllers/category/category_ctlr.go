@@ -17,6 +17,10 @@ func GetCategory(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 	qs := r.URL.Query()
 	key := qs.Get("key")
 	id, err := strconv.Atoi(params["id"])
+	var page int
+	var count int
+	page, _ = strconv.Atoi(qs.Get("page"))
+	count, _ = strconv.Atoi(qs.Get("count"))
 
 	var cat products.Category
 	if err != nil {
@@ -29,7 +33,7 @@ func GetCategory(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 		cat.ID = id
 	}
 
-	if err = cat.GetCategory(key); err != nil {
+	if err = cat.GetCategory(key, page, count, false); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
@@ -112,15 +116,10 @@ func GetParts(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, para
 		page = page - 1
 	}
 
-	parts, err := products.GetCategoryParts(cat, key, page, count)
-	if err != nil {
+	if err := cat.GetParts(key, page, count, nil); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
 
-	if parts == nil {
-		parts = make([]products.Part, 0)
-	}
-
-	return encoding.Must(enc.Encode(parts))
+	return encoding.Must(enc.Encode(cat.ProductListing.Parts))
 }

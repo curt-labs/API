@@ -23,7 +23,7 @@ var (
 )
 
 func (p *Part) GetPricing() error {
-	redis_key := fmt.Sprintf("part:%d:pricing", p.PartId)
+	redis_key := fmt.Sprintf("part:%d:pricing", p.ID)
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -44,7 +44,7 @@ func (p *Part) GetPricing() error {
 	}
 	defer qry.Close()
 
-	rows, err := qry.Query(p.PartId)
+	rows, err := qry.Query(p.ID)
 	if err != nil || rows == nil {
 		return err
 	}

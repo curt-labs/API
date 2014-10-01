@@ -3,19 +3,19 @@ package apifilter
 type FilteredOptions []Options
 
 type Options struct {
-	Key     string
-	Options []Option
+	Key     string   `json:"key" xml:"key,attr"`
+	Options []Option `json:"options" xml:"options"`
 }
 
 type Option struct {
-	Value    string
-	Selected bool
-	Products []int
+	Value    string `json:"value" xml:"value,attr"`
+	Selected bool   `json:"selected" xml:"selected,attr"`
+	Products []int  `json:"products" xml:"products"`
 }
 
 type Decision struct {
-	Field  string
-	Values map[string]interface{}
+	Field  string                 `json:"field" xml:"field,attr"`
+	Values map[string]interface{} `json:"values" xml:"values"`
 }
 
 func (o *Options) AppendValue(newOpt Option) {
