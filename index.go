@@ -85,7 +85,7 @@ func main() {
 	m.Group("/part", func(r martini.Router) {
 		r.Get("/:part/vehicles", part_ctlr.Vehicles)
 		r.Get("/:part/attributes", part_ctlr.Attributes)
-		r.Get("/:part/reviews", part_ctlr.Reviews)
+		r.Get("/:part/reviews", part_ctlr.ActiveApprovedReviews)
 		r.Get("/:part/categories", part_ctlr.Categories)
 		r.Get("/:part/content", part_ctlr.GetContent)
 		r.Get("/:part/images", part_ctlr.Images)
@@ -204,6 +204,14 @@ func main() {
 		r.Post("/:id", internalCors, news_controller.Update)   //{id, question and/or answer}
 		r.Delete("/:id", internalCors, news_controller.Delete) //{id}
 		r.Delete("", internalCors, news_controller.Delete)     //{id}
+	})
+
+	m.Group("/reviews", func(r martini.Router) {
+		r.Get("", part_ctlr.GetAllReviews)
+		r.Get("/:id", part_ctlr.GetReview)
+		r.Put("", part_ctlr.SaveReview)
+		r.Post("/:id", part_ctlr.SaveReview)
+		r.Delete("/:id", part_ctlr.DeleteReview)
 	})
 	m.Group("/webProperties", func(r martini.Router) {
 		r.Post("/note/:id", internalCors, webProperty_controller.CreateUpdateWebPropertyNote)                                       //updates when an id is present; otherwise, creates
