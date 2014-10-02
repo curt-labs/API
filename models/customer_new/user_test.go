@@ -33,6 +33,27 @@ func getRandomKey() string {
 	}
 	return key
 }
+
+func getRandomKeyNonAuthentication() string {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return ""
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare("SELECT api_key FROM ApiKey WHERE type_id = '209A05AD-7D42-4C88-B5FA-FEEACDD19AC2' ORDER BY RAND() LIMIT 1")
+	// stmt, err := db.Prepare("SELECT api_key FROM ApiKey WHERE type_id = (SELECT id FROM ApiKeyType WHERE Type = 'Authentication') ORDER BY RAND() LIMIT 1")
+	if err != nil {
+		return ""
+	}
+	defer stmt.Close()
+	var key string
+	err = stmt.QueryRow().Scan(&key)
+	if err != nil {
+		return ""
+	}
+	return key
+}
 func updateApiTime(apiKey string) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -46,6 +67,27 @@ func updateApiTime(apiKey string) {
 	}
 	_, _ = stmt.Exec(apiKey)
 	return
+}
+
+func randomUserId() (user CustomerUser) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return user
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare("SELECT id FROM CustomerUser WHERE active = 1 AND NotCustomer = 0 AND isSudo  = 0 ORDER BY RAND() LIMIT 1")
+	if err != nil {
+		return user
+	}
+	defer stmt.Close()
+
+	err = stmt.QueryRow().Scan(&user.Id)
+	if err != nil {
+		return user
+	}
+
+	return user
 }
 
 func TestCustomerUser(t *testing.T) {
@@ -131,4 +173,15 @@ func TestCustomerUser(t *testing.T) {
 		})
 
 	})
+
+	//meddler calls this auth function
+	Convey("Test GetCustomerUserFromKey", t, func() {
+		key := getRandomKeyNonAuthentication()
+		t.Log("KEY", key)
+		u, err := GetCustomerUserFromKey(key)
+		So(u, ShouldNotBeNil)
+		t.Log(u)
+		So(err, ShouldBeNil)
+	})
+
 }

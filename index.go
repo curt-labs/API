@@ -15,6 +15,7 @@ import (
 	"github.com/curt-labs/GoAPI/controllers/part"
 	"github.com/curt-labs/GoAPI/controllers/salesrep"
 	"github.com/curt-labs/GoAPI/controllers/search"
+	"github.com/curt-labs/GoAPI/controllers/site"
 	"github.com/curt-labs/GoAPI/controllers/vehicle"
 	"github.com/curt-labs/GoAPI/controllers/videos"
 	"github.com/curt-labs/GoAPI/controllers/webProperty"
@@ -213,6 +214,16 @@ func main() {
 		r.Put("", part_ctlr.SaveReview)
 		r.Post("/:id", part_ctlr.SaveReview)
 		r.Delete("/:id", part_ctlr.DeleteReview)
+	})
+
+	m.Group("/site", func(r martini.Router) {
+		r.Get("/page/get", site.GetContentPage) //get content page by id or slug
+		r.Get("/menu/primary", site.GetPrimaryMenu)
+		r.Get("/menu", site.GetMenu)
+		r.Get("/menu/content", site.GetMenuContent)
+		r.Get("/menu/footer/sitemap", site.GetFooterSitemap)
+		r.Get("/menu/get", site.GetMenuWithContent)
+
 	})
 	m.Group("/webProperties", func(r martini.Router) {
 		r.Post("/note/:id", internalCors, webProperty_controller.CreateUpdateWebPropertyNote)                                       //updates when an id is present; otherwise, creates

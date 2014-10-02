@@ -80,6 +80,7 @@ func RegisterUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) 
 	cust_ID, err := strconv.Atoi(r.FormValue("cust_ID"))
 	notCustomer, err := strconv.ParseBool(r.FormValue("notCustomer"))
 
+	log.Print("NAME", name)
 	var user customer_new.CustomerUser
 	user.Email = email
 	user.Name = name
