@@ -3,13 +3,13 @@ package site
 import (
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/site"
-	"log"
+	"github.com/go-martini/martini"
 	"net/http"
 	"strconv"
 )
 
 func GetPrimaryMenu(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder) string {
-	var m site.Menu
+	var m site.MenuWithContent
 	err := m.GetPrimaryMenu()
 
 	if err != nil {
@@ -20,69 +20,49 @@ func GetPrimaryMenu(rw http.ResponseWriter, req *http.Request, enc encoding.Enco
 	return encoding.Must(enc.Encode(m))
 }
 
-func GetMenu(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder) string {
+func GetMenuWithContent(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var err error
-	var m site.Menu
-	err = req.ParseForm()
-
-	id, err := strconv.Atoi(req.FormValue("id"))
-	if err != nil {
-		name := req.FormValue("name")
-		m.Name = name
-		err = m.GetByName()
-	} else {
-		m.Id = id
-		err = m.Get()
-	}
-
-	if err != nil {
-		http.Error(rw, err.Error(), http.StatusNoContent)
-		return ""
-	}
-
-	return encoding.Must(enc.Encode(m))
-}
-
-func GetMenuContent(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder) string {
-	var err error
-	var m site.Menu
-	err = req.ParseForm()
-
-	id, err := strconv.Atoi(req.FormValue("id"))
-	m.Id = id
-
-	err = m.GetMenuContents()
-	// err = m.GetContentPages()
-
-	if err != nil {
-		log.Print(err)
-		http.Error(rw, err.Error(), http.StatusNoContent)
-		return ""
-	}
-
-	return encoding.Must(enc.Encode(m))
-}
-
-func GetMenuWithContent(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder) string {
-	var err error
-	var m site.Menu
+	var m site.MenuWithContent
 	err = req.ParseForm()
 
 	auth, err := strconv.ParseBool(req.FormValue("auth"))
-	if err != nil {
+	if err != nil || auth == false {
 		http.Error(rw, err.Error(), http.StatusForbidden)
 		return ""
 	}
-	m.RequireAuthentication = auth
-	id, err := strconv.Atoi(req.FormValue("id"))
+
+	id, err := strconv.Atoi(params["idOrName"])
 	if err != nil {
-		slug := req.FormValue("name")
-		err = m.GetMenuWithContentByName(slug)
-		log.Print(slug)
+		name := req.FormValue("idOrName")
+		err = m.GetMenuWithContentByName(name)
 	} else {
-		err = m.GetMenuByContentId(id)
-		log.Print(id)
+		err = m.GetMenuByContentId(id, auth)
 	}
+
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusNoContent)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(m))
+}
+
+func GetMenuByContentId(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+	var err error
+	var m site.MenuWithContent
+	err = req.ParseForm()
+
+	auth, err := strconv.ParseBool(req.FormValue("auth"))
+	if err != nil || auth == false {
+		http.Error(rw, err.Error(), http.StatusForbidden)
+		return ""
+	}
+
+	contentId, err := strconv.Atoi(req.FormValue("contentId"))
+	menuId, err := strconv.Atoi(req.FormValue("menuId"))
+	m.Menu.Id = menuId
+
+	err = m.GetMenuByContentId(contentId, auth)
 
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusNoContent)
@@ -95,6 +75,16 @@ func GetMenuWithContent(rw http.ResponseWriter, req *http.Request, enc encoding.
 func GetFooterSitemap(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder) string {
 	menus, err := site.GetFooterSitemap()
 
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusNoContent)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(menus))
+}
+
+func GetMenuSitemap(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder) string {
+	menus, err := site.GetMenuSitemap()
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusNoContent)
 		return ""
