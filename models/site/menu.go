@@ -89,16 +89,11 @@ func (m *Menu) GetPrimaryMenu() (err error) {
 	if err != nil {
 		return err
 	}
-	mChan := make(chan int)
-	go func() {
-		for _, c := range contentMap {
-			if c.MenuId == m.Id {
-				m.MenuContents = append(m.MenuContents, c)
-			}
-		}
-		mChan <- 1
-	}()
-	<-mChan
+
+	if cmc, found := contentMap[m.Id]; found {
+		m.MenuContents = append(m.MenuContents, cmc)
+	}
+
 	return err
 }
 
@@ -138,16 +133,13 @@ func GetAllMenus() (ms Menus, err error) {
 			log.Print("ERR HERE", err)
 			return ms, err
 		}
-		mChan := make(chan int)
-		go func() {
-			for _, c := range contentMap {
-				if c.MenuId == m.Id {
-					m.MenuContents = append(m.MenuContents, c)
-				}
+
+		for _, c := range contentMap {
+			if c.MenuId == m.Id {
+				m.MenuContents = append(m.MenuContents, c)
 			}
-			mChan <- 1
-		}()
-		<-mChan
+		}
+
 	}
 	ms = append(ms, m)
 	return ms, err
@@ -184,16 +176,9 @@ func (m *Menu) Get() (err error) {
 	if err != nil {
 		return err
 	}
-	mChan := make(chan int)
-	go func() {
-		for _, c := range contentMap {
-			if c.MenuId == m.Id {
-				m.MenuContents = append(m.MenuContents, c)
-			}
-		}
-		mChan <- 1
-	}()
-	<-mChan
+	if cmc, found := contentMap[m.Id]; found {
+		m.MenuContents = append(m.MenuContents, cmc)
+	}
 	return err
 }
 
@@ -229,16 +214,9 @@ func (m *Menu) GetByName() (err error) {
 	if err != nil {
 		return err
 	}
-	mChan := make(chan int)
-	go func() {
-		for _, c := range contentMap {
-			if c.MenuId == m.Id {
-				m.MenuContents = append(m.MenuContents, c)
-			}
-		}
-		mChan <- 1
-	}()
-	<-mChan
+	if cmc, found := contentMap[m.Id]; found {
+		m.MenuContents = append(m.MenuContents, cmc)
+	}
 	return err
 }
 
