@@ -1,4 +1,4 @@
-package aces
+package products
 
 import (
 	. "github.com/smartystreets/goconvey/convey"

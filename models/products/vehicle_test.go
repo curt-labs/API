@@ -1,8 +1,7 @@
-package aces
+package products
 
 import (
 	"github.com/curt-labs/GoAPI/helpers/api"
-	"github.com/curt-labs/GoAPI/models/products"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )

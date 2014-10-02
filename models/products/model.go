@@ -1,4 +1,4 @@
-package aces
+package products
 
 import (
 	"database/sql"

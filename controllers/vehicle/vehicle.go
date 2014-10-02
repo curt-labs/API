@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"github.com/curt-labs/GoAPI/helpers/apifilter"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
-	"github.com/curt-labs/GoAPI/models/aces"
 	"github.com/curt-labs/GoAPI/models/products"
 	"io/ioutil"
 	"log"
@@ -18,8 +17,8 @@ import (
 // the given configuration. Doesn't start looking for parts
 // until the model is provided.
 func Query(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
-	var l aces.Lookup
-	l.Vehicle = loadVehicle(r)
+	var l products.Lookup
+	l.Vehicle = LoadVehicle(r)
 
 	qs := r.URL.Query()
 	if qs.Get("key") != "" {
@@ -81,7 +80,7 @@ func Query(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string 
 // Parses the vehicle data out of the request
 // body. It will first check for Content-Type as
 // JSON and parse accordingly.
-func loadVehicle(r *http.Request) (v aces.Vehicle) {
+func LoadVehicle(r *http.Request) (v products.Vehicle) {
 	defer r.Body.Close()
 
 	if strings.Contains(strings.ToLower(r.Header.Get("Content-Type")), "json") {
@@ -128,7 +127,7 @@ func loadVehicle(r *http.Request) (v aces.Vehicle) {
 	// Get vehicle configuration options
 	for key, opt := range r.Form {
 		if len(opt) > 0 {
-			conf := aces.Configuration{
+			conf := products.Configuration{
 				Key:   key,
 				Value: opt[0],
 			}

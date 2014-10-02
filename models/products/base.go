@@ -1,4 +1,4 @@
-package aces
+package products
 
 type BaseVehicle struct {
 	Year  int    `json:"year" xml:"year,attr"`
