@@ -8,7 +8,6 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	"github.com/curt-labs/GoAPI/models/customer/content"
-	"github.com/curt-labs/GoAPI/models/vehicle"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"net/url"
@@ -107,7 +106,7 @@ var (
 )
 
 const (
-	DefaultPageCount = 20
+	DefaultPageCount = 10
 )
 
 type Category struct {
@@ -178,6 +177,8 @@ func PopulateCategoryMulti(rows *sql.Rows, ch chan []Category) {
 			initCat.ColorCode = fmt.Sprintf("rgb(%s,%s,%s)", cc[0:3], cc[3:6], cc[6:9])
 			initCat.FontCode = fmt.Sprintf("#%s", *fontCode)
 		}
+
+		initCat.ProductListing = nil
 
 		cats = append(cats, initCat)
 	}
@@ -285,7 +286,7 @@ func TopTierCategories(key string) (cats []Category, err error) {
 		err := catRows.Scan(&cat.ID)
 		if err == nil {
 			go func(c Category) {
-				err := c.GetCategory(key, 0, 0, true)
+				err := c.GetCategory(key, 0, 0, true, nil)
 				if err == nil {
 					cats = append(cats, c)
 				}
@@ -430,7 +431,11 @@ func (c *Category) GetSubCategories() (cats []Category, err error) {
 	return
 }
 
-func (c *Category) GetCategory(key string, page int, count int, ignoreParts bool) error {
+func (c *Category) GetCategory(key string, page int, count int, ignoreParts bool, v *Vehicle) error {
+
+	if v != nil && v.Base.Year == 0 {
+		v = nil
+	}
 
 	redis_key := "category:" + strconv.Itoa(c.ID)
 
@@ -471,7 +476,7 @@ func (c *Category) GetCategory(key string, page int, count int, ignoreParts bool
 	partChan := make(chan *PaginatedProductListing)
 	if !ignoreParts {
 		go func() {
-			c.GetParts(key, page, count, nil)
+			c.GetParts(key, page, count, v)
 			partChan <- c.ProductListing
 		}()
 	} else {
@@ -533,9 +538,40 @@ func (c *Category) GetContent() (content []Content, err error) {
 	return
 }
 
-func (c *Category) GetParts(key string, page int, count int, v *vehicle.Vehicle) error {
+func (c *Category) GetParts(key string, page int, count int, v *Vehicle) error {
+
+	c.ProductListing = &PaginatedProductListing{}
 	if c.ID == 0 {
 		return fmt.Errorf("error: %s %d", "invalid category reference", c.ID)
+	}
+
+	if v != nil {
+		vehicleChan := make(chan []Part)
+		l := Lookup{
+			Vehicle:     *v,
+			CustomerKey: key,
+		}
+		go l.LoadParts(vehicleChan)
+
+		parts := <-vehicleChan
+
+		for _, p := range parts {
+			log.Println(p.ID)
+			for _, partCat := range p.Categories {
+				if partCat.ID == c.ID {
+					c.ProductListing.Parts = append(c.ProductListing.Parts, p)
+					break
+				}
+			}
+		}
+
+		c.ProductListing.ReturnedCount = len(c.ProductListing.Parts)
+		c.ProductListing.PerPage = c.ProductListing.ReturnedCount
+		c.ProductListing.Page = 1
+		c.ProductListing.TotalItems = c.ProductListing.ReturnedCount
+		c.ProductListing.TotalPages = 1
+
+		return nil
 	}
 
 	if count == 0 {
@@ -545,9 +581,10 @@ func (c *Category) GetParts(key string, page int, count int, v *vehicle.Vehicle)
 		page = count * page
 	}
 
+	parts := make([]Part, 0)
+
 	redis_key := fmt.Sprintf("category:%d:parts:%d:%d", c.ID, page, count)
 
-	parts := make([]Part, 0)
 	// First lets try to access the category:top endpoint in Redis
 	part_bytes, err := redis.Get(redis_key)
 	if len(part_bytes) > 0 {
@@ -604,6 +641,7 @@ func (c *Category) GetParts(key string, page int, count int, v *vehicle.Vehicle)
 
 	sortutil.AscByField(c.ProductListing.Parts, "ID")
 
+	c.ProductListing.ReturnedCount = len(c.ProductListing.Parts)
 	c.ProductListing.PerPage = count
 	if page == 0 {
 		page = 1
@@ -611,14 +649,13 @@ func (c *Category) GetParts(key string, page int, count int, v *vehicle.Vehicle)
 	c.ProductListing.Page = page
 	c.GetPartCount(key, v)
 	c.ProductListing.TotalPages = c.ProductListing.TotalItems / count
-	c.ProductListing.ReturnedCount = len(c.ProductListing.Parts)
 
 	go redis.Setex(redis_key, parts, redis.CacheTimeout)
 
 	return nil
 }
 
-func (c *Category) GetPartCount(key string, v *vehicle.Vehicle) error {
+func (c *Category) GetPartCount(key string, v *Vehicle) error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err

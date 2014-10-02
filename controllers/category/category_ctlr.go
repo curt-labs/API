@@ -1,6 +1,7 @@
 package category_ctlr
 
 import (
+	"github.com/curt-labs/GoAPI/controllers/vehicle"
 	"github.com/curt-labs/GoAPI/helpers/apifilter"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/products"
@@ -33,7 +34,10 @@ func GetCategory(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 		cat.ID = id
 	}
 
-	if err = cat.GetCategory(key, page, count, false); err != nil {
+	var l products.Lookup
+	l.Vehicle = vehicle.LoadVehicle(r)
+
+	if err = cat.GetCategory(key, page, count, false, &l.Vehicle); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}

@@ -199,21 +199,11 @@ func (p *Part) FromDatabase() error {
 	<-categoryChan
 	<-contentChan
 
-	go redis.Setex("part:"+strconv.Itoa(p.ID), p, redis.CacheTimeout)
+	go func(tmp Part) {
+		redis.Setex("part:"+strconv.Itoa(tmp.ID), tmp, redis.CacheTimeout)
+	}(*p)
 
 	return nil
-}
-
-func (p *Part) FromCache() error {
-
-	part_bytes, err := redis.Get("part:" + strconv.Itoa(p.ID))
-	if err != nil {
-		return err
-	} else if len(part_bytes) == 0 {
-		return errors.New("Part does not exist in cache")
-	}
-
-	return json.Unmarshal(part_bytes, &p)
 }
 
 func (p *Part) Get(key string) error {
@@ -369,7 +359,9 @@ func (p *Part) Basics() error {
 
 	p.ShortDesc = fmt.Sprintf("CURT %s %d", p.ShortDesc, p.ID)
 
-	go redis.Setex(redis_key, p, redis.CacheTimeout)
+	go func(tmp Part) {
+		redis.Setex(redis_key, tmp, redis.CacheTimeout)
+	}(*p)
 
 	return nil
 }
@@ -403,7 +395,9 @@ func (p *Part) GetRelated() error {
 	p.Related = related
 	p.RelatedCount = len(related)
 
-	go redis.Setex(redis_key, p.Related, redis.CacheTimeout)
+	go func(rel []int) {
+		redis.Setex(redis_key, rel, redis.CacheTimeout)
+	}(p.Related)
 
 	return nil
 }
@@ -518,7 +512,9 @@ func (p *Part) GetInstallSheet(r *http.Request) (data []byte, err error) {
 
 	data, err = rest.GetPDF(row.Str(0), r)
 
-	go redis.Setex(redis_key, data, redis.CacheTimeout)
+	go func(dt []byte) {
+		redis.Setex(redis_key, dt, redis.CacheTimeout)
+	}(data)
 
 	return
 }
@@ -605,7 +601,9 @@ func (p *Part) PartBreadcrumbs() error {
 	// Apply breadcrumbs to our part object and return
 	p.Categories = cats
 
-	go redis.Setex(redis_key, p.Categories, redis.CacheTimeout)
+	go func(cats []Category) {
+		redis.Setex(redis_key, cats, redis.CacheTimeout)
+	}(p.Categories)
 
 	return nil
 }
@@ -696,7 +694,9 @@ func (p *Part) GetPartCategories(key string) (cats []Category, err error) {
 		cats = append(cats, cat)
 	}
 
-	go redis.Setex(redis_key, cats, redis.CacheTimeout)
+	go func(cts []Category) {
+		redis.Setex(redis_key, cts, redis.CacheTimeout)
+	}(cats)
 
 	return
 }

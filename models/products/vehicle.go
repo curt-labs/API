@@ -1,10 +1,9 @@
-package aces
+package products
 
 import (
 	"database/sql"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
-	"github.com/curt-labs/GoAPI/models/products"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"strings"
@@ -68,7 +67,7 @@ type Lookup struct {
 	Submodels      []string              `json:"available_submodels,omitempty" xml:"available_submodels,omitempty"`
 	Configurations []ConfigurationOption `json:"available_configurations,omitempty" xml:"available_configurations,omitempty"`
 	Vehicle        Vehicle               `json:"vehicle" xml:"vehicle"`
-	Parts          []products.Part       `json:"parts" xml:"parts"`
+	Parts          []Part                `json:"parts" xml:"parts"`
 	Filter         interface{}           `json:"filter" xml:"filter"`
 	Pagination     Pagination            `json:"pagination" xml:"pagination"`
 	CustomerKey    string                `json:"-" xml:"-"`
@@ -82,8 +81,8 @@ type Pagination struct {
 	TotalPages    int `json:"total_pages" xml:"total_pages"`
 }
 
-func (l *Lookup) LoadParts(ch chan []products.Part) {
-	parts := make([]products.Part, 0)
+func (l *Lookup) LoadParts(ch chan []Part) {
+	parts := make([]Part, 0)
 
 	vehicleChan := make(chan error)
 	baseVehicleChan := make(chan error)
@@ -115,7 +114,7 @@ func (l *Lookup) LoadParts(ch chan []products.Part) {
 			}
 			if matches {
 				for _, partID := range config[0].Parts {
-					p := products.Part{ID: partID}
+					p := Part{ID: partID}
 					l.Parts = append(l.Parts, p)
 				}
 			}
@@ -126,7 +125,7 @@ func (l *Lookup) LoadParts(ch chan []products.Part) {
 	<-baseVehicleChan
 	removeDuplicates(&l.Parts)
 
-	parts = make([]products.Part, 0)
+	parts = make([]Part, 0)
 	for i, p := range l.Parts {
 		if err := p.Get(l.CustomerKey); err == nil && p.ShortDesc != "" {
 			parts = append(parts, p)
@@ -171,7 +170,7 @@ func (l *Lookup) loadVehicleParts(ch chan error) {
 	}
 
 	for rows.Next() {
-		var p products.Part
+		var p Part
 		if err = rows.Scan(&p.ID); err == nil {
 			l.Parts = append(l.Parts, p)
 		}
@@ -202,7 +201,7 @@ func (l *Lookup) loadBaseVehicleParts(ch chan error) {
 	}
 
 	for rows.Next() {
-		var p products.Part
+		var p Part
 		if err = rows.Scan(&p.ID); err == nil {
 			l.Parts = append(l.Parts, p)
 		}
@@ -212,7 +211,7 @@ func (l *Lookup) loadBaseVehicleParts(ch chan error) {
 	return
 }
 
-func removeDuplicates(xs *[]products.Part) {
+func removeDuplicates(xs *[]Part) {
 	found := make(map[int]bool)
 	j := 0
 	for i, x := range *xs {
