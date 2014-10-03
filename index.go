@@ -217,13 +217,19 @@ func main() {
 	})
 
 	m.Group("/site", func(r martini.Router) {
-		r.Get("/page/get", site.GetContentPage) //get content page by id or slug
+		r.Get("/page/get", site.GetContentPage)
+		r.Get("/page/primary", site.GetPrimaryContentPage)
+		r.Get("/page/sitemap", site.GetSitemapCP)
 		r.Get("/menu/primary", site.GetPrimaryMenu)
-		r.Get("/menu", site.GetMenu)
-		r.Get("/menu/content", site.GetMenuContent)
 		r.Get("/menu/footer/sitemap", site.GetFooterSitemap)
 		r.Get("/menu/get", site.GetMenuWithContent)
+		r.Get("/menu/get/id", site.GetMenuByContentId)
+		r.Get("/menu/sitemap", site.GetMenuSitemap)
 
+	})
+
+	m.Group("/landingPage", func(r martini.Router) {
+		r.Get("/get", site.GetLandingPage)
 	})
 	m.Group("/webProperties", func(r martini.Router) {
 		r.Post("/note/:id", internalCors, webProperty_controller.CreateUpdateWebPropertyNote)                                       //updates when an id is present; otherwise, creates
