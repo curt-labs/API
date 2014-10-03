@@ -57,12 +57,12 @@ var (
 							  ORDER BY msc.menuID ASC
 							  LIMIT 1`
 
-	getPrimaryMenu           = `SELECT ` + menuColumns + ` FROM Menu as m WHERE m.isPrimary = 1`
-	getMenu                  = `SELECT ` + menuColumns + ` FROM Menu as m WHERE m.menuID = ?`
-	getAllMenus              = `SELECT ` + menuColumns + ` FROM Menu as m `
-	getMenuByName            = `SELECT ` + menuColumns + ` FROM Menu as m WHERE m.menu_name = ?`
-	getMenuByMenuID          = `SELECT ` + menuColumns + ` FROM Menu as m WHERE m.menuID = ?`
-	getMenuItemsByMenuID     = `SELECT ` + menuSiteContentColumns + ` FROM Menu_SiteContent as msc WHERE menuID = ? ORDER BY menuSort`
+	getPrimaryMenu           = `SELECT ` + menuColumns + ` FROM Menu AS m WHERE m.isPrimary = 1`
+	getMenu                  = `SELECT ` + menuColumns + ` FROM Menu AS m WHERE m.menuID = ?`
+	getAllMenus              = `SELECT ` + menuColumns + ` FROM Menu AS m `
+	getMenuByName            = `SELECT ` + menuColumns + ` FROM Menu AS m WHERE m.menu_name = ?`
+	getMenuByMenuID          = `SELECT ` + menuColumns + ` FROM Menu AS m WHERE m.menuID = ?`
+	getMenuItemsByMenuID     = `SELECT ` + menuSiteContentColumns + ` FROM Menu_SiteContent AS msc WHERE menuID = ? ORDER BY menuSort`
 	getFooterSitemap         = `SELECT ` + menuColumns + ` FROM Menu AS m WHERE m.showOnSitemap = 1 ORDER BY m.sort`
 	getMenuWithContentByName = `SELECT ` + menuColumns + ` FROM Menu AS m WHERE m.menu_name = ? LIMIT 1`
 	getAllMenuContents       = `SELECT ` + menuSiteContentColumns + ` FROM Menu_SiteContent AS msc`
@@ -323,4 +323,43 @@ func (m *MenuWithContent) GetMenuWithContentByName(name string) (err error) {
 
 	return err
 
+}
+
+//NEW, non-V2, methods
+func GetAllMenus() (ms Menus, err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return ms, err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(getAllMenus)
+	if err != nil {
+		return ms, err
+	}
+	defer stmt.Close()
+
+	var displayName *string
+	var m Menu
+	res, err := stmt.Query()
+	for res.Next() {
+		err = res.Scan(
+			&m.Id,
+			&m.Name,
+			&m.IsPrimary,
+			&m.Active,
+			&displayName,
+			&m.RequireAuthentication,
+			&m.ShowOnSiteMap,
+			&m.Sort,
+		)
+		if err != nil {
+			return ms, err
+		}
+
+		if displayName != nil {
+			m.DisplayName = *displayName
+		}
+		ms = append(ms, m)
+	}
+	return ms, err
 }
