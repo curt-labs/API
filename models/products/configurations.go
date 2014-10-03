@@ -586,7 +586,7 @@ func (c *Configuration) getCurtOptions(v Vehicle) ([]string, error) {
 		}
 	}
 
-	if !hasOther {
+	if !hasOther && len(opts) < 2 {
 		opts = append(opts, "Other")
 	}
 
