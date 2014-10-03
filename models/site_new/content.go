@@ -35,6 +35,7 @@ type Contents []Content
 
 type ContentRevision struct {
 	Id          int
+	ContentId   int
 	Text        string
 	CreatedDate time.Time
 	Active      bool
@@ -52,6 +53,22 @@ var (
 	getContentRevisions    = `SELECT revisionID, content_text, createdOn, active FROM SiteContentRevision AS scr WHERE scr.contentID = ? `
 	getAllContentRevisions = `SELECT revisionID, content_text, createdOn, active FROM SiteContentRevision AS scr `
 	getContentRevision     = `SELECT revisionID, content_text, createdOn, active FROM SiteContentRevision AS scr WHERE revisionID = ?`
+	getContentBySlug       = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s WHERE s.slug = ? `
+
+	//operations
+	createRevision = `INSERT INTO SiteContentRevision (contentID, content_text, createdOn, active) VALUES (?,?,?,?)`
+	createContent  = `INSERT INTO SiteContent 
+						(content_type, page_title, createdDate, meta_title, meta_description, keywords, isPrimary, published, active, slug, requireAuthentication, canonical)
+						VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`
+	updateRevision = `UPDATE SiteContentRevision SET contentID = ?, content_text = ?, active = ? WHERE revisionID = ?`
+	updateContent  = `UPDATE SiteContent SET 
+					content_type = ?, page_title = ?,  meta_title = ?, meta_description = ?, keywords = ?, isPrimary = ?, published = ?, active = ?, slug = ?, requireAuthentication = ?, canonical  = ?
+					WHERE contentID = ?`
+
+	deleteRevision                   = `DELETE FROM SiteContentRevision WHERE revisionID = ?`
+	deleteContent                    = `DELETE FROM SiteContent WHERE contentID = ?`
+	deleteRevisionbyContentID        = `DELETE FROM SiteContentRevision WHERE contentID = ?`
+	deleteMenuSiteContentByContentId = `DELETE FROM Menu_SiteContent WHERE contentID = ?`
 )
 
 //Fetch content by id
@@ -69,6 +86,61 @@ func (c *Content) Get() (err error) {
 
 	var cType, title, mTitle, mDesc, slug, canon *string
 	err = stmt.QueryRow(c.Id).Scan(
+		&c.Id,
+		&cType,
+		&title,
+		&c.CreatedDate,
+		&c.LastModified,
+		&mTitle,
+		&mDesc,
+		&c.Keywords,
+		&c.IsPrimary,
+		&c.Published,
+		&c.Active,
+		&slug,
+		&c.RequireAuthentication,
+		&canon,
+	)
+	if err != nil {
+		return err
+	}
+
+	if cType != nil {
+		c.Type = *cType
+	}
+	if title != nil {
+		c.Title = *title
+	}
+	if mTitle != nil {
+		c.MetaTitle = *mTitle
+	}
+	if mDesc != nil {
+		c.MetaDescription = *mDesc
+	}
+	if slug != nil {
+		c.Slug = *slug
+	}
+	if canon != nil {
+		c.Canonical = *canon
+	}
+	return err
+}
+
+//Fetch content by slug
+func (c *Content) GetbySlug() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(getContentBySlug)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	var cType, title, mTitle, mDesc, slug, canon *string
+	err = stmt.QueryRow(c.Slug).Scan(
 		&c.Id,
 		&cType,
 		&title,
@@ -276,4 +348,214 @@ func GetAllContentRevisions() (cr ContentRevisions, err error) {
 		cr = append(cr, rev)
 	}
 	return cr, err
+}
+
+//creatin' content
+func (c *Content) Create() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(createContent)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	c.CreatedDate = time.Now()
+	res, err := stmt.Exec(
+		c.Type,
+		c.Title,
+		c.CreatedDate,
+		c.MetaTitle,
+		c.MetaDescription,
+		c.Keywords,
+		c.IsPrimary,
+		c.Published,
+		c.Active,
+		c.Slug,
+		c.RequireAuthentication,
+		c.Canonical,
+	)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return err
+	}
+	c.Id = int(id)
+	return err
+}
+
+//updatin' content
+func (c *Content) Update() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(updateContent)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(
+		c.Type,
+		c.Title,
+		c.MetaTitle,
+		c.MetaDescription,
+		c.Keywords,
+		c.IsPrimary,
+		c.Published,
+		c.Active,
+		c.Slug,
+		c.RequireAuthentication,
+		c.Canonical,
+		c.Id,
+	)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	return err
+}
+
+//deletin' content, brings joined revisions and menu join with
+func (c *Content) Delete() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+
+	//adios revisions
+	stmt, err := tx.Prepare(deleteRevisionbyContentID)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(c.Id)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	//adios menu join
+	stmt, err = tx.Prepare(deleteMenuSiteContentByContentId)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(c.Id)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	//adios content
+	stmt, err = tx.Prepare(deleteContent)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(c.Id)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err = tx.Commit()
+	return err
+}
+
+//creatin' a revision, requires content to exist
+func (rev *ContentRevision) Create() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(createRevision)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	rev.CreatedDate = time.Now()
+	res, err := stmt.Exec(rev.ContentId, rev.Text, rev.CreatedDate, rev.Active)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+	id, err := res.LastInsertId()
+	if err != nil {
+		return err
+	}
+	rev.Id = int(id)
+	return err
+}
+
+//updatin' a revision, requires content to exisi
+func (rev *ContentRevision) Update() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(updateRevision)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(rev.ContentId, rev.Text, rev.Active, rev.Id)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+//deletin' a revision
+func (rev *ContentRevision) Delete() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(deleteRevision)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(rev.Id)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	return err
 }

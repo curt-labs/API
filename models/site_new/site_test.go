@@ -36,6 +36,8 @@ func TestSite_New(t *testing.T) {
 			if len(ms) > 0 {
 				i := rand.Intn(len(ms))
 				menu := ms[i]
+
+				//get by id
 				err = menu.Get()
 				if err != sql.ErrNoRows { //check for empty db
 					So(menu, ShouldNotBeNil)
@@ -43,6 +45,11 @@ func TestSite_New(t *testing.T) {
 
 					So(err, ShouldBeNil)
 				}
+				//get by name
+				err = menu.GetByName()
+				So(err, ShouldBeNil)
+
+				//get menu's contents
 				err = menu.GetContents()
 				t.Log(err)
 				if err != sql.ErrNoRows {
@@ -85,6 +92,10 @@ func TestSite_New(t *testing.T) {
 						}
 					})
 				})
+				Convey("Testing GetContentBySlug", func() {
+					err = c.GetbySlug()
+					So(err, ShouldBeNil)
+				})
 			}
 		})
 		Convey("Testing ContentRevisions", func() {
@@ -99,6 +110,86 @@ func TestSite_New(t *testing.T) {
 				So(r, ShouldNotBeNil)
 			}
 		})
+	})
+	Convey("Testing Content CRUD", t, func() {
+		var c Content
+		c.Type = "type"
+		c.Title = "title"
+		c.MetaTitle = "mTitle"
+		c.MetaDescription = "mDesc"
+		err := c.Create()
+		So(err, ShouldBeNil)
+		c.Get()
+		So(c.Title, ShouldEqual, "title")
+		c.Type = "type2"
+		c.Title = "title2"
+		c.MetaTitle = "mTitle2"
+		c.MetaDescription = "mDesc2"
+		err = c.Update()
+		So(err, ShouldBeNil)
+		c.Get()
+		So(c.Title, ShouldEqual, "title2")
+		err = c.Delete()
+		So(err, ShouldBeNil)
+	})
+
+	Convey("Testing Revision CRUD", t, func() {
+		var r ContentRevision
+		//get rand content, for its id, tis a FK relation
+		cs, err := GetAllContents()
+		if err != sql.ErrNoRows {
+			So(err, ShouldBeNil)
+			i := rand.Intn(len(cs))
+			c := cs[i] //random content object
+
+			r.Text = "text"
+			r.Active = true
+			r.ContentId = c.Id
+
+			err = r.Create()
+			So(err, ShouldBeNil)
+			r.Get()
+			So(r.Text, ShouldEqual, "text")
+			r.Text = "text2"
+			r.Active = false
+			err = r.Update()
+			So(err, ShouldBeNil)
+			r.Get()
+			So(r.Text, ShouldEqual, "text2")
+			err = r.Delete()
+			So(err, ShouldBeNil)
+		}
+	})
+	Convey("Testing Menu CRUD", t, func() {
+		var m Menu
+		m.Name = "name"
+		m.ShowOnSitemap = true
+		err := m.Create()
+		So(err, ShouldBeNil)
+		m.Get()
+		So(m.Name, ShouldEqual, "name")
+		m.Name = "name2"
+		m.ShowOnSitemap = false
+		err = m.Update()
+		So(err, ShouldBeNil)
+		m.Get()
+		So(m.Name, ShouldEqual, "name2")
+		err = m.Delete()
+		So(err, ShouldBeNil)
+	})
+	Convey("Testing Menu-Content Joins", t, func() {
+		var m Menu
+		m.Name = "name"
+		err := m.Create()
+		So(err, ShouldBeNil)
+		var c Content
+		c.Title = "title"
+		err = c.Create()
+		So(err, ShouldBeNil)
+		err = m.JoinToContent(c)
+		So(err, ShouldBeNil)
+		err = m.DeleteMenuContentJoin(c)
+		So(err, ShouldBeNil)
 	})
 
 }

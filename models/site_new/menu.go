@@ -31,9 +31,17 @@ var (
 	getMenu         = ` SELECT ` + menuFields + ` FROM Menu AS m WHERE menuID = ? `
 	getAllMenus     = ` SELECT ` + menuFields + ` FROM Menu AS m`
 	getMenuContents = `SELECT ` + siteContentFields + `, ` + menuSiteContentFields + `  from menu_sitecontent as msc JOIN SiteContent AS s ON s.contentID = msc.ContentID  WHERE msc.menuID = ?`
+	getMenuByName   = ` SELECT ` + menuFields + ` FROM Menu AS m WHERE menu_name = ? `
+	//operations
+	createMenu                    = `INSERT INTO Menu (menu_name, isPrimary, active, display_name, requireAuthentication, showOnSiteMap, sort) VALUES(?,?,?,?,?,?,?)`
+	updateMenu                    = `UPDATE Menu SET menu_name = ?, isPrimary = ?, active = ?, display_name = ?, requireAuthentication = ?, showOnSiteMap = ?, sort = ? WHERE menuID = ?`
+	deleteMenu                    = `DELETE FROM Menu WHERE menuID = ?`
+	deleteMenuSiteContentByMenuId = `DELETE FROM Menu_SiteContent WHERE menuID = ?` //used when deleting menu
+	createMenuContentJoin         = `INSERT INTO Menu_SiteContent (menuID, contentID, menuSort, menuTitle, menuLink, parentID, linkTarget) VALUES(?,?,?,?,?,?,?)`
+	deleteMenuSiteContentJoin     = `DELETE FROM Menu_SiteContent WHERE menuID = ? AND contentID = ?`
 )
 
-//Get menu by Id
+//Fetch menu by Id
 func (m *Menu) Get() (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -67,7 +75,41 @@ func (m *Menu) Get() (err error) {
 	return err
 }
 
-//Get all menus
+//Fetch up a menu by name
+func (m *Menu) GetByName() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(getMenuByName)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	var display *string
+
+	err = stmt.QueryRow(m.Name).Scan(
+		&m.Id,
+		&m.Name,
+		&m.IsPrimary,
+		&m.Active,
+		&display,
+		&m.RequireAuthentication,
+		&m.ShowOnSitemap,
+		&m.Sort,
+	)
+	if err != nil {
+		return err
+	}
+	if display != nil {
+		m.DisplayName = *display
+	}
+	return err
+}
+
+//Fetch all menus
 func GetAllMenus() (ms Menus, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -110,7 +152,7 @@ func GetAllMenus() (ms Menus, err error) {
 	return ms, err
 }
 
-//Get a menu's contents, including latest revision
+//Fetch a menu's contents, including latest revision
 func (m *Menu) GetContents() (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -189,7 +231,154 @@ func (m *Menu) GetContents() (err error) {
 			}
 		}
 		m.Contents = append(m.Contents, c)
-
 	}
+	return err
+}
+
+//creatin' a menu
+func (m *Menu) Create() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(createMenu)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	res, err := stmt.Exec(m.Name,
+		m.IsPrimary,
+		m.Active,
+		m.DisplayName,
+		m.RequireAuthentication,
+		m.ShowOnSitemap,
+		m.Sort,
+	)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+	id, err := res.LastInsertId()
+	if err != nil {
+		return err
+	}
+	m.Id = int(id)
+	return err
+}
+
+//updatin' a menu
+func (m *Menu) Update() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(updateMenu)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(m.Name,
+		m.IsPrimary,
+		m.Active,
+		m.DisplayName,
+		m.RequireAuthentication,
+		m.ShowOnSitemap,
+		m.Sort,
+		m.Id,
+	)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+//deletin' a menu, takes a content_sitecontent join with
+func (m *Menu) Delete() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+
+	//delete menu content join
+	stmt, err := tx.Prepare(deleteMenuSiteContentByMenuId)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(m.Id)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	//delete menu
+	stmt, err = tx.Prepare(deleteMenu)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(m.Id)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+//thar needs to exists a menu object with id > 0, for thar be a FK relation
+func (m *Menu) JoinToContent(c Content) (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+
+	stmt, err := tx.Prepare(createMenuContentJoin)
+	_, err = stmt.Exec(m.Id, c.Id, c.MenuSort, c.MenuTitle, c.MenuLink, c.ParentId, c.LinkTarget)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	return err
+}
+
+//For deletin' a join
+func (m *Menu) DeleteMenuContentJoin(c Content) (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+
+	stmt, err := tx.Prepare(deleteMenuSiteContentJoin)
+	_, err = stmt.Exec(m.Id, c.Id)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
 	return err
 }
