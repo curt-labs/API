@@ -357,7 +357,9 @@ func (p *Part) Basics() error {
 		&p.PriceCode,
 		&p.PartClass)
 
-	p.ShortDesc = fmt.Sprintf("CURT %s %d", p.ShortDesc, p.ID)
+	if !strings.Contains(p.ShortDesc, "CURT") {
+		p.ShortDesc = fmt.Sprintf("CURT %s %d", p.ShortDesc, p.ID)
+	}
 
 	go func(tmp Part) {
 		redis.Setex(redis_key, tmp, redis.CacheTimeout)

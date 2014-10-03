@@ -433,6 +433,10 @@ func (c *Category) GetSubCategories() (cats []Category, err error) {
 
 func (c *Category) GetCategory(key string, page int, count int, ignoreParts bool, v *Vehicle) error {
 
+	if c.ID == 0 {
+		return fmt.Errorf("error: %s", "invalid category reference")
+	}
+
 	if v != nil && v.Base.Year == 0 {
 		v = nil
 	}
