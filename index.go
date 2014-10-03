@@ -16,6 +16,7 @@ import (
 	"github.com/curt-labs/GoAPI/controllers/salesrep"
 	"github.com/curt-labs/GoAPI/controllers/search"
 	"github.com/curt-labs/GoAPI/controllers/site"
+	"github.com/curt-labs/GoAPI/controllers/site_new"
 	"github.com/curt-labs/GoAPI/controllers/vehicle"
 	"github.com/curt-labs/GoAPI/controllers/videos"
 	"github.com/curt-labs/GoAPI/controllers/webProperty"
@@ -341,6 +342,18 @@ func main() {
 			r.Get("/search/geo/:latitude/:longitude", internalCors, dealers_ctlr_new.SearchLocationsByLatLng)
 		})
 		m.Get("/dealer/location/:id", internalCors, dealers_ctlr_new.GetLocationById)
+
+		//New, more better site endpoints - will not work with current .mfg travesty
+		m.Group("/site", func(r martini.Router) {
+			m.Group("/menu", func(r martini.Router) {
+				r.Get("/all", site_new.GetAllMenus)
+				r.Get("/:id", site_new.GetMenu)                      //may pass id (int) or name(string)
+				r.Get("/contents/:id", site_new.GetMenuWithContents) //may pass id (int) or name(string)
+				r.Put("", site_new.Save)
+				r.Post("/:id", site_new.Save)
+				r.Delete("/:id", site_new.Delete)
+			})
+		})
 
 	})
 
