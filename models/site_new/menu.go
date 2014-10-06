@@ -9,15 +9,15 @@ import (
 )
 
 type Menu struct {
-	Id                    int
-	Name                  string
-	IsPrimary             bool
-	Active                bool
-	DisplayName           string
-	RequireAuthentication bool
-	ShowOnSitemap         bool
-	Sort                  int
-	Contents              Contents
+	Id                    int      `json:"id,omitempty" xml:"id,omitempty"`
+	Name                  string   `json:"name,omitempty" xml:"name,omitempty"`
+	IsPrimary             bool     `json:"isPrimary,omitempty" xml:"isPrimary,omitempty"`
+	Active                bool     `json:"active,omitempty" xml:"active,omitempty"`
+	DisplayName           string   `json:"displayName,omitempty" xml:"displayName,omitempty"`
+	RequireAuthentication bool     `json:"requireAuthentication,omitempty" xml:"requireAuthentication,omitempty"`
+	ShowOnSitemap         bool     `json:"showOnSitemap,omitempty" xml:showOnSitemap,omitempty"`
+	Sort                  int      `json:"sort,omitempty" xml:"sort,omitempty"`
+	Contents              Contents `json:"contents,omitempty" xml:"contents,omitempty"`
 }
 type Menus []Menu
 

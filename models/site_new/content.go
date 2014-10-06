@@ -10,36 +10,36 @@ import (
 )
 
 type Content struct {
-	Id                    int
-	Type                  string
-	Title                 string
-	CreatedDate           time.Time
-	LastModified          time.Time
-	MetaTitle             string
-	MetaDescription       string
-	Keywords              string
-	IsPrimary             bool
-	Published             bool
-	Active                bool
-	Slug                  string
-	RequireAuthentication bool
-	Canonical             string
-	ContentRevisions      ContentRevisions
-	MenuSort              int
-	MenuTitle             string
-	MenuLink              string
-	ParentId              int
-	LinkTarget            bool
+	Id                    int              `json:"id,omitempty" xml:"id,omitempty"`
+	Type                  string           `json:"type,omitempty" xml:"type,omitempty"`
+	Title                 string           `json:"title,omitempty" xml:"title,omitempty"`
+	CreatedDate           time.Time        `json:"createdDate,omitempty" xml:"createdDate,omitempty"`
+	LastModified          time.Time        `json:"lastModified,omitempty" xml:"lastModified,omitempty"`
+	MetaTitle             string           `json:"metaTitle,omitempty" xml:"metaTitle,omitempty"`
+	MetaDescription       string           `json:"metaDescription,omitempty" xml:"metaDescription,omitempty"`
+	Keywords              string           `json:"keywords,omitempty" xml:"keywords,omitempty"`
+	IsPrimary             bool             `json:"isPrimary,omitempty" xml:"isPrimary,omitempty"`
+	Published             bool             `json:"published,omitempty" xml:"published,omitempty"`
+	Active                bool             `json:"active,omitempty" xml:"active,omitempty"`
+	Slug                  string           `json:"slug,omitempty" xml:"slug,omitempty"`
+	RequireAuthentication bool             `json:"requireAuthentication,omitempty" xml:"requireAuthentication,omitempty"`
+	Canonical             string           `json:"canonical,omitempty" xml:"canonical,omitempty"`
+	ContentRevisions      ContentRevisions `json:"contentRevisions,omitempty" xml:"contentRevisions,omitempty"`
+	MenuSort              int              `json:"menuSort,omitempty" xml:"menuSort,omitempty"`
+	MenuTitle             string           `json:"menuTitle,omitempty" xml:"menuTitle,omitempty"`
+	MenuLink              string           `json:"menuLink,omitempty" xml:"menuLink,omitempty"`
+	ParentId              int              `json:"parentId,omitempty" xml:"parentId,omitempty"`
+	LinkTarget            bool             `json:"linkTarget,omitempty" xml:"v,omitempty"`
 }
 
 type Contents []Content
 
 type ContentRevision struct {
-	Id          int
-	ContentId   int
-	Text        string
-	CreatedDate time.Time
-	Active      bool
+	Id          int       `json:"id,omitempty" xml:"id,omitempty"`
+	ContentId   int       `json:"contentId,omitempty" xml:"contentId,omitempty"`
+	Text        string    `json:"text,omitempty" xml:"text,omitempty"`
+	CreatedDate time.Time `json:"createdDate,omitempty" xml:"createdDate,omitempty"`
+	Active      bool      `json:"active,omitempty" xml:"active,omitempty"`
 }
 type ContentRevisions []ContentRevision
 
