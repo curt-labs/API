@@ -190,6 +190,9 @@ func TestSite_New(t *testing.T) {
 		So(err, ShouldBeNil)
 		err = m.DeleteMenuContentJoin(c)
 		So(err, ShouldBeNil)
+		//cleanup
+		m.Delete()
+		c.Delete()
 	})
 
 }

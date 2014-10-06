@@ -403,6 +403,14 @@ func (c *Content) Create() (err error) {
 		return err
 	}
 	c.Id = int(id)
+	//create content revisions
+	for _, cr := range c.ContentRevisions {
+		cr.ContentId = c.Id
+		err = cr.Create()
+		if err != nil {
+			return err
+		}
+	}
 	return err
 }
 
@@ -440,6 +448,21 @@ func (c *Content) Update() (err error) {
 		return err
 	}
 	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	//create/update content revisions
+	for _, cr := range c.ContentRevisions {
+		cr.ContentId = c.Id
+		if cr.Id > 0 {
+			err = cr.Update()
+		} else {
+			err = cr.Create()
+		}
+		if err != nil {
+			return err
+		}
+	}
 	return err
 }
 

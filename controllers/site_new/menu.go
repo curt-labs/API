@@ -78,7 +78,7 @@ func GetMenuWithContents(rw http.ResponseWriter, req *http.Request, enc encoding
 	return encoding.Must(enc.Encode(m))
 }
 
-func Save(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+func SaveMenu(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var m site_new.Menu
 	var err error
 	idStr := params["id"]
@@ -116,7 +116,7 @@ func Save(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, param
 	return encoding.Must(enc.Encode(m))
 }
 
-func Delete(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+func DeleteMenu(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var err error
 	var m site_new.Menu
 
