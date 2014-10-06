@@ -52,7 +52,7 @@ func GetContentRevisions(rw http.ResponseWriter, req *http.Request, enc encoding
 	idStr := params["id"]
 	c.Id, err = strconv.Atoi(idStr)
 
-	err = c.Get()
+	err = c.GetContentRevisions()
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusNoContent)
 		return ""
