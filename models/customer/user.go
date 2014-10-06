@@ -1,20 +1,19 @@
 package customer
 
 import (
+	"code.google.com/p/go.crypto/bcrypt"
 	"database/sql"
 	"errors"
 	"fmt"
-	"net/http"
-	"net/url"
-	"strings"
-	"time"
-
-	"code.google.com/p/go.crypto/bcrypt"
 	"github.com/curt-labs/GoAPI/helpers/api"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	"github.com/curt-labs/GoAPI/models/geography"
 	_ "github.com/go-sql-driver/mysql"
+	"net/http"
+	"net/url"
+	"strings"
+	"time"
 )
 
 var (
@@ -158,7 +157,6 @@ func UserAuthenticationByKey(key string) (cust Customer, err error) {
 
 	<-keyChan
 	<-locChan
-
 	cust.Users = append(cust.Users, u)
 
 	return
@@ -183,6 +181,8 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 
 	c.State = &geography.State{}
 	c.State.Country = &geography.Country{}
+	var stateId, countryId *int
+	var state, stateAbr, country, countryAbr *string
 
 	err = stmt.QueryRow(u.Id).Scan(
 		&c.Id,
@@ -200,12 +200,12 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 		&logoUrl,
 		&websiteUrl,
 		&c.PostalCode,
-		&c.State.Id,
-		&c.State.State,
-		&c.State.Abbreviation,
-		&c.State.Country.Id,
-		&c.State.Country.Country,
-		&c.State.Country.Abbreviation,
+		&stateId,
+		&state,
+		&stateAbr,
+		&countryId,
+		&country,
+		&countryAbr,
 		&c.DealerType.Id,
 		&c.DealerType.Type,
 		&c.DealerType.Online,
@@ -225,6 +225,25 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 	)
 	if err != nil {
 		return
+	}
+
+	if stateId != nil {
+		c.State.Id = *stateId
+	}
+	if state != nil {
+		c.State.State = *state
+	}
+	if stateAbr != nil {
+		c.State.Abbreviation = *stateAbr
+	}
+	if countryId != nil {
+		c.State.Country.Id = *countryId
+	}
+	if country != nil {
+		c.State.Country.Country = *country
+	}
+	if countryAbr != nil {
+		c.State.Country.Abbreviation = *countryAbr
 	}
 
 	if searchUrl != nil {
