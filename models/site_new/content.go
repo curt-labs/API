@@ -24,6 +24,7 @@ type Content struct {
 	Slug                  string           `json:"slug,omitempty" xml:"slug,omitempty"`
 	RequireAuthentication bool             `json:"requireAuthentication,omitempty" xml:"requireAuthentication,omitempty"`
 	Canonical             string           `json:"canonical,omitempty" xml:"canonical,omitempty"`
+	WebsiteId             int              `json:"websiteId,omitempty" xml:"websiteId,omitempty"`
 	ContentRevisions      ContentRevisions `json:"contentRevisions,omitempty" xml:"contentRevisions,omitempty"`
 	MenuSort              int              `json:"menuSort,omitempty" xml:"menuSort,omitempty"`
 	MenuTitle             string           `json:"menuTitle,omitempty" xml:"menuTitle,omitempty"`
@@ -44,7 +45,7 @@ type ContentRevision struct {
 type ContentRevisions []ContentRevision
 
 const (
-	siteContentColumns = "s.contentID, s.content_type, s.page_title, s.createdDate, s.lastModified, s.meta_title, s.meta_description, s.keywords, s.isPrimary, s.published, s.active, s.slug, s.requireAuthentication, s.canonical" //as s
+	siteContentColumns = "s.contentID, s.content_type, s.page_title, s.createdDate, s.lastModified, s.meta_title, s.meta_description, s.keywords, s.isPrimary, s.published, s.active, s.slug, s.requireAuthentication, s.canonical, s.websiteID" //as s
 )
 
 var (
@@ -59,11 +60,11 @@ var (
 	//operations
 	createRevision = `INSERT INTO SiteContentRevision (contentID, content_text, createdOn, active) VALUES (?,?,?,?)`
 	createContent  = `INSERT INTO SiteContent 
-						(content_type, page_title, createdDate, meta_title, meta_description, keywords, isPrimary, published, active, slug, requireAuthentication, canonical)
-						VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`
+						(content_type, page_title, createdDate, meta_title, meta_description, keywords, isPrimary, published, active, slug, requireAuthentication, canonical, websiteID)
+						VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`
 	updateRevision = `UPDATE SiteContentRevision SET contentID = ?, content_text = ?, active = ? WHERE revisionID = ?`
 	updateContent  = `UPDATE SiteContent SET 
-					content_type = ?, page_title = ?,  meta_title = ?, meta_description = ?, keywords = ?, isPrimary = ?, published = ?, active = ?, slug = ?, requireAuthentication = ?, canonical  = ?
+					content_type = ?, page_title = ?,  meta_title = ?, meta_description = ?, keywords = ?, isPrimary = ?, published = ?, active = ?, slug = ?, requireAuthentication = ?, canonical  = ?, websiteID = ?
 					WHERE contentID = ?`
 
 	deleteRevision                   = `DELETE FROM SiteContentRevision WHERE revisionID = ?`
@@ -101,6 +102,7 @@ func (c *Content) Get() (err error) {
 		&slug,
 		&c.RequireAuthentication,
 		&canon,
+		&c.WebsiteId,
 	)
 	if err != nil {
 		return err
@@ -124,11 +126,13 @@ func (c *Content) Get() (err error) {
 	if canon != nil {
 		c.Canonical = *canon
 	}
+	//get latest revision
+	err = c.GetLatestRevision()
 	return err
 }
 
 //Fetch content by slug
-func (c *Content) GetbySlug() (err error) {
+func (c *Content) GetBySlug() (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -156,6 +160,7 @@ func (c *Content) GetbySlug() (err error) {
 		&slug,
 		&c.RequireAuthentication,
 		&canon,
+		&c.WebsiteId,
 	)
 	if err != nil {
 		return err
@@ -179,6 +184,8 @@ func (c *Content) GetbySlug() (err error) {
 	if canon != nil {
 		c.Canonical = *canon
 	}
+	//get latest revision
+	err = c.GetLatestRevision()
 	return err
 }
 
@@ -214,6 +221,7 @@ func GetAllContents() (cs Contents, err error) {
 			&slug,
 			&c.RequireAuthentication,
 			&canon,
+			&c.WebsiteId,
 		)
 		if err != nil {
 			return cs, err
@@ -380,6 +388,7 @@ func (c *Content) Create() (err error) {
 		c.Slug,
 		c.RequireAuthentication,
 		c.Canonical,
+		c.WebsiteId,
 	)
 	if err != nil {
 		tx.Rollback()
@@ -423,6 +432,7 @@ func (c *Content) Update() (err error) {
 		c.Slug,
 		c.RequireAuthentication,
 		c.Canonical,
+		c.WebsiteId,
 		c.Id,
 	)
 	if err != nil {

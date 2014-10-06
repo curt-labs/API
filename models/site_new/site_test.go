@@ -93,7 +93,7 @@ func TestSite_New(t *testing.T) {
 					})
 				})
 				Convey("Testing GetContentBySlug", func() {
-					err = c.GetbySlug()
+					err = c.GetBySlug()
 					So(err, ShouldBeNil)
 				})
 			}

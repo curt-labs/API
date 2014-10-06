@@ -17,14 +17,15 @@ type Menu struct {
 	RequireAuthentication bool     `json:"requireAuthentication,omitempty" xml:"requireAuthentication,omitempty"`
 	ShowOnSitemap         bool     `json:"showOnSitemap,omitempty" xml:showOnSitemap,omitempty"`
 	Sort                  int      `json:"sort,omitempty" xml:"sort,omitempty"`
+	WebsiteId             int      `json:"websiteId,omitempty" xml:"websiteId,omitempty"`
 	Contents              Contents `json:"contents,omitempty" xml:"contents,omitempty"`
 }
 type Menus []Menu
 
 const (
-	menuFields            = "m.menuID, m.menu_name, m.isPrimary, m.active, m.display_name, m.requireAuthentication, m.showOnSiteMap, m.sort"                                                                                           //menu AS m
-	menuSiteContentFields = "msc.menuSort, msc.menuTitle, msc.menuLink, msc.parentID, msc.linkTarget"                                                                                                                                  //omits join ids  as msc
-	siteContentFields     = "s.contentID, s.content_type, s.page_title, s.createdDate, s.lastModified, s.meta_title, s.meta_description, s.keywords, s.isPrimary, s.published, s.active, s.slug, s.requireAuthentication, s.canonical" //as s
+	menuFields            = "m.menuID, m.menu_name, m.isPrimary, m.active, m.display_name, m.requireAuthentication, m.showOnSiteMap, m.sort, m.websiteID"                                                                                           //menu AS m
+	menuSiteContentFields = "msc.menuSort, msc.menuTitle, msc.menuLink, msc.parentID, msc.linkTarget"                                                                                                                                               //omits join ids  as msc
+	siteContentFields     = "s.contentID, s.content_type, s.page_title, s.createdDate, s.lastModified, s.meta_title, s.meta_description, s.keywords, s.isPrimary, s.published, s.active, s.slug, s.requireAuthentication, s.canonical, s.contentID" //as s
 
 )
 
@@ -34,8 +35,8 @@ var (
 	getMenuContents = `SELECT ` + siteContentFields + `, ` + menuSiteContentFields + `  from menu_sitecontent as msc JOIN SiteContent AS s ON s.contentID = msc.ContentID  WHERE msc.menuID = ?`
 	getMenuByName   = ` SELECT ` + menuFields + ` FROM Menu AS m WHERE menu_name = ? `
 	//operations
-	createMenu                    = `INSERT INTO Menu (menu_name, isPrimary, active, display_name, requireAuthentication, showOnSiteMap, sort) VALUES(?,?,?,?,?,?,?)`
-	updateMenu                    = `UPDATE Menu SET menu_name = ?, isPrimary = ?, active = ?, display_name = ?, requireAuthentication = ?, showOnSiteMap = ?, sort = ? WHERE menuID = ?`
+	createMenu                    = `INSERT INTO Menu (menu_name, isPrimary, active, display_name, requireAuthentication, showOnSiteMap, sort, websiteID) VALUES(?,?,?,?,?,?,?,?)`
+	updateMenu                    = `UPDATE Menu SET menu_name = ?, isPrimary = ?, active = ?, display_name = ?, requireAuthentication = ?, showOnSiteMap = ?, sort = ?, websiteID = ? WHERE menuID = ?`
 	deleteMenu                    = `DELETE FROM Menu WHERE menuID = ?`
 	deleteMenuSiteContentByMenuId = `DELETE FROM Menu_SiteContent WHERE menuID = ?` //used when deleting menu
 	createMenuContentJoin         = `INSERT INTO Menu_SiteContent (menuID, contentID, menuSort, menuTitle, menuLink, parentID, linkTarget) VALUES(?,?,?,?,?,?,?)`
@@ -66,6 +67,7 @@ func (m *Menu) Get() (err error) {
 		&m.RequireAuthentication,
 		&m.ShowOnSitemap,
 		&m.Sort,
+		&m.WebsiteId,
 	)
 	if err != nil {
 		return err
@@ -100,6 +102,7 @@ func (m *Menu) GetByName() (err error) {
 		&m.RequireAuthentication,
 		&m.ShowOnSitemap,
 		&m.Sort,
+		&m.WebsiteId,
 	)
 	if err != nil {
 		return err
@@ -141,6 +144,7 @@ func GetAllMenus() (ms Menus, err error) {
 			&m.RequireAuthentication,
 			&m.ShowOnSitemap,
 			&m.Sort,
+			&m.WebsiteId,
 		)
 		if err != nil {
 			return ms, err
@@ -186,6 +190,7 @@ func (m *Menu) GetContents() (err error) {
 			&slug,
 			&c.RequireAuthentication,
 			&canon,
+			&m.WebsiteId,
 			&c.MenuSort,
 			&menTitle,
 			&mLink,
@@ -250,13 +255,15 @@ func (m *Menu) Create() (err error) {
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Exec(m.Name,
+	res, err := stmt.Exec(
+		m.Name,
 		m.IsPrimary,
 		m.Active,
 		m.DisplayName,
 		m.RequireAuthentication,
 		m.ShowOnSitemap,
 		m.Sort,
+		m.WebsiteId,
 	)
 	if err != nil {
 		tx.Rollback()
@@ -292,6 +299,7 @@ func (m *Menu) Update() (err error) {
 		m.RequireAuthentication,
 		m.ShowOnSitemap,
 		m.Sort,
+		m.WebsiteId,
 		m.Id,
 	)
 	if err != nil {

@@ -353,6 +353,11 @@ func main() {
 				r.Post("/:id", site_new.Save)
 				r.Delete("/:id", site_new.Delete)
 			})
+			m.Group("/content", func(r martini.Router) {
+				r.Get("/all", site_new.GetAllContents)
+				r.Get("/:id", site_new.GetContent) //may pass id (int) or slug(string)
+				r.Get("/:id/revisions", site_new.GetContentRevisions)
+			})
 		})
 
 	})
