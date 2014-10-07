@@ -74,11 +74,18 @@ func TestMenus(t *testing.T) {
 				mc := menuWithContents[i]
 				Convey("GetMenuByContentId", func() {
 					msc := getRandomMenuSiteContent()
-					err = mc.GetMenuByContentId(msc.Id, true)
+					err = mc.GetMenuByContentId(msc.Id, false)
 					t.Log(mc, msc.Id)
 					if err != sql.ErrNoRows {
 						So(err, ShouldBeNil)
+						So(mc.Id, ShouldBeGreaterThan, 0)
 					}
+
+				})
+				Convey("GetMenuIdByContentId", func() {
+					menuId, err := GetMenuIdByContentId(getRandomMenuSiteContent().Id)
+					So(err, ShouldBeNil)
+					So(menuId, ShouldBeGreaterThanOrEqualTo, 0)
 				})
 			}
 		})

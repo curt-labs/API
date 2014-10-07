@@ -8,8 +8,8 @@ import (
 )
 
 type MenuWithContent struct {
-	Menu
-	Contents []MenuItem
+	Menu     `json:"menu,omitempty" xml:"menu,omitempty"`
+	Contents []MenuItem `json:"contents,omitempty" xml:"contents,omitempty"`
 }
 type MenuWithContents []MenuWithContent
 
@@ -22,14 +22,14 @@ type Menu struct {
 	RequireAuthentication bool   `json:"requireAuthentication,omitempty" xml:"requireAuthentication,omitempty"`
 	ShowOnSiteMap         bool   `json:"showOnSiteMap,omitempty" xml:"showOnSiteMap,omitempty"`
 	Sort                  int    `json:"sort,omitempty" xml:"sort,omitempty"`
-	WebsiteID             int    `json:"websiteId,omitempty" xml:"websiteId,omitempty"`
+	WebsiteId             int    `json:"websiteId,omitempty" xml:"websiteId,omitempty"`
 }
 
 type Menus []Menu
 
 type MenuItem struct {
-	Menu_SiteContent
-	Content ContentPage
+	Menu_SiteContent `json:"menuSiteContent,omitempty" xml:"menuSiteContent,omitempty"`
+	Content          ContentPage `json:"content,omitempty" xml:"content,omitempty"`
 }
 type MenuItems []MenuItem
 
@@ -46,27 +46,28 @@ type Menu_SiteContent struct {
 type Menu_SiteContents []Menu_SiteContent
 
 const (
-	menuColumns            = "m.menuID, m.menu_name, m.isPrimary, m.active, m.display_name, m.requireAuthentication, m.showOnSiteMap, m.sort"        //menu AS m
-	menuSiteContentColumns = "msc.menuContentID, msc.menuID, msc.contentID, msc.menuSort, msc.menuTitle, msc.menuLink, msc.parentID, msc.linkTarget" //as msc
+	menuColumns            = "m.menuID, m.menu_name, m.isPrimary, m.active, m.display_name, m.requireAuthentication, m.showOnSiteMap, m.sort, m.websiteID" //menu AS m
+	menuSiteContentColumns = "msc.menuContentID, msc.menuID, msc.contentID, msc.menuSort, msc.menuTitle, msc.menuLink, msc.parentID, msc.linkTarget"       //as msc
 )
 
 var (
 	getMenuByContentID = `SELECT ` + menuColumns + ` FROM Menu AS m
 							JOIN Menu_SiteContent AS msc ON m.menuID = msc.menuID
-							  WHERE msc.contentID = ? && isPrimary = 0 && m.requireAuthentication = ?
+							  WHERE msc.contentID = ? && isPrimary = 0 && m.requireAuthentication = ? && m.websiteID = 1
 							  ORDER BY msc.menuID ASC
-							  LIMIT 1`
+							  LIMIT 1` //TODO - V2 changed this to menuID
 
-	getPrimaryMenu           = `SELECT ` + menuColumns + ` FROM Menu AS m WHERE m.isPrimary = 1`
+	getPrimaryMenu           = `SELECT ` + menuColumns + ` FROM Menu AS m WHERE m.isPrimary = 1 && m.websiteID = 1`
 	getMenu                  = `SELECT ` + menuColumns + ` FROM Menu AS m WHERE m.menuID = ?`
 	getAllMenus              = `SELECT ` + menuColumns + ` FROM Menu AS m `
 	getMenuByName            = `SELECT ` + menuColumns + ` FROM Menu AS m WHERE m.menu_name = ?`
-	getMenuByMenuID          = `SELECT ` + menuColumns + ` FROM Menu AS m WHERE m.menuID = ?`
-	getMenuItemsByMenuID     = `SELECT ` + menuSiteContentColumns + ` FROM Menu_SiteContent AS msc WHERE menuID = ? ORDER BY menuSort`
-	getFooterSitemap         = `SELECT ` + menuColumns + ` FROM Menu AS m WHERE m.showOnSitemap = 1 ORDER BY m.sort`
-	getMenuWithContentByName = `SELECT ` + menuColumns + ` FROM Menu AS m WHERE m.menu_name = ? LIMIT 1`
+	getMenuByMenuID          = `SELECT ` + menuColumns + ` FROM Menu AS m WHERE m.menuID = ? && m.websiteID = 1`
+	getMenuItemsByMenuID     = `SELECT ` + menuSiteContentColumns + ` FROM Menu_SiteContent AS msc WHERE msc.menuID = ? ORDER BY menuSort`
+	getFooterSitemap         = `SELECT ` + menuColumns + ` FROM Menu AS m WHERE m.showOnSitemap = 1 && m.websiteID = 1 ORDER BY m.sort`
+	getMenuWithContentByName = `SELECT ` + menuColumns + ` FROM Menu AS m WHERE m.menu_name = ? &&m.websiteID  = 1 LIMIT 1`
 	getAllMenuContents       = `SELECT ` + menuSiteContentColumns + ` FROM Menu_SiteContent AS msc`
-	getMenuSitemap           = `SELECT ` + menuColumns + ` FROM Menu AS m ORDER BY m.isPrimary DESC`
+	getMenuSitemap           = `SELECT ` + menuColumns + ` FROM Menu AS m WHERE m.websiteID = 1 ORDER BY m.isPrimary DESC`
+	getMenuIDByContentID     = `select menuID from Menu_SiteContent where contentID = ?`
 )
 
 //get primary menu...with Menu Contents ...primary Menu is just GetMenu, with primary
@@ -91,6 +92,7 @@ func (m *MenuWithContent) GetPrimaryMenu() (err error) {
 		&m.RequireAuthentication,
 		&m.ShowOnSiteMap,
 		&m.Sort,
+		&m.WebsiteId,
 	)
 	if err != nil {
 		return err
@@ -182,6 +184,7 @@ func GetFooterSitemap() (ms MenuWithContents, err error) {
 			&m.Menu.RequireAuthentication,
 			&m.Menu.ShowOnSiteMap,
 			&m.Menu.Sort,
+			&m.WebsiteId,
 		)
 		if err != nil {
 			return ms, err
@@ -225,6 +228,7 @@ func GetMenuSitemap() (ms MenuWithContents, err error) {
 			&m.Menu.RequireAuthentication,
 			&m.Menu.ShowOnSiteMap,
 			&m.Menu.Sort,
+			&m.Menu.WebsiteId,
 		)
 		if err != nil {
 			return ms, err
@@ -270,6 +274,7 @@ func (m *MenuWithContent) GetMenuByContentId(id int, auth bool) (err error) {
 		&m.Menu.RequireAuthentication,
 		&m.Menu.ShowOnSiteMap,
 		&m.Menu.Sort,
+		&m.Menu.WebsiteId,
 	)
 	if err != nil {
 
@@ -285,7 +290,22 @@ func (m *MenuWithContent) GetMenuByContentId(id int, auth bool) (err error) {
 		return err
 	}
 	return err
+}
 
+func GetMenuIdByContentId(ContentId int) (menuId int, err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return menuId, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(getMenuIDByContentID)
+	if err != nil {
+		return menuId, err
+	}
+	defer stmt.Close()
+	err = stmt.QueryRow(ContentId).Scan(&menuId)
+	return menuId, err
 }
 
 func (m *MenuWithContent) GetMenuWithContentByName(name string) (err error) {
@@ -311,6 +331,7 @@ func (m *MenuWithContent) GetMenuWithContentByName(name string) (err error) {
 		&m.Menu.RequireAuthentication,
 		&m.Menu.ShowOnSiteMap,
 		&m.Menu.Sort,
+		&m.Menu.WebsiteId,
 	)
 	if err != nil {
 		return err
@@ -351,6 +372,7 @@ func GetAllMenus() (ms Menus, err error) {
 			&m.RequireAuthentication,
 			&m.ShowOnSiteMap,
 			&m.Sort,
+			&m.WebsiteId,
 		)
 		if err != nil {
 			return ms, err

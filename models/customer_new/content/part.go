@@ -2,6 +2,7 @@ package custcontent
 
 import (
 	"database/sql"
+	"github.com/curt-labs/GoAPI/helpers/api"
 	"github.com/curt-labs/GoAPI/helpers/conversions"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	_ "github.com/go-sql-driver/mysql"
@@ -157,7 +158,7 @@ func GetGroupedPartContent(ids []string, key string) (content map[int][]Customer
 			content[intId] = make([]CustomerContent, 0)
 		}
 	}
-	escaped_key := database.Db.Escape(key)
+	escaped_key := api_helpers.Escape(key)
 
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {

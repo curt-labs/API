@@ -7,27 +7,27 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/pagination"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
-
+	// "log"
 	"strconv"
 	"time"
 )
 
 type WebProperty struct {
-	ID                      int    `json:"id,omitempty" xml:"id,omitempty"`
-	Name                    string `json:"name,omitempty" xml:"name,omitempty"`
-	CustID                  int    `json:"custId,omitempty" xml:"custId,omitempty"`
-	BadgeID                 string `json:"badgeId,omitempty" xml:"badgeId,omitempty"`
-	Url                     string `json:"url,omitempty" xml:"url,omitempty"`
-	IsEnabled               bool   `json:"isEnabled,omitempty" xml:"isEnabled,omitempty"`
-	SellerID                string `json:"sellerId,omitempty" xml:"v,omitempty"`
-	WebPropertyNotes        WebPropertyNotes
-	WebPropertyType         WebPropertyType
-	WebPropertyRequirements WebPropertyRequirements
-	IsFinalApproved         bool      `json:"isFinalApproved,omitempty" xml:"isFinalApproved,omitempty"`
-	IsEnabledDate           time.Time `json:"isEnabledDate,omitempty" xml:"isEnabledDate,omitempty"`
-	IsDenied                bool      `json:"isDenied,omitempty" xml:"isDenied,omitempty"`
-	RequestedDate           time.Time `json:"requestedDate,omitempty" xml:"requestedDate,omitempty"`
-	AddedDate               time.Time `json:"addedDate,omitempty" xml:"addedDate,omitempty"`
+	ID                      int                     `json:"id,omitempty" xml:"id,omitempty"`
+	Name                    string                  `json:"name,omitempty" xml:"name,omitempty"`
+	CustID                  int                     `json:"custId,omitempty" xml:"custId,omitempty"`
+	BadgeID                 string                  `json:"badgeId,omitempty" xml:"badgeId,omitempty"`
+	Url                     string                  `json:"url,omitempty" xml:"url,omitempty"`
+	IsEnabled               bool                    `json:"isEnabled,omitempty" xml:"isEnabled,omitempty"`
+	SellerID                string                  `json:"sellerId,omitempty" xml:"v,omitempty"`
+	WebPropertyNotes        WebPropertyNotes        `json:"webPropertyNotes,omitempty" xml:"webPropertyNotes,omitempty"`
+	WebPropertyType         WebPropertyType         `json:"webPropertyTypes,omitempty" xml:"webPropertyTypes,omitempty"`
+	WebPropertyRequirements WebPropertyRequirements `json:"webPropertyRequirements,omitempty" xml:"webPropertyRequirements,omitempty"`
+	IsFinalApproved         bool                    `json:"isFinalApproved,omitempty" xml:"isFinalApproved,omitempty"`
+	IsEnabledDate           time.Time               `json:"isEnabledDate,omitempty" xml:"isEnabledDate,omitempty"`
+	IsDenied                bool                    `json:"isDenied,omitempty" xml:"isDenied,omitempty"`
+	RequestedDate           time.Time               `json:"requestedDate,omitempty" xml:"requestedDate,omitempty"`
+	AddedDate               time.Time               `json:"addedDate,omitempty" xml:"addedDate,omitempty"`
 }
 
 type WebProperties []WebProperty
@@ -60,33 +60,33 @@ type WebPropertyRequirement struct {
 type WebPropertyRequirements []WebPropertyRequirement
 
 var (
-	getAllWebProperties           = "SELECT id, name, cust_ID, badgeID, url, isEnabled,sellerID, typeID , isFinalApproved, isEnabledDate, isDenied, requestedDate, addedDate FROM WebProperties"
-	getWebProperty                = "SELECT id, name, cust_ID, badgeID, url, isEnabled,sellerID, typeID , isFinalApproved, isEnabledDate, isDenied, requestedDate, addedDate FROM WebProperties WHERE id = ?"
-	getAllWebPropertyTypes        = "SELECT id, typeID, type FROM WebPropertyTypes"
-	getAllWebPropertyNotes        = "SELECT id, webPropID, text, dateAdded FROM WebPropNotes"
-	getAllWebPropertyRequirements = "SELECT wprc.ID, wpr.ID, wpr.ReqType, wpr.Requirement, wprc.Compliance, wprc.WebPropertiesID FROM WebPropRequirementCheck AS wprc LEFT JOIN WebPropRequirements AS wpr ON wpr.ID = wprc.WebPropRequirementsID"
-	create                        = "INSERT INTO WebProperties (name, cust_ID, badgeID, url, isEnabled,sellerID, typeID , isFinalApproved, isEnabledDate, isDenied, requestedDate, addedDate) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
-	deleteWebProp                 = "DELETE FROM WebProperties WHERE id = ?"
-	createNote                    = "INSERT INTO WebPropNotes (webPropID, text, dateAdded) VALUES (?,?,?)"
-	updateNote                    = "UPDATE WebPropNotes SET webPropID = ?, text = ?, dateAdded = ? WHERE id =?"
-	deleteNote                    = "DELETE FROM WebPropNotes WHERE id = ?"
-	createRequirementsBridge      = "INSERT INTO WebPropRequirementCheck (WebPropertiesID, Compliance, WebPropRequirementsID) VALUES (?,?,?)"
-	deleteRequirementsBridge      = "DELETE FROM WebPropRequirementCheck WHERE id = ?"
-	updateRequirementsBridge      = "UPDATE WebPropRequirementCheck SET WebPropertiesID = ?, Compliance = ?, WebPropRequirementsID = ? WHERE ID = ?"
-	update                        = "UPDATE WebProperties SET name = ?, cust_ID = ?, badgeID = ?, url = ?, isEnabled = ?,sellerID = ?, typeID = ?, isFinalApproved = ?, isEnabledDate = ?, isDenied = ?, requestedDate = ? WHERE id = ?"
-	search                        = `SELECT id, name, cust_ID, badgeID, url, isEnabled,sellerID, typeID , isFinalApproved, isEnabledDate, isDenied, requestedDate, addedDate FROM WebProperties
+	getAllWebProperties               = "SELECT id, name, cust_ID, badgeID, url, isEnabled,sellerID, typeID , isFinalApproved, isEnabledDate, isDenied, requestedDate, addedDate FROM WebProperties"
+	getWebProperty                    = "SELECT id, name, cust_ID, badgeID, url, isEnabled,sellerID, typeID , isFinalApproved, isEnabledDate, isDenied, requestedDate, addedDate FROM WebProperties WHERE id = ?"
+	getAllWebPropertyTypes            = "SELECT id, typeID, type FROM WebPropertyTypes"
+	getAllWebPropertyNotes            = "SELECT id, webPropID, text, dateAdded FROM WebPropNotes"
+	getAllWebPropertyRequirements     = "SELECT wprc.ID, wpr.ID, wpr.ReqType, wpr.Requirement, wprc.Compliance, wprc.WebPropertiesID FROM WebPropRequirementCheck AS wprc LEFT JOIN WebPropRequirements AS wpr ON wpr.ID = wprc.WebPropRequirementsID"
+	create                            = "INSERT INTO WebProperties (name, cust_ID, badgeID, url, isEnabled,sellerID, typeID , isFinalApproved, isEnabledDate, isDenied, requestedDate, addedDate) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
+	deleteWebProp                     = "DELETE FROM WebProperties WHERE id = ?"
+	createNote                        = "INSERT INTO WebPropNotes (webPropID, text, dateAdded) VALUES (?,?,?)"
+	updateNote                        = "UPDATE WebPropNotes SET webPropID = ?, text = ?, dateAdded = ? WHERE id =?"
+	deleteNote                        = "DELETE FROM WebPropNotes WHERE id = ?"
+	deletePropertyNotes               = "DELETE FROM WebPropNotes WHERE WebPropID = ?"
+	createRequirementsBridge          = "INSERT INTO WebPropRequirementCheck (WebPropertiesID, Compliance, WebPropRequirementsID) VALUES (?,?,?)"
+	deleteRequirementsBridge          = "DELETE FROM WebPropRequirementCheck WHERE id = ?"
+	deletePropertyRequirementsBridges = "DELETE FROM WebPropRequirementCheck WHERE WebPropertiesID = ?"
+	update                            = "UPDATE WebProperties SET name = ?, cust_ID = ?, badgeID = ?, url = ?, isEnabled = ?,sellerID = ?, typeID = ?, isFinalApproved = ?, isEnabledDate = ?, isDenied = ?, requestedDate = ? WHERE id = ?"
+	search                            = `SELECT id, name, cust_ID, badgeID, url, isEnabled,sellerID, typeID , isFinalApproved, isEnabledDate, isDenied, requestedDate, addedDate FROM WebProperties
 									 WHERE  name LIKE ? AND cust_ID LIKE ? AND url LIKE ? AND isEnabled LIKE ? AND sellerID LIKE ? AND typeID  LIKE ? AND isFinalApproved LIKE ? AND isEnabledDate LIKE ? AND
 									 isDenied LIKE ? AND requestedDate LIKE ? AND addedDate LIKE ? `
-	createRequirement    = "INSERT INTO WebPropRequirements (ReqType, Requirement) VALUES (?,?)"
-	updateRequirement    = "UPDATE WebPropRequirements SET ReqType = ?, Requirement = ? WHERE ID = ?"
-	deleteRequirement    = "DELETE FROM WebPropRequirements WHERE ID = ?"
-	getNote              = "SELECT id, webPropID, text, dateAdded FROM WebPropNotes WHERE id = ?"
-	getRequirement       = "SELECT ID, ReqType, Requirement FROM WebPropRequirements WHERE ID = ?"
-	getRequirementBridge = "SELECT ID, WebPropertiesID, Compliance, WebPropRequirementsID FROM WebPropRequirementCheck WHERE ID = ?"
-	getType              = "SELECT id, typeID, type FROM WebPropertyTypes WHERE id = ?"
-	createType           = "INSERT INTO WebPropertyTypes (typeID, type) VALUES (?,?)"
-	updateType           = "UPDATE WebPropertyTypes SET typeID = ?, type=? WHERE id = ?"
-	deleteType           = "DELETE FROM WebPropertyTypes WHERE id = ?"
+	createRequirement = "INSERT INTO WebPropRequirements (ReqType, Requirement) VALUES (?,?)"
+	updateRequirement = "UPDATE WebPropRequirements SET ReqType = ?, Requirement = ? WHERE ID = ?"
+	deleteRequirement = "DELETE FROM WebPropRequirements WHERE ID = ?"
+	getNote           = "SELECT id, webPropID, text, dateAdded FROM WebPropNotes WHERE id = ?"
+	getRequirement    = "SELECT ID, ReqType, Requirement FROM WebPropRequirements WHERE ID = ?"
+	getType           = "SELECT id, typeID, type FROM WebPropertyTypes WHERE id = ?"
+	createType        = "INSERT INTO WebPropertyTypes (typeID, type) VALUES (?,?)"
+	updateType        = "UPDATE WebPropertyTypes SET typeID = ?, type=? WHERE id = ?"
+	deleteType        = "DELETE FROM WebPropertyTypes WHERE id = ?"
 )
 
 const (
@@ -122,51 +122,41 @@ func (w *WebProperty) Get() error {
 	if err != nil {
 		return err
 	}
-
 	typesMap := webPropTypes.ToMap()
 	notesMap := webPropNotes.ToMap()
 	requirementsMap := WebPropertyRequirements.ToMap()
 
-	res, err := stmt.Query(w.ID)
-	for res.Next() {
-		res.Scan(&w.ID, &w.Name, &w.CustID, &w.BadgeID, &w.Url, &w.IsEnabled, &w.SellerID, &w.WebPropertyType.ID, &w.IsFinalApproved, &w.IsEnabledDate, &w.IsDenied, &w.RequestedDate, &w.AddedDate)
+	err = stmt.QueryRow(w.ID).Scan(&w.ID, &w.Name, &w.CustID, &w.BadgeID, &w.Url, &w.IsEnabled, &w.SellerID, &w.WebPropertyType.ID, &w.IsFinalApproved, &w.IsEnabledDate, &w.IsDenied, &w.RequestedDate, &w.AddedDate)
 
-		typeChan := make(chan int)
-		notesChan := make(chan int)
-		requirementsChan := make(chan int)
-		go func() error {
-			for _, val := range typesMap {
-				if val.TypeID == w.WebPropertyType.ID {
-					w.WebPropertyType = val
-				}
-			}
-			typeChan <- 1
-			return nil
-		}()
-		go func() error {
-			for _, val := range notesMap {
-				if val.WebPropID == w.ID {
-					w.WebPropertyNotes = append(w.WebPropertyNotes, val)
-				}
-			}
-			notesChan <- 1
-			return nil
-		}()
-		go func() error {
-			for _, val := range requirementsMap {
-				if val.WebPropID == w.ID {
-					w.WebPropertyRequirements = append(w.WebPropertyRequirements, val)
-				}
-			}
-			requirementsChan <- 1
-			return nil
-		}()
+	typeChan := make(chan int)
+	notesChan := make(chan int)
+	requirementsChan := make(chan int)
+	go func() error {
+		if _, ok := typesMap[w.WebPropertyType.ID]; ok {
+			w.WebPropertyType = typesMap[w.WebPropertyType.ID]
+		}
+		typeChan <- 1
+		return nil
+	}()
+	go func() error {
+		if _, ok := notesMap[w.ID]; ok {
+			w.WebPropertyNotes = append(w.WebPropertyNotes, notesMap[w.ID])
+		}
+		notesChan <- 1
+		return nil
+	}()
+	go func() error {
+		if _, ok := requirementsMap[w.ID]; ok {
+			w.WebPropertyRequirements = append(w.WebPropertyRequirements, requirementsMap[w.ID])
+		}
+		requirementsChan <- 1
+		return nil
+	}()
 
-		<-typeChan
-		<-notesChan
-		<-requirementsChan
+	<-typeChan
+	<-notesChan
+	<-requirementsChan
 
-	}
 	go redis.Setex(redis_key, w, 86400)
 	return err
 }
@@ -215,31 +205,22 @@ func GetAll() (WebProperties, error) {
 		notesChan := make(chan int)
 		requirementsChan := make(chan int)
 		go func() error {
-
-			for _, val := range typesMap {
-				if val.TypeID == w.WebPropertyType.ID {
-					w.WebPropertyType = val
-				}
+			if _, ok := typesMap[w.WebPropertyType.ID]; ok {
+				w.WebPropertyType = typesMap[w.WebPropertyType.ID]
 			}
 			typeChan <- 1
 			return nil
 		}()
 		go func() error {
-
-			for _, val := range notesMap {
-				if val.WebPropID == w.ID {
-					w.WebPropertyNotes = append(w.WebPropertyNotes, val)
-				}
+			if _, ok := notesMap[w.ID]; ok {
+				w.WebPropertyNotes = append(w.WebPropertyNotes, notesMap[w.ID])
 			}
 			notesChan <- 1
 			return nil
 		}()
 		go func() error {
-
-			for _, val := range requirementsMap {
-				if val.WebPropID == w.ID {
-					w.WebPropertyRequirements = append(w.WebPropertyRequirements, val)
-				}
+			if _, ok := requirementsMap[w.ID]; ok {
+				w.WebPropertyRequirements = append(w.WebPropertyRequirements, requirementsMap[w.ID])
 			}
 			requirementsChan <- 1
 			return nil
@@ -254,7 +235,8 @@ func GetAll() (WebProperties, error) {
 	go redis.Setex(redis_key, ws, 86400)
 	return ws, err
 }
-func (w *WebProperty) Create() error {
+func (w *WebProperty) Create() (err error) {
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -278,26 +260,42 @@ func (w *WebProperty) Create() error {
 		return err
 	}
 	tx.Commit()
-	//create notes
-	for _, note := range w.WebPropertyNotes {
-		note.WebPropID = w.ID
-		err = note.Create()
-		if err != nil {
-			return err
-		}
-	}
-	//create web properties check
+
+	//create/update web properties check
 	for _, req := range w.WebPropertyRequirements {
 		req.WebPropID = w.ID
+
 		err = req.CreateJoin()
 		if err != nil {
 			return err
 		}
 	}
+	//create/updated notes
+	for _, note := range w.WebPropertyNotes {
+		note.WebPropID = w.ID
+
+		err = note.Create()
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
-func (w *WebProperty) Update() error {
+func (w *WebProperty) Update() (err error) {
+	//create/udpated type
+	if w.WebPropertyType.ID > 0 {
+		err = w.WebPropertyType.Update()
+		if err != nil {
+			return err
+		}
+	} else {
+		err = w.WebPropertyType.Create()
+		if err != nil {
+			return err
+		}
+	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -315,6 +313,41 @@ func (w *WebProperty) Update() error {
 	}
 	tx.Commit()
 
+	//create/update web properties check
+	for _, req := range w.WebPropertyRequirements {
+		req.WebPropID = w.ID
+		if req.ID > 0 {
+			err = req.Update()
+			if err != nil {
+				return err
+			}
+		} else {
+			err = req.Create()
+			if err != nil {
+				return err
+			}
+		}
+		err = req.CreateJoin()
+		if err != nil {
+			return err
+		}
+	}
+	//create/updated notes
+	for _, note := range w.WebPropertyNotes {
+		note.WebPropID = w.ID
+		if note.ID > 0 {
+			err = note.Update()
+			if err != nil {
+				return err
+			}
+		} else {
+			err = note.Create()
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	return nil
 }
 func (w *WebProperty) Delete() error {
@@ -324,29 +357,15 @@ func (w *WebProperty) Delete() error {
 	}
 	defer db.Close()
 
-	webPropNotes, err := GetAllWebPropertyNotes()
-	notesMap := webPropNotes.ToMap()
-
-	WebPropertyRequirements, err := GetAllWebPropertyRequirements()
-	requirementsMap := WebPropertyRequirements.ToMap()
-
 	notesChan := make(chan int)
 	requirementsChan := make(chan int)
 
 	go func() {
-		for _, val := range notesMap {
-			if val.WebPropID == w.ID {
-				val.Delete()
-			}
-		}
+		err = w.DeleteNotesByPropId()
 		notesChan <- 1
 	}()
 	go func() {
-		for _, val := range requirementsMap {
-			if val.WebPropID == w.ID {
-				val.DeleteJoin()
-			}
-		}
+		err = w.DeleteJoinByPropId()
 		requirementsChan <- 1
 	}()
 	<-notesChan
@@ -356,6 +375,7 @@ func (w *WebProperty) Delete() error {
 	if err != nil {
 		return err
 	}
+
 	stmt, err := tx.Prepare(deleteWebProp)
 	_, err = stmt.Exec(w.ID)
 	if err != nil {
@@ -555,25 +575,24 @@ func (n *WebPropertyNote) Delete() error {
 	return nil
 }
 
-func (r *WebPropertyRequirement) GetJoin() error {
-	redis_key := "goapi:webpropertyrequirementjoin:" + strconv.Itoa(r.ID)
-	data, err := redis.Get(redis_key)
-	if err == nil && len(data) > 0 {
-		err = json.Unmarshal(data, &r)
-		return err
-	}
+func (n *WebProperty) DeleteNotesByPropId() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
 	}
 	defer db.Close()
-
-	stmt, err := db.Prepare(getRequirementBridge)
-	err = stmt.QueryRow(r.ID).Scan(&r.ID, &r.WebPropID, &r.Compliance, &r.RequirementID)
+	tx, err := db.Begin()
 	if err != nil {
 		return err
 	}
-	err = r.Get()
+	stmt, err := tx.Prepare(deletePropertyNotes)
+	_, err = stmt.Exec(n.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+
 	return nil
 }
 
@@ -599,28 +618,6 @@ func (r *WebPropertyRequirement) CreateJoin() error {
 	return nil
 }
 
-func (r *WebPropertyRequirement) UpdateJoin() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-	stmt, err := tx.Prepare(updateRequirementsBridge)
-	_, err = stmt.Exec(r.WebPropID, r.Compliance, r.RequirementID, r.ID)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	tx.Commit()
-	r.Get()
-
-	return nil
-}
-
 func (r *WebPropertyRequirement) DeleteJoin() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -632,6 +629,27 @@ func (r *WebPropertyRequirement) DeleteJoin() error {
 		return err
 	}
 	stmt, err := tx.Prepare(deleteRequirementsBridge)
+	_, err = stmt.Exec(r.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+
+	return nil
+}
+
+func (r *WebProperty) DeleteJoinByPropId() error {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	stmt, err := tx.Prepare(deletePropertyRequirementsBridges)
 	_, err = stmt.Exec(r.ID)
 	if err != nil {
 		tx.Rollback()

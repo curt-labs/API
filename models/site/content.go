@@ -10,9 +10,9 @@ import (
 )
 
 type ContentPage struct {
-	SiteContent     SiteContent
-	MenuWithContent MenuWithContent
-	Revision        SiteContentRevision
+	SiteContent     SiteContent         `json:"siteContent,omitempty" xml:"siteContent,omitempty"`
+	MenuWithContent MenuWithContent     `json:"menuWithContent,omitempty" xml:"menuWithContent,omitempty"`
+	Revision        SiteContentRevision `json:"revision,omitempty" xml:"revision,omitempty"`
 }
 
 type ContentPages []ContentPage
@@ -32,6 +32,7 @@ type SiteContent struct {
 	Slug                  string    `json:"slug, omitempty" xml:"slug,omitempty"`
 	RequireAuthentication bool      `json:"requireAuthentication,omitempty" xml:"requireAuthentication,omitempty"`
 	Canonical             string    `json:"canonical,omitempty" xml:"canonical,omitempty"`
+	WebsiteId             int       `json:"websiteId,omitempty" xml:"websiteId,omitempty"`
 }
 
 type SiteContents []SiteContent
@@ -60,6 +61,7 @@ type LandingPage struct {
 	MenuPosition      string            `json:"menuPosition,omitempty" xml:"menuPosition,omitempty"`
 	LandingPageDatas  LandingPageDatas  `json:"landingPageDatas,omitempty" xml:"landingPageDatas,omitempty"`
 	LandingPageImages LandingPageImages `json:"landingPageImages,omitempty" xml:"landingPageImages,omitempty"`
+	WebsiteId         int               `json:"websiteId,omitempty" xml:"websiteId,omitempty"`
 }
 
 type LandingPages []LandingPage
@@ -80,19 +82,19 @@ type LandingPageImage struct {
 type LandingPageImages []LandingPageImage
 
 const (
-	siteContentColumns         = "s.contentID, s.content_type, s.page_title, s.createdDate, s.lastModified, s.meta_title, s.meta_description, s.keywords, s.isPrimary, s.published, s.active, s.slug, s.requireAuthentication, s.canonical" //as s
+	siteContentColumns         = "s.contentID, s.content_type, s.page_title, s.createdDate, s.lastModified, s.meta_title, s.meta_description, s.keywords, s.isPrimary, s.published, s.active, s.slug, s.requireAuthentication, s.canonical, s.websiteID" //as s
 	siteContentRevisionColumns = "revisionID, contentID, content_text, createdOn, active"
 	landingPageColumns         = "l.id, l.name, l.startDate, l.endDate, l.url, l.pageContent, l.linkClasses, l.conversionID, l.conversionLabel, l.newWindow, l.menuPosition" //as l
 )
 
 var (
-	getContentPageByName              = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s WHERE slug = ? LIMIT 1`
+	getContentPageByName              = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s WHERE s.slug = ?  && s.active = 1 && s.published = 1 && s.websiteID = 1 LIMIT 1`
 	getSiteContentRevisionByContentID = `SELECT ` + siteContentRevisionColumns + ` FROM SiteContentRevision WHERE contentID = ? ORDER BY createdOn DESC LIMIT 1`
-	getContentPageByID                = `select ` + siteContentColumns + ` from SiteContent AS s WHERE contentID = ? limit 1`
+	getContentPageByID                = `select ` + siteContentColumns + ` from SiteContent AS s WHERE s.contentID = ? && s.websiteID = 1 limit 1`
 	getAllSiteContent                 = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s`
 	getAllSiteContentRevisions        = `SELECT ` + siteContentRevisionColumns + ` FROM SiteContentRevision `
-	getPrimaryContentPage             = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s WHERE isPrimary = 1`
-	getSitemapCP                      = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s JOIN Menu_SiteContent AS msc ON msc.contentID != s.contentID`
+	getPrimaryContentPage             = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s WHERE s.isPrimary = 1 && s.websiteID = 1`
+	getSitemapCP                      = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s WHERE s.contentID NOT IN(SELECT msc.contentID FROM Menu_SiteContent as msc) order by page_title`
 	getLandingPageByID                = `SELECT ` + landingPageColumns + ` FROM LandingPage AS l WHERE id = ? && startDate <= NOW() && endDate >= NOW() limit 1`
 )
 
@@ -124,6 +126,7 @@ func (cp *ContentPage) Get() (err error) {
 		&slug,
 		&cp.SiteContent.RequireAuthentication,
 		&canon,
+		&cp.SiteContent.WebsiteId,
 	)
 	if err != sql.ErrNoRows {
 		if err != nil {
@@ -184,6 +187,7 @@ func (cp *ContentPage) GetContentPageByName(menuId int, auth bool) (err error) {
 		&slug,
 		&cp.SiteContent.RequireAuthentication,
 		&canon,
+		&cp.SiteContent.WebsiteId,
 	)
 
 	if err != sql.ErrNoRows {
@@ -285,6 +289,7 @@ func (cp *ContentPage) GetPrimaryContentPage() (err error) {
 		&slug,
 		&cp.SiteContent.RequireAuthentication,
 		&canon,
+		&cp.SiteContent.WebsiteId,
 	)
 	if err != sql.ErrNoRows {
 		if err != nil {
@@ -346,6 +351,7 @@ func GetSitemapCP() (cps ContentPages, err error) {
 			&slug,
 			&cp.SiteContent.RequireAuthentication,
 			&canon,
+			&cp.SiteContent.WebsiteId,
 		)
 		if err != sql.ErrNoRows {
 			if err != nil {

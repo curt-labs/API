@@ -20,7 +20,6 @@ import (
 	"github.com/curt-labs/GoAPI/controllers/vehicle"
 	"github.com/curt-labs/GoAPI/controllers/videos"
 	"github.com/curt-labs/GoAPI/controllers/webProperty"
-	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/cors"
@@ -44,11 +43,6 @@ var (
  */
 func main() {
 	flag.Parse()
-
-	err := database.PrepareAll()
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	m := martini.Classic()
 	gorelic.InitNewrelicAgent("5fbc49f51bd658d47b4d5517f7a9cb407099c08c", "GoAPI", false)
@@ -234,22 +228,18 @@ func main() {
 		r.Get("/get", site.GetLandingPage)
 	})
 	m.Group("/webProperties", func(r martini.Router) {
-		r.Post("/note/:id", internalCors, webProperty_controller.CreateUpdateWebPropertyNote)                                       //updates when an id is present; otherwise, creates
-		r.Put("/note", internalCors, webProperty_controller.CreateUpdateWebPropertyNote)                                            //updates when an id is present; otherwise, creates
-		r.Delete("/note/:id", internalCors, webProperty_controller.DeleteWebPropertyNote)                                           //{id}
-		r.Get("/note/:id", webProperty_controller.GetWebPropertyNote)                                                               //{id}
-		r.Post("/requirementCheck/:id", internalCors, internalCors, webProperty_controller.CreateUpdateWebPropertyRequirementCheck) //updates when an id is present; otherwise, creates
-		r.Put("/requirementCheck", internalCors, webProperty_controller.CreateUpdateWebPropertyRequirementCheck)                    //updates when an id is present; otherwise, creates
-		r.Delete("/requirementCheck/:id", internalCors, webProperty_controller.DeleteWebPropertyRequirementCheck)                   //{id}
-		r.Get("/requirementCheck/:id", webProperty_controller.GetWebPropertyRequirementCheck)                                       //{id}
-		r.Post("/type/:id", internalCors, webProperty_controller.CreateUpdateWebPropertyType)                                       //updates when an id is present; otherwise, creates
-		r.Put("/type", internalCors, webProperty_controller.CreateUpdateWebPropertyType)                                            //updates when an id is present; otherwise, creates
-		r.Delete("/type/:id", internalCors, webProperty_controller.DeleteWebPropertyType)                                           //{id}
-		r.Get("/type/:id", webProperty_controller.GetWebPropertyType)                                                               //{id}
-		r.Post("/requirement/:id", internalCors, webProperty_controller.CreateUpdateWebPropertyRequirement)                         //updates when an id is present; otherwise, creates
-		r.Put("/requirement", internalCors, webProperty_controller.CreateUpdateWebPropertyRequirement)                              //updates when an id is present; otherwise, creates
-		r.Delete("/requirement/:id", internalCors, webProperty_controller.DeleteWebPropertyRequirement)                             //{id}
-		r.Get("/requirement/:id", webProperty_controller.GetWebPropertyRequirement)                                                 //{id}
+		r.Post("/note/:id", internalCors, webProperty_controller.CreateUpdateWebPropertyNote)               //updates when an id is present; otherwise, creates
+		r.Put("/note", internalCors, webProperty_controller.CreateUpdateWebPropertyNote)                    //updates when an id is present; otherwise, creates
+		r.Delete("/note/:id", internalCors, webProperty_controller.DeleteWebPropertyNote)                   //{id}
+		r.Get("/note/:id", webProperty_controller.GetWebPropertyNote)                                       //{id}
+		r.Post("/type/:id", internalCors, webProperty_controller.CreateUpdateWebPropertyType)               //updates when an id is present; otherwise, creates
+		r.Put("/type", internalCors, webProperty_controller.CreateUpdateWebPropertyType)                    //updates when an id is present; otherwise, creates
+		r.Delete("/type/:id", internalCors, webProperty_controller.DeleteWebPropertyType)                   //{id}
+		r.Get("/type/:id", webProperty_controller.GetWebPropertyType)                                       //{id}
+		r.Post("/requirement/:id", internalCors, webProperty_controller.CreateUpdateWebPropertyRequirement) //updates when an id is present; otherwise, creates
+		r.Put("/requirement", internalCors, webProperty_controller.CreateUpdateWebPropertyRequirement)      //updates when an id is present; otherwise, creates
+		r.Delete("/requirement/:id", internalCors, webProperty_controller.DeleteWebPropertyRequirement)     //{id}
+		r.Get("/requirement/:id", webProperty_controller.GetWebPropertyRequirement)                         //{id}
 		r.Get("/search", internalCors, webProperty_controller.Search)
 		r.Get("/type", webProperty_controller.GetAllTypes)               //all tyeps
 		r.Get("/note", webProperty_controller.GetAllNotes)               //all notes
@@ -259,6 +249,8 @@ func main() {
 		r.Delete("/:id", internalCors, webProperty_controller.DeleteWebProperty)     //{id}
 		r.Post("/:id", internalCors, webProperty_controller.CreateUpdateWebProperty) //
 		r.Put("", internalCors, webProperty_controller.CreateUpdateWebProperty)      //can create notes(text) and requirements (requirement, by requirement=requirementID) while creating a property
+		r.Post("/json/:id", internalCors, webProperty_controller.Save_Json)
+		r.Put("/json", internalCors, webProperty_controller.Save_Json)
 
 	})
 
