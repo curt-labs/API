@@ -1,18 +1,39 @@
 package products
 
 import (
+	"database/sql"
+	"github.com/curt-labs/GoAPI/helpers/database"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
 
-func TestTopTierCategories(t *testing.T) {
-	Convey("Test TopTierCategories()", t, func() {
-		cats, err := TopTierCategories("9300f7bc-2ca6-11e4-8758-42010af0fd79")
-		So(cats, ShouldNotBeNil)
-		So(err, ShouldBeNil)
-		So(cats, ShouldNotBeEmpty)
-	})
+func generateAPIkey() (apiKey string) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return ""
+	}
+	defer db.Close()
+	stmt, err := db.Prepare("SELECT api_key FROM ApiKey ORDER BY RAND() LIMIT 1")
+	if err != nil {
+		return ""
+	}
+	defer stmt.Close()
+	err = stmt.QueryRow().Scan(&apiKey)
+	if err != nil {
+		return ""
+	}
+	return apiKey
 }
+
+// func TestTopTierCategories(t *testing.T) {
+// 	Convey("Test TopTierCategories()", t, func() {
+// 		// cats, err := TopTierCategories("9300f7bc-2ca6-11e4-8758-42010af0fd79")
+// 		cats, err := TopTierCategories(generateAPIkey())
+// 		So(cats, ShouldNotBeNil)
+// 		So(err, ShouldBeNil)
+// 		So(cats, ShouldNotBeEmpty)
+// 	})
+// }
 
 func TestGetCategoryByTitle(t *testing.T) {
 
@@ -32,6 +53,7 @@ func TestGetCategoryByTitle(t *testing.T) {
 		Convey("with `Trailer Hitches`", func() {
 			cat, err := GetCategoryByTitle("Trailer Hitches")
 			So(cat, ShouldNotBeNil)
+			t.Log(cat)
 			So(cat.ID, ShouldNotEqual, 0)
 			So(err, ShouldBeNil)
 		})

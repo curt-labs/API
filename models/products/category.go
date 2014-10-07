@@ -58,7 +58,7 @@ var (
 		select c.catID, c.ParentID, c.sort, c.dateAdded,
 		c.catTitle, c.shortDesc, c.longDesc,
 		c.image, c.icon, c.isLifestyle, c.vehicleSpecific,
-		c.vehicleRequired,
+		
 		cc.code, cc.font from Categories as c
 		left join ColorCode as cc on c.codeID = cc.codeID
 		where c.ParentID = ?
@@ -68,7 +68,7 @@ var (
 		select c.catID, c.ParentID, c.sort, c.dateAdded,
 		c.catTitle, c.shortDesc, c.longDesc,
 		c.image, c.icon, c.isLifestyle, c.vehicleSpecific,
-		c.vehicleRequired,
+		
 		cc.code, cc.font from Categories as c
 		left join ColorCode as cc on c.codeID = cc.codeID
 		where c.catTitle = ?
@@ -77,7 +77,7 @@ var (
 		select c.catID, c.ParentID, c.sort, c.dateAdded,
 		c.catTitle, c.shortDesc, c.longDesc,
 		c.image, c.icon, c.isLifestyle, c.vehicleSpecific,
-		c.vehicleRequired,
+		
 		cc.code, cc.font from Categories as c
 		left join ColorCode as cc on c.codeID = cc.codeID
 		where c.catID = ?
@@ -209,7 +209,7 @@ func PopulateCategory(row *sql.Row, ch chan Category) {
 		&catIcon,
 		&initCat.IsLifestyle,
 		&initCat.VehicleSpecific,
-		&initCat.VehicleRequired,
+		// &initCat.VehicleRequired,
 		&colorCode,
 		&fontCode)
 	if err != nil {
@@ -468,7 +468,7 @@ func (c *Category) GetCategory(key string, page int, count int, ignoreParts bool
 		c.Sort = cat.Sort
 		c.Title = cat.Title
 		c.VehicleSpecific = cat.VehicleSpecific
-		c.VehicleRequired = cat.VehicleRequired
+		// c.VehicleRequired = cat.VehicleRequired
 		c.Content = cat.Content
 		c.SubCategories = cat.SubCategories
 		c.ProductListing = cat.ProductListing
