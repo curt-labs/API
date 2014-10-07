@@ -83,19 +83,19 @@ var (
 		where c.catID = ?
 		order by c.sort`
 	CategoryPartsStmt = `
-		select p.partID from Part as p
+		select p.partID, 1 from Part as p
 		join CatPart as cp on p.partID = cp.partID
 		where (p.status = 800 || p.status = 900) && FIND_IN_SET(cp.catID,bottom_category_ids(?))
 		order by p.partID
 		limit ?,?`
-	CategoryPartsFilteredStmt = `select p.partID from Part as p
-		join CatPart as cp on p.partID = cp.partID
-		where (p.status = 800 || p.status = 900) && FIND_IN_SET(cp.catID,bottom_category_ids(?))
-		having (
+	CategoryPartsFilteredStmt = `select p.partID, (
 			select count(pa.pAttrID) from PartAttribute as pa
 			where pa.partID = cp.partID && FIND_IN_SET(pa.field,?) &&
 			FIND_IN_SET(pa.value,?)
-		)
+		) as cnt from Part as p
+		join CatPart as cp on p.partID = cp.partID
+		where (p.status = 800 || p.status = 900) && FIND_IN_SET(cp.catID,bottom_category_ids(?))
+		having cnt >= ?
 		order by p.partID
 		limit ?,?`
 	CategoryPartCountStmt = `
@@ -223,7 +223,7 @@ func PopulateCategory(row *sql.Row, ch chan Category) {
 		&colorCode,
 		&fontCode)
 	if err != nil {
-		log.Println(err)
+		log.Printf("Populate Error: %s", err.Error())
 		ch <- Category{}
 		return
 	}
@@ -628,7 +628,7 @@ func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *
 			}
 			defer stmt.Close()
 
-			rows, err = stmt.Query(c.ID, strings.Join(keys, ","), strings.Join(values, ","), page, count)
+			rows, err = stmt.Query(strings.Join(keys, ","), strings.Join(values, ","), c.ID, len(keys), page, count)
 		} else {
 			stmt, err := db.Prepare(CategoryPartsStmt)
 			if err != nil {
@@ -644,8 +644,9 @@ func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *
 		defer rows.Close()
 
 		for rows.Next() {
+			var ct *int
 			var id *int
-			if err := rows.Scan(&id); err == nil && id != nil {
+			if err := rows.Scan(&id, &ct); err == nil && id != nil {
 				ids = append(ids, *id)
 			}
 		}
