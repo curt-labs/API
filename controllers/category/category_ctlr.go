@@ -13,6 +13,7 @@ import (
 
 var (
 	NoFilterCategories = map[int]int{1: 1, 3: 3, 4: 4, 5: 5, 8: 8, 9: 9, 254: 254, 2: 2, 11: 11, 12: 12, 13: 13, 14: 14, 273: 273}
+	NoFilterKeys       = map[string]string{"key": "key", "page": "page", "count": "count"}
 )
 
 func GetCategory(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
@@ -34,7 +35,7 @@ func GetCategory(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 	r.ParseForm()
 	if _, ignore := NoFilterCategories[cat.ID]; !ignore {
 		for k, v := range r.Form {
-			if strings.ToLower(k) != "key" {
+			if _, excluded := NoFilterKeys[strings.ToLower(k)]; !excluded {
 				if _, ok := specs[k]; !ok {
 					specs[k] = make([]string, 0)
 				}
@@ -107,6 +108,7 @@ func SubCategories(w http.ResponseWriter, r *http.Request, enc encoding.Encoder,
 func GetParts(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	key := params["key"]
 	catID, err := strconv.Atoi(params["id"])
+	qs := r.URL.Query()
 
 	var cat products.Category
 	if err != nil {
@@ -124,26 +126,19 @@ func GetParts(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, para
 		cat.ID = catID
 	}
 
-	count, err := strconv.Atoi(params["count"])
-	if err != nil {
-		count = 5
-	}
-
-	page, err := strconv.Atoi(params["page"])
-	if err != nil {
-		page = 0
-	} else {
-		page = page - 1
-	}
+	count, _ := strconv.Atoi(qs.Get("count"))
+	page, _ := strconv.Atoi(qs.Get("page"))
 
 	specs := make(map[string][]string, 0)
 	r.ParseForm()
-	for k, v := range r.Form {
-		if strings.ToLower(k) != "key" {
-			if _, ok := specs[k]; !ok {
-				specs[k] = make([]string, 0)
+	if _, ignore := NoFilterCategories[cat.ID]; !ignore {
+		for k, v := range r.Form {
+			if _, excluded := NoFilterKeys[strings.ToLower(k)]; !excluded {
+				if _, ok := specs[k]; !ok {
+					specs[k] = make([]string, 0)
+				}
+				specs[k] = append(specs[k], v...)
 			}
-			specs[k] = append(specs[k], v...)
 		}
 	}
 

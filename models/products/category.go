@@ -103,6 +103,15 @@ var (
 		join CatPart as cp on p.partID = cp.partID
 		where (p.status = 800 || p.status = 900) && FIND_IN_SET(cp.catID,bottom_category_ids(?))
 		order by p.partID`
+	CategoryFilteredPartCountStmt = `select p.partID, (
+			select count(pa.pAttrID) from PartAttribute as pa
+			where pa.partID = cp.partID && FIND_IN_SET(pa.field,?) &&
+			FIND_IN_SET(pa.value,?)
+		) as cnt from Part as p
+		join CatPart as cp on p.partID = cp.partID
+		where (p.status = 800 || p.status = 900) && FIND_IN_SET(cp.catID,bottom_category_ids(?))
+		having cnt >= ?
+		order by p.partID`
 	SubIDStmt = `
 		select c.catID, group_concat(p.partID) as parts from Categories as c
 		left join CatPart as cp on c.catID = cp.catID
@@ -635,6 +644,8 @@ func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *
 				return err
 			}
 			defer stmt.Close()
+
+			log.Println(page)
 			rows, err = stmt.Query(c.ID, page, count)
 		}
 
@@ -680,7 +691,7 @@ func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *
 		page = 1
 	}
 	c.ProductListing.Page = page
-	c.GetPartCount(key, v)
+	c.GetPartCount(key, v, specs)
 	c.ProductListing.TotalPages = c.ProductListing.TotalItems / count
 
 	go redis.Setex(redis_key, parts, redis.CacheTimeout)
@@ -688,27 +699,53 @@ func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *
 	return nil
 }
 
-func (c *Category) GetPartCount(key string, v *Vehicle) error {
+func (c *Category) GetPartCount(key string, v *Vehicle, specs *map[string][]string) error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
 	}
 	defer db.Close()
 
-	stmt, err := db.Prepare(CategoryPartCountStmt)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-
-	row := stmt.QueryRow(c.ID)
-	if row == nil {
-		return fmt.Errorf("error: %s", "failed to retrieve part count")
-	}
-
 	var total *int
-	if err := row.Scan(&total); err != nil || total == nil {
-		return err
+	if specs != nil && len(*specs) > 0 {
+		keys := make([]string, 0)
+		values := make([]string, 0)
+		for k, vals := range *specs {
+			keys = append(keys, k)
+			values = append(values, vals...)
+		}
+
+		stmt, err := db.Prepare(CategoryFilteredPartCountStmt)
+		if err != nil {
+			return err
+		}
+		defer stmt.Close()
+
+		rows, err := stmt.Query(strings.Join(keys, ","), strings.Join(values, ","), c.ID, len(keys))
+		if err != nil {
+			return err
+		}
+
+		counter := 0
+		for rows.Next() {
+			counter++
+		}
+		total = &counter
+	} else {
+		stmt, err := db.Prepare(CategoryPartCountStmt)
+		if err != nil {
+			return err
+		}
+		defer stmt.Close()
+
+		row := stmt.QueryRow(c.ID)
+		if row == nil {
+			return fmt.Errorf("error: %s", "failed to retrieve part count")
+		}
+
+		if err := row.Scan(&total); err != nil || total == nil {
+			return err
+		}
 	}
 
 	c.ProductListing.TotalItems = *total
