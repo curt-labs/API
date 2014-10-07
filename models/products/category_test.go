@@ -108,7 +108,7 @@ func TestGetCategory(t *testing.T) {
 				ID: 0,
 			}
 
-			err := cat.GetCategory("", 0, 10, false, nil)
+			err := cat.GetCategory("", 0, 10, false, nil, nil)
 			So(cat, ShouldNotBeNil)
 			So(cat.ID, ShouldEqual, 0)
 			So(err, ShouldNotBeNil)
@@ -119,7 +119,7 @@ func TestGetCategory(t *testing.T) {
 				ID: 1,
 			}
 
-			err := cat.GetCategory("9300f7bc-2ca6-11e4-8758-42010af0fd79", 0, 10, false, nil)
+			err := cat.GetCategory("9300f7bc-2ca6-11e4-8758-42010af0fd79", 0, 10, false, nil, nil)
 			So(cat, ShouldNotBeNil)
 			So(cat.ID, ShouldNotEqual, 0)
 			So(err, ShouldBeNil)
