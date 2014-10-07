@@ -145,9 +145,6 @@ func (filtered FilteredOptions) categoryGroupAttributes(cat products.Category, s
 	close(priceCh)
 
 	for key, res := range filterResults {
-		if key == "Receiver Tube Size" {
-			log.Println(res.Options)
-		}
 		indexed := make(map[string]int, 0)
 		opts := make(map[string]Option, 0)
 		for i, opt := range res.Options {
