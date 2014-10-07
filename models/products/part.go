@@ -378,22 +378,34 @@ func (p *Part) GetRelated() error {
 		}
 	}
 
-	qry, err := database.Db.Prepare(relatedPartStmt)
+	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
 	}
+	defer db.Close()
 
-	rows, _, err := qry.Exec(p.ID)
+	stmt, err := db.Prepare(relatedPartStmt)
 	if err != nil {
 		return err
-	} else if rows == nil {
-		return errors.New("No related found for part: " + string(p.ID))
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(p.ID)
+	if err != nil {
+		return err
 	}
 
 	var related []int
-	for _, row := range rows {
-		related = append(related, row.Int(0))
+	var relatedID int
+	for rows.Next() {
+		err = rows.Scan(&relatedID)
+		if err != nil {
+			return err
+		}
+		related = append(related, relatedID)
 	}
+	defer rows.Close()
+
 	p.Related = related
 	p.RelatedCount = len(related)
 
@@ -414,23 +426,32 @@ func (p *Part) GetContent() error {
 		}
 	}
 
-	qry, err := database.Db.Prepare(partContentStmt)
+	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
 	}
+	defer db.Close()
 
-	rows, _, err := qry.Exec(p.ID)
+	stmt, err := db.Prepare(partContentStmt)
 	if err != nil {
 		return err
-	} else if rows == nil {
-		return errors.New("No content found for part: " + string(p.ID))
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(p.ID)
+	if err != nil {
+		return err
 	}
 
 	var content []Content
-	for _, row := range rows {
-		con := Content{
-			Key:   row.Str(0),
-			Value: row.Str(1),
+	for rows.Next() {
+		var con Content
+		err = rows.Scan(
+			&con.Key,
+			&con.Value,
+		)
+		if err != nil {
+			return err
 		}
 
 		if strings.Contains(strings.ToLower(con.Key), "install") {
@@ -440,6 +461,8 @@ func (p *Part) GetContent() error {
 			content = append(content, con)
 		}
 	}
+	defer rows.Close()
+
 	p.Content = content
 
 	go redis.Setex(redis_key, p.Content, redis.CacheTimeout)
@@ -502,17 +525,27 @@ func (p *Part) GetInstallSheet(r *http.Request) (data []byte, err error) {
 		return data, nil
 	}
 
-	qry, err := database.Db.Prepare(partInstallSheetStmt)
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(partInstallSheetStmt)
+	if err != nil {
+		return
+	}
+	defer stmt.Close()
+
+	var text string
+	err = stmt.QueryRow(p.ID).Scan(
+		&text,
+	)
 	if err != nil {
 		return
 	}
 
-	row, _, err := qry.ExecFirst(p.ID)
-	if err != nil || row == nil {
-		return
-	}
-
-	data, err = rest.GetPDF(row.Str(0), r)
+	data, err = rest.GetPDF(text, r)
 
 	go func(dt []byte) {
 		redis.Setex(redis_key, dt, redis.CacheTimeout)

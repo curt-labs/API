@@ -1,8 +1,13 @@
 package database
 
 import (
+	"flag"
 	"fmt"
 	"os"
+)
+
+var (
+	EmptyDb = flag.String("clean", "", "bind empty database with structure defined")
 )
 
 func ConnectionString() string {

@@ -20,7 +20,6 @@ import (
 	"github.com/curt-labs/GoAPI/controllers/vehicle"
 	"github.com/curt-labs/GoAPI/controllers/videos"
 	"github.com/curt-labs/GoAPI/controllers/webProperty"
-	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/cors"
@@ -44,11 +43,6 @@ var (
  */
 func main() {
 	flag.Parse()
-
-	err := database.PrepareAll()
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	m := martini.Classic()
 	gorelic.InitNewrelicAgent("5fbc49f51bd658d47b4d5517f7a9cb407099c08c", "GoAPI", false)

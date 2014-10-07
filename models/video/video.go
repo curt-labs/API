@@ -1,9 +1,12 @@
 package video
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/database"
+	"database/sql"
 	"net/url"
 	"time"
+
+	"github.com/curt-labs/GoAPI/helpers/database"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type Video struct {
@@ -23,36 +26,38 @@ var (
 )
 
 func UniqueVideos() (videos []Video, err error) {
-	rows, res, err := database.Db.Query(uniqueVideoStmt)
-	if database.MysqlError(err) || len(rows) == 0 {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(uniqueVideoStmt)
+	if err != nil {
+		return
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query()
+	if err != nil {
 		return
 	}
 
-	youTubeId := res.Map("embed_link")
-	dateAdded := res.Map("dateAdded")
-	sort := res.Map("sort")
-	title := res.Map("title")
-	description := res.Map("description")
-	watchpage := res.Map("watchpage")
-	screenshot := res.Map("screenshot")
-
-	for _, row := range rows {
-
-		date_add, _ := time.Parse("2006-01-02 15:04:15", row.Str(dateAdded))
-
-		page, _ := url.Parse(row.Str(watchpage))
-		shot, _ := url.Parse(row.Str(screenshot))
-
-		video := Video{
-			YouTubeId:   row.Str(youTubeId),
-			DateAdded:   date_add,
-			Sort:        row.Int(sort),
-			Title:       row.Str(title),
-			Description: row.Str(description),
-			Watchpage:   page,
-			Screenshot:  shot,
+	for rows.Next() {
+		var v Video
+		err = rows.Scan(
+			&v.YouTubeId,
+			&v.DateAdded,
+			&v.Sort,
+			&v.Title,
+			&v.Description,
+			&v.Watchpage,
+			&v.Screenshot,
+		)
+		if err != nil {
+			return
 		}
-		videos = append(videos, video)
+		videos = append(videos, v)
 	}
 
 	return
