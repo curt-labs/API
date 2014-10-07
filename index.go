@@ -82,6 +82,7 @@ func main() {
 		r.Post("/:id", category_ctlr.GetCategory)
 		r.Get("/:id/subs", category_ctlr.SubCategories)
 		r.Get("/:id/parts", category_ctlr.GetParts)
+		r.Post("/:id/parts", category_ctlr.GetParts)
 		r.Get("/:id/parts/:page/:count", category_ctlr.GetParts)
 	})
 
