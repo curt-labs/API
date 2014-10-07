@@ -8,6 +8,7 @@ import (
 	"github.com/go-martini/martini"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 var (
@@ -15,35 +16,50 @@ var (
 )
 
 func GetCategory(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+	var page int
+	var count int
+	var cat products.Category
+	var l products.Lookup
+
 	qs := r.URL.Query()
 	key := qs.Get("key")
 	id, err := strconv.Atoi(params["id"])
-	var page int
-	var count int
 	page, _ = strconv.Atoi(qs.Get("page"))
 	count, _ = strconv.Atoi(qs.Get("count"))
 
-	var cat products.Category
-	if err != nil {
+	// Load Vehicle from Request
+	l.Vehicle = vehicle.LoadVehicle(r)
+
+	specs := make(map[string][]string, 0)
+	r.ParseForm()
+	if _, ignore := NoFilterCategories[cat.ID]; !ignore {
+		for k, v := range r.Form {
+			if strings.ToLower(k) != "key" {
+				if _, ok := specs[k]; !ok {
+					specs[k] = make([]string, 0)
+				}
+				specs[k] = append(specs[k], v...)
+			}
+		}
+	}
+
+	// Get Category
+	if err != nil { // get by title
 		cat, err = products.GetCategoryByTitle(params["id"])
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return ""
 		}
-	} else {
+	} else { // get by id
 		cat.ID = id
-	}
-
-	var l products.Lookup
-	l.Vehicle = vehicle.LoadVehicle(r)
-
-	if err = cat.GetCategory(key, page, count, false, &l.Vehicle); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return ""
+		if err = cat.GetCategory(key, page, count, false, &l.Vehicle, &specs); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return ""
+		}
 	}
 
 	if _, ignore := NoFilterCategories[cat.ID]; !ignore {
-		if filters, err := apifilter.CategoryFilter(cat, nil); err == nil {
+		if filters, err := apifilter.CategoryFilter(cat, &specs); err == nil {
 			cat.Filter = filters
 		}
 	}
@@ -120,10 +136,21 @@ func GetParts(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, para
 		page = page - 1
 	}
 
-	if err := cat.GetParts(key, page, count, nil); err != nil {
+	specs := make(map[string][]string, 0)
+	r.ParseForm()
+	for k, v := range r.Form {
+		if strings.ToLower(k) != "key" {
+			if _, ok := specs[k]; !ok {
+				specs[k] = make([]string, 0)
+			}
+			specs[k] = append(specs[k], v...)
+		}
+	}
+
+	if err := cat.GetParts(key, page, count, nil, &specs); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
 
-	return encoding.Must(enc.Encode(cat.ProductListing.Parts))
+	return encoding.Must(enc.Encode(cat.ProductListing))
 }

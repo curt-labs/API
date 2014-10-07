@@ -8,6 +8,7 @@ import (
 	"github.com/curt-labs/GoAPI/models/products"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
+	"net/http"
 	"sort"
 	"strconv"
 	"strings"
@@ -35,14 +36,20 @@ var (
 	GetCategoryGroup = `select bottom_category_ids(?) as cats`
 )
 
-func CategoryFilter(cat products.Category, specs []interface{}) ([]Options, error) {
+func RenderSelections(r *http.Request) map[string][]string {
+	data := make(map[string][]string, 0)
+
+	return data
+}
+
+func CategoryFilter(cat products.Category, specs *map[string][]string) ([]Options, error) {
 
 	var filtered FilteredOptions
 
 	attrChan := make(chan error)
 
 	go func() {
-		if results, err := filtered.categoryGroupAttributes(cat); err == nil {
+		if results, err := filtered.categoryGroupAttributes(cat, specs); err == nil {
 			filtered = append(filtered, results...)
 		}
 		attrChan <- nil
@@ -62,7 +69,7 @@ func CategoryFilter(cat products.Category, specs []interface{}) ([]Options, erro
 	return filtered, nil
 }
 
-func (filtered FilteredOptions) categoryGroupAttributes(cat products.Category) (FilteredOptions, error) {
+func (filtered FilteredOptions) categoryGroupAttributes(cat products.Category, specs *map[string][]string) (FilteredOptions, error) {
 
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -137,7 +144,10 @@ func (filtered FilteredOptions) categoryGroupAttributes(cat products.Category) (
 	close(attrCh)
 	close(priceCh)
 
-	for _, res := range filterResults {
+	for key, res := range filterResults {
+		if key == "Receiver Tube Size" {
+			log.Println(res.Options)
+		}
 		indexed := make(map[string]int, 0)
 		opts := make(map[string]Option, 0)
 		for i, opt := range res.Options {
@@ -149,6 +159,18 @@ func (filtered FilteredOptions) categoryGroupAttributes(cat products.Category) (
 				opts[opt.Value] = curOpt
 			} else {
 				res.Options = append(res.Options, opt)
+				if specs != nil {
+					for k, vals := range *specs {
+						if strings.ToLower(key) == strings.ToLower(k) {
+							for _, val := range vals {
+								if strings.ToLower(opt.Value) == strings.ToLower(val) {
+									opt.Selected = true
+								}
+							}
+							break
+						}
+					}
+				}
 				opts[opt.Value] = opt
 				indexed[opt.Value] = i
 			}
@@ -165,6 +187,8 @@ func (filtered FilteredOptions) categoryGroupAttributes(cat products.Category) (
 		}
 		if len(res.Options) > 1 {
 			sortutil.AscByField(res.Options, "Value")
+		}
+		if len(res.Options) > 0 {
 			filtered = append(filtered, res)
 		}
 	}
@@ -209,6 +233,7 @@ func categoryAttributes(catID int) (map[string]Options, error) {
 		var val *string
 		var parts *string
 		err = rows.Scan(&key, &val, &parts)
+
 		if err != nil || key == nil || val == nil || parts == nil || strings.Contains(exs, *key) {
 			// We're including the parts nil check here
 			// so we don't display attributes when there

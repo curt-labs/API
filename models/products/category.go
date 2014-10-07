@@ -88,6 +88,16 @@ var (
 		where (p.status = 800 || p.status = 900) && FIND_IN_SET(cp.catID,bottom_category_ids(?))
 		order by p.partID
 		limit ?,?`
+	CategoryPartsFilteredStmt = `select p.partID from Part as p
+		join CatPart as cp on p.partID = cp.partID
+		where (p.status = 800 || p.status = 900) && FIND_IN_SET(cp.catID,bottom_category_ids(?))
+		having (
+			select count(pa.pAttrID) from PartAttribute as pa
+			where pa.partID = cp.partID && FIND_IN_SET(pa.field,?) &&
+			FIND_IN_SET(pa.value,?)
+		)
+		order by p.partID
+		limit ?,?`
 	CategoryPartCountStmt = `
 		select count(p.partID) as count from Part as p
 		join CatPart as cp on p.partID = cp.partID
@@ -286,7 +296,7 @@ func TopTierCategories(key string) (cats []Category, err error) {
 		err := catRows.Scan(&cat.ID)
 		if err == nil {
 			go func(c Category) {
-				err := c.GetCategory(key, 0, 0, true, nil)
+				err := c.GetCategory(key, 0, 0, true, nil, nil)
 				if err == nil {
 					cats = append(cats, c)
 				}
@@ -431,7 +441,7 @@ func (c *Category) GetSubCategories() (cats []Category, err error) {
 	return
 }
 
-func (c *Category) GetCategory(key string, page int, count int, ignoreParts bool, v *Vehicle) error {
+func (c *Category) GetCategory(key string, page int, count int, ignoreParts bool, v *Vehicle, specs *map[string][]string) error {
 
 	if c.ID == 0 {
 		return fmt.Errorf("error: %s", "invalid category reference")
@@ -480,7 +490,7 @@ func (c *Category) GetCategory(key string, page int, count int, ignoreParts bool
 	partChan := make(chan *PaginatedProductListing)
 	if !ignoreParts {
 		go func() {
-			c.GetParts(key, page, count, v)
+			c.GetParts(key, page, count, v, specs)
 			partChan <- c.ProductListing
 		}()
 	} else {
@@ -542,7 +552,7 @@ func (c *Category) GetContent() (content []Content, err error) {
 	return
 }
 
-func (c *Category) GetParts(key string, page int, count int, v *Vehicle) error {
+func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *map[string][]string) error {
 
 	c.ProductListing = &PaginatedProductListing{}
 	if c.ID == 0 {
@@ -560,7 +570,6 @@ func (c *Category) GetParts(key string, page int, count int, v *Vehicle) error {
 		parts := <-vehicleChan
 
 		for _, p := range parts {
-			log.Println(p.ID)
 			for _, partCat := range p.Categories {
 				if partCat.ID == c.ID {
 					c.ProductListing.Parts = append(c.ProductListing.Parts, p)
@@ -595,7 +604,7 @@ func (c *Category) GetParts(key string, page int, count int, v *Vehicle) error {
 		err = json.Unmarshal(part_bytes, &parts)
 	}
 
-	if err != nil || len(parts) == 0 {
+	if err != nil || len(parts) == 0 || specs != nil {
 		ids := make([]int, 0)
 		db, err := sql.Open("mysql", database.ConnectionString())
 		if err != nil {
@@ -603,14 +612,33 @@ func (c *Category) GetParts(key string, page int, count int, v *Vehicle) error {
 		}
 		defer db.Close()
 
-		stmt, err := db.Prepare(CategoryPartsStmt)
-		if err != nil {
-			return err
-		}
-		defer stmt.Close()
+		var rows *sql.Rows
 
-		rows, err := stmt.Query(c.ID, page, count)
-		if err != nil {
+		if specs != nil && len(*specs) > 0 {
+			keys := make([]string, 0)
+			values := make([]string, 0)
+			for k, vals := range *specs {
+				keys = append(keys, k)
+				values = append(values, vals...)
+			}
+
+			stmt, err := db.Prepare(CategoryPartsFilteredStmt)
+			if err != nil {
+				return err
+			}
+			defer stmt.Close()
+
+			rows, err = stmt.Query(c.ID, strings.Join(keys, ","), strings.Join(values, ","), page, count)
+		} else {
+			stmt, err := db.Prepare(CategoryPartsStmt)
+			if err != nil {
+				return err
+			}
+			defer stmt.Close()
+			rows, err = stmt.Query(c.ID, page, count)
+		}
+
+		if err != nil || rows == nil {
 			return err
 		}
 		defer rows.Close()
