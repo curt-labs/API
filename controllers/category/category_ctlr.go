@@ -108,6 +108,7 @@ func SubCategories(w http.ResponseWriter, r *http.Request, enc encoding.Encoder,
 func GetParts(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	key := params["key"]
 	catID, err := strconv.Atoi(params["id"])
+	qs := r.URL.Query()
 
 	var cat products.Category
 	if err != nil {
@@ -125,17 +126,8 @@ func GetParts(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, para
 		cat.ID = catID
 	}
 
-	count, err := strconv.Atoi(params["count"])
-	if err != nil {
-		count = 5
-	}
-
-	page, err := strconv.Atoi(params["page"])
-	if err != nil {
-		page = 0
-	} else {
-		page = page - 1
-	}
+	count, _ := strconv.Atoi(qs.Get("count"))
+	page, _ := strconv.Atoi(qs.Get("page"))
 
 	specs := make(map[string][]string, 0)
 	r.ParseForm()

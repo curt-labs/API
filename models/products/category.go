@@ -645,6 +645,7 @@ func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *
 			}
 			defer stmt.Close()
 
+			log.Println(page)
 			rows, err = stmt.Query(c.ID, page, count)
 		}
 
