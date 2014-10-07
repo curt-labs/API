@@ -25,15 +25,15 @@ func generateAPIkey() (apiKey string) {
 	return apiKey
 }
 
-// func TestTopTierCategories(t *testing.T) {
-// 	Convey("Test TopTierCategories()", t, func() {
-// 		// cats, err := TopTierCategories("9300f7bc-2ca6-11e4-8758-42010af0fd79")
-// 		cats, err := TopTierCategories(generateAPIkey())
-// 		So(cats, ShouldNotBeNil)
-// 		So(err, ShouldBeNil)
-// 		So(cats, ShouldNotBeEmpty)
-// 	})
-// }
+func TestTopTierCategories(t *testing.T) {
+	Convey("Test TopTierCategories()", t, func() {
+		// cats, err := TopTierCategories("9300f7bc-2ca6-11e4-8758-42010af0fd79")
+		cats, err := TopTierCategories(generateAPIkey())
+		So(cats, ShouldNotBeNil)
+		So(err, ShouldBeNil)
+		So(cats, ShouldNotBeEmpty)
+	})
+}
 
 func TestGetCategoryByTitle(t *testing.T) {
 
