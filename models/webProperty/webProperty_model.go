@@ -284,18 +284,7 @@ func (w *WebProperty) Create() (err error) {
 }
 
 func (w *WebProperty) Update() (err error) {
-	//create/udpated type
-	if w.WebPropertyType.ID > 0 {
-		err = w.WebPropertyType.Update()
-		if err != nil {
-			return err
-		}
-	} else {
-		err = w.WebPropertyType.Create()
-		if err != nil {
-			return err
-		}
-	}
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -316,16 +305,9 @@ func (w *WebProperty) Update() (err error) {
 	//create/update web properties check
 	for _, req := range w.WebPropertyRequirements {
 		req.WebPropID = w.ID
-		if req.ID > 0 {
-			err = req.Update()
-			if err != nil {
-				return err
-			}
-		} else {
-			err = req.Create()
-			if err != nil {
-				return err
-			}
+		err = req.DeleteJoin()
+		if err != nil {
+			return err
 		}
 		err = req.CreateJoin()
 		if err != nil {
