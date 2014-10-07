@@ -98,6 +98,12 @@ func main() {
 		r.Get("/:part", part_ctlr.Get)
 		r.Get("", part_ctlr.All)
 	})
+	m.Group("/price", func(r martini.Router) {
+		r.Get("/:id", internalCors, part_ctlr.GetPrice)
+		r.Put("", internalCors, part_ctlr.SavePrice)
+		r.Post("/:id", internalCors, part_ctlr.SavePrice)
+		r.Delete("/:id", internalCors, part_ctlr.DeletePrice)
+	})
 
 	m.Group("/customer", func(r martini.Router) {
 		r.Post("", customer_ctlr.GetCustomer)
