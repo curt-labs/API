@@ -179,10 +179,14 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 	var logoUrl, searchUrl, websiteUrl, mapIconUrl, mapShadowUrl *string
 	var salesRep, salesRepCode *string
 
+	var stateID, countryID *int
+	var stateName, stateAbbr, countryName, countryAbbr *string
+	var typeID, tierID, tierSort *int
+	var dealerType, dealerLabel, tier *string
+	var typeOnline, typeShow *bool
+
 	c.State = &geography.State{}
 	c.State.Country = &geography.Country{}
-	var stateId, countryId *int
-	var state, stateAbr, country, countryAbr *string
 
 	err = stmt.QueryRow(u.Id).Scan(
 		&c.Id,
@@ -200,18 +204,18 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 		&logoUrl,
 		&websiteUrl,
 		&c.PostalCode,
-		&stateId,
-		&state,
-		&stateAbr,
-		&countryId,
-		&country,
-		&countryAbr,
-		&c.DealerType.Id,
-		&c.DealerType.Type,
-		&c.DealerType.Online,
-		&c.DealerType.Show,
-		&c.DealerType.Label,
-		&c.DealerTier.Id,
+		&stateID,
+		&stateName,
+		&stateAbbr,
+		&countryID,
+		&countryName,
+		&countryAbbr,
+		&typeID,
+		&dealerType,
+		&typeOnline,
+		&typeShow,
+		&dealerLabel,
+		&tierID,
 		&c.DealerTier.Tier,
 		&c.DealerTier.Sort,
 		&mapIconId,
@@ -227,23 +231,35 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 		return
 	}
 
-	if stateId != nil {
-		c.State.Id = *stateId
+	if stateID != nil && *stateID > 0 && stateName != nil && stateAbbr != nil {
+		c.State = &geography.State{
+			Id:           *stateID,
+			State:        *stateName,
+			Abbreviation: *stateAbbr,
+		}
+		if countryID != nil && *countryID > 0 && countryName != nil && countryAbbr != nil {
+			c.State.Country = &geography.Country{
+				Id:           *countryID,
+				Country:      *countryName,
+				Abbreviation: *countryAbbr,
+			}
+		}
 	}
-	if state != nil {
-		c.State.State = *state
+
+	c.DealerType = DealerType{}
+	c.DealerTier = DealerTier{}
+	if tierID != nil && tierSort != nil && tier != nil {
+		c.DealerTier.Id = *tierID
+		c.DealerTier.Tier = *tier
+		c.DealerTier.Sort = *tierSort
 	}
-	if stateAbr != nil {
-		c.State.Abbreviation = *stateAbr
-	}
-	if countryId != nil {
-		c.State.Country.Id = *countryId
-	}
-	if country != nil {
-		c.State.Country.Country = *country
-	}
-	if countryAbr != nil {
-		c.State.Country.Abbreviation = *countryAbr
+	if typeID != nil && dealerType != nil && dealerLabel != nil &&
+		typeOnline != nil && typeShow != nil {
+		c.DealerType.Id = *typeID
+		c.DealerType.Type = *dealerType
+		c.DealerType.Label = *dealerLabel
+		c.DealerType.Online = *typeOnline
+		c.DealerType.Show = *typeShow
 	}
 
 	if searchUrl != nil {
