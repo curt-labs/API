@@ -21,8 +21,8 @@ type Video struct {
 	Thumbnail    string
 	Channels     Channels
 	Files        CdnFiles
-	Categories   []CatAssociation
-	Parts        []PartAssociation
+	Categories   []Category
+	Parts        []products.Part
 	WebsiteId    int //TODO
 }
 type Videos []Video
@@ -74,6 +74,11 @@ type VideoType struct {
 	Icon string
 }
 
+//TODO categories should be their own entity
+type Category struct {
+	ID    int
+	Title string
+}
 type CatAssociation struct {
 	CatID    int
 	CatTitle string
@@ -109,8 +114,21 @@ var (
 						LEFT JOIN CdnFileType AS cft ON cft.ID = cf.typeID 
 						LEFT JOIN VideoCdnFiles AS vcf ON vcf.cdnID = cf.ID 
 						WHERE vcf.videoID = ? `
+
+	createVideo             = `INSERT INTO VideoNew (subjectTypeID, title, description, dateAdded, dateModified, isPrimary, thumbnail) VALUES(?, ?, ?, ?, ?, ?, ?)`
+	joinVideoCdn            = `INSERT INTO VideoCdnFiles(cdnID, videoID) VALUES(?,?)`
+	joinVideoChannel        = `INSERT INTO VideoChannels(videoID, channelID) VALUES(?,?)`
+	joinVideoPart           = `INSERT INTO VideoJoin(videoID, partID, catID, websiteID, isPrimary) VALUES(?,?,0,?,?)`
+	joinVideoCategory       = `INSERT INTO VideoJoin(videoID, partID, catID, websiteID, isPrimary) VALUES(?,0,?,?,?)`
+	deleteVideoCdnJoin      = `DELETE FROM VideoCdnFiles WHERE videoID = ?`
+	deleteVideoChannelJoin  = `DELETE FROM VideoChannels WHERE videoID = ?`
+	deleteVideoPartJoin     = `DELETE FROM VideoJoin WHERE videoID = ? AND partID = ?`
+	deleteVideoCategoryJoin = `DELETE FROM VideoJoin WHERE videoID = ? AND catID = ?`
+	updateVideo             = `UPDATE videoNew SET subjectTypeID = ?, title = ?, description = ?, isPrimary = ?, thumbnail = ? WHERE ID = ?`
+	deleteVideo             = `DELETE FROM videoNew WHERE ID = ?`
 )
 
+//Base Video
 func (v *Video) Get() (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -232,6 +250,429 @@ func (v *Video) GetCdnFiles() (cdns CdnFiles, err error) {
 	}
 
 	return cdns, err
+}
+
+func (v *Video) Create() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(createVideo)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	res, err := stmt.Exec(v.VideoType.ID, v.Title, v.Description, v.DateAdded, v.DateModified, v.IsPrimary, v.Thumbnail)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+	id, err := res.LastInsertId()
+	v.ID = int(id)
+
+	// create joins
+	fChan := make(chan int)
+	chChan := make(chan int)
+	catChan := make(chan int)
+	pChan := make(chan int)
+
+	go func() (err error) {
+		if len(v.Files) > 0 {
+			for _, file := range v.Files {
+				err = v.CreateJoinFile(file)
+			}
+		}
+		fChan <- 1
+		return err
+	}()
+	go func() (err error) {
+		if len(v.Channels) > 0 {
+			for _, channel := range v.Channels {
+				err = v.CreateJoinChannel(channel)
+			}
+		}
+		chChan <- 1
+		return err
+	}()
+	go func() (err error) {
+		if len(v.Categories) > 0 {
+			for _, cat := range v.Categories {
+				err = v.CreateJoinCategory(cat)
+			}
+		}
+		catChan <- 1
+		return err
+	}()
+	go func() (err error) {
+		if len(v.Parts) > 0 {
+			for _, part := range v.Parts {
+				err = v.CreateJoinPart(part)
+			}
+		}
+		pChan <- 1
+		return err
+	}()
+
+	<-fChan
+	<-chChan
+	<-catChan
+	<-pChan
+
+	return err
+}
+
+func (v *Video) Update() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(updateVideo)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	res, err := stmt.Exec(v.VideoType.ID, v.Title, v.Description, v.IsPrimary, v.Thumbnail, v.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+	id, err := res.LastInsertId()
+	v.ID = int(id)
+
+	// delete and create joins
+	fChan := make(chan int)
+	chChan := make(chan int)
+	catChan := make(chan int)
+	pChan := make(chan int)
+
+	go func() (err error) {
+		err = v.DeleteJoinFiles()
+		if err != nil {
+			return err
+		}
+		if len(v.Files) > 0 {
+			for _, file := range v.Files {
+				err = v.CreateJoinFile(file)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		fChan <- 1
+		return nil
+	}()
+	go func() (err error) {
+		err = v.DeleteJoinChannels()
+		if err != nil {
+			return err
+		}
+		if len(v.Channels) > 0 {
+			for _, channel := range v.Channels {
+				err = v.CreateJoinChannel(channel)
+				if err != nil {
+					return err
+				}
+			}
+
+		}
+		chChan <- 1
+		return nil
+	}()
+	go func() (err error) {
+		if len(v.Categories) > 0 {
+			for _, cat := range v.Categories {
+				err = v.DeleteJoinCategory(cat)
+				if err != nil {
+					return err
+				}
+				err = v.CreateJoinCategory(cat)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		catChan <- 1
+		return nil
+	}()
+	go func() (err error) {
+		if len(v.Parts) > 0 {
+			for _, part := range v.Parts {
+				err = v.DeleteJoinPart(part)
+				if err != nil {
+					return err
+				}
+				err = v.CreateJoinPart(part)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		pChan <- 1
+		return nil
+	}()
+	<-fChan
+	<-chChan
+	<-catChan
+	<-pChan
+
+	return err
+}
+
+func (v *Video) Delete() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(deleteVideo)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	res, err := stmt.Exec(v.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+	id, err := res.LastInsertId()
+	v.ID = int(id)
+
+	//delete and create joins
+	fChan := make(chan int)
+	chChan := make(chan int)
+	catChan := make(chan int)
+	pChan := make(chan int)
+
+	go func() (err error) {
+		if len(v.Files) > 0 {
+			err = v.DeleteJoinFiles()
+			if err != nil {
+				return err
+			}
+		}
+		fChan <- 1
+		return nil
+	}()
+	go func() (err error) {
+		if len(v.Channels) > 0 {
+			err = v.DeleteJoinChannels()
+			if err != nil {
+				return err
+			}
+		}
+		chChan <- 1
+		return nil
+	}()
+	go func() (err error) {
+		if len(v.Categories) > 0 {
+			for _, cat := range v.Categories {
+				err = v.DeleteJoinCategory(cat)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		catChan <- 1
+		return nil
+	}()
+	go func() (err error) {
+		if len(v.Parts) > 0 {
+			for _, part := range v.Parts {
+				err = v.DeleteJoinPart(part)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		pChan <- 1
+		return nil
+	}()
+	<-fChan
+	<-chChan
+	<-catChan
+	<-pChan
+
+	return err
+}
+
+func (v *Video) CreateJoinFile(f CdnFile) (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(joinVideoCdn)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(f.ID, v.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+	return err
+}
+
+//Youtube
+func (v *Video) CreateJoinChannel(channel Channel) (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(joinVideoChannel)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(channel.ID, v.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+	return err
+}
+
+func (v *Video) CreateJoinPart(p products.Part) (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(joinVideoPart)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(v.ID, p.ID, v.WebsiteId, v.IsPrimary)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+	return err
+}
+
+//HTML5
+func (v *Video) CreateJoinCategory(c Category) (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(joinVideoCategory)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(v.ID, c.ID, v.WebsiteId, v.IsPrimary)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+	return err
+}
+
+func (v *Video) DeleteJoinFiles() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(deleteVideoCdnJoin)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(v.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+	return err
+}
+
+//Youtube
+func (v *Video) DeleteJoinChannels() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(deleteVideoChannelJoin)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(v.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+	return err
+}
+
+func (v *Video) DeleteJoinPart(p products.Part) (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(deleteVideoPartJoin)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(v.ID, p.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+	return err
+}
+
+//HTML5
+func (v *Video) DeleteJoinCategory(c Category) (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(deleteVideoCategoryJoin)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(v.ID, c.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+	return err
 }
 
 //Populates video and video type fields
