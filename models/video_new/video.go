@@ -80,18 +80,6 @@ type Category struct {
 	Title string
 }
 
-// type CatAssociation struct {
-// 	CatID    int
-// 	CatTitle string
-// 	ParentID int
-// }
-
-// type PartAssociation struct {
-// 	PartID    int
-// 	ShortDesc string
-// 	IsPrimary bool
-// }
-
 const (
 	videoFields       = ` v.ID, v.subjectTypeID, v.title, v.description, v.dateAdded, v.dateModified, v.isPrimary, v.thumbnail `
 	videoTypeFields   = `  vt.name, vt.icon `
@@ -106,11 +94,10 @@ var (
 	getAllVideos  = `SELECT ` + videoFields + `, ` + videoTypeFields + ` FROM VideoNew AS v LEFT JOIN videoType AS vt ON vt.vTypeID = v.subjectTypeID`
 	getPartVideos = `SELECT ` + videoFields + `, ` + videoTypeFields + ` FROM VideoNew AS v LEFT JOIN videoType AS vt ON vt.vTypeID = v.subjectTypeID 
 						LEFT JOIN VideoJoin AS vj on vj.videoID = v.ID WHERE vj.partID = ? ORDER BY v.title `
-	getVideoChannels = `SELECT ` + channelFields + `, ` + channelTypeFields + ` FROM VideoNew AS v 
-						LEFT JOIN VideoChannels AS vc ON vc.videoID = v.ID 
-						LEFT JOIN Channel AS c ON c.ID = vc.channelID
-						LEFT JOIN ChannelType AS ct ON ct.ID = c.typeID 
-						WHERE c.ID = ?`
+	getVideoChannels = `SELECT ` + channelFields + `, ` + channelTypeFields + ` FROM VideoChannels AS vc 
+					LEFT JOIN Channel AS c on c.ID = vc.channelID
+					LEFT JOIN ChannelType AS ct ON ct.ID = c.typeID
+					WHERE vc.videoID = ?`
 	getVideoCdns = `SELECT ` + cdnFileFields + `, ` + cdnFileTypeFields + ` FROM CdnFile AS cf 
 						LEFT JOIN CdnFileType AS cft ON cft.ID = cf.typeID 
 						LEFT JOIN VideoCdnFiles AS vcf ON vcf.cdnID = cf.ID 
@@ -120,7 +107,7 @@ var (
 	updateVideo             = `UPDATE videoNew SET subjectTypeID = ?, title = ?, description = ?, isPrimary = ?, thumbnail = ? WHERE ID = ?`
 	deleteVideo             = `DELETE FROM videoNew WHERE ID = ?`
 	joinVideoCdn            = `INSERT INTO VideoCdnFiles(cdnID, videoID) VALUES(?,?)`
-	joinVideoChannel        = `INSERT INTO VideoChannels(videoID, channelID) VALUES(?,?)`
+	joinVideoChannel        = `INSERT INTO VideoChannels( channelID, videoID) VALUES(?,?)`
 	joinVideoPart           = `INSERT INTO VideoJoin(videoID, partID, catID, websiteID, isPrimary) VALUES(?,?,0,?,?)`
 	joinVideoCategory       = `INSERT INTO VideoJoin(videoID, partID, catID, websiteID, isPrimary) VALUES(?,0,?,?,?)`
 	deleteVideoCdnJoin      = `DELETE FROM VideoCdnFiles WHERE videoID = ?`
@@ -164,11 +151,35 @@ func (v *Video) Get() (err error) {
 	}
 	defer stmt.Close()
 	row := stmt.QueryRow(v.ID)
-	ch := make(chan Video)
+
+	ch := make(chan *Video)
+
 	go populateVideo(row, ch)
-	*v = <-ch
+	v = <-ch
 
 	return err
+}
+
+func populateVideo(row *sql.Row, ch chan *Video) {
+	var v Video
+	err := row.Scan(
+		&v.ID,
+		&v.VideoType.ID,
+		&v.Title,
+		&v.Description,
+		&v.DateAdded,
+		&v.DateModified,
+		&v.IsPrimary,
+		&v.Thumbnail,
+		&v.VideoType.Name,
+		&v.VideoType.Icon,
+	)
+	if err != nil {
+		ch <- &v
+		return
+	}
+	ch <- &v
+	return
 }
 
 func GetAllVideos() (vs Videos, err error) {
@@ -238,15 +249,39 @@ func (v *Video) GetChannels() (chs Channels, err error) {
 	if err != nil {
 		return chs, err
 	}
-
-	ch := make(chan Channels)
-	go populateChannels(rows, ch)
-	chs = <-ch
+	chs, err = populateChannels(rows)
+	if err != nil {
+		return chs, err
+	}
 	if len(chs) == 0 {
 		err = sql.ErrNoRows
 	}
 
 	return chs, err
+}
+func populateChannels(rows *sql.Rows) (cs Channels, err error) {
+	var c Channel
+	for rows.Next() {
+		err := rows.Scan(
+			&c.ID,
+			&c.Type.ID,
+			&c.Link,
+			&c.EmbedCode,
+			&c.ForiegnID,
+			&c.DateAdded,
+			&c.DateModified,
+			&c.Title,
+			&c.Description,
+			&c.Type.Name,
+			&c.Type.Description,
+		)
+		if err != nil {
+			return cs, err
+		}
+		cs = append(cs, c)
+	}
+
+	return cs, err
 }
 
 func (v *Video) GetCdnFiles() (cdns CdnFiles, err error) {
@@ -264,15 +299,46 @@ func (v *Video) GetCdnFiles() (cdns CdnFiles, err error) {
 	if err != nil {
 		return cdns, err
 	}
-
-	ch := make(chan CdnFiles)
-	go populateCdns(rows, ch)
-	cdns = <-ch
-	if len(cdns) == 0 {
-		err = sql.ErrNoRows
-	}
-
+	cdns, err = populateCdns(rows)
 	return cdns, err
+}
+
+//Populates channels and channel type fields
+func populateCdns(rows *sql.Rows) (cs CdnFiles, err error) {
+	var c CdnFile
+	var last, object, bucket, size *string
+	for rows.Next() {
+		err := rows.Scan(
+			&c.ID,
+			&c.Type.ID,
+			&c.Path,
+			&c.DateAdded,
+			&last,
+			&bucket,
+			&object,
+			&size,
+			&c.Type.MimeType,
+			&c.Type.Title,
+			&c.Type.Description,
+		)
+		if err != nil {
+			return cs, err
+		}
+		if last != nil {
+			c.LastUploaded = *last
+		}
+		if bucket != nil {
+			c.Bucket = *bucket
+		}
+		if object != nil {
+			c.ObjectName = *object
+		}
+		if size != nil {
+			c.FileSize = *size
+		}
+		cs = append(cs, c)
+	}
+	return cs, err
 }
 
 func (v *Video) Create() (err error) {
@@ -360,14 +426,12 @@ func (v *Video) Update() (err error) {
 		return err
 	}
 	defer stmt.Close()
-	res, err := stmt.Exec(v.VideoType.ID, v.Title, v.Description, v.IsPrimary, v.Thumbnail, v.ID)
+	_, err = stmt.Exec(v.VideoType.ID, v.Title, v.Description, v.IsPrimary, v.Thumbnail, v.ID)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 	tx.Commit()
-	id, err := res.LastInsertId()
-	v.ID = int(id)
 
 	// delete and create joins
 	fChan := make(chan int)
@@ -460,14 +524,12 @@ func (v *Video) Delete() (err error) {
 		return err
 	}
 	defer stmt.Close()
-	res, err := stmt.Exec(v.ID)
+	_, err = stmt.Exec(v.ID)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 	tx.Commit()
-	id, err := res.LastInsertId()
-	v.ID = int(id)
 
 	//delete and create joins
 	fChan := make(chan int)
@@ -1165,29 +1227,6 @@ func (c *ChannelType) Delete() (err error) {
 }
 
 //Populates video and video type fields
-func populateVideo(row *sql.Row, ch chan Video) {
-	var v Video
-	err := row.Scan(
-		&v.ID,
-		&v.VideoType.ID,
-		&v.Title,
-		&v.Description,
-		&v.DateAdded,
-		&v.DateModified,
-		&v.IsPrimary,
-		&v.Thumbnail,
-		&v.VideoType.Name,
-		&v.VideoType.Icon,
-	)
-	if err != nil {
-		ch <- Video{}
-		return
-	}
-	ch <- v
-	return
-}
-
-//Populates video and video type fields
 func populateVideos(rows *sql.Rows, ch chan Videos) {
 	var v Video
 	var vs Videos
@@ -1212,60 +1251,4 @@ func populateVideos(rows *sql.Rows, ch chan Videos) {
 	}
 	ch <- vs
 	return
-}
-
-//Populates channels and channel type fields
-func populateChannels(rows *sql.Rows, ch chan Channels) {
-	var c Channel
-	var cs Channels
-	for rows.Next() {
-		err := rows.Scan(
-			&c.ID,
-			&c.Type.ID,
-			&c.Link,
-			&c.EmbedCode,
-			&c.ForiegnID,
-			&c.DateAdded,
-			&c.DateModified,
-			&c.Title,
-			&c.Description,
-			&c.Type.Name,
-			&c.Type.Description,
-		)
-		if err != nil {
-			ch <- Channels{}
-			return
-		}
-		cs = append(cs, c)
-	}
-	ch <- cs
-	return
-}
-
-//Populates channels and channel type fields
-func populateCdns(rows *sql.Rows, ch chan CdnFiles) (err error) {
-	var c CdnFile
-	var cs CdnFiles
-	for rows.Next() {
-		err := rows.Scan(
-			&c.ID,
-			&c.Type.ID,
-			&c.Path,
-			&c.DateAdded,
-			&c.LastUploaded,
-			&c.Bucket,
-			&c.ObjectName,
-			&c.FileSize,
-			&c.Type.MimeType,
-			&c.Type.Title,
-			&c.Type.Description,
-		)
-		if err != nil {
-			ch <- CdnFiles{}
-			return err
-		}
-		cs = append(cs, c)
-	}
-	ch <- cs
-	return nil
 }
