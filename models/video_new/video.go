@@ -79,17 +79,18 @@ type Category struct {
 	ID    int
 	Title string
 }
-type CatAssociation struct {
-	CatID    int
-	CatTitle string
-	ParentID int
-}
 
-type PartAssociation struct {
-	PartID    int
-	ShortDesc string
-	IsPrimary bool
-}
+// type CatAssociation struct {
+// 	CatID    int
+// 	CatTitle string
+// 	ParentID int
+// }
+
+// type PartAssociation struct {
+// 	PartID    int
+// 	ShortDesc string
+// 	IsPrimary bool
+// }
 
 const (
 	videoFields       = ` v.ID, v.subjectTypeID, v.title, v.description, v.dateAdded, v.dateModified, v.isPrimary, v.thumbnail `
@@ -116,6 +117,8 @@ var (
 						WHERE vcf.videoID = ? `
 
 	createVideo             = `INSERT INTO VideoNew (subjectTypeID, title, description, dateAdded, dateModified, isPrimary, thumbnail) VALUES(?, ?, ?, ?, ?, ?, ?)`
+	updateVideo             = `UPDATE videoNew SET subjectTypeID = ?, title = ?, description = ?, isPrimary = ?, thumbnail = ? WHERE ID = ?`
+	deleteVideo             = `DELETE FROM videoNew WHERE ID = ?`
 	joinVideoCdn            = `INSERT INTO VideoCdnFiles(cdnID, videoID) VALUES(?,?)`
 	joinVideoChannel        = `INSERT INTO VideoChannels(videoID, channelID) VALUES(?,?)`
 	joinVideoPart           = `INSERT INTO VideoJoin(videoID, partID, catID, websiteID, isPrimary) VALUES(?,?,0,?,?)`
@@ -124,8 +127,28 @@ var (
 	deleteVideoChannelJoin  = `DELETE FROM VideoChannels WHERE videoID = ?`
 	deleteVideoPartJoin     = `DELETE FROM VideoJoin WHERE videoID = ? AND partID = ?`
 	deleteVideoCategoryJoin = `DELETE FROM VideoJoin WHERE videoID = ? AND catID = ?`
-	updateVideo             = `UPDATE videoNew SET subjectTypeID = ?, title = ?, description = ?, isPrimary = ?, thumbnail = ? WHERE ID = ?`
-	deleteVideo             = `DELETE FROM videoNew WHERE ID = ?`
+
+	//crud
+	getChannel        = "SELECT ID, typeID, link, embedCode, foriegnID, dateAdded, dateModified, title, `desc` FROM Channel WHERE ID = ?"
+	createChannel     = "INSERT INTO Channel (typeID, link, embedCode, foriegnID, dateAdded, title, `desc`) VALUES (?,?,?,?,?,?,?)"
+	updateChannel     = "UPDATE Channel SET typeID = ?, link = ?, embedCode = ?, foriegnID = ?, title = ?, `desc` = ? WHERE ID = ?"
+	deleteChannel     = "DELETE FROM Channel WHERE ID = ?"
+	getCdn            = `SELECT ID, typeID, path, dateAdded, dateModified, lastUploaded, bucket, objectName, fileSize FROM CdnFile WHERE ID = ?`
+	createCdn         = `INSERT INTO CdnFile (typeID, path, dateAdded, lastUploaded, bucket, objectName, fileSize) VALUES (?,?,?,?,?,?,?)`
+	updateCdn         = `UPDATE CdnFile SET typeID = ?, path = ?, lastUploaded = ?, bucket = ?, objectName = ?, fileSize = ? WHERE ID = ?`
+	deleteCdn         = `DELETE FROM CdnFile WHERE ID = ?`
+	getCdnType        = `SELECT ID, mimeType, title, description FROM CdnFileType WHERE ID = ?`
+	createCdnType     = `INSERT INTO CdnFileType (mimeType, title, description) VALUES(?,?,?)`
+	updateCdnType     = `UPDATE CdnFileType SET mimeType = ?, title = ?, description = ? WHERE ID = ?`
+	deleteCdnType     = `DELETE FROM CdnFileType WHERE ID = ?`
+	getVideoType      = `SELECT vTypeID, name, icon FROM VideoType WHERE vTypeID = ?`
+	createVideoType   = `INSERT INTO VideoType (name, icon) VALUES (?,?)`
+	updateVideoType   = `UPDATE VideoType SET name = ?, icon = ? WHERE vTypeID = ?`
+	deleteVideoType   = `DELETE FROM VideoType WHERE vTypeID = ?`
+	getChannelType    = `SELECT ID, name, description FROM ChannelType WHERE ID = ?`
+	createChannelType = `INSERT INTO ChannelType (name, description) VALUES (?,?)`
+	updateChannelType = `UPDATE ChannelType SET name = ?, description = ? WHERE ID = ?`
+	deleteChannelType = `DELETE FROM ChannelType WHERE ID = ?`
 )
 
 //Base Video
@@ -264,6 +287,7 @@ func (v *Video) Create() (err error) {
 		return err
 	}
 	defer stmt.Close()
+	v.DateAdded = time.Now()
 	res, err := stmt.Exec(v.VideoType.ID, v.Title, v.Description, v.DateAdded, v.DateModified, v.IsPrimary, v.Thumbnail)
 	if err != nil {
 		tx.Rollback()
@@ -672,6 +696,471 @@ func (v *Video) DeleteJoinCategory(c Category) (err error) {
 		return err
 	}
 	tx.Commit()
+	return err
+}
+
+func (c *Channel) Get() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(getChannel)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	err = stmt.QueryRow(c.ID).Scan(
+		&c.ID,
+		&c.Type.ID,
+		&c.Link,
+		&c.EmbedCode,
+		&c.ForiegnID,
+		&c.DateAdded,
+		&c.DateModified,
+		&c.Title,
+		&c.Description,
+	)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+func (c *Channel) Create() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(createChannel)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	c.DateAdded = time.Now()
+	res, err := stmt.Exec(c.Type.ID, c.Link, c.EmbedCode, c.ForiegnID, c.DateAdded, c.Title, c.Description)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	id, err := res.LastInsertId()
+	c.ID = int(id)
+	return err
+}
+
+func (c *Channel) Update() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(updateChannel)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(c.Type.ID, c.Link, c.EmbedCode, c.ForiegnID, c.Title, c.Description, c.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	return err
+}
+func (c *Channel) Delete() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(deleteChannel)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(c.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	return err
+}
+
+func (c *CdnFile) Get() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(getCdn)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	err = stmt.QueryRow(c.ID).Scan(
+		&c.ID,
+		&c.Type.ID,
+		&c.Path,
+		&c.DateAdded,
+		&c.DateModified,
+		&c.LastUploaded,
+		&c.Bucket,
+		&c.ObjectName,
+		&c.FileSize,
+	)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+func (c *CdnFile) Create() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(createCdn)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	c.DateAdded = time.Now()
+	res, err := stmt.Exec(c.Type.ID, c.Path, c.DateAdded, c.LastUploaded, c.Bucket, c.ObjectName, c.FileSize)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	id, err := res.LastInsertId()
+	c.ID = int(id)
+	return err
+}
+
+func (c *CdnFile) Update() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(updateCdn)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(c.Type.ID, c.Path, c.LastUploaded, c.Bucket, c.ObjectName, c.FileSize, c.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	return err
+}
+func (c *CdnFile) Delete() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(deleteCdn)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(c.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	return err
+}
+
+func (c *CdnFileType) Get() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(getCdnType)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	err = stmt.QueryRow(c.ID).Scan(
+		&c.ID,
+		&c.MimeType,
+		&c.Title,
+		&c.Description,
+	)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+func (c *CdnFileType) Create() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(createCdnType)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	res, err := stmt.Exec(c.MimeType, c.Title, c.Description)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	id, err := res.LastInsertId()
+	c.ID = int(id)
+	return err
+}
+
+func (c *CdnFileType) Update() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(updateCdnType)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(c.MimeType, c.Title, c.Description, c.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	return err
+}
+func (c *CdnFileType) Delete() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(deleteCdnType)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(c.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	return err
+}
+
+func (c *VideoType) Get() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(getVideoType)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	err = stmt.QueryRow(c.ID).Scan(
+		&c.ID,
+		&c.Name,
+		&c.Icon,
+	)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+func (c *VideoType) Create() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(createVideoType)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	res, err := stmt.Exec(c.Name, c.Icon)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	id, err := res.LastInsertId()
+	c.ID = int(id)
+	return err
+}
+
+func (c *VideoType) Update() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(updateVideoType)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(c.Name, c.Icon, c.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	return err
+}
+func (c *VideoType) Delete() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(deleteVideoType)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(c.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	return err
+}
+
+func (c *ChannelType) Get() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(getChannelType)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	err = stmt.QueryRow(c.ID).Scan(
+		&c.ID,
+		&c.Name,
+		&c.Description,
+	)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+func (c *ChannelType) Create() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(createChannelType)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	res, err := stmt.Exec(c.Name, c.Description)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	id, err := res.LastInsertId()
+	c.ID = int(id)
+	return err
+}
+
+func (c *ChannelType) Update() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(updateChannelType)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(c.Name, c.Description, c.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	return err
+}
+func (c *ChannelType) Delete() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(deleteChannelType)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(c.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
 	return err
 }
 

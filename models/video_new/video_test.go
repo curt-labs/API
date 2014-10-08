@@ -66,7 +66,7 @@ func getFileId() (id int) {
 	return id
 }
 
-func TestSite_New(t *testing.T) {
+func TestVideo_New(t *testing.T) {
 	Convey("Testing Create", t, func() {
 		var v Video
 		var p products.Part
@@ -100,6 +100,23 @@ func TestSite_New(t *testing.T) {
 			So(err, ShouldBeNil)
 
 		})
+		Convey("Testing Get", func() {
+			err = v.Get()
+			So(err, ShouldBeNil)
+			chs, err := v.GetChannels()
+			t.Log(err)
+			if err != sql.ErrNoRows {
+				So(err, ShouldBeNil)
+				So(len(chs), ShouldBeGreaterThan, 0)
+			}
+
+			cdns, err := v.GetCdnFiles()
+			if err != sql.ErrNoRows {
+				So(err, ShouldBeNil)
+				So(len(cdns), ShouldBeGreaterThan, 0)
+			}
+
+		})
 		Convey("Testing Delete", func() {
 			err = v.Delete()
 			So(err, ShouldBeNil)
@@ -107,25 +124,6 @@ func TestSite_New(t *testing.T) {
 		})
 	})
 
-	Convey("Testing Gets", t, func() {
-		var v Video
-		v.ID = 19
-		err := v.Get()
-		So(err, ShouldBeNil)
-
-		chs, err := v.GetChannels()
-		t.Log(err)
-		if err != sql.ErrNoRows {
-			So(err, ShouldBeNil)
-			So(len(chs), ShouldBeGreaterThan, 0)
-		}
-
-		cdns, err := v.GetCdnFiles()
-		if err != sql.ErrNoRows {
-			So(err, ShouldBeNil)
-			So(len(cdns), ShouldBeGreaterThan, 0)
-		}
-	})
 	Convey("Testing Get-all", t, func() {
 		//All Videos
 		vs, err := GetAllVideos()
@@ -142,6 +140,78 @@ func TestSite_New(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(len(partVids), ShouldBeGreaterThan, 0)
 		}
+
+	})
+}
+
+func TestVideoCatsnStuff_New(t *testing.T) {
+	Convey("Testing Creates", t, func() {
+		var err error
+		var ch Channel
+		var f CdnFile
+		var v VideoType
+		var cht ChannelType
+		var ft CdnFileType
+
+		ch.Description = "test"
+		f.ObjectName = "test"
+		v.Name = "test"
+		cht.Name = "test"
+		ft.Title = "test"
+
+		err = ch.Create()
+		So(err, ShouldBeNil)
+		err = f.Create()
+		So(err, ShouldBeNil)
+		err = v.Create()
+		So(err, ShouldBeNil)
+		err = cht.Create()
+		So(err, ShouldBeNil)
+		err = ft.Create()
+		So(err, ShouldBeNil)
+
+		Convey("Testing Updates", func() {
+			ch.Description = "new test"
+			f.ObjectName = "new test"
+			v.Name = "new test"
+			cht.Name = "new test"
+			ft.Title = "new test"
+
+			err = ch.Update()
+			So(err, ShouldBeNil)
+			err = f.Update()
+			So(err, ShouldBeNil)
+			err = v.Update()
+			So(err, ShouldBeNil)
+			err = cht.Update()
+			So(err, ShouldBeNil)
+			err = ft.Update()
+			So(err, ShouldBeNil)
+		})
+		Convey("Testing Gets", func() {
+			err = ch.Get()
+			So(err, ShouldBeNil)
+			err = f.Get()
+			So(err, ShouldBeNil)
+			err = v.Get()
+			So(err, ShouldBeNil)
+			err = cht.Get()
+			So(err, ShouldBeNil)
+			err = ft.Get()
+			So(err, ShouldBeNil)
+		})
+		Convey("Testing Deletes", func() {
+			err = ch.Delete()
+			So(err, ShouldBeNil)
+			err = f.Delete()
+			So(err, ShouldBeNil)
+			err = v.Delete()
+			So(err, ShouldBeNil)
+			err = cht.Delete()
+			So(err, ShouldBeNil)
+			err = ft.Delete()
+			So(err, ShouldBeNil)
+		})
 
 	})
 }
