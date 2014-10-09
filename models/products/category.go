@@ -9,7 +9,6 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	"github.com/curt-labs/GoAPI/models/customer/content"
 	_ "github.com/go-sql-driver/mysql"
-	"log"
 	"net/url"
 	"strconv"
 	"strings"
@@ -232,7 +231,6 @@ func PopulateCategory(row *sql.Row, ch chan Category) {
 		&colorCode,
 		&fontCode)
 	if err != nil {
-		log.Printf("Populate Error: %s", err.Error())
 		ch <- Category{}
 		return
 	}
@@ -645,7 +643,6 @@ func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *
 			}
 			defer stmt.Close()
 
-			log.Println(page)
 			rows, err = stmt.Query(c.ID, page, count)
 		}
 
@@ -676,10 +673,8 @@ func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *
 			}(id)
 		}
 
-		for i := 0; i < len(ids); i++ {
-			if err := <-ch; err != nil {
-				log.Println(err)
-			}
+		for _, _ = range ids {
+			<-ch
 		}
 	}
 

@@ -21,7 +21,7 @@ var (
 								WHERE cl.locationID IS NOT NULL
 								AND cp.partID IS NOT NULL ORDER BY RAND()LIMIT 1`
 
-	getPublicKeyAndPart = `SELECT a.api_key, cp.partID FROM  ApiKey AS a JOIN customerUser AS cu ON a.user_id = cu.id JOIN customerPricing AS cp on cp.cust_id = cu.cust_id 
+	getPublicKeyAndPart = `SELECT a.api_key, cp.partID FROM  ApiKey AS a JOIN customerUser AS cu ON a.user_id = cu.id JOIN customerPricing AS cp on cp.cust_id = cu.cust_id
 					WHERE cu.name = "Alex Ninneman" AND a.type_id = "209A05AD-7D42-4C88-B5FA-FEEACDD19AC2" LIMIT 1`
 )
 
@@ -315,8 +315,6 @@ func TestCustomerModel(t *testing.T) {
 	})
 	//Comparative Tests - Old Customer Model to New One
 	Convey("Testing Existing User object to the New One", t, func() {
-		err := database.PrepareAll()
-		So(err, ShouldBeNil)
 		Convey("Testing GetCustomer()", func() {
 			var cc customer.CustomerUser
 			var c CustomerUser

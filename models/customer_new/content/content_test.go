@@ -160,11 +160,10 @@ func TestContent(t *testing.T) {
 
 func TestContentComparedToOldModel(t *testing.T) {
 	Convey("ComparativeTests", t, func() {
-		err := database.PrepareAll()
-		So(err, ShouldBeNil)
 		id, key := getApiKey(allCustContent)
 
 		allCon, err := AllCustomerContent(key)
+		So(err, ShouldBeNil)
 		var c CustomerContent
 		if len(allCon) > 0 {
 			c = allCon[rand.Intn(len(allCon))]

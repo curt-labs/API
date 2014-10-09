@@ -29,7 +29,8 @@ var (
 		(
 			select GROUP_CONCAT(vp1.PartNumber order by vp1.PartNumber)
 			from vcdb_VehiclePart as vp1
-			where vp1.VehicleID = v.ID
+			join Part as p1 on vp1.PartNumber = p1.partID
+			where vp1.VehicleID = v.ID && (p1.status = 800 || p1.status = 900)
 		) as parts, vca.VehicleConfigID
 		from vcdb_Vehicle as v
 		join VehicleConfigAttribute as vca on v.ConfigID = vca.VehicleConfigID
