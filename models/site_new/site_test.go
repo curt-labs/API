@@ -196,3 +196,38 @@ func TestSite_New(t *testing.T) {
 	})
 
 }
+
+func TestWebsite(t *testing.T) {
+	Convey("Testing CRUD", t, func() {
+		var w Website
+		var err error
+		//create
+		w.Url = "www.example.com"
+		err = w.Create()
+		So(err, ShouldBeNil)
+		//update
+		w.Description = "Desc"
+		err = w.Update()
+		So(err, ShouldBeNil)
+		//get
+		err = w.Get()
+		So(err, ShouldBeNil)
+		//delete
+		err = w.Delete()
+		So(err, ShouldBeNil)
+
+	})
+	Convey("Testing GetAll-s", t, func() {
+		ws, err := GetAllWebsites()
+		if err != sql.ErrNoRows {
+			So(err, ShouldBeNil)
+			So(len(ws), ShouldBeGreaterThan, 0)
+		}
+		var w Website
+		w.ID = 1
+		err = w.GetDetails()
+		So(err, ShouldBeNil)
+		t.Log(w)
+
+	})
+}

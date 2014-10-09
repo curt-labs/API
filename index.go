@@ -406,6 +406,11 @@ func main() {
 				r.Post("/:id", site_new.SaveContent)
 				r.Delete("/:id", site_new.DeleteContent)
 			})
+			r.Get("/details/:id", site_new.GetSiteDetails)
+			r.Put("", site_new.SaveSite)
+			r.Post("/:id", site_new.SaveSite)
+			r.Delete("/:id", site_new.DeleteSite)
+
 		})
 
 	})
