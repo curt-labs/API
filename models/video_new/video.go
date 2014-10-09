@@ -90,9 +90,12 @@ const (
 )
 
 var (
-	getVideo      = `SELECT ` + videoFields + `, ` + videoTypeFields + ` FROM VideoNew AS v LEFT JOIN videoType AS vt ON vt.vTypeID = v.subjectTypeID WHERE v.ID = ?`
-	getAllVideos  = `SELECT ` + videoFields + `, ` + videoTypeFields + ` FROM VideoNew AS v LEFT JOIN videoType AS vt ON vt.vTypeID = v.subjectTypeID`
-	getPartVideos = `SELECT ` + videoFields + `, ` + videoTypeFields + ` FROM VideoNew AS v LEFT JOIN videoType AS vt ON vt.vTypeID = v.subjectTypeID 
+	getVideo         = `SELECT ` + videoFields + `, ` + videoTypeFields + ` FROM VideoNew AS v LEFT JOIN videoType AS vt ON vt.vTypeID = v.subjectTypeID WHERE v.ID = ?`
+	getAllVideos     = `SELECT ` + videoFields + `, ` + videoTypeFields + ` FROM VideoNew AS v LEFT JOIN videoType AS vt ON vt.vTypeID = v.subjectTypeID`
+	getAllCdnFiles   = `SELECT ` + cdnFileFields + `,` + cdnFileTypeFields + ` FROM CdnFile AS cf LEFT JOIN CdnFileType AS cft ON cft.ID = cf.typeID `
+	getAllChannels   = `SELECT ` + channelFields + `, ` + channelTypeFields + ` FROM Channel AS c LEFT JOIN ChannelType AS ct ON ct.ID = c.typeID `
+	getAllVideoTypes = `SELECT vt.vTypeID, ` + videoTypeFields + ` FROM videoType AS vt`
+	getPartVideos    = `SELECT ` + videoFields + `, ` + videoTypeFields + ` FROM VideoNew AS v LEFT JOIN videoType AS vt ON vt.vTypeID = v.subjectTypeID 
 						LEFT JOIN VideoJoin AS vj on vj.videoID = v.ID WHERE vj.partID = ? ORDER BY v.title `
 	getVideoChannels = `SELECT ` + channelFields + `, ` + channelTypeFields + ` FROM VideoChannels AS vc 
 					LEFT JOIN Channel AS c on c.ID = vc.channelID
@@ -158,28 +161,6 @@ func (v *Video) Get() (err error) {
 	v = <-ch
 
 	return err
-}
-
-func populateVideo(row *sql.Row, ch chan *Video) {
-	var v Video
-	err := row.Scan(
-		&v.ID,
-		&v.VideoType.ID,
-		&v.Title,
-		&v.Description,
-		&v.DateAdded,
-		&v.DateModified,
-		&v.IsPrimary,
-		&v.Thumbnail,
-		&v.VideoType.Name,
-		&v.VideoType.Icon,
-	)
-	if err != nil {
-		ch <- &v
-		return
-	}
-	ch <- &v
-	return
 }
 
 func GetAllVideos() (vs Videos, err error) {
@@ -249,39 +230,16 @@ func (v *Video) GetChannels() (chs Channels, err error) {
 	if err != nil {
 		return chs, err
 	}
-	chs, err = populateChannels(rows)
-	if err != nil {
-		return chs, err
-	}
+
+	ch := make(chan Channels)
+	go populateChannels(rows, ch)
+	chs = <-ch
+
 	if len(chs) == 0 {
 		err = sql.ErrNoRows
 	}
 
 	return chs, err
-}
-func populateChannels(rows *sql.Rows) (cs Channels, err error) {
-	var c Channel
-	for rows.Next() {
-		err := rows.Scan(
-			&c.ID,
-			&c.Type.ID,
-			&c.Link,
-			&c.EmbedCode,
-			&c.ForiegnID,
-			&c.DateAdded,
-			&c.DateModified,
-			&c.Title,
-			&c.Description,
-			&c.Type.Name,
-			&c.Type.Description,
-		)
-		if err != nil {
-			return cs, err
-		}
-		cs = append(cs, c)
-	}
-
-	return cs, err
 }
 
 func (v *Video) GetCdnFiles() (cdns CdnFiles, err error) {
@@ -299,46 +257,10 @@ func (v *Video) GetCdnFiles() (cdns CdnFiles, err error) {
 	if err != nil {
 		return cdns, err
 	}
-	cdns, err = populateCdns(rows)
+	ch := make(chan CdnFiles)
+	go populateCdns(rows, ch)
+	cdns = <-ch
 	return cdns, err
-}
-
-//Populates channels and channel type fields
-func populateCdns(rows *sql.Rows) (cs CdnFiles, err error) {
-	var c CdnFile
-	var last, object, bucket, size *string
-	for rows.Next() {
-		err := rows.Scan(
-			&c.ID,
-			&c.Type.ID,
-			&c.Path,
-			&c.DateAdded,
-			&last,
-			&bucket,
-			&object,
-			&size,
-			&c.Type.MimeType,
-			&c.Type.Title,
-			&c.Type.Description,
-		)
-		if err != nil {
-			return cs, err
-		}
-		if last != nil {
-			c.LastUploaded = *last
-		}
-		if bucket != nil {
-			c.Bucket = *bucket
-		}
-		if object != nil {
-			c.ObjectName = *object
-		}
-		if size != nil {
-			c.FileSize = *size
-		}
-		cs = append(cs, c)
-	}
-	return cs, err
 }
 
 func (v *Video) Create() (err error) {
@@ -774,21 +696,56 @@ func (c *Channel) Get() (err error) {
 	}
 	defer stmt.Close()
 
+	var link, foreign, title *string
 	err = stmt.QueryRow(c.ID).Scan(
 		&c.ID,
 		&c.Type.ID,
-		&c.Link,
+		&link,
 		&c.EmbedCode,
-		&c.ForiegnID,
+		&foreign,
 		&c.DateAdded,
 		&c.DateModified,
-		&c.Title,
+		&title,
 		&c.Description,
 	)
 	if err != nil {
 		return err
 	}
+	if link != nil {
+		c.Link = *link
+	}
+	if foreign != nil {
+		c.ForiegnID = *foreign
+	}
+	if title != nil {
+		c.Title = *title
+	}
 	return err
+}
+
+func GetAllChannels() (cs Channels, err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return cs, err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(getAllChannels)
+	if err != nil {
+		return cs, err
+	}
+	defer stmt.Close()
+	rows, err := stmt.Query()
+	if err != nil {
+		return cs, err
+	}
+
+	ch := make(chan Channels)
+	go populateChannels(rows, ch)
+	cs = <-ch
+	if len(cs) == 0 {
+		err = sql.ErrNoRows
+	}
+	return cs, err
 }
 
 func (c *Channel) Create() (err error) {
@@ -871,21 +828,59 @@ func (c *CdnFile) Get() (err error) {
 	}
 	defer stmt.Close()
 
+	var last, bucket, object, size *string
 	err = stmt.QueryRow(c.ID).Scan(
 		&c.ID,
 		&c.Type.ID,
 		&c.Path,
 		&c.DateAdded,
 		&c.DateModified,
-		&c.LastUploaded,
-		&c.Bucket,
-		&c.ObjectName,
-		&c.FileSize,
+		&last,
+		&bucket,
+		&object,
+		&size,
 	)
 	if err != nil {
 		return err
 	}
+	if last != nil {
+		c.LastUploaded = *last
+	}
+	if bucket != nil {
+		c.Bucket = *bucket
+	}
+	if object != nil {
+		c.ObjectName = *object
+	}
+	if size != nil {
+		c.FileSize = *size
+	}
 	return err
+}
+
+func GetAllCdnFiles() (cs CdnFiles, err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return cs, err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(getAllCdnFiles)
+	if err != nil {
+		return cs, err
+	}
+	defer stmt.Close()
+	rows, err := stmt.Query()
+	if err != nil {
+		return cs, err
+	}
+
+	ch := make(chan CdnFiles)
+	go populateCdns(rows, ch)
+	cs = <-ch
+	if len(cs) == 0 {
+		err = sql.ErrNoRows
+	}
+	return cs, err
 }
 
 func (c *CdnFile) Create() (err error) {
@@ -968,14 +963,18 @@ func (c *CdnFileType) Get() (err error) {
 	}
 	defer stmt.Close()
 
+	var desc *string
 	err = stmt.QueryRow(c.ID).Scan(
 		&c.ID,
 		&c.MimeType,
 		&c.Title,
-		&c.Description,
+		&desc,
 	)
 	if err != nil {
 		return err
+	}
+	if desc != nil {
+		c.Description = *desc
 	}
 	return err
 }
@@ -1068,6 +1067,39 @@ func (c *VideoType) Get() (err error) {
 		return err
 	}
 	return err
+}
+
+func GetAllVideoTypes() (vts []VideoType, err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return vts, err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(getAllVideoTypes)
+	if err != nil {
+		return vts, err
+	}
+	defer stmt.Close()
+	rows, err := stmt.Query()
+	if err != nil {
+		return vts, err
+	}
+	var vt VideoType
+	var vName, vIcon *string
+	for rows.Next() {
+		err = rows.Scan(&vt.ID, &vName, &vIcon)
+		if err != nil {
+			return vts, err
+		}
+		if vName != nil {
+			vt.Name = *vName
+		}
+		if vIcon != nil {
+			vt.Icon = *vIcon
+		}
+		vts = append(vts, vt)
+	}
+	return vts, err
 }
 
 func (c *VideoType) Create() (err error) {
@@ -1226,10 +1258,42 @@ func (c *ChannelType) Delete() (err error) {
 	return err
 }
 
+//Populates a video + type
+func populateVideo(row *sql.Row, ch chan *Video) {
+	var v Video
+	var tName, tIcon *string
+	err := row.Scan(
+		&v.ID,
+		&v.VideoType.ID,
+		&v.Title,
+		&v.Description,
+		&v.DateAdded,
+		&v.DateModified,
+		&v.IsPrimary,
+		&v.Thumbnail,
+		&tName,
+		&tIcon,
+	)
+	if err != nil {
+		ch <- &v
+		return
+	}
+	if tName != nil {
+		v.VideoType.Name = *tName
+	}
+	if tIcon != nil {
+		v.VideoType.Icon = *tIcon
+	}
+
+	ch <- &v
+	return
+}
+
 //Populates video and video type fields
 func populateVideos(rows *sql.Rows, ch chan Videos) {
 	var v Video
 	var vs Videos
+	var tName, tIcon *string
 	for rows.Next() {
 		err := rows.Scan(
 			&v.ID,
@@ -1240,15 +1304,101 @@ func populateVideos(rows *sql.Rows, ch chan Videos) {
 			&v.DateModified,
 			&v.IsPrimary,
 			&v.Thumbnail,
-			&v.VideoType.Name,
-			&v.VideoType.Icon,
+			&tName,
+			&tIcon,
 		)
 		if err != nil {
 			ch <- Videos{}
 			return
 		}
+		if tName != nil {
+			v.VideoType.Name = *tName
+		}
+		if tIcon != nil {
+			v.VideoType.Icon = *tIcon
+		}
 		vs = append(vs, v)
 	}
 	ch <- vs
+	return
+}
+
+//Populates channels and channel type fields
+func populateCdns(rows *sql.Rows, ch chan CdnFiles) {
+	var c CdnFile
+	var cs CdnFiles
+	var last, object, bucket, size, tDesc *string
+	for rows.Next() {
+		err := rows.Scan(
+			&c.ID,
+			&c.Type.ID,
+			&c.Path,
+			&c.DateAdded,
+			&last,
+			&bucket,
+			&object,
+			&size,
+			&c.Type.MimeType,
+			&c.Type.Title,
+			&tDesc,
+		)
+		if err != nil {
+			return
+		}
+		if last != nil {
+			c.LastUploaded = *last
+		}
+		if bucket != nil {
+			c.Bucket = *bucket
+		}
+		if object != nil {
+			c.ObjectName = *object
+		}
+		if size != nil {
+			c.FileSize = *size
+		}
+		if tDesc != nil {
+			c.Type.Description = *tDesc
+		}
+		cs = append(cs, c)
+	}
+	ch <- cs
+	return
+}
+
+//populate channels
+func populateChannels(rows *sql.Rows, ch chan Channels) {
+	var chs Channels
+	var c Channel
+	var link, foreign, title *string
+	for rows.Next() {
+		err := rows.Scan(
+			&c.ID,
+			&c.Type.ID,
+			&link,
+			&c.EmbedCode,
+			&foreign,
+			&c.DateAdded,
+			&c.DateModified,
+			&title,
+			&c.Description,
+			&c.Type.Name,
+			&c.Type.Description,
+		)
+		if err != nil {
+			return
+		}
+		if link != nil {
+			c.Link = *link
+		}
+		if foreign != nil {
+			c.ForiegnID = *foreign
+		}
+		if title != nil {
+			c.Title = *title
+		}
+		chs = append(chs, c)
+	}
+	ch <- chs
 	return
 }

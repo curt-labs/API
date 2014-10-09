@@ -8,6 +8,7 @@ import (
 	"testing"
 )
 
+//Data Modelling Helper Functions
 func getPartId() (id int) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -65,6 +66,7 @@ func getFileId() (id int) {
 	return id
 }
 
+//Test Videos
 func TestVideo_New(t *testing.T) {
 	Convey("Testing Videos", t, func() {
 		var v Video
@@ -108,7 +110,6 @@ func TestVideo_New(t *testing.T) {
 		//Get Chans
 
 		chs, err := v.GetChannels()
-
 		if err != sql.ErrNoRows {
 			So(err, ShouldBeNil)
 			So(len(chs), ShouldBeGreaterThan, 0)
@@ -134,7 +135,6 @@ func TestVideo_New(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(len(vs), ShouldBeGreaterThan, 0)
 		}
-		// t.Log(vs)
 		//Part Vids
 		var p products.Part
 		p.ID = getPartId()
@@ -147,6 +147,7 @@ func TestVideo_New(t *testing.T) {
 	})
 }
 
+//Test Video-related items
 func TestVideoCatsnStuff_New(t *testing.T) {
 	Convey("Testing Creates", t, func() {
 		var err error
@@ -173,7 +174,7 @@ func TestVideoCatsnStuff_New(t *testing.T) {
 		err = ft.Create()
 		So(err, ShouldBeNil)
 
-		// Convey("Testing Updates", func() {
+		//Updates
 		ch.Description = "new test"
 		f.ObjectName = "new test"
 		v.Name = "new test"
@@ -190,8 +191,7 @@ func TestVideoCatsnStuff_New(t *testing.T) {
 		So(err, ShouldBeNil)
 		err = ft.Update()
 		So(err, ShouldBeNil)
-		// })
-		// Convey("Testing Gets", func() {
+		//Gets
 		err = ch.Get()
 		So(err, ShouldBeNil)
 		err = f.Get()
@@ -202,8 +202,7 @@ func TestVideoCatsnStuff_New(t *testing.T) {
 		So(err, ShouldBeNil)
 		err = ft.Get()
 		So(err, ShouldBeNil)
-		// })
-		// Convey("Testing Deletes", func() {
+		//Deletes
 		err = ch.Delete()
 		So(err, ShouldBeNil)
 		err = f.Delete()
@@ -214,7 +213,28 @@ func TestVideoCatsnStuff_New(t *testing.T) {
 		So(err, ShouldBeNil)
 		err = ft.Delete()
 		So(err, ShouldBeNil)
-		// })
+
+	})
+
+	Convey("Testing GetAll", t, func() {
+		//Channels
+		chs, err := GetAllChannels()
+		if err != sql.ErrNoRows {
+			So(err, ShouldBeNil)
+			So(len(chs), ShouldBeGreaterThan, 0)
+		}
+		//CdnFiles
+		cdns, err := GetAllCdnFiles()
+		if err != sql.ErrNoRows {
+			So(err, ShouldBeNil)
+			So(len(cdns), ShouldBeGreaterThan, 0)
+		}
+		//VideoTypes
+		vts, err := GetAllVideoTypes()
+		if err != sql.ErrNoRows {
+			So(err, ShouldBeNil)
+			So(len(vts), ShouldBeGreaterThan, 0)
+		}
 
 	})
 }
