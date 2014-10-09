@@ -10,73 +10,73 @@ import (
 )
 
 type Video struct {
-	ID           int
-	Title        string
-	VideoType    VideoType
-	Description  string
-	DateAdded    time.Time
-	DateModified time.Time
-	IsPrimary    bool
-	Thumbnail    string
-	Channels     Channels
-	Files        CdnFiles
-	Categories   []Category
-	Parts        []products.Part
-	WebsiteId    int //TODO
+	ID           int             `json:"id,omitempty" xml:"id,omitempty"`
+	Title        string          `json:"title, omitempty" xml:"title,omitempty"`
+	VideoType    VideoType       `json:"videoType,omitempty" xml:"v,omitempty"`
+	Description  string          `json:"description,omitempty" xml:"description,omitempty"`
+	DateAdded    time.Time       `json:"dateAdded,omitempty" xml:"dateAdded,omitempty"`
+	DateModified time.Time       `json:"dateModified,omitempty" xml:"dateModified,omitempty"`
+	IsPrimary    bool            `json:"isPrimary,omitempty" xml:"v,omitempty"`
+	Thumbnail    string          `json:"thumbnail,omitempty" xml:"thumbnail,omitempty"`
+	Channels     Channels        `json:"channels,omitempty" xml:"channels,omitempty"`
+	Files        CdnFiles        `json:"files,omitempty" xml:"files,omitempty"`
+	Categories   []Category      `json:"categories,omitempty" xml:"categories,omitempty"`
+	Parts        []products.Part `json:"parts,omitempty" xml:"parts,omitempty"`
+	WebsiteId    int             `json:"websiteId,omitempty" xml:"websiteId,omitempty"` //TODO
 }
 type Videos []Video
 
 type Channel struct {
-	ID           int
-	Type         ChannelType
-	Link         string
-	EmbedCode    string
-	ForiegnID    string
-	DateAdded    time.Time
-	DateModified time.Time
-	Title        string
-	Description  string
+	ID           int         `json:"id,omitempty" xml:"id,omitempty"`
+	Type         ChannelType `json:"type,omitempty" xml:"type,omitempty"`
+	Link         string      `json:"link,omitempty" xml:"link,omitempty"`
+	EmbedCode    string      `json:"embedCode,omitempty" xml:"embedCode,omitempty"`
+	ForiegnID    string      `json:"foreignId,omitempty" xml:"foreignId,omitempty"`
+	DateAdded    time.Time   `json:"dateAdded,omitempty" xml:"dateAdded,omitempty"`
+	DateModified time.Time   `json:"dateModified,omitempty" xml:"dateModified,omitempty"`
+	Title        string      `json:"title,omitempty" xml:"title,omitempty"`
+	Description  string      `json:"description,omitempty" xml:"description,omitempty"`
 }
 
 type Channels []Channel
 
 type ChannelType struct {
-	ID          int
-	Name        string
-	Description string
+	ID          int    `json:"id,omitempty" xml:"id,omitempty"`
+	Name        string `json:"name,omitempty" xml:"name,omitempty"`
+	Description string `json:"description,omitempty" xml:"description,omitempty"`
 }
 
 type CdnFile struct {
-	ID           int
-	Type         CdnFileType
-	Path         string
-	Bucket       string
-	ObjectName   string
-	FileSize     string
-	DateAdded    time.Time
-	DateModified time.Time
-	LastUploaded string
+	ID           int         `json:"id,omitempty" xml:"id,omitempty"`
+	Type         CdnFileType `json:"type,omitempty" xml:"type,omitempty"`
+	Path         string      `json:"path,omitempty" xml:"path,omitempty"`
+	Bucket       string      `json:"bucket,omitempty" xml:"bucket,omitempty"`
+	ObjectName   string      `json:"objectName,omitempty" xml:"objectName,omitempty"`
+	FileSize     string      `json:"fileSize,omitempty" xml:"fileSize,omitempty"`
+	DateAdded    time.Time   `json:"dateAdded,omitempty" xml:"dateAdded,omitempty"`
+	DateModified time.Time   `json:"dateModified,omitempty" xml:"dateModified,omitempty"`
+	LastUploaded string      `json:"lastUploaded,omitempty" xml:"lastUploaded,omitempty"`
 }
 
 type CdnFiles []CdnFile
 
 type CdnFileType struct {
-	ID          int
-	MimeType    string
-	Title       string
-	Description string
+	ID          int    `json:"id,omitempty" xml:"id,omitempty"`
+	MimeType    string `json:"mimeType,omitempty" xml:"mimeType,omitempty"`
+	Title       string `json:"title,omitempty" xml:"title,omitempty"`
+	Description string `json:"description,omitempty" xml:"description,omitempty"`
 }
 
 type VideoType struct {
-	ID   int
-	Name string
-	Icon string
+	ID   int    `json:"id,omitempty" xml:"id,omitempty"`
+	Name string `json:"name,omitempty" xml:"name,omitempty"`
+	Icon string `json:"icon,omitempty" xml:"icon,omitempty"`
 }
 
 //TODO categories should be their own entity
 type Category struct {
-	ID    int
-	Title string
+	ID    int    `json:"id,omitempty" xml:"id,omitempty"`
+	Title string `json:"title,omitempty" xml:"title,omitempty"`
 }
 
 const (
