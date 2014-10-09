@@ -277,7 +277,19 @@ func main() {
 	})
 
 	m.Get("/search/:term", search_ctlr.Search)
-	m.Get("/videos", videos_ctlr.DistinctVideos)
+	// m.Get("/videos", videos_ctlr.DistinctVideos)
+	m.Group("/videos", func(r martini.Router) {
+		m.Get("/distinct", videos_ctlr.DistinctVideos) //old "videos" table - curtmfg?
+		r.Get("/channel", videos_ctlr.GetAllChannels)
+		r.Get("/channel/:id", videos_ctlr.GetChannel)
+		r.Get("/cdn", videos_ctlr.GetAllCdns)
+		r.Get("/cdn/:id", videos_ctlr.GetCdn)
+		r.Get("/type", videos_ctlr.GetAllTypes)
+		r.Get("/type/:id", videos_ctlr.GetType)
+		r.Get("", videos_ctlr.GetAllVideos)
+		r.Get("/:id", videos_ctlr.Get)
+
+	})
 
 	//NEW Customer & Dealer endpoints - Seems to work. Feeling brave?
 	m.Group("/new", func(r martini.Router) {
