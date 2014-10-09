@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+//Pulls from "video" table, as opposed to "video_new"
 type Video_Old struct {
 	YouTubeId   string
 	DateAdded   time.Time

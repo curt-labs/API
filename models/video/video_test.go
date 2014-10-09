@@ -109,10 +109,10 @@ func TestVideo_New(t *testing.T) {
 		t.Log("ID", v.ID)
 		//Get Chans
 
-		chs, err := v.GetChannels()
+		chans, err := v.GetChannels()
 		if err != sql.ErrNoRows {
 			So(err, ShouldBeNil)
-			So(len(chs), ShouldBeGreaterThan, 0)
+			So(len(chans), ShouldBeGreaterThan, 0)
 		}
 
 		//Get CDNs
@@ -235,6 +235,19 @@ func TestVideoCatsnStuff_New(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(len(vts), ShouldBeGreaterThan, 0)
 		}
+		//ChannelTypes
+		cts, err := GetAllChannelTypes()
+		t.Log(cts)
+		if err != sql.ErrNoRows {
+			So(err, ShouldBeNil)
+			So(len(cts), ShouldBeGreaterThan, 0)
+		}
 
+		//CdnFileTypes
+		cds, err := GetAllCdnFileTypes()
+		if err != sql.ErrNoRows {
+			So(err, ShouldBeNil)
+			So(len(cds), ShouldBeGreaterThan, 0)
+		}
 	})
 }

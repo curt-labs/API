@@ -6,7 +6,7 @@ import (
 	// "github.com/curt-labs/GoAPI/models/site"
 	"github.com/curt-labs/GoAPI/models/products"
 	_ "github.com/go-sql-driver/mysql"
-	"log"
+	// "log"
 	"time"
 )
 
@@ -98,8 +98,8 @@ var (
 	getPartVideos    = `SELECT ` + videoFields + `, ` + videoTypeFields + ` FROM VideoNew AS v LEFT JOIN videoType AS vt ON vt.vTypeID = v.subjectTypeID 
 						LEFT JOIN VideoJoin AS vj on vj.videoID = v.ID WHERE vj.partID = ? ORDER BY v.title `
 	getVideoChannels = `SELECT ` + channelFields + `, ` + channelTypeFields + ` FROM VideoChannels AS vc 
-					LEFT JOIN Channel AS c on c.ID = vc.channelID
-					LEFT JOIN ChannelType AS ct ON ct.ID = c.typeID
+					 JOIN Channel AS c on c.ID = vc.channelID
+					 JOIN ChannelType AS ct ON ct.ID = c.typeID
 					WHERE vc.videoID = ?`
 	getVideoCdns = `SELECT ` + cdnFileFields + `, ` + cdnFileTypeFields + ` FROM CdnFile AS cf 
 						LEFT JOIN CdnFileType AS cft ON cft.ID = cf.typeID 
@@ -119,26 +119,28 @@ var (
 	deleteVideoCategoryJoin = `DELETE FROM VideoJoin WHERE videoID = ? AND catID = ?`
 
 	//crud
-	getChannel        = "SELECT ID, typeID, link, embedCode, foriegnID, dateAdded, dateModified, title, `desc` FROM Channel WHERE ID = ?"
-	createChannel     = "INSERT INTO Channel (typeID, link, embedCode, foriegnID, dateAdded, title, `desc`) VALUES (?,?,?,?,?,?,?)"
-	updateChannel     = "UPDATE Channel SET typeID = ?, link = ?, embedCode = ?, foriegnID = ?, title = ?, `desc` = ? WHERE ID = ?"
-	deleteChannel     = "DELETE FROM Channel WHERE ID = ?"
-	getCdn            = `SELECT ` + cdnFileFields + `, ` + cdnFileTypeFields + `, cf.dateModified FROM CdnFile AS cf LEFT JOIN CdnFileType AS cft ON cft.ID = cf.typeID WHERE cf.ID = ?`
-	createCdn         = `INSERT INTO CdnFile (typeID, path, dateAdded, lastUploaded, bucket, objectName, fileSize) VALUES (?,?,?,?,?,?,?)`
-	updateCdn         = `UPDATE CdnFile SET typeID = ?, path = ?, lastUploaded = ?, bucket = ?, objectName = ?, fileSize = ? WHERE ID = ?`
-	deleteCdn         = `DELETE FROM CdnFile WHERE ID = ?`
-	getCdnType        = `SELECT ID, mimeType, title, description FROM CdnFileType WHERE ID = ?`
-	createCdnType     = `INSERT INTO CdnFileType (mimeType, title, description) VALUES(?,?,?)`
-	updateCdnType     = `UPDATE CdnFileType SET mimeType = ?, title = ?, description = ? WHERE ID = ?`
-	deleteCdnType     = `DELETE FROM CdnFileType WHERE ID = ?`
-	getVideoType      = `SELECT vTypeID, name, icon FROM VideoType WHERE vTypeID = ?`
-	createVideoType   = `INSERT INTO VideoType (name, icon) VALUES (?,?)`
-	updateVideoType   = `UPDATE VideoType SET name = ?, icon = ? WHERE vTypeID = ?`
-	deleteVideoType   = `DELETE FROM VideoType WHERE vTypeID = ?`
-	getChannelType    = `SELECT ID, name, description FROM ChannelType WHERE ID = ?`
-	createChannelType = `INSERT INTO ChannelType (name, description) VALUES (?,?)`
-	updateChannelType = `UPDATE ChannelType SET name = ?, description = ? WHERE ID = ?`
-	deleteChannelType = `DELETE FROM ChannelType WHERE ID = ?`
+	getChannel         = "SELECT ID, typeID, link, embedCode, foriegnID, dateAdded, dateModified, title, `desc` FROM Channel WHERE ID = ?"
+	createChannel      = "INSERT INTO Channel (typeID, link, embedCode, foriegnID, dateAdded, title, `desc`) VALUES (?,?,?,?,?,?,?)"
+	updateChannel      = "UPDATE Channel SET typeID = ?, link = ?, embedCode = ?, foriegnID = ?, title = ?, `desc` = ? WHERE ID = ?"
+	deleteChannel      = "DELETE FROM Channel WHERE ID = ?"
+	getCdn             = `SELECT ` + cdnFileFields + `, ` + cdnFileTypeFields + `, cf.dateModified FROM CdnFile AS cf LEFT JOIN CdnFileType AS cft ON cft.ID = cf.typeID WHERE cf.ID = ?`
+	createCdn          = `INSERT INTO CdnFile (typeID, path, dateAdded, lastUploaded, bucket, objectName, fileSize) VALUES (?,?,?,?,?,?,?)`
+	updateCdn          = `UPDATE CdnFile SET typeID = ?, path = ?, lastUploaded = ?, bucket = ?, objectName = ?, fileSize = ? WHERE ID = ?`
+	deleteCdn          = `DELETE FROM CdnFile WHERE ID = ?`
+	getCdnType         = `SELECT ID, mimeType, title, description FROM CdnFileType WHERE ID = ?`
+	getAllCdnTypes     = `SELECT ID, mimeType, title, description FROM CdnFileType`
+	createCdnType      = `INSERT INTO CdnFileType (mimeType, title, description) VALUES(?,?,?)`
+	updateCdnType      = `UPDATE CdnFileType SET mimeType = ?, title = ?, description = ? WHERE ID = ?`
+	deleteCdnType      = `DELETE FROM CdnFileType WHERE ID = ?`
+	getVideoType       = `SELECT vTypeID, name, icon FROM VideoType WHERE vTypeID = ?`
+	createVideoType    = `INSERT INTO VideoType (name, icon) VALUES (?,?)`
+	updateVideoType    = `UPDATE VideoType SET name = ?, icon = ? WHERE vTypeID = ?`
+	deleteVideoType    = `DELETE FROM VideoType WHERE vTypeID = ?`
+	getChannelType     = `SELECT ID, name, description FROM ChannelType WHERE ID = ?`
+	getAllChannelTypes = `SELECT ID, name, description FROM ChannelType `
+	createChannelType  = `INSERT INTO ChannelType (name, description) VALUES (?,?)`
+	updateChannelType  = `UPDATE ChannelType SET name = ?, description = ? WHERE ID = ?`
+	deleteChannelType  = `DELETE FROM ChannelType WHERE ID = ?`
 )
 
 //Base Video
@@ -159,6 +161,27 @@ func (v *Video) Get() (err error) {
 
 	go populateVideo(row, ch)
 	*v = <-ch
+
+	return err
+}
+
+func (v *Video) GetVideoDetails() (err error) {
+	err = v.Get()
+	if err != nil {
+		return err
+	}
+
+	chs, err := v.GetChannels()
+	if err != nil {
+		return err
+	}
+	v.Channels = chs
+
+	cdns, err := v.GetCdnFiles()
+	if err != nil {
+		return err
+	}
+	v.Files = cdns
 
 	return err
 }
@@ -230,15 +253,11 @@ func (v *Video) GetChannels() (chs Channels, err error) {
 	if err != nil {
 		return chs, err
 	}
-
-	ch := make(chan Channels)
-	go populateChannels(rows, ch)
-	chs = <-ch
-
-	if len(chs) == 0 {
-		err = sql.ErrNoRows
+	if err == nil {
+		ch := make(chan Channels)
+		go populateChannels(rows, ch)
+		chs = <-ch
 	}
-
 	return chs, err
 }
 
@@ -257,9 +276,11 @@ func (v *Video) GetCdnFiles() (cdns CdnFiles, err error) {
 	if err != nil {
 		return cdns, err
 	}
-	ch := make(chan CdnFiles)
-	go populateCdns(rows, ch)
-	cdns = <-ch
+	if err == nil {
+		ch := make(chan CdnFiles)
+		go populateCdns(rows, ch)
+		cdns = <-ch
+	}
 	return cdns, err
 }
 
@@ -828,7 +849,7 @@ func (c *CdnFile) Get() (err error) {
 	}
 	defer stmt.Close()
 
-	var last, bucket, object, size, desc *string
+	var last, bucket, object, size, desc, tMime, tTitle *string
 	err = stmt.QueryRow(c.ID).Scan(
 		&c.ID,
 		&c.Type.ID,
@@ -838,8 +859,8 @@ func (c *CdnFile) Get() (err error) {
 		&bucket,
 		&object,
 		&size,
-		&c.Type.MimeType,
-		&c.Type.Title,
+		&tMime,
+		&tTitle,
 		&desc,
 		&c.DateModified,
 	)
@@ -861,7 +882,12 @@ func (c *CdnFile) Get() (err error) {
 	if desc != nil {
 		c.Type.Description = *desc
 	}
-	log.Print(c)
+	if tMime != nil {
+		c.Type.MimeType = *tMime
+	}
+	if tTitle != nil {
+		c.Type.Title = *tTitle
+	}
 	return err
 }
 
@@ -984,6 +1010,39 @@ func (c *CdnFileType) Get() (err error) {
 		c.Description = *desc
 	}
 	return err
+}
+
+func GetAllCdnFileTypes() (cts []CdnFileType, err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return cts, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(getAllCdnTypes)
+	if err != nil {
+		return cts, err
+	}
+	defer stmt.Close()
+
+	res, err := stmt.Query()
+	if err != nil {
+		return cts, err
+	}
+	var c CdnFileType
+	for res.Next() {
+		err = res.Scan(
+			&c.ID,
+			&c.MimeType,
+			&c.Title,
+			&c.Description,
+		)
+		if err != nil {
+			return cts, err
+		}
+		cts = append(cts, c)
+	}
+	return cts, err
 }
 
 func (c *CdnFileType) Create() (err error) {
@@ -1199,6 +1258,37 @@ func (c *ChannelType) Get() (err error) {
 	return err
 }
 
+func GetAllChannelTypes() (cts []ChannelType, err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return cts, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(getAllChannelTypes)
+	if err != nil {
+		return cts, err
+	}
+	defer stmt.Close()
+	var c ChannelType
+	res, err := stmt.Query()
+	if err != nil {
+		return cts, err
+	}
+	for res.Next() {
+		err = res.Scan(
+			&c.ID,
+			&c.Name,
+			&c.Description,
+		)
+		if err != nil {
+			return cts, err
+		}
+		cts = append(cts, c)
+	}
+	return cts, err
+}
+
 func (c *ChannelType) Create() (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1334,7 +1424,7 @@ func populateVideos(rows *sql.Rows, ch chan Videos) {
 func populateCdns(rows *sql.Rows, ch chan CdnFiles) {
 	var c CdnFile
 	var cs CdnFiles
-	var last, object, bucket, size, tDesc *string
+	var last, object, bucket, size, tMime, tTitle, tDesc *string
 	for rows.Next() {
 		err := rows.Scan(
 			&c.ID,
@@ -1345,11 +1435,12 @@ func populateCdns(rows *sql.Rows, ch chan CdnFiles) {
 			&bucket,
 			&object,
 			&size,
-			&c.Type.MimeType,
-			&c.Type.Title,
+			&tMime,
+			&tTitle,
 			&tDesc,
 		)
 		if err != nil {
+			ch <- CdnFiles{}
 			return
 		}
 		if last != nil {
@@ -1367,6 +1458,13 @@ func populateCdns(rows *sql.Rows, ch chan CdnFiles) {
 		if tDesc != nil {
 			c.Type.Description = *tDesc
 		}
+		if tMime != nil {
+			c.Type.MimeType = *tMime
+		}
+		if tTitle != nil {
+			c.Type.Title = *tTitle
+		}
+
 		cs = append(cs, c)
 	}
 	ch <- cs
@@ -1377,7 +1475,7 @@ func populateCdns(rows *sql.Rows, ch chan CdnFiles) {
 func populateChannels(rows *sql.Rows, ch chan Channels) {
 	var chs Channels
 	var c Channel
-	var link, foreign, title *string
+	var link, foreign, title, tName, tDesc *string
 	for rows.Next() {
 		err := rows.Scan(
 			&c.ID,
@@ -1389,10 +1487,11 @@ func populateChannels(rows *sql.Rows, ch chan Channels) {
 			&c.DateModified,
 			&title,
 			&c.Description,
-			&c.Type.Name,
-			&c.Type.Description,
+			&tName,
+			&tDesc,
 		)
 		if err != nil {
+			ch <- Channels{}
 			return
 		}
 		if link != nil {
@@ -1403,6 +1502,12 @@ func populateChannels(rows *sql.Rows, ch chan Channels) {
 		}
 		if title != nil {
 			c.Title = *title
+		}
+		if tName != nil {
+			c.Type.Name = *tName
+		}
+		if tDesc != nil {
+			c.Type.Description = *tDesc
 		}
 		chs = append(chs, c)
 	}
