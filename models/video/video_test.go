@@ -106,9 +106,7 @@ func TestVideo_New(t *testing.T) {
 		//Get
 		err = v.Get()
 		So(err, ShouldBeNil)
-		t.Log("ID", v.ID)
 		//Get Chans
-
 		chans, err := v.GetChannels()
 		if err != sql.ErrNoRows {
 			So(err, ShouldBeNil)
@@ -237,7 +235,6 @@ func TestVideoCatsnStuff_New(t *testing.T) {
 		}
 		//ChannelTypes
 		cts, err := GetAllChannelTypes()
-		t.Log(cts)
 		if err != sql.ErrNoRows {
 			So(err, ShouldBeNil)
 			So(len(cts), ShouldBeGreaterThan, 0)

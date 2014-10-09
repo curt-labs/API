@@ -6,7 +6,6 @@ import (
 	// "github.com/curt-labs/GoAPI/models/site"
 	"github.com/curt-labs/GoAPI/models/products"
 	_ "github.com/go-sql-driver/mysql"
-	// "log"
 	"time"
 )
 

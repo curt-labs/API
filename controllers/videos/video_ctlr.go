@@ -1,12 +1,11 @@
 package videos_ctlr
 
 import (
+	"encoding/json"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/products"
 	"github.com/curt-labs/GoAPI/models/video"
 	"github.com/go-martini/martini"
-	// "log"
-	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"strconv"
