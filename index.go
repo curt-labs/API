@@ -98,6 +98,12 @@ func main() {
 		r.Get("/:part", part_ctlr.Get)
 		r.Get("", part_ctlr.All)
 	})
+	m.Group("/price", func(r martini.Router) {
+		r.Get("/:id", internalCors, part_ctlr.GetPrice)
+		r.Put("", internalCors, part_ctlr.SavePrice)
+		r.Post("/:id", internalCors, part_ctlr.SavePrice)
+		r.Delete("/:id", internalCors, part_ctlr.DeletePrice)
+	})
 
 	m.Group("/customer", func(r martini.Router) {
 		r.Post("", customer_ctlr.GetCustomer)
@@ -228,6 +234,16 @@ func main() {
 		r.Get("/get", site.GetLandingPage)
 	})
 	m.Group("/webProperties", func(r martini.Router) {
+		//Passing JSON in the request body?
+
+		r.Post("/json/type", internalCors, webProperty_controller.SaveType_Json)
+		r.Post("/json/type/:id", internalCors, webProperty_controller.SaveType_Json)
+		r.Post("/json/requirement", internalCors, webProperty_controller.SaveRequirement_Json)
+		r.Post("/json/requirement/:id", internalCors, webProperty_controller.SaveRequirement_Json)
+		r.Post("/json/note", internalCors, webProperty_controller.SaveNote_Json)
+		r.Post("/json/note/:id", internalCors, webProperty_controller.SaveNote_Json)
+		r.Post("/json/:id", internalCors, webProperty_controller.Save_Json)
+		r.Put("/json", internalCors, webProperty_controller.Save_Json)
 		r.Post("/note/:id", internalCors, webProperty_controller.CreateUpdateWebPropertyNote)               //updates when an id is present; otherwise, creates
 		r.Put("/note", internalCors, webProperty_controller.CreateUpdateWebPropertyNote)                    //updates when an id is present; otherwise, creates
 		r.Delete("/note/:id", internalCors, webProperty_controller.DeleteWebPropertyNote)                   //{id}
@@ -249,8 +265,6 @@ func main() {
 		r.Delete("/:id", internalCors, webProperty_controller.DeleteWebProperty)     //{id}
 		r.Post("/:id", internalCors, webProperty_controller.CreateUpdateWebProperty) //
 		r.Put("", internalCors, webProperty_controller.CreateUpdateWebProperty)      //can create notes(text) and requirements (requirement, by requirement=requirementID) while creating a property
-		r.Post("/json/:id", internalCors, webProperty_controller.Save_Json)
-		r.Put("/json", internalCors, webProperty_controller.Save_Json)
 
 	})
 
@@ -263,7 +277,45 @@ func main() {
 	})
 
 	m.Get("/search/:term", search_ctlr.Search)
-	m.Get("/videos", videos_ctlr.DistinctVideos)
+
+	m.Group("/videos", func(r martini.Router) {
+		r.Get("/distinct", videos_ctlr.DistinctVideos) //old "videos" table - curtmfg?
+		r.Get("/channel/type", videos_ctlr.GetAllChannelTypes)
+		r.Get("/channel/type/:id", videos_ctlr.GetChannelType)
+		r.Post("/channel/type/:id", videos_ctlr.SaveChannelType)
+		r.Post("/channel/type", videos_ctlr.SaveChannelType)
+		r.Delete("/channel/type/:id", videos_ctlr.DeleteChannelType)
+		r.Get("/channel", videos_ctlr.GetAllChannels)
+		r.Get("/channel/:id", videos_ctlr.GetChannel)
+		r.Post("/channel/:id", videos_ctlr.SaveChannel)
+		r.Post("/channel", videos_ctlr.SaveChannel)
+		r.Delete("/channel/:id", videos_ctlr.DeleteChannel)
+		r.Get("/cdn/type", videos_ctlr.GetAllCdnTypes)
+		r.Get("/cdn/type/:id", videos_ctlr.GetCdnType)
+		r.Post("/cdn/type/:id", videos_ctlr.SaveCdnType)
+		r.Post("/cdn/type", videos_ctlr.SaveCdnType)
+		r.Delete("/cdn/type/:id", videos_ctlr.DeleteCdnType)
+
+		r.Get("/cdn", videos_ctlr.GetAllCdns)
+		r.Get("/cdn/:id", videos_ctlr.GetCdn)
+		r.Post("/cdn/:id", videos_ctlr.SaveCdn)
+		r.Post("/cdn", videos_ctlr.SaveCdn)
+		r.Delete("/cdn/:id", videos_ctlr.DeleteCdn)
+		r.Get("/type", videos_ctlr.GetAllVideoTypes)
+		r.Get("/type/:id", videos_ctlr.GetVideoType)
+		r.Post("/type/:id", videos_ctlr.SaveVideoType)
+		r.Post("/type", videos_ctlr.SaveVideoType)
+		r.Delete("/type/:id", videos_ctlr.DeleteVideoType)
+
+		r.Get("/part/:id", videos_ctlr.GetPartVideos)
+		r.Get("", videos_ctlr.GetAllVideos)
+		r.Get("/details/:id", videos_ctlr.GetVideoDetails)
+		r.Get("/:id", videos_ctlr.Get)
+		r.Post("/:id", videos_ctlr.SaveVideo)
+		r.Post("", videos_ctlr.SaveVideo)
+		r.Delete("/:id", videos_ctlr.DeleteVideo)
+
+	})
 
 	//NEW Customer & Dealer endpoints - Seems to work. Feeling brave?
 	m.Group("/new", func(r martini.Router) {

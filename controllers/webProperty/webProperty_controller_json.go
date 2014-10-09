@@ -6,6 +6,7 @@ import (
 	"github.com/curt-labs/GoAPI/models/webProperty"
 	"github.com/go-martini/martini"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -49,5 +50,125 @@ func Save_Json(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, 
 		return ""
 	}
 	return encoding.Must(enc.Encode(w))
+}
 
+func SaveType_Json(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+	log.Print("YOYER")
+	var w webProperty_model.WebPropertyType
+	var err error
+	idStr := params["id"]
+	if idStr != "" {
+		w.ID, err = strconv.Atoi(idStr)
+		err = w.Get()
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return ""
+		}
+	}
+
+	//json
+	requestBody, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+	err = json.Unmarshal(requestBody, &w)
+	if err != nil {
+
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+
+	//create or update
+	if w.ID > 0 {
+		err = w.Update()
+	} else {
+		err = w.Create()
+	}
+
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+	return encoding.Must(enc.Encode(w))
+}
+
+func SaveRequirement_Json(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+	var w webProperty_model.WebPropertyRequirement
+	var err error
+	idStr := params["id"]
+	if idStr != "" {
+		w.ID, err = strconv.Atoi(idStr)
+		err = w.Get()
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return ""
+		}
+	}
+
+	//json
+	requestBody, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+	err = json.Unmarshal(requestBody, &w)
+	if err != nil {
+
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+
+	//create or update
+	if w.ID > 0 {
+		err = w.Update()
+	} else {
+		err = w.Create()
+	}
+
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+	return encoding.Must(enc.Encode(w))
+}
+
+func SaveNote_Json(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+	var w webProperty_model.WebPropertyNote
+	var err error
+	idStr := params["id"]
+	if idStr != "" {
+		w.ID, err = strconv.Atoi(idStr)
+		err = w.Get()
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return ""
+		}
+	}
+
+	//json
+	requestBody, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+	err = json.Unmarshal(requestBody, &w)
+	if err != nil {
+
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+
+	//create or update
+	if w.ID > 0 {
+		err = w.Update()
+	} else {
+		err = w.Create()
+	}
+
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+	return encoding.Must(enc.Encode(w))
 }

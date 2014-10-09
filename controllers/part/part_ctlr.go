@@ -9,6 +9,7 @@ import (
 	"github.com/curt-labs/GoAPI/models/vehicle"
 	"github.com/go-martini/martini"
 	"github.com/ninnemana/analytics-go"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -337,7 +338,7 @@ func Prices(w http.ResponseWriter, r *http.Request, params martini.Params, enc e
 			err = custErr
 		}
 
-		p.Pricing = append(p.Pricing, products.Price{"Customer", price, false})
+		p.Pricing = append(p.Pricing, products.Price{0, 0, "Customer", price, false, time.Now()})
 		custChan <- 1
 	}()
 
@@ -350,4 +351,78 @@ func Prices(w http.ResponseWriter, r *http.Request, params martini.Params, enc e
 	}
 
 	return encoding.Must(enc.Encode(p.Pricing))
+}
+
+func SavePrice(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
+	var p products.Price
+	var err error
+	idStr := params["id"]
+	if idStr != "" {
+		p.Id, err = strconv.Atoi(idStr)
+		err = p.Get()
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return ""
+		}
+	}
+	//json
+	requestBody, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return encoding.Must(enc.Encode(false))
+	}
+	err = json.Unmarshal(requestBody, &p)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return encoding.Must(enc.Encode(false))
+	}
+	log.Print(p)
+	//create or update
+	if p.Id > 0 {
+		err = p.Update()
+	} else {
+		err = p.Create()
+	}
+	log.Print(p)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+	return encoding.Must(enc.Encode(p))
+}
+
+func DeletePrice(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
+	var p products.Price
+	var err error
+	idStr := params["id"]
+
+	p.Id, err = strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+	err = p.Delete()
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+	return encoding.Must(enc.Encode(p))
+}
+
+func GetPrice(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
+	var p products.Price
+	var err error
+	idStr := params["id"]
+
+	p.Id, err = strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+	err = p.Get()
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+	return encoding.Must(enc.Encode(p))
 }
