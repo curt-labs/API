@@ -97,8 +97,8 @@ func main() {
 		r.Get("/:part/:year/:make/:model/:submodel/:config(.+)", part_ctlr.GetWithVehicle)
 		r.Get("/:part", part_ctlr.Get)
 		r.Get("", part_ctlr.All)
-		r.Post("/:id", internalCors, part_ctlr.SavePart)
-		r.Post("", internalCors, part_ctlr.SavePart)
+		r.Post("/:id", internalCors, part_ctlr.UpdatePart)
+		r.Put("", internalCors, part_ctlr.CreatePart)
 		r.Delete("/:id", internalCors, part_ctlr.DeletePart)
 	})
 	m.Group("/price", func(r martini.Router) {
