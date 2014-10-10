@@ -426,3 +426,66 @@ func GetPrice(rw http.ResponseWriter, req *http.Request, params martini.Params, 
 	}
 	return encoding.Must(enc.Encode(p))
 }
+
+func SavePart(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
+	var p products.Part
+	var err error
+	api := params["key"]
+	if api == "" {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+
+	idStr := params["id"]
+	if idStr != "" {
+		p.ID, err = strconv.Atoi(idStr)
+		err = p.Get(api)
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return ""
+		}
+	}
+
+	//json
+	requestBody, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return encoding.Must(enc.Encode(false))
+	}
+	err = json.Unmarshal(requestBody, &p)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return encoding.Must(enc.Encode(false))
+	}
+
+	//create or update
+	if p.ID > 0 {
+		err = p.Update()
+	} else {
+		err = p.Create()
+	}
+
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+	return encoding.Must(enc.Encode(p))
+}
+
+func DeletePart(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
+	var p products.Part
+	var err error
+	idStr := params["id"]
+
+	p.ID, err = strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+	err = p.Delete()
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+	return encoding.Must(enc.Encode(p))
+}
