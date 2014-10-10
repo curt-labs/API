@@ -2,10 +2,12 @@ package video
 
 import (
 	"database/sql"
+	"encoding/json"
 	"github.com/curt-labs/GoAPI/helpers/database"
-	// "github.com/curt-labs/GoAPI/models/site"
+	"github.com/curt-labs/GoAPI/helpers/redis"
 	"github.com/curt-labs/GoAPI/models/products"
 	_ "github.com/go-sql-driver/mysql"
+	"strconv"
 	"time"
 )
 
@@ -144,6 +146,12 @@ var (
 
 //Base Video
 func (v *Video) Get() (err error) {
+	redis_key := "goapi:video:" + strconv.Itoa(v.ID)
+	data, err := redis.Get(redis_key)
+	if err == nil && len(data) > 0 {
+		err = json.Unmarshal(data, &v)
+		return err
+	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -160,32 +168,64 @@ func (v *Video) Get() (err error) {
 
 	go populateVideo(row, ch)
 	*v = <-ch
-
+	go redis.Setex(redis_key, v, 86400)
 	return err
 }
 
 func (v *Video) GetVideoDetails() (err error) {
-	err = v.Get()
-	if err != nil {
+	redis_key := "goapi:video:details:" + strconv.Itoa(v.ID)
+	data, err := redis.Get(redis_key)
+	if err == nil && len(data) > 0 {
+		err = json.Unmarshal(data, &v)
 		return err
 	}
-
-	chs, err := v.GetChannels()
-	if err != nil {
+	baseChan := make(chan bool)
+	chanChan := make(chan bool)
+	cdnChan := make(chan bool)
+	go func() (err error) {
+		err = v.Get()
+		if err != nil {
+			return err
+		}
+		baseChan <- true
 		return err
-	}
-	v.Channels = chs
-
-	cdns, err := v.GetCdnFiles()
-	if err != nil {
+	}()
+	go func() (err error) {
+		chs, err := v.GetChannels()
+		if err != nil {
+			return err
+		}
+		v.Channels = chs
+		chanChan <- true
 		return err
-	}
-	v.Files = cdns
+	}()
+	go func() (err error) {
+		cdns, err := v.GetCdnFiles()
+		if err != nil {
+			return err
+		}
+		v.Files = cdns
+		cdnChan <- true
+		return err
+	}()
 
-	return err
+	<-baseChan
+	<-chanChan
+	<-cdnChan
+	close(baseChan)
+	close(chanChan)
+	close(cdnChan)
+	go redis.Setex(redis_key, v, 86400)
+	return nil
 }
 
 func GetAllVideos() (vs Videos, err error) {
+	redis_key := "goapi:video"
+	data, err := redis.Get(redis_key)
+	if err == nil && len(data) > 0 {
+		err = json.Unmarshal(data, &vs)
+		return vs, err
+	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return vs, err
@@ -207,11 +247,17 @@ func GetAllVideos() (vs Videos, err error) {
 	if len(vs) == 0 {
 		err = sql.ErrNoRows
 	}
-
+	go redis.Setex(redis_key, vs, 86400)
 	return vs, err
 }
 
 func GetPartVideos(p products.Part) (vs Videos, err error) {
+	redis_key := "goapi:video:part:" + strconv.Itoa(p.ID)
+	data, err := redis.Get(redis_key)
+	if err == nil && len(data) > 0 {
+		err = json.Unmarshal(data, &vs)
+		return vs, err
+	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return vs, err
@@ -233,11 +279,17 @@ func GetPartVideos(p products.Part) (vs Videos, err error) {
 	if len(vs) == 0 {
 		err = sql.ErrNoRows
 	}
-
+	go redis.Setex(redis_key, vs, 86400)
 	return vs, err
 }
 
 func (v *Video) GetChannels() (chs Channels, err error) {
+	redis_key := "goapi:video:channels:" + strconv.Itoa(v.ID)
+	data, err := redis.Get(redis_key)
+	if err == nil && len(data) > 0 {
+		err = json.Unmarshal(data, &chs)
+		return chs, err
+	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return chs, err
@@ -257,10 +309,17 @@ func (v *Video) GetChannels() (chs Channels, err error) {
 		go populateChannels(rows, ch)
 		chs = <-ch
 	}
+	go redis.Setex(redis_key, chs, 86400)
 	return chs, err
 }
 
 func (v *Video) GetCdnFiles() (cdns CdnFiles, err error) {
+	redis_key := "goapi:video:cdnFiles:" + strconv.Itoa(v.ID)
+	data, err := redis.Get(redis_key)
+	if err == nil && len(data) > 0 {
+		err = json.Unmarshal(data, &cdns)
+		return cdns, err
+	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return cdns, err
@@ -280,6 +339,7 @@ func (v *Video) GetCdnFiles() (cdns CdnFiles, err error) {
 		go populateCdns(rows, ch)
 		cdns = <-ch
 	}
+	go redis.Setex(redis_key, cdns, 86400)
 	return cdns, err
 }
 
@@ -744,6 +804,12 @@ func (c *Channel) Get() (err error) {
 }
 
 func GetAllChannels() (cs Channels, err error) {
+	redis_key := "goapi:video:channels"
+	data, err := redis.Get(redis_key)
+	if err == nil && len(data) > 0 {
+		err = json.Unmarshal(data, &cs)
+		return cs, err
+	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return cs, err
@@ -765,6 +831,7 @@ func GetAllChannels() (cs Channels, err error) {
 	if len(cs) == 0 {
 		err = sql.ErrNoRows
 	}
+	go redis.Setex(redis_key, cs, 86400)
 	return cs, err
 }
 
@@ -891,6 +958,12 @@ func (c *CdnFile) Get() (err error) {
 }
 
 func GetAllCdnFiles() (cs CdnFiles, err error) {
+	redis_key := "goapi:video:cdnFiles"
+	data, err := redis.Get(redis_key)
+	if err == nil && len(data) > 0 {
+		err = json.Unmarshal(data, &cs)
+		return cs, err
+	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return cs, err
@@ -912,6 +985,7 @@ func GetAllCdnFiles() (cs CdnFiles, err error) {
 	if len(cs) == 0 {
 		err = sql.ErrNoRows
 	}
+	go redis.Setex(redis_key, cs, 86400)
 	return cs, err
 }
 
@@ -1012,6 +1086,12 @@ func (c *CdnFileType) Get() (err error) {
 }
 
 func GetAllCdnFileTypes() (cts []CdnFileType, err error) {
+	redis_key := "goapi:video:cdnFileTypes"
+	data, err := redis.Get(redis_key)
+	if err == nil && len(data) > 0 {
+		err = json.Unmarshal(data, &cts)
+		return cts, err
+	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return cts, err
@@ -1041,6 +1121,7 @@ func GetAllCdnFileTypes() (cts []CdnFileType, err error) {
 		}
 		cts = append(cts, c)
 	}
+	go redis.Setex(redis_key, cts, 86400)
 	return cts, err
 }
 
@@ -1135,6 +1216,12 @@ func (c *VideoType) Get() (err error) {
 }
 
 func GetAllVideoTypes() (vts []VideoType, err error) {
+	redis_key := "goapi:video:videoTypes"
+	data, err := redis.Get(redis_key)
+	if err == nil && len(data) > 0 {
+		err = json.Unmarshal(data, &vts)
+		return vts, err
+	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return vts, err
@@ -1164,6 +1251,7 @@ func GetAllVideoTypes() (vts []VideoType, err error) {
 		}
 		vts = append(vts, vt)
 	}
+	go redis.Setex(redis_key, vts, 86400)
 	return vts, err
 }
 
@@ -1258,6 +1346,12 @@ func (c *ChannelType) Get() (err error) {
 }
 
 func GetAllChannelTypes() (cts []ChannelType, err error) {
+	redis_key := "goapi:video:channelTypes"
+	data, err := redis.Get(redis_key)
+	if err == nil && len(data) > 0 {
+		err = json.Unmarshal(data, &cts)
+		return cts, err
+	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return cts, err
@@ -1285,6 +1379,7 @@ func GetAllChannelTypes() (cts []ChannelType, err error) {
 		}
 		cts = append(cts, c)
 	}
+	go redis.Setex(redis_key, cts, 86400)
 	return cts, err
 }
 

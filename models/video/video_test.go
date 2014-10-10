@@ -106,6 +106,11 @@ func TestVideo_New(t *testing.T) {
 		//Get
 		err = v.Get()
 		So(err, ShouldBeNil)
+
+		//Get Details
+		err = v.GetVideoDetails()
+		So(err, ShouldBeNil)
+
 		//Get Chans
 		chans, err := v.GetChannels()
 		if err != sql.ErrNoRows {
