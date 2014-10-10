@@ -24,11 +24,12 @@ var (
 	createReview  = `INSERT INTO Review (partID, rating, subject, review_text, name, email, active, approved, createdDate, cust_id) VALUES (?,?,?,?,?,?,?,?,?,?)`
 	updateReview  = `UPDATE Review SET partID = ?, rating = ?, subject = ?, review_text = ?, name = ?, email = ?, active = ?, approved = ?, createdDate = ?, cust_id = ? WHERE reviewID = ?`
 	deleteReview  = `DELETE FROM Review WHERE reviewID = ?`
+	deleteReviews = `DELETE FROM Review WHERE partID = ?`
 )
 
 type Review struct {
 	Id          int               `json:"id,omitempty" xml:"id,omitempty"`
-	ID          int               `json:"partId,omitempty" xml:"partId,omitempty"`
+	PartID      int               `json:"partId,omitempty" xml:"partId,omitempty"`
 	Rating      int               `json:"rating,omitempty" xml:"rating,omitempty"`
 	Subject     string            `json:"subject,omitempty" xml:"subject,omitempty"`
 	ReviewText  string            `json:"reviewText,omitempty" xml:"reviewText,omitempty"`
@@ -126,7 +127,7 @@ func GetAll() (revs Reviews, err error) {
 
 	for res.Next() {
 		var r Review
-		err = res.Scan(&r.Id, &r.ID, &r.Rating, &subject, &text, &name, &email, &r.Active, &r.Approved, &r.CreatedDate, &r.Customer.Id)
+		err = res.Scan(&r.Id, &r.PartID, &r.Rating, &subject, &text, &name, &email, &r.Active, &r.Approved, &r.CreatedDate, &r.Customer.Id)
 		if err != nil {
 			return revs, err
 		}
@@ -186,7 +187,7 @@ func (r *Review) Get() (err error) {
 		r.Email = *email
 	}
 	if partId != nil {
-		r.ID = *partId
+		r.PartID = *partId
 	}
 
 	if err != nil {
@@ -211,7 +212,7 @@ func (r *Review) Create() (err error) {
 	defer stmt.Close()
 
 	r.CreatedDate = time.Now()
-	res, err := stmt.Exec(r.ID, r.Rating, r.Subject, r.ReviewText, r.Name, r.Email, r.Active, r.Approved, r.CreatedDate, r.Customer.Id)
+	res, err := stmt.Exec(r.PartID, r.Rating, r.Subject, r.ReviewText, r.Name, r.Email, r.Active, r.Approved, r.CreatedDate, r.Customer.Id)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -238,7 +239,7 @@ func (r *Review) Update() (err error) {
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(r.ID, r.Rating, r.Subject, r.ReviewText, r.Name, r.Email, r.Active, r.Approved, r.CreatedDate, r.Customer.Id, r.Id)
+	_, err = stmt.Exec(r.PartID, r.Rating, r.Subject, r.ReviewText, r.Name, r.Email, r.Active, r.Approved, r.CreatedDate, r.Customer.Id, r.Id)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -262,6 +263,30 @@ func (r *Review) Delete() (err error) {
 	defer stmt.Close()
 
 	_, err = stmt.Exec(r.Id)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err = tx.Commit()
+
+	return err
+}
+func (r *Review) DeletebyPart() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+
+	stmt, err := tx.Prepare(deleteReviews)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(r.PartID)
 	if err != nil {
 		tx.Rollback()
 		return err

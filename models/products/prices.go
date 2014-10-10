@@ -26,10 +26,11 @@ var (
 		select priceType, price, enforced from Price
 		where partID = ?
 		order by priceType`
-	getPrice    = `select priceID, partID, priceType, price, enforced, dateModified from Price where priceID = ?`
-	createPrice = `INSERT INTO Price (partID, priceType, price, enforced) VALUES (?,?,?,?) `
-	updatePrice = `UPDATE Price SET partID = ?, priceType = ?, price = ?, enforced = ? WHERE priceID = ?`
-	deletePrice = `DELETE FROM Price WHERE priceID = ?`
+	getPrice     = `select priceID, partID, priceType, price, enforced, dateModified from Price where priceID = ?`
+	createPrice  = `INSERT INTO Price (partID, priceType, price, enforced) VALUES (?,?,?,?) `
+	updatePrice  = `UPDATE Price SET partID = ?, priceType = ?, price = ?, enforced = ? WHERE priceID = ?`
+	deletePrice  = `DELETE FROM Price WHERE priceID = ?`
+	deletePrices = `DELETE FROM Prices WHERE partID = ?`
 )
 
 func (p *Part) GetPricing() error {
@@ -164,6 +165,26 @@ func (p *Price) Delete() (err error) {
 		return err
 	}
 	_, err = stmt.Exec(p.Id)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	return err
+}
+
+func (p *Price) DeleteByPart() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(deletePrices)
+	if err != nil {
+		return err
+	}
+	_, err = stmt.Exec(p.PartId)
 	if err != nil {
 		tx.Rollback()
 		return err

@@ -52,6 +52,25 @@ var (
 					join ContentType as ct on c.cTypeID = ct.cTypeID
 					where partID = ? && ct.type = 'InstallationSheet'
 					limit 1`
+	//create
+	createPart = `INSERT INTO Part (partID, status, dateAdded, shortDesc, priceCode, classID, featured, ACESPartTypeID) 
+					VALUES(?,?,?,?,?,?,?, ?)`
+	createPartAttributeJoin = `INSERT INTO PartAttribute (partID, value, field, sort) VALUES (?,?,?,?)`
+	createVehiclePartJoin   = `INSERT INTO VehiclePart (vehicleID, partID, drilling, exposed, installTime) VALUES (?,?,?,?,?)`
+	createContentBridge     = `INSERT INTO ContentBridge (catID, partID, contentID) VALUES (?,?,?)`
+	createRelatedPart       = `INSERT INTO RelatedPart (partID, relatedID) VALUES (?,?)`
+	createPartCategoryJoin  = `INSERT INTO CatPart (catID, partID) VALUES (?,?)`
+
+	//delete
+	deletePart               = `DELETE FROM Part WHERE partID  = ?`
+	deletePartAttributeJoins = `DELETE FROM PartAttribute WHERE partID = ?`
+	deleteVehiclePartJoins   = `DELETE FROM VehiclePart WHERE partID = ?`
+	deleteContentBridgeJoins = `DELETE FROM ContentBridge WHERE partID = ?`
+	deleteRelatedParts       = `DELETE FROM RelatedPart WHERE partID = ?`
+	deletePartCategoryJoins  = `DELETE FROM CatPart WHERE partID = ?`
+
+	//update
+	updatePart = `UPDATE Part SET status = ?, shortDesc = ?, priceCode = ?, classID = ?, featured = ?, ACESPartTypeID = ? WHERE partID = ?`
 )
 
 type Part struct {
@@ -63,7 +82,7 @@ type Part struct {
 	DateModified      time.Time         `json:"date_modified" xml:"date_modified,attr"`
 	DateAdded         time.Time         `json:"date_added" xml:"date_added,attr"`
 	ShortDesc         string            `json:"short_description" xml:"short_description,attr"`
-	PartClass         string            `json:"part_class" xml:"part_class,attr"`
+	PartClass         string            `json:"part_class" xml:"part_class,attr"` //sloppy - delete me in favor of child object "Class"
 	InstallSheet      *url.URL          `json:"install_sheet" xml:"install_sheet"`
 	Attributes        []Attribute       `json:"attributes" xml:"attributes"`
 	VehicleAttributes []string          `json:"vehicle_atttributes" xml:"vehicle_attributes"`
@@ -77,6 +96,10 @@ type Part struct {
 	Videos            []PartVideo       `json:"videos" xml:"videos"`
 	Packages          []Package         `json:"packages" xml:"packages"`
 	Customer          CustomerPart      `json:"customer,omitempty" xml:"customer,omitempty"`
+	Class             Class             `json:"class,omitempty" xml:"class,omitempty"`
+	Featured          bool              `json:"featured,omitempty" xml:"featured,omitempty"`
+	AcesPartTypeID    int               `json:"acesPartTypeId,omitempty" xml:"acesPartTypeId,omitempty"`
+	Installations     Installations     `json:"installation,omitempty" xml:"installation,omitempty"`
 }
 
 type CustomerPart struct {
@@ -85,6 +108,7 @@ type CustomerPart struct {
 }
 
 type Content struct {
+	ID    int    `json:"id,omitempty" xml:"id,omitempty"`
 	Key   string `json:"key" xml:"key,attr"`
 	Value string `json:"value" xml:",chardata"`
 }
@@ -97,6 +121,23 @@ type PaginatedProductListing struct {
 	PerPage       int    `json:"per_page" xml:"per_page,attr"`
 	TotalPages    int    `json:"total_pages" xml:"total_pages,attr"`
 }
+
+type Class struct {
+	ID    int    `json:"id,omitempty" xml:"id,omitempty"`
+	Name  string `json:"name,omitempty" xml:"name,omitempty"`
+	Image string `json:"image,omitempty" xml:"image,omitempty"`
+}
+
+type Installation struct { //aka VehiclePart Table
+	ID          int             `json:"id,omitempty" xml:"id,omitempty"`
+	Vehicle     vehicle.Vehicle `json:"vehicle,omitempty" xml:"vehicle,omitempty"`
+	Part        Part            `json:"part,omitempty" xml:"part,omitempty"`
+	Drilling    string          `json:"drilling,omitempty" xml:"v,omitempty"`
+	Exposed     string          `json:"exposed,omitempty" xml:"exposed,omitempty"`
+	InstallTime int             `json:"installTime,omitempty" xml:"installTime,omitempty"`
+}
+
+type Installations []Installation
 
 func (p *Part) FromDatabase() error {
 
@@ -796,3 +837,779 @@ func (p *Part) GetPartCategories(key string) (cats []Category, err error) {
 
 // 	return
 // }
+
+func (p *Part) Create() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(createPart)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	p.DateAdded = time.Now()
+	_, err = stmt.Exec(
+		p.ID,
+		p.Status,
+		p.DateAdded,
+		p.ShortDesc,
+		p.PriceCode,
+		p.Class.ID,
+		p.Featured,
+		p.AcesPartTypeID,
+	)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+
+	pajChan := make(chan int)
+	diChan := make(chan int)
+	dcbChan := make(chan int)
+	priceChan := make(chan int)
+	revChan := make(chan int)
+	imageChan := make(chan int)
+	relatedChan := make(chan int)
+	pcjChan := make(chan int)
+	videoChan := make(chan int)
+	packChan := make(chan int)
+
+	go func() (err error) {
+		for _, attribute := range p.Attributes {
+			err = p.CreatePartAttributeJoin(attribute)
+			if err != nil {
+				pajChan <- 1
+				return err
+			}
+		}
+		pajChan <- 1
+		return err
+	}()
+	go func() (err error) {
+		for _, installation := range p.Installations {
+			err = p.CreateInstallation(installation)
+			if err != nil {
+				diChan <- 1
+				return err
+			}
+		}
+		diChan <- 1
+		return err
+	}()
+	go func() (err error) {
+		for _, content := range p.Content {
+			err = p.CreateContentBridge(p.Categories, content)
+			if err != nil {
+				dcbChan <- 1
+				return err
+			}
+		}
+		dcbChan <- 1
+		return err
+	}()
+	go func() (err error) {
+		for _, price := range p.Pricing {
+			price.PartId = p.ID
+			err = price.Create()
+			if err != nil {
+				priceChan <- 1
+				return err
+			}
+		}
+		priceChan <- 1
+		return err
+	}()
+	go func() (err error) {
+		for _, review := range p.Reviews {
+			review.PartID = p.ID
+			err = review.Create()
+			if err != nil {
+				revChan <- 1
+				return err
+			}
+		}
+		revChan <- 1
+		return err
+	}()
+	go func() (err error) {
+		for _, image := range p.Images {
+			image.PartID = p.ID
+			err = image.Create()
+			if err != nil {
+				imageChan <- 1
+				return err
+			}
+		}
+		imageChan <- 1
+		return err
+	}()
+	go func() (err error) {
+		for _, related := range p.Related {
+			err = p.CreateRelatedPart(related)
+			if err != nil {
+				relatedChan <- 1
+				return err
+			}
+		}
+		relatedChan <- 1
+		return err
+	}()
+	go func() (err error) {
+		for _, category := range p.Categories {
+			err = p.CreatePartCategoryJoin(category)
+			if err != nil {
+				pcjChan <- 1
+				return err
+			}
+		}
+		pcjChan <- 1
+		return err
+	}()
+	go func() (err error) {
+		for _, video := range p.Videos {
+			video.PartID = p.ID
+			err = video.CreatePartVideo()
+			if err != nil {
+				videoChan <- 1
+				return err
+			}
+		}
+		videoChan <- 1
+		return err
+	}()
+	go func() (err error) {
+		for _, pack := range p.Packages {
+			pack.PartID = p.ID
+			err = pack.Create()
+			if err != nil {
+				packChan <- 1
+				return err
+			}
+		}
+		packChan <- 1
+		return err
+	}()
+
+	<-pajChan
+	<-diChan
+	<-dcbChan
+	<-priceChan
+	<-revChan
+	<-imageChan
+	<-relatedChan
+	<-pcjChan
+	<-videoChan
+	<-packChan
+
+	return err
+}
+
+func (p *Part) Delete() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(deletePart)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(p.ID)
+	if err != nil {
+		return err
+	}
+
+	pajChan := make(chan int)
+	diChan := make(chan int)
+	dcbChan := make(chan int)
+	priceChan := make(chan int)
+	revChan := make(chan int)
+	imageChan := make(chan int)
+	relatedChan := make(chan int)
+	pcjChan := make(chan int)
+	videoChan := make(chan int)
+	packChan := make(chan int)
+
+	go func() (err error) {
+		err = p.DeletePartAttributeJoins()
+		if err != nil {
+			pajChan <- 1
+			return err
+		}
+		pajChan <- 1
+		return err
+	}()
+	go func() (err error) {
+		err = p.DeleteInstallations()
+		if err != nil {
+			diChan <- 1
+			return err
+		}
+		diChan <- 1
+		return err
+	}()
+	go func() (err error) {
+		err = p.DeleteContentBridges()
+		if err != nil {
+			dcbChan <- 1
+			return err
+		}
+		dcbChan <- 1
+		return err
+	}()
+	go func() (err error) {
+		var price Price
+		price.PartId = p.ID
+		err = price.DeleteByPart()
+		if err != nil {
+			priceChan <- 1
+			return err
+		}
+		priceChan <- 1
+		return err
+	}()
+	go func() (err error) {
+		var review Review
+		review.PartID = p.ID
+		err = review.Delete()
+		if err != nil {
+			revChan <- 1
+			return err
+		}
+		revChan <- 1
+		return err
+	}()
+	go func() (err error) {
+		var image Image
+		image.PartID = p.ID
+		err = image.DeleteByPart()
+		if err != nil {
+			imageChan <- 1
+			return err
+		}
+		imageChan <- 1
+		return err
+	}()
+	go func() (err error) {
+		err = p.DeleteRelatedParts()
+		if err != nil {
+			relatedChan <- 1
+			return err
+		}
+		relatedChan <- 1
+		return err
+	}()
+	go func() (err error) {
+		err = p.DeletePartCategoryJoins()
+		if err != nil {
+			pcjChan <- 1
+			return err
+		}
+		pcjChan <- 1
+		return err
+	}()
+	go func() (err error) {
+		var v PartVideo
+		v.PartID = p.ID
+		err = v.DeleteByPart()
+		if err != nil {
+			videoChan <- 1
+			return err
+		}
+		videoChan <- 1
+		return err
+	}()
+	go func() (err error) {
+		var pack Package
+		pack.PartID = p.ID
+		err = pack.DeleteByPart()
+		if err != nil {
+			packChan <- 1
+			return err
+		}
+		packChan <- 1
+		return err
+	}()
+
+	<-pajChan
+	<-diChan
+	<-dcbChan
+	<-priceChan
+	<-revChan
+	<-imageChan
+	<-relatedChan
+	<-pcjChan
+	<-videoChan
+	<-packChan
+
+	return nil
+}
+
+func (p *Part) Update() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(updatePart)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(p.Status, p.ShortDesc, p.PriceCode, p.Class.ID, p.Featured, p.AcesPartTypeID, p.ID)
+	if err != nil {
+		return err
+	}
+	//Refresh joins
+	pajChan := make(chan int)
+	diChan := make(chan int)
+	dcbChan := make(chan int)
+	priceChan := make(chan int)
+	revChan := make(chan int)
+	imageChan := make(chan int)
+	relatedChan := make(chan int)
+	pcjChan := make(chan int)
+	videoChan := make(chan int)
+	packChan := make(chan int)
+	pajChanC := make(chan int)
+	diChanC := make(chan int)
+	dcbChanC := make(chan int)
+	priceChanC := make(chan int)
+	revChanC := make(chan int)
+	imageChanC := make(chan int)
+	relatedChanC := make(chan int)
+	pcjChanC := make(chan int)
+	videoChanC := make(chan int)
+	packChanC := make(chan int)
+
+	go func() (err error) {
+		err = p.DeletePartAttributeJoins()
+		if err != nil {
+			pajChan <- 1
+			return err
+		}
+		pajChan <- 1
+		return err
+	}()
+	go func() (err error) {
+		err = p.DeleteInstallations()
+		if err != nil {
+			diChan <- 1
+			return err
+		}
+		diChan <- 1
+		return err
+	}()
+	go func() (err error) {
+		err = p.DeleteContentBridges()
+		if err != nil {
+			dcbChan <- 1
+			return err
+		}
+		dcbChan <- 1
+		return err
+	}()
+	go func() (err error) {
+		var price Price
+		price.PartId = p.ID
+		err = price.DeleteByPart()
+		if err != nil {
+			priceChan <- 1
+			return err
+		}
+		priceChan <- 1
+		return err
+	}()
+	go func() (err error) {
+		var review Review
+		review.PartID = p.ID
+		err = review.Delete()
+		if err != nil {
+			revChan <- 1
+			return err
+		}
+		revChan <- 1
+		return err
+	}()
+	go func() (err error) {
+		var image Image
+		image.PartID = p.ID
+		err = image.DeleteByPart()
+		if err != nil {
+			imageChan <- 1
+			return err
+		}
+		imageChan <- 1
+		return err
+	}()
+	go func() (err error) {
+		err = p.DeleteRelatedParts()
+		if err != nil {
+			relatedChan <- 1
+			return err
+		}
+		relatedChan <- 1
+		return err
+	}()
+	go func() (err error) {
+		err = p.DeletePartCategoryJoins()
+		if err != nil {
+			pcjChan <- 1
+			return err
+		}
+		pcjChan <- 1
+		return err
+	}()
+	go func() (err error) {
+		var v PartVideo
+		v.PartID = p.ID
+		err = v.DeleteByPart()
+		if err != nil {
+			videoChan <- 1
+			return err
+		}
+		videoChan <- 1
+		return err
+	}()
+	go func() (err error) {
+		var pack Package
+		pack.PartID = p.ID
+		err = pack.DeleteByPart()
+		if err != nil {
+			packChan <- 1
+			return err
+		}
+		packChan <- 1
+		return err
+	}()
+
+	go func() (err error) {
+		for _, attribute := range p.Attributes {
+			err = p.CreatePartAttributeJoin(attribute)
+			if err != nil {
+				pajChanC <- 1
+				return err
+			}
+		}
+		pajChanC <- 1
+		return err
+	}()
+	go func() (err error) {
+		for _, installation := range p.Installations {
+			err = p.CreateInstallation(installation)
+			if err != nil {
+				diChanC <- 1
+				return err
+			}
+		}
+		diChanC <- 1
+		return err
+	}()
+	go func() (err error) {
+		for _, content := range p.Content {
+			err = p.CreateContentBridge(p.Categories, content)
+			if err != nil {
+				dcbChanC <- 1
+				return err
+			}
+		}
+		dcbChanC <- 1
+		return err
+	}()
+	go func() (err error) {
+		for _, price := range p.Pricing {
+			price.PartId = p.ID
+			err = price.Create()
+			if err != nil {
+				priceChanC <- 1
+				return err
+			}
+		}
+		priceChanC <- 1
+		return err
+	}()
+	go func() (err error) {
+		for _, review := range p.Reviews {
+			review.PartID = p.ID
+			err = review.Create()
+			if err != nil {
+				revChanC <- 1
+				return err
+			}
+		}
+		revChanC <- 1
+		return err
+	}()
+	go func() (err error) {
+		for _, image := range p.Images {
+			image.PartID = p.ID
+			err = image.Create()
+			if err != nil {
+				imageChanC <- 1
+				return err
+			}
+		}
+		imageChanC <- 1
+		return err
+	}()
+	go func() (err error) {
+		for _, related := range p.Related {
+			err = p.CreateRelatedPart(related)
+			if err != nil {
+				relatedChanC <- 1
+				return err
+			}
+		}
+		relatedChanC <- 1
+		return err
+	}()
+	go func() (err error) {
+		for _, category := range p.Categories {
+			err = p.CreatePartCategoryJoin(category)
+			if err != nil {
+				pcjChanC <- 1
+				return err
+			}
+		}
+		pcjChanC <- 1
+		return err
+	}()
+	go func() (err error) {
+		for _, video := range p.Videos {
+			video.PartID = p.ID
+			err = video.CreatePartVideo()
+			if err != nil {
+				videoChanC <- 1
+				return err
+			}
+		}
+		videoChanC <- 1
+		return err
+	}()
+	go func() (err error) {
+		for _, pack := range p.Packages {
+			pack.PartID = p.ID
+			err = pack.Create()
+			if err != nil {
+				packChanC <- 1
+				return err
+			}
+		}
+		packChanC <- 1
+		return err
+	}()
+
+	<-pajChan
+	<-diChan
+	<-dcbChan
+	<-priceChan
+	<-revChan
+	<-imageChan
+	<-relatedChan
+	<-pcjChan
+	<-videoChan
+	<-packChan
+	<-pajChanC
+	<-diChanC
+	<-dcbChanC
+	<-priceChanC
+	<-revChanC
+	<-imageChanC
+	<-relatedChanC
+	<-pcjChanC
+	<-videoChanC
+	<-packChanC
+
+	return err
+}
+
+//Join Creators
+func (p *Part) CreatePartAttributeJoin(a Attribute) (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(createPartAttributeJoin)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(p.ID, a.Value, a.Key, a.Sort)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+//Creates "VehiclePart" Join, which also contains installation fields
+func (p *Part) CreateInstallation(i Installation) (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(createVehiclePartJoin)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	res, err := stmt.Exec(i.Vehicle.ID, p.ID, i.Drilling, i.Exposed, i.InstallTime)
+	if err != nil {
+		return err
+	}
+	id, err := res.LastInsertId()
+	i.ID = int(id)
+	return nil
+}
+
+func (p *Part) CreateContentBridge(cats []Category, c Content) (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(createContentBridge)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	for _, cat := range cats {
+		_, err = stmt.Exec(cat.ID, p.ID, c.ID)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	err = tx.Commit()
+	return err
+}
+
+func (p *Part) CreateRelatedPart(relatedID int) (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(createRelatedPart)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(p.ID, relatedID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (p *Part) CreatePartCategoryJoin(c Category) (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(createPartCategoryJoin)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(c.ID, p.ID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+//delete Joins
+func (p *Part) DeletePartAttributeJoins() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(deletePartAttributeJoins)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(p.ID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+func (p *Part) DeleteInstallations() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(deleteVehiclePartJoins)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(p.ID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+func (p *Part) DeleteContentBridges() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(deleteContentBridgeJoins)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(p.ID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+func (p *Part) DeleteRelatedParts() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(deleteRelatedParts)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(p.ID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+func (p *Part) DeletePartCategoryJoins() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(deletePartCategoryJoins)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(p.ID)
+	if err != nil {
+		return err
+	}
+	return nil
+}

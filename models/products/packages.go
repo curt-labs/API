@@ -18,14 +18,30 @@ var (
 				join UnitOfMeasure as um_wt on pp.weightUOM = um_wt.ID
 				join UnitOfMeasure as um_pkg on pp.packageUOM = um_pkg.ID
 				where pp.partID = ?`
+	createPackage  = `INSERT INTO PartPackage (partID, height, width, length, weight, dimensionUOM, weightUOM, packageUOM, quantity, typeID)`
+	deletePackages = `DELETE FROM PartPackages WHERE partID = ?`
 )
 
 type Package struct {
-	Height, Width, Length, Quantity   float64
-	Weight                            float64
-	DimensionUnit, DimensionUnitLabel string
-	WeightUnit, WeightUnitLabel       string
-	PackageUnit, PackageUnitLabel     string
+	ID                 int         `json:"id,omitempty" xml:"id,omitempty"`
+	PartID             int         `json:"partId,omitempty" xml:"partId,omitempty"`
+	Height             float64     `json:"height,omitempty" xml:"height,omitempty"`
+	Width              float64     `json:"width,omitempty" xml:"width,omitempty"`
+	Length             float64     `json:"length,omitempty" xml:"length,omitempty"`
+	Weight             float64     `json:"weight,omitempty" xml:"weight,omitempty"`
+	DimensionUnit      int         `json:"dimensionUnit,omitempty" xml:"dimensionUnit,omitempty"`
+	DimensionUnitLabel string      `json:"dimensionUnitLabel,omitempty" xml:"dimensionUnitLabel,omitempty"`
+	WeightUnit         int         `json:"weightUnit,omitempty" xml:"weightUnit,omitempty"`
+	WeightUnitLabel    string      `json:"weightUnitLabel,omitempty" xml:"weightUnitLabel,omitempty"`
+	PackageUnit        int         `json:"packageUnit,omitempty" xml:"packageUnit,omitempty"`
+	PackageUnitLabel   string      `json:"packageUnitLabel,omitempty" xml:"packageUnitLabel,omitempty"`
+	Quantity           int         `json:"quantity,omitempty" xml:"quantity,omitempty"`
+	PackageType        PackageType `json:"packageType,omitempty" xml:"packageType,omitempty"`
+}
+
+type PackageType struct {
+	ID   int    `json:"id,omitempty" xml:"id,omitempty"`
+	Name string `json:"name,omitempty" xml:"name,omitempty"`
 }
 
 func (p *Part) GetPartPackaging() error {
@@ -79,5 +95,46 @@ func (p *Part) GetPartPackaging() error {
 
 	go redis.Setex(redis_key, p.Packages, redis.CacheTimeout)
 
+	return nil
+}
+
+func (p *Package) Create() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(createPackage)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	res, err := stmt.Exec(p.PartID, p.Height, p.Width, p.Length, p.DimensionUnit, p.WeightUnit, p.PackageUnit, p.PackageType.ID)
+	if err != nil {
+		return err
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return err
+	}
+	p.ID = int(id)
+	return
+}
+
+func (p *Package) DeleteByPart() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(deletePackages)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(p.PartID)
+	if err != nil {
+		return err
+	}
 	return nil
 }

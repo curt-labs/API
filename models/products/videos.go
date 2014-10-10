@@ -11,15 +11,27 @@ import (
 )
 
 type PartVideo struct {
-	YouTubeVideoId, Type string
-	IsPrimary            bool
-	TypeIcon             *url.URL
+	ID             int
+	PartID         int
+	YouTubeVideoId string
+	Type           string //TODO dispose
+	IsPrimary      bool
+	TypeIcon       *url.URL //TODO dispose
+	VideoType      VideoType
+}
+
+type VideoType struct {
+	ID   int
+	Name string
+	Icon string
 }
 
 var (
 	partVideoStmt = `select pv.video,vt.name,pv.isPrimary, vt.icon from PartVideo as pv
 				join videoType vt on pv.vTypeID = vt.vTypeID
 				where pv.partID = ?`
+	createPartVideo  = `INSERT INTO PartVideo (partID, video, vTypeID, isPrimary) VALUES (?,?,?,?)`
+	deletePartVideos = `DELETE FROM PartVideo WHERE partID = ?`
 )
 
 func (p *Part) GetVideos() error {
@@ -70,5 +82,47 @@ func (p *Part) GetVideos() error {
 
 	go redis.Setex(redis_key, p.Videos, redis.CacheTimeout)
 
+	return nil
+}
+
+func (p *PartVideo) CreatePartVideo() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(createPartVideo)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	res, err := stmt.Exec(p.PartID, p.YouTubeVideoId, p.VideoType.ID, p.IsPrimary)
+	if err != nil {
+		return err
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return err
+	}
+
+	p.ID = int(id)
+	return nil
+}
+
+func (p *PartVideo) DeleteByPart() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(deletePartVideos)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(p.PartID)
+	if err != nil {
+		return err
+	}
 	return nil
 }
