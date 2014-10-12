@@ -17,6 +17,7 @@ import (
 	"github.com/curt-labs/GoAPI/controllers/search"
 	"github.com/curt-labs/GoAPI/controllers/site"
 	"github.com/curt-labs/GoAPI/controllers/site_new"
+	"github.com/curt-labs/GoAPI/controllers/testimonials"
 	"github.com/curt-labs/GoAPI/controllers/vehicle"
 	"github.com/curt-labs/GoAPI/controllers/videos"
 	"github.com/curt-labs/GoAPI/controllers/webProperty"
@@ -280,6 +281,11 @@ func main() {
 	})
 
 	m.Get("/search/:term", search_ctlr.Search)
+
+	m.Group("/testimonials", func(r martini.Router) {
+		r.Get("", testimonials.GetAllTestimonials)
+		r.Get("/:id", testimonials.GetTestimonial)
+	})
 
 	m.Group("/videos", func(r martini.Router) {
 		r.Get("/distinct", videos_ctlr.DistinctVideos) //old "videos" table - curtmfg?
