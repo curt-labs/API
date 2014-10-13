@@ -1,6 +1,8 @@
 package testimonials
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 
@@ -31,4 +33,63 @@ func GetTestimonial(rw http.ResponseWriter, req *http.Request, params martini.Pa
 		return err.Error()
 	}
 	return encoding.Must(enc.Encode(test))
+}
+
+func Save(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+	var a testimonials.Testimonial
+	var err error
+	idStr := params["id"]
+	if idStr != "" {
+		a.ID, err = strconv.Atoi(idStr)
+		err = a.Get()
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return ""
+		}
+	}
+
+	//json
+	requestBody, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return encoding.Must(enc.Encode(false))
+	}
+	err = json.Unmarshal(requestBody, &a)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return encoding.Must(enc.Encode(false))
+	}
+	//create or update
+	if a.ID > 0 {
+		err = a.Update()
+	} else {
+		err = a.Create()
+	}
+
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+	return encoding.Must(enc.Encode(a))
+}
+
+func Delete(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+	var err error
+	var a testimonials.Testimonial
+
+	idStr := params["id"]
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+	a.ID = id
+	err = a.Delete()
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(a))
 }
