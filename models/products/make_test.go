@@ -28,7 +28,7 @@ func TestGetMakes(t *testing.T) {
 		err := l.GetMakes()
 		So(err, ShouldEqual, nil)
 		So(l.Makes, ShouldNotEqual, nil)
-		So(len(l.Makes), ShouldNotEqual, 0)
+		So(l.Makes, ShouldHaveSameTypeAs, []string{})
 		So(l.Vehicle.Base.Year, ShouldEqual, 2010)
 	})
 }
