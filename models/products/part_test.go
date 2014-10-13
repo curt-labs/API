@@ -80,5 +80,12 @@ func TestParts(t *testing.T) {
 	// 	p.ShortDesc = "Test"
 
 	// })
+}
 
+func TestLatest(t *testing.T) {
+	Convey("Testing GetLatest", t, func() {
+		parts, err := Latest(generateAPIkey(), 10)
+		So(err, ShouldBeNil)
+		So(parts, ShouldHaveSameTypeAs, []Part{})
+	})
 }

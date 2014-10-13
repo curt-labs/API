@@ -82,6 +82,7 @@ func main() {
 	})
 
 	m.Group("/part", func(r martini.Router) {
+		r.Get("/latest", part_ctlr.Latest)
 		r.Get("/:part/vehicles", part_ctlr.Vehicles)
 		r.Get("/:part/attributes", part_ctlr.Attributes)
 		r.Get("/:part/reviews", part_ctlr.ActiveApprovedReviews)
