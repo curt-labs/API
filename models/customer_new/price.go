@@ -34,9 +34,9 @@ var (
 	createPrice          = "INSERT INTO CustomerPricing (cust_id, partID, price, isSale, sale_start, sale_end) VALUES (?,?,?,?,?,?)"
 	updatePrice          = "UPDATE CustomerPricing SET cust_id = ?, partID = ?, price = ?, isSale = ?, sale_start = ?, sale_end = ? WHERE cust_price_id = ?"
 	deletePrice          = "DELETE FROM CustomerPricing WHERE cust_price_id = ?"
-	getPricesByCustomer  = "SELECT cust_price_id, cust_id, partID, price, isSale, sale_start, sale_end FROM CustomerPricing WHERE cust_id = ?"
+	getPricesByCustomer  = "SELECT cust_price_id, cust_id, partID, price, isSale, sale_start, sale_end FROM CustomerPricing WHERE cust_id = (select cust_id from Customer where customerID = ?)"
 	getPricesByPart      = "SELECT cust_price_id, cust_id, partID, price, isSale, sale_start, sale_end FROM CustomerPricing WHERE partID = ?"
-	getPricesBySaleRange = "SELECT cust_price_id, cust_id, partID, price, isSale, sale_start, sale_end FROM CustomerPricing WHERE sale_start >= ? AND sale_end <= ? AND cust_id = ?"
+	getPricesBySaleRange = "SELECT cust_price_id, cust_id, partID, price, isSale, sale_start, sale_end FROM CustomerPricing WHERE sale_start >= ? AND sale_end <= ? AND cust_id = (select cust_id from Customer where customerID = ?)"
 )
 
 const (

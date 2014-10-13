@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"github.com/curt-labs/GoAPI/controllers/blog"
+	"github.com/curt-labs/GoAPI/controllers/cartIntegration"
 	"github.com/curt-labs/GoAPI/controllers/category"
 	"github.com/curt-labs/GoAPI/controllers/customer"
 	"github.com/curt-labs/GoAPI/controllers/customer_new"
@@ -175,6 +176,18 @@ func main() {
 		r.Put("", internalCors, blog_controller.CreateBlog)        //update {post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active} required{id}
 		r.Delete("/:id", internalCors, blog_controller.DeleteBlog) //{?id=id}
 		r.Delete("", internalCors, blog_controller.DeleteBlog)     //{id}
+	})
+
+	m.Group("/cart", func(r martini.Router) {
+		r.Get("/customer/pricing/:custID/:page/:count", cartIntegration.GetCustomerPricingPaged)
+		r.Get("/customer/pricing/:custID", cartIntegration.GetCustomerPricing)
+		r.Get("/customer/count/:custID", cartIntegration.GetCustomerPricingCount)
+		r.Get("/part/:id", cartIntegration.GetCIbyPart)
+		r.Get("/customer/:id", cartIntegration.GetCIbyCustomer) //shallower object than GetCustomerPricing
+		r.Get("/:id", cartIntegration.GetCI)
+		r.Post("/:id", cartIntegration.SaveCI)
+		r.Put("", cartIntegration.SaveCI)
+		r.Delete("/:id", cartIntegration.DeleteCI)
 	})
 
 	m.Group("/forum", func(r martini.Router) {
