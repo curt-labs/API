@@ -11,6 +11,6 @@ func TestGetYears(t *testing.T) {
 		err := l.GetYears()
 		So(err, ShouldEqual, nil)
 		So(l.Years, ShouldNotEqual, nil)
-		So(len(l.Years), ShouldNotEqual, 0)
+		So(l.Years, ShouldHaveSameTypeAs, []int{})
 	})
 }
