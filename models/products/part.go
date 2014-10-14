@@ -28,6 +28,11 @@ var (
 															where p.status = 800 || p.status = 900
 															order by p.partID
 															limit ?,?`
+	GetLatestParts = `select distinct p.partID
+										from Part as p
+										where p.status = 800 || p.status = 900
+										order by p.dateAdded desc
+										limit 0,?`
 	SubCategoryIDStmt = `select distinct cp.partID
 								from CatPart as cp
 								join Part as p on cp.partID = p.partID
@@ -53,7 +58,7 @@ var (
 					where partID = ? && ct.type = 'InstallationSheet'
 					limit 1`
 	//create
-	createPart = `INSERT INTO Part (partID, status, dateAdded, shortDesc, priceCode, classID, featured, ACESPartTypeID) 
+	createPart = `INSERT INTO Part (partID, status, dateAdded, shortDesc, priceCode, classID, featured, ACESPartTypeID)
 					VALUES(?,?,?,?,?,?,?, ?)`
 	createPartAttributeJoin = `INSERT INTO PartAttribute (partID, value, field, sort) VALUES (?,?,?,?)`
 	createVehiclePartJoin   = `INSERT INTO VehiclePart (vehicleID, partID, drilling, exposed, installTime) VALUES (?,?,?,?,?)`
@@ -100,6 +105,7 @@ type Part struct {
 	Featured          bool              `json:"featured,omitempty" xml:"featured,omitempty"`
 	AcesPartTypeID    int               `json:"acesPartTypeId,omitempty" xml:"acesPartTypeId,omitempty"`
 	Installations     Installations     `json:"installation,omitempty" xml:"installation,omitempty"`
+	Inventory         PartInventory     `json:"inventory,omitempty" xml:"inventory,omitempty"`
 }
 
 type CustomerPart struct {
@@ -255,6 +261,8 @@ func (p *Part) Get(key string) error {
 
 	go func(api_key string) {
 		err = p.BindCustomer(api_key)
+
+		err = p.GetInventory(api_key, "")
 		customerChan <- 1
 	}(key)
 
@@ -322,6 +330,52 @@ func All(key string, page, count int) ([]Part, error) {
 	}
 
 	sortutil.AscByField(parts, "ID")
+
+	return parts, nil
+}
+
+func Latest(key string, count int) ([]Part, error) {
+	parts := make([]Part, 0)
+
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return parts, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(GetLatestParts)
+	if err != nil {
+		return parts, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(count)
+	if err != nil {
+		return parts, err
+	}
+
+	iter := 0
+	partChan := make(chan int)
+	for rows.Next() {
+		var partID int
+		if err = rows.Scan(&partID); err != nil {
+			return parts, err
+		}
+
+		go func(id int) {
+			p := Part{ID: id}
+			p.Get(key)
+			parts = append(parts, p)
+			partChan <- 1
+		}(partID)
+		iter++
+	}
+
+	for i := 0; i < iter; i++ {
+		<-partChan
+	}
+
+	sortutil.DescByField(parts, "DateAdded")
 
 	return parts, nil
 }

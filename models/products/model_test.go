@@ -37,7 +37,7 @@ func TestGetModels(t *testing.T) {
 		err := l.GetModels()
 		So(err, ShouldEqual, nil)
 		So(l.Models, ShouldNotEqual, nil)
-		So(len(l.Models), ShouldNotEqual, 0)
+		So(l.Models, ShouldHaveSameTypeAs, []string{})
 		So(l.Vehicle.Base.Year, ShouldEqual, 2010)
 		So(l.Vehicle.Base.Make, ShouldEqual, "Ford")
 	})

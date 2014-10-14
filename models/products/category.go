@@ -267,6 +267,7 @@ func PopulateCategory(row *sql.Row, ch chan Category) {
 // Returns: []Category, error
 func TopTierCategories(key string) (cats []Category, err error) {
 
+	cats = make([]Category, 0)
 	redis_key := "category:top"
 
 	// First lets try to access the category:top endpoint in Redis
@@ -405,6 +406,8 @@ func GetCategoryById(cat_id int) (cat Category, err error) {
 }
 
 func (c *Category) GetSubCategories() (cats []Category, err error) {
+
+	cats = make([]Category, 0)
 
 	if c.ID == 0 {
 		return
