@@ -140,9 +140,6 @@ func (p *Part) GetInventory(apiKey, warehouseCode string) error {
 		); err != nil {
 			return err
 		}
-		// if date != "" {
-		// 	i.DateUpdated, _ = time.Parse(time.RFC3339, date)
-		// }
 
 		if i.Part != 0 {
 			p.Inventory.Warehouses = append(p.Inventory.Warehouses, i)
@@ -151,10 +148,6 @@ func (p *Part) GetInventory(apiKey, warehouseCode string) error {
 
 	for _, w := range p.Inventory.Warehouses {
 		p.Inventory.TotalAvailability = p.Inventory.TotalAvailability + w.Quantity
-	}
-
-	if p.Inventory.TotalAvailability > 2 {
-		p.Inventory.TotalAvailability = p.Inventory.TotalAvailability - 2
 	}
 
 	return nil
