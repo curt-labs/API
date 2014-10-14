@@ -105,6 +105,7 @@ type Part struct {
 	Featured          bool              `json:"featured,omitempty" xml:"featured,omitempty"`
 	AcesPartTypeID    int               `json:"acesPartTypeId,omitempty" xml:"acesPartTypeId,omitempty"`
 	Installations     Installations     `json:"installation,omitempty" xml:"installation,omitempty"`
+	Inventory         PartInventory     `json:"inventory,omitempty" xml:"inventory,omitempty"`
 }
 
 type CustomerPart struct {
@@ -260,6 +261,8 @@ func (p *Part) Get(key string) error {
 
 	go func(api_key string) {
 		err = p.BindCustomer(api_key)
+
+		err = p.GetInventory(api_key, "")
 		customerChan <- 1
 	}(key)
 

@@ -7,6 +7,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
+	"log"
 )
 
 var (
@@ -29,13 +30,13 @@ type Package struct {
 	Width              float64     `json:"width,omitempty" xml:"width,omitempty"`
 	Length             float64     `json:"length,omitempty" xml:"length,omitempty"`
 	Weight             float64     `json:"weight,omitempty" xml:"weight,omitempty"`
-	DimensionUnit      int         `json:"dimensionUnit,omitempty" xml:"dimensionUnit,omitempty"`
+	DimensionUnit      string      `json:"dimensionUnit,omitempty" xml:"dimensionUnit,omitempty"`
 	DimensionUnitLabel string      `json:"dimensionUnitLabel,omitempty" xml:"dimensionUnitLabel,omitempty"`
-	WeightUnit         int         `json:"weightUnit,omitempty" xml:"weightUnit,omitempty"`
+	WeightUnit         string      `json:"weightUnit,omitempty" xml:"weightUnit,omitempty"`
 	WeightUnitLabel    string      `json:"weightUnitLabel,omitempty" xml:"weightUnitLabel,omitempty"`
-	PackageUnit        int         `json:"packageUnit,omitempty" xml:"packageUnit,omitempty"`
+	PackageUnit        string      `json:"packageUnit,omitempty" xml:"packageUnit,omitempty"`
 	PackageUnitLabel   string      `json:"packageUnitLabel,omitempty" xml:"packageUnitLabel,omitempty"`
-	Quantity           int         `json:"quantity,omitempty" xml:"quantity,omitempty"`
+	Quantity           string      `json:"quantity,omitempty" xml:"quantity,omitempty"`
 	PackageType        PackageType `json:"packageType,omitempty" xml:"packageType,omitempty"`
 }
 
@@ -86,11 +87,13 @@ func (p *Part) GetPartPackaging() error {
 			&pkg.WeightUnitLabel,
 			&pkg.PackageUnit,
 			&pkg.PackageUnitLabel)
+		log.Println(err)
 		if err == nil {
 			pkgs = append(pkgs, pkg)
 		}
 	}
 
+	log.Println(len(pkgs))
 	p.Packages = pkgs
 
 	go redis.Setex(redis_key, p.Packages, redis.CacheTimeout)
