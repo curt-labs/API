@@ -10,7 +10,6 @@ import (
 	"github.com/go-martini/martini"
 	"github.com/ninnemana/analytics-go"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -24,7 +23,6 @@ func track(endpoint string, params map[string]string, r *http.Request) {
 
 	js, err := json.Marshal(params)
 	if err != nil {
-		log.Println(err)
 		return
 	}
 
@@ -399,14 +397,12 @@ func SavePrice(rw http.ResponseWriter, req *http.Request, params martini.Params,
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return encoding.Must(enc.Encode(false))
 	}
-	log.Print(p)
 	//create or update
 	if p.Id > 0 {
 		err = p.Update()
 	} else {
 		err = p.Create()
 	}
-	log.Print(p)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return ""
