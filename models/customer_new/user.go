@@ -304,10 +304,10 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 	c.DealerType.MapIcon.Id, err = conversions.ByteToInt(mapIconId)
 	c.DealerType.MapIcon.MapIcon, err = conversions.ByteToUrl(icon)
 	c.DealerType.MapIcon.MapIconShadow, err = conversions.ByteToUrl(shadow)
-	c.MapixCode, err = conversions.ByteToString(mapixCode)
-	c.MapixDescription, err = conversions.ByteToString(mapixDesc)
-	c.SalesRepresentative, err = conversions.ByteToString(rep)
-	c.SalesRepresentativeCode, err = conversions.ByteToString(repCode)
+	c.MapixCode.Code, err = conversions.ByteToString(mapixCode)
+	c.MapixCode.Description, err = conversions.ByteToString(mapixDesc)
+	c.SalesRepresentative.Name, err = conversions.ByteToString(rep)
+	c.SalesRepresentative.Code, err = conversions.ByteToString(repCode)
 
 	parentInt, err := conversions.ByteToInt(parentId)
 	if err != nil {

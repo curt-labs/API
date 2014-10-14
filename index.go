@@ -179,15 +179,15 @@ func main() {
 	})
 
 	m.Group("/cart", func(r martini.Router) {
-		r.Get("/customer/pricing/:custID/:page/:count", cartIntegration.GetCustomerPricingPaged)
-		r.Get("/customer/pricing/:custID", cartIntegration.GetCustomerPricing)
-		r.Get("/customer/count/:custID", cartIntegration.GetCustomerPricingCount)
-		r.Get("/part/:id", cartIntegration.GetCIbyPart)
-		r.Get("/customer/:id", cartIntegration.GetCIbyCustomer) //shallower object than GetCustomerPricing
-		r.Get("/:id", cartIntegration.GetCI)
-		r.Post("/:id", cartIntegration.SaveCI)
-		r.Put("", cartIntegration.SaveCI)
-		r.Delete("/:id", cartIntegration.DeleteCI)
+		r.Get("/customer/pricing/:custID/:page/:count", internalCors, cartIntegration.GetCustomerPricingPaged)
+		r.Get("/customer/pricing/:custID", internalCors, cartIntegration.GetCustomerPricing)
+		r.Get("/customer/count/:custID", internalCors, cartIntegration.GetCustomerPricingCount)
+		r.Get("/part/:id", internalCors, cartIntegration.GetCIbyPart)
+		r.Get("/customer/:id", internalCors, cartIntegration.GetCIbyCustomer) //shallower object than GetCustomerPricing
+		r.Get("/:id", internalCors, cartIntegration.GetCI)
+		r.Post("/:id", internalCors, cartIntegration.SaveCI)
+		r.Put("", internalCors, cartIntegration.SaveCI)
+		r.Delete("/:id", internalCors, cartIntegration.DeleteCI)
 	})
 
 	m.Group("/forum", func(r martini.Router) {
@@ -357,7 +357,11 @@ func main() {
 			r.Delete("/user/:id", customer_ctlr_new.DeleteCustomerUser)
 			r.Delete("/allUsersByCustomerID/:id", customer_ctlr_new.DeleteCustomerUsersByCustomerID) //Takes CustomerID (UUID)---danger!
 
-			// r.Get("/locations", internalCors, customer_ctlr_new.GetLocations)
+			r.Put("/location/json", internalCors, customer_ctlr_new.SaveLocationJson)
+			r.Post("/location/json/:id", internalCors, customer_ctlr_new.SaveLocationJson)
+			r.Put("/location", internalCors, customer_ctlr_new.SaveLocation)
+			r.Post("/location/:id", internalCors, customer_ctlr_new.SaveLocation)
+			r.Get("/locations", internalCors, customer_ctlr_new.GetLocations)
 			r.Post("/locations", internalCors, customer_ctlr_new.GetLocations)
 			r.Get("/price/:id", internalCors, customer_ctlr_new.GetCustomerPrice)           //{part id}
 			r.Get("/cartRef/:id", internalCors, customer_ctlr_new.GetCustomerCartReference) //{part id}
@@ -365,7 +369,7 @@ func main() {
 			r.Get("/auth", customer_ctlr_new.KeyedUserAuthentication)
 
 			// Customer CMS endpoints
-			// All Customer Content
+			// All Customer Contents
 			r.Get("/cms", customer_ctlr_new.GetAllContent)
 			// Content Types
 			r.Get("/cms/content_types", customer_ctlr.GetAllContentTypes)
@@ -406,9 +410,7 @@ func main() {
 			r.Get("/etailer/platinum", internalCors, dealers_ctlr_new.PlatinumEtailers) //move to dealers
 			r.Get("/location/:id", internalCors, dealers_ctlr_new.GetLocationById)      //move to dealers
 			r.Get("/search/:search", internalCors, dealers_ctlr_new.SearchLocations)
-			r.Get("/search/type", internalCors, dealers_ctlr_new.SearchLocationsByType)
 			r.Get("/search/type/:search", internalCors, dealers_ctlr_new.SearchLocationsByType)
-			r.Get("/search/geo", internalCors, dealers_ctlr_new.SearchLocationsByLatLng)
 			r.Get("/search/geo/:latitude/:longitude", internalCors, dealers_ctlr_new.SearchLocationsByLatLng)
 		})
 		m.Get("/dealer/location/:id", internalCors, dealers_ctlr_new.GetLocationById)
