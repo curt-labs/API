@@ -1,10 +1,10 @@
 package products
 
 import (
-	"database/sql"
+	"encoding/json"
 	"fmt"
-	"github.com/curt-labs/GoAPI/helpers/database"
-	_ "github.com/go-sql-driver/mysql"
+	"github.com/curt-labs/GoAPI/helpers/redis"
+	redix "github.com/garyburd/redigo/redis"
 	"time"
 )
 
@@ -38,19 +38,19 @@ var (
 )
 
 type Warehouse struct {
-	ID            int    `json:"-" xml:"-"`
-	Name          string `json:"name" xml:"name,attr"`
-	Code          string `json:"code" xml:"code,attr"`
-	Address       string `json:"address" xml:"address,attr"`
-	City          string `json:"city" xml:"city,attr"`
-	State         State  `json:"state" xml:"state"`
-	PostalCode    string `json:"postal_code" xml:"postal_code,attr"`
-	TollFreePhone string `json:"toll_free_phone" xml:"toll_free_phone,attr"`
-	Latitude      string `json:"latitude" xml:"latitude,attr"`
-	Longitude     string `json:"longitude" xml:"longitude,attr"`
-	Fax           string `json:"fax" xml:"fax,attr"`
-	LocalPhone    string `json:"local_phone" xml:"local_phone,attr"`
-	Manager       string `json:"manager" xml:"manager"`
+	ID            int     `json:"-" xml:"-"`
+	Name          string  `json:"name" xml:"name,attr"`
+	Code          string  `json:"code" xml:"code,attr"`
+	Address       string  `json:"address" xml:"address,attr"`
+	City          string  `json:"city" xml:"city,attr"`
+	State         State   `json:"state" xml:"state"`
+	PostalCode    string  `json:"postal_code" xml:"postal_code,attr"`
+	TollFreePhone string  `json:"toll_free_phone" xml:"toll_free_phone,attr"`
+	Latitude      float64 `json:"latitude" xml:"latitude,attr"`
+	Longitude     float64 `json:"longitude" xml:"longitude,attr"`
+	Fax           string  `json:"fax" xml:"fax,attr"`
+	LocalPhone    string  `json:"local_phone" xml:"local_phone,attr"`
+	Manager       string  `json:"manager" xml:"manager"`
 }
 
 type PartInventory struct {
@@ -78,70 +78,37 @@ type Country struct {
 	Abbreviation string `json:"abbreviation" xml:"abbreviation,attr"`
 }
 
+type FeedRecord struct {
+	Warehouse  Warehouse `json:"warehouse" xml:"warehouse"`
+	Part       int       `json:"part" xml:"part,attr"`
+	Quantity   int       `json:"quantity" xml:"quantity,attr"`
+	DateUpdate time.Time `json:"date_updated" xml:"date_updated`
+}
+
 func (p *Part) GetInventory(apiKey, warehouseCode string) error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	redis_key := fmt.Sprintf("part:%d:inventory", p.ID)
+
+	data, err := redis.Get(redis_key)
 	if err != nil {
+		if err == redix.ErrNil {
+			return nil
+		}
 		return err
 	}
-	defer db.Close()
 
-	var rows *sql.Rows
-	if warehouseCode == "" {
-		stmt, err := db.Prepare(GetInventoryForPart)
-		if err != nil {
-			return err
-		}
-		defer stmt.Close()
-
-		rows, err = stmt.Query(p.ID)
-		if err != nil {
-			return err
-		}
-	} else {
-		stmt, err := db.Prepare(GetInventoryForPartByWarehouse)
-		if err != nil {
-			return err
-		}
-		defer stmt.Close()
-
-		rows, err = stmt.Query(p.ID, warehouseCode)
-		if err != nil {
-			return err
-		}
+	var recs []FeedRecord
+	if err = json.Unmarshal(data, &recs); err != nil {
+		return err
 	}
 
-	if rows == nil {
-		return fmt.Errorf("error: %s", "inventory not available for this part")
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var i Inventory
-		// var date string
-		if err = rows.Scan(
-			&i.Part,
-			&i.Quantity,
-			&i.DateUpdated,
-			&i.Warehouse.Name,
-			&i.Warehouse.Code,
-			&i.Warehouse.Address,
-			&i.Warehouse.City,
-			&i.Warehouse.PostalCode,
-			&i.Warehouse.TollFreePhone,
-			&i.Warehouse.Fax,
-			&i.Warehouse.LocalPhone,
-			&i.Warehouse.Manager,
-			&i.Warehouse.Longitude,
-			&i.Warehouse.Latitude,
-			&i.Warehouse.State.Abbreviation,
-			&i.Warehouse.State.State,
-			&i.Warehouse.State.Country.Name,
-			&i.Warehouse.State.Country.Abbreviation,
-		); err != nil {
-			return err
+	for _, rec := range recs {
+		i := Inventory{
+			Part:        rec.Part,
+			Warehouse:   rec.Warehouse,
+			Quantity:    rec.Quantity,
+			DateUpdated: rec.DateUpdate,
 		}
-
-		if i.Part != 0 {
+		if (warehouseCode != "" && warehouseCode == i.Warehouse.Code) || warehouseCode == "" {
 			p.Inventory.Warehouses = append(p.Inventory.Warehouses, i)
 		}
 	}

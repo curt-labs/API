@@ -262,7 +262,7 @@ func (p *Part) Get(key string) error {
 	go func(api_key string) {
 		err = p.BindCustomer(api_key)
 
-		err = p.GetInventory(api_key, "")
+		p.GetInventory(api_key, "")
 		customerChan <- 1
 	}(key)
 
