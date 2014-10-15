@@ -11,6 +11,7 @@ import (
 	"github.com/curt-labs/GoAPI/controllers/dealers_new"
 	"github.com/curt-labs/GoAPI/controllers/faq"
 	"github.com/curt-labs/GoAPI/controllers/forum"
+	"github.com/curt-labs/GoAPI/controllers/geography"
 	"github.com/curt-labs/GoAPI/controllers/middleware"
 	"github.com/curt-labs/GoAPI/controllers/news"
 	"github.com/curt-labs/GoAPI/controllers/part"
@@ -214,6 +215,12 @@ func main() {
 		r.Post("/posts", forum_ctlr.AddPost)
 		r.Put("/posts/:id", forum_ctlr.UpdatePost)
 		r.Delete("/posts/:id", forum_ctlr.DeletePost)
+	})
+
+	m.Group("/geography", func(r martini.Router) {
+		r.Get("/states", geography.GetAllStates)
+		r.Get("/countries", geography.GetAllCountries)
+		r.Get("/countrystates", geography.GetAllCountriesAndStates)
 	})
 
 	m.Group("/news", func(r martini.Router) {
