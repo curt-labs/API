@@ -2,7 +2,7 @@ box: wercker/golang
 deploy:
 	steps:
 		- add-to-known_hosts:
-			hostname: $SERVER_IP
+			hostname: 23.251.158.181
 		- add-ssh-key:
 			keyname: GCE
 		- script:
