@@ -8,9 +8,5 @@ deploy:
     -  script:
          name: Remove symlink
          code: |
-           sudo rm -f /etc/service/goapi
            docker pull curtlabs/goapi
-           docker stop goapi
-           docker rm goapi
            docker run -d -i --name goapi --env-file='/home/deployer/env' -p 127.0.0.1:8080:80 curtlabs/goapi /home/deployer/gosrc/src/github.com/curt-labs/GoAPI/GoAPI -http=:80
-           ln -s /etc/sv/goapi /etc/service/
