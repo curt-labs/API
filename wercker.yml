@@ -1,4 +1,4 @@
-box: wercker/default
+box: wercker-labs/docker
 deploy:
   steps:
     -  add-to-known_hosts:
