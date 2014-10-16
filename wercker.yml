@@ -1,4 +1,4 @@
-box: wercker-labs/docker
+box: wercker/default
 deploy:
   steps:
     -  add-to-known_hosts:
@@ -7,6 +7,4 @@ deploy:
          keyname: GCE
     -  script:
          name: Remove symlink
-         code: |
-           docker pull curtlabs/goapi
-           docker run -d -i --name goapi --env-file='/home/deployer/env' -p 127.0.0.1:8080:80 curtlabs/goapi /home/deployer/gosrc/src/github.com/curt-labs/GoAPI/GoAPI -http=:80
+         code: ssh deployer@$SERVER_HOSTNAME 'bash -s' < 'sudo docker restart goapi'
