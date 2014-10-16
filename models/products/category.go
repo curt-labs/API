@@ -89,8 +89,8 @@ var (
 		limit ?,?`
 	CategoryPartsFilteredStmt = `select p.partID, (
 			select count(pa.pAttrID) from PartAttribute as pa
-			where pa.partID = cp.partID && FIND_IN_SET(pa.field,?) &&
-			FIND_IN_SET(pa.value,?)
+			where pa.partID = cp.partID && FIND_IN_SET(REPLACE(pa.field, ',','|'),?) &&
+			FIND_IN_SET(REPLACE(pa.value, ',','|'),?)
 		) as cnt from Part as p
 		join CatPart as cp on p.partID = cp.partID
 		where (p.status = 800 || p.status = 900) && FIND_IN_SET(cp.catID,bottom_category_ids(?))
@@ -628,8 +628,10 @@ func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *
 			keys := make([]string, 0)
 			values := make([]string, 0)
 			for k, vals := range *specs {
-				keys = append(keys, k)
-				values = append(values, vals...)
+				keys = append(keys, strings.Replace(k, ",", "|", -1))
+				for _, val := range vals {
+					values = append(values, strings.Replace(val, ",", "|", -1))
+				}
 			}
 
 			stmt, err := db.Prepare(CategoryPartsFilteredStmt)
