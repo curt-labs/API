@@ -7,4 +7,4 @@ deploy:
          keyname: GCE
     -  script:
          name: Remove symlink
-         code: ssh deployer@$SERVER_HOSTNAME 'bash -s' < 'sudo docker restart goapi'
+         code: echo $SERVER_HOSTNAME
