@@ -1,31 +1,16 @@
 box: wercker/golang
 deploy:
-	steps:
-		- add-to-known_hosts:
-			hostname: 23.251.158.181
-		- add-ssh-key:
-			keyname: GCE
-		- script:
-			name: Remove symlink
-			code: |
-				sudo rm /etc/service/goapi
-		- script:
-			name: Pull docker image
-			code: |
-				sudo docker pull curtlabs/goapi
-		- script:
-			name: Stop container
-			code: |
-				sudo docker stop goapi
-		- script:
-			name: Remove container
-			code: |
-				sudo docker rm goapi
-		- script:
-			name: Run container
-			code: |
-				sudo docker run -d -i --name goapi --env-file='/home/deployer/env' -p 127.0.0.1:8080:80 curtlabs/goapi /home/deployer/gosrc/src/github.com/curt-labs/GoAPI/GoAPI -http=:80
-		- script:
-			name: Add symlink
-			code: |
-				sudo ln -s /etc/sv/goapi /etc/service/
+  steps:
+    - add-to-known_hosts:
+      hostname: 23.251.158.181
+    - add-ssh-key:
+      keyname: GCE
+    - script:
+      name: Remove symlink
+      code: |
+        rm /etc/service/goapi
+        docker pull curtlabs/goapi
+        docker stop goapi
+        docker rm goapi
+        docker run -d -i --name goapi --env-file='/home/deployer/env' -p 127.0.0.1:8080:80 curtlabs/goapi /home/deployer/gosrc/src/github.com/curt-labs/GoAPI/GoAPI -http=:80
+        ln -s /etc/sv/goapi /etc/service/
