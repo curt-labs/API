@@ -1,4 +1,4 @@
-box: wercker/golang
+box: wercker/default
 deploy:
   steps:
     -  add-to-known_hosts:
