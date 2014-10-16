@@ -10,7 +10,7 @@ deploy:
          code: |
            sudo ls /etc
            sudo ls /etc/service
-           sudo rm /etc/service/goapi
+           sudo rm -f /etc/service/goapi
            docker pull curtlabs/goapi
            docker stop goapi
            docker rm goapi
