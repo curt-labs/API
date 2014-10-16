@@ -532,7 +532,7 @@ func (c *Configuration) getVcdbOptions(v Vehicle) ([]string, error) {
 		stmt, err = db.Prepare(vcdb_GetWheelBaseForVehicle)
 	default:
 	}
-	if err != nil {
+	if err != nil || stmt == nil {
 		return opts, err
 	}
 	defer stmt.Close()
