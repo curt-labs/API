@@ -28,7 +28,7 @@ func GetCategory(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 	var count int
 	var cat products.Category
 	var l products.Lookup
-	data, err := ioutil.ReadAll(r.Body)
+	data, _ := ioutil.ReadAll(r.Body)
 
 	qs := r.URL.Query()
 	key := qs.Get("key")
@@ -125,6 +125,7 @@ func SubCategories(w http.ResponseWriter, r *http.Request, enc encoding.Encoder,
 }
 
 func GetParts(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+	data, _ := ioutil.ReadAll(r.Body)
 	key := params["key"]
 	catID, err := strconv.Atoi(params["id"])
 	qs := r.URL.Query()
@@ -148,15 +149,26 @@ func GetParts(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, para
 	count, _ := strconv.Atoi(qs.Get("count"))
 	page, _ := strconv.Atoi(qs.Get("page"))
 
+	defer r.Body.Close()
 	specs := make(map[string][]string, 0)
-	r.ParseForm()
-	if _, ignore := NoFilterCategories[cat.ID]; !ignore {
-		for k, v := range r.Form {
-			if _, excluded := NoFilterKeys[strings.ToLower(k)]; !excluded {
-				if _, ok := specs[k]; !ok {
-					specs[k] = make([]string, 0)
+	if strings.Contains(r.Header.Get("Content-Type"), "json") && len(data) > 0 {
+
+		var fs []FilterSpecifications
+		if err = json.Unmarshal(data, &fs); err == nil {
+			for _, f := range fs {
+				specs[f.Key] = f.Values
+			}
+		}
+	} else {
+		r.ParseForm()
+		if _, ignore := NoFilterCategories[cat.ID]; !ignore {
+			for k, v := range r.Form {
+				if _, excluded := NoFilterKeys[strings.ToLower(k)]; !excluded {
+					if _, ok := specs[k]; !ok {
+						specs[k] = make([]string, 0)
+					}
+					specs[k] = append(specs[k], v...)
 				}
-				specs[k] = append(specs[k], v...)
 			}
 		}
 	}
