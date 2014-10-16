@@ -3,6 +3,7 @@ package customer_ctlr
 import (
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/customer"
+	"log"
 	"net/http"
 )
 
@@ -13,6 +14,7 @@ func UserAuthentication(w http.ResponseWriter, r *http.Request, enc encoding.Enc
 	user := customer.CustomerUser{
 		Email: email,
 	}
+
 	cust, err := user.UserAuthentication(pass)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -135,7 +137,7 @@ func GetUsers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) stri
 
 func GetUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 	key := r.FormValue("key")
-
+	log.Print("KEY", key)
 	if key == "" {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return ""

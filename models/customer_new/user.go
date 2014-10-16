@@ -54,10 +54,9 @@ var (
 						left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
 						left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
 						where cu.id = ?`
-	getRegisteredUsersId = `
-		select cu.id from CustomerUser as cu
-		where cu.email = ? && cu.password = ?
-		limit 1`
+	getRegisteredUsersId = `select cu.id from CustomerUser as cu
+								where cu.email = ? && cu.password = ?
+								limit 1`
 
 	customerUserAuth = `select password, id, name, email, date_added, active, isSudo, passwordConverted from CustomerUser
 							where email = ?
@@ -215,10 +214,11 @@ func UserAuthenticationByKey(key string) (cust Customer, err error) {
 	}()
 
 	cust, err = u.GetCustomer()
-	if err != nil {
-		return cust, AuthError
+	if err != sql.ErrNoRows {
+		if err != nil {
+			return cust, AuthError
+		}
 	}
-
 	<-keyChan
 	<-locChan
 
@@ -318,6 +318,11 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 		par.GetCustomer()
 		c.Parent = &par
 	}
+	err = c.GetLocations()
+	if err != nil {
+		return c, err
+	}
+
 	return
 }
 
@@ -385,19 +390,20 @@ func (u *CustomerUser) AuthenticateUser(pass string) error {
 	}()
 
 	<-resetChan
+	u.Current = true
 	return nil
 }
 
 func AuthenticateUserByKey(key string) (u CustomerUser, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		return u, AuthError
+		return u, err
 	}
 	defer db.Close()
 
 	stmt, err := db.Prepare(customerUserKeyAuth)
 	if err != nil {
-		return u, AuthError
+		return u, err
 	}
 	defer stmt.Close()
 	t := time.Now()
@@ -426,7 +432,7 @@ func AuthenticateUserByKey(key string) (u CustomerUser, err error) {
 		&passConversion, //Not Used
 	)
 	if err != nil {
-		return u, AuthError
+		return u, err
 	}
 
 	resetChan := make(chan int)

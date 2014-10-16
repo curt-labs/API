@@ -9,7 +9,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	"github.com/curt-labs/GoAPI/models/geography"
 	_ "github.com/go-sql-driver/mysql"
-	// "log"
+	"log"
 	"math"
 	"net/url"
 	"strconv"
@@ -70,9 +70,9 @@ type CustomerLocation struct {
 	ContactPerson   string              `json:"contactPerson,omitempty" xml:"contactPerson,omitempty"`
 	IsPrimary       bool                `json:"isPrimary,omitempty" xml:"isPrimary,omitempty"`
 	ShippingDefault bool                `json:"shippingDefault,omitempty" xml:"shippingDefault,omitempty"`
-	ShowWebSite     bool
-	ELocalUrl       url.URL
-	Website         url.URL
+	ShowWebSite     bool                `json:"showWebsite,omitempty" xml:"showWebsite,omitempty"`
+	ELocalUrl       url.URL             `json:"eLocalUrl,omitempty" xml:"eLocalUrl,omitempty"`
+	Website         url.URL             `json:"website,omitempty" xml:"website,omitempty"`
 }
 
 type DealerType struct {
@@ -116,16 +116,16 @@ type MapixCode struct {
 }
 
 type DealerLocation struct {
-	CustomerLocation    CustomerLocation
-	Distance            float64
-	Website             url.URL
-	Parent              *Customer
-	SearchUrl           url.URL
-	Logo                url.URL
-	DealerType          DealerType
-	DealerTier          DealerTier
-	SalesRepresentative SalesRepresentative
-	MapixCode           MapixCode
+	CustomerLocation    CustomerLocation    `json:"id,omitempty" xml:"id,omitempty"`
+	Distance            float64             `json:"distance,omitempty" xml:"distance,omitempty"`
+	Website             url.URL             `json:"website,omitempty" xml:"website,omitempty"`
+	Parent              *Customer           `json:"parent,omitempty" xml:"parent,omitempty"`
+	SearchUrl           url.URL             `json:"searchUrl,omitempty" xml:"searchUrl,omitempty"`
+	Logo                url.URL             `json:"logo,omitempty" xml:"logo,omitempty"`
+	DealerType          DealerType          `json:"dealerType,omitempty" xml:"dealerType,omitempty"`
+	DealerTier          DealerTier          `json:"dealerTier,omitempty" xml:"dealerTier,omitempty"`
+	SalesRepresentative SalesRepresentative `json:"salesRepresentative,omitempty" xml:"salesRepresentative,omitempty"`
+	MapixCode           MapixCode           `json:"mapixCode,omitempty" xml:"mapixCode,omitempty"`
 }
 type DealerLocations []DealerLocation
 type StateRegion struct {
@@ -158,7 +158,8 @@ const (
 )
 
 var (
-	basics = `select ` + customerFields + `, ` + stateFields + `, ` + countryFields + `, ` + dealerTypeFields + `, ` + dealerTierFields + `, ` + mapIconFields + `, ` + mapixCodeFields + `, ` + salesRepFields + `
+	findCustomerIdFromCustId = `select customerID from Customer where cust_id = ?`
+	basics                   = `select ` + customerFields + `, ` + stateFields + `, ` + countryFields + `, ` + dealerTypeFields + `, ` + dealerTierFields + `, ` + mapIconFields + `, ` + mapixCodeFields + `, ` + salesRepFields + `
 			from Customer as c
 				left join States as s on c.stateID = s.stateID
 				left join Country as cty on s.countryID = cty.countryID
@@ -336,6 +337,15 @@ var (
 											SQRT(1 - ((SIN(((cl.latitude - ?) * (PI() / 180)) / 2) * SIN(((cl.latitude - ?) * (PI() / 180)) / 2)) + ((SIN(((cl.longitude - ?) * (PI() / 180)) / 2)) * (SIN(((cl.longitude - ?) * (PI() / 180)) / 2))) * COS(? * (PI() / 180)) * COS(cl.latitude * (PI() / 180))))
 										)
 									) < 100.0)`
+
+	//customer Crud
+	createCustomer = `insert into Customer (name, email, address,  city, stateID, phone, fax, contact_person, dealer_type, latitude,longitude,  website, customerID, isDummy, parentID, searchURL, 
+					eLocalURL, logo,address2, postal_code, mCodeID, salesRepID, APIKey, tier, showWebsite) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+
+	updateCustomerId = ` update Customer set customerID = ? where cust_id = ?`
+	updateCustomer   = `update Customer set name = ?, email = ?, address = ?, city = ?, stateID = ?, phone = ?, fax = ?, contact_person = ?, dealer_type = ?, latitude = ?, longitude = ?,  website = ?, customerID = ?, 
+					isDummy = ?, parentID = ?, searchURL = ?, eLocalURL = ?, logo = ?, address2 = ?, postal_code = ?, mCodeID = ?, salesRepID = ?, APIKey = ?, tier = ?, showWebsite = ? where cust_id = ?`
+	deleteCustomer = `delete from Customer where cust_id = ?`
 )
 
 func (c *Customer) GetCustomer() (err error) {
@@ -410,6 +420,150 @@ func (c *Customer) GetLocations() (err error) {
 	}
 
 	return err
+}
+
+func (c *Customer) FindCustomerIdFromCustId() (err error) { //Jesus, really?
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(findCustomerIdFromCustId)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	err = stmt.QueryRow(c.Id).Scan(&c.CustomerId)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+func (c *Customer) Create() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(createCustomer)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	parentId := 0
+	if c.Parent != nil {
+		parentId = c.Parent.Id
+	}
+
+	res, err := stmt.Exec(
+		c.Name,
+		c.Email,
+		c.Address,
+		c.City,
+		c.State.Id,
+		c.Phone,
+		c.Fax,
+		c.ContactPerson,
+		c.DealerType.Id,
+		c.Latitude,
+		c.Longitude,
+		c.Website.String(),
+		c.CustomerId,
+		c.IsDummy,
+		parentId,
+		c.SearchUrl.String(),
+		c.ELocalUrl.String(),
+		c.Logo.String(),
+		c.Address2,
+		c.PostalCode,
+		c.MapixCode.ID,
+		c.SalesRepresentative.ID,
+		c.ApiKey,
+		c.DealerTier.Id,
+		c.ShowWebsite,
+	)
+	if err != nil {
+		return err
+	}
+	id, err := res.LastInsertId()
+	c.Id = int(id)
+
+	stmt2, err := db.Prepare(updateCustomerId)
+	_, err = stmt2.Exec(c.Id, c.Id)
+	log.Print(stmt2)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+func (c *Customer) Update() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(updateCustomer)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	parentId := 0
+	if c.Parent != nil {
+		parentId = c.Parent.Id
+	}
+	_, err = stmt.Exec(
+		c.Name,
+		c.Email,
+		c.Address,
+		c.City,
+		c.State.Id,
+		c.Phone,
+		c.Fax,
+		c.ContactPerson,
+		c.DealerType.Id,
+		c.Latitude,
+		c.Longitude,
+		c.Website.String(),
+		c.CustomerId,
+		c.IsDummy,
+		parentId,
+		c.SearchUrl.String(),
+		c.ELocalUrl.String(),
+		c.Logo.String(),
+		c.Address2,
+		c.PostalCode,
+		c.MapixCode.ID,
+		c.SalesRepresentative.ID,
+		c.ApiKey,
+		c.DealerTier.Id,
+		c.ShowWebsite,
+		c.Id,
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Customer) Delete() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(deleteCustomer)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(c.Id)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *Customer) GetUsers() (users []CustomerUser, err error) {
@@ -1127,19 +1281,21 @@ func populateCustomer(row *sql.Row, ch chan Customer) {
 
 	//get parent, if has parent
 	go func() {
-		parentInt, err := conversions.ByteToInt(*parentId)
-		if err != nil {
-			ch <- c
-			return
-		}
-		if parentInt != 0 {
-			par := Customer{Id: parentInt}
-			err = par.GetCustomer()
+		if parentId != nil {
+			parentInt, err := conversions.ByteToInt(*parentId)
 			if err != nil {
 				ch <- c
 				return
 			}
-			c.Parent = &par
+			if parentInt != 0 {
+				par := Customer{Id: parentInt}
+				err = par.GetCustomer()
+				if err != nil {
+					ch <- c
+					return
+				}
+				c.Parent = &par
+			}
 		}
 		parentChan <- 1
 	}()

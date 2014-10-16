@@ -268,7 +268,7 @@ func TestCustomerModel(t *testing.T) {
 			var err error
 			u, err := AuthenticateUserByKey(auth_key)
 			if err != nil {
-				So(err, ShouldEqual, AuthError)
+				So(err, ShouldEqual, sql.ErrNoRows)
 				So(u.Id, ShouldEqual, "")
 			} else {
 				So(err, ShouldBeNil)
@@ -392,6 +392,27 @@ func TestCustomerModel(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(u.Location.State.State, ShouldResemble, u2.Location.State.State)
 		})
+
+	})
+
+	Convey("Test CRUD Customer", t, func() {
+		var c Customer
+		var err error
+		c.Name = "test"
+		c.Address = "Nowhere"
+		err = c.Create()
+		So(err, ShouldBeNil)
+
+		c.Name = "New Name"
+		c.MapixCode.ID = 1
+		err = c.Update()
+		So(err, ShouldBeNil)
+
+		err = c.GetCustomer()
+		So(err, ShouldBeNil)
+
+		err = c.Delete()
+		So(err, ShouldBeNil)
 
 	})
 }

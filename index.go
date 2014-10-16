@@ -346,16 +346,22 @@ func main() {
 	m.Group("/new", func(r martini.Router) {
 		m.Group("/customer", func(r martini.Router) {
 			// r.Get("", internalCors, customer_ctlr_new.GetCustomer)
+			r.Post("/user/register", customer_ctlr_new.RegisterUser)
+			r.Post("/auth", customer_ctlr_new.UserAuthentication)
+			r.Get("/auth", customer_ctlr_new.KeyedUserAuthentication)
 			r.Post("", internalCors, customer_ctlr_new.GetCustomer)
 			r.Post("/user", customer_ctlr_new.GetUser)
 			r.Get("/user/:id", customer_ctlr_new.GetUserById)
 			r.Get("/users", customer_ctlr_new.GetUsers)
 			r.Post("/users", customer_ctlr_new.GetUsers)
-			r.Post("/user/register", customer_ctlr_new.RegisterUser)
+
 			r.Post("/user/resetPassword", customer_ctlr_new.ResetPassword)
 			r.Post("/user/changePassword", customer_ctlr_new.ChangePassword)
 			r.Delete("/user/:id", customer_ctlr_new.DeleteCustomerUser)
 			r.Delete("/allUsersByCustomerID/:id", customer_ctlr_new.DeleteCustomerUsersByCustomerID) //Takes CustomerID (UUID)---danger!
+			r.Post("/:id", customer_ctlr_new.SaveCustomer)
+			r.Delete("/:id", customer_ctlr_new.DeleteCustomer)
+			r.Put("", customer_ctlr_new.SaveCustomer)
 
 			r.Put("/location/json", internalCors, customer_ctlr_new.SaveLocationJson)
 			r.Post("/location/json/:id", internalCors, customer_ctlr_new.SaveLocationJson)
@@ -365,8 +371,6 @@ func main() {
 			r.Post("/locations", internalCors, customer_ctlr_new.GetLocations)
 			r.Get("/price/:id", internalCors, customer_ctlr_new.GetCustomerPrice)           //{part id}
 			r.Get("/cartRef/:id", internalCors, customer_ctlr_new.GetCustomerCartReference) //{part id}
-			r.Post("/auth", customer_ctlr_new.UserAuthentication)
-			r.Get("/auth", customer_ctlr_new.KeyedUserAuthentication)
 
 			// Customer CMS endpoints
 			// All Customer Contents
