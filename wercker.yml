@@ -2,7 +2,7 @@ box: wercker/default
 deploy:
   steps:
     -  add-to-known_hosts:
-         hostname: 23.251.158.181
+         hostname: $SERVER_HOSTNAME
     -  add-ssh-key:
          keyname: GCE
     -  script:
