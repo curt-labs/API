@@ -8,6 +8,8 @@ deploy:
     -  script:
          name: Remove symlink
          code: |
+           sudo ls /etc
+           sudo ls /etc/service
            sudo rm /etc/service/goapi
            docker pull curtlabs/goapi
            docker stop goapi
