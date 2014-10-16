@@ -13,6 +13,10 @@ import (
 	"time"
 )
 
+var (
+	ignoredFormParams = []string{"key"}
+)
+
 // Finds further configuration options and parts that match
 // the given configuration. Doesn't start looking for parts
 // until the model is provided.
@@ -126,7 +130,14 @@ func LoadVehicle(r *http.Request) (v products.Vehicle) {
 
 	// Get vehicle configuration options
 	for key, opt := range r.Form {
-		if len(opt) > 0 {
+		ignore := false
+		for _, param := range ignoredFormParams {
+			if param == strings.ToLower(key) {
+				ignore = true
+				break
+			}
+		}
+		if !ignore && len(opt) > 0 {
 			conf := products.Configuration{
 				Key:   key,
 				Value: opt[0],

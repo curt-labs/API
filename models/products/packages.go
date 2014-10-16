@@ -29,11 +29,11 @@ type Package struct {
 	Width              float64     `json:"width,omitempty" xml:"width,omitempty"`
 	Length             float64     `json:"length,omitempty" xml:"length,omitempty"`
 	Weight             float64     `json:"weight,omitempty" xml:"weight,omitempty"`
-	DimensionUnit      int         `json:"dimensionUnit,omitempty" xml:"dimensionUnit,omitempty"`
+	DimensionUnit      string      `json:"dimensionUnit,omitempty" xml:"dimensionUnit,omitempty"`
 	DimensionUnitLabel string      `json:"dimensionUnitLabel,omitempty" xml:"dimensionUnitLabel,omitempty"`
-	WeightUnit         int         `json:"weightUnit,omitempty" xml:"weightUnit,omitempty"`
+	WeightUnit         string      `json:"weightUnit,omitempty" xml:"weightUnit,omitempty"`
 	WeightUnitLabel    string      `json:"weightUnitLabel,omitempty" xml:"weightUnitLabel,omitempty"`
-	PackageUnit        int         `json:"packageUnit,omitempty" xml:"packageUnit,omitempty"`
+	PackageUnit        string      `json:"packageUnit,omitempty" xml:"packageUnit,omitempty"`
 	PackageUnitLabel   string      `json:"packageUnitLabel,omitempty" xml:"packageUnitLabel,omitempty"`
 	Quantity           int         `json:"quantity,omitempty" xml:"quantity,omitempty"`
 	PackageType        PackageType `json:"packageType,omitempty" xml:"packageType,omitempty"`

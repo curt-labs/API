@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	_ "github.com/go-sql-driver/mysql"
+	"log"
 	"strconv"
 	"strings"
 )
@@ -532,7 +533,8 @@ func (c *Configuration) getVcdbOptions(v Vehicle) ([]string, error) {
 		stmt, err = db.Prepare(vcdb_GetWheelBaseForVehicle)
 	default:
 	}
-	if err != nil {
+	if err != nil || stmt == nil {
+		log.Println(c.Key)
 		return opts, err
 	}
 	defer stmt.Close()

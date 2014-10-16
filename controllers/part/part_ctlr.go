@@ -10,7 +10,6 @@ import (
 	"github.com/go-martini/martini"
 	"github.com/ninnemana/analytics-go"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -24,7 +23,6 @@ func track(endpoint string, params map[string]string, r *http.Request) {
 
 	js, err := json.Marshal(params)
 	if err != nil {
-		log.Println(err)
 		return
 	}
 
@@ -62,6 +60,29 @@ func All(w http.ResponseWriter, r *http.Request, params martini.Params, enc enco
 	}
 
 	parts, err := products.All(key, page, count)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(parts))
+}
+
+func Latest(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+	count := 10
+	qs := r.URL.Query()
+	key := qs.Get("key")
+	if qs.Get("count") != "" {
+		if ct, err := strconv.Atoi(qs.Get("count")); err == nil {
+			if ct > 50 {
+				http.Error(w, fmt.Sprintf("maximum request size is 50, you requested: %d", ct), http.StatusInternalServerError)
+				return ""
+			}
+			count = ct
+		}
+	}
+
+	parts, err := products.Latest(key, count)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -376,14 +397,12 @@ func SavePrice(rw http.ResponseWriter, req *http.Request, params martini.Params,
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return encoding.Must(enc.Encode(false))
 	}
-	log.Print(p)
 	//create or update
 	if p.Id > 0 {
 		err = p.Update()
 	} else {
 		err = p.Create()
 	}
-	log.Print(p)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return ""
