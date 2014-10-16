@@ -1,10 +1,12 @@
 package customer_ctlr_new
 
 import (
+	"encoding/json"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	"github.com/curt-labs/GoAPI/models/customer_new"
 	"github.com/go-martini/martini"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -48,7 +50,7 @@ func GetAllLocations(rw http.ResponseWriter, r *http.Request, enc encoding.Encod
 	return encoding.Must(enc.Encode(c))
 }
 
-func CreateUpdateLocation(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+func SaveLocation(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 	var w customer_new.CustomerLocation
 	var err error
 
@@ -128,6 +130,42 @@ func CreateUpdateLocation(rw http.ResponseWriter, r *http.Request, enc encoding.
 		return err.Error()
 	}
 	return encoding.Must(enc.Encode(w))
+}
+
+func SaveLocationJson(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+	var l customer_new.CustomerLocation
+	var err error
+	id := params["id"]
+	if id != "" {
+		l.Id, err = strconv.Atoi(id)
+		err = l.Get()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return ""
+		}
+	}
+
+	defer r.Body.Close()
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+	err = json.Unmarshal(body, &l)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+	if l.Id != 0 {
+		err = l.Update()
+	} else {
+		err = l.Create()
+	}
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+	return encoding.Must(enc.Encode(l))
 }
 
 func DeleteLocation(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {

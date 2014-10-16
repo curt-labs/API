@@ -230,7 +230,7 @@ func GetPricesByPart(partID int) (Prices, error) {
 	return ps, nil
 }
 
-func (c Customer) GetPricesBySaleRange(startDate, endDate time.Time) (Prices, error) {
+func (c *Customer) GetPricesBySaleRange(startDate, endDate time.Time) (Prices, error) {
 	var err error
 	var ps Prices
 	db, err := sql.Open("mysql", database.ConnectionString())

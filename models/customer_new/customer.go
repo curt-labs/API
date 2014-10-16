@@ -9,6 +9,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	"github.com/curt-labs/GoAPI/models/geography"
 	_ "github.com/go-sql-driver/mysql"
+	"log"
 	"math"
 	"net/url"
 	"strconv"
@@ -16,104 +17,150 @@ import (
 )
 
 type Customer struct {
-	Id                                   int
-	Name, Email, Address, Address2, City string
-	State                                geography.State_New
-	PostalCode                           string
-	Phone, Fax                           string
-	ContactPerson                        string
-	Latitude, Longitude                  float64
-	Website                              url.URL
-	Parent                               *Customer
-	SearchUrl, Logo                      url.URL
-	DealerType                           DealerType
-	DealerTier                           DealerTier
-	SalesRepresentative                  string
-	SalesRepresentativeCode              string
-	MapixCode, MapixDescription          string
-	Locations                            []CustomerLocation
-	Users                                []CustomerUser
+	Id                  int                 `json:"id,omitempty" xml:"id,omitempty"`
+	Name                string              `json:"name,omitempty" xml:"name,omitempty"`
+	Email               string              `json:"email,omitempty" xml:"email,omitempty"`
+	Address             string              `json:"address,omitempty" xml:"address,omitempty"`
+	Address2            string              `json:"address2,omitempty" xml:"address2,omitempty"`
+	City                string              `json:"city,omitempty" xml:"city,omitempty"`
+	State               geography.State_New `json:"state,omitempty" xml:"state,omitempty"`
+	PostalCode          string              `json:"postalCode,omitempty" xml:"postalCode,omitempty"`
+	Phone               string              `json:"phone,omitempty" xml:"phone,omitempty"`
+	Fax                 string              `json:"fax,omitempty" xml:"fax,omitempty"`
+	ContactPerson       string              `json:"contactPerson,omitempty" xml:"contactPerson,omitempty"`
+	Latitude            float64             `json:"latitude,omitempty" xml:"latitude,omitempty"`
+	Longitude           float64             `json:"longitude,omitempty" xml:"longitude,omitempty"`
+	Website             url.URL             `json:"website,omitempty" xml:"website,omitempty"`
+	Parent              *Customer           `json:"parent,omitempty" xml:"parent,omitempty"`
+	SearchUrl           url.URL             `json:"searchUrl,omitempty" xml:"searchUrl,omitempty"`
+	Logo                url.URL             `json:"logo,omitempty" xml:"logo,omitempty"`
+	DealerType          DealerType          `json:"dealerType,omitempty" xml:"dealerType,omitempty"`
+	DealerTier          DealerTier          `json:"dealerTier,omitempty" xml:"dealerTier,omitempty"`
+	Locations           []CustomerLocation  `json:"locations,omitempty" xml:"locations,omitempty"`
+	Users               []CustomerUser      `json:"users,omitempty" xml:"users,omitempty"`
+	CustomerId          int                 `json:"customerId,omitempty" xml:"customerId,omitempty"`
+	IsDummy             bool                `json:"isDummy,omitempty" xml:"isDummy,omitempty"`
+	ELocalUrl           url.URL             `json:"eLocalUrl,omitempty" xml:"eLocalUrl,omitempty"`
+	MapixCode           MapixCode           `json:"mapixCode,omitempty" xml:"mapixCode,omitempty"`
+	ApiKey              string              `json:"apiKey,omitempty" xml:"apiKey,omitempty"`
+	ShowWebsite         bool                `json:"showWebsite,omitempty" xml:"showWebsite,omitempty"`
+	SalesRepresentative SalesRepresentative `json:"salesRepresentative,omitempty" xml:"salesRepresentative,omitempty"`
+}
+type Customers []Customer
+
+type SalesRepresentative struct {
+	ID   int    `json:"id,omitempty" xml:"id,omitempty"`
+	Name string `json:"name,omitempty" xml:"name,omitempty"`
+	Code string `json:"code,omitempty" xml:"code,omitempty"`
 }
 
 type CustomerLocation struct {
-	Id                                     int
-	Name, Email, Address, City, PostalCode string
-	State                                  geography.State_New
-	Phone, Fax                             string
-	Latitude, Longitude                    float64
-	CustomerId                             int
-	ContactPerson                          string
-	IsPrimary, ShippingDefault             bool
+	Id              int                 `json:"id,omitempty" xml:"id,omitempty"`
+	Name            string              `json:"name,omitempty" xml:"name,omitempty"`
+	Email           string              `json:"email,omitempty" xml:"email,omitempty"`
+	Address         string              `json:"address,omitempty" xml:"address,omitempty"`
+	City            string              `json:"city,omitempty" xml:"city,omitempty"`
+	PostalCode      string              `json:"postalCode,omitempty" xml:"postalCode,omitempty"`
+	State           geography.State_New `json:"state,omitempty" xml:"state,omitempty"`
+	Phone           string              `json:"phone,omitempty" xml:"phone,omitempty"`
+	Fax             string              `json:"fax,omitempty" xml:"fax,omitempty"`
+	Latitude        float64             `json:"latitude,omitempty" xml:"latitude,omitempty"`
+	Longitude       float64             `json:"longitude,omitempty" xml:"longitude,omitempty"`
+	CustomerId      int                 `json:"customerId,omitempty" xml:"customerId,omitempty"`
+	ContactPerson   string              `json:"contactPerson,omitempty" xml:"contactPerson,omitempty"`
+	IsPrimary       bool                `json:"isPrimary,omitempty" xml:"isPrimary,omitempty"`
+	ShippingDefault bool                `json:"shippingDefault,omitempty" xml:"shippingDefault,omitempty"`
+	ShowWebSite     bool                `json:"showWebsite,omitempty" xml:"showWebsite,omitempty"`
+	ELocalUrl       url.URL             `json:"eLocalUrl,omitempty" xml:"eLocalUrl,omitempty"`
+	Website         url.URL             `json:"website,omitempty" xml:"website,omitempty"`
 }
 
 type DealerType struct {
-	Id           int
-	Type, Label  string
-	Online, Show bool
-	MapIcon      MapIcon
+	Id      int     `json:"id,omitempty" xml:"id,omitempty"`
+	Type    string  `json:"type,omitempty" xml:"type,omitempty"`
+	Label   string  `json:"label,omitempty" xml:"label,omitempty"`
+	Online  bool    `json:"online,omitempty" xml:"online,omitempty"`
+	Show    bool    `json:"show,omitempty" xml:"show,omitempty"`
+	MapIcon MapIcon `json:"mapIcon,omitempty" xml:"mapIcon,omitempty"`
 }
 
 type DealerTier struct {
-	Id   int
-	Tier string
-	Sort int
+	Id   int    `json:"id,omitempty" xml:"id,omitempty"`
+	Tier string `json:"tier,omitempty" xml:"tier,omitempty"`
+	Sort int    `json:"sort,omitempty" xml:"sort,omitempty"`
 }
 
 type MapIcon struct {
-	Id, TierId             int
-	MapIcon, MapIconShadow url.URL
+	Id            int `json:"id,omitempty" xml:"id,omitempty"`
+	TierId        int `json:"tierId,omitempty" xml:"tierId,omitempty"`
+	DealerTypeId  int
+	MapIcon       url.URL `json:"mapIcon,omitempty" xml:"mapIcon,omitempty"`
+	MapIconShadow url.URL `json:"mapIconShadow,omitempty" xml:"mapIconShadow,omitempty"`
 }
 
 type MapGraphics struct {
-	DealerTier DealerTier
-	DealerType DealerType
-	MapIcon    MapIcon
+	DealerTier DealerTier `json:"dealerTier,omitempty" xml:"dealerTier,omitempty"`
+	DealerType DealerType `json:"dealerType,omitempty" xml:"dealerType,omitempty"`
+	MapIcon    MapIcon    `json:"mapIcon,omitempty" xml:"mapIcon,omitempty"`
 }
 
 type GeoLocation struct {
-	Latitude, Longitude float64
+	Latitude  float64 `json:"latitude,omitempty" xml:"latitude,omitempty"`
+	Longitude float64 `json:"longitude,omitempty" xml:"longitude,omitempty"`
+}
+
+type MapixCode struct {
+	ID          int    `json:"id,omitempty" xml:"id,omitempty"`
+	Code        string `json:"code,omitempty" xml:"code,omitempty"`
+	Description string `json:"description,omitempty" xml:"description,omitempty"`
 }
 
 type DealerLocation struct {
-	Id, LocationId                       int
-	Name, Email, Address, Address2, City string
-	State                                geography.State_New
-	PostalCode                           string
-	Phone, Fax                           string
-	ContactPerson                        string
-	Latitude, Longitude, Distance        float64
-	Website                              url.URL
-	Parent                               Customer
-	SearchUrl, Logo                      url.URL
-	DealerType                           DealerType
-	DealerTier                           DealerTier
-	SalesRepresentative                  string
-	SalesRepresentativeCode              string
-	MapixCode, MapixDescription          string
+	CustomerLocation    CustomerLocation    `json:"id,omitempty" xml:"id,omitempty"`
+	Distance            float64             `json:"distance,omitempty" xml:"distance,omitempty"`
+	Website             url.URL             `json:"website,omitempty" xml:"website,omitempty"`
+	Parent              *Customer           `json:"parent,omitempty" xml:"parent,omitempty"`
+	SearchUrl           url.URL             `json:"searchUrl,omitempty" xml:"searchUrl,omitempty"`
+	Logo                url.URL             `json:"logo,omitempty" xml:"logo,omitempty"`
+	DealerType          DealerType          `json:"dealerType,omitempty" xml:"dealerType,omitempty"`
+	DealerTier          DealerTier          `json:"dealerTier,omitempty" xml:"dealerTier,omitempty"`
+	SalesRepresentative SalesRepresentative `json:"salesRepresentative,omitempty" xml:"salesRepresentative,omitempty"`
+	MapixCode           MapixCode           `json:"mapixCode,omitempty" xml:"mapixCode,omitempty"`
 }
-
+type DealerLocations []DealerLocation
 type StateRegion struct {
-	Id                 int
-	Name, Abbreviation string
-	Count              int
-	Polygons           []MapPolygon
+	Id           int          `json:"id,omitempty" xml:"id,omitempty"`
+	Name         string       `json:"name,omitempty" xml:"name,omitempty"`
+	Abbreviation string       `json:"abbreviation,omitempty" xml:"abbreviation,omitempty"`
+	Count        int          `json:"count,omitempty" xml:"count,omitempty"`
+	Polygons     []MapPolygon `json:"polygon,omitempty" xml:"polygon,omitempty"`
 }
 
 type MapPolygon struct {
-	Id          int
-	Coordinates []GeoLocation
+	Id          int           `json:"id,omitempty" xml:"id,omitempty"`
+	Coordinates []GeoLocation `json:"coordinates,omitempty" xml:"coordinates,omitempty"`
 }
 
+const (
+	customerFields = ` c.customerID, c.name, c.email, c.address,  c.city, c.stateID, c.phone, c.fax, c.contact_person, c.dealer_type, 
+				c.latitude,c.longitude,  c.website, c.customerID, c.isDummy, c.parentID, c.searchURL, c.eLocalURL, c.logo,c.address2,
+				c.postal_code, c.mCodeID, c.salesRepID, c.APIKey, c.tier, c.showWebsite `
+	stateFields            = ` s.state, s.abbr, s.countryID `
+	countryFields          = ` cty.name, cty.abbr `
+	dealerTypeFields       = ` dt.type, dt.online, dt.show, dt.label `
+	dealerTierFields       = ` dtr.tier, dtr.sort `
+	mapIconFields          = ` mi.mapicon, mi.mapiconshadow ` //joins on dealer_type usually
+	mapixCodeFields        = ` mpx.code, mpx.description `
+	salesRepFields         = ` sr.name, sr.code `
+	customerLocationFields = ` cl.locationID, cl.name, cl.address, cl.city, cl.stateID,  cl.email, cl.phone, cl.fax, 
+							cl.latitude, cl.longitude, cl.cust_id, cl.contact_person, cl.isprimary, cl.postalCode, cl.ShippingDefault `
+	showSiteFields = ` c.showWebsite, c.website, c.eLocalURL `
+)
+
 var (
-	basics = `select c.customerID, c.name, c.email, c.address, c.address2, c.city, c.phone, c.fax, c.contact_person,
-				COALESCE(c.latitude,0), COALESCE(c.longitude,0), c.searchURL, c.logo, c.website,
-				c.postal_code, COALESCE(s.stateID,0), COALESCE(s.state,""), COALESCE(s.abbr,"") as state_abbr, COALESCE(cty.countryID,0), COALESCE(cty.name,"") as country_name, COALESCE(cty.abbr,"") as country_abbr,
-				dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
-				dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
-				COALESCE(mi.ID,0) as iconID, COALESCE(mi.mapicon,""), COALESCE(mi.mapiconshadow,""),
-				COALESCE(mpx.code,"") as mapix_code, COALESCE(mpx.description,"") as mapic_desc,
-				COALESCE(sr.name,"") as rep_name, COALESCE(sr.code,"") as rep_code, c.parentID
-				from Customer as c
+	findCustomerIdFromCustId = `select customerID from Customer where cust_id = ?`
+	basics                   = `select ` + customerFields + `, ` + stateFields + `, ` + countryFields + `, ` + dealerTypeFields + `, ` + dealerTierFields + `, ` + mapIconFields + `, ` + mapixCodeFields + `, ` + salesRepFields + `
+			from Customer as c
 				left join States as s on c.stateID = s.stateID
 				left join Country as cty on s.countryID = cty.countryID
 				left join DealerTypes as dt on c.dealer_type = dt.dealer_type
@@ -121,15 +168,12 @@ var (
 				left join DealerTiers as dtr on c.tier = dtr.ID
 				left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
 				left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
-				where c.customerID = ? ` //TODO - clumsy, shoud use cust_ID, not customerID
-
-	customerLocation = `select cl.locationID, cl.name, cl.email, cl.address, cl.city,
-							cl.postalCode, cl.phone, cl.fax, cl.latitude, cl.longitude,
-							cl.cust_id, cl.contact_person, cl.isprimary, cl.ShippingDefault,
-							s.stateID, s.state, s.abbr as state_abbr, cty.countryID, cty.name as cty_name, cty.abbr as cty_abbr
+				where c.customerID = ? `
+	//affects CL methods
+	customerLocation = `select ` + customerLocationFields + `, ` + stateFields + `, ` + countryFields + ` 
 							from CustomerLocations as cl
-							left join States as s on cl.stateID = s.stateID
-							left join Country as cty on s.countryID = cty.countryID
+	 						left join States as s on cl.stateID = s.stateID
+	 						left join Country as cty on s.countryID = cty.countryID
 							where cl.cust_id = ?`
 
 	customerUser = `select cu.id, cu.name, cu.email, cu.date_added, cu.active, cu.isSudo from CustomerUser as cu
@@ -149,32 +193,18 @@ var (
 						join CartIntegration ci on c.customerID = ci.custID
 						where ak.api_key = ?
 						and ci.partID = ?`
-	etailers = `select c.customerID, c.name, c.email, c.address, c.address2, c.city, c.phone, c.fax, c.contact_person,
-					COALESCE(c.latitude,0), COALESCE(c.longitude,0), c.searchURL, c.logo, c.website,
-					c.postal_code, COALESCE(s.stateID,0), COALESCE(s.state,""), COALESCE(s.abbr,"") as state_abbr, COALESCE(cty.countryID,0), COALESCE(cty.name,"") as country_name, COALESCE(cty.abbr,"") as country_abbr,
-					dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
-					dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
-					COALESCE(mi.ID,0) as iconID, COALESCE(mi.mapicon,""), COALESCE(mi.mapiconshadow,""),
-					COALESCE(mpx.code,"") as mapix_code, COALESCE(mpx.description,"") as mapic_desc,
-					COALESCE(sr.name,"") as rep_name, COALESCE(sr.code,"") as rep_code, c.parentID
-					from Customer as c
-					join DealerTypes as dt on c.dealer_type = dt.dealer_type
-					join DealerTiers dtr on c.tier = dtr.ID
-					left join MapIcons as mi on dt.dealer_type = mi.dealer_type
-					left join States as s on c.stateID = s.stateID
-					left join Country as cty on s.countryID = cty.countryID
-					left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
-					left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
-					where dt.online = 1 && c.isDummy = 0`
+	etailers = `select ` + customerFields + `, ` + stateFields + `, ` + countryFields + `, ` + dealerTypeFields + `, ` + dealerTierFields + `, ` + mapIconFields + `, ` + mapixCodeFields + `, ` + salesRepFields + `
+				from Customer as c
+				left join States as s on c.stateID = s.stateID
+				left join Country as cty on s.countryID = cty.countryID
+				left join DealerTypes as dt on c.dealer_type = dt.dealer_type
+				left join MapIcons as mi on dt.dealer_type = mi.dealer_type
+				left join DealerTiers as dtr on c.tier = dtr.ID
+				left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
+				left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
+				where dt.online = 1 && c.isDummy = 0`
 
-	localDealers = `select cl.locationID, c.customerID, cl.name, c.email, cl.address, cl.city, cl.phone, cl.fax, cl.contact_person,
-						cl.latitude, cl.longitude, c.searchURL, c.logo, c.website,
-						cl.postalCode, s.stateID, s.state, s.abbr as state_abbr, cty.countryID, cty.name as country_name, cty.abbr as country_abbr,
-						dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
-						dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
-						mi.ID as iconID, mi.mapicon, mi.mapiconshadow,
-						mpx.code as mapix_code, mpx.description as mapic_desc,
-						sr.name as rep_name, sr.code as rep_code, c.parentID
+	localDealers = `select ` + customerLocationFields + `, ` + stateFields + `, ` + countryFields + `, ` + dealerTypeFields + `, ` + dealerTierFields + `, ` + mapIconFields + `, ` + mapixCodeFields + `, ` + salesRepFields + ` ,` + showSiteFields + `	
 						from CustomerLocations as cl
 						join Customer as c on cl.cust_id = c.cust_id
 						join DealerTypes as dt on c.dealer_type = dt.dealer_type
@@ -198,8 +228,8 @@ var (
 							||
 							(cl.longitude >= ? && cl.longitude <= ?)
 						)
-
 						group by cl.locationID`
+
 	polygon = `select s.stateID, s.state, s.abbr,
 					(
 						select COUNT(cl.locationID) from CustomerLocations as cl
@@ -233,110 +263,117 @@ var (
 							join DealerTiers as dtr on m.tier = dtr.ID
 							where dt.show = true
 							order by dtr.sort desc`
-	whereToBuyDealers = `select c.customerID, c.name, c.email, c.address, c.address2, c.city, c.phone, c.fax, c.contact_person,
-							c.latitude, c.longitude, c.searchURL, c.logo, c.website,
-							c.postal_code, s.stateID, s.state, s.abbr as state_abbr, cty.countryID, cty.name as country_name, cty.abbr as country_abbr,
-							dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
-							dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
-							mi.ID as iconID, mi.mapicon, mi.mapiconshadow,
-							mpx.code as mapix_code, mpx.description as mapic_desc,
-							sr.name as rep_name, sr.code as rep_code, c.parentID
-							from Customer as c
-							join DealerTypes as dt on c.dealer_type = dt.dealer_type
-							join DealerTiers dtr on c.tier = dtr.ID
-							left join MapIcons as mi on dt.dealer_type = mi.dealer_type
-							left join States as s on c.stateID = s.stateID
-							left join Country as cty on s.countryID = cty.countryID
-							left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
-							left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
-							where dt.dealer_type = 1 and dtr.ID = 4 and c.isDummy = false and length(c.searchURL) > 1`
 
-	customerByLocation = `select cls.*, dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
-							dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
-							cl.locationID, cl.name, cl.address,cl.city,
-							cl.postalCode, cl.email, cl.phone,cl.fax,
-							cl.latitude, cl.longitude, cl.cust_id, cl.isPrimary, cl.ShippingDefault, cl.contact_person,
-							c.showWebsite, c.website, c.eLocalURL
-							from CustomerLocations as cl
-							join States as cls on cl.stateID = cls.stateID
-							join Customer as c on cl.cust_id = c.cust_id
-							join DealerTypes as dt on c.dealer_type = dt.dealer_type
-							join DealerTiers as dtr on c.tier = dtr.ID
-							where cl.locationID = ? limit 1`
-	searchDealerLocations = `select cls.*, dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
-								dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
-								cl.locationID, cl.name, cl.address,cl.city,
-								cl.postalCode, cl.email, cl.phone,cl.fax,
-								cl.latitude, cl.longitude, cl.cust_id, cl.isPrimary, cl.ShippingDefault, cl.contact_person,
-								c.showWebsite, c.website, c.eLocalURL
+	whereToBuyDealers = `select ` + customerFields + `, ` + stateFields + `, ` + countryFields + `, ` + dealerTypeFields + `, ` + dealerTierFields + `, ` + mapIconFields + `, ` + mapixCodeFields + `, ` + salesRepFields + `
+			from Customer as c
+				left join States as s on c.stateID = s.stateID
+				left join Country as cty on s.countryID = cty.countryID
+				left join DealerTypes as dt on c.dealer_type = dt.dealer_type
+				left join MapIcons as mi on dt.dealer_type = mi.dealer_type
+				left join DealerTiers as dtr on c.tier = dtr.ID
+				left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
+				left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
+				where dt.dealer_type = 1 and dtr.ID = 4 and c.isDummy = false and length(c.searchURL) > 1`
+
+	customerByLocation = `select ` + customerLocationFields + `, ` + stateFields + `, ` + countryFields + `, ` + dealerTypeFields + `, ` + dealerTierFields + `, ` + mapIconFields + `, ` + mapixCodeFields + `, ` + salesRepFields + `  ,` + showSiteFields + `
 								from CustomerLocations as cl
-								join States as cls on cl.stateID = cls.stateID
+								join States as s on cl.stateID = s.stateID
+								left join country as cty on cty.countryID = s.countryID
 								join Customer as c on cl.cust_id = c.cust_id
 								join DealerTypes as dt on c.dealer_type = dt.dealer_type
 								join DealerTiers as dtr on c.tier = dtr.ID
+								left join MapIcons as mi on dt.dealer_type = mi.dealer_type
+								left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
+								left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
 								where (dt.dealer_type = 2 or dt.dealer_type = 3) and c.isDummy = false
 								and dt.show = true and (lower(cl.name) like ? || lower(c.name) like ?)`
-	dealerLocationsByType = `select cls.*, dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
-								dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
-								cl.locationID, cl.name, cl.address,cl.city,
-								cl.postalCode, cl.email, cl.phone,cl.fax,
-								cl.latitude, cl.longitude, cl.cust_id, cl.isPrimary, cl.ShippingDefault, cl.contact_person,
-								c.showWebsite, c.website, c.eLocalURL
+	locationById = `select ` + customerLocationFields + `, ` + stateFields + `, ` + countryFields + `
 								from CustomerLocations as cl
-								join States as cls on cl.stateID = cls.stateID
+								join States as s on cl.stateID = s.stateID
+								left join country as cty on cty.countryID = s.countryID
+								where cl.locationID = ?`
+
+	searchDealerLocations = `select ` + customerLocationFields + `, ` + stateFields + `, ` + countryFields + `, ` + dealerTypeFields + `, ` + dealerTierFields + `, ` + mapIconFields + `, ` + mapixCodeFields + `, ` + salesRepFields + ` ,` + showSiteFields + `
+								from CustomerLocations as cl
+								join States as s on cl.stateID = s.stateID
+								left join country as cty on cty.countryID = s.countryID
 								join Customer as c on cl.cust_id = c.cust_id
 								join DealerTypes as dt on c.dealer_type = dt.dealer_type
 								join DealerTiers as dtr on c.tier = dtr.ID
+								left join MapIcons as mi on dt.dealer_type = mi.dealer_type
+								left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
+								left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
+								where (dt.dealer_type = 2 or dt.dealer_type = 3) and c.isDummy = false
+								and dt.show = true and (lower(cl.name) like ? || lower(c.name) like ?)`
+
+	dealerLocationsByType = `select ` + customerLocationFields + `, ` + stateFields + `, ` + countryFields + `, ` + dealerTypeFields + `, ` + dealerTierFields + `, ` + mapIconFields + `, ` + mapixCodeFields + `, ` + salesRepFields + ` ,` + showSiteFields + `
+								from CustomerLocations as cl
+	 							join States as s on cl.stateID = s.stateID
+	 							left join Country as cty ON cty.countryID = s.countryID
+	 							join Customer as c on cl.cust_id = c.cust_id
+	 							join DealerTypes as dt on c.dealer_type = dt.dealer_type
+	 							join DealerTiers as dtr on c.tier = dtr.ID
+	 							left join MapIcons as mi on dtr.tier = mi.tier
+	 							left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
+	 							left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
 								where dt.online = false and c.isDummy = false
 								and dt.show = true and (lower(cl.name) like ? || lower(c.name) like ?)`
-	searchDealerLocationsByLatLng = `select cls.*, dt.dealer_type as typeID, dt.type as dealerType, dt.online as typeOnline, dt.show as typeShow, dt.label as typeLabel,
-										dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
-										cl.locationID, cl.name, cl.address,cl.city,
-										cl.postalCode, cl.email, cl.phone,cl.fax,
-										cl.latitude, cl.longitude, cl.cust_id, cl.isPrimary, cl.ShippingDefault, cl.contact_person,
-										c.showWebsite, c.website, c.eLocalURL
-										from CustomerLocations as cl
-										join States as cls on cl.stateID = cls.stateID
-										join Customer as c on cl.cust_id = c.cust_id
-										join DealerTypes as dt on c.dealer_type = dt.dealer_type
-										join DealerTiers as dtr on c.tier = dtr.ID
-										where dt.online = false and c.isDummy = false
-										and dt.show = true and
-										( ? * (
-											2 * ATAN2(
-												SQRT((SIN(((cl.latitude - ?) * (PI() / 180)) / 2) * SIN(((cl.latitude - ?) * (PI() / 180)) / 2)) + ((SIN(((cl.longitude - ?) * (PI() / 180)) / 2)) * (SIN(((cl.longitude - ?) * (PI() / 180)) / 2))) * COS(? * (PI() / 180)) * COS(cl.latitude * (PI() / 180))),
-												SQRT(1 - ((SIN(((cl.latitude - ?) * (PI() / 180)) / 2) * SIN(((cl.latitude - ?) * (PI() / 180)) / 2)) + ((SIN(((cl.longitude - ?) * (PI() / 180)) / 2)) * (SIN(((cl.longitude - ?) * (PI() / 180)) / 2))) * COS(? * (PI() / 180)) * COS(cl.latitude * (PI() / 180))))
-											)
-										) < 100.0)`
+
+	searchDealerLocationsByLatLng = `select ` + customerLocationFields + `, ` + stateFields + `, ` + countryFields + `, ` + dealerTypeFields + `, ` + dealerTierFields + `, ` + mapIconFields + `, ` + mapixCodeFields + `, ` + salesRepFields + `, ` + showSiteFields + ` 
+									from CustomerLocations as cl
+									join States as s on cl.stateID = s.stateID
+									left join Country as cty ON cty.countryID = s.countryID
+									join Customer as c on cl.cust_id = c.cust_id
+									join DealerTypes as dt on c.dealer_type = dt.dealer_type
+									join DealerTiers as dtr on c.tier = dtr.ID
+									left join MapIcons as mi on dtr.tier = mi.tier
+		 							left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
+		 							left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
+									where dt.online = false and c.isDummy = false
+									and dt.show = true and
+									( ? * (
+										2 * ATAN2(
+											SQRT((SIN(((cl.latitude - ?) * (PI() / 180)) / 2) * SIN(((cl.latitude - ?) * (PI() / 180)) / 2)) + ((SIN(((cl.longitude - ?) * (PI() / 180)) / 2)) * (SIN(((cl.longitude - ?) * (PI() / 180)) / 2))) * COS(? * (PI() / 180)) * COS(cl.latitude * (PI() / 180))),
+											SQRT(1 - ((SIN(((cl.latitude - ?) * (PI() / 180)) / 2) * SIN(((cl.latitude - ?) * (PI() / 180)) / 2)) + ((SIN(((cl.longitude - ?) * (PI() / 180)) / 2)) * (SIN(((cl.longitude - ?) * (PI() / 180)) / 2))) * COS(? * (PI() / 180)) * COS(cl.latitude * (PI() / 180))))
+										)
+									) < 100.0)`
+
+	//customer Crud
+	createCustomer = `insert into Customer (name, email, address,  city, stateID, phone, fax, contact_person, dealer_type, latitude,longitude,  website, customerID, isDummy, parentID, searchURL, 
+					eLocalURL, logo,address2, postal_code, mCodeID, salesRepID, APIKey, tier, showWebsite) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+
+	updateCustomerId = ` update Customer set customerID = ? where cust_id = ?`
+	updateCustomer   = `update Customer set name = ?, email = ?, address = ?, city = ?, stateID = ?, phone = ?, fax = ?, contact_person = ?, dealer_type = ?, latitude = ?, longitude = ?,  website = ?, customerID = ?, 
+					isDummy = ?, parentID = ?, searchURL = ?, eLocalURL = ?, logo = ?, address2 = ?, postal_code = ?, mCodeID = ?, salesRepID = ?, APIKey = ?, tier = ?, showWebsite = ? where cust_id = ?`
+	deleteCustomer = `delete from Customer where cust_id = ?`
 )
 
 func (c *Customer) GetCustomer() (err error) {
 
 	locationChan := make(chan int)
 	basicsChan := make(chan int)
+	var locErr, basErr error
 
 	go func() {
-		if locErr := c.GetLocations(); locErr != nil {
-			err = locErr
-		}
+		locErr = c.GetLocations()
 		locationChan <- 1
 	}()
 	go func() {
-		if basErr := c.Basics(); basErr != nil {
-			err = basErr
-		}
+		basErr = c.Basics()
 		basicsChan <- 1
 	}()
 
 	<-locationChan
 	<-basicsChan
 
+	if locErr != nil && basErr != nil {
+		err = sql.ErrNoRows
+	}
 	return err
+	// return nil
 }
 
-//TODO - I hate the hacks in this scan/query!!!
-func (c *Customer) Basics() error {
-	var err error
+func (c *Customer) Basics() (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -348,99 +385,17 @@ func (c *Customer) Basics() error {
 		return err
 	}
 	defer stmt.Close()
+	row := stmt.QueryRow(c.Id)
 
-	var name, email, address, address2, city, phone, fax, contactPerson []byte
-	var logo, web, lat, lon, url, icon, shadow, mapIconId []byte
-	var stateId, state, stateAbbr, countryId, country, countryAbbr, parentId, postalCode, mapixCode, mapixDesc, rep, repCode []byte
-	err = stmt.QueryRow(c.Id).Scan(
-		&c.Id,          //c.customerID,
-		&name,          //c.name
-		&email,         //c.email
-		&address,       //c.address
-		&address2,      //c.address2
-		&city,          //c.city,
-		&phone,         //phone,
-		&fax,           //c.fax
-		&contactPerson, //c.contact_person,
-		&lat,           //c.latitude
-		&lon,           //c.longitude
-		&url,
-		&logo,
-		&web,
-		&postalCode,          //c.postal_code
-		&stateId,             //s.stateID
-		&state,               //s.state
-		&stateAbbr,           //s.abbr as state_abbr
-		&countryId,           //cty.countryID,
-		&country,             //cty.name as country_name
-		&countryAbbr,         //cty.abbr as country_abbr,
-		&c.DealerType.Id,     //dt.dealer_type as typeID
-		&c.DealerType.Type,   // dt.type as dealerType
-		&c.DealerType.Online, // dt.online as typeOnline,
-		&c.DealerType.Show,   //dt.show as typeShow
-		&c.DealerType.Label,  //dt.label as typeLabel,
-		&c.DealerTier.Id,     //dtr.ID as tierID,
-		&c.DealerTier.Tier,   //dtr.tier as tier
-		&c.DealerTier.Sort,   //dtr.sort as tierSort
-		&mapIconId,
-		&icon,
-		&shadow,    //mi.ID as iconID
-		&mapixCode, //mpx.code as mapix_code
-		&mapixDesc, //mpx.description as mapic_desc,
-		&rep,       //sr.name as rep_name
-		&repCode,   // sr.code as rep_code,
-		&parentId,  //c.parentID
-	)
-	if err != nil {
-		return err
-	}
-	c.Name, err = conversions.ByteToString(name)
-	c.Address, err = conversions.ByteToString(address)
-	c.City, err = conversions.ByteToString(city)
-	c.Email, err = conversions.ByteToString(email)
-	c.Phone, err = conversions.ByteToString(phone)
-	c.Fax, err = conversions.ByteToString(fax)
-	c.ContactPerson, err = conversions.ByteToString(contactPerson)
+	ch := make(chan Customer)
+	go populateCustomer(row, ch)
+	*c = <-ch
 
-	c.Latitude, err = conversions.ByteToFloat(lat)
-	c.Longitude, err = conversions.ByteToFloat(lon)
-	c.SearchUrl, err = conversions.ByteToUrl(url)
-	c.Logo, err = conversions.ByteToUrl(logo)
-	c.Website, err = conversions.ByteToUrl(web)
-	c.DealerType.MapIcon.MapIcon, err = conversions.ByteToUrl(icon)
-	c.DealerType.MapIcon.MapIconShadow, err = conversions.ByteToUrl(shadow)
-
-	c.PostalCode, err = conversions.ByteToString(postalCode)
-	c.State.Id, err = conversions.ByteToInt(stateId)
-	c.State.State, err = conversions.ByteToString(state)
-	c.State.Abbreviation, err = conversions.ByteToString(stateAbbr)
-	c.State.Country.Id, err = conversions.ByteToInt(countryId)
-	c.State.Country.Country, err = conversions.ByteToString(country)
-	c.State.Country.Abbreviation, err = conversions.ByteToString(countryAbbr)
-	c.DealerType.MapIcon.Id, err = conversions.ByteToInt(mapIconId)
-	c.DealerType.MapIcon.MapIcon, err = conversions.ByteToUrl(icon)
-	c.DealerType.MapIcon.MapIconShadow, err = conversions.ByteToUrl(shadow)
-	c.MapixCode, err = conversions.ByteToString(mapixCode)
-	c.MapixDescription, err = conversions.ByteToString(mapixDesc)
-	c.SalesRepresentative, err = conversions.ByteToString(rep)
-	c.SalesRepresentativeCode, err = conversions.ByteToString(repCode)
-
-	parentInt, err := conversions.ByteToInt(parentId)
-	if err != nil {
-		return err
-	}
-	if parentInt != 0 {
-		par := Customer{Id: parentInt}
-		par.GetCustomer()
-		c.Parent = &par
-	}
-
-	return nil
+	return err
 }
 
-func (c *Customer) GetLocations() error {
-	var err error
-	c.Locations = make([]CustomerLocation, 0)
+func (c *Customer) GetLocations() (err error) {
+	// c.Locations = make([]CustomerLocation, 0)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -452,40 +407,162 @@ func (c *Customer) GetLocations() error {
 		return err
 	}
 	defer stmt.Close()
-	var stateId, state, stateAbbr, countryId, country, countryAbbr, postalCode []byte
-	var name, email, address, city, phone, fax, contactPerson []byte
-	res, err := stmt.Query(c.Id)
-	for res.Next() {
-		var l CustomerLocation
-		err = res.Scan(
-			&l.Id,
-			&name,       //c.name
-			&email,      //c.email
-			&address,    //c.address
-			&city,       //c.city,
-			&postalCode, //c.postal_code
-			&phone,      //phone,
-			&fax,        //c.fax
-			&l.Latitude,
-			&l.Longitude,
-			&l.CustomerId,
-			&contactPerson, //c.contact_person,
-			&l.IsPrimary,
-			&l.ShippingDefault,
-			&stateId,     //s.stateID
-			&state,       //s.state
-			&stateAbbr,   //s.abbr as state_abbr
-			&countryId,   //cty.countryID,
-			&country,     //cty.name as country_name
-			&countryAbbr, //cty.abbr as country_ab
 
-		)
-		if err != nil {
-			return err
-		}
-		c.Locations = append(c.Locations, l)
+	rows, err := stmt.Query(c.Id)
+	ch := make(chan CustomerLocations)
+	go populateLocations(rows, ch)
+
+	var cls CustomerLocations
+	cls = <-ch
+	c.Locations = cls
+	if len(cls) == 0 {
+		err = sql.ErrNoRows
 	}
 
+	return err
+}
+
+func (c *Customer) FindCustomerIdFromCustId() (err error) { //Jesus, really?
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(findCustomerIdFromCustId)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	err = stmt.QueryRow(c.Id).Scan(&c.CustomerId)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+func (c *Customer) Create() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(createCustomer)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	parentId := 0
+	if c.Parent != nil {
+		parentId = c.Parent.Id
+	}
+
+	res, err := stmt.Exec(
+		c.Name,
+		c.Email,
+		c.Address,
+		c.City,
+		c.State.Id,
+		c.Phone,
+		c.Fax,
+		c.ContactPerson,
+		c.DealerType.Id,
+		c.Latitude,
+		c.Longitude,
+		c.Website.String(),
+		c.CustomerId,
+		c.IsDummy,
+		parentId,
+		c.SearchUrl.String(),
+		c.ELocalUrl.String(),
+		c.Logo.String(),
+		c.Address2,
+		c.PostalCode,
+		c.MapixCode.ID,
+		c.SalesRepresentative.ID,
+		c.ApiKey,
+		c.DealerTier.Id,
+		c.ShowWebsite,
+	)
+	if err != nil {
+		return err
+	}
+	id, err := res.LastInsertId()
+	c.Id = int(id)
+
+	stmt2, err := db.Prepare(updateCustomerId)
+	_, err = stmt2.Exec(c.Id, c.Id)
+	log.Print(stmt2)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+func (c *Customer) Update() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(updateCustomer)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	parentId := 0
+	if c.Parent != nil {
+		parentId = c.Parent.Id
+	}
+	_, err = stmt.Exec(
+		c.Name,
+		c.Email,
+		c.Address,
+		c.City,
+		c.State.Id,
+		c.Phone,
+		c.Fax,
+		c.ContactPerson,
+		c.DealerType.Id,
+		c.Latitude,
+		c.Longitude,
+		c.Website.String(),
+		c.CustomerId,
+		c.IsDummy,
+		parentId,
+		c.SearchUrl.String(),
+		c.ELocalUrl.String(),
+		c.Logo.String(),
+		c.Address2,
+		c.PostalCode,
+		c.MapixCode.ID,
+		c.SalesRepresentative.ID,
+		c.ApiKey,
+		c.DealerTier.Id,
+		c.ShowWebsite,
+		c.Id,
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Customer) Delete() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(deleteCustomer)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(c.Id)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -559,17 +636,7 @@ func GetCustomerCartReference(api_key string, part_id int) (ref int, err error) 
 	return ref, err
 }
 
-/* Internal Use Only */
 func GetEtailers() (dealers []Customer, err error) {
-
-	// redis_key := "goapi:dealers:etailers"
-	// data, err := redis.Get(redis_key)
-	// if len(data) > 0 && err != nil {
-	// 	err = json.Unmarshal(data, &dealers)
-	// 	if err == nil {
-	// 		return
-	// 	}
-	// }
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return dealers, err
@@ -580,92 +647,15 @@ func GetEtailers() (dealers []Customer, err error) {
 	if err != nil {
 		return dealers, err
 	}
-	var name, email, address, address2, city, phone, fax, contactPerson []byte
-	var url, logo, web, icon, shadow, lat, lon []byte
-	var stateId, state, stateAbbr, countryId, country, countryAbbr, parentId, postalCode, mapixCode, mapixDesc, rep, repCode []byte
-	res, err := stmt.Query()
-	for res.Next() {
-		var c Customer
-		err = res.Scan(
-			&c.Id,          //c.customerID,
-			&name,          //c.name
-			&email,         //c.email
-			&address,       //c.address
-			&address2,      //c.address2
-			&city,          //c.city,
-			&phone,         //phone,
-			&fax,           //c.fax
-			&contactPerson, //c.contact_person,
-			&lat,           //c.latitude
-			&lon,           //c.longitude
-			&url,
-			&logo,
-			&web,
-			&postalCode,          //c.postal_code
-			&stateId,             //s.stateID
-			&state,               //s.state
-			&stateAbbr,           //s.abbr as state_abbr
-			&countryId,           //cty.countryID,
-			&country,             //cty.name as country_name
-			&countryAbbr,         //cty.abbr as country_abbr,
-			&c.DealerType.Id,     //dt.dealer_type as typeID
-			&c.DealerType.Type,   // dt.type as dealerType
-			&c.DealerType.Online, // dt.online as typeOnline,
-			&c.DealerType.Show,   //dt.show as typeShow
-			&c.DealerType.Label,  //dt.label as typeLabel,
-			&c.DealerTier.Id,     //dtr.ID as tierID,
-			&c.DealerTier.Tier,   //dtr.tier as tier
-			&c.DealerTier.Sort,   //dtr.sort as tierSort
-			&c.DealerType.MapIcon.Id,
-			&icon,
-			&shadow,
-			&mapixCode, //mpx.code as mapix_code
-			&mapixDesc, //mpx.description as mapic_desc,
-			&rep,       //sr.name as rep_name
-			&repCode,   // sr.code as rep_code,
-			&parentId,  //c.parentID
-		)
-		if err != nil {
-			return dealers, err
-		}
-
-		c.Name, err = conversions.ByteToString(name)
-		c.Address, err = conversions.ByteToString(address)
-		c.Address2, err = conversions.ByteToString(address2)
-		c.City, err = conversions.ByteToString(city)
-		c.Email, err = conversions.ByteToString(email)
-		c.Phone, err = conversions.ByteToString(phone)
-		c.Fax, err = conversions.ByteToString(fax)
-		c.ContactPerson, err = conversions.ByteToString(contactPerson)
-
-		c.Latitude, err = conversions.ByteToFloat(lat)
-		c.Longitude, err = conversions.ByteToFloat(lon)
-		c.SearchUrl, err = conversions.ByteToUrl(url)
-		c.Logo, err = conversions.ByteToUrl(logo)
-		c.Website, err = conversions.ByteToUrl(web)
-		c.DealerType.MapIcon.MapIcon, err = conversions.ByteToUrl(icon)
-		c.DealerType.MapIcon.MapIconShadow, err = conversions.ByteToUrl(shadow)
-		c.MapixCode, err = conversions.ByteToString(mapixCode)
-		c.MapixDescription, err = conversions.ByteToString(mapixDesc)
-		c.SalesRepresentative, err = conversions.ByteToString(rep)
-		c.SalesRepresentativeCode, err = conversions.ByteToString(repCode)
-		if err != nil {
-			return dealers, err
-		}
-		err = c.GetLocations()
-		parentInt, err := conversions.ByteToInt(parentId)
-		if err != nil {
-			return dealers, err
-		}
-		if parentInt != 0 {
-			par := Customer{Id: parentInt}
-			par.GetCustomer()
-			c.Parent = &par
-		}
-
-		dealers = append(dealers, c)
+	rows, err := stmt.Query()
+	if err != nil {
+		return dealers, err
 	}
-	// go redis.Setex(redis_key, dealers, 86400)
+
+	ch := make(chan Customers)
+	go populateCustomers(rows, ch)
+	dealers = <-ch
+
 	return dealers, err
 }
 
@@ -771,82 +761,10 @@ func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, er
 	if err != nil {
 		return dealers, err
 	}
+	ch := make(chan DealerLocations)
+	go populateDealerLocations(res, ch)
+	dealers = <-ch
 
-	var ur, logo, web, lat, lon, icon, shadow, mapixCode, mapixDesc, rep, repCode []byte
-	var name, email, address, city, phone, fax, contactPerson []byte
-	for res.Next() {
-		var cust DealerLocation
-		res.Scan(
-
-			&cust.LocationId,
-			&cust.Id,
-			&name,          //c.name
-			&email,         //c.email
-			&address,       //c.address
-			&city,          //c.city,
-			&phone,         //phone,
-			&fax,           //c.fax
-			&contactPerson, //c.contact_person,
-			&lat,
-			&lon,
-			&ur,
-			&logo,
-			&web,
-			&cust.PostalCode,
-			&cust.State.Id,
-			&cust.State.State,
-			&cust.State.Abbreviation,
-			&cust.State.Country.Id,
-			&cust.State.Country.Country,
-			&cust.State.Country.Abbreviation,
-			&cust.DealerType.Id,
-			&cust.DealerType.Type,
-			&cust.DealerType.Online,
-			&cust.DealerType.Show,
-			&cust.DealerType.Label,
-			&cust.DealerTier.Id,
-			&cust.DealerTier.Tier,
-			&cust.DealerTier.Sort,
-			&cust.DealerType.MapIcon.Id,
-			&icon,
-			&shadow,
-			&mapixCode, //mpx.code as mapix_code
-			&mapixDesc, //mpx.description as mapic_desc,
-			&rep,       //sr.name as rep_name
-			&repCode,   // sr.code as rep_code,
-			&cust.Parent.Id,
-		)
-
-		cust.Name, err = conversions.ByteToString(name)
-		cust.Address, err = conversions.ByteToString(address)
-		cust.City, err = conversions.ByteToString(city)
-		cust.Email, err = conversions.ByteToString(email)
-		cust.Phone, err = conversions.ByteToString(phone)
-		cust.Fax, err = conversions.ByteToString(fax)
-		cust.ContactPerson, err = conversions.ByteToString(contactPerson)
-
-		cust.Latitude, err = conversions.ByteToFloat(lat)
-		cust.Longitude, err = conversions.ByteToFloat(lon)
-		cust.SearchUrl, err = conversions.ByteToUrl(ur)
-		cust.Logo, err = conversions.ByteToUrl(logo)
-		cust.Website, err = conversions.ByteToUrl(web)
-		cust.DealerType.MapIcon.MapIcon, err = conversions.ByteToUrl(icon)
-		cust.DealerType.MapIcon.MapIconShadow, err = conversions.ByteToUrl(shadow)
-
-		cust.MapixCode, err = conversions.ByteToString(mapixCode)
-		cust.MapixDescription, err = conversions.ByteToString(mapixDesc)
-		cust.SalesRepresentative, err = conversions.ByteToString(rep)
-		cust.SalesRepresentativeCode, err = conversions.ByteToString(repCode)
-		if err != nil {
-			return dealers, err
-		}
-
-		cust.Distance = api_helpers.EARTH * (2 * math.Atan2(
-			math.Sqrt((math.Sin(((cust.Latitude-clat)*(math.Pi/180))/2)*math.Sin(((cust.Latitude-clat)*(math.Pi/180))/2))+((math.Sin(((cust.Longitude-clong)*(math.Pi/180))/2))*(math.Sin(((cust.Longitude-clong)*(math.Pi/180))/2)))*math.Cos(clat*(math.Pi/180))*math.Cos(cust.Latitude*(math.Pi/180))),
-			math.Sqrt(1-((math.Sin(((cust.Latitude-clat)*(math.Pi/180))/2)*math.Sin(((cust.Latitude-clat)*(math.Pi/180))/2))+((math.Sin(((cust.Longitude-clong)*(math.Pi/180))/2))*(math.Sin(((cust.Longitude-clong)*(math.Pi/180))/2)))*math.Cos(clat*(math.Pi/180))*math.Cos(cust.Latitude*(math.Pi/180))))))
-
-		dealers = append(dealers, cust)
-	}
 	sortutil.AscByField(dealers, "Distance")
 	return
 }
@@ -933,8 +851,6 @@ func GetLocalRegions() (regions []StateRegion, err error) {
 	// go redis.Set(redis_key, regions)
 	return
 }
-
-//no db - same
 
 func GetLocalDealerTiers() (tiers []DealerTier, err error) {
 	// redis_key := "goapi:local:tiers"
@@ -1036,166 +952,35 @@ func GetWhereToBuyDealers() (customers []Customer, err error) {
 	if err != nil {
 		return customers, err
 	}
-	var ur, logo, web, icon, shadow, lat, lon, postalCode, mapixCode, mapixDesc, rep, repCode, parentId []byte
-	var stateId, state, stateAbbr, countryId, country, countryAbbr, mapIconId []byte
-	var name, email, address, address2, city, phone, fax, contactPerson []byte
-
 	res, err := stmt.Query()
 	if err != nil {
 		return customers, err
 	}
-	for res.Next() {
-		var c Customer
-		err = res.Scan(
-			&c.Id,    //c.customerID,
-			&name,    //c.name
-			&email,   //c.email
-			&address, //c.address
-			&address2,
-			&city,          //c.city,
-			&phone,         //phone,
-			&fax,           //c.fax
-			&contactPerson, //c.contact_person
-			&lat,
-			&lon,
-			&ur,
-			&logo,
-			&web,
-			&postalCode,          //c.postal_code
-			&stateId,             //s.stateID
-			&state,               //s.state
-			&stateAbbr,           //s.abbr as state_abbr
-			&countryId,           //cty.countryID,
-			&country,             //cty.name as country_name
-			&countryAbbr,         //cty.abbr as country_abbr,
-			&c.DealerType.Id,     //dt.dealer_type as typeID
-			&c.DealerType.Type,   // dt.type as dealerType
-			&c.DealerType.Online, // dt.online as typeOnline,
-			&c.DealerType.Show,   //dt.show as typeShow
-			&c.DealerType.Label,  //dt.label as typeLabel,
-			&c.DealerTier.Id,     //dtr.ID as tierID,
-			&c.DealerTier.Tier,   //dtr.tier as tier
-			&c.DealerTier.Sort,   //dtr.sort as tierSort
-			&mapIconId,
-			&icon,
-			&shadow,
-			&mapixCode, //mpx.code as mapix_code
-			&mapixDesc, //mpx.description as mapic_desc,
-			&rep,       //sr.name as rep_name
-			&repCode,   // sr.code as rep_code,
-			&parentId,  //c.parentID
-		)
-		if err != nil {
-			return customers, err
-		}
-
-		c.Name, err = conversions.ByteToString(name)
-		c.Address, err = conversions.ByteToString(address)
-		c.City, err = conversions.ByteToString(city)
-		c.Email, err = conversions.ByteToString(email)
-		c.Phone, err = conversions.ByteToString(phone)
-		c.Fax, err = conversions.ByteToString(fax)
-		c.ContactPerson, err = conversions.ByteToString(contactPerson)
-
-		c.Latitude, err = conversions.ByteToFloat(lat)
-		c.Longitude, err = conversions.ByteToFloat(lon)
-		c.SearchUrl, err = conversions.ByteToUrl(ur)
-		c.Logo, err = conversions.ByteToUrl(logo)
-		c.Website, err = conversions.ByteToUrl(web)
-		c.PostalCode, err = conversions.ByteToString(postalCode)
-		c.State.Id, err = conversions.ByteToInt(stateId)
-		c.State.State, err = conversions.ByteToString(state)
-		c.State.Abbreviation, err = conversions.ByteToString(stateAbbr)
-		c.DealerType.MapIcon.Id, err = conversions.ByteToInt(mapIconId)
-		c.DealerType.MapIcon.MapIcon, err = conversions.ByteToUrl(icon)
-		c.DealerType.MapIcon.MapIconShadow, err = conversions.ByteToUrl(shadow)
-		c.MapixCode, err = conversions.ByteToString(mapixCode)
-		c.MapixDescription, err = conversions.ByteToString(mapixDesc)
-		c.SalesRepresentative, err = conversions.ByteToString(rep)
-		c.SalesRepresentativeCode, err = conversions.ByteToString(repCode)
-		_ = c.GetLocations()
-		parentInt, err := conversions.ByteToInt(parentId)
-		if err != nil {
-			return customers, err
-		}
-		if parentInt != 0 {
-			par := Customer{Id: parentInt}
-			par.GetCustomer()
-			c.Parent = &par
-		}
-
-		customers = append(customers, c)
-	}
+	ch := make(chan Customers)
+	go populateCustomers(res, ch)
+	customers = <-ch
 
 	// go redis.Setex(redis_key, customers, 86400)
-	return
+	return customers, err
 }
 
-func GetLocationById(id int) (location DealerLocation, err error) {
+func GetLocationById(id int) (location CustomerLocation, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return location, err
 	}
 	defer db.Close()
 
-	stmt, err := db.Prepare(customerByLocation)
+	stmt, err := db.Prepare(locationById)
 	if err != nil {
 		return location, err
 	}
-	var website, eLocal, isPrimary, shippingDefault []byte //ununsed, but in the original query
-	var name, email, address, city, phone, fax, contactPerson, postalCode []byte
-	var showWeb bool
-	err = stmt.QueryRow(id).Scan(
-		&location.State.Id,           //s.stateID
-		&location.State.State,        //s.state
-		&location.State.Abbreviation, //s.abbr as state_abbr
-		&location.State.Country.Id,   //cty.countryID,
-		&location.DealerType.Id,      //dt.dealer_type as typeID
-		&location.DealerType.Type,    // dt.type as dealerType
-		&location.DealerType.Online,  // dt.online as typeOnline,
-		&location.DealerType.Show,    //dt.show as typeShow
-		&location.DealerType.Label,   //dt.label as typeLabel,
-		&location.DealerTier.Id,      //dtr.ID as tierID,
-		&location.DealerTier.Tier,    //dtr.tier as tier
-		&location.DealerTier.Sort,    //dtr.sort as tierSort
-		&location.LocationId,
-		&name,    //c.name
-		&email,   //c.email
-		&address, //c.address
-		&city,    //c.city,
-		&postalCode,
-		&phone, //phone,
-		&fax,   //c.fax
-		&location.Latitude,
-		&location.Longitude,
-		&location.Id,
-		&isPrimary,       //Unused
-		&shippingDefault, //Unused
-		&location.ContactPerson,
-		&showWeb,
-		&website,
-		&eLocal,
-	)
-	location.Name, err = conversions.ByteToString(name)
-	location.Address, err = conversions.ByteToString(address)
-	location.City, err = conversions.ByteToString(city)
-	location.PostalCode, err = conversions.ByteToString(postalCode)
-	location.Email, err = conversions.ByteToString(email)
-	location.Phone, err = conversions.ByteToString(phone)
-	location.Fax, err = conversions.ByteToString(fax)
-	location.ContactPerson, err = conversions.ByteToString(contactPerson)
-	if showWeb {
-		if website == nil {
-			website = eLocal
-		}
-		if website != nil {
-			location.Website, err = conversions.ByteToUrl(website)
-			if err != nil {
-				return location, err
-			}
-		}
-	}
-	return
+	row := stmt.QueryRow(id)
+	ch := make(chan CustomerLocation)
+	go populateLocation(row, ch)
+	location = <-ch
+
+	return location, err
 }
 
 func SearchLocations(term string) (locations []DealerLocation, err error) {
@@ -1215,70 +1000,14 @@ func SearchLocations(term string) (locations []DealerLocation, err error) {
 	if err != nil {
 		return locations, err
 	}
-	var name, email, address, city, phone, fax, contactPerson, postalCode []byte
-	var website, eLocal, isPrimary, shippingDefault []byte //ununsed, but in the original query
-	var showWeb bool
-	for res.Next() {
-		var location DealerLocation
-		err = res.Scan(
-			&location.State.Id,           //s.stateID
-			&location.State.State,        //s.state
-			&location.State.Abbreviation, //s.abbr as state_abbr
-			&location.State.Country.Id,   //cty.countryID,
-			&location.DealerType.Id,      //dt.dealer_type as typeID
-			&location.DealerType.Type,    // dt.type as dealerType
-			&location.DealerType.Online,  // dt.online as typeOnline,
-			&location.DealerType.Show,    //dt.show as typeShow
-			&location.DealerType.Label,   //dt.label as typeLabel,
-			&location.DealerTier.Id,      //dtr.ID as tierID,
-			&location.DealerTier.Tier,    //dtr.tier as tier
-			&location.DealerTier.Sort,    //dtr.sort as tierSort
-			&location.LocationId,
-			&name,    //c.name
-			&address, //c.address
-			&city,    //c.city,
-			&postalCode,
-			&email, //c.email
-			&phone, //phone,
-			&fax,   //c.fax
-			&location.Latitude,
-			&location.Longitude,
-			&location.Id,
-			&isPrimary,       //Unused
-			&shippingDefault, //Unused
-			&contactPerson,   //c.contact_person
-			&showWeb,
-			&website,
-			&eLocal,
-		)
-		if err != nil {
-			return locations, err
-		}
-		location.Name, err = conversions.ByteToString(name)
-		location.Address, err = conversions.ByteToString(address)
-		location.City, err = conversions.ByteToString(city)
-		location.PostalCode, err = conversions.ByteToString(postalCode)
-		location.Email, err = conversions.ByteToString(email)
-		location.Phone, err = conversions.ByteToString(phone)
-		location.Fax, err = conversions.ByteToString(fax)
-		location.ContactPerson, err = conversions.ByteToString(contactPerson)
-		if showWeb {
-			if website == nil {
-				website = eLocal
-			}
-			if website != nil {
-				location.Website, err = conversions.ByteToUrl(website)
-				if err != nil {
-					return locations, err
-				}
-			}
-		}
-		locations = append(locations, location)
-	}
-	return
+	ch := make(chan DealerLocations)
+	go populateDealerLocations(res, ch)
+	locations = <-ch
+
+	return locations, err
 }
 
-func SearchLocationsByType(term string) (locations []DealerLocation, err error) {
+func SearchLocationsByType(term string) (locations DealerLocations, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return locations, err
@@ -1295,68 +1024,12 @@ func SearchLocationsByType(term string) (locations []DealerLocation, err error) 
 	if err != nil {
 		return locations, err
 	}
-	var name, email, address, city, phone, fax, contactPerson, postalCode []byte
-	var website, eLocal, isPrimary, shippingDefault []byte //ununsed, but in the original query
-	var showWeb bool
-	for res.Next() {
 
-		var location DealerLocation
-		err = res.Scan(
-			&location.State.Id,           //s.stateID
-			&location.State.State,        //s.state
-			&location.State.Abbreviation, //s.abbr as state_abbr
-			&location.State.Country.Id,   //cty.countryID,
-			&location.DealerType.Id,      //dt.dealer_type as typeID
-			&location.DealerType.Type,    // dt.type as dealerType
-			&location.DealerType.Online,  // dt.online as typeOnline,
-			&location.DealerType.Show,    //dt.show as typeShow
-			&location.DealerType.Label,   //dt.label as typeLabel,
-			&location.DealerTier.Id,      //dtr.ID as tierID,
-			&location.DealerTier.Tier,    //dtr.tier as tier
-			&location.DealerTier.Sort,    //dtr.sort as tierSort
-			&location.LocationId,
-			&name,    //c.name
-			&address, //c.address
-			&city,    //c.city,
-			&postalCode,
-			&email, //c.email
-			&phone, //phone,
-			&fax,   //c.fax
-			&location.Latitude,
-			&location.Longitude,
-			&location.Id,
-			&isPrimary,       //Unused
-			&shippingDefault, //Unused
-			&contactPerson,   //c.contact_person
-			&showWeb,
-			&website,
-			&eLocal,
-		)
-		if err != nil {
-			return locations, err
-		}
-		location.Name, err = conversions.ByteToString(name)
-		location.Address, err = conversions.ByteToString(address)
-		location.City, err = conversions.ByteToString(city)
-		location.PostalCode, err = conversions.ByteToString(postalCode)
-		location.Email, err = conversions.ByteToString(email)
-		location.Phone, err = conversions.ByteToString(phone)
-		location.Fax, err = conversions.ByteToString(fax)
-		location.ContactPerson, err = conversions.ByteToString(contactPerson)
-		if showWeb {
-			if website == nil {
-				website = eLocal
-			}
-			if website != nil {
-				location.Website, err = conversions.ByteToUrl(website)
-				if err != nil {
-					return locations, err
-				}
-			}
-		}
-		locations = append(locations, location)
-	}
-	return
+	ch := make(chan DealerLocations)
+	go populateDealerLocations(res, ch)
+	locations = <-ch
+
+	return locations, err
 }
 
 func SearchLocationsByLatLng(loc GeoLocation) (locations []DealerLocation, err error) {
@@ -1387,68 +1060,11 @@ func SearchLocationsByLatLng(loc GeoLocation) (locations []DealerLocation, err e
 	if err != nil {
 		return locations, err
 	}
-	var name, email, address, city, phone, fax, contactPerson, postalCode []byte
-	var website, eLocal, isPrimary, shippingDefault []byte //ununsed, but in the original query
-	var showWeb bool
-	for res.Next() {
-		var location DealerLocation
-		err = res.Scan(
-			&location.State.Id,
-			&location.State.State,        //s.state
-			&location.State.Abbreviation, //s.abbr as state_abbr
-			&location.State.Country.Id,   //cty.countryID,
-			&location.DealerType.Id,      //dt.dealer_type as typeID
-			&location.DealerType.Type,    // dt.type as dealerType
-			&location.DealerType.Online,  // dt.online as typeOnline,
-			&location.DealerType.Show,    //dt.show as typeShow
-			&location.DealerType.Label,   //dt.label as typeLabel,
-			&location.DealerTier.Id,      //dtr.ID as tierID,
-			&location.DealerTier.Tier,    //dtr.tier as tier
-			&location.DealerTier.Sort,    //dtr.sort as tierSort
-			&location.LocationId,
-			&name,    //c.name
-			&address, //c.address
-			&city,    //c.city,
-			&postalCode,
-			&email, //c.email
-			&phone, //phone,
-			&fax,   //c.fax
-			&location.Latitude,
-			&location.Longitude,
-			&location.Id,
-			&isPrimary,       //Unused
-			&shippingDefault, //Unused
-			&contactPerson,   //c.contact_person
-			&showWeb,
-			&website,
-			&eLocal,
-		)
-		if err != nil {
-			return locations, err
-		}
-		location.Name, err = conversions.ByteToString(name)
-		location.Address, err = conversions.ByteToString(address)
-		location.City, err = conversions.ByteToString(city)
-		location.PostalCode, err = conversions.ByteToString(postalCode)
-		location.Email, err = conversions.ByteToString(email)
-		location.Phone, err = conversions.ByteToString(phone)
-		location.Fax, err = conversions.ByteToString(fax)
-		location.ContactPerson, err = conversions.ByteToString(contactPerson)
+	ch := make(chan DealerLocations)
+	go populateDealerLocations(res, ch)
+	locations = <-ch
 
-		if showWeb {
-			if website == nil {
-				website = eLocal
-			}
-			if website != nil {
-				location.Website, err = conversions.ByteToUrl(website)
-				if err != nil {
-					return locations, err
-				}
-			}
-		}
-		locations = append(locations, location)
-	}
-	return
+	return locations, err
 }
 
 func (g *GeoLocation) LatitudeRadians() float64 {
@@ -1469,4 +1085,962 @@ func getViewPortWidth(lat1 float64, lon1 float64, lat2 float64, long2 float64) f
 	a := (math.Sin(dlat/2) * math.Sin(dlat/2)) + ((math.Sin(dlon/2))*(math.Sin(dlon/2)))*math.Cos(lat1)*math.Cos(lat2)
 	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
 	return api_helpers.EARTH * c
+}
+
+//populate  customer
+func populateCustomer(row *sql.Row, ch chan Customer) {
+	populateChan := make(chan int)
+	parentChan := make(chan int)
+
+	var c Customer
+	var err error
+	var name, email, address, address2, city, phone, fax, contactPerson, state, stateAbbr, country, countryAbbr, postalCode, mapixCode, mapixDesc, rep, repCode, dtypeType, dtypeLabel, dtierTier, apiKey *string
+	var logo, web, searchU, icon, shadow, parentId, eLocalUrl *[]byte
+	var lat, lon *float64
+	var mapIconId, stateId, countryId, dtypeId, dtierId, dtierSort, custID, mapixCodeID, salesRepID *int
+	var dtypeOnline, dtypeShow, isDummy, showWebsite *bool
+
+	err = row.Scan(
+		&c.Id,
+		&name,
+		&email,
+		&address,
+		&city,
+		&stateId,
+		&phone,
+		&fax,
+		&contactPerson,
+		&dtypeId,
+		&lat,
+		&lon,
+		&web,
+		&custID,
+		&isDummy,
+		&parentId,
+		&searchU,
+		&eLocalUrl,
+		&logo,
+		&address2,
+		&postalCode,
+		&mapixCodeID,
+		&salesRepID,
+		&apiKey,
+		&dtierId,
+		&showWebsite,
+		&state,
+		&stateAbbr,
+		&countryId,
+		&country,
+		&countryAbbr,
+		&dtypeType,
+		&dtypeOnline,
+		&dtypeShow,
+		&dtypeLabel,
+		&dtierTier,
+		&dtierSort,
+		&icon,
+		&shadow,
+		&mapixCode,
+		&mapixDesc,
+		&rep,
+		&repCode,
+	)
+	if err != nil {
+		ch <- c
+		return
+	}
+	go func() {
+		if name != nil {
+			c.Name = *name
+		}
+		if address != nil {
+			c.Address = *address
+		}
+		if address2 != nil {
+			c.Address2 = *address2
+		}
+		if city != nil {
+			c.City = *city
+		}
+		if email != nil {
+			c.Email = *email
+		}
+		if phone != nil {
+			c.Phone = *phone
+		}
+		if fax != nil {
+			c.Fax = *fax
+		}
+		if contactPerson != nil {
+			c.ContactPerson = *contactPerson
+		}
+		if lat != nil {
+			c.Latitude = *lat
+		}
+		if lon != nil {
+			c.Longitude = *lon
+		}
+		if searchU != nil {
+			c.SearchUrl, err = conversions.ByteToUrl(*searchU)
+		}
+		if eLocalUrl != nil {
+			c.ELocalUrl, err = conversions.ByteToUrl(*eLocalUrl)
+		}
+		if logo != nil {
+			c.Logo, err = conversions.ByteToUrl(*logo)
+		}
+		if web != nil {
+			c.Website, err = conversions.ByteToUrl(*web)
+		}
+		if custID != nil {
+			c.CustomerId = *custID
+		}
+		if isDummy != nil {
+			c.IsDummy = *isDummy
+		}
+		if postalCode != nil {
+			c.PostalCode = *postalCode
+		}
+		if mapixCodeID != nil {
+			c.MapixCode.ID = *mapixCodeID
+		}
+		if salesRepID != nil {
+			c.SalesRepresentative.ID = *salesRepID
+		}
+		if apiKey != nil {
+			c.ApiKey = *apiKey
+		}
+		if showWebsite != nil {
+			c.ShowWebsite = *showWebsite
+		}
+		if stateId != nil {
+			c.State.Id = *stateId
+		}
+		if state != nil {
+			c.State.State = *state
+		}
+		if stateAbbr != nil {
+			c.State.Abbreviation = *stateAbbr
+		}
+		if countryId != nil {
+			c.State.Country.Id = *countryId
+		}
+		if country != nil {
+			c.State.Country.Country = *country
+		}
+		if countryId != nil {
+			c.State.Country.Abbreviation = *countryAbbr
+		}
+		if dtypeId != nil {
+			c.DealerType.Id = *dtypeId
+		}
+		if dtypeType != nil {
+			c.DealerType.Type = *dtypeType
+		}
+		if dtypeOnline != nil {
+			c.DealerType.Online = *dtypeOnline
+		}
+		if dtypeShow != nil {
+			c.DealerType.Show = *dtypeShow
+		}
+		if dtypeLabel != nil {
+			c.DealerType.Label = *dtypeLabel
+		}
+		if dtierId != nil {
+			c.DealerTier.Id = *dtierId
+		}
+		if dtierSort != nil {
+			c.DealerTier.Sort = *dtierSort
+		}
+		if dtierTier != nil {
+			c.DealerTier.Tier = *dtierTier
+		}
+		if mapIconId != nil {
+			c.DealerType.MapIcon.Id = *mapIconId
+		}
+		if icon != nil {
+			c.DealerType.MapIcon.MapIcon, err = conversions.ByteToUrl(*icon)
+		}
+		if shadow != nil {
+			c.DealerType.MapIcon.MapIconShadow, err = conversions.ByteToUrl(*shadow)
+		}
+		if mapixCode != nil {
+			c.MapixCode.Code = *mapixCode
+		}
+		if mapixDesc != nil {
+			c.MapixCode.Description = *mapixDesc
+		}
+		if rep != nil {
+			c.SalesRepresentative.Name = *rep
+		}
+		if repCode != nil {
+			c.SalesRepresentative.Code = *repCode
+		}
+		populateChan <- 1
+	}()
+
+	//get parent, if has parent
+	go func() {
+		if parentId != nil {
+			parentInt, err := conversions.ByteToInt(*parentId)
+			if err != nil {
+				ch <- c
+				return
+			}
+			if parentInt != 0 {
+				par := Customer{Id: parentInt}
+				err = par.GetCustomer()
+				if err != nil {
+					ch <- c
+					return
+				}
+				c.Parent = &par
+			}
+		}
+		parentChan <- 1
+	}()
+	<-populateChan
+	<-parentChan
+	ch <- c
+	return
+}
+
+//populate  customer
+func populateCustomers(rows *sql.Rows, ch chan Customers) {
+	populateChan := make(chan int)
+	parentChan := make(chan int)
+	locationChan := make(chan int)
+	var c Customer
+	var cs Customers
+	var err error
+	var name, email, address, address2, city, phone, fax, contactPerson, state, stateAbbr, country, countryAbbr, postalCode, mapixCode, mapixDesc, rep, repCode, dtypeType, dtypeLabel, dtierTier, apiKey *string
+	var logo, web, searchU, icon, shadow, parentId, eLocalUrl *[]byte
+	var lat, lon *float64
+	var mapIconId, stateId, countryId, dtypeId, dtierId, dtierSort, custID, mapixCodeID, salesRepID *int
+	var dtypeOnline, dtypeShow, isDummy, showWebsite *bool
+
+	for rows.Next() {
+		err = rows.Scan(
+			&c.Id,
+			&name,
+			&email,
+			&address,
+			&city,
+			&stateId,
+			&phone,
+			&fax,
+			&contactPerson,
+			&dtypeId,
+			&lat,
+			&lon,
+			&web,
+			&custID,
+			&isDummy,
+			&parentId,
+			&searchU,
+			&eLocalUrl,
+			&logo,
+			&address2,
+			&postalCode,
+			&mapixCodeID,
+			&salesRepID,
+			&apiKey,
+			&dtierId,
+			&showWebsite,
+			&state,
+			&stateAbbr,
+			&countryId,
+			&country,
+			&countryAbbr,
+			&dtypeType,
+			&dtypeOnline,
+			&dtypeShow,
+			&dtypeLabel,
+			&dtierTier,
+			&dtierSort,
+			&icon,
+			&shadow,
+			&mapixCode,
+			&mapixDesc,
+			&rep,
+			&repCode,
+		)
+		if err != nil {
+			ch <- cs
+			return
+		}
+
+		go func() {
+			if name != nil {
+				c.Name = *name
+			}
+			if address != nil {
+				c.Address = *address
+			}
+			if address2 != nil {
+				c.Address2 = *address2
+			}
+			if city != nil {
+				c.City = *city
+			}
+			if email != nil {
+				c.Email = *email
+			}
+			if phone != nil {
+				c.Phone = *phone
+			}
+			if fax != nil {
+				c.Fax = *fax
+			}
+			if contactPerson != nil {
+				c.ContactPerson = *contactPerson
+			}
+			if lat != nil {
+				c.Latitude = *lat
+			}
+			if lon != nil {
+				c.Longitude = *lon
+			}
+			if searchU != nil {
+				c.SearchUrl, err = conversions.ByteToUrl(*searchU)
+			}
+			if eLocalUrl != nil {
+				c.ELocalUrl, err = conversions.ByteToUrl(*eLocalUrl)
+			}
+			if logo != nil {
+				c.Logo, err = conversions.ByteToUrl(*logo)
+			}
+			if web != nil {
+				c.Website, err = conversions.ByteToUrl(*web)
+			}
+			if custID != nil {
+				c.CustomerId = *custID
+			}
+			if isDummy != nil {
+				c.IsDummy = *isDummy
+			}
+			if postalCode != nil {
+				c.PostalCode = *postalCode
+			}
+			if mapixCodeID != nil {
+				c.MapixCode.ID = *mapixCodeID
+			}
+			if salesRepID != nil {
+				c.SalesRepresentative.ID = *salesRepID
+			}
+			if apiKey != nil {
+				c.ApiKey = *apiKey
+			}
+			if showWebsite != nil {
+				c.ShowWebsite = *showWebsite
+			}
+			if stateId != nil {
+				c.State.Id = *stateId
+			}
+			if state != nil {
+				c.State.State = *state
+			}
+			if stateAbbr != nil {
+				c.State.Abbreviation = *stateAbbr
+			}
+			if countryId != nil {
+				c.State.Country.Id = *countryId
+			}
+			if country != nil {
+				c.State.Country.Country = *country
+			}
+			if countryId != nil {
+				c.State.Country.Abbreviation = *countryAbbr
+			}
+			if dtypeId != nil {
+				c.DealerType.Id = *dtypeId
+			}
+			if dtypeType != nil {
+				c.DealerType.Type = *dtypeType
+			}
+			if dtypeOnline != nil {
+				c.DealerType.Online = *dtypeOnline
+			}
+			if dtypeShow != nil {
+				c.DealerType.Show = *dtypeShow
+			}
+			if dtypeLabel != nil {
+				c.DealerType.Label = *dtypeLabel
+			}
+			if dtierId != nil {
+				c.DealerTier.Id = *dtierId
+			}
+			if dtierSort != nil {
+				c.DealerTier.Sort = *dtierSort
+			}
+			if dtierTier != nil {
+				c.DealerTier.Tier = *dtierTier
+			}
+			if mapIconId != nil {
+				c.DealerType.MapIcon.Id = *mapIconId
+			}
+			if icon != nil {
+				c.DealerType.MapIcon.MapIcon, err = conversions.ByteToUrl(*icon)
+			}
+			if shadow != nil {
+				c.DealerType.MapIcon.MapIconShadow, err = conversions.ByteToUrl(*shadow)
+			}
+			if mapixCode != nil {
+				c.MapixCode.Code = *mapixCode
+			}
+			if mapixDesc != nil {
+				c.MapixCode.Description = *mapixDesc
+			}
+			if rep != nil {
+				c.SalesRepresentative.Name = *rep
+			}
+			if repCode != nil {
+				c.SalesRepresentative.Code = *repCode
+			}
+			populateChan <- 1
+		}()
+
+		//get parent, if has parent
+		go func() {
+			parentInt, err := conversions.ByteToInt(*parentId)
+			if err != nil {
+				ch <- cs
+				return
+			}
+			if parentInt != 0 {
+				par := Customer{Id: parentInt}
+				err = par.GetCustomer()
+
+				c.Parent = &par
+			}
+			parentChan <- 1
+		}()
+		go func() {
+			err = c.GetLocations()
+			locationChan <- 1
+		}()
+
+		<-populateChan
+		<-parentChan
+		<-locationChan
+		cs = append(cs, c)
+	}
+
+	ch <- cs
+	return
+}
+
+//populate CustomerLocations
+func populateLocations(rows *sql.Rows, ch chan CustomerLocations) {
+	var l CustomerLocation
+	var ls CustomerLocations
+	var err error
+	var name, email, address, city, phone, fax, contactPerson, state, stateAbbr, country, countryAbbr, postalCode *string
+	var lat, lon *float64
+	var custId, stateId, countryId *int
+	var isPrimary, shippingDefault *bool
+
+	for rows.Next() {
+		err = rows.Scan(
+			&l.Id,
+			&name,
+			&address,
+			&city,
+			&stateId,
+			&email,
+			&phone,
+			&fax,
+			&lat,
+			&lon,
+			&custId,
+			&contactPerson,
+			&isPrimary,
+			&postalCode,
+			&shippingDefault,
+			&state,
+			&stateAbbr,
+			&countryId,
+			&country,
+			&countryAbbr,
+		)
+		if err != nil {
+			ch <- ls
+			return
+		}
+		if name != nil {
+			l.Name = *name
+		}
+		if email != nil {
+			l.Email = *email
+		}
+		if address != nil {
+			l.Address = *address
+		}
+		if city != nil {
+			l.City = *city
+		}
+		if postalCode != nil {
+			l.PostalCode = *postalCode
+		}
+		if phone != nil {
+			l.Phone = *phone
+		}
+		if fax != nil {
+			l.Fax = *fax
+		}
+		if lat != nil {
+			l.Latitude = *lat
+		}
+		if lon != nil {
+			l.Longitude = *lon
+		}
+		if custId != nil {
+			l.CustomerId = *custId
+		}
+		if contactPerson != nil {
+			l.ContactPerson = *contactPerson
+		}
+		if isPrimary != nil {
+			l.IsPrimary = *isPrimary
+		}
+		if shippingDefault != nil {
+			l.ShippingDefault = *shippingDefault
+		}
+		if stateId != nil {
+			l.State.Id = *stateId
+		}
+		if state != nil {
+			l.State.State = *state
+		}
+		if stateAbbr != nil {
+			l.State.Abbreviation = *stateAbbr
+		}
+		if countryId != nil {
+			l.State.Country.Id = *countryId
+		}
+		if country != nil {
+			l.State.Country.Country = *country
+		}
+		if countryId != nil {
+			l.State.Country.Abbreviation = *countryAbbr
+		}
+
+		ls = append(ls, l)
+	}
+	ch <- ls
+	return
+}
+
+//populate CustomerLocations
+func populateLocation(row *sql.Row, ch chan CustomerLocation) {
+	var l CustomerLocation
+
+	var err error
+	var name, email, address, city, phone, fax, contactPerson, state, stateAbbr, country, countryAbbr, postalCode *string
+	var lat, lon *float64
+	var custId, stateId, countryId *int
+	var isPrimary, shippingDefault *bool
+
+	err = row.Scan(
+		&l.Id,
+		&name,
+		&address,
+		&city,
+		&stateId,
+		&email,
+		&phone,
+		&fax,
+		&lat,
+		&lon,
+		&custId,
+		&contactPerson,
+		&isPrimary,
+		&postalCode,
+		&shippingDefault,
+		&state,
+		&stateAbbr,
+		&countryId,
+		&country,
+		&countryAbbr,
+	)
+	if err != nil {
+		ch <- l
+		return
+	}
+	if name != nil {
+		l.Name = *name
+	}
+	if email != nil {
+		l.Email = *email
+	}
+	if address != nil {
+		l.Address = *address
+	}
+	if city != nil {
+		l.City = *city
+	}
+	if postalCode != nil {
+		l.PostalCode = *postalCode
+	}
+	if phone != nil {
+		l.Phone = *phone
+	}
+	if fax != nil {
+		l.Fax = *fax
+	}
+	if lat != nil {
+		l.Latitude = *lat
+	}
+	if lon != nil {
+		l.Longitude = *lon
+	}
+	if custId != nil {
+		l.CustomerId = *custId
+	}
+	if contactPerson != nil {
+		l.ContactPerson = *contactPerson
+	}
+	if isPrimary != nil {
+		l.IsPrimary = *isPrimary
+	}
+	if shippingDefault != nil {
+		l.ShippingDefault = *shippingDefault
+	}
+	if stateId != nil {
+		l.State.Id = *stateId
+	}
+	if state != nil {
+		l.State.State = *state
+	}
+	if stateAbbr != nil {
+		l.State.Abbreviation = *stateAbbr
+	}
+	if countryId != nil {
+		l.State.Country.Id = *countryId
+	}
+	if country != nil {
+		l.State.Country.Country = *country
+	}
+	if countryId != nil {
+		l.State.Country.Abbreviation = *countryAbbr
+	}
+	ch <- l
+	return
+}
+
+//populate CustomerLocations
+func populateDealerLocation(row *sql.Row, ch chan DealerLocation) {
+	var l DealerLocation
+	var err error
+	var name, email, address, city, phone, fax, contactPerson, state, stateAbbr, country, countryAbbr, postalCode, mapixCode, mapixDesc, rep, repCode, dtypeType, dtypeLabel, dtierTier *string
+	var lat, lon *float64
+	var icon, shadow, eLocal, web *[]byte
+	var custId, stateId, countryId, dtierSort *int
+	var isPrimary, shippingDefault, dtypeOnline, dtypeShow, showWebsite *bool
+
+	err = row.Scan(
+		&l.CustomerLocation.Id,
+		&name,
+		&address,
+		&city,
+		&stateId,
+		&email,
+		&phone,
+		&fax,
+		&lat,
+		&lon,
+		&custId,
+		&contactPerson,
+		&isPrimary,
+		&postalCode,
+		&shippingDefault,
+		&state,
+		&stateAbbr,
+		&countryId,
+		&country,
+		&countryAbbr,
+		&dtypeType,
+		&dtypeOnline,
+		&dtypeShow,
+		&dtypeLabel,
+		&dtierTier,
+		&dtierSort,
+		&icon,
+		&shadow,
+		&mapixCode,
+		&mapixDesc,
+		&rep,
+		&repCode,
+		&showWebsite,
+		&eLocal,
+		&web,
+	)
+	if err != nil {
+		ch <- l
+		return
+	}
+	if name != nil {
+		l.CustomerLocation.Name = *name
+	}
+	if email != nil {
+		l.CustomerLocation.Email = *email
+	}
+	if address != nil {
+		l.CustomerLocation.Address = *address
+	}
+	if city != nil {
+		l.CustomerLocation.City = *city
+	}
+	if postalCode != nil {
+		l.CustomerLocation.PostalCode = *postalCode
+	}
+	if phone != nil {
+		l.CustomerLocation.Phone = *phone
+	}
+	if fax != nil {
+		l.CustomerLocation.Fax = *fax
+	}
+	if lat != nil {
+		l.CustomerLocation.Latitude = *lat
+	}
+	if lon != nil {
+		l.CustomerLocation.Longitude = *lon
+	}
+	if custId != nil {
+		l.CustomerLocation.CustomerId = *custId
+	}
+	if contactPerson != nil {
+		l.CustomerLocation.ContactPerson = *contactPerson
+	}
+	if isPrimary != nil {
+		l.CustomerLocation.IsPrimary = *isPrimary
+	}
+	if shippingDefault != nil {
+		l.CustomerLocation.ShippingDefault = *shippingDefault
+	}
+	if stateId != nil {
+		l.CustomerLocation.State.Id = *stateId
+	}
+	if state != nil {
+		l.CustomerLocation.State.State = *state
+	}
+	if stateAbbr != nil {
+		l.CustomerLocation.State.Abbreviation = *stateAbbr
+	}
+	if countryId != nil {
+		l.CustomerLocation.State.Country.Id = *countryId
+	}
+	if country != nil {
+		l.CustomerLocation.State.Country.Country = *country
+	}
+	if countryId != nil {
+		l.CustomerLocation.State.Country.Abbreviation = *countryAbbr
+	}
+	if dtypeType != nil {
+		l.DealerType.Type = *dtypeType
+	}
+	if dtypeOnline != nil {
+		l.DealerType.Online = *dtypeOnline
+	}
+	if dtypeShow != nil {
+		l.DealerType.Show = *dtypeShow
+	}
+	if dtypeLabel != nil {
+		l.DealerType.Label = *dtypeLabel
+	}
+	if dtierSort != nil {
+		l.DealerTier.Sort = *dtierSort
+	}
+	if dtierTier != nil {
+		l.DealerTier.Tier = *dtierTier
+	}
+	if icon != nil {
+		l.DealerType.MapIcon.MapIcon, err = conversions.ByteToUrl(*icon)
+	}
+	if shadow != nil {
+		l.DealerType.MapIcon.MapIconShadow, err = conversions.ByteToUrl(*shadow)
+	}
+	if mapixCode != nil {
+		l.MapixCode.Code = *mapixCode
+	}
+	if mapixDesc != nil {
+		l.MapixCode.Description = *mapixDesc
+	}
+	if rep != nil {
+		l.SalesRepresentative.Name = *rep
+	}
+	if repCode != nil {
+		l.SalesRepresentative.Code = *repCode
+	}
+	if showWebsite != nil {
+		l.CustomerLocation.ShowWebSite = *showWebsite
+	}
+	if eLocal != nil {
+		l.CustomerLocation.ELocalUrl, err = conversions.ByteToUrl(*eLocal)
+	}
+	if web != nil {
+		l.CustomerLocation.Website, err = conversions.ByteToUrl(*web)
+	}
+
+	ch <- l
+	return
+}
+
+func populateDealerLocations(rows *sql.Rows, ch chan DealerLocations) {
+	var l DealerLocation
+	var ls DealerLocations
+	var err error
+	var name, email, address, city, phone, fax, contactPerson, state, stateAbbr, country, countryAbbr, postalCode, mapixCode, mapixDesc, rep, repCode, dtypeType, dtypeLabel, dtierTier *string
+	var lat, lon *float64
+	var icon, shadow, eLocal, web *[]byte
+	var custId, stateId, countryId, dtierSort *int
+	var isPrimary, shippingDefault, dtypeOnline, dtypeShow, showWebsite *bool
+	for rows.Next() {
+		err = rows.Scan(
+			&l.CustomerLocation.Id,
+			&name,
+			&address,
+			&city,
+			&stateId,
+			&email,
+			&phone,
+			&fax,
+			&lat,
+			&lon,
+			&custId,
+			&contactPerson,
+			&isPrimary,
+			&postalCode,
+			&shippingDefault,
+			&state,
+			&stateAbbr,
+			&countryId,
+			&country,
+			&countryAbbr,
+			&dtypeType,
+			&dtypeOnline,
+			&dtypeShow,
+			&dtypeLabel,
+			&dtierTier,
+			&dtierSort,
+			&icon,
+			&shadow,
+			&mapixCode,
+			&mapixDesc,
+			&rep,
+			&repCode,
+			&showWebsite,
+			&eLocal,
+			&web,
+		)
+		if err != nil {
+			ch <- ls
+			return
+		}
+		if name != nil {
+			l.CustomerLocation.Name = *name
+		}
+		if email != nil {
+			l.CustomerLocation.Email = *email
+		}
+		if address != nil {
+			l.CustomerLocation.Address = *address
+		}
+		if city != nil {
+			l.CustomerLocation.City = *city
+		}
+		if postalCode != nil {
+			l.CustomerLocation.PostalCode = *postalCode
+		}
+		if phone != nil {
+			l.CustomerLocation.Phone = *phone
+		}
+		if fax != nil {
+			l.CustomerLocation.Fax = *fax
+		}
+		if lat != nil {
+			l.CustomerLocation.Latitude = *lat
+		}
+		if lon != nil {
+			l.CustomerLocation.Longitude = *lon
+		}
+		if custId != nil {
+			l.CustomerLocation.CustomerId = *custId
+		}
+		if contactPerson != nil {
+			l.CustomerLocation.ContactPerson = *contactPerson
+		}
+		if isPrimary != nil {
+			l.CustomerLocation.IsPrimary = *isPrimary
+		}
+		if shippingDefault != nil {
+			l.CustomerLocation.ShippingDefault = *shippingDefault
+		}
+		if stateId != nil {
+			l.CustomerLocation.State.Id = *stateId
+		}
+		if state != nil {
+			l.CustomerLocation.State.State = *state
+		}
+		if stateAbbr != nil {
+			l.CustomerLocation.State.Abbreviation = *stateAbbr
+		}
+		if countryId != nil {
+			l.CustomerLocation.State.Country.Id = *countryId
+		}
+		if country != nil {
+			l.CustomerLocation.State.Country.Country = *country
+		}
+		if countryId != nil {
+			l.CustomerLocation.State.Country.Abbreviation = *countryAbbr
+		}
+		if dtypeType != nil {
+			l.DealerType.Type = *dtypeType
+		}
+		if dtypeOnline != nil {
+			l.DealerType.Online = *dtypeOnline
+		}
+		if dtypeShow != nil {
+			l.DealerType.Show = *dtypeShow
+		}
+		if dtypeLabel != nil {
+			l.DealerType.Label = *dtypeLabel
+		}
+		if dtierSort != nil {
+			l.DealerTier.Sort = *dtierSort
+		}
+		if dtierTier != nil {
+			l.DealerTier.Tier = *dtierTier
+		}
+		if icon != nil {
+			l.DealerType.MapIcon.MapIcon, err = conversions.ByteToUrl(*icon)
+		}
+		if shadow != nil {
+			l.DealerType.MapIcon.MapIconShadow, err = conversions.ByteToUrl(*shadow)
+		}
+		if mapixCode != nil {
+			l.MapixCode.Code = *mapixCode
+		}
+		if mapixDesc != nil {
+			l.MapixCode.Description = *mapixDesc
+		}
+		if rep != nil {
+			l.SalesRepresentative.Name = *rep
+		}
+		if repCode != nil {
+			l.SalesRepresentative.Code = *repCode
+		}
+		if showWebsite != nil {
+			l.CustomerLocation.ShowWebSite = *showWebsite
+		}
+		if eLocal != nil {
+			l.CustomerLocation.ELocalUrl, err = conversions.ByteToUrl(*eLocal)
+		}
+		if web != nil {
+			l.CustomerLocation.Website, err = conversions.ByteToUrl(*web)
+		}
+		ls = append(ls, l)
+	}
+	ch <- ls
+	return
 }

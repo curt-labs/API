@@ -1,10 +1,13 @@
 package customer_ctlr_new
 
 import (
+	"encoding/json"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/customer_new"
 	"github.com/curt-labs/GoAPI/models/products"
 	"github.com/go-martini/martini"
+	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -16,6 +19,7 @@ func UserAuthentication(w http.ResponseWriter, r *http.Request, enc encoding.Enc
 	user := customer_new.CustomerUser{
 		Email: email,
 	}
+
 	cust, err := user.UserAuthentication(pass)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -28,8 +32,10 @@ func UserAuthentication(w http.ResponseWriter, r *http.Request, enc encoding.Enc
 func KeyedUserAuthentication(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 	qs := r.URL.Query()
 	key := qs.Get("key")
+
 	cust, err := customer_new.UserAuthenticationByKey(key)
 	if err != nil {
+		log.Print(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
@@ -208,4 +214,69 @@ func GetCustomerCartReference(w http.ResponseWriter, r *http.Request, enc encodi
 		return err.Error()
 	}
 	return encoding.Must(enc.Encode(ref))
+}
+
+func SaveCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+	var c customer_new.Customer
+	var err error
+	idStr := params["id"]
+	if idStr != "" {
+		c.Id, err = strconv.Atoi(idStr)
+		log.Print(c.Id)
+		err = c.FindCustomerIdFromCustId()
+		log.Print(c.Id, " ", c.CustomerId)
+		err = c.Basics()
+		log.Print(c.Id, " ", c.CustomerId)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return ""
+		}
+	}
+
+	//json
+	requestBody, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return encoding.Must(enc.Encode(false))
+	}
+	err = json.Unmarshal(requestBody, &c)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return encoding.Must(enc.Encode(false))
+	}
+
+	//create or update
+	if c.Id > 0 {
+		err = c.Update()
+	} else {
+		err = c.Create()
+	}
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+	return encoding.Must(enc.Encode(c))
+}
+
+func DeleteCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+	var c customer_new.Customer
+	var err error
+	idStr := params["id"]
+	if idStr == "" {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+	c.Id, err = strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+
+	err = c.Delete()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+	return encoding.Must(enc.Encode(c))
 }

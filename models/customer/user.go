@@ -10,6 +10,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	"github.com/curt-labs/GoAPI/models/geography"
 	_ "github.com/go-sql-driver/mysql"
+	// "log"
 	"net/http"
 	"net/url"
 	"strings"

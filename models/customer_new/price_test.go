@@ -1,12 +1,38 @@
 package customer_new
 
 import (
+	"database/sql"
+	"github.com/curt-labs/GoAPI/helpers/database"
 	_ "github.com/go-sql-driver/mysql"
 	. "github.com/smartystreets/goconvey/convey"
 	"math/rand"
 	"testing"
 	"time"
 )
+
+func getCustWithSale() (custId int) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return 0
+	}
+	defer db.Close()
+	var id int
+	stmt, err := db.Prepare("select cust_id from CustomerPricing where sale_start > 2013 ORDER BY RAND() LIMIT 1")
+	if err != nil {
+		return 0
+	}
+	defer stmt.Close()
+	err = stmt.QueryRow().Scan(&id)
+	//need customerID, not cust_id
+	stmt, err = db.Prepare("SELECT customerID FROM Customer WHERE cust_id = ?")
+	if err != nil {
+		return 0
+	}
+	defer stmt.Close()
+	err = stmt.QueryRow(id).Scan(&custId)
+
+	return custId
+}
 
 func TestCustomerPriceModel(t *testing.T) {
 	Convey("Testing Price - Gets", t, func() {
@@ -45,14 +71,18 @@ func TestCustomerPriceModel(t *testing.T) {
 				Convey("Testing GetPricesBySaleRange", func() {
 					var s time.Time
 					var e time.Time
-					c := Customer{Id: p.CustID}
+					id := getCustWithSale()
+					c := Customer{Id: id}
 					var err error
 					s, err = time.Parse(inputTimeFormat, "2006-01-02 15:04:05")
 					e, err = time.Parse(inputTimeFormat, "2016-01-02 15:04:05")
 					prices, err := c.GetPricesBySaleRange(s, e)
-					So(err, ShouldBeNil)
-					So(len(prices), ShouldBeGreaterThan, 0)
-					So(prices, ShouldNotBeNil)
+					t.Log(c)
+					if err != sql.ErrNoRows {
+						So(err, ShouldBeNil)
+						So(len(prices), ShouldBeGreaterThan, 0)
+						So(prices, ShouldNotBeNil)
+					}
 				})
 
 				Convey("Testing Price -  CUD", func() {
