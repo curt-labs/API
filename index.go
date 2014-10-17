@@ -22,6 +22,7 @@ import (
 	"github.com/curt-labs/GoAPI/controllers/testimonials"
 	"github.com/curt-labs/GoAPI/controllers/vehicle"
 	"github.com/curt-labs/GoAPI/controllers/videos"
+	"github.com/curt-labs/GoAPI/controllers/vinLookup"
 	"github.com/curt-labs/GoAPI/controllers/webProperty"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/go-martini/martini"
@@ -453,6 +454,7 @@ func main() {
 		})
 
 	})
+	m.Get("/vin/:vin", vinLookup.GetVehicleConfigs)
 
 	// m.Get("/customer/auth/keyedUser", internalCors, customer_ctlr_new.KeyedUserAuthentication)
 	// m.Post("/customer/auth/new", internalCors, customer_ctlr_new.UserAuthentication)

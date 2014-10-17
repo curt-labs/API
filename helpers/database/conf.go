@@ -36,3 +36,10 @@ func VcdbConnectionString() string {
 
 	return "root:@tcp(127.0.0.1:3306)/vcdb?parseTime=true&loc=America%2FChicago"
 }
+
+func VintelligencePass() string {
+	if vinPin := os.Getenv("VIN_PIN"); vinPin != "" {
+		return fmt.Sprintf("%s", vinPin)
+	}
+	return "curtman:Oct2013!"
+}
