@@ -12,6 +12,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/encryption"
 	"github.com/curt-labs/GoAPI/helpers/redis"
+	"github.com/curt-labs/GoAPI/models/geography"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"net/http"
@@ -250,7 +251,10 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 	defer stmt.Close()
 
 	var logo, web, lat, lon, url, icon, shadow, mapIconId []byte
-	var stateId, state, stateAbbr, countryId, country, countryAbbr, parentId, postalCode, mapixCode, mapixDesc, rep, repCode []byte
+	var stateId, state, stateAbbr, parentId, postalCode, mapixCode, mapixDesc, rep, repCode []byte
+	var countryId *int
+	var country, countryAbbr *string
+	var coun geography.Country
 	err = stmt.QueryRow(u.Id).Scan(
 		&c.Id,            //c.customerID,
 		&c.Name,          //c.name
@@ -304,9 +308,7 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 	c.State.Id, err = conversions.ByteToInt(stateId)
 	c.State.State, err = conversions.ByteToString(state)
 	c.State.Abbreviation, err = conversions.ByteToString(stateAbbr)
-	c.State.Country.Id, err = conversions.ByteToInt(countryId)
-	c.State.Country.Country, err = conversions.ByteToString(country)
-	c.State.Country.Abbreviation, err = conversions.ByteToString(countryAbbr)
+
 	c.DealerType.MapIcon.Id, err = conversions.ByteToInt(mapIconId)
 	c.DealerType.MapIcon.MapIcon, err = conversions.ByteToUrl(icon)
 	c.DealerType.MapIcon.MapIconShadow, err = conversions.ByteToUrl(shadow)
@@ -314,6 +316,17 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 	c.MapixCode.Description, err = conversions.ByteToString(mapixDesc)
 	c.SalesRepresentative.Name, err = conversions.ByteToString(rep)
 	c.SalesRepresentative.Code, err = conversions.ByteToString(repCode)
+
+	if countryId != nil {
+		coun.Id = *countryId
+	}
+	if country != nil {
+		coun.Country = *country
+	}
+	if countryAbbr != nil {
+		coun.Abbreviation = *countryAbbr
+	}
+	c.State.Country = &coun
 
 	parentInt, err := conversions.ByteToInt(parentId)
 	if err != nil {
@@ -494,6 +507,9 @@ func (u *CustomerUser) GetLocation() error {
 	}
 	defer stmt.Close()
 
+	var stateId, countryId *int
+	var state, stateAbbr, country, countryAbbr *string
+
 	err = stmt.QueryRow(u.Id).Scan(
 		&u.Location.Id,
 		&u.Name,
@@ -509,16 +525,37 @@ func (u *CustomerUser) GetLocation() error {
 		&u.Location.ContactPerson,
 		&u.Location.IsPrimary,
 		&u.Location.ShippingDefault,
-		&u.Location.State.Id,
-		&u.Location.State.State,
-		&u.Location.State.Abbreviation,
-		&u.Location.State.Country.Id,
-		&u.Location.State.Country.Country,
-		&u.Location.State.Country.Abbreviation,
+		&stateId,
+		&state,
+		&stateAbbr,
+		&countryId,
+		&country,
+		&countryAbbr,
 	)
 	if err != nil {
 		return err
 	}
+	var coun geography.Country
+
+	if stateId != nil {
+		u.Location.State.Id = *stateId
+	}
+	if state != nil {
+		u.Location.State.State = *state
+	}
+	if stateAbbr != nil {
+		u.Location.State.Abbreviation = *stateAbbr
+	}
+	if countryId != nil {
+		coun.Id = *countryId
+	}
+	if country != nil {
+		coun.Country = *country
+	}
+	if countryAbbr != nil {
+		coun.Abbreviation = *countryAbbr
+	}
+	u.Location.State.Country = &coun
 	return nil
 }
 
@@ -1012,6 +1049,9 @@ func (cu *CustomerUser) BindLocation() error {
 	if err != nil {
 		return err
 	}
+	var coun geography.Country
+	var countryId *int
+	var country, countryAbbr *string
 	err = stmt.QueryRow(cu.Id).Scan(
 		&cu.Location.Id,
 		&cu.Location.Name,
@@ -1020,9 +1060,9 @@ func (cu *CustomerUser) BindLocation() error {
 		&cu.Location.State.Id,
 		&cu.Location.State.State,
 		&cu.Location.State.Abbreviation,
-		&cu.Location.State.Country.Id,
-		&cu.Location.State.Country.Country,
-		&cu.Location.State.Country.Abbreviation,
+		&countryId,
+		&country,
+		&countryAbbr,
 		&cu.Location.Email,
 		&cu.Location.Phone,
 		&cu.Location.Fax,
@@ -1034,6 +1074,16 @@ func (cu *CustomerUser) BindLocation() error {
 		&cu.Location.PostalCode,
 		&cu.Location.ShippingDefault,
 	)
+	if countryId != nil {
+		coun.Id = *countryId
+	}
+	if country != nil {
+		coun.Country = *country
+	}
+	if countryAbbr != nil {
+		coun.Abbreviation = *countryAbbr
+	}
+	cu.Location.State.Country = &coun
 
 	if err != nil {
 		return err

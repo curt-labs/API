@@ -1150,6 +1150,7 @@ func populateCustomer(row *sql.Row, ch chan Customer) {
 		return
 	}
 	go func() {
+		var coun geography.Country
 		if name != nil {
 			c.Name = *name
 		}
@@ -1223,13 +1224,13 @@ func populateCustomer(row *sql.Row, ch chan Customer) {
 			c.State.Abbreviation = *stateAbbr
 		}
 		if countryId != nil {
-			c.State.Country.Id = *countryId
+			coun.Id = *countryId
 		}
 		if country != nil {
-			c.State.Country.Country = *country
+			coun.Country = *country
 		}
 		if countryId != nil {
-			c.State.Country.Abbreviation = *countryAbbr
+			coun.Abbreviation = *countryAbbr
 		}
 		if dtypeId != nil {
 			c.DealerType.Id = *dtypeId
@@ -1276,6 +1277,8 @@ func populateCustomer(row *sql.Row, ch chan Customer) {
 		if repCode != nil {
 			c.SalesRepresentative.Code = *repCode
 		}
+
+		c.State.Country = &coun
 		populateChan <- 1
 	}()
 
@@ -1371,6 +1374,7 @@ func populateCustomers(rows *sql.Rows, ch chan Customers) {
 		}
 
 		go func() {
+			var coun geography.Country
 			if name != nil {
 				c.Name = *name
 			}
@@ -1444,13 +1448,13 @@ func populateCustomers(rows *sql.Rows, ch chan Customers) {
 				c.State.Abbreviation = *stateAbbr
 			}
 			if countryId != nil {
-				c.State.Country.Id = *countryId
+				coun.Id = *countryId
 			}
 			if country != nil {
-				c.State.Country.Country = *country
+				coun.Country = *country
 			}
 			if countryId != nil {
-				c.State.Country.Abbreviation = *countryAbbr
+				coun.Abbreviation = *countryAbbr
 			}
 			if dtypeId != nil {
 				c.DealerType.Id = *dtypeId
@@ -1497,6 +1501,7 @@ func populateCustomers(rows *sql.Rows, ch chan Customers) {
 			if repCode != nil {
 				c.SalesRepresentative.Code = *repCode
 			}
+			c.State.Country = &coun
 			populateChan <- 1
 		}()
 
@@ -1539,6 +1544,7 @@ func populateLocations(rows *sql.Rows, ch chan CustomerLocations) {
 	var lat, lon *float64
 	var custId, stateId, countryId *int
 	var isPrimary, shippingDefault *bool
+	var coun geography.Country
 
 	for rows.Next() {
 		err = rows.Scan(
@@ -1616,14 +1622,15 @@ func populateLocations(rows *sql.Rows, ch chan CustomerLocations) {
 			l.State.Abbreviation = *stateAbbr
 		}
 		if countryId != nil {
-			l.State.Country.Id = *countryId
+			coun.Id = *countryId
 		}
 		if country != nil {
-			l.State.Country.Country = *country
+			coun.Country = *country
 		}
 		if countryId != nil {
-			l.State.Country.Abbreviation = *countryAbbr
+			coun.Abbreviation = *countryAbbr
 		}
+		l.State.Country = &coun
 
 		ls = append(ls, l)
 	}
@@ -1640,6 +1647,7 @@ func populateLocation(row *sql.Row, ch chan CustomerLocation) {
 	var lat, lon *float64
 	var custId, stateId, countryId *int
 	var isPrimary, shippingDefault *bool
+	var coun geography.Country
 
 	err = row.Scan(
 		&l.Id,
@@ -1716,14 +1724,15 @@ func populateLocation(row *sql.Row, ch chan CustomerLocation) {
 		l.State.Abbreviation = *stateAbbr
 	}
 	if countryId != nil {
-		l.State.Country.Id = *countryId
+		coun.Id = *countryId
 	}
 	if country != nil {
-		l.State.Country.Country = *country
+		coun.Country = *country
 	}
 	if countryId != nil {
-		l.State.Country.Abbreviation = *countryAbbr
+		coun.Abbreviation = *countryAbbr
 	}
+	l.State.Country = &coun
 	ch <- l
 	return
 }
@@ -1737,6 +1746,7 @@ func populateDealerLocation(row *sql.Row, ch chan DealerLocation) {
 	var icon, shadow, eLocal, web *[]byte
 	var custId, stateId, countryId, dtierSort *int
 	var isPrimary, shippingDefault, dtypeOnline, dtypeShow, showWebsite *bool
+	var coun geography.Country
 
 	err = row.Scan(
 		&l.CustomerLocation.Id,
@@ -1828,13 +1838,13 @@ func populateDealerLocation(row *sql.Row, ch chan DealerLocation) {
 		l.CustomerLocation.State.Abbreviation = *stateAbbr
 	}
 	if countryId != nil {
-		l.CustomerLocation.State.Country.Id = *countryId
+		coun.Id = *countryId
 	}
 	if country != nil {
-		l.CustomerLocation.State.Country.Country = *country
+		coun.Country = *country
 	}
 	if countryId != nil {
-		l.CustomerLocation.State.Country.Abbreviation = *countryAbbr
+		coun.Abbreviation = *countryAbbr
 	}
 	if dtypeType != nil {
 		l.DealerType.Type = *dtypeType
@@ -1882,6 +1892,7 @@ func populateDealerLocation(row *sql.Row, ch chan DealerLocation) {
 		l.CustomerLocation.Website, err = conversions.ByteToUrl(*web)
 	}
 
+	l.CustomerLocation.State.Country = &coun
 	ch <- l
 	return
 }
@@ -1895,6 +1906,7 @@ func populateDealerLocations(rows *sql.Rows, ch chan DealerLocations) {
 	var icon, shadow, eLocal, web *[]byte
 	var custId, stateId, countryId, dtierSort *int
 	var isPrimary, shippingDefault, dtypeOnline, dtypeShow, showWebsite *bool
+	var coun geography.Country
 	for rows.Next() {
 		err = rows.Scan(
 			&l.CustomerLocation.Id,
@@ -1986,13 +1998,13 @@ func populateDealerLocations(rows *sql.Rows, ch chan DealerLocations) {
 			l.CustomerLocation.State.Abbreviation = *stateAbbr
 		}
 		if countryId != nil {
-			l.CustomerLocation.State.Country.Id = *countryId
+			coun.Id = *countryId
 		}
 		if country != nil {
-			l.CustomerLocation.State.Country.Country = *country
+			coun.Country = *country
 		}
 		if countryId != nil {
-			l.CustomerLocation.State.Country.Abbreviation = *countryAbbr
+			coun.Abbreviation = *countryAbbr
 		}
 		if dtypeType != nil {
 			l.DealerType.Type = *dtypeType
@@ -2039,6 +2051,7 @@ func populateDealerLocations(rows *sql.Rows, ch chan DealerLocations) {
 		if web != nil {
 			l.CustomerLocation.Website, err = conversions.ByteToUrl(*web)
 		}
+		l.CustomerLocation.State.Country = &coun
 		ls = append(ls, l)
 	}
 	ch <- ls

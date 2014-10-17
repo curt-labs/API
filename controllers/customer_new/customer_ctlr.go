@@ -15,7 +15,6 @@ import (
 func UserAuthentication(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 	email := r.FormValue("email")
 	pass := r.FormValue("password")
-
 	user := customer_new.CustomerUser{
 		Email: email,
 	}
