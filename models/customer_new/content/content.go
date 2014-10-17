@@ -16,11 +16,15 @@ import (
 )
 
 type CustomerContent struct {
-	Id              int
-	Text            string
-	Added, Modified time.Time
-	ContentType     ContentType
-	Hidden          bool
+	Id          int
+	Text        string
+	Added       time.Time
+	Modified    time.Time
+	ContentType ContentType
+	Hidden      bool
+	Customer    *customer.Customer
+	User        *customer.CustomerUser
+	Revisions   CustomerContentRevisions
 }
 
 type IndexedContentType struct {
@@ -30,22 +34,30 @@ type IndexedContentType struct {
 }
 
 type ContentType struct {
+	Id        int
 	Type      string
 	AllowHtml bool
 }
 
 type CustomerContentRevision struct {
-	User                           customer.CustomerUser
-	OldText, NewText               string
-	Date                           time.Time
-	ChangeType                     string
-	OldContentType, NewContentType ContentType
+	Id             int
+	User           customer.CustomerUser
+	Customer       customer.Customer
+	OldText        string
+	NewText        string
+	Date           time.Time
+	ChangeType     string
+	ContentId      int
+	OldContentType ContentType
+	NewContentType ContentType
 }
+type CustomerContentRevisions []CustomerContentRevision
 
 var (
 	allCustomerContent = `select cc.id, cc.text,cc.added,cc.modified,cc.deleted,
 							ct.type,ct.allowHTML,
-							ccb.partID, ccb.catID
+							ccb.partID, ccb.catID,
+							cc.userID, cc.custID
 							from CustomerContent as cc
 							left join CustomerContentBridge as ccb on cc.id = ccb.contentID
 							join ContentType as ct on cc.typeID = ct.cTypeID
@@ -55,7 +67,8 @@ var (
 							where api_key = ?
 							group by cc.id`
 	customerContent = `select cc.id, cc.text,cc.added,cc.modified,cc.deleted,
-							ct.type,ct.allowHTML,ccb.partID,ccb.catID
+							ct.type,ct.allowHTML,ccb.partID,ccb.catID,
+							cc.userID, cc.custID
 							from CustomerContent as cc
 							join CustomerContentBridge as ccb on cc.id = ccb.contentID
 							join ContentType as ct on cc.typeID = ct.cTypeID
@@ -87,10 +100,10 @@ var (
 										values (?,?,?)`
 	getContentTypeId         = `select cTypeID, type, allowHTML from ContentType where type = ? limit 1`
 	getAllContentTypes       = `select type, allowHTML from ContentType order by type`
-	customerContentRevisions = `select ccr.old_text, ccr.new_text, ccr.date, ccr.changeType,
+	customerContentRevisions = `select ccr.id, ccr.old_text, ccr.new_text, ccr.date, ccr.changeType,
 									ct1.type as newType, ct1.allowHTML as newAllowHtml,
 									ct2.type as oldType, ct2.allowHTML as oldAllowHtml,
-									ccr.userID as userId
+									ccr.userID as userId, ccr.custID
 									from CustomerContent_Revisions ccr
 									left join ContentType ct1 on ccr.new_type = ct1.cTypeId
 									left join ContentType ct2 on ccr.old_type = ct2.cTypeId
@@ -117,6 +130,10 @@ var (
 									set cc.deleted = 1, cc.modified = now(),
 									cc.userID = cu.id where ak.api_key = ?
 									and cc.id = ?`
+
+	getRevisionsByContentId = `select ccr.id, ccr.userID, ccr.custID, ccr.old_text, ccr.new_text, ccr.date, ccr.changeType, ccr.contentID, ccr.old_type, ccr.new_type
+								from CustomerContent_Revisions as ccr
+								where contentID = ?`
 )
 
 const (
@@ -136,9 +153,14 @@ func AllCustomerContent(key string) (content []CustomerContent, err error) {
 	if err != nil {
 		return content, err
 	}
-	var deleted, added, pId, cId, modified []byte
-	var contentType string
+	var pId, cId []byte
+	var deleted *bool
+	var added, modified *time.Time
+	var contentType, userId *string
 	var partId, catId int
+	var custId *int
+	var u customer.CustomerUser
+	var cus customer.Customer
 	res, err := stmt.Query(key)
 	for res.Next() {
 		var c CustomerContent
@@ -152,7 +174,20 @@ func AllCustomerContent(key string) (content []CustomerContent, err error) {
 			&c.ContentType.AllowHtml,
 			&pId,
 			&cId,
+			&userId,
+			&custId,
 		)
+		if err != nil {
+			return content, err
+		}
+		if userId != nil {
+			u.Id = *userId
+			c.User = &u
+		}
+		if custId != nil {
+			cus.Id = *custId
+			c.Customer = &cus
+		}
 		if pId != nil {
 			partId, err = conversions.ByteToInt(pId)
 		}
@@ -160,31 +195,22 @@ func AllCustomerContent(key string) (content []CustomerContent, err error) {
 			catId, err = conversions.ByteToInt(cId)
 		}
 		if partId > 0 {
-			c.ContentType.Type = "Part:" + contentType
+			c.ContentType.Type = "Part:" + *contentType
 		} else if catId > 0 {
-			c.ContentType.Type = "Category:" + contentType
+			c.ContentType.Type = "Category:" + *contentType
 		} else {
-			c.ContentType.Type = contentType
+			c.ContentType.Type = *contentType
+		}
+		if deleted != nil {
+			c.Hidden = *deleted
 		}
 		if modified != nil {
-			m, err := conversions.ByteToString(modified)
-			c.Modified, err = time.Parse("2006", m)
-			if err != nil {
-				return content, err
-			}
+			c.Modified = *modified
 		}
 		if added != nil {
-			a, err := conversions.ByteToString(added)
-			c.Added, err = time.Parse(timeYearFormat, a)
-			if err != nil {
-				return content, err
-			}
+			c.Added = *added
 		}
-
-		if err != nil {
-			return content, err
-		}
-
+		err = c.GetRevisions()
 		content = append(content, c)
 	}
 	return
@@ -208,9 +234,15 @@ func GetCustomerContent(id int, key string) (c CustomerContent, err error) {
 		return c, err
 	}
 
-	var deleted, added, modified, pId, cId []byte
+	var pId, cId []byte
+	var deleted *bool
+	var added, modified *time.Time
 	var contentType string
 	var partId, catId int
+	var custId *int
+	var userId *string
+	var u customer.CustomerUser
+	var cus customer.Customer
 
 	for rows.Next() {
 		err = rows.Scan(
@@ -223,6 +255,8 @@ func GetCustomerContent(id int, key string) (c CustomerContent, err error) {
 			&c.ContentType.AllowHtml,
 			&pId,
 			&cId,
+			&userId,
+			&custId,
 		)
 		if err != nil {
 			return c, err
@@ -242,21 +276,75 @@ func GetCustomerContent(id int, key string) (c CustomerContent, err error) {
 	} else {
 		c.ContentType.Type = contentType
 	}
+	if deleted != nil {
+		c.Hidden = *deleted
+	}
 	if modified != nil {
-		m, err := conversions.ByteToString(modified)
-		c.Modified, err = time.Parse(timeYearFormat, m)
-		if err != nil {
-			return c, err
-		}
+		c.Modified = *modified
 	}
 	if added != nil {
-		a, err := conversions.ByteToString(added)
-		c.Added, err = time.Parse(timeYearFormat, a)
-		if err != nil {
-			return c, err
-		}
+		c.Added = *added
 	}
+	if userId != nil {
+		u.Id = *userId
+		c.User = &u
+	}
+	if custId != nil {
+		cus.Id = *custId
+		c.Customer = &cus
+	}
+	err = c.GetRevisions()
 	return c, err
+}
+
+// by customer ID
+func (cc *CustomerContent) GetRevisions() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(getRevisionsByContentId)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	res, err := stmt.Query(cc.Id)
+	var r CustomerContentRevision
+	var oldT, newT *string
+	var oct, nct *int
+
+	for res.Next() {
+		err = res.Scan(
+			&r.Id,
+			&r.User.Id,
+			&r.Customer.Id,
+			&oldT,
+			&newT,
+			&r.Date,
+			&r.ChangeType,
+			&r.ContentId,
+			&oct,
+			&nct,
+		)
+		if err != nil {
+			return err
+		}
+		if oldT != nil {
+			r.OldText = *oldT
+		}
+		if newT != nil {
+			r.NewText = *newT
+		}
+		if oct != nil {
+			r.OldContentType.Id = *oct
+		}
+		if nct != nil {
+			r.NewContentType.Id = *nct
+		}
+		cc.Revisions = append(cc.Revisions, r)
+	}
+	return err
 }
 
 func GetCustomerContentRevisions(id int, key string) (revs []CustomerContentRevision, err error) {
@@ -274,23 +362,39 @@ func GetCustomerContentRevisions(id int, key string) (revs []CustomerContentRevi
 
 	users := make(map[string]customer.CustomerUser, 0)
 
+	var ot, nt, octt *string
+	var octa *bool
+
 	for res.Next() {
 		var ccr CustomerContentRevision
 		err = res.Scan(
-			&ccr.OldText,
-			&ccr.NewText,
+			&ccr.Id,
+			&ot,
+			&nt,
 			&ccr.Date,
 			&ccr.ChangeType,
 			&ccr.NewContentType.Type,
 			&ccr.NewContentType.AllowHtml,
-			&ccr.OldContentType.Type,
-			&ccr.OldContentType.AllowHtml,
+			&octt,
+			&octa,
 			&ccr.User.Id,
+			&ccr.Customer.Id,
 		)
 		if err != nil {
 			return revs, err
 		}
-
+		if ot != nil {
+			ccr.OldText = *ot
+		}
+		if nt != nil {
+			ccr.NewText = *nt
+		}
+		if octt != nil {
+			ccr.OldContentType.Type = *octt
+		}
+		if octa != nil {
+			ccr.OldContentType.AllowHtml = *octa
+		}
 		if _, ok := users[ccr.User.Id]; !ok {
 			u, err := customer.GetCustomerUserById(ccr.User.Id)
 			if err == nil {

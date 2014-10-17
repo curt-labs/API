@@ -194,7 +194,7 @@ func (u CustomerUser) UserAuthentication(password string) (cust Customer, err er
 
 	cust.Users = append(cust.Users, u)
 
-	return cust, nil
+	return
 }
 
 func UserAuthenticationByKey(key string) (cust Customer, err error) {

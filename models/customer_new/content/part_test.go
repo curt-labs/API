@@ -1,8 +1,6 @@
 package custcontent
 
 import (
-	// "github.com/curt-labs/GoAPI/helpers/database"
-	"github.com/curt-labs/GoAPI/models/customer/content"
 	. "github.com/smartystreets/goconvey/convey"
 	"math/rand"
 	"strconv"
@@ -41,31 +39,32 @@ func TestPart(t *testing.T) {
 				So(partContent, ShouldNotBeNil)
 			})
 
-			Convey("Comparative Tests", func() {
-				Convey("All Part Content", func() {
-					content, err := GetAllPartContent(key)
-					So(err, ShouldBeNil)
-					old, err := custcontent.GetAllPartContent(key)
-					So(err, ShouldBeNil)
-					So(len(content), ShouldResemble, len(old))
-				})
-				Convey("Part Content", func() {
-					_, key := getApiKey(allCustContent)
-					content, err := GetPartContent(c.PartId, key)
-					So(err, ShouldBeNil)
-					old, err := custcontent.GetPartContent(c.PartId, key)
-					So(err, ShouldBeNil)
-					So(len(content), ShouldResemble, len(old))
-				})
-				Convey("Grouped Part Content", func() {
-					_, key := getApiKey(allCustContent)
-					content, err := GetGroupedPartContent(ids, key)
-					So(err, ShouldBeNil)
-					old, err := custcontent.GetGroupedPartContent(ids, key)
-					So(err, ShouldBeNil)
-					So(len(content), ShouldResemble, len(old))
-				})
-			})
+			//Tests compare part content to old Part content model
+			// Convey("Comparative Tests", func() {
+			// 	Convey("All Part Content", func() {
+			// 		content, err := GetAllPartContent(key)
+			// 		So(err, ShouldBeNil)
+			// 		old, err := custcontent.GetAllPartContent(key)
+			// 		So(err, ShouldBeNil)
+			// 		So(len(content), ShouldResemble, len(old))
+			// 	})
+			// 	Convey("Part Content", func() {
+			// 		_, key := getApiKey(allCustContent)
+			// 		content, err := GetPartContent(c.PartId, key)
+			// 		So(err, ShouldBeNil)
+			// 		old, err := custcontent.GetPartContent(c.PartId, key)
+			// 		So(err, ShouldBeNil)
+			// 		So(len(content), ShouldResemble, len(old))
+			// 	})
+			// 	Convey("Grouped Part Content", func() {
+			// 		_, key := getApiKey(allCustContent)
+			// 		content, err := GetGroupedPartContent(ids, key)
+			// 		So(err, ShouldBeNil)
+			// 		old, err := custcontent.GetGroupedPartContent(ids, key)
+			// 		So(err, ShouldBeNil)
+			// 		So(len(content), ShouldResemble, len(old))
+			// 	})
+			// })
 		})
 	})
 

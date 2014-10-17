@@ -3,12 +3,11 @@ package custcontent
 import (
 	"database/sql"
 	"github.com/curt-labs/GoAPI/helpers/api"
-	"github.com/curt-labs/GoAPI/helpers/conversions"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	_ "github.com/go-sql-driver/mysql"
 	"strconv"
 	"strings"
-	// "time"
+	"time"
 )
 
 var (
@@ -70,7 +69,8 @@ func GetAllPartContent(key string) (content []PartContent, err error) {
 
 	rawContent := make(map[int][]CustomerContent, 0)
 	var partId int
-	var added, modified, deleted []byte
+	var deleted *bool
+	var added, modified *time.Time
 	var ctype string
 	for res.Next() {
 		var cc CustomerContent
@@ -88,8 +88,15 @@ func GetAllPartContent(key string) (content []PartContent, err error) {
 			return content, err
 		}
 		cc.ContentType.Type = "Part:" + ctype
-		cc.Added, _ = conversions.ByteToTime(added, timeYearFormat)
-		cc.Modified, _ = conversions.ByteToTime(modified, timeYearFormat)
+		if added != nil {
+			cc.Added = *added
+		}
+		if modified != nil {
+			cc.Modified = *modified
+		}
+		if deleted != nil {
+			cc.Hidden = *deleted
+		}
 		part_id := partId
 		if part_id > 0 {
 			rawContent[part_id] = append(rawContent[part_id], cc)
@@ -124,7 +131,8 @@ func GetPartContent(partID int, key string) (content []CustomerContent, err erro
 
 	res, err := stmt.Query(key, partID)
 	var partId int
-	var added, modified, deleted []byte
+	var deleted *bool
+	var added, modified *time.Time
 	var ctype string
 	for res.Next() {
 		var cc CustomerContent
@@ -142,8 +150,15 @@ func GetPartContent(partID int, key string) (content []CustomerContent, err erro
 			return content, err
 		}
 		cc.ContentType.Type = "Part:" + ctype
-		cc.Added, _ = conversions.ByteToTime(added, timeYearFormat)
-		cc.Modified, _ = conversions.ByteToTime(modified, timeYearFormat)
+		if added != nil {
+			cc.Added = *added
+		}
+		if modified != nil {
+			cc.Modified = *modified
+		}
+		if deleted != nil {
+			cc.Hidden = *deleted
+		}
 		content = append(content, cc)
 	}
 	return
@@ -171,7 +186,8 @@ func GetGroupedPartContent(ids []string, key string) (content map[int][]Customer
 		return content, err
 	}
 	var partId int
-	var added, modified, deleted []byte
+	var deleted *bool
+	var added, modified *time.Time
 	var ctype string
 
 	res, err := stmt.Query(escaped_key, strings.Join(ids, ","))
@@ -191,8 +207,15 @@ func GetGroupedPartContent(ids []string, key string) (content map[int][]Customer
 			return content, err
 		}
 		cc.ContentType.Type = "Part:" + ctype
-		cc.Added, _ = conversions.ByteToTime(added, timeYearFormat)
-		cc.Modified, _ = conversions.ByteToTime(modified, timeYearFormat)
+		if added != nil {
+			cc.Added = *added
+		}
+		if modified != nil {
+			cc.Modified = *modified
+		}
+		if deleted != nil {
+			cc.Hidden = *deleted
+		}
 		content[partId] = append(content[partId], cc)
 	}
 	return

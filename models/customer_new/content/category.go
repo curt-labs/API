@@ -2,9 +2,8 @@ package custcontent
 
 import (
 	"database/sql"
-	"github.com/curt-labs/GoAPI/helpers/conversions"
 	"github.com/curt-labs/GoAPI/helpers/database"
-	// "time"
+	"time"
 	// "log"
 )
 
@@ -51,7 +50,8 @@ func GetAllCategoryContent(key string) (content []CategoryContent, err error) {
 	}
 	res, err := stmt.Query(key)
 	var catID int
-	var added, modified, deleted []byte
+	var added, modified *time.Time
+	var deleted *bool
 	rawContent := make(map[int][]CustomerContent, 0)
 	for res.Next() {
 		var c CustomerContent
@@ -72,9 +72,15 @@ func GetAllCategoryContent(key string) (content []CategoryContent, err error) {
 		if catID > 0 {
 			rawContent[catID] = append(rawContent[catID], c)
 		}
-		//TODO "added" is a bool field in DB, time field in customerContent struct
-		// c.Added, err = conversions.ByteToTime(added, timeYearFormat)
-		c.Modified, err = conversions.ByteToTime(modified, timeYearFormat)
+		if added != nil {
+			c.Added = *added
+		}
+		if modified != nil {
+			c.Modified = *modified
+		}
+		if deleted != nil {
+			c.Hidden = *deleted
+		}
 	}
 
 	for k, _ := range rawContent {
@@ -102,7 +108,8 @@ func GetCategoryContent(catID int, key string) (content []CustomerContent, err e
 		return content, err
 	}
 	res, err := stmt.Query(key, catID)
-	var added, modified, deleted []byte
+	var deleted *bool
+	var added, modified *time.Time
 
 	for res.Next() {
 		var c CustomerContent
@@ -119,9 +126,15 @@ func GetCategoryContent(catID int, key string) (content []CustomerContent, err e
 		if err != nil {
 			return content, err
 		}
-		//TODO "added" is a bool field in DB, time field in customerContent struct
-		// c.Added, err = conversions.ByteToTime(added, timeYearFormat)
-		c.Modified, err = conversions.ByteToTime(modified, timeYearFormat)
+		if added != nil {
+			c.Added = *added
+		}
+		if modified != nil {
+			c.Modified = *modified
+		}
+		if deleted != nil {
+			c.Hidden = *deleted
+		}
 		content = append(content, c)
 	}
 	return
