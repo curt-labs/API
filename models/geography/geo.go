@@ -12,7 +12,7 @@ var (
 	getAllStatesStmt             = `select * from States`
 	getAllCountriesStmt          = `select * from Country`
 	getAllCountriesAndStatesStmt = `select C.*, S.stateID, S.state, S.abbr from Country C
-									inner join States S on S.countryID = C.countryID 
+									inner join States S on S.countryID = C.countryID
 									order by C.countryID, S.state`
 )
 
@@ -30,12 +30,6 @@ type Country struct {
 	Country      string  `json:"country"`
 	Abbreviation string  `json:"abbreviation"`
 	States       *States `json:"states,omitempty"`
-}
-
-type State_New struct {
-	Id                  int
-	State, Abbreviation string
-	Country             Country
 }
 
 func GetAllCountriesAndStates() (countries Countries, err error) {

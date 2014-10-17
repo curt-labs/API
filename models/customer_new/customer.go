@@ -23,7 +23,7 @@ type Customer struct {
 	Address             string              `json:"address,omitempty" xml:"address,omitempty"`
 	Address2            string              `json:"address2,omitempty" xml:"address2,omitempty"`
 	City                string              `json:"city,omitempty" xml:"city,omitempty"`
-	State               geography.State_New `json:"state,omitempty" xml:"state,omitempty"`
+	State               geography.State     `json:"state,omitempty" xml:"state,omitempty"`
 	PostalCode          string              `json:"postalCode,omitempty" xml:"postalCode,omitempty"`
 	Phone               string              `json:"phone,omitempty" xml:"phone,omitempty"`
 	Fax                 string              `json:"fax,omitempty" xml:"fax,omitempty"`
@@ -55,24 +55,24 @@ type SalesRepresentative struct {
 }
 
 type CustomerLocation struct {
-	Id              int                 `json:"id,omitempty" xml:"id,omitempty"`
-	Name            string              `json:"name,omitempty" xml:"name,omitempty"`
-	Email           string              `json:"email,omitempty" xml:"email,omitempty"`
-	Address         string              `json:"address,omitempty" xml:"address,omitempty"`
-	City            string              `json:"city,omitempty" xml:"city,omitempty"`
-	PostalCode      string              `json:"postalCode,omitempty" xml:"postalCode,omitempty"`
-	State           geography.State_New `json:"state,omitempty" xml:"state,omitempty"`
-	Phone           string              `json:"phone,omitempty" xml:"phone,omitempty"`
-	Fax             string              `json:"fax,omitempty" xml:"fax,omitempty"`
-	Latitude        float64             `json:"latitude,omitempty" xml:"latitude,omitempty"`
-	Longitude       float64             `json:"longitude,omitempty" xml:"longitude,omitempty"`
-	CustomerId      int                 `json:"customerId,omitempty" xml:"customerId,omitempty"`
-	ContactPerson   string              `json:"contactPerson,omitempty" xml:"contactPerson,omitempty"`
-	IsPrimary       bool                `json:"isPrimary,omitempty" xml:"isPrimary,omitempty"`
-	ShippingDefault bool                `json:"shippingDefault,omitempty" xml:"shippingDefault,omitempty"`
-	ShowWebSite     bool                `json:"showWebsite,omitempty" xml:"showWebsite,omitempty"`
-	ELocalUrl       url.URL             `json:"eLocalUrl,omitempty" xml:"eLocalUrl,omitempty"`
-	Website         url.URL             `json:"website,omitempty" xml:"website,omitempty"`
+	Id              int             `json:"id,omitempty" xml:"id,omitempty"`
+	Name            string          `json:"name,omitempty" xml:"name,omitempty"`
+	Email           string          `json:"email,omitempty" xml:"email,omitempty"`
+	Address         string          `json:"address,omitempty" xml:"address,omitempty"`
+	City            string          `json:"city,omitempty" xml:"city,omitempty"`
+	PostalCode      string          `json:"postalCode,omitempty" xml:"postalCode,omitempty"`
+	State           geography.State `json:"state,omitempty" xml:"state,omitempty"`
+	Phone           string          `json:"phone,omitempty" xml:"phone,omitempty"`
+	Fax             string          `json:"fax,omitempty" xml:"fax,omitempty"`
+	Latitude        float64         `json:"latitude,omitempty" xml:"latitude,omitempty"`
+	Longitude       float64         `json:"longitude,omitempty" xml:"longitude,omitempty"`
+	CustomerId      int             `json:"customerId,omitempty" xml:"customerId,omitempty"`
+	ContactPerson   string          `json:"contactPerson,omitempty" xml:"contactPerson,omitempty"`
+	IsPrimary       bool            `json:"isPrimary,omitempty" xml:"isPrimary,omitempty"`
+	ShippingDefault bool            `json:"shippingDefault,omitempty" xml:"shippingDefault,omitempty"`
+	ShowWebSite     bool            `json:"showWebsite,omitempty" xml:"showWebsite,omitempty"`
+	ELocalUrl       url.URL         `json:"eLocalUrl,omitempty" xml:"eLocalUrl,omitempty"`
+	Website         url.URL         `json:"website,omitempty" xml:"website,omitempty"`
 }
 
 type DealerType struct {
@@ -142,7 +142,7 @@ type MapPolygon struct {
 }
 
 const (
-	customerFields = ` c.customerID, c.name, c.email, c.address,  c.city, c.stateID, c.phone, c.fax, c.contact_person, c.dealer_type, 
+	customerFields = ` c.customerID, c.name, c.email, c.address,  c.city, c.stateID, c.phone, c.fax, c.contact_person, c.dealer_type,
 				c.latitude,c.longitude,  c.website, c.customerID, c.isDummy, c.parentID, c.searchURL, c.eLocalURL, c.logo,c.address2,
 				c.postal_code, c.mCodeID, c.salesRepID, c.APIKey, c.tier, c.showWebsite `
 	stateFields            = ` s.state, s.abbr, s.countryID `
@@ -152,7 +152,7 @@ const (
 	mapIconFields          = ` mi.mapicon, mi.mapiconshadow ` //joins on dealer_type usually
 	mapixCodeFields        = ` mpx.code, mpx.description `
 	salesRepFields         = ` sr.name, sr.code `
-	customerLocationFields = ` cl.locationID, cl.name, cl.address, cl.city, cl.stateID,  cl.email, cl.phone, cl.fax, 
+	customerLocationFields = ` cl.locationID, cl.name, cl.address, cl.city, cl.stateID,  cl.email, cl.phone, cl.fax,
 							cl.latitude, cl.longitude, cl.cust_id, cl.contact_person, cl.isprimary, cl.postalCode, cl.ShippingDefault `
 	showSiteFields = ` c.showWebsite, c.website, c.eLocalURL `
 )
@@ -170,7 +170,7 @@ var (
 				left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
 				where c.customerID = ? `
 	//affects CL methods
-	customerLocation = `select ` + customerLocationFields + `, ` + stateFields + `, ` + countryFields + ` 
+	customerLocation = `select ` + customerLocationFields + `, ` + stateFields + `, ` + countryFields + `
 							from CustomerLocations as cl
 	 						left join States as s on cl.stateID = s.stateID
 	 						left join Country as cty on s.countryID = cty.countryID
@@ -204,7 +204,7 @@ var (
 				left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
 				where dt.online = 1 && c.isDummy = 0`
 
-	localDealers = `select ` + customerLocationFields + `, ` + stateFields + `, ` + countryFields + `, ` + dealerTypeFields + `, ` + dealerTierFields + `, ` + mapIconFields + `, ` + mapixCodeFields + `, ` + salesRepFields + ` ,` + showSiteFields + `	
+	localDealers = `select ` + customerLocationFields + `, ` + stateFields + `, ` + countryFields + `, ` + dealerTypeFields + `, ` + dealerTierFields + `, ` + mapIconFields + `, ` + mapixCodeFields + `, ` + salesRepFields + ` ,` + showSiteFields + `
 						from CustomerLocations as cl
 						join Customer as c on cl.cust_id = c.cust_id
 						join DealerTypes as dt on c.dealer_type = dt.dealer_type
@@ -319,7 +319,7 @@ var (
 								where dt.online = false and c.isDummy = false
 								and dt.show = true and (lower(cl.name) like ? || lower(c.name) like ?)`
 
-	searchDealerLocationsByLatLng = `select ` + customerLocationFields + `, ` + stateFields + `, ` + countryFields + `, ` + dealerTypeFields + `, ` + dealerTierFields + `, ` + mapIconFields + `, ` + mapixCodeFields + `, ` + salesRepFields + `, ` + showSiteFields + ` 
+	searchDealerLocationsByLatLng = `select ` + customerLocationFields + `, ` + stateFields + `, ` + countryFields + `, ` + dealerTypeFields + `, ` + dealerTierFields + `, ` + mapIconFields + `, ` + mapixCodeFields + `, ` + salesRepFields + `, ` + showSiteFields + `
 									from CustomerLocations as cl
 									join States as s on cl.stateID = s.stateID
 									left join Country as cty ON cty.countryID = s.countryID
@@ -339,11 +339,11 @@ var (
 									) < 100.0)`
 
 	//customer Crud
-	createCustomer = `insert into Customer (name, email, address,  city, stateID, phone, fax, contact_person, dealer_type, latitude,longitude,  website, customerID, isDummy, parentID, searchURL, 
+	createCustomer = `insert into Customer (name, email, address,  city, stateID, phone, fax, contact_person, dealer_type, latitude,longitude,  website, customerID, isDummy, parentID, searchURL,
 					eLocalURL, logo,address2, postal_code, mCodeID, salesRepID, APIKey, tier, showWebsite) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
 
 	updateCustomerId = ` update Customer set customerID = ? where cust_id = ?`
-	updateCustomer   = `update Customer set name = ?, email = ?, address = ?, city = ?, stateID = ?, phone = ?, fax = ?, contact_person = ?, dealer_type = ?, latitude = ?, longitude = ?,  website = ?, customerID = ?, 
+	updateCustomer   = `update Customer set name = ?, email = ?, address = ?, city = ?, stateID = ?, phone = ?, fax = ?, contact_person = ?, dealer_type = ?, latitude = ?, longitude = ?,  website = ?, customerID = ?,
 					isDummy = ?, parentID = ?, searchURL = ?, eLocalURL = ?, logo = ?, address2 = ?, postal_code = ?, mCodeID = ?, salesRepID = ?, APIKey = ?, tier = ?, showWebsite = ? where cust_id = ?`
 	deleteCustomer = `delete from Customer where cust_id = ?`
 )
