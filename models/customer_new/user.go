@@ -178,10 +178,11 @@ func (u CustomerUser) UserAuthentication(password string) (cust Customer, err er
 	}()
 
 	cust, err = u.GetCustomer()
-	if err != nil {
-		return cust, AuthError
+	if err != sql.ErrNoRows {
+		if err != nil {
+			return cust, AuthError
+		}
 	}
-
 	<-keyChan
 	<-locChan
 
