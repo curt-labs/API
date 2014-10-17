@@ -185,6 +185,7 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 	var typeID, tierID, tierSort *int
 	var dealerType, dealerLabel, tier *string
 	var typeOnline, typeShow *bool
+	var lat, lon *float64
 
 	c.State = &geography.State{}
 	c.State.Country = &geography.Country{}
@@ -199,8 +200,8 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 		&c.Phone,
 		&c.Fax,
 		&c.ContactPerson,
-		&c.Latitude,
-		&c.Longitude,
+		&lat,
+		&lon,
 		&searchUrl,
 		&logoUrl,
 		&websiteUrl,
@@ -261,6 +262,12 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 		c.DealerType.Label = *dealerLabel
 		c.DealerType.Online = *typeOnline
 		c.DealerType.Show = *typeShow
+	}
+	if lat != nil {
+		c.Latitude = *lat
+	}
+	if lon != nil {
+		c.Longitude = *lon
 	}
 
 	if searchUrl != nil {
