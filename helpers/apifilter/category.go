@@ -16,8 +16,7 @@ import (
 )
 
 var (
-	ExcludedCategoryAttributes = []string{"UPC", "Weight"}
-	GetCategoryAttributes      = `
+	GetCategoryAttributes = `
 		select pa.field, pa.value, group_concat(distinct pa.partID) as parts from PartAttribute as pa
 		join Part as p on pa.partID = p.partID
 		join CatPart as cp on p.partID = cp.partID
@@ -95,19 +94,24 @@ func (filtered FilteredOptions) categoryGroupAttributes(cat products.Category, s
 		var strIds *string
 		if err := idRows.Scan(&strIds); err == nil && strIds != nil {
 			strCats := strings.Split(*strIds, ",")
+			existing := make(map[int]int, 0)
 			for _, strCat := range strCats {
 				if cID, err := strconv.Atoi(strCat); err == nil {
-					ids = append(ids, cID)
+					if _, ok := existing[cID]; !ok {
+						ids = append(ids, cID)
+						existing[cID] = cID
+					}
 				}
 			}
 		}
 	}
 
+	excludedAttributeTypes := getExcludedAttributeTypes()
 	filterResults := make(map[string]Options, 0)
 	attrCh := make(chan error)
 	for _, id := range ids {
 		go func(catID int) {
-			if results, err := categoryAttributes(catID); err == nil {
+			if results, err := categoryAttributes(catID, excludedAttributeTypes); err == nil {
 				for key, result := range results {
 					filterResults[key] = result
 				}
@@ -121,6 +125,7 @@ func (filtered FilteredOptions) categoryGroupAttributes(cat products.Category, s
 		Key:     "Price",
 		Options: make([]Option, 0),
 	}
+
 	for _, id := range ids {
 		go func(catID int) {
 			if results, err := categoryPrices(catID); err == nil {
@@ -194,12 +199,12 @@ func (filtered FilteredOptions) categoryGroupAttributes(cat products.Category, s
 	return filtered, nil
 }
 
-func categoryAttributes(catID int) (map[string]Options, error) {
+func categoryAttributes(catID int, excludedAttributeTypes []string) (map[string]Options, error) {
 
 	mapped := make(map[string]Options, 0)
 
 	var exs string
-	for i, ex := range ExcludedCategoryAttributes {
+	for i, ex := range excludedAttributeTypes {
 		if i == 0 {
 			exs = ex
 		} else {

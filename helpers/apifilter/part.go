@@ -1,9 +1,12 @@
 package apifilter
 
 import (
+	"database/sql"
 	"fmt"
+	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	"github.com/curt-labs/GoAPI/models/products"
+	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"sort"
 	"strconv"
@@ -12,7 +15,8 @@ import (
 )
 
 var (
-	ExcludedPartAttributes = []string{"UPC"}
+	GetExcludedAttributeTypes = `select distinct field from PartAttribute
+																where canFilter = 1`
 )
 
 func PartFilter(parts []products.Part, specs []interface{}) ([]Options, error) {
@@ -67,13 +71,16 @@ func PartFilter(parts []products.Part, specs []interface{}) ([]Options, error) {
 }
 
 func (filtered FilteredOptions) partAttributes(parts []products.Part) FilteredOptions {
+
+	excludedAttributes := getExcludedAttributeTypes()
+
 	attributeDefinitions := make(map[string]Options, 0)
 	for _, part := range parts {
 		for _, attr := range part.Attributes {
 
 			// Check Excluded attributes
 			exclude := false
-			for _, ex := range ExcludedPartAttributes {
+			for _, ex := range excludedAttributes {
 				if ex == attr.Key {
 					exclude = true
 				}
@@ -266,4 +273,34 @@ func (filtered FilteredOptions) partClass(parts []products.Part) Options {
 	sortutil.AscByField(opt.Options, "Value")
 
 	return opt
+}
+
+func getExcludedAttributeTypes() []string {
+	var ats []string
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return ats
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(GetExcludedAttributeTypes)
+	if err != nil {
+		return ats
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query()
+	if err != nil {
+		return ats
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var at string
+		if err := rows.Scan(&at); err == nil {
+			ats = append(ats, at)
+		}
+	}
+
+	return ats
 }
