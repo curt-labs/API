@@ -24,8 +24,8 @@ type Price struct {
 type Prices []Price
 
 type CustomerPrices struct {
-	Customer Customer
-	Prices   Prices
+	Customer Customer `json:"customer" xml:"customer"`
+	Prices   Prices   `json:"prices" xml:"prices"`
 }
 
 var (

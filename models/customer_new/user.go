@@ -22,17 +22,22 @@ import (
 )
 
 type CustomerUser struct {
-	Id                    string
-	Name, Email           string
-	DateAdded             time.Time
-	Active, Sudo, Current bool
-	Location              CustomerLocation
-	Keys                  []ApiCredentials
+	Id        string           `json:"-" xml:"-"`
+	Name      string           `json:"name" xml:"name,attr"`
+	Email     string           `json:"email" xml:"email,attr"`
+	DateAdded time.Time        `json:"date_added" xml:"date_added,attr"`
+	Active    bool             `json:"active" xml:"active,attr"`
+	Sudo      bool             `json:"sudo" xml:"sudo,attr"`
+	Current   bool             `json:"current" xml:"current,attr"`
+	Location  CustomerLocation `json:"location" xml:"location"`
+	Keys      []ApiCredentials `json:"keys" xml:"keys"`
 }
 
 type ApiCredentials struct {
-	Key, Type, TypeId string
-	DateAdded         time.Time
+	Key       string    `json:"key" xml:"key,attr"`
+	Type      string    `json:"type" xml:"type,attr"`
+	TypeId    string    `json:"typeID" xml:"typeID,attr"`
+	DateAdded time.Time `json:"date_added" xml:"date_added,attr"`
 }
 
 var (
@@ -1036,11 +1041,11 @@ func (cu *CustomerUser) BindLocation() error {
 }
 
 type ApiRequest struct {
-	User        CustomerUser
-	RequestTime time.Time
-	Url         *url.URL
-	Query       url.Values
-	Form        url.Values
+	User        CustomerUser `json:"user" xml:"user"`
+	RequestTime time.Time    `json:"request_time" xml:"request_time,attr"`
+	Url         *url.URL     `json:"url" xml:"url"`
+	Query       url.Values   `json:"query" xml:"query"`
+	Form        url.Values   `json:"form" xml:"form"`
 }
 
 func (u *CustomerUser) LogApiRequest(r *http.Request) {
