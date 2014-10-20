@@ -154,8 +154,7 @@ func VinPartLookup(vin string) (vs []CurtVehicle, err error) {
 	log.Print(av)
 	//get CURT vehicle
 	curtVehicles, err := av.GetCurtVehicles()
-	// log.Print(vs)
-	// log.Print("COUNT", len(vs))
+
 	//get parts
 	var p products.Part
 	for _, v := range curtVehicles {
@@ -186,8 +185,10 @@ func VinPartLookup(vin string) (vs []CurtVehicle, err error) {
 			v.Parts = append(v.Parts, p)
 
 		}
-		vs = append(vs, v)
-		// log.Print("VVV", v.Parts)
+		//omit null vehicles (Base, pre-config vehicles with no associated parts)
+		if v.Parts != nil {
+			vs = append(vs, v)
+		}
 	}
 
 	// for _, vehicle := range vs {
@@ -198,8 +199,6 @@ func VinPartLookup(vin string) (vs []CurtVehicle, err error) {
 	// 	ps = <-partChan
 	// }
 
-	// log.Print(ps)
-	// log.Print(vs[0].Parts)
 	return vs, err
 }
 
@@ -249,7 +248,6 @@ func GetAcesVehicle(vin string) (av AcesVehicle, err error) {
 	if err != nil {
 		return av, err
 	}
-	// log.Print(string(body))
 
 	var x XMLResponse
 	err = xml.Unmarshal(body, &x)
@@ -275,7 +273,6 @@ func GetAcesVehicle(vin string) (av AcesVehicle, err error) {
 			av.AcesID, err = strconv.Atoi(field.Value)
 		}
 	}
-	// log.Print("ACES", av)
 	return av, err
 }
 
@@ -292,8 +289,6 @@ func (av *AcesVehicle) GetCurtVehicles() (cvs []CurtVehicle, err error) { //get 
 	defer stmt.Close()
 	res, err := stmt.Query(av.AAIABaseVehicleID, av.AAIASubmodelID)
 
-	// var vc VehicleConfiguration
-	//vca.VehicleConfigID, vca.AttributeID, ca.value
 	var sub, configKey, configValue *string
 	var subID, configKeyID, configValueID *int
 	var cv CurtVehicle
@@ -332,7 +327,5 @@ func (av *AcesVehicle) GetCurtVehicles() (cvs []CurtVehicle, err error) { //get 
 		}
 		cvs = append(cvs, cv)
 	}
-
 	return cvs, err
-
 }
