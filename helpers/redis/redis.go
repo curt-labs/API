@@ -12,8 +12,11 @@ import (
 const (
 	Db                = 13
 	PoolAllocationErr = "failed to allocate pool"
-	Prefix            = "goapi"
 	CacheTimeout      = 86400
+)
+
+var (
+	Prefix = "goapi"
 )
 
 func RedisPool(master bool) *redix.Pool {
@@ -27,6 +30,10 @@ func RedisPool(master bool) *redix.Pool {
 		if ad := os.Getenv("REDIS_CLIENT_ADDRESS"); ad != "" {
 			addr = ad
 		}
+	}
+
+	if prefix := os.Getenv("REDIS_CACHE_PREFIX"); prefix != "" {
+		Prefix = prefix
 	}
 
 	return &redix.Pool{
