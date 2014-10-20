@@ -354,7 +354,7 @@ func main() {
 	//NEW Customer & Dealer endpoints - Seems to work. Feeling brave?
 	m.Group("/new", func(r martini.Router) {
 		m.Group("/customer", func(r martini.Router) {
-			// r.Get("", internalCors, customer_ctlr_new.GetCustomer)
+			r.Get("", customer_ctlr_new.GetCustomer)
 			r.Post("/user/register", customer_ctlr_new.RegisterUser)
 			r.Post("/auth", customer_ctlr_new.UserAuthentication)
 			r.Get("/auth", customer_ctlr_new.KeyedUserAuthentication)

@@ -77,11 +77,23 @@ func GetCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) s
 		Id: id,
 	}
 
+	userChan := make(chan error)
+	go func() {
+		user, err := customer_new.GetCustomerUserFromKey(key)
+		if err == nil {
+			user.Current = true
+		}
+		c.Users = append(c.Users, user)
+		userChan <- err
+	}()
+
 	err = c.GetCustomer()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
+
+	<-userChan
 
 	return encoding.Must(enc.Encode(c))
 }
