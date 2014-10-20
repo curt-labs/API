@@ -76,11 +76,36 @@ func GetCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) s
 		Id: id,
 	}
 
+	userChan := make(chan error)
+	go func() {
+		user, err := customer_new.GetCustomerUserFromKey(key)
+		if err == nil {
+			user.Current = true
+			if user.Sudo {
+				if users, err := c.GetUsers(); err == nil {
+					for i, u := range users {
+						if user.Email == u.Email {
+							u.Current = true
+							users[i] = u
+						}
+					}
+					c.Users = users
+				}
+			} else {
+				c.Users = append(c.Users, user)
+			}
+		}
+
+		userChan <- err
+	}()
+
 	err = c.GetCustomer()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
+
+	<-userChan
 
 	return encoding.Must(enc.Encode(c))
 }

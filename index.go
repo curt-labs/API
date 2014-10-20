@@ -5,6 +5,7 @@ import (
 	"github.com/curt-labs/GoAPI/controllers/blog"
 	"github.com/curt-labs/GoAPI/controllers/cartIntegration"
 	"github.com/curt-labs/GoAPI/controllers/category"
+	"github.com/curt-labs/GoAPI/controllers/contact"
 	"github.com/curt-labs/GoAPI/controllers/customer"
 	"github.com/curt-labs/GoAPI/controllers/customer_new"
 	"github.com/curt-labs/GoAPI/controllers/dealers"
@@ -152,7 +153,19 @@ func main() {
 		r.Put("/prices", internalCors, customer_ctlr_new.CreateUpdatePrice)                //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
 		r.Delete("/prices/:id", internalCors, customer_ctlr_new.DeletePrice)               //{id} refers to customerPriceId
 		r.Get("/pricesByCustomer/:id", internalCors, customer_ctlr_new.GetPriceByCustomer) //{id} refers to customerId; returns CustomerPrices
+	})
 
+	m.Group("/contact", func(r martini.Router) {
+		m.Group("/types", func(r martini.Router) {
+			r.Get("", contact.GetAllContactTypes)
+			r.Get("/:id", contact.GetContactType)
+		})
+		m.Group("/receivers", func(r martini.Router) {
+			r.Get("", contact.GetAllContactReceivers)
+			r.Get("/:id", contact.GetContactReceiver)
+		})
+		r.Get("", contact.GetAllContacts)
+		r.Get("/:id", contact.GetContact)
 	})
 
 	m.Group("/faqs", func(r martini.Router) {
@@ -354,7 +367,7 @@ func main() {
 	//NEW Customer & Dealer endpoints - Seems to work. Feeling brave?
 	m.Group("/new", func(r martini.Router) {
 		m.Group("/customer", func(r martini.Router) {
-			// r.Get("", internalCors, customer_ctlr_new.GetCustomer)
+			r.Get("", customer_ctlr_new.GetCustomer)
 			r.Post("/user/register", customer_ctlr_new.RegisterUser)
 			r.Post("/auth", customer_ctlr_new.UserAuthentication)
 			r.Get("/auth", customer_ctlr_new.KeyedUserAuthentication)
