@@ -9,7 +9,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/models/products"
 	"io/ioutil"
-	"log"
+	// "log"
 	"net/http"
 	"strconv"
 )
@@ -101,14 +101,14 @@ type DecodeVin struct {
 }
 
 var (
-	getVehiclesPreConfig = `SELECT vv.ID, vca.VehicleConfigID, vca.AttributeID, ca.value
-								FROM vcdb_Vehicle AS vv
-								LEFT JOIN BaseVehicle AS bv ON bv.ID = vv.BaseVehicleID
-								LEFT JOIN Submodel AS sm ON sm.ID = vv.SubmodelID
-								LEFT JOIN VehicleConfigAttribute AS vca ON vca.VehicleConfigID = vv.ConfigID
-								LEFT JOIN ConfigAttribute AS ca ON ca.ID = vca.AttributeID
-								WHERE bv.AAIABaseVehicleID = ?
-								AND sm.AAIASubmodelID = ?`
+	// getVehiclesPreConfig = `SELECT vv.ID, vca.VehicleConfigID, vca.AttributeID, ca.value
+	// 							FROM vcdb_Vehicle AS vv
+	// 							LEFT JOIN BaseVehicle AS bv ON bv.ID = vv.BaseVehicleID
+	// 							LEFT JOIN Submodel AS sm ON sm.ID = vv.SubmodelID
+	// 							LEFT JOIN VehicleConfigAttribute AS vca ON vca.VehicleConfigID = vv.ConfigID
+	// 							LEFT JOIN ConfigAttribute AS ca ON ca.ID = vca.AttributeID
+	// 							WHERE bv.AAIABaseVehicleID = ?
+	// 							AND sm.AAIASubmodelID = ?`
 	getCurtVehiclesPreConfig = `SELECT vv.ID, vmd.ID,vmd.ModelName, vmk.ID, vmk.MakeName, vyr.YearID, sm.ID, sm.SubmodelName, cat.name, cat.ID, ca.value, ca.ID
 								FROM vcdb_Vehicle AS vv
 								LEFT JOIN BaseVehicle AS bv ON bv.ID = vv.BaseVehicleID
@@ -128,32 +128,32 @@ var (
 	// 						AND ca.vcdbID = 17` //list of Configs linked to 34
 	// getAttributeID = `SELECT ID FROM ConfigAttribute WHERE vcdbID = 17 AND ConfigAttributeTypeID = 2` //34
 
-	getVehicles = `SELECT vv.ID
-						FROM vcdb_Vehicle AS vv
-						LEFT JOIN BaseVehicle AS bv ON bv.ID = vv.BaseVehicleID
-						LEFT JOIN Submodel AS sm ON sm.ID = vv.SubmodelID
-						LEFT JOIN VehicleConfigAttribute AS vca ON vca.VehicleConfigID = vv.ConfigID
-						LEFT JOIN ConfigAttribute AS ca ON ca.ID = vca.AttributeID
-						WHERE bv.AAIABaseVehicleID = ?
-						AND sm.AAIASubmodelID = ?
-						AND (vv.configID IN (SELECT vca.VehicleConfigID FROM VehicleConfigAttribute AS vca 
-						LEFT JOIN ConfigAttribute AS ca ON ca.ID = vca.AttributeID
-						WHERE ca.ConfigAttributeTypeID = ? 
-						AND ca.vcdbID = ?) 
-						OR vv.configID = 0 OR vv.configID IS NULL)`
+	// getVehicles = `SELECT vv.ID
+	// 					FROM vcdb_Vehicle AS vv
+	// 					LEFT JOIN BaseVehicle AS bv ON bv.ID = vv.BaseVehicleID
+	// 					LEFT JOIN Submodel AS sm ON sm.ID = vv.SubmodelID
+	// 					LEFT JOIN VehicleConfigAttribute AS vca ON vca.VehicleConfigID = vv.ConfigID
+	// 					LEFT JOIN ConfigAttribute AS ca ON ca.ID = vca.AttributeID
+	// 					WHERE bv.AAIABaseVehicleID = ?
+	// 					AND sm.AAIASubmodelID = ?
+	// 					AND (vv.configID IN (SELECT vca.VehicleConfigID FROM VehicleConfigAttribute AS vca
+	// 					LEFT JOIN ConfigAttribute AS ca ON ca.ID = vca.AttributeID
+	// 					WHERE ca.ConfigAttributeTypeID = ?
+	// 					AND ca.vcdbID = ?)
+	// 					OR vv.configID = 0 OR vv.configID IS NULL)`
 
 	getPartID = `SELECT PartNumber FROM vcdb_VehiclePart WHERE VehicleID = ?`
 )
 
 func VinPartLookup(vin string) (vs []CurtVehicle, err error) {
 	//get ACES vehicles
-	av, err := GetAcesVehicle(vin)
+	av, err := getAcesVehicle(vin)
 	if err != nil {
 		return vs, err
 	}
-	log.Print(av)
+
 	//get CURT vehicle
-	curtVehicles, err := av.GetCurtVehicles()
+	curtVehicles, err := av.getCurtVehicles()
 
 	//get parts
 	var p products.Part
@@ -202,7 +202,56 @@ func VinPartLookup(vin string) (vs []CurtVehicle, err error) {
 	return vs, err
 }
 
-func Query(vin string) (output []byte, err error) {
+func GetVehicleConfigs(vin string) (curtVehicles []CurtVehicle, err error) {
+	//get ACES vehicles
+	av, err := getAcesVehicle(vin)
+	if err != nil {
+		return curtVehicles, err
+	}
+	//get CURT vehicle
+	curtVehicles, err = av.getCurtVehicles()
+	return curtVehicles, err
+}
+
+func (v *CurtVehicle) GetPartsFromVehicleConfig() (ps []products.Part, err error) {
+	//get parts
+	var p products.Part
+	//get part id
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return ps, err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(getPartID)
+	if err != nil {
+		return ps, err
+	}
+	defer stmt.Close()
+	res, err := stmt.Query(v.ID)
+	for res.Next() {
+		err = res.Scan(&p.ID)
+		if err != nil {
+			return ps, err
+		}
+		//get part -- adds some weight
+		err = p.FromDatabase()
+		if err != nil {
+			return ps, err
+		}
+
+		// //append to vehicle.parts
+		// v.Parts = append(v.Parts, p)
+		ps = append(ps, p)
+	}
+	//omit null vehicles (Base, pre-config vehicles with no associated parts)
+	// if v.Parts != nil {
+	// 	vs = append(vs, v)
+	// }
+
+	return ps, err
+}
+
+func query(vin string) (output []byte, err error) {
 	var e Envelope
 	e.SoapEnv = "http://schemas.xmlsoap.org/soap/envelope/"
 	e.Web = "http://webservice.vindecoder.polk.com/"
@@ -216,11 +265,11 @@ func Query(vin string) (output []byte, err error) {
 	return output, err
 }
 
-func GetAcesVehicle(vin string) (av AcesVehicle, err error) {
+func getAcesVehicle(vin string) (av AcesVehicle, err error) {
 	data := []byte(database.VintelligencePass())
 	password := base64.StdEncoding.EncodeToString(data)
 
-	b, err := Query(vin)
+	b, err := query(vin)
 	if err != nil {
 		return av, err
 	}
@@ -276,7 +325,7 @@ func GetAcesVehicle(vin string) (av AcesVehicle, err error) {
 	return av, err
 }
 
-func (av *AcesVehicle) GetCurtVehicles() (cvs []CurtVehicle, err error) { //get CURT vehicles
+func (av *AcesVehicle) getCurtVehicles() (cvs []CurtVehicle, err error) { //get CURT vehicles
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return cvs, err
