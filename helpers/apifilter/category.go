@@ -22,7 +22,7 @@ var (
 		join CatPart as cp on p.partID = cp.partID
 		where
 		(p.status = 800 || p.status = 900) &&
-		cp.catID = ?
+		cp.catID = ? && !FIND_IN_SET(pa.field, ?)
 		group by pa.field, pa.value
 		order by pa.field, pa.value`
 	GetCategoryPrices = `
@@ -32,7 +32,9 @@ var (
 		where cp.catID = ? && lower(pr.priceType) = 'list' &&
 		(p.status = 800 || p.status = 900)
 		group by pr.price`
-	GetCategoryGroup = `select bottom_category_ids(?) as cats`
+	GetCategoryGroup = `select distinct cp.catID as cats
+											from CatPart as cp
+											where FIND_IN_SET(cp.catID, bottom_category_ids(?))`
 )
 
 func RenderSelections(r *http.Request) map[string][]string {
@@ -59,7 +61,7 @@ func CategoryFilter(cat products.Category, specs *map[string][]string) ([]Option
 		if err != nil {
 			log.Printf("filter error: %s\n", err.Error())
 		}
-	case <-time.After(50 * time.Second):
+	case <-time.After(5 * time.Second):
 		log.Println("filter generation timed out")
 	}
 
@@ -89,20 +91,12 @@ func (filtered FilteredOptions) categoryGroupAttributes(cat products.Category, s
 	defer idRows.Close()
 
 	ids := make([]int, 0)
-	ids = append(ids, cat.ID) // don't forget the given category
+	// ids = append(ids, cat.ID) // don't forget the given category
 	for idRows.Next() {
-		var strIds *string
-		if err := idRows.Scan(&strIds); err == nil && strIds != nil {
-			strCats := strings.Split(*strIds, ",")
-			existing := make(map[int]int, 0)
-			for _, strCat := range strCats {
-				if cID, err := strconv.Atoi(strCat); err == nil {
-					if _, ok := existing[cID]; !ok {
-						ids = append(ids, cID)
-						existing[cID] = cID
-					}
-				}
-			}
+		var i *int
+		err := idRows.Scan(&i)
+		if err == nil && i != nil {
+			ids = append(ids, *i)
 		}
 	}
 
@@ -200,7 +194,6 @@ func (filtered FilteredOptions) categoryGroupAttributes(cat products.Category, s
 }
 
 func categoryAttributes(catID int, excludedAttributeTypes []string) (map[string]Options, error) {
-
 	mapped := make(map[string]Options, 0)
 
 	var exs string
@@ -224,7 +217,7 @@ func categoryAttributes(catID int, excludedAttributeTypes []string) (map[string]
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query(catID)
+	rows, err := stmt.Query(catID, strings.Join(excludedAttributeTypes, ","))
 	if err != nil {
 		return map[string]Options{}, err
 	}
@@ -252,6 +245,7 @@ func categoryAttributes(catID int, excludedAttributeTypes []string) (map[string]
 				Key:     *key,
 				Options: make([]Option, 0),
 			}
+			mapped[*key] = opts
 		}
 
 		opt := Option{
@@ -265,7 +259,8 @@ func categoryAttributes(catID int, excludedAttributeTypes []string) (map[string]
 				opt.Products = append(opt.Products, p)
 			}
 		}
-		opts.AppendValue(opt)
+
+		opts.Options = append(opts.Options, opt)
 		mapped[opts.Key] = opts
 	}
 

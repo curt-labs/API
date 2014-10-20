@@ -9,6 +9,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	"github.com/curt-labs/GoAPI/models/customer/content"
 	_ "github.com/go-sql-driver/mysql"
+	"log"
 	"net/url"
 	"strconv"
 	"strings"
@@ -563,6 +564,7 @@ func (c *Category) GetContent() (content []Content, err error) {
 }
 
 func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *map[string][]string) error {
+	start := time.Now()
 
 	c.ProductListing = &PaginatedProductListing{}
 	if c.ID == 0 {
@@ -696,6 +698,7 @@ func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *
 
 	go redis.Setex(redis_key, parts, redis.CacheTimeout)
 
+	log.Println(time.Since(start).Seconds())
 	return nil
 }
 
