@@ -176,7 +176,11 @@ func VinPartLookup(vin string) (vs []CurtVehicle, err error) {
 			if err != nil {
 				return vs, err
 			}
-			//get part
+			//get part -- adds some weight
+			err = p.FromDatabase()
+			if err != nil {
+				return vs, err
+			}
 
 			//append to vehicle.parts
 			v.Parts = append(v.Parts, p)
@@ -195,7 +199,7 @@ func VinPartLookup(vin string) (vs []CurtVehicle, err error) {
 	// }
 
 	// log.Print(ps)
-	log.Print(vs[0].Parts)
+	// log.Print(vs[0].Parts)
 	return vs, err
 }
 
