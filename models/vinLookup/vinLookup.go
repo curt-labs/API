@@ -140,14 +140,6 @@ type DecodeVin struct {
 }
 
 var (
-	// getVehiclesPreConfig = `SELECT vv.ID, vca.VehicleConfigID, vca.AttributeID, ca.value
-	// 							FROM vcdb_Vehicle AS vv
-	// 							LEFT JOIN BaseVehicle AS bv ON bv.ID = vv.BaseVehicleID
-	// 							LEFT JOIN Submodel AS sm ON sm.ID = vv.SubmodelID
-	// 							LEFT JOIN VehicleConfigAttribute AS vca ON vca.VehicleConfigID = vv.ConfigID
-	// 							LEFT JOIN ConfigAttribute AS ca ON ca.ID = vca.AttributeID
-	// 							WHERE bv.AAIABaseVehicleID = ?
-	// 							AND sm.AAIASubmodelID = ?`
 	getCurtVehiclesPreConfig = `SELECT vv.ID, vmd.ID,vmd.ModelName, vmk.ID, vmk.MakeName, vyr.YearID, sm.ID, sm.SubmodelName, cat.name, cat.ID, ca.value, ca.ID, ca.vcdbID
 								FROM vcdb_Vehicle AS vv
 								LEFT JOIN BaseVehicle AS bv ON bv.ID = vv.BaseVehicleID
@@ -160,26 +152,6 @@ var (
 								LEFT JOIN ConfigAttributeType AS cat ON cat.ID = ca.ConfigAttributeTypeID
 								WHERE bv.AAIABaseVehicleID = ? 
 								AND (sm.AAIASubmodelID = ?  OR sm.AAIASubmodelID IS NULL) `
-
-	// getVehicleConfigIDs = `SELECT vca.AttributeID, vca.* FROM VehicleConfigAttribute AS vca
-	// 						LEFT JOIN ConfigAttribute AS ca ON ca.ID = vca.AttributeID
-	// 						WHERE ca.ConfigAttributeTypeID = 2
-	// 						AND ca.vcdbID = 17` //list of Configs linked to 34
-	// getAttributeID = `SELECT ID FROM ConfigAttribute WHERE vcdbID = 17 AND ConfigAttributeTypeID = 2` //34
-
-	// getVehicles = `SELECT vv.ID
-	// 					FROM vcdb_Vehicle AS vv
-	// 					LEFT JOIN BaseVehicle AS bv ON bv.ID = vv.BaseVehicleID
-	// 					LEFT JOIN Submodel AS sm ON sm.ID = vv.SubmodelID
-	// 					LEFT JOIN VehicleConfigAttribute AS vca ON vca.VehicleConfigID = vv.ConfigID
-	// 					LEFT JOIN ConfigAttribute AS ca ON ca.ID = vca.AttributeID
-	// 					WHERE bv.AAIABaseVehicleID = ?
-	// 					AND sm.AAIASubmodelID = ?
-	// 					AND (vv.configID IN (SELECT vca.VehicleConfigID FROM VehicleConfigAttribute AS vca
-	// 					LEFT JOIN ConfigAttribute AS ca ON ca.ID = vca.AttributeID
-	// 					WHERE ca.ConfigAttributeTypeID = ?
-	// 					AND ca.vcdbID = ?)
-	// 					OR vv.configID = 0 OR vv.configID IS NULL)`
 
 	getPartID = `SELECT PartNumber FROM vcdb_VehiclePart WHERE VehicleID = ?`
 )
@@ -463,15 +435,14 @@ func (av *AcesVehicle) getCurtVehicles(configMap map[int]interface{}) (cvs []Cur
 		log.Print("CURT", cv)
 		cvs = append(cvs, cv)
 		//Pop off configs that have non-conforming values
-		log.Print("CONFIG TYP", cv.Configuration.TypeID)
+		// log.Print("CONFIG TYP", cv.Configuration.TypeID)
 		if name, ok := configMap[cv.Configuration.TypeID]; ok {
-			log.Print("CONFIG VAL ", name, " ACES CONVFIG VAL ", cv.Configuration.AcesValueID)
+			// log.Print("CONFIG VAL ", name, " ACES CONVFIG VAL ", cv.Configuration.AcesValueID)
 			if cv.Configuration.AcesValueID != name {
 				cvs = cvs[:len(cvs)-1]
 			}
 		}
 
 	}
-	// log.Print(cvs)
 	return cvs, err
 }
