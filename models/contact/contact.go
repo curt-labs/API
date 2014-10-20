@@ -3,9 +3,11 @@ package contact
 import (
 	"database/sql"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/curt-labs/GoAPI/helpers/database"
+	"github.com/curt-labs/GoAPI/helpers/email"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -15,10 +17,11 @@ var (
                           from Contact limit ?, ?`
 	getContactStmt = `select contactID, first_name, last_name, email, phone, subject, message, 
                       createdDate, type, address1, address2, city, state, postalcode, country from Contact where contactID = ?`
-	getAllContactTypesStmt     = `select contactTypeID, name from ContactType`
-	getContactTypeStmt         = `select contactTypeID, name from ContactType where contactTypeID = ?`
-	getAllContactReceiversStmt = `select contactReceiverID, first_name, last_name, email from ContactReceiver`
-	getContactReceiverStmt     = `select contactReceiverID, first_name, last_name, email from ContactReceiver where contactReceiverID = ?`
+	addContactStmt = `insert into Contact(createdDate, first_name, last_name, email, phone, subject, 
+                      message, type, address1, address2, city, state, postalcode, country) values (NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	updateContactStmt = `update Contact set first_name = ?, last_name = ?, email = ?, phone = ?, subject = ?, 
+                         message = ?, type = ?, address1 = ?, address2 = ?, city = ?, state = ?, postalCode = ?, country = ? where contactID = ?`
+	deleteContactStmt = `delete from Contact where contactID = ?`
 )
 
 type Contacts []Contact
@@ -38,20 +41,6 @@ type Contact struct {
 	State      string
 	PostalCode string
 	Country    string
-}
-
-type ContactTypes []ContactType
-type ContactType struct {
-	ID   int
-	Name string
-}
-
-type ContactReceivers []ContactReceiver
-type ContactReceiver struct {
-	ID        int
-	FirstName string
-	LastName  string
-	Email     string
 }
 
 func GetAllContacts(page, count int) (contacts Contacts, err error) {
@@ -121,76 +110,6 @@ func GetAllContacts(page, count int) (contacts Contacts, err error) {
 	return
 }
 
-func GetAllContactTypes() (types ContactTypes, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return
-	}
-	defer db.Close()
-
-	stmt, err := db.Prepare(getAllContactTypesStmt)
-	if err != nil {
-		return
-	}
-	defer stmt.Close()
-
-	rows, err := stmt.Query()
-	if err != nil {
-		return
-	}
-
-	for rows.Next() {
-		var ct ContactType
-		err = rows.Scan(
-			&ct.ID,
-			&ct.Name,
-		)
-		if err != nil {
-			return
-		}
-		types = append(types, ct)
-	}
-	defer rows.Close()
-
-	return
-}
-
-func GetAllContactReceivers() (receivers ContactReceivers, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return
-	}
-	defer db.Close()
-
-	stmt, err := db.Prepare(getAllContactReceiversStmt)
-	if err != nil {
-		return
-	}
-	defer stmt.Close()
-
-	rows, err := stmt.Query()
-	if err != nil {
-		return
-	}
-
-	for rows.Next() {
-		var cr ContactReceiver
-		err = rows.Scan(
-			&cr.ID,
-			&cr.FirstName,
-			&cr.LastName,
-			&cr.Email,
-		)
-		if err != nil {
-			return
-		}
-		receivers = append(receivers, cr)
-	}
-	defer rows.Close()
-
-	return
-}
-
 func (c *Contact) Get() error {
 	if c.ID > 0 {
 		db, err := sql.Open("mysql", database.ConnectionString())
@@ -250,51 +169,113 @@ func (c *Contact) Get() error {
 	return errors.New("Invalid Contact ID")
 }
 
-func (ct *ContactType) Get() error {
-	if ct.ID > 0 {
-		db, err := sql.Open("mysql", database.ConnectionString())
-		if err != nil {
-			return err
-		}
-		defer db.Close()
+func (c *Contact) Add() error {
+	if strings.TrimSpace(c.FirstName) == "" {
+		return errors.New("First name is required")
+	}
+	if strings.TrimSpace(c.LastName) == "" {
+		return errors.New("Last name is required")
+	}
+	if !email.IsEmail(c.Email) {
+		return errors.New("Empty or invalid email address")
+	}
+	if strings.TrimSpace(c.Type) == "" {
+		return errors.New("Type can't be empty")
+	}
+	if strings.TrimSpace(c.Subject) == "" {
+		return errors.New("Subject can't be empty")
+	}
+	if strings.TrimSpace(c.Message) == "" {
+		return errors.New("Message can't be empty")
+	}
 
-		stmt, err := db.Prepare(getContactTypeStmt)
-		if err != nil {
-			return err
-		}
-		defer stmt.Close()
-
-		err = stmt.QueryRow(ct.ID).Scan(
-			&ct.ID,
-			&ct.Name,
-		)
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
 		return err
 	}
-	return errors.New("Invalid ContactType ID")
+	defer db.Close()
+
+	stmt, err := db.Prepare(addContactStmt)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	res, err := stmt.Exec(
+		c.FirstName, c.LastName, c.Email, c.Phone, c.Subject, c.Message,
+		c.Type, c.Address1, c.Address2, c.City, c.State, c.PostalCode, c.Country)
+	if err != nil {
+		return err
+	}
+
+	if id, err := res.LastInsertId(); err != nil {
+		return err
+	} else {
+		c.ID = int(id)
+	}
+
+	return nil
 }
 
-func (cr *ContactReceiver) Get() error {
-	if cr.ID > 0 {
+func (c *Contact) Update() error {
+	if c.ID == 0 {
+		return errors.New("Invalid Contact ID")
+	}
+	if strings.TrimSpace(c.FirstName) == "" {
+		return errors.New("First name is required")
+	}
+	if strings.TrimSpace(c.LastName) == "" {
+		return errors.New("Last name is required")
+	}
+	if !email.IsEmail(c.Email) {
+		return errors.New("Empty or invalid email address")
+	}
+	if strings.TrimSpace(c.Type) == "" {
+		return errors.New("Type can't be empty")
+	}
+	if strings.TrimSpace(c.Subject) == "" {
+		return errors.New("Subject can't be empty")
+	}
+	if strings.TrimSpace(c.Message) == "" || len(c.Message) < 50 {
+		return errors.New("Message can't be empty or be less than 50 characters")
+	}
+
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(updateContactStmt)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(
+		c.FirstName, c.LastName, c.Email, c.Phone, c.Subject, c.Message, c.Type,
+		c.Address1, c.Address2, c.City, c.State, c.PostalCode, c.Country, c.ID)
+
+	return err
+}
+
+func (c *Contact) Delete() error {
+	if c.ID > 0 {
 		db, err := sql.Open("mysql", database.ConnectionString())
 		if err != nil {
 			return err
 		}
 		defer db.Close()
 
-		stmt, err := db.Prepare(getContactReceiverStmt)
+		stmt, err := db.Prepare(deleteContactStmt)
 		if err != nil {
 			return err
 		}
 		defer stmt.Close()
 
-		err = stmt.QueryRow(cr.ID).Scan(
-			&cr.ID,
-			&cr.FirstName,
-			&cr.LastName,
-			&cr.Email,
-		)
+		_, err = stmt.Exec(c.ID)
 
 		return err
 	}
-	return errors.New("Invalid ContactReceiver ID")
+	return errors.New("Invalid Contact ID")
 }

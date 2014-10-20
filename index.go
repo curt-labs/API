@@ -159,13 +159,22 @@ func main() {
 		m.Group("/types", func(r martini.Router) {
 			r.Get("", contact.GetAllContactTypes)
 			r.Get("/:id", contact.GetContactType)
+			r.Post("", contact.AddContactType)
+			r.Put("/:id", contact.UpdateContactType)
+			r.Delete("/:id", contact.DeleteContactType)
 		})
 		m.Group("/receivers", func(r martini.Router) {
 			r.Get("", contact.GetAllContactReceivers)
 			r.Get("/:id", contact.GetContactReceiver)
+			r.Post("", contact.AddContactReceiver)
+			r.Put("/:id", contact.UpdateContactReceiver)
+			r.Delete("/:id", contact.DeleteContactReceiver)
 		})
 		r.Get("", contact.GetAllContacts)
 		r.Get("/:id", contact.GetContact)
+		r.Post("/:id", contact.AddContact)
+		r.Put("/:id", contact.UpdateContact)
+		r.Delete("/:id", contact.DeleteContact)
 	})
 
 	m.Group("/faqs", func(r martini.Router) {
