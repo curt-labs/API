@@ -9,7 +9,6 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/models/products"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
 )
@@ -159,7 +158,7 @@ var (
 const (
 	soapRequestedFields = `ACES_BASE_VEHICLE,ACES_MAKE_ID,ACES_MDL_ID,ACES_SUB_MDL_ID,ACES_YEAR_ID,ACES_REGION_ID,ACES_VEHICLE_ID,
 		ACES_FUEL,ACES_FUEL_DELIVERY,ACES_ENG_VIN_ID,ACES_ASP_ID,ACES_DRIVE_ID,ACES_BODY_TYPE,ACES_REGION_ID,ACES_LITERS,ACES_CC_DISPLACEMENT,ACES_CI_DISPLACEMENT,
-		ACES_CYLINDERS,ACES_RESERVED,DOOR_CNT,BODY_STYLE_DESC,WHL_BAS_SHRST_INCHS,TRK_BED_LEN_DESC,TRANS_CD,TRK_BED_LEN_CD`
+		ACES_CYLINDERS,ACES_RESERVED,DOOR_CNT,BODY_STYLE_DESC,WHL_BAS_SHRST_INCHS,TRK_BED_LEN_DESC,TRANS_CD,TRK_BED_LEN_CD,ENG_FUEL_DESC`
 )
 
 func VinPartLookup(vin string) (vs []CurtVehicle, err error) {
@@ -207,14 +206,6 @@ func VinPartLookup(vin string) (vs []CurtVehicle, err error) {
 			vs = append(vs, v)
 		}
 	}
-
-	// for _, vehicle := range vs {
-	// 	var l products.Lookup
-	// 	l.Vehicle = vehicle
-	// 	partChan := make(chan []products.Part)
-	// 	go l.LoadParts(partChan)
-	// 	ps = <-partChan
-	// }
 
 	return vs, err
 }
@@ -308,7 +299,7 @@ func getAcesVehicle(vin string) (av AcesVehicle, configMap map[int]interface{}, 
 	if err != nil {
 		return av, configMap, err
 	}
-	log.Print(string(body))
+	// log.Print(string(body))
 
 	var x XMLResponse
 	err = xml.Unmarshal(body, &x)
@@ -336,7 +327,7 @@ func getAcesVehicle(vin string) (av AcesVehicle, configMap map[int]interface{}, 
 	}
 	//check out them configs
 	configMap, err = av.checkConfigs(x.Body.DecodeVinResponse.VinResponse.Fields)
-	log.Print("ACES ", av)
+
 	return av, configMap, err
 }
 
@@ -432,7 +423,7 @@ func (av *AcesVehicle) getCurtVehicles(configMap map[int]interface{}) (cvs []Cur
 		if acesConfigValID != nil {
 			cv.Configuration.AcesValueID = *acesConfigValID
 		}
-		log.Print("CURT", cv)
+
 		cvs = append(cvs, cv)
 		//Pop off configs that have non-conforming values
 		// log.Print("CONFIG TYP", cv.Configuration.TypeID)

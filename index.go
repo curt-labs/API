@@ -471,7 +471,7 @@ func main() {
 	m.Get("/vin/configs/:vin", vinLookup.GetConfigs)                    //returns vehicles - user must call vin/vehicle with vehicleID to get parts
 	m.Get("/vin/vehicleID/:vehicleID", vinLookup.GetPartsFromVehicleID) //returns array of parts
 	//option 2 - one call - returns vehicles with parts
-	m.Get("/vin/:vin", vinLookup.GetParts) //returns vehicles+configs with associated parts
+	m.Get("/vin/:vin", vinLookup.GetParts) //returns vehicles+configs with associated parts -or- an array of parts if only one vehicle config matches
 
 	// m.Get("/customer/auth/keyedUser", internalCors, customer_ctlr_new.KeyedUserAuthentication)
 	// m.Post("/customer/auth/new", internalCors, customer_ctlr_new.UserAuthentication)
