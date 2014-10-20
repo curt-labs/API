@@ -9,7 +9,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/models/products"
 	"io/ioutil"
-	// "log"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -46,12 +46,51 @@ type Submodel struct {
 }
 
 type VehicleConfiguration struct {
-	// Vehicle Vehicle
-	TypeID  int
-	ValueID int
-	Type    string
-	Value   string
-	// Part    products.Part
+	TypeID      int
+	ValueID     int
+	Type        string
+	Value       string
+	AcesValueID int
+}
+
+type ConfigurationBits struct {
+	WheelBase                        interface{} //WHL_BAS_SHRST_INCHS
+	BodyType                         interface{} //ACES_BODY_TYPE
+	DriveType                        interface{} //ACES_DRIVE_ID
+	NumberOfDoors                    interface{} //DOOR_CNT
+	BedLength                        interface{}
+	FuelType                         interface{}
+	Engine                           interface{} //ACES_LITERS + ACES_CYLINDERS--not quite
+	Aspiration                       interface{} //ACES_ASP_ID
+	BedType                          interface{}
+	BrakeABS                         interface{}
+	BrakeSystem                      interface{}
+	CylinderHeadType                 interface{}
+	EngineDesignation                interface{}
+	EngineManufacturer               interface{}
+	EngineVersion                    interface{}
+	EngineVin                        interface{} //ACES_ENG_VIN_ID
+	FrontBrakeType                   interface{}
+	FrontSpringType                  interface{}
+	FuelDeliverySubType              interface{}
+	FuelDeliveryType                 interface{} //ACES_FUEL
+	FuelSystemControlType            interface{}
+	FuelSystemDesign                 interface{} //ACES_FUEL
+	IgnitionSystemDesign             interface{}
+	ManufacturerBodyCode             interface{}
+	PowerOutput                      interface{}
+	RearBrakeType                    interface{}
+	RearSpringType                   interface{}
+	SteeringSystem                   interface{}
+	SteeringType                     interface{}
+	TransmissionElectronicControlled interface{}
+	Transmission                     interface{} //TRANS_CD
+	TransmissionControlType          interface{}
+	TransmissionManufacturerCode     interface{}
+	TransmissionNumberOfSpeeds       interface{} //TRANS_OPT1_SPEED_CD
+	TransmissionType                 interface{}
+	ValvesPerEngine                  interface{}
+	Region                           interface{} //ACES_REGION_ID
 }
 
 //reponse
@@ -109,7 +148,7 @@ var (
 	// 							LEFT JOIN ConfigAttribute AS ca ON ca.ID = vca.AttributeID
 	// 							WHERE bv.AAIABaseVehicleID = ?
 	// 							AND sm.AAIASubmodelID = ?`
-	getCurtVehiclesPreConfig = `SELECT vv.ID, vmd.ID,vmd.ModelName, vmk.ID, vmk.MakeName, vyr.YearID, sm.ID, sm.SubmodelName, cat.name, cat.ID, ca.value, ca.ID
+	getCurtVehiclesPreConfig = `SELECT vv.ID, vmd.ID,vmd.ModelName, vmk.ID, vmk.MakeName, vyr.YearID, sm.ID, sm.SubmodelName, cat.name, cat.ID, ca.value, ca.ID, ca.vcdbID
 								FROM vcdb_Vehicle AS vv
 								LEFT JOIN BaseVehicle AS bv ON bv.ID = vv.BaseVehicleID
 								LEFT JOIN vcdb_Model AS vmd ON vmd.ID = bv.ModelID
@@ -120,7 +159,7 @@ var (
 								LEFT JOIN ConfigAttribute AS ca ON ca.ID = vca.AttributeID
 								LEFT JOIN ConfigAttributeType AS cat ON cat.ID = ca.ConfigAttributeTypeID
 								WHERE bv.AAIABaseVehicleID = ?
-								AND (sm.AAIASubmodelID = ?  OR sm.AAIASubmodelID IS NULL)`
+								AND (sm.AAIASubmodelID = ?  OR sm.AAIASubmodelID IS NULL) `
 
 	// getVehicleConfigIDs = `SELECT vca.AttributeID, vca.* FROM VehicleConfigAttribute AS vca
 	// 						LEFT JOIN ConfigAttribute AS ca ON ca.ID = vca.AttributeID
@@ -147,13 +186,13 @@ var (
 
 func VinPartLookup(vin string) (vs []CurtVehicle, err error) {
 	//get ACES vehicles
-	av, err := getAcesVehicle(vin)
+	av, configMap, err := getAcesVehicle(vin)
 	if err != nil {
 		return vs, err
 	}
 
 	//get CURT vehicle
-	curtVehicles, err := av.getCurtVehicles()
+	curtVehicles, err := av.getCurtVehicles(configMap)
 
 	//get parts
 	var p products.Part
@@ -204,15 +243,16 @@ func VinPartLookup(vin string) (vs []CurtVehicle, err error) {
 
 func GetVehicleConfigs(vin string) (curtVehicles []CurtVehicle, err error) {
 	//get ACES vehicles
-	av, err := getAcesVehicle(vin)
+	av, configMap, err := getAcesVehicle(vin)
 	if err != nil {
 		return curtVehicles, err
 	}
 	//get CURT vehicle
-	curtVehicles, err = av.getCurtVehicles()
+	curtVehicles, err = av.getCurtVehicles(configMap)
 	return curtVehicles, err
 }
 
+//already have vehicleID (vcdb_vehicle.ID)? get parts
 func (v *CurtVehicle) GetPartsFromVehicleConfig() (ps []products.Part, err error) {
 	//get parts
 	var p products.Part
@@ -239,15 +279,8 @@ func (v *CurtVehicle) GetPartsFromVehicleConfig() (ps []products.Part, err error
 			return ps, err
 		}
 
-		// //append to vehicle.parts
-		// v.Parts = append(v.Parts, p)
 		ps = append(ps, p)
 	}
-	//omit null vehicles (Base, pre-config vehicles with no associated parts)
-	// if v.Parts != nil {
-	// 	vs = append(vs, v)
-	// }
-
 	return ps, err
 }
 
@@ -256,7 +289,9 @@ func query(vin string) (output []byte, err error) {
 	e.SoapEnv = "http://schemas.xmlsoap.org/soap/envelope/"
 	e.Web = "http://webservice.vindecoder.polk.com/"
 	e.Body.DecodeVin.Vin = vin
-	e.Body.DecodeVin.RequestedFields = `ACES_BASE_VEHICLE,ACES_MAKE_ID,ACES_MDL_ID,ACES_SUB_MDL_ID,ACES_YEAR_ID,ACES_REGION_ID,ACES_VEHICLE_ID`
+	e.Body.DecodeVin.RequestedFields = `ACES_BASE_VEHICLE,ACES_MAKE_ID,ACES_MDL_ID,ACES_SUB_MDL_ID,ACES_YEAR_ID,ACES_REGION_ID,ACES_VEHICLE_ID,
+		ACES_FUEL,ACES_FUEL_DELIVERY,ACES_ENG_VIN_ID,ACES_ASP_ID,ACES_DRIVE_ID,ACES_BODY_TYPE,ACES_REGION_ID,ACES_LITERS,ACES_CC_DISPLACEMENT,ACES_CI_DISPLACEMENT,
+		ACES_CYLINDERS,ACES_RESERVED,DOOR_CNT,BODY_STYLE_DESC,WHL_BAS_SHRST_INCHS,TRK_BED_LEN_DESC,TRANS_CD`
 
 	output, err = xml.MarshalIndent(e, " ", "\t")
 	if err != nil {
@@ -265,19 +300,19 @@ func query(vin string) (output []byte, err error) {
 	return output, err
 }
 
-func getAcesVehicle(vin string) (av AcesVehicle, err error) {
+func getAcesVehicle(vin string) (av AcesVehicle, configMap map[int]interface{}, err error) {
 	data := []byte(database.VintelligencePass())
 	password := base64.StdEncoding.EncodeToString(data)
 
 	b, err := query(vin)
 	if err != nil {
-		return av, err
+		return av, configMap, err
 	}
 	buffer := bytes.NewReader(b)
 	client := http.Client{}
 	req, err := http.NewRequest("POST", "https://vintelligence3.polk.com/vindecoder/VinDecoderService", buffer)
 	if err != nil {
-		return av, err
+		return av, configMap, err
 	}
 	req.Header.Add("Authorization", "Basic "+password)
 	req.Header.Add("Content-Type", "text/xml;charset=utf-8")
@@ -285,23 +320,24 @@ func getAcesVehicle(vin string) (av AcesVehicle, err error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return av, err
+		return av, configMap, err
 	}
 
 	if resp.StatusCode != 200 {
 		err = errors.New(resp.Status)
-		return av, err
+		return av, configMap, err
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return av, err
+		return av, configMap, err
 	}
+	log.Print(string(body))
 
 	var x XMLResponse
 	err = xml.Unmarshal(body, &x)
 	if err != nil {
-		return av, err
+		return av, configMap, err
 	}
 
 	for _, field := range x.Body.DecodeVinResponse.VinResponse.Fields {
@@ -322,24 +358,67 @@ func getAcesVehicle(vin string) (av AcesVehicle, err error) {
 			av.AcesID, err = strconv.Atoi(field.Value)
 		}
 	}
-	return av, err
+	//check out them configs
+	configMap, err = av.checkConfigs(x.Body.DecodeVinResponse.VinResponse.Fields)
+	// log.Print("ACES ", av)
+	return av, configMap, err
 }
 
-func (av *AcesVehicle) getCurtVehicles() (cvs []CurtVehicle, err error) { //get CURT vehicles
+//creates a map of config options from the SOAP request to check against curt vehicles
+func (av *AcesVehicle) checkConfigs(responseFields []Field) (configMap map[int]interface{}, err error) {
+	//map of configAttributeType AcesID to configAttribute Aces ID
+	configMap = make(map[int]interface{})
+	for _, field := range responseFields {
+		switch field.Key {
+		case "WHL_BAS_SHRST_INCHS":
+			configMap[1], err = strconv.Atoi(field.Value)
+		case "ACES_BODY_TYPE":
+			configMap[2], err = strconv.Atoi(field.Value)
+		case "ACES_DRIVE_ID":
+			configMap[3], err = strconv.Atoi(field.Value)
+		case "DOOR_CNT":
+			configMap[4], err = strconv.Atoi(field.Value)
+		case "ACES_ASP_ID":
+			configMap[8], err = strconv.Atoi(field.Value)
+		case "ACES_ENG_VIN_ID":
+			configMap[16], err = strconv.Atoi(field.Value)
+		case "ACES_FUEL":
+			configMap[20], err = strconv.Atoi(field.Value)
+		case "TRANS_CD":
+			configMap[34] = field.Value
+		case "TRANS_OPT1_SPEED_CD":
+			configMap[38], err = strconv.Atoi(field.Value)
+
+			if err != nil {
+				return configMap, err
+			}
+		}
+
+	}
+	// log.Print("ALL CBS", configMap)
+	return configMap, err
+}
+
+func (av *AcesVehicle) getCurtVehicles(configMap map[int]interface{}) (cvs []CurtVehicle, err error) { //get CURT vehicles
+	var queryAddons string
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return cvs, err
 	}
 	defer db.Close()
-	stmt, err := db.Prepare(getCurtVehiclesPreConfig)
+	stmt, err := db.Prepare(getCurtVehiclesPreConfig + queryAddons)
 	if err != nil {
 		return cvs, err
 	}
 	defer stmt.Close()
 	res, err := stmt.Query(av.AAIABaseVehicleID, av.AAIASubmodelID)
+	if err != nil {
+		return cvs, err
+	}
 
 	var sub, configKey, configValue *string
-	var subID, configKeyID, configValueID *int
+	var subID, configKeyID, configValueID, acesConfigValID *int
 	var cv CurtVehicle
 	for res.Next() {
 		err = res.Scan(
@@ -355,6 +434,7 @@ func (av *AcesVehicle) getCurtVehicles() (cvs []CurtVehicle, err error) { //get 
 			&configKeyID,
 			&configValue,
 			&configValueID,
+			&acesConfigValID,
 		)
 		if subID != nil {
 			cv.Submodel.ID = *subID
@@ -374,7 +454,20 @@ func (av *AcesVehicle) getCurtVehicles() (cvs []CurtVehicle, err error) { //get 
 		if configValueID != nil {
 			cv.Configuration.ValueID = *configValueID
 		}
+		if acesConfigValID != nil {
+			cv.Configuration.AcesValueID = *acesConfigValID
+		}
 		cvs = append(cvs, cv)
+		//Pop off configs that have non-conforming values
+		log.Print("CONFIG TYP", cv.Configuration.TypeID)
+		if name, ok := configMap[cv.Configuration.TypeID]; ok {
+			log.Print("CONFIG VAL ", name, " ACES CONVFIG VAL ", cv.Configuration.AcesValueID)
+			if cv.Configuration.AcesValueID != name {
+				cvs = cvs[:len(cvs)-1]
+			}
+		}
+
 	}
+	// log.Print(cvs)
 	return cvs, err
 }
