@@ -58,10 +58,10 @@ type ConfigurationBits struct {
 	BodyType                         interface{} //ACES_BODY_TYPE
 	DriveType                        interface{} //ACES_DRIVE_ID
 	NumberOfDoors                    interface{} //DOOR_CNT
-	BedLength                        interface{}
 	FuelType                         interface{}
 	Engine                           interface{} //ACES_LITERS + ACES_CYLINDERS--not quite
 	Aspiration                       interface{} //ACES_ASP_ID
+	BedLength                        interface{} //TRK_BED_LEN_CD
 	BedType                          interface{}
 	BrakeABS                         interface{}
 	BrakeSystem                      interface{}
@@ -158,7 +158,7 @@ var (
 								LEFT JOIN VehicleConfigAttribute AS vca ON vca.VehicleConfigID = vv.ConfigID
 								LEFT JOIN ConfigAttribute AS ca ON ca.ID = vca.AttributeID
 								LEFT JOIN ConfigAttributeType AS cat ON cat.ID = ca.ConfigAttributeTypeID
-								WHERE bv.AAIABaseVehicleID = ?
+								WHERE bv.AAIABaseVehicleID = ? 
 								AND (sm.AAIASubmodelID = ?  OR sm.AAIASubmodelID IS NULL) `
 
 	// getVehicleConfigIDs = `SELECT vca.AttributeID, vca.* FROM VehicleConfigAttribute AS vca
@@ -182,6 +182,12 @@ var (
 	// 					OR vv.configID = 0 OR vv.configID IS NULL)`
 
 	getPartID = `SELECT PartNumber FROM vcdb_VehiclePart WHERE VehicleID = ?`
+)
+
+const (
+	soapRequestedFields = `ACES_BASE_VEHICLE,ACES_MAKE_ID,ACES_MDL_ID,ACES_SUB_MDL_ID,ACES_YEAR_ID,ACES_REGION_ID,ACES_VEHICLE_ID,
+		ACES_FUEL,ACES_FUEL_DELIVERY,ACES_ENG_VIN_ID,ACES_ASP_ID,ACES_DRIVE_ID,ACES_BODY_TYPE,ACES_REGION_ID,ACES_LITERS,ACES_CC_DISPLACEMENT,ACES_CI_DISPLACEMENT,
+		ACES_CYLINDERS,ACES_RESERVED,DOOR_CNT,BODY_STYLE_DESC,WHL_BAS_SHRST_INCHS,TRK_BED_LEN_DESC,TRANS_CD,TRK_BED_LEN_CD`
 )
 
 func VinPartLookup(vin string) (vs []CurtVehicle, err error) {
@@ -289,9 +295,7 @@ func query(vin string) (output []byte, err error) {
 	e.SoapEnv = "http://schemas.xmlsoap.org/soap/envelope/"
 	e.Web = "http://webservice.vindecoder.polk.com/"
 	e.Body.DecodeVin.Vin = vin
-	e.Body.DecodeVin.RequestedFields = `ACES_BASE_VEHICLE,ACES_MAKE_ID,ACES_MDL_ID,ACES_SUB_MDL_ID,ACES_YEAR_ID,ACES_REGION_ID,ACES_VEHICLE_ID,
-		ACES_FUEL,ACES_FUEL_DELIVERY,ACES_ENG_VIN_ID,ACES_ASP_ID,ACES_DRIVE_ID,ACES_BODY_TYPE,ACES_REGION_ID,ACES_LITERS,ACES_CC_DISPLACEMENT,ACES_CI_DISPLACEMENT,
-		ACES_CYLINDERS,ACES_RESERVED,DOOR_CNT,BODY_STYLE_DESC,WHL_BAS_SHRST_INCHS,TRK_BED_LEN_DESC,TRANS_CD`
+	e.Body.DecodeVin.RequestedFields = soapRequestedFields
 
 	output, err = xml.MarshalIndent(e, " ", "\t")
 	if err != nil {
@@ -360,7 +364,7 @@ func getAcesVehicle(vin string) (av AcesVehicle, configMap map[int]interface{}, 
 	}
 	//check out them configs
 	configMap, err = av.checkConfigs(x.Body.DecodeVinResponse.VinResponse.Fields)
-	// log.Print("ACES ", av)
+	log.Print("ACES ", av)
 	return av, configMap, err
 }
 
@@ -400,14 +404,13 @@ func (av *AcesVehicle) checkConfigs(responseFields []Field) (configMap map[int]i
 }
 
 func (av *AcesVehicle) getCurtVehicles(configMap map[int]interface{}) (cvs []CurtVehicle, err error) { //get CURT vehicles
-	var queryAddons string
 
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return cvs, err
 	}
 	defer db.Close()
-	stmt, err := db.Prepare(getCurtVehiclesPreConfig + queryAddons)
+	stmt, err := db.Prepare(getCurtVehiclesPreConfig)
 	if err != nil {
 		return cvs, err
 	}
@@ -457,6 +460,7 @@ func (av *AcesVehicle) getCurtVehicles(configMap map[int]interface{}) (cvs []Cur
 		if acesConfigValID != nil {
 			cv.Configuration.AcesValueID = *acesConfigValID
 		}
+		log.Print("CURT", cv)
 		cvs = append(cvs, cv)
 		//Pop off configs that have non-conforming values
 		log.Print("CONFIG TYP", cv.Configuration.TypeID)

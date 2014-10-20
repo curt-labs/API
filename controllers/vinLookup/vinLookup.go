@@ -12,13 +12,17 @@ import (
 func GetParts(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	vin := params["vin"]
 
-	parts, err := vinLookup.VinPartLookup(vin)
+	vehicles, err := vinLookup.VinPartLookup(vin)
 	if err != nil {
 		log.Print(err)
 		return ""
 	}
-
-	return encoding.Must(enc.Encode(parts))
+	//only one vehicle? Just return parts
+	if len(vehicles) == 1 {
+		return encoding.Must(enc.Encode(vehicles[0].Parts))
+	}
+	//else, return array of vehicles containing array of parts
+	return encoding.Must(enc.Encode(vehicles))
 
 }
 
