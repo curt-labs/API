@@ -21,7 +21,7 @@ func UserAuthentication(w http.ResponseWriter, r *http.Request, enc encoding.Enc
 
 	cust, err := user.UserAuthentication(pass)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusForbidden)
 		return ""
 	}
 
@@ -34,8 +34,7 @@ func KeyedUserAuthentication(w http.ResponseWriter, r *http.Request, enc encodin
 
 	cust, err := customer_new.UserAuthenticationByKey(key)
 	if err != nil {
-		log.Print(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusForbidden)
 		return ""
 	}
 

@@ -194,18 +194,18 @@ func (u CustomerUser) UserAuthentication(password string) (cust Customer, err er
 
 	cust.Users = append(cust.Users, u)
 
-	return cust, nil
+	return
 }
 
 func UserAuthenticationByKey(key string) (cust Customer, err error) {
 	u, err := AuthenticateUserByKey(key)
 	if err != nil {
+		log.Print(err)
 		return cust, AuthError
 	}
 
 	keyChan := make(chan int)
 	locChan := make(chan int)
-
 	go func() {
 		if kErr := u.GetKeys(); kErr != nil {
 			err = kErr
@@ -219,7 +219,6 @@ func UserAuthenticationByKey(key string) (cust Customer, err error) {
 		}
 		locChan <- 1
 	}()
-
 	cust, err = u.GetCustomer()
 	if err != sql.ErrNoRows {
 		if err != nil {
