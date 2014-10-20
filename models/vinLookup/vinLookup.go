@@ -14,36 +14,44 @@ import (
 	"strconv"
 )
 
-//vehicle
-type Vehicle struct {
-	ID             int
-	YearID         int
-	MakeID         int
-	AAIAMakeID     int
-	ModelID        int
-	AAIAModelID    int
-	BaseVehicleID  int
-	SubmodelID     int
-	AAIASubmodelID int
-	AcesID         int
-	Year           int
-	Make           string
-	Model          string
-	Submodel       string
-	RegionID       int
-	BodyTypeID     int
-	Bumper         interface{}
-	BedLength      interface{}
-	DriveType      interface{}
+type AcesVehicle struct {
+	AcesID            int
+	AAIABaseVehicleID int
+	AAIAMakeID        int
+	AAIAModelID       int
+	AAIAYearID        int
+	AAIASubmodelID    int
+	AAIARegionID      int
+}
+type CurtVehicle struct {
+	ID            int
+	BaseVehicle   BaseVehicle
+	Submodel      Submodel
+	Configuration VehicleConfiguration
+	Parts         []products.Part
+}
+
+type BaseVehicle struct {
+	ID        int
+	ModelID   int
+	MakeID    int
+	YearID    int
+	ModelName string
+	MakeName  string
+}
+
+type Submodel struct {
+	ID   int
+	Name string
 }
 
 type VehicleConfiguration struct {
-	Vehicle Vehicle
+	// Vehicle Vehicle
 	TypeID  int
 	ValueID int
 	Type    string
 	Value   string
-	Part    products.Part
+	// Part    products.Part
 }
 
 //reponse
@@ -101,6 +109,18 @@ var (
 								LEFT JOIN ConfigAttribute AS ca ON ca.ID = vca.AttributeID
 								WHERE bv.AAIABaseVehicleID = ?
 								AND sm.AAIASubmodelID = ?`
+	getCurtVehiclesPreConfig = `SELECT vv.ID, vmd.ID,vmd.ModelName, vmk.ID, vmk.MakeName, vyr.YearID, sm.ID, sm.SubmodelName, cat.name, cat.ID, ca.value, ca.ID
+								FROM vcdb_Vehicle AS vv
+								LEFT JOIN BaseVehicle AS bv ON bv.ID = vv.BaseVehicleID
+								LEFT JOIN vcdb_Model AS vmd ON vmd.ID = bv.ModelID
+								LEFT JOIN vcdb_Make AS vmk ON vmk.ID = bv.MakeID 
+								LEFT JOIN vcdb_year AS vyr ON vyr.YearID = bv.YearID
+								LEFT JOIN Submodel AS sm ON sm.ID = vv.SubmodelID
+								LEFT JOIN VehicleConfigAttribute AS vca ON vca.VehicleConfigID = vv.ConfigID
+								LEFT JOIN ConfigAttribute AS ca ON ca.ID = vca.AttributeID
+								LEFT JOIN ConfigAttributeType AS cat ON cat.ID = ca.ConfigAttributeTypeID
+								WHERE bv.AAIABaseVehicleID = ?
+								AND (sm.AAIASubmodelID = ?  OR sm.AAIASubmodelID IS NULL)`
 
 	// getVehicleConfigIDs = `SELECT vca.AttributeID, vca.* FROM VehicleConfigAttribute AS vca
 	// 						LEFT JOIN ConfigAttribute AS ca ON ca.ID = vca.AttributeID
@@ -125,12 +145,66 @@ var (
 	getPartID = `SELECT PartNumber FROM vcdb_VehiclePart WHERE VehicleID = ?`
 )
 
-func CreateQuery(vin string) (output []byte, err error) {
+func VinPartLookup(vin string) (vs []CurtVehicle, err error) {
+	//get ACES vehicles
+	av, err := GetAcesVehicle(vin)
+	if err != nil {
+		return vs, err
+	}
+	log.Print(av)
+	//get CURT vehicle
+	curtVehicles, err := av.GetCurtVehicles()
+	// log.Print(vs)
+	// log.Print("COUNT", len(vs))
+	//get parts
+	var p products.Part
+	for _, v := range curtVehicles {
+		//get part id
+		db, err := sql.Open("mysql", database.ConnectionString())
+		if err != nil {
+			return vs, err
+		}
+		defer db.Close()
+		stmt, err := db.Prepare(getPartID)
+		if err != nil {
+			return vs, err
+		}
+		defer stmt.Close()
+		res, err := stmt.Query(v.ID)
+		for res.Next() {
+			err = res.Scan(&p.ID)
+			if err != nil {
+				return vs, err
+			}
+			//get part
+
+			//append to vehicle.parts
+			v.Parts = append(v.Parts, p)
+
+		}
+		vs = append(vs, v)
+		// log.Print("VVV", v.Parts)
+	}
+
+	// for _, vehicle := range vs {
+	// 	var l products.Lookup
+	// 	l.Vehicle = vehicle
+	// 	partChan := make(chan []products.Part)
+	// 	go l.LoadParts(partChan)
+	// 	ps = <-partChan
+	// }
+
+	// log.Print(ps)
+	log.Print(vs[0].Parts)
+	return vs, err
+}
+
+func Query(vin string) (output []byte, err error) {
 	var e Envelope
 	e.SoapEnv = "http://schemas.xmlsoap.org/soap/envelope/"
 	e.Web = "http://webservice.vindecoder.polk.com/"
 	e.Body.DecodeVin.Vin = vin
-	e.Body.DecodeVin.RequestedFields = "ACES_BASE_VEHICLE,ACES_MAKE_ID,ACES_MDL_ID,ACES_SUB_MDL_ID,ACES_YEAR_ID,ACES_BODY_TYPE,MAK_NM,MDL_DESC,TRIM_DESC,ACES_REGION_ID,ACES_VEHICLE_ID"
+	e.Body.DecodeVin.RequestedFields = `ACES_BASE_VEHICLE,ACES_MAKE_ID,ACES_MDL_ID,ACES_SUB_MDL_ID,ACES_YEAR_ID,ACES_REGION_ID,ACES_VEHICLE_ID`
 
 	output, err = xml.MarshalIndent(e, " ", "\t")
 	if err != nil {
@@ -139,20 +213,19 @@ func CreateQuery(vin string) (output []byte, err error) {
 	return output, err
 }
 
-func Lookup(vin string) (vcs []VehicleConfiguration, err error) {
-	var v VehicleConfiguration
+func GetAcesVehicle(vin string) (av AcesVehicle, err error) {
 	data := []byte(database.VintelligencePass())
 	password := base64.StdEncoding.EncodeToString(data)
 
-	b, err := CreateQuery(vin)
+	b, err := Query(vin)
 	if err != nil {
-		return vcs, err
+		return av, err
 	}
 	buffer := bytes.NewReader(b)
 	client := http.Client{}
 	req, err := http.NewRequest("POST", "https://vintelligence3.polk.com/vindecoder/VinDecoderService", buffer)
 	if err != nil {
-		return vcs, err
+		return av, err
 	}
 	req.Header.Add("Authorization", "Basic "+password)
 	req.Header.Add("Content-Type", "text/xml;charset=utf-8")
@@ -160,125 +233,102 @@ func Lookup(vin string) (vcs []VehicleConfiguration, err error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return vcs, err
+		return av, err
 	}
 
 	if resp.StatusCode != 200 {
 		err = errors.New(resp.Status)
-		return vcs, err
+		return av, err
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return vcs, err
+		return av, err
 	}
-	log.Print(string(body))
+	// log.Print(string(body))
 
 	var x XMLResponse
 	err = xml.Unmarshal(body, &x)
 	if err != nil {
-		return vcs, err
+		return av, err
 	}
 
 	for _, field := range x.Body.DecodeVinResponse.VinResponse.Fields {
 		switch field.Key {
 		case "ACES_BASE_VEHICLE":
-			v.Vehicle.BaseVehicleID, err = strconv.Atoi(field.Value)
+			av.AAIABaseVehicleID, err = strconv.Atoi(field.Value)
 		case "ACES_MAKE_ID":
-			v.Vehicle.AAIAMakeID, err = strconv.Atoi(field.Value)
+			av.AAIAMakeID, err = strconv.Atoi(field.Value)
 		case "ACES_MDL_ID":
-			v.Vehicle.AAIAModelID, err = strconv.Atoi(field.Value)
+			av.AAIAModelID, err = strconv.Atoi(field.Value)
 		case "ACES_SUB_MDL_ID":
-			v.Vehicle.AAIASubmodelID, err = strconv.Atoi(field.Value)
+			av.AAIASubmodelID, err = strconv.Atoi(field.Value)
 		case "ACES_YEAR_ID":
-			v.Vehicle.YearID, err = strconv.Atoi(field.Value)
-			v.Vehicle.Year, err = strconv.Atoi(field.Value)
-		case "ACES_BODY_TYPE":
-			v.TypeID = 2 //Body Type
-			v.ValueID, err = strconv.Atoi(field.Value)
-			// v.Configurations = append(v.Configurations, vcBody)
-			v.Vehicle.BodyTypeID, err = strconv.Atoi(field.Value)
-		case "MAK_NM":
-			v.Vehicle.Make = field.Value
-		case "MDL_DESC":
-			v.Vehicle.Model = field.Value
-			// case "TRIM_DESC":
-			// 	v.BaseVehicleID, err = strconv.Atoi(field.Value)
+			av.AAIAYearID, err = strconv.Atoi(field.Value)
 		case "ACES_REGION_ID":
-			v.Vehicle.RegionID, err = strconv.Atoi(field.Value)
+			av.AAIARegionID, err = strconv.Atoi(field.Value)
 		case "ACES_VEHICLE_ID":
-			v.Vehicle.AcesID, err = strconv.Atoi(field.Value)
-		case "BUMPER":
-			v.Vehicle.Bumper = field.Value
-		case "BED_LENGTH":
-			v.Vehicle.BedLength = field.Value
-		case "ACES_DRIVE_TYPE":
-			v.Vehicle.DriveType = field.Value
-
+			av.AcesID, err = strconv.Atoi(field.Value)
 		}
-
 	}
-
-	vcs, err = v.partLookup()
-	log.Print(vcs)
-
-	return vcs, err
+	// log.Print("ACES", av)
+	return av, err
 }
 
-//get curt vehicle, then parts
-func (v *VehicleConfiguration) partLookup() (vcs []VehicleConfiguration, err error) {
-	// get vehicle ID
-	var vs []VehicleConfiguration
-
+func (av *AcesVehicle) GetCurtVehicles() (cvs []CurtVehicle, err error) { //get CURT vehicles
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		return vcs, err
+		return cvs, err
 	}
 	defer db.Close()
-	stmt, err := db.Prepare(getVehiclesPreConfig)
+	stmt, err := db.Prepare(getCurtVehiclesPreConfig)
 	if err != nil {
-		return vcs, err
+		return cvs, err
 	}
 	defer stmt.Close()
+	res, err := stmt.Query(av.AAIABaseVehicleID, av.AAIASubmodelID)
 
-	res, err := stmt.Query(v.Vehicle.BaseVehicleID, v.Vehicle.AAIASubmodelID)
-	// var tempVehicle Vehicle
-	var tempCon VehicleConfiguration
-	var valID *int
-	var val *string
-	var configID *int
+	// var vc VehicleConfiguration
+	//vca.VehicleConfigID, vca.AttributeID, ca.value
+	var sub, configKey, configValue *string
+	var subID, configKeyID, configValueID *int
+	var cv CurtVehicle
 	for res.Next() {
-		tempCon = *v
-		err = res.Scan(&tempCon.Vehicle.ID, &configID, &valID, &val)
-		if err != nil {
-			return vcs, err
+		err = res.Scan(
+			&cv.ID,
+			&cv.BaseVehicle.ModelID,
+			&cv.BaseVehicle.ModelName,
+			&cv.BaseVehicle.MakeID,
+			&cv.BaseVehicle.MakeName,
+			&cv.BaseVehicle.YearID,
+			&subID,
+			&sub,
+			&configKey,
+			&configKeyID,
+			&configValue,
+			&configValueID,
+		)
+		if subID != nil {
+			cv.Submodel.ID = *subID
 		}
-		if valID != nil {
-			tempCon.ValueID = *valID
+		if sub != nil {
+			cv.Submodel.Name = *sub
 		}
-		if val != nil {
-			tempCon.Value = *val
+		if configKey != nil {
+			cv.Configuration.Type = *configKey
 		}
-		vs = append(vs, tempCon)
+		if configValue != nil {
+			cv.Configuration.Value = *configValue
+		}
+		if configKeyID != nil {
+			cv.Configuration.TypeID = *configKeyID
+		}
+		if configValueID != nil {
+			cv.Configuration.ValueID = *configValueID
+		}
+		cvs = append(cvs, cv)
 	}
-	//not enough configs coming from polk - returns a variety of configs from a single vehicle
 
-	for _, vc := range vs {
-		var p products.Part
-		db, err := sql.Open("mysql", database.ConnectionString())
-		if err != nil {
-			return vcs, err
-		}
-		defer db.Close()
-		stmt, err := db.Prepare(getPartID)
-		if err != nil {
-			return vcs, err
-		}
-		defer stmt.Close()
-		err = stmt.QueryRow(vc.Vehicle.ID).Scan(&p.ID)
-		err = p.Basics()
-		vc.Part = p
-		vcs = append(vcs, vc)
-	}
-	return vcs, err
+	return cvs, err
+
 }

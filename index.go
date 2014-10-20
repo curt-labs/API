@@ -454,7 +454,8 @@ func main() {
 		})
 
 	})
-	m.Get("/vin/:vin", vinLookup.GetVehicleConfigs)
+
+	m.Get("/vin/:vin", vinLookup.GetParts)
 
 	// m.Get("/customer/auth/keyedUser", internalCors, customer_ctlr_new.KeyedUserAuthentication)
 	// m.Post("/customer/auth/new", internalCors, customer_ctlr_new.UserAuthentication)
