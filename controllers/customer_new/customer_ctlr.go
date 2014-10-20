@@ -82,8 +82,21 @@ func GetCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) s
 		user, err := customer_new.GetCustomerUserFromKey(key)
 		if err == nil {
 			user.Current = true
+			if user.Sudo {
+				if users, err := c.GetUsers(); err == nil {
+					for i, u := range users {
+						if user.Email == u.Email {
+							u.Current = true
+							users[i] = u
+						}
+					}
+					c.Users = users
+				}
+			} else {
+				c.Users = append(c.Users, user)
+			}
 		}
-		c.Users = append(c.Users, user)
+
 		userChan <- err
 	}()
 
