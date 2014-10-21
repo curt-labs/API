@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
+	"github.com/curt-labs/GoAPI/helpers/slack"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -24,25 +25,43 @@ func (p *Part) GetAttributes() (err error) {
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
-		if err = json.Unmarshal(data, &p.Attributes); err != nil {
+		if err = json.Unmarshal(data, &p.Attributes); err != nil && len(p.Attributes) > 0 {
 			return nil
 		}
 	}
 
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
+		msg := slack.Message{
+			Channel:  "debugging",
+			Username: "ninnemana",
+			Text:     err.Error(),
+		}
+		msg.Send()
 		return
 	}
 	defer db.Close()
 
 	qry, err := db.Prepare(partAttrStmt)
 	if err != nil {
+		msg := slack.Message{
+			Channel:  "debugging",
+			Username: "ninnemana",
+			Text:     err.Error(),
+		}
+		msg.Send()
 		return
 	}
 	defer qry.Close()
 
 	rows, err := qry.Query(p.ID)
 	if err != nil || rows == nil {
+		msg := slack.Message{
+			Channel:  "debugging",
+			Username: "ninnemana",
+			Text:     err.Error(),
+		}
+		msg.Send()
 		return err
 	}
 	defer rows.Close()
@@ -53,6 +72,14 @@ func (p *Part) GetAttributes() (err error) {
 		if err := rows.Scan(&attr.Key, &attr.Value); err == nil {
 			attrs = append(attrs, attr)
 		}
+	}
+	if len(attrs) == 0 {
+		msg := slack.Message{
+			Channel:  "debugging",
+			Username: "ninnemana",
+			Text:     fmt.Sprintf("Attributes empty for part #%d", p.ID),
+		}
+		msg.Send()
 	}
 	p.Attributes = attrs
 
