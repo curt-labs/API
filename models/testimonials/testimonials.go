@@ -10,11 +10,13 @@ import (
 )
 
 var (
-	getAllTestimonialsStmt = `select * from Testimonial`
-	getTestimonialStmt     = `select * from Testimonial where testimonialID = ?`
-	createTestimonial      = `insert into Testimonial (rating, title, testimonial, dateAdded, approved, active, first_name, last_name, location) values (?,?,?,?,?,?,?,?,?)`
-	updateTestimonial      = `update Testimonial set rating = ?, title = ?, testimonial = ?, approved = ?, active = ?, first_name = ?, last_name = ?, location = ? where testimonialID = ?`
-	deleteTestimonial      = `delete from Testimonial where testimonialID = ?`
+	getAllTestimonialsStmt    = `select * from Testimonial where active = 1 && approved = 1 order by dateAdded desc`
+	getTestimonialsByPageStmt = `select * from Testimonial where active = 1 && approved = 1 order by dateAdded desc limit ?,?`
+	getRandomTestimonalsStmt  = `select * from Testimonial where active = 1 && approved = 1 order by Rand() limit ?`
+	getTestimonialStmt        = `select * from Testimonial where testimonialID = ?`
+	createTestimonial         = `insert into Testimonial (rating, title, testimonial, dateAdded, approved, active, first_name, last_name, location) values (?,?,?,?,?,?,?,?,?)`
+	updateTestimonial         = `update Testimonial set rating = ?, title = ?, testimonial = ?, approved = ?, active = ?, first_name = ?, last_name = ?, location = ? where testimonialID = ?`
+	deleteTestimonial         = `delete from Testimonial where testimonialID = ?`
 )
 
 type Testimonials []Testimonial
@@ -31,20 +33,39 @@ type Testimonial struct {
 	Location  string    `json:"location,omitempty" xml:"location,omitempty"`
 }
 
-func GetAllTestimonials() (tests Testimonials, err error) {
+func GetAllTestimonials(page int, count int, randomize bool) (tests Testimonials, err error) {
+	var stmt *sql.Stmt
+	var rows *sql.Rows
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return
 	}
 	defer db.Close()
 
-	stmt, err := db.Prepare(getAllTestimonialsStmt)
-	if err != nil {
-		return
+	if page == 0 && count == 0 {
+		stmt, err = db.Prepare(getAllTestimonialsStmt)
+		if err != nil {
+			return
+		}
+		defer stmt.Close()
+		rows, err = stmt.Query()
+	} else if randomize {
+		stmt, err = db.Prepare(getRandomTestimonalsStmt)
+		if err != nil {
+			return
+		}
+		defer stmt.Close()
+		rows, err = stmt.Query(count)
+	} else {
+		stmt, err = db.Prepare(getTestimonialsByPageStmt)
+		if err != nil {
+			return
+		}
+		defer stmt.Close()
+		rows, err = stmt.Query(page, count)
 	}
-	defer stmt.Close()
 
-	rows, err := stmt.Query()
 	if err != nil {
 		return
 	}

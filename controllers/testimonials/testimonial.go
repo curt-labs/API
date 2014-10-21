@@ -12,7 +12,29 @@ import (
 )
 
 func GetAllTestimonials(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder) string {
-	tests, err := testimonials.GetAllTestimonials()
+	var err error
+	var page int
+	var count int
+	var randomize bool
+
+	qs := req.URL.Query()
+
+	if qs.Get("page") != "" {
+		if pg, err := strconv.Atoi(qs.Get("page")); err == nil {
+			page = pg
+		}
+	}
+	if qs.Get("count") != "" {
+		if c, err := strconv.Atoi(qs.Get("count")); err == nil {
+			count = c
+		}
+	}
+
+	if qs.Get("randomize") != "" {
+		randomize, err = strconv.ParseBool(qs.Get("randomize"))
+	}
+
+	tests, err := testimonials.GetAllTestimonials(page, count, randomize)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return err.Error()
