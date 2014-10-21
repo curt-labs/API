@@ -6,6 +6,7 @@ import (
 	"github.com/curt-labs/GoAPI/models/customer_new"
 	"github.com/go-martini/martini"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -142,6 +143,8 @@ func GetPricesByPart(rw http.ResponseWriter, r *http.Request, enc encoding.Encod
 	var err error
 	var ps customer_new.Prices
 	var partID int
+	qs := url.Query
+	log.Print(qs)
 
 	id := r.FormValue("id")
 	if id != "" {
