@@ -8,8 +8,7 @@ import (
 	"github.com/curt-labs/GoAPI/models/customer"
 	_ "github.com/go-sql-driver/mysql"
 	"html"
-	"log"
-	// "log"
+
 	// "strconv"
 	"strings"
 	"time"
@@ -27,11 +26,11 @@ type CustomerContent struct {
 	Revisions   CustomerContentRevisions
 }
 
-type IndexedContentType struct {
-	Id        int
-	Type      string
-	AllowHtml bool
-}
+// type IndexedContentType struct {
+// 	Id        int
+// 	Type      string
+// 	AllowHtml bool
+// }
 
 type ContentType struct {
 	Id        int
@@ -228,7 +227,6 @@ func GetCustomerContent(id int, key string) (c CustomerContent, err error) {
 		return c, err
 	}
 
-	log.Println("calling")
 	rows, err := stmt.Query(key, id)
 	if err != nil {
 		return c, err
@@ -420,9 +418,11 @@ func (content *CustomerContent) Save(partID, catID int, key string) error { //TO
 		return errors.New("Invalid content text: Content text was empty; if attempting to remove, use deletion endpoint.")
 	}
 
-	contentType, err := content.GetContentType()
-	if err != nil || contentType.Id == 0 {
-		return errors.New("Failed to match up to a content type.")
+	if content.ContentType.Id < 1 {
+		err := content.GetContentType()
+		if err != nil || content.ContentType.Id == 0 {
+			return errors.New("Failed to match up to a content type.")
+		}
 	}
 
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -440,7 +440,8 @@ func (content *CustomerContent) Save(partID, catID int, key string) error { //TO
 	if content.Hidden {
 		hidden = 1
 	}
-	_, err = stmt.Exec(content.Text, key, content.Id, contentType.Id, hidden) //TODO this right?
+
+	_, err = stmt.Exec(content.Text, content.ContentType.Id, hidden, key, content.Id) //TODO this right?
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -470,7 +471,6 @@ func (content *CustomerContent) Delete(partID, catID int, key string) error {
 		tx.Rollback()
 		return errors.New("Failed to delete content bridge.")
 	}
-	tx.Commit()
 
 	stmt, err = tx.Prepare(markCustomerContentDeleted)
 	if err != nil {
@@ -500,21 +500,22 @@ func (content *CustomerContent) insert(partID, catID int, key string) error {
 		return err
 	}
 
-	contentType, err := content.GetContentType()
+	err = content.GetContentType()
 	if err != nil {
 		return errors.New("Error getting content type.")
 	}
 
-	if !contentType.AllowHtml {
+	if !content.ContentType.AllowHtml {
 		content.Text = html.EscapeString(content.Text)
 	}
 
-	res, err := stmt.Exec(content.Text, contentType.Id, key)
+	res, err := stmt.Exec(content.Text, content.ContentType.Id, key)
+
 	if err != nil {
 		tx.Rollback()
 		return errors.New("Error executing statement.")
 	}
-
+	err = tx.Commit()
 	id, err := res.LastInsertId()
 	content.Id = int(id)
 
@@ -522,13 +523,12 @@ func (content *CustomerContent) insert(partID, catID int, key string) error {
 	return err
 }
 
-func (content CustomerContent) bridge(partID, catID int) error {
+func (content *CustomerContent) bridge(partID, catID int) error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
 	}
 	defer db.Close()
-
 	stmt, err := db.Prepare(checkExistingCustomerContentBridge)
 	if err != nil {
 		return err
@@ -536,7 +536,7 @@ func (content CustomerContent) bridge(partID, catID int) error {
 
 	var count int
 	err = stmt.QueryRow(partID, catID, content.Id).Scan(&count)
-	if count == 0 {
+	if count != 0 {
 		return err
 	}
 
@@ -549,10 +549,12 @@ func (content CustomerContent) bridge(partID, catID int) error {
 		tx.Rollback()
 		return err
 	}
+	err = tx.Commit()
 	return err
 }
 
-func (content CustomerContent) GetContentType() (ct IndexedContentType, err error) {
+//gets content by name
+func (content *CustomerContent) GetContentType() (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return
@@ -570,7 +572,7 @@ func (content CustomerContent) GetContentType() (ct IndexedContentType, err erro
 		cType = typeArr[1]
 	}
 
-	err = stmt.QueryRow(cType).Scan(&ct.Id, &ct.Type, &ct.AllowHtml)
+	err = stmt.QueryRow(cType).Scan(&content.ContentType.Id, &content.ContentType.Type, &content.ContentType.AllowHtml)
 	if err == sql.ErrNoRows {
 		err = nil
 	}
