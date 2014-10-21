@@ -18,11 +18,19 @@ func TestVinLookup(t *testing.T) {
 		if err != sql.ErrNoRows {
 			So(err, ShouldBeNil)
 			So(len(vs), ShouldBeGreaterThanOrEqualTo, 1)
+
 		}
 		if err != sql.ErrNoRows {
 			vs, err = VinPartLookup(taurusVin)
 			So(err, ShouldBeNil)
 			So(len(vs), ShouldBeGreaterThanOrEqualTo, 1)
+
+			//Make sure it's a Taurus - VINs should be constant
+			i := rand.Intn(len(vs))
+			So(vs[i].BaseVehicle.ModelName, ShouldEqual, "Taurus")
+
+			//We have 2010 Taurus Hitches
+			So(len(vs[i].Parts), ShouldBeGreaterThanOrEqualTo, 1)
 		}
 
 	})
@@ -48,5 +56,9 @@ func TestVinLookup(t *testing.T) {
 		vs, err := VinPartLookup(bogusVin)
 		So(err, ShouldNotBeNil)
 		So(vs, ShouldBeNil)
+
+		vcs, err := GetVehicleConfigs(bogusVin)
+		So(err, ShouldNotBeNil)
+		So(vcs, ShouldBeNil)
 	})
 }
