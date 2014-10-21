@@ -15,6 +15,9 @@ var (
 	addContactTypeStmt     = `insert into ContactType(name) values (?)`
 	updateContactTypeStmt  = `update ContactType set name = ? where contactTypeID = ?`
 	deleteContactTypeStmt  = `delete from ContactType where contactTypeID = ?`
+	getReceiverByType      = `select cr.contactReceiverID, cr.first_name, cr.last_name, cr.email from ContactReceiver_ContactType as crct 
+								left join ContactReceiver as cr on crct.contactReceiverID = cr.contactReceiverID 
+								where crct.contactTypeID = ?`
 )
 
 type ContactTypes []ContactType
@@ -109,6 +112,37 @@ func (ct *ContactType) Add() error {
 	}
 
 	return nil
+}
+
+func (ct *ContactType) GetReceivers() (crs ContactReceivers, err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return crs, err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(getReceiverByType)
+	if err != nil {
+		return crs, err
+	}
+	defer stmt.Close()
+	var cr ContactReceiver
+	res, err := stmt.Query(ct.ID)
+	if err != nil {
+		return crs, err
+	}
+	for res.Next() {
+		err = res.Scan(
+			&cr.ID,
+			&cr.FirstName,
+			&cr.LastName,
+			&cr.Email,
+		)
+		if err != nil {
+			return crs, err
+		}
+		crs = append(crs, cr)
+	}
+	return crs, err
 }
 
 func (ct *ContactType) Update() error {

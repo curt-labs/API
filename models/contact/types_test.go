@@ -1,6 +1,7 @@
 package contact
 
 import (
+	"database/sql"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
@@ -68,6 +69,33 @@ func TestTypes(t *testing.T) {
 				err = ct.Update()
 				So(ct.Name, ShouldEqual, "TESTER")
 				So(err, ShouldBeNil)
+
+				Convey("Test getReceiversByType", func() {
+					var cr ContactReceiver
+					cr.LastName = "testLName"
+					cr.Email = "testEmail@test.com"
+					err = cr.Add()
+					So(err, ShouldBeNil)
+
+					err = cr.Get()
+
+					Convey("Test Join", func() {
+						err = cr.CreateTypeJoin(ct)
+						t.Log(err)
+						crs, err := ct.GetReceivers()
+						if err != sql.ErrNoRows {
+							So(err, ShouldBeNil)
+							So(len(crs), ShouldBeGreaterThanOrEqualTo, 1)
+						}
+						//cleanup
+						cr.DeleteTypeJoin(ct)
+						So(err, ShouldBeNil)
+						cr.Delete()
+						So(err, ShouldBeNil)
+
+					})
+
+				})
 
 				Convey("Delete Valid ContactType", func() {
 					err = ct.Delete()

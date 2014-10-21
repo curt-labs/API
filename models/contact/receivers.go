@@ -10,11 +10,13 @@ import (
 )
 
 var (
-	getAllContactReceiversStmt = `select contactReceiverID, first_name, last_name, email from ContactReceiver`
-	getContactReceiverStmt     = `select contactReceiverID, first_name, last_name, email from ContactReceiver where contactReceiverID = ?`
-	addContactReceiverStmt     = `insert into ContactReceiver(first_name, last_name, email) values (?,?,?)`
-	updateContactReceiverStmt  = `update ContactReceiver set first_name = ?, last_name = ?, email = ? where contactReceiverID = ?`
-	deleteContactReceiverStmt  = `delete from ContactReceiver where contactReceiverID = ?`
+	getAllContactReceiversStmt    = `select contactReceiverID, first_name, last_name, email from ContactReceiver`
+	getContactReceiverStmt        = `select contactReceiverID, first_name, last_name, email from ContactReceiver where contactReceiverID = ?`
+	addContactReceiverStmt        = `insert into ContactReceiver(first_name, last_name, email) values (?,?,?)`
+	updateContactReceiverStmt     = `update ContactReceiver set first_name = ?, last_name = ?, email = ? where contactReceiverID = ?`
+	deleteContactReceiverStmt     = `delete from ContactReceiver where contactReceiverID = ?`
+	createReceiverContactTypeJoin = `insert into ContactReceiver_ContactType (ContactReceiverID, ContactTypeID) values (?,?)`
+	deleteReceiverContactTypeJoin = `delete from ContactReceiver_ContactType where ContactReceiverID = ? and  ContactTypeID = ?`
 )
 
 type ContactReceivers []ContactReceiver
@@ -162,4 +164,40 @@ func (cr *ContactReceiver) Delete() error {
 		return err
 	}
 	return errors.New("Invalid ContactReceiver ID")
+}
+
+func (cr *ContactReceiver) CreateTypeJoin(ct ContactType) (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(createReceiverContactTypeJoin)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(cr.ID, ct.ID)
+	if err != nil {
+		return err
+	}
+	return
+}
+
+func (cr *ContactReceiver) DeleteTypeJoin(ct ContactType) (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(deleteReceiverContactTypeJoin)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(cr.ID, ct.ID)
+	if err != nil {
+		return err
+	}
+	return
 }
