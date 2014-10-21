@@ -24,7 +24,7 @@ func (p *Part) GetAttributes() (err error) {
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
-		if err = json.Unmarshal(data, &p.Attributes); err != nil {
+		if err = json.Unmarshal(data, &p.Attributes); err != nil && len(p.Attributes) > 0 {
 			return nil
 		}
 	}
