@@ -141,12 +141,10 @@ func TestContent(t *testing.T) {
 		})
 		Convey("Testing GetContentType()", func() {
 			var c CustomerContent
-			var t IndexedContentType
 			c.ContentType.Type = getRandType()
-			ct, err := c.GetContentType()
+			err := c.GetContentType()
 			So(err, ShouldBeNil)
-			So(ct, ShouldNotBeNil)
-			So(ct, ShouldHaveSameTypeAs, t)
+			So(c.ContentType, ShouldNotBeNil)
 
 		})
 		Convey("AllCustomerContentTypes()", func() {

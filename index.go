@@ -412,13 +412,13 @@ func main() {
 			// Customer Part Content
 			r.Get("/cms/part", customer_ctlr_new.AllPartContent)
 			r.Get("/cms/part/:id", customer_ctlr_new.UniquePartContent)
-			r.Post("/cms/part/:id", customer_ctlr_new.UpdatePartContent)
+			r.Post("/cms/part/:id", customer_ctlr_new.UpdatePartContent) //partId
 			r.Delete("/cms/part/:id", customer_ctlr_new.DeletePartContent)
 
 			// Customer Category Content
 			r.Get("/cms/category", customer_ctlr_new.AllCategoryContent)
 			r.Get("/cms/category/:id", customer_ctlr_new.UniqueCategoryContent)
-			r.Post("/cms/category/:id", customer_ctlr_new.UpdateCategoryContent)
+			r.Post("/cms/category/:id", customer_ctlr_new.UpdateCategoryContent) //categoryId
 			r.Delete("/cms/category/:id", customer_ctlr_new.DeleteCategoryContent)
 
 			// Customer Content By Content Id
