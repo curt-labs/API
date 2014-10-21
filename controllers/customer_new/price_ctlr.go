@@ -6,7 +6,6 @@ import (
 	"github.com/curt-labs/GoAPI/models/customer_new"
 	"github.com/go-martini/martini"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -107,8 +106,10 @@ func CreateUpdatePrice(rw http.ResponseWriter, r *http.Request, enc encoding.Enc
 	}
 
 	if w.ID > 0 {
+
 		err = w.Update()
 	} else {
+
 		err = w.Create()
 	}
 
@@ -143,8 +144,6 @@ func GetPricesByPart(rw http.ResponseWriter, r *http.Request, enc encoding.Encod
 	var err error
 	var ps customer_new.Prices
 	var partID int
-	qs := url.Query
-	log.Print(qs)
 
 	id := r.FormValue("id")
 	if id != "" {
@@ -187,12 +186,8 @@ func GetSales(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, par
 		if err != nil {
 			return err.Error()
 		}
-	}
-	if params["id"] != "" {
-		c.Id, err = strconv.Atoi(params["id"])
-		if err != nil {
-			return err.Error()
-		}
+	} else {
+		return "No Customer Id Supplied."
 	}
 
 	start := r.FormValue("start")
@@ -200,12 +195,14 @@ func GetSales(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, par
 	startDate, err := time.Parse(inputTimeFormat, start)
 	endDate, err := time.Parse(inputTimeFormat, end)
 	if err != nil {
-		return err.Error()
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return ""
 	}
 
 	ps, err = c.GetPricesBySaleRange(startDate, endDate)
 	if err != nil {
-		return err.Error()
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return ""
 	}
 	return encoding.Must(enc.Encode(ps))
 }
@@ -219,19 +216,22 @@ func GetPriceByCustomer(rw http.ResponseWriter, r *http.Request, enc encoding.En
 	if id != "" {
 		c.Id, err = strconv.Atoi(id)
 		if err != nil {
-			return err.Error()
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return ""
 		}
 	}
 	if params["id"] != "" {
 		c.Id, err = strconv.Atoi(params["id"])
 		if err != nil {
-			return err.Error()
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return ""
 		}
 	}
 
 	ps, err = c.GetPricesByCustomer()
 	if err != nil {
-		return err.Error()
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return ""
 	}
 	return encoding.Must(enc.Encode(ps))
 }
