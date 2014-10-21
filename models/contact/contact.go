@@ -236,8 +236,8 @@ func (c *Contact) Update() error {
 	if strings.TrimSpace(c.Subject) == "" {
 		return errors.New("Subject can't be empty")
 	}
-	if strings.TrimSpace(c.Message) == "" || len(c.Message) < 50 {
-		return errors.New("Message can't be empty or be less than 50 characters")
+	if strings.TrimSpace(c.Message) == "" {
+		return errors.New("Message can't be empty")
 	}
 
 	db, err := sql.Open("mysql", database.ConnectionString())
