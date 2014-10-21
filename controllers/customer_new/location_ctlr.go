@@ -50,14 +50,18 @@ func GetAllLocations(rw http.ResponseWriter, r *http.Request, enc encoding.Encod
 	return encoding.Must(enc.Encode(c))
 }
 
-func SaveLocation(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+func SaveLocation(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var w customer_new.CustomerLocation
 	var err error
+	err = r.ParseForm()
 
-	id := r.FormValue("id")
-	if id != "" {
-		w.Id, err = strconv.Atoi(id)
-		w.Get()
+	id := params["id"]
+	if id == "" {
+		id = r.Form.Get("id")
+		if id != "" {
+			w.Id, err = strconv.Atoi(id)
+			w.Get()
+		}
 	}
 
 	name := r.FormValue("name")
@@ -168,11 +172,11 @@ func SaveLocationJson(w http.ResponseWriter, r *http.Request, enc encoding.Encod
 	return encoding.Must(enc.Encode(l))
 }
 
-func DeleteLocation(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+func DeleteLocation(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var w customer_new.CustomerLocation
 	var err error
 
-	id := r.FormValue("id")
+	id := params["id"]
 	if id != "" {
 		w.Id, err = strconv.Atoi(id)
 		if err != nil {

@@ -388,18 +388,18 @@ func main() {
 
 			r.Post("/user/resetPassword", customer_ctlr_new.ResetPassword)
 			r.Post("/user/changePassword", customer_ctlr_new.ChangePassword)
-			r.Delete("/user/:id", customer_ctlr_new.DeleteCustomerUser)
-			r.Delete("/allUsersByCustomerID/:id", customer_ctlr_new.DeleteCustomerUsersByCustomerID) //Takes CustomerID (UUID)---danger!
-			r.Post("/:id", customer_ctlr_new.SaveCustomer)
-			r.Delete("/:id", customer_ctlr_new.DeleteCustomer)
-			r.Put("", customer_ctlr_new.SaveCustomer)
+			r.Delete("/user/:id", internalCors, customer_ctlr_new.DeleteCustomerUser)
+			r.Delete("/allUsersByCustomerID/:id", internalCors, customer_ctlr_new.DeleteCustomerUsersByCustomerID) //Takes CustomerID (UUID)---danger!
 
 			r.Put("/location/json", internalCors, customer_ctlr_new.SaveLocationJson)
 			r.Post("/location/json/:id", internalCors, customer_ctlr_new.SaveLocationJson)
 			r.Put("/location", internalCors, customer_ctlr_new.SaveLocation)
 			r.Post("/location/:id", internalCors, customer_ctlr_new.SaveLocation)
+			r.Delete("/location/:id", internalCors, customer_ctlr_new.DeleteLocation)
+
 			r.Get("/locations", internalCors, customer_ctlr_new.GetLocations)
 			r.Post("/locations", internalCors, customer_ctlr_new.GetLocations)
+
 			r.Get("/price/:id", internalCors, customer_ctlr_new.GetCustomerPrice)           //{part id}
 			r.Get("/cartRef/:id", internalCors, customer_ctlr_new.GetCustomerCartReference) //{part id}
 
@@ -434,6 +434,10 @@ func main() {
 			r.Put("/prices", internalCors, customer_ctlr_new.CreateUpdatePrice)                //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
 			r.Delete("/prices/:id", internalCors, customer_ctlr_new.DeletePrice)               //{id} refers to customerPriceId
 			r.Get("/pricesByCustomer/:id", internalCors, customer_ctlr_new.GetPriceByCustomer) //{id} refers to customerId; returns CustomerPrices
+
+			r.Post("/:id", customer_ctlr_new.SaveCustomer)
+			r.Delete("/:id", internalCors, customer_ctlr_new.DeleteCustomer)
+			r.Put("", customer_ctlr_new.SaveCustomer)
 
 		})
 		m.Group("/dealers", func(r martini.Router) {
