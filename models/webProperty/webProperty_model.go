@@ -611,7 +611,29 @@ func GetAllWebPropertyRequirements() (WebPropertyRequirements, error) {
 	res, err := stmt.Query()
 	for res.Next() {
 		var w WebPropertyRequirement
-		res.Scan(&w.ID, &w.RequirementID, &w.ReqType, &w.Requirement, &w.Compliance, &w.WebPropID)
+		var reqType, req *string
+		var comp *bool
+		var wpid *int
+		res.Scan(
+			&w.ID,
+			&w.RequirementID,
+			&reqType,
+			&req,
+			&comp,
+			&wpid,
+		)
+		if reqType != nil {
+			w.ReqType = *reqType
+		}
+		if req != nil {
+			w.Requirement = *req
+		}
+		if comp != nil {
+			w.Compliance = *comp
+		}
+		if wpid != nil {
+			w.WebPropID = *wpid
+		}
 		ws = append(ws, w)
 	}
 	go redis.Setex(redis_key, ws, 86400)
@@ -812,9 +834,20 @@ func (r *WebPropertyRequirement) Get() error {
 	defer db.Close()
 
 	stmt, err := db.Prepare(getRequirement)
-	err = stmt.QueryRow(r.RequirementID).Scan(&r.ID, &r.ReqType, &r.Requirement)
+	var req, reqType *string
+	err = stmt.QueryRow(r.RequirementID).Scan(
+		&r.ID,
+		&reqType,
+		&req,
+	)
 	if err != nil {
 		return err
+	}
+	if reqType != nil {
+		r.ReqType = *reqType
+	}
+	if req != nil {
+		r.Requirement = *req
 	}
 
 	return nil
