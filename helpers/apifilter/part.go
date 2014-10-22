@@ -16,7 +16,7 @@ import (
 
 var (
 	GetExcludedAttributeTypes = `select distinct field from PartAttribute
-																where canFilter = 0`
+																where canFilter = 1`
 )
 
 func PartFilter(parts []products.Part, specs []interface{}) ([]Options, error) {
