@@ -34,9 +34,6 @@ func SendEmail(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, 
 		tos = append(tos, r.Email)
 	}
 
-	//test tos
-	// tos := []string{"jshenk@curtmfg.com", "john_shenk@hotmail.com"}
-
 	subject := "Email from the Aries Contact Form!"
 
 	//form contact data from requestBody
