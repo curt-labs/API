@@ -5,7 +5,7 @@ build:
     - script:
         name: 'Build docker image'
         code: |
-          docker build -t curt-labs/goapi .
+          docker build -t curtlabs/goapi .
     - script:
         name: 'Authenticate docker'
         code: |
@@ -13,7 +13,7 @@ build:
     - script:
         name: 'Push to docker hub'
         code: |
-          docker push curt-labs/goapi
+          docker push curtlabs/goapi
 
 deploy:
   steps:
