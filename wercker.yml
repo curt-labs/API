@@ -6,14 +6,11 @@ build:
         name: 'Build docker image'
         code: |
           docker build -t curtlabs/goapi .
-    - script:
-        name: 'Authenticate docker'
-        code: |
-          docker login -e="$DOCKER_EMAIL" -u="$DOCKER_USER" -p="$DOCKER_PASSWORD"
-    - script:
-        name: 'Push to docker hub'
-        code: |
-          docker push curtlabs/goapi
+    - carlsaturnino/docker-hub-push@1.0.2:
+        username: $DOCKER_USER
+        password: $DOCKER_PASSWORD
+        email: $DOCKER_EMAIL
+        image: curtlabs/goapi
 
 deploy:
   steps:
