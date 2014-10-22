@@ -3,12 +3,11 @@ package contact
 import (
 	"database/sql"
 	"errors"
-	"strings"
-	"time"
-
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/email"
 	_ "github.com/go-sql-driver/mysql"
+	"strings"
+	"time"
 )
 
 var (
@@ -251,7 +250,6 @@ func (c *Contact) Update() error {
 		return err
 	}
 	defer stmt.Close()
-
 	_, err = stmt.Exec(
 		c.FirstName, c.LastName, c.Email, c.Phone, c.Subject, c.Message, c.Type,
 		c.Address1, c.Address2, c.City, c.State, c.PostalCode, c.Country, c.ID)
