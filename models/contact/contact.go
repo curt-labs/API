@@ -216,6 +216,34 @@ func (c *Contact) Add() error {
 	return nil
 }
 
+func (c *Contact) AddButLessRestrictiveYouFieldValidatinFool() error {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(addContactStmt)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	res, err := stmt.Exec(
+		c.FirstName, c.LastName, c.Email, c.Phone, c.Subject, c.Message,
+		c.Type, c.Address1, c.Address2, c.City, c.State, c.PostalCode, c.Country)
+	if err != nil {
+		return err
+	}
+
+	if id, err := res.LastInsertId(); err != nil {
+		return err
+	} else {
+		c.ID = int(id)
+	}
+	return nil
+}
+
 func (c *Contact) Update() error {
 	if c.ID == 0 {
 		return errors.New("Invalid Contact ID")

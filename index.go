@@ -20,6 +20,7 @@ import (
 	"github.com/curt-labs/GoAPI/controllers/search"
 	"github.com/curt-labs/GoAPI/controllers/site"
 	"github.com/curt-labs/GoAPI/controllers/site_new"
+	"github.com/curt-labs/GoAPI/controllers/techSupport"
 	"github.com/curt-labs/GoAPI/controllers/testimonials"
 	"github.com/curt-labs/GoAPI/controllers/vehicle"
 	"github.com/curt-labs/GoAPI/controllers/videos"
@@ -327,6 +328,10 @@ func main() {
 	})
 
 	m.Get("/search/:term", search_ctlr.Search)
+	m.Group("/techSupport", func(r martini.Router) {
+		r.Get("/all", techSupport.GetAllTechSupport)
+		r.Put("", techSupport.CreateTechSupport)
+	})
 
 	m.Group("/testimonials", func(r martini.Router) {
 		r.Get("", testimonials.GetAllTestimonials)
