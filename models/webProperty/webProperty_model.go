@@ -125,7 +125,36 @@ func (w *WebProperty) Get() error {
 	notesMap := webPropNotes.ToMap()
 	requirementsMap := WebPropertyRequirements.ToMap()
 
-	err = stmt.QueryRow(w.ID).Scan(&w.ID, &w.Name, &w.CustID, &w.BadgeID, &w.Url, &w.IsEnabled, &w.SellerID, &w.WebPropertyType.ID, &w.IsFinalApproved, &w.IsEnabledDate, &w.IsDenied, &w.RequestedDate, &w.AddedDate)
+	var url, sid *string
+	var tid *int
+	err = stmt.QueryRow(w.ID).Scan(
+		&w.ID,
+		&w.Name,
+		&w.CustID,
+		&w.BadgeID,
+		&url,
+		&w.IsEnabled,
+		&sid,
+		&tid,
+		&w.IsFinalApproved,
+		&w.IsEnabledDate,
+		&w.IsDenied,
+		&w.RequestedDate,
+		&w.AddedDate,
+	)
+	if err != nil {
+		return err
+	}
+
+	if url != nil {
+		w.Url = *url
+	}
+	if sid != nil {
+		w.SellerID = *sid
+	}
+	if tid != nil {
+		w.WebPropertyType.ID = *tid
+	}
 
 	typeChan := make(chan int)
 	notesChan := make(chan int)
@@ -191,16 +220,18 @@ func GetByCustomer(CustID int) (ws WebProperties, err error) {
 
 	res, err := stmt.Query(CustID)
 	var w WebProperty
+	var url, sid *string
+	var tid *int
 	for res.Next() {
 		err = res.Scan(
 			&w.ID,
 			&w.Name,
 			&w.CustID,
 			&w.BadgeID,
-			&w.Url,
+			&url,
 			&w.IsEnabled,
-			&w.SellerID,
-			&w.WebPropertyType.ID,
+			&sid,
+			&tid,
 			&w.IsFinalApproved,
 			&w.IsEnabledDate,
 			&w.IsDenied,
@@ -210,6 +241,16 @@ func GetByCustomer(CustID int) (ws WebProperties, err error) {
 		if err != nil {
 			return
 		}
+		if url != nil {
+			w.Url = *url
+		}
+		if sid != nil {
+			w.SellerID = *sid
+		}
+		if tid != nil {
+			w.WebPropertyType.ID = *tid
+		}
+
 		typeChan := make(chan int)
 		notesChan := make(chan int)
 		requirementsChan := make(chan int)
@@ -279,10 +320,39 @@ func GetAll() (WebProperties, error) {
 	notesMap := webPropNotes.ToMap()
 	requirementsMap := WebPropertyRequirements.ToMap()
 
+	var url, sid *string
+	var tid *int
+
 	res, err := stmt.Query()
 	for res.Next() {
 		var w WebProperty
-		res.Scan(&w.ID, &w.Name, &w.CustID, &w.BadgeID, &w.Url, &w.IsEnabled, &w.SellerID, &w.WebPropertyType.ID, &w.IsFinalApproved, &w.IsEnabledDate, &w.IsDenied, &w.RequestedDate, &w.AddedDate)
+		res.Scan(
+			&w.ID,
+			&w.Name,
+			&w.CustID,
+			&w.BadgeID,
+			&url,
+			&w.IsEnabled,
+			&sid,
+			&tid,
+			&w.IsFinalApproved,
+			&w.IsEnabledDate,
+			&w.IsDenied,
+			&w.RequestedDate,
+			&w.AddedDate,
+		)
+		if err != nil {
+			return ws, err
+		}
+		if url != nil {
+			w.Url = *url
+		}
+		if sid != nil {
+			w.SellerID = *sid
+		}
+		if tid != nil {
+			w.WebPropertyType.ID = *tid
+		}
 
 		typeChan := make(chan int)
 		notesChan := make(chan int)
@@ -581,7 +651,8 @@ func (n *WebPropertyNote) Create() error {
 		return err
 	}
 	stmt, err := tx.Prepare(createNote)
-	n.DateAdded = time.Now()
+	da := time.Now()
+	n.DateAdded = &da
 	res, err := stmt.Exec(n.WebPropID, n.Text, n.DateAdded)
 	if err != nil {
 		tx.Rollback()
@@ -609,7 +680,8 @@ func (n *WebPropertyNote) Update() error {
 		return err
 	}
 	stmt, err := tx.Prepare(updateNote)
-	n.DateAdded = time.Now()
+	da := time.Now()
+	n.DateAdded = &da
 	_, err = stmt.Exec(n.WebPropID, n.Text, n.DateAdded, n.ID)
 	if err != nil {
 		tx.Rollback()
