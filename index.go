@@ -309,6 +309,7 @@ func main() {
 		r.Get("/type", webProperty_controller.GetAllTypes)               //all tyeps
 		r.Get("/note", webProperty_controller.GetAllNotes)               //all notes
 		r.Get("/requirement", webProperty_controller.GetAllRequirements) //requirements
+		r.Get("/customer", webProperty_controller.GetByPrivateKey)       //private key
 		r.Get("", internalCors, webProperty_controller.GetAll)
 		r.Get("/:id", internalCors, webProperty_controller.Get)                      //?id=id
 		r.Delete("/:id", internalCors, webProperty_controller.DeleteWebProperty)     //{id}

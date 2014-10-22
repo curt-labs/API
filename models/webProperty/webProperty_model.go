@@ -7,7 +7,6 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/pagination"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
-	// "log"
 	"strconv"
 	"time"
 )
@@ -24,10 +23,10 @@ type WebProperty struct {
 	WebPropertyType         WebPropertyType         `json:"webPropertyTypes,omitempty" xml:"webPropertyTypes,omitempty"`
 	WebPropertyRequirements WebPropertyRequirements `json:"webPropertyRequirements,omitempty" xml:"webPropertyRequirements,omitempty"`
 	IsFinalApproved         bool                    `json:"isFinalApproved,omitempty" xml:"isFinalApproved,omitempty"`
-	IsEnabledDate           time.Time               `json:"isEnabledDate,omitempty" xml:"isEnabledDate,omitempty"`
+	IsEnabledDate           *time.Time              `json:"isEnabledDate,omitempty" xml:"isEnabledDate,omitempty"`
 	IsDenied                bool                    `json:"isDenied,omitempty" xml:"isDenied,omitempty"`
-	RequestedDate           time.Time               `json:"requestedDate,omitempty" xml:"requestedDate,omitempty"`
-	AddedDate               time.Time               `json:"addedDate,omitempty" xml:"addedDate,omitempty"`
+	RequestedDate           *time.Time              `json:"requestedDate,omitempty" xml:"requestedDate,omitempty"`
+	AddedDate               *time.Time              `json:"addedDate,omitempty" xml:"addedDate,omitempty"`
 }
 
 type WebProperties []WebProperty
@@ -161,23 +160,22 @@ func (w *WebProperty) Get() error {
 	return err
 }
 
-func (w *WebProperty) GetByCustomer() (ws WebProperties, err error) {
-	redis_key := "goapi:webpropertyByCustomer:" + strconv.Itoa(w.CustID)
+func GetByCustomer(CustID int) (ws WebProperties, err error) {
+	redis_key := "goapi:webpropertyByCustomer:" + strconv.Itoa(CustID)
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &ws)
-		return err
+		return
 	}
-
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		return err
+		return
 	}
 	defer db.Close()
 
 	stmt, err := db.Prepare(getWebPropertiesByCustomer)
 	if err != nil {
-		return err
+		return
 	}
 	defer stmt.Close()
 
@@ -185,15 +183,15 @@ func (w *WebProperty) GetByCustomer() (ws WebProperties, err error) {
 	webPropNotes, err := GetAllWebPropertyNotes()
 	WebPropertyRequirements, err := GetAllWebPropertyRequirements()
 	if err != nil {
-		return err
+		return
 	}
 	typesMap := webPropTypes.ToMap()
 	notesMap := webPropNotes.ToMap()
 	requirementsMap := WebPropertyRequirements.ToMap()
 
-	res, err := stmt.Query(w.CustID)
-	for res.Next {
-
+	res, err := stmt.Query(CustID)
+	var w WebProperty
+	for res.Next() {
 		err = res.Scan(
 			&w.ID,
 			&w.Name,
@@ -210,7 +208,7 @@ func (w *WebProperty) GetByCustomer() (ws WebProperties, err error) {
 			&w.AddedDate,
 		)
 		if err != nil {
-			return err
+			return
 		}
 		typeChan := make(chan int)
 		notesChan := make(chan int)
@@ -240,9 +238,10 @@ func (w *WebProperty) GetByCustomer() (ws WebProperties, err error) {
 		<-typeChan
 		<-notesChan
 		<-requirementsChan
+		ws = append(ws, w)
 	}
 	go redis.Setex(redis_key, ws, 86400)
-	return err
+	return
 }
 
 func GetAll() (WebProperties, error) {
@@ -331,7 +330,8 @@ func (w *WebProperty) Create() (err error) {
 		return err
 	}
 	stmt, err := tx.Prepare(create)
-	w.AddedDate = time.Now()
+	add := time.Now()
+	w.AddedDate = &add
 	res, err := stmt.Exec(w.Name, w.CustID, w.Url, w.IsEnabled, w.SellerID, w.WebPropertyType.ID, w.IsFinalApproved, w.IsEnabledDate, w.IsDenied, w.RequestedDate, w.AddedDate)
 	if err != nil {
 		tx.Rollback()

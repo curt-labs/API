@@ -72,17 +72,15 @@ func Get(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params m
 }
 
 func GetByPrivateKey(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	var w webProperty_model.WebProperty
 	var err error
 	//get private key & custID
 	privateKey := r.FormValue("key")
 	custID, err := customer.GetCustomerIdFromKey(privateKey)
-	w.CustID = custID
-	err = w.GetByCust()
+	ws, err := webProperty_model.GetByCustomer(custID)
 	if err != nil {
-		return err
+		return err.Error()
 	}
-	return encoding.Must(enc.Encode(w))
+	return encoding.Must(enc.Encode(ws))
 }
 
 func GetAllTypes(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
@@ -208,13 +206,21 @@ func CreateUpdateWebProperty(rw http.ResponseWriter, r *http.Request, enc encodi
 			w.IsFinalApproved, err = strconv.ParseBool(isFinalApproved)
 		}
 		if isEnabledDate != "" {
-			w.IsEnabledDate, err = time.Parse(timeFormat, isEnabledDate)
+			en, err := time.Parse(timeFormat, isEnabledDate)
+			if err != nil {
+				return err.Error()
+			}
+			w.IsEnabledDate = &en
 		}
 		if isDenied != "" {
 			w.IsDenied, err = strconv.ParseBool(isDenied)
 		}
 		if requestedDate != "" {
-			w.RequestedDate, err = time.Parse(timeFormat, requestedDate)
+			req, err := time.Parse(timeFormat, requestedDate)
+			if err != nil {
+				return err.Error()
+			}
+			w.RequestedDate = &req
 		}
 		if typeID != "" {
 			w.WebPropertyType.ID, err = strconv.Atoi(typeID)
