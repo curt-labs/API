@@ -62,6 +62,7 @@ type WebPropertyRequirements []WebPropertyRequirement
 var (
 	getAllWebProperties               = "SELECT id, name, cust_ID, badgeID, url, isEnabled,sellerID, typeID , isFinalApproved, isEnabledDate, isDenied, requestedDate, addedDate FROM WebProperties"
 	getWebProperty                    = "SELECT id, name, cust_ID, badgeID, url, isEnabled,sellerID, typeID , isFinalApproved, isEnabledDate, isDenied, requestedDate, addedDate FROM WebProperties WHERE id = ?"
+	getWebPropertiesByCustomer        = "SELECT id, name, cust_ID, badgeID, url, isEnabled,sellerID, typeID , isFinalApproved, isEnabledDate, isDenied, requestedDate, addedDate FROM WebProperties WHERE cust_ID = ?"
 	getAllWebPropertyTypes            = "SELECT id, typeID, type FROM WebPropertyTypes"
 	getAllWebPropertyNotes            = "SELECT id, webPropID, text, dateAdded FROM WebPropNotes"
 	getAllWebPropertyRequirements     = "SELECT wprc.ID, wpr.ID, wpr.ReqType, wpr.Requirement, wprc.Compliance, wprc.WebPropertiesID FROM WebPropRequirementCheck AS wprc LEFT JOIN WebPropRequirements AS wpr ON wpr.ID = wprc.WebPropRequirementsID"
@@ -94,13 +95,12 @@ const (
 )
 
 func (w *WebProperty) Get() error {
-	var ws WebProperties
 	var err error
 
 	redis_key := "goapi:webproperty:" + strconv.Itoa(w.ID)
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
-		err = json.Unmarshal(data, &ws)
+		err = json.Unmarshal(data, &w)
 		return err
 	}
 
@@ -158,6 +158,90 @@ func (w *WebProperty) Get() error {
 	<-requirementsChan
 
 	go redis.Setex(redis_key, w, 86400)
+	return err
+}
+
+func (w *WebProperty) GetByCustomer() (ws WebProperties, err error) {
+	redis_key := "goapi:webpropertyByCustomer:" + strconv.Itoa(w.CustID)
+	data, err := redis.Get(redis_key)
+	if err == nil && len(data) > 0 {
+		err = json.Unmarshal(data, &ws)
+		return err
+	}
+
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(getWebPropertiesByCustomer)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	webPropTypes, err := GetAllWebPropertyTypes()
+	webPropNotes, err := GetAllWebPropertyNotes()
+	WebPropertyRequirements, err := GetAllWebPropertyRequirements()
+	if err != nil {
+		return err
+	}
+	typesMap := webPropTypes.ToMap()
+	notesMap := webPropNotes.ToMap()
+	requirementsMap := WebPropertyRequirements.ToMap()
+
+	res, err := stmt.Query(w.CustID)
+	for res.Next {
+
+		err = res.Scan(
+			&w.ID,
+			&w.Name,
+			&w.CustID,
+			&w.BadgeID,
+			&w.Url,
+			&w.IsEnabled,
+			&w.SellerID,
+			&w.WebPropertyType.ID,
+			&w.IsFinalApproved,
+			&w.IsEnabledDate,
+			&w.IsDenied,
+			&w.RequestedDate,
+			&w.AddedDate,
+		)
+		if err != nil {
+			return err
+		}
+		typeChan := make(chan int)
+		notesChan := make(chan int)
+		requirementsChan := make(chan int)
+		go func() error {
+			if _, ok := typesMap[w.WebPropertyType.ID]; ok {
+				w.WebPropertyType = typesMap[w.WebPropertyType.ID]
+			}
+			typeChan <- 1
+			return nil
+		}()
+		go func() error {
+			if _, ok := notesMap[w.ID]; ok {
+				w.WebPropertyNotes = append(w.WebPropertyNotes, notesMap[w.ID])
+			}
+			notesChan <- 1
+			return nil
+		}()
+		go func() error {
+			if _, ok := requirementsMap[w.ID]; ok {
+				w.WebPropertyRequirements = append(w.WebPropertyRequirements, requirementsMap[w.ID])
+			}
+			requirementsChan <- 1
+			return nil
+		}()
+
+		<-typeChan
+		<-notesChan
+		<-requirementsChan
+	}
+	go redis.Setex(redis_key, ws, 86400)
 	return err
 }
 

@@ -71,6 +71,20 @@ func Get(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params m
 	return encoding.Must(enc.Encode(w))
 }
 
+func GetByPrivateKey(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+	var w webProperty_model.WebProperty
+	var err error
+	//get private key & custID
+	privateKey := r.FormValue("key")
+	custID, err := customer.GetCustomerIdFromKey(privateKey)
+	w.CustID = custID
+	err = w.GetByCust()
+	if err != nil {
+		return err
+	}
+	return encoding.Must(enc.Encode(w))
+}
+
 func GetAllTypes(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 	props, err := webProperty_model.GetAllWebPropertyTypes()
 	if err != nil {
