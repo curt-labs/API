@@ -18,6 +18,8 @@ var (
 	createReceiverContactTypeJoin           = `insert into ContactReceiver_ContactType (ContactReceiverID, ContactTypeID) values (?,?)`
 	deleteReceiverContactTypeJoin           = `delete from ContactReceiver_ContactType where ContactReceiverID = ? and  ContactTypeID = ?`
 	deleteReceiverContactTypeJoinByReceiver = `delete from ContactReceiver_ContactType where ContactReceiverID = ?`
+	getContactTypesByReceiver               = `select crct.contactTypeID, ct.name from ContactReceiver_ContactType as crct 
+												left join ContactType as ct on crct.ContactTypeID = ct.contactTypeID where crct.contactReceiverID = ?`
 )
 
 type ContactReceivers []ContactReceiver
@@ -58,6 +60,10 @@ func GetAllContactReceivers() (receivers ContactReceivers, err error) {
 		if err != nil {
 			return
 		}
+		err = cr.GetContactTypes()
+		if err != nil {
+			return
+		}
 		receivers = append(receivers, cr)
 	}
 	defer rows.Close()
@@ -85,6 +91,7 @@ func (cr *ContactReceiver) Get() error {
 			&cr.LastName,
 			&cr.Email,
 		)
+		err = cr.GetContactTypes()
 
 		return err
 	}
@@ -191,6 +198,30 @@ func (cr *ContactReceiver) Delete() error {
 		return err
 	}
 	return errors.New("Invalid ContactReceiver ID")
+}
+
+//get a contact receiver's contact types
+func (cr *ContactReceiver) GetContactTypes() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(getContactTypesByReceiver)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	var ct ContactType
+	res, err := stmt.Query(cr.ID)
+	for res.Next() {
+		err = res.Scan(&ct.ID, &ct.Name)
+		if err != nil {
+			return err
+		}
+		cr.ContactTypes = append(cr.ContactTypes, ct)
+	}
+	return err
 }
 
 func (cr *ContactReceiver) CreateTypeJoin(ct ContactType) (err error) {

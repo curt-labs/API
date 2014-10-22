@@ -36,11 +36,14 @@ func TestReceivers(t *testing.T) {
 	})
 
 	Convey("Testing Add/Update/Delete", t, func() {
+		ct := ContactType{Name: "TestType"}
+		ct.Add()
 		cr = ContactReceiver{
 			FirstName: "TEST",
 			LastName:  "TEST",
 			Email:     "test@test.com",
 		}
+		cr.ContactTypes = append(cr.ContactTypes, ct)
 
 		Convey("Add Missing Values", func() {
 			Convey("Missing Email", func() {
@@ -74,17 +77,27 @@ func TestReceivers(t *testing.T) {
 				So(cr.LastName, ShouldEqual, "Flintstone")
 				So(err, ShouldBeNil)
 
+				Convey("Test Get now that it's valid and has a new type", func() {
+					err = cr.Get()
+					So(err, ShouldBeNil)
+
+				})
+
 				Convey("Delete Valid ContactReceiver", func() {
 					err = cr.Delete()
 					So(err, ShouldBeNil)
 				})
 			})
+
 		})
 
 		Convey("Delete Empty ContactReceiver", func() {
 			rec := ContactReceiver{}
 			err = rec.Delete()
 			So(err, ShouldNotBeNil)
+			err = ct.Delete()
+			So(err, ShouldBeNil)
+
 		})
 	})
 }
