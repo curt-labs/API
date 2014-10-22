@@ -1,16 +1,32 @@
-box: wercker/default
+box: wercker-labs/docker
+
+build:
+  steps:
+    - script:
+        name: 'Build docker image'
+        code: |
+          docker build -t curt-labs/goapi .
+    - script:
+        name: 'Authenticate docker'
+        code: |
+          docker login -e="$DOCKER_EMAIL" -u="$DOCKER_USER" -p="$DOCKER_PASSWORD"
+    - script:
+        name: 'Push to docker hub'
+        code: |
+          docker push curt-labs/goapi
+
 deploy:
   steps:
-    -  add-to-known_hosts:
-         hostname: $SERVER_HOSTNAME
-    -  add-ssh-key:
-         keyname: GCE
-    -  script:
-         name: Remove symlink
-         code: |
-           ssh deployer@$SERVER_HOSTNAME 'sudo rm -f /etc/service/goapi'
-           ssh deployer@$SERVER_HOSTNAME 'sudo docker pull curtlabs/goapi'
-           ssh deployer@$SERVER_HOSTNAME 'sudo docker stop goapi'
-           ssh deployer@$SERVER_HOSTNAME 'sudo docker rm goapi'
-           ssh deployer@$SERVER_HOSTNAME 'sudo docker run -d -i --name goapi --env-file='/home/deployer/env' -p 127.0.0.1:8080:80 curtlabs/goapi /home/deployer/gosrc/src/github.com/curt-labs/GoAPI/GoAPI -http=:80'
-           ssh deployer@$SERVER_HOSTNAME 'sudo ln -s /etc/sv/goapi /etc/service/'
+    - add-to-known_hosts:
+        hostname: $SERVER_HOSTNAME
+    - add-ssh-key:
+        keyname: GCE
+    - script:
+        name: 'Deploy across environment'
+        code: |
+          ssh deployer@$SERVER_HOSTNAME 'sudo rm -f /etc/service/goapi'
+          ssh deployer@$SERVER_HOSTNAME 'sudo docker pull curtlabs/goapi'
+          ssh deployer@$SERVER_HOSTNAME 'sudo docker stop goapi'
+          ssh deployer@$SERVER_HOSTNAME 'sudo docker rm goapi'
+          ssh deployer@$SERVER_HOSTNAME 'sudo docker run -d -i --name goapi --env-file='/home/deployer/env' -p 127.0.0.1:8080:80 curtlabs/goapi /home/deployer/gosrc/src/github.com/curt-labs/GoAPI/GoAPI -http=:80'
+          ssh deployer@$SERVER_HOSTNAME 'sudo ln -s /etc/sv/goapi /etc/service/'
