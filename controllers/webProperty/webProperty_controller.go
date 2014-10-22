@@ -1,10 +1,15 @@
 package webProperty_controller
 
 import (
+	"encoding/json"
+	// "errors"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
+	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/curt-labs/GoAPI/models/webProperty"
 	"github.com/go-martini/martini"
+	"io/ioutil"
+	// "log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -121,78 +126,91 @@ func GetAllRequirements(rw http.ResponseWriter, r *http.Request, enc encoding.En
 func CreateUpdateWebProperty(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var w webProperty_model.WebProperty
 	var err error
+	//get private key & custID
+	privateKey := r.FormValue("key")
+	custID, err := customer.GetCustomerIdFromKey(privateKey)
+	w.CustID = custID
 
-	idStr := r.FormValue("id")
-	if idStr != "" {
-		w.ID, err = strconv.Atoi(idStr)
+	//determine content type
+	contType := r.Header.Get("Content-Type")
+	if contType == "application/json" {
+		//json
+		requestBody, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			return err.Error()
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return encoding.Must(enc.Encode(false))
 		}
-	}
-	if params["id"] != "" {
-		w.ID, err = strconv.Atoi(params["id"])
+
+		err = json.Unmarshal(requestBody, &w)
 		if err != nil {
-			return err.Error()
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return encoding.Must(enc.Encode(false))
 		}
-	}
-	if w.ID > 0 {
-		w.Get()
-	}
+	} else {
+		idStr := r.FormValue("id")
+		if idStr != "" {
+			w.ID, err = strconv.Atoi(idStr)
+			if err != nil {
+				return err.Error()
+			}
+		}
+		if params["id"] != "" {
+			w.ID, err = strconv.Atoi(params["id"])
+			if err != nil {
+				return err.Error()
+			}
+		}
+		if w.ID > 0 {
+			w.Get()
+		}
 
-	name := r.FormValue("name")
-	custID := r.FormValue("custID")
-	badgeID := r.FormValue("badgeID")
-	url := r.FormValue("url")
-	isEnabled := r.FormValue("isEnabled")
-	sellerID := r.FormValue("sellerID")
-	webPropertyTypeID := r.FormValue("webPropertyTypeID")
-	isFinalApproved := r.FormValue("metaDescription")
-	isEnabledDate := r.FormValue("metaDescription")
-	isDenied := r.FormValue("metaDescription")
-	requestedDate := r.FormValue("metaDescription")
-	typeID := r.FormValue("typeID")
+		name := r.FormValue("name")
+		url := r.FormValue("url")
+		isEnabled := r.FormValue("isEnabled")
+		sellerID := r.FormValue("sellerID")
+		webPropertyTypeID := r.FormValue("webPropertyTypeID")
+		isFinalApproved := r.FormValue("metaDescription")
+		isEnabledDate := r.FormValue("metaDescription")
+		isDenied := r.FormValue("metaDescription")
+		requestedDate := r.FormValue("metaDescription")
+		typeID := r.FormValue("typeID")
 
-	if name != "" {
-		w.Name = name
-	}
-	if custID != "" {
-		w.CustID, err = strconv.Atoi(custID)
-	}
-	if badgeID != "" {
-		w.BadgeID = badgeID
-	}
-	if url != "" {
-		w.Url = url
-	}
-	if isEnabled != "" {
-		w.IsEnabled, err = strconv.ParseBool(isEnabled)
-	}
-	if sellerID != "" {
-		w.SellerID = sellerID
-	}
-	if webPropertyTypeID != "" {
-		w.WebPropertyType.ID, err = strconv.Atoi(webPropertyTypeID)
-	}
-	if isFinalApproved != "" {
-		w.IsFinalApproved, err = strconv.ParseBool(isFinalApproved)
-	}
-	if isEnabledDate != "" {
-		w.IsEnabledDate, err = time.Parse(timeFormat, isEnabledDate)
-	}
-	if isDenied != "" {
-		w.IsDenied, err = strconv.ParseBool(isDenied)
-	}
-	if requestedDate != "" {
-		w.RequestedDate, err = time.Parse(timeFormat, requestedDate)
-	}
-	if typeID != "" {
-		w.WebPropertyType.ID, err = strconv.Atoi(typeID)
+		if name != "" {
+			w.Name = name
+		}
+		if url != "" {
+			w.Url = url
+		}
+		if isEnabled != "" {
+			w.IsEnabled, err = strconv.ParseBool(isEnabled)
+		}
+		if sellerID != "" {
+			w.SellerID = sellerID
+		}
+		if webPropertyTypeID != "" {
+			w.WebPropertyType.ID, err = strconv.Atoi(webPropertyTypeID)
+		}
+		if isFinalApproved != "" {
+			w.IsFinalApproved, err = strconv.ParseBool(isFinalApproved)
+		}
+		if isEnabledDate != "" {
+			w.IsEnabledDate, err = time.Parse(timeFormat, isEnabledDate)
+		}
+		if isDenied != "" {
+			w.IsDenied, err = strconv.ParseBool(isDenied)
+		}
+		if requestedDate != "" {
+			w.RequestedDate, err = time.Parse(timeFormat, requestedDate)
+		}
+		if typeID != "" {
+			w.WebPropertyType.ID, err = strconv.Atoi(typeID)
+		}
 	}
 
 	if w.ID > 0 {
 		err = w.Update()
 	} else {
-		//notes (text) and property requirements (reqID) can bre created when web property is created
+		//notes (text) and property requirements (reqID) can be created when web property is created
 		notes := r.Form["note"]
 		for _, v := range notes {
 			var n webProperty_model.WebPropertyNote

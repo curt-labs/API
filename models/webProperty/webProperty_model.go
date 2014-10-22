@@ -65,7 +65,7 @@ var (
 	getAllWebPropertyTypes            = "SELECT id, typeID, type FROM WebPropertyTypes"
 	getAllWebPropertyNotes            = "SELECT id, webPropID, text, dateAdded FROM WebPropNotes"
 	getAllWebPropertyRequirements     = "SELECT wprc.ID, wpr.ID, wpr.ReqType, wpr.Requirement, wprc.Compliance, wprc.WebPropertiesID FROM WebPropRequirementCheck AS wprc LEFT JOIN WebPropRequirements AS wpr ON wpr.ID = wprc.WebPropRequirementsID"
-	create                            = "INSERT INTO WebProperties (name, cust_ID, badgeID, url, isEnabled,sellerID, typeID , isFinalApproved, isEnabledDate, isDenied, requestedDate, addedDate) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
+	create                            = "INSERT INTO WebProperties (name, cust_ID, badgeID, url, isEnabled,sellerID, typeID , isFinalApproved, isEnabledDate, isDenied, requestedDate, addedDate) VALUES (?,?,UUID(),?,?,?,?,?,?,?,?,?)"
 	deleteWebProp                     = "DELETE FROM WebProperties WHERE id = ?"
 	createNote                        = "INSERT INTO WebPropNotes (webPropID, text, dateAdded) VALUES (?,?,?)"
 	updateNote                        = "UPDATE WebPropNotes SET webPropID = ?, text = ?, dateAdded = ? WHERE id =?"
@@ -74,7 +74,7 @@ var (
 	createRequirementsBridge          = "INSERT INTO WebPropRequirementCheck (WebPropertiesID, Compliance, WebPropRequirementsID) VALUES (?,?,?)"
 	deleteRequirementsBridge          = "DELETE FROM WebPropRequirementCheck WHERE id = ?"
 	deletePropertyRequirementsBridges = "DELETE FROM WebPropRequirementCheck WHERE WebPropertiesID = ?"
-	update                            = "UPDATE WebProperties SET name = ?, cust_ID = ?, badgeID = ?, url = ?, isEnabled = ?,sellerID = ?, typeID = ?, isFinalApproved = ?, isEnabledDate = ?, isDenied = ?, requestedDate = ? WHERE id = ?"
+	update                            = "UPDATE WebProperties SET name = ?, cust_ID = ?,url = ?, isEnabled = ?,sellerID = ?, typeID = ?, isFinalApproved = ?, isEnabledDate = ?, isDenied = ?, requestedDate = ? WHERE id = ?"
 	search                            = `SELECT id, name, cust_ID, badgeID, url, isEnabled,sellerID, typeID , isFinalApproved, isEnabledDate, isDenied, requestedDate, addedDate FROM WebProperties
 									 WHERE  name LIKE ? AND cust_ID LIKE ? AND url LIKE ? AND isEnabled LIKE ? AND sellerID LIKE ? AND typeID  LIKE ? AND isFinalApproved LIKE ? AND isEnabledDate LIKE ? AND
 									 isDenied LIKE ? AND requestedDate LIKE ? AND addedDate LIKE ? `
@@ -248,7 +248,7 @@ func (w *WebProperty) Create() (err error) {
 	}
 	stmt, err := tx.Prepare(create)
 	w.AddedDate = time.Now()
-	res, err := stmt.Exec(w.Name, w.CustID, w.BadgeID, w.Url, w.IsEnabled, w.SellerID, w.WebPropertyType.ID, w.IsFinalApproved, w.IsEnabledDate, w.IsDenied, w.RequestedDate, w.AddedDate)
+	res, err := stmt.Exec(w.Name, w.CustID, w.Url, w.IsEnabled, w.SellerID, w.WebPropertyType.ID, w.IsFinalApproved, w.IsEnabledDate, w.IsDenied, w.RequestedDate, w.AddedDate)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -295,7 +295,7 @@ func (w *WebProperty) Update() (err error) {
 		return err
 	}
 	stmt, err := tx.Prepare(update)
-	_, err = stmt.Exec(w.Name, w.CustID, w.BadgeID, w.Url, w.IsEnabled, w.SellerID, w.WebPropertyType.ID, w.IsFinalApproved, w.IsEnabledDate, w.IsDenied, w.RequestedDate, w.ID)
+	_, err = stmt.Exec(w.Name, w.CustID, w.Url, w.IsEnabled, w.SellerID, w.WebPropertyType.ID, w.IsFinalApproved, w.IsEnabledDate, w.IsDenied, w.RequestedDate, w.ID)
 	if err != nil {
 		tx.Rollback()
 		return err
