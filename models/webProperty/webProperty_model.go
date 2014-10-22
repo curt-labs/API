@@ -402,7 +402,19 @@ func (w *WebProperty) Create() (err error) {
 	stmt, err := tx.Prepare(create)
 	add := time.Now()
 	w.AddedDate = &add
-	res, err := stmt.Exec(w.Name, w.CustID, w.Url, w.IsEnabled, w.SellerID, w.WebPropertyType.ID, w.IsFinalApproved, w.IsEnabledDate, w.IsDenied, w.RequestedDate, w.AddedDate)
+	res, err := stmt.Exec(
+		w.Name,
+		w.CustID,
+		w.Url,
+		w.IsEnabled,
+		w.SellerID,
+		w.WebPropertyType.ID,
+		w.IsFinalApproved,
+		w.IsEnabledDate,
+		w.IsDenied,
+		w.RequestedDate,
+		w.AddedDate,
+	)
 	if err != nil {
 		tx.Rollback()
 		return err
