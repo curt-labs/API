@@ -48,7 +48,7 @@ func GetContact(rw http.ResponseWriter, req *http.Request, params martini.Params
 	return encoding.Must(enc.Encode(c))
 }
 
-func AddContact(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
+func AddContact(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder) string {
 	c := contact.Contact{
 		FirstName:  req.FormValue("first_name"),
 		LastName:   req.FormValue("last_name"),
@@ -59,7 +59,8 @@ func AddContact(rw http.ResponseWriter, req *http.Request, params martini.Params
 		Type:       req.FormValue("type"),
 		Address1:   req.FormValue("address1"),
 		Address2:   req.FormValue("address2"),
-		City:       req.FormValue("state"),
+		City:       req.FormValue("city"),
+		State:      req.FormValue("state"),
 		PostalCode: req.FormValue("postal_code"),
 		Country:    req.FormValue("country"),
 	}

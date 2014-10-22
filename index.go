@@ -172,7 +172,7 @@ func main() {
 		})
 		r.Get("", contact.GetAllContacts)
 		r.Get("/:id", contact.GetContact)
-		r.Post("/:id", contact.AddContact)
+		r.Post("", contact.AddContact)
 		r.Put("/:id", contact.UpdateContact)
 		r.Delete("/:id", contact.DeleteContact)
 	})
