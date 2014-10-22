@@ -39,10 +39,10 @@ type WebPropertyType struct {
 type WebPropertyTypes []WebPropertyType
 
 type WebPropertyNote struct {
-	ID        int       `json:"id,omitempty" xml:"id,omitempty"`
-	WebPropID int       `json:"webPropId,omitempty" xml:"webPropId,omitempty"`
-	Text      string    `json:"text,omitempty" xml:"text,omitempty"`
-	DateAdded time.Time `json:"dateAdded,omitempty" xml:"dateAdded,omitempty"`
+	ID        int        `json:"id,omitempty" xml:"id,omitempty"`
+	WebPropID int        `json:"webPropId,omitempty" xml:"webPropId,omitempty"`
+	Text      string     `json:"text,omitempty" xml:"text,omitempty"`
+	DateAdded *time.Time `json:"dateAdded,omitempty" xml:"dateAdded,omitempty"`
 }
 
 type WebPropertyNotes []WebPropertyNote
