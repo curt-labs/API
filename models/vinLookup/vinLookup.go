@@ -144,7 +144,7 @@ var (
 								LEFT JOIN BaseVehicle AS bv ON bv.ID = vv.BaseVehicleID
 								LEFT JOIN vcdb_Model AS vmd ON vmd.ID = bv.ModelID
 								LEFT JOIN vcdb_Make AS vmk ON vmk.ID = bv.MakeID 
-								LEFT JOIN vcdb_year AS vyr ON vyr.YearID = bv.YearID
+								LEFT JOIN vcdb_Year AS vyr ON vyr.YearID = bv.YearID
 								LEFT JOIN Submodel AS sm ON sm.ID = vv.SubmodelID
 								LEFT JOIN VehicleConfigAttribute AS vca ON vca.VehicleConfigID = vv.ConfigID
 								LEFT JOIN ConfigAttribute AS ca ON ca.ID = vca.AttributeID
@@ -310,19 +310,33 @@ func getAcesVehicle(vin string) (av AcesVehicle, configMap map[int]interface{}, 
 	for _, field := range x.Body.DecodeVinResponse.VinResponse.Fields {
 		switch field.Key {
 		case "ACES_BASE_VEHICLE":
-			av.AAIABaseVehicleID, err = strconv.Atoi(field.Value)
+			if field.Value != "" {
+				av.AAIABaseVehicleID, err = strconv.Atoi(field.Value)
+			}
 		case "ACES_MAKE_ID":
-			av.AAIAMakeID, err = strconv.Atoi(field.Value)
+			if field.Value != "" {
+				av.AAIAMakeID, err = strconv.Atoi(field.Value)
+			}
 		case "ACES_MDL_ID":
-			av.AAIAModelID, err = strconv.Atoi(field.Value)
+			if field.Value != "" {
+				av.AAIAModelID, err = strconv.Atoi(field.Value)
+			}
 		case "ACES_SUB_MDL_ID":
-			av.AAIASubmodelID, err = strconv.Atoi(field.Value)
+			if field.Value != "" {
+				av.AAIASubmodelID, err = strconv.Atoi(field.Value)
+			}
 		case "ACES_YEAR_ID":
-			av.AAIAYearID, err = strconv.Atoi(field.Value)
+			if field.Value != "" {
+				av.AAIAYearID, err = strconv.Atoi(field.Value)
+			}
 		case "ACES_REGION_ID":
-			av.AAIARegionID, err = strconv.Atoi(field.Value)
+			if field.Value != "" {
+				av.AAIARegionID, err = strconv.Atoi(field.Value)
+			}
 		case "ACES_VEHICLE_ID":
-			av.AcesID, err = strconv.Atoi(field.Value)
+			if field.Value != "" {
+				av.AcesID, err = strconv.Atoi(field.Value)
+			}
 		}
 	}
 	//check out them configs
@@ -338,24 +352,41 @@ func (av *AcesVehicle) checkConfigs(responseFields []Field) (configMap map[int]i
 	for _, field := range responseFields {
 		switch field.Key {
 		case "WHL_BAS_SHRST_INCHS":
-			configMap[1], err = strconv.Atoi(field.Value)
+			if field.Value != "" {
+				configMap[1], err = strconv.Atoi(field.Value)
+			}
 		case "ACES_BODY_TYPE":
-			configMap[2], err = strconv.Atoi(field.Value)
+			if field.Value != "" {
+				configMap[2], err = strconv.Atoi(field.Value)
+			}
 		case "ACES_DRIVE_ID":
-			configMap[3], err = strconv.Atoi(field.Value)
+			if field.Value != "" {
+				configMap[3], err = strconv.Atoi(field.Value)
+			}
 		case "DOOR_CNT":
-			configMap[4], err = strconv.Atoi(field.Value)
+			if field.Value != "" {
+				configMap[4], err = strconv.Atoi(field.Value)
+			}
 		case "ACES_ASP_ID":
-			configMap[8], err = strconv.Atoi(field.Value)
+			if field.Value != "" {
+				configMap[8], err = strconv.Atoi(field.Value)
+			}
 		case "ACES_ENG_VIN_ID":
-			configMap[16], err = strconv.Atoi(field.Value)
+			if field.Value != "" {
+				configMap[16], err = strconv.Atoi(field.Value)
+			}
 		case "ACES_FUEL":
-			configMap[20], err = strconv.Atoi(field.Value)
+			if field.Value != "" {
+				configMap[20], err = strconv.Atoi(field.Value)
+			}
 		case "TRANS_CD":
-			configMap[34] = field.Value
+			if field.Value != "" {
+				configMap[34] = field.Value
+			}
 		case "TRANS_OPT1_SPEED_CD":
-			configMap[38], err = strconv.Atoi(field.Value)
-
+			if field.Value != "" {
+				configMap[38], err = strconv.Atoi(field.Value)
+			}
 			if err != nil {
 				return configMap, err
 			}

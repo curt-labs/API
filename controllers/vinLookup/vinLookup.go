@@ -41,6 +41,10 @@ func GetConfigs(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, pa
 func GetPartsFromVehicleID(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	vehicleID := params["vehicleID"]
 	id, err := strconv.Atoi(vehicleID)
+	if err != nil {
+		log.Print(err)
+		return ""
+	}
 	var v vinLookup.CurtVehicle
 	v.ID = id
 	parts, err := v.GetPartsFromVehicleConfig()
