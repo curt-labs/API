@@ -10,12 +10,12 @@ import (
 )
 
 type Warranty struct {
-	ID           int
-	PartNumber   int
-	Date         *time.Time
-	SerialNumber string
-	Approved     bool
-	Contact      contact.Contact
+	ID           int             `json:"id,omitempty" xml:"id,omitempty"`
+	PartNumber   int             `json:"partNumber,omitempty" xml:"partNumber,omitempty"`
+	Date         *time.Time      `json:"date,omitempty" xml:"date,omitempty"`
+	SerialNumber string          `json:"serialNumber,omitempty" xml:"serialNumber,omitempty"`
+	Approved     bool            `json:"approved,omitempty" xml:"approved,omitempty"`
+	Contact      contact.Contact `json:"contact,omitempty" xml:"contact,omitempty"`
 }
 
 const (

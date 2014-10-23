@@ -25,21 +25,21 @@ var (
 
 type Contacts []Contact
 type Contact struct {
-	ID         int
-	FirstName  string
-	LastName   string
-	Email      string
-	Phone      string
-	Subject    string
-	Message    string
-	Created    time.Time
-	Type       string
-	Address1   string
-	Address2   string
-	City       string
-	State      string
-	PostalCode string
-	Country    string
+	ID         int       `json:"id,omitempty" xml:"id,omitempty"`
+	FirstName  string    `json:"firstName,omitempty" xml:"firstName,omitempty"`
+	LastName   string    `json:"lastName,omitempty" xml:"lastName,omitempty"`
+	Email      string    `json:"email" xml:"email,omitempty"`
+	Phone      string    `json:"phone,omitempty" xml:"phone,omitempty"`
+	Subject    string    `json:"subject,omitempty" xml:"subject,omitempty"`
+	Message    string    `json:"message,omitempty" xml:"message,omitempty"`
+	Created    time.Time `json:"created,omitempty" xml:"created,omitempty"`
+	Type       string    `json:"type,omitempty" xml:"type,omitempty"`
+	Address1   string    `json:"address1,omitempty" xml:"address1,omitempty"`
+	Address2   string    `json:"address2,omitempty" xml:"address2,omitempty"`
+	City       string    `json:"city,omitempty" xml:"city,omitempty"`
+	State      string    `json:"state,omitempty" xml:"state,omitempty"`
+	PostalCode string    `json:"postalCode,omitempty" xml:"postalCode,omitempty"`
+	Country    string    `json:"country,omitempty" xml:"country,omitempty"`
 }
 
 func GetAllContacts(page, count int) (contacts Contacts, err error) {

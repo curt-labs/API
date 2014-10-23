@@ -10,17 +10,17 @@ import (
 )
 
 type TechSupport struct {
-	ID            int
-	VehicleMake   string
-	VehicleModel  string
-	VehicleYear   int
-	PurchaseDate  time.Time
-	PurchasedFrom string
-	DealerName    string
-	ProductCode   string
-	DateCode      string
-	Issue         string
-	Contact       contact.Contact
+	ID            int             `json:"id,omitempty" xml:"id,omitempty"`
+	VehicleMake   string          `json:"vehicleMake,omitempty" xml:"vehicleMake,omitempty"`
+	VehicleModel  string          `json:"vehicleModel,omitempty" xml:"vehicleModel,omitempty"`
+	VehicleYear   int             `json:"vehicleYear,omitempty" xml:"vehicleYear,omitempty"`
+	PurchaseDate  time.Time       `json:"purchaseDate,omitempty" xml:"purchaseDate,omitempty"`
+	PurchasedFrom string          `json:"purchasedFrom,omitempty" xml:"purchasedFrom,omitempty"`
+	DealerName    string          `json:"dealerName,omitempty" xml:"dealerName,omitempty"`
+	ProductCode   string          `json:"productCode,omitempty" xml:"productCode,omitempty"`
+	DateCode      string          `json:"dateCode,omitempty" xml:"dateCode,omitempty"`
+	Issue         string          `json:"issue,omitempty" xml:"issue,omitempty"`
+	Contact       contact.Contact `json:"contact,omitempty" xml:"contact,omitempty"`
 }
 
 const (
