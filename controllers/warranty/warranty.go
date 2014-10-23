@@ -61,6 +61,7 @@ func CreateWarranty(rw http.ResponseWriter, req *http.Request, enc encoding.Enco
 	var err error
 
 	contactTypeID, err := strconv.Atoi(params["contactReceiverTypeID"]) //to whom the emails go
+	sendEmail, err := strconv.ParseBool(params["sendEmail"])
 
 	if contType == "application/json" {
 		//json
@@ -103,25 +104,25 @@ func CreateWarranty(rw http.ResponseWriter, req *http.Request, enc encoding.Enco
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return err.Error()
 	}
+	if sendEmail == true {
+		//Send Email
+		body :=
+			"Name: " + w.Contact.FirstName + " " + w.Contact.LastName + "\n" +
+				"Email: " + w.Contact.Email + "\n" +
+				"Phone: " + w.Contact.Phone + "\n" +
+				"Serial Number: " + w.SerialNumber + "\n" +
+				"Date: " + w.Date.String() + "\n" +
+				"Part Number: " + strconv.Itoa(w.PartNumber) + "\n"
 
-	//Send Email
-	body :=
-		"Name: " + w.Contact.FirstName + " " + w.Contact.LastName + "\n" +
-			"Email: " + w.Contact.Email + "\n" +
-			"Phone: " + w.Contact.Phone + "\n" +
-			"Serial Number: " + w.SerialNumber + "\n" +
-			"Date: " + w.Date.String() + "\n" +
-			"Part Number: " + strconv.Itoa(w.PartNumber) + "\n"
-
-	var ct contact.ContactType
-	ct.ID = contactTypeID
-	subject := "Email from Aries Warranty Applications"
-	err = contact.SendEmail(ct, subject, body) //contact type id, subject, techSupport
-	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		var ct contact.ContactType
+		ct.ID = contactTypeID
+		subject := "Email from Warranty Applications Form"
+		err = contact.SendEmail(ct, subject, body) //contact type id, subject, techSupport
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return err.Error()
+		}
 	}
-
 	//Return JSON
 	return encoding.Must(enc.Encode(w))
 }

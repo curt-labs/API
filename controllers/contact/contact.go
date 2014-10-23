@@ -56,6 +56,7 @@ func AddContact(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder,
 	var err error
 
 	contactTypeID, err := strconv.Atoi(params["contactReceiverTypeID"]) //to whom the emails go
+	sendEmail, err := strconv.ParseBool(params["sendEmail"])
 
 	if contType == "application/json" {
 		//json
@@ -92,29 +93,31 @@ func AddContact(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder,
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return err.Error()
 	}
+	if sendEmail == true {
+		//Send Email
+		body :=
+			"From: " + c.FirstName + " " + c.LastName + "\n" +
+				"Email: " + c.Email + "\n" +
+				"Phone: " + c.Phone + "\n" +
+				"Subject: " + c.Subject + "\n" +
+				"Time: " + c.Created.String() + "\n" +
+				"Type: " + c.Type + "\n" +
+				"Address1: " + c.Address1 + "\n" +
+				"Address2: " + c.Address2 + "\n" +
+				"City: " + c.City + "\n" +
+				"State: " + c.State + "\n" +
+				"PostalCode: " + c.PostalCode + "\n" +
+				"Country: " + c.Country + "\n\n" +
+				"Message: " + c.Message + "\n"
 
-	//Send Email
-	body :=
-		"Email: " + c.Email + "\n" +
-			"Phone: " + c.Phone + "\n" +
-			"Subject: " + c.Subject + "\n" +
-			"Time: " + c.Created.String() + "\n" +
-			"Type: " + c.Type + "\n" +
-			"Address1: " + c.Address1 + "\n" +
-			"Address2: " + c.Address2 + "\n" +
-			"City: " + c.City + "\n" +
-			"State: " + c.State + "\n" +
-			"PostalCode: " + c.PostalCode + "\n" +
-			"Country: " + c.Country + "\n\n" +
-			"Message: " + c.Message + "\n"
-
-	var ct contact.ContactType
-	ct.ID = contactTypeID
-	subject := "Email from Aries Contact Form"
-	err = contact.SendEmail(ct, subject, body) //contact type id, subject, techSupport
-	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		var ct contact.ContactType
+		ct.ID = contactTypeID
+		subject := "Email from Contact Form"
+		err = contact.SendEmail(ct, subject, body) //contact type id, subject, techSupport
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return err.Error()
+		}
 	}
 	//Return object
 	return encoding.Must(enc.Encode(c))

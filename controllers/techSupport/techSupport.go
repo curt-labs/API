@@ -61,6 +61,7 @@ func CreateTechSupport(rw http.ResponseWriter, req *http.Request, enc encoding.E
 	var err error
 
 	contactTypeID, err := strconv.Atoi(params["contactReceiverTypeID"]) //to whom the emails go
+	sendEmail, err := strconv.ParseBool(params["sendEmail"])
 
 	if contType == "application/json" {
 		//json
@@ -106,31 +107,31 @@ func CreateTechSupport(rw http.ResponseWriter, req *http.Request, enc encoding.E
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return err.Error()
 	}
+	if sendEmail == true {
+		//Send Email
+		body :=
+			"Name: " + t.Contact.FirstName + " " + t.Contact.LastName + "\n" +
+				"Email: " + t.Contact.Email + "\n" +
+				"Phone: " + t.Contact.Phone + "\n" +
+				"Make: " + t.VehicleMake + "\n" +
+				"Model: " + t.VehicleModel + "\n" +
+				"Year: " + strconv.Itoa(t.VehicleYear) + "\n" +
+				"Purchase Date: " + t.PurchaseDate.String() + "\n" +
+				"Purchased From: " + t.PurchasedFrom + "\n" +
+				"Dealer Name: " + t.DealerName + "\n" +
+				"Product Code: " + t.ProductCode + "\n" +
+				"Date Code: " + t.DateCode + "\n\n" +
+				"Issue: " + t.Issue + "\n"
 
-	//Send Email
-	body :=
-		"Name: " + t.Contact.FirstName + " " + t.Contact.LastName + "\n" +
-			"Email: " + t.Contact.Email + "\n" +
-			"Phone: " + t.Contact.Phone + "\n" +
-			"Make: " + t.VehicleMake + "\n" +
-			"Model: " + t.VehicleModel + "\n" +
-			"Year: " + strconv.Itoa(t.VehicleYear) + "\n" +
-			"Purchase Date: " + t.PurchaseDate.String() + "\n" +
-			"Purchased From: " + t.PurchasedFrom + "\n" +
-			"Dealer Name: " + t.DealerName + "\n" +
-			"Product Code: " + t.ProductCode + "\n" +
-			"Date Code: " + t.DateCode + "\n\n" +
-			"Issue: " + t.Issue + "\n"
-
-	var ct contact.ContactType
-	ct.ID = contactTypeID
-	subject := "Email from Aries Tech Support"
-	err = contact.SendEmail(ct, subject, body) //contact type id, subject, techSupport
-	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		var ct contact.ContactType
+		ct.ID = contactTypeID
+		subject := "Email from Tech Support Request Form"
+		err = contact.SendEmail(ct, subject, body) //contact type id, subject, techSupport
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return err.Error()
+		}
 	}
-
 	//Return JSON
 	return encoding.Must(enc.Encode(t))
 }
