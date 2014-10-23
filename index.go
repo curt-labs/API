@@ -175,7 +175,7 @@ func main() {
 		// r.Post("/sendmail/:id", contact.SendEmail)
 		r.Get("", contact.GetAllContacts)
 		r.Get("/:id", contact.GetContact)
-		r.Post("", contact.AddContact)
+		r.Post("/:contactReceiverTypeID", contact.AddContact) //contactReceiver determines who will receive the email
 		r.Put("/:id", contact.UpdateContact)
 		r.Delete("/:id", contact.DeleteContact)
 	})
@@ -334,14 +334,14 @@ func main() {
 		r.Get("/all", techSupport.GetAllTechSupport)
 		r.Get("/contact/:id", techSupport.GetTechSupportByContact)
 		r.Get("/:id", techSupport.GetTechSupport)
-		r.Put("/:contactReceiverTypeID", techSupport.CreateTechSupport) //contactType determines who receives the email
+		r.Post("/:contactReceiverTypeID", techSupport.CreateTechSupport) //contactType determines who receives the email
 		r.Delete("/:id", techSupport.DeleteTechSupport)
 	})
 	m.Group("/warranty", func(r martini.Router) {
 		r.Get("/all", warranty.GetAllWarranties)
 		r.Get("/contact/:id", warranty.GetWarrantyByContact)
 		r.Get("/:id", warranty.GetWarranty)
-		r.Put("/:contactReceiverTypeID", warranty.CreateWarranty) //contactType determines who receives the email
+		r.Post("/:contactReceiverTypeID", warranty.CreateWarranty) //contactType determines who receives the email
 		r.Delete("/:id", warranty.DeleteWarranty)
 	})
 

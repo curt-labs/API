@@ -49,10 +49,14 @@ func GetContact(rw http.ResponseWriter, req *http.Request, params martini.Params
 	return encoding.Must(enc.Encode(c))
 }
 
-func AddContact(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder) string {
+func AddContact(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
 	contType := req.Header.Get("Content-Type")
 
 	var c contact.Contact
+	var err error
+
+	contactTypeID, err := strconv.Atoi(params["contactReceiverTypeID"]) //to whom the emails go
+
 	if contType == "application/json" {
 		//json
 		requestBody, err := ioutil.ReadAll(req.Body)
@@ -105,15 +109,13 @@ func AddContact(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder)
 			"Message: " + c.Message + "\n"
 
 	var ct contact.ContactType
-	ct.ID = 232 //hard ass coded
-	// ct.ID = 6 //customer service
+	ct.ID = contactTypeID
 	subject := "Email from Aries Contact Form"
-	err := contact.SendEmail(ct, subject, body) //contact type id, subject, techSupport
+	err = contact.SendEmail(ct, subject, body) //contact type id, subject, techSupport
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return err.Error()
 	}
-
 	//Return object
 	return encoding.Must(enc.Encode(c))
 }

@@ -54,23 +54,15 @@ func (a *plainAuth) Next(fromServer []byte, more bool) ([]byte, error) {
 
 func Send(tos []string, subject string, body string, html bool) error {
 	// Bind SMTP Settings from Environment Variables
-	// if server := os.Getenv("EMAIL_SERVER"); server != "" {
-	// 	creds.Server = server
-	// 	creds.Address = os.Getenv("EMAIL_ADDRESS")
-	// 	creds.Username = os.Getenv("EMAIL_USERNAME")
-	// 	creds.Password = os.Getenv("EMAIL_PASSWORD")
-	// 	creds.SSL, _ = strconv.ParseBool(os.Getenv("EMAIL_SSL"))
-	// 	creds.Port, _ = strconv.Atoi(os.Getenv("EMAIL_PORT"))
+	if server := os.Getenv("EMAIL_SERVER"); server != "" {
+		creds.Server = server
+		creds.Address = os.Getenv("EMAIL_ADDRESS")
+		creds.Username = os.Getenv("EMAIL_USERNAME")
+		creds.Password = os.Getenv("EMAIL_PASSWORD")
+		creds.SSL, _ = strconv.ParseBool(os.Getenv("EMAIL_SSL"))
+		creds.Port, _ = strconv.Atoi(os.Getenv("EMAIL_PORT"))
 
-	// }
-	log.Print("OS", os.ModeDevice.String())
-
-	creds.Server = "smtp.gmail.com"
-	creds.Address = "no-reply@curtmfg.com"
-	creds.Username = "no-reply@curtmfg.com"
-	creds.Password = "eC0mm3rc3"
-	creds.SSL = true
-	creds.Port = 587
+	}
 
 	fullserver := creds.Server + ":" + strconv.Itoa(creds.Port)
 	mimetype := "text/plain"
