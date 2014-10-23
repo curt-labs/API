@@ -9,7 +9,6 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	"github.com/curt-labs/GoAPI/models/customer/content"
 	_ "github.com/go-sql-driver/mysql"
-	"log"
 	"net/url"
 	"strconv"
 	"strings"
@@ -564,7 +563,6 @@ func (c *Category) GetContent() (content []Content, err error) {
 }
 
 func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *map[string][]string) error {
-	start := time.Now()
 
 	c.ProductListing = &PaginatedProductListing{}
 	if c.ID == 0 {
@@ -602,13 +600,16 @@ func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *
 	if count == 0 {
 		count = DefaultPageCount
 	}
-	if page > 0 {
-		page = count * page
+	queryPage := page
+	if page == 1 {
+		queryPage = count
+	} else if page > 1 {
+		queryPage = count * (page - 1)
 	}
 
 	parts := make([]Part, 0)
 
-	redis_key := fmt.Sprintf("category:%d:parts:%d:%d", c.ID, page, count)
+	redis_key := fmt.Sprintf("category:%d:parts:%d:%d", c.ID, queryPage, count)
 
 	// First lets try to access the category:top endpoint in Redis
 	part_bytes, err := redis.Get(redis_key)
@@ -642,7 +643,7 @@ func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *
 			}
 			defer stmt.Close()
 
-			rows, err = stmt.Query(strings.Join(keys, ","), strings.Join(values, ","), c.ID, len(keys), page, count)
+			rows, err = stmt.Query(strings.Join(keys, ","), strings.Join(values, ","), c.ID, len(keys), queryPage, count)
 		} else {
 			stmt, err := db.Prepare(CategoryPartsStmt)
 			if err != nil {
@@ -650,7 +651,7 @@ func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *
 			}
 			defer stmt.Close()
 
-			rows, err = stmt.Query(c.ID, page, count)
+			rows, err = stmt.Query(c.ID, queryPage, count)
 		}
 
 		if err != nil || rows == nil {
@@ -698,7 +699,6 @@ func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *
 
 	go redis.Setex(redis_key, parts, redis.CacheTimeout)
 
-	log.Println(time.Since(start).Seconds())
 	return nil
 }
 
