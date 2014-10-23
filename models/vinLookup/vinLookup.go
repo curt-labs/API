@@ -45,9 +45,9 @@ type Submodel struct {
 }
 
 type VehicleConfiguration struct {
-	TypeID      int
+	TypeID      int //aka key id
 	ValueID     int
-	Type        string
+	Type        string //aka key
 	Value       string
 	AcesValueID int
 }
@@ -161,64 +161,35 @@ const (
 		ACES_CYLINDERS,ACES_RESERVED,DOOR_CNT,BODY_STYLE_DESC,WHL_BAS_SHRST_INCHS,TRK_BED_LEN_DESC,TRANS_CD,TRK_BED_LEN_CD,ENG_FUEL_DESC`
 )
 
-func VinPartLookup(vin string) (vs []CurtVehicle, err error) {
+func VinPartLookup(vin string) (ps []products.Part, err error) {
 	//get ACES vehicles
 	av, configMap, err := getAcesVehicle(vin)
 	if err != nil {
-		return vs, err
+		return ps, err
 	}
 
 	//get CURT vehicle
-	curtVehicles, err := av.getCurtVehicles(configMap)
+	l, err := av.getCurtVehicles(configMap)
+	if err != nil {
+		return ps, err
+	}
 
 	//get parts
-	var p products.Part
-	for _, v := range curtVehicles {
-		//get part id
-		db, err := sql.Open("mysql", database.ConnectionString())
-		if err != nil {
-			return vs, err
-		}
-		defer db.Close()
-		stmt, err := db.Prepare(getPartID)
-		if err != nil {
-			return vs, err
-		}
-		defer stmt.Close()
-		res, err := stmt.Query(v.ID)
-		for res.Next() {
-			err = res.Scan(&p.ID)
-			if err != nil {
-				return vs, err
-			}
-			//get part -- adds some weight
-			err = p.FromDatabase()
-			if err != nil {
-				return vs, err
-			}
-
-			//append to vehicle.parts
-			v.Parts = append(v.Parts, p)
-
-		}
-		//omit null vehicles (Base, pre-config vehicles with no associated parts)
-		if v.Parts != nil {
-			vs = append(vs, v)
-		}
-	}
-
-	return vs, err
+	ch := make(chan []products.Part)
+	go l.LoadParts(ch)
+	ps = <-ch
+	return ps, err
 }
 
-func GetVehicleConfigs(vin string) (curtVehicles []CurtVehicle, err error) {
+func GetVehicleConfigs(vin string) (l products.Lookup, err error) {
 	//get ACES vehicles
 	av, configMap, err := getAcesVehicle(vin)
 	if err != nil {
-		return curtVehicles, err
+		return l, err
 	}
 	//get CURT vehicle
-	curtVehicles, err = av.getCurtVehicles(configMap)
-	return curtVehicles, err
+	l, err = av.getCurtVehicles(configMap)
+	return l, err
 }
 
 //already have vehicleID (vcdb_vehicle.ID)? get parts
@@ -393,25 +364,25 @@ func (av *AcesVehicle) checkConfigs(responseFields []Field) (configMap map[int]i
 		}
 
 	}
-	// log.Print("ALL CBS", configMap)
+
 	return configMap, err
 }
 
-func (av *AcesVehicle) getCurtVehicles(configMap map[int]interface{}) (cvs []CurtVehicle, err error) { //get CURT vehicles
+func (av *AcesVehicle) getCurtVehicles(configMap map[int]interface{}) (l products.Lookup, err error) { //get CURT vehicles
 
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		return cvs, err
+		return l, err
 	}
 	defer db.Close()
 	stmt, err := db.Prepare(getCurtVehiclesPreConfig)
 	if err != nil {
-		return cvs, err
+		return l, err
 	}
 	defer stmt.Close()
 	res, err := stmt.Query(av.AAIABaseVehicleID, av.AAIASubmodelID)
 	if err != nil {
-		return cvs, err
+		return l, err
 	}
 
 	var sub, configKey, configValue *string
@@ -455,16 +426,45 @@ func (av *AcesVehicle) getCurtVehicles(configMap map[int]interface{}) (cvs []Cur
 			cv.Configuration.AcesValueID = *acesConfigValID
 		}
 
-		cvs = append(cvs, cv)
-		//Pop off configs that have non-conforming values
-		// log.Print("CONFIG TYP", cv.Configuration.TypeID)
+		// cvs = append(cvs, cv)
+		// //Pop off configs that have non-conforming values
+		// // log.Print("CONFIG TYP", cv.Configuration.TypeID)
+		// if name, ok := configMap[cv.Configuration.TypeID]; ok {
+		// 	// log.Print("CONFIG VAL ", name, " ACES CONVFIG VAL ", cv.Configuration.AcesValueID)
+		// 	if cv.Configuration.AcesValueID != name {
+		// 		cvs = cvs[:len(cvs)-1]
+		// 	}
+		// }
+
+		//convert to products.Lookup
+		var lookupConfig products.ConfigurationOption
+		var vehicleConfiguration products.Configuration
+
+		l.Vehicle.Base.Make = cv.BaseVehicle.MakeName
+		l.Vehicle.Base.Model = cv.BaseVehicle.ModelName
+		l.Vehicle.Base.Year = cv.BaseVehicle.YearID
+		l.Vehicle.Submodel = cv.Submodel.Name
+
 		if name, ok := configMap[cv.Configuration.TypeID]; ok {
-			// log.Print("CONFIG VAL ", name, " ACES CONVFIG VAL ", cv.Configuration.AcesValueID)
-			if cv.Configuration.AcesValueID != name {
-				cvs = cvs[:len(cvs)-1]
+
+			if cv.Configuration.AcesValueID == name {
+				l.Makes = append(l.Makes, cv.BaseVehicle.MakeName)
+				l.Models = append(l.Models, cv.BaseVehicle.ModelName)
+				l.Years = append(l.Years, cv.BaseVehicle.YearID)
+				l.Submodels = append(l.Submodels, cv.Submodel.Name)
+
+				lookupConfig.Type = cv.Configuration.Type
+				lookupConfig.Options = append(lookupConfig.Options, cv.Configuration.Value)
+
+				vehicleConfiguration.Key = cv.Configuration.Type
+				vehicleConfiguration.Value = cv.Configuration.Value
+
 			}
+			l.Configurations = append(l.Configurations, lookupConfig)
+			l.Vehicle.Configurations = append(l.Vehicle.Configurations, vehicleConfiguration)
 		}
 
 	}
-	return cvs, err
+
+	return l, err
 }
