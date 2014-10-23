@@ -25,6 +25,7 @@ import (
 	"github.com/curt-labs/GoAPI/controllers/vehicle"
 	"github.com/curt-labs/GoAPI/controllers/videos"
 	"github.com/curt-labs/GoAPI/controllers/vinLookup"
+	"github.com/curt-labs/GoAPI/controllers/warranty"
 	"github.com/curt-labs/GoAPI/controllers/webProperty"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/go-martini/martini"
@@ -328,9 +329,20 @@ func main() {
 	})
 
 	m.Get("/search/:term", search_ctlr.Search)
+
 	m.Group("/techSupport", func(r martini.Router) {
 		r.Get("/all", techSupport.GetAllTechSupport)
-		r.Put("", techSupport.CreateTechSupport)
+		r.Get("/contact/:id", techSupport.GetTechSupportByContact)
+		r.Get("/:id", techSupport.GetTechSupport)
+		r.Put("/:contactReceiverTypeID", techSupport.CreateTechSupport) //contactType determines who receives the email
+		r.Delete("/:id", techSupport.DeleteTechSupport)
+	})
+	m.Group("/warranty", func(r martini.Router) {
+		r.Get("/all", warranty.GetAllWarranties)
+		r.Get("/contact/:id", warranty.GetWarrantyByContact)
+		r.Get("/:id", warranty.GetWarranty)
+		r.Put("/:contactReceiverTypeID", warranty.CreateWarranty) //contactType determines who receives the email
+		r.Delete("/:id", warranty.DeleteWarranty)
 	})
 
 	m.Group("/testimonials", func(r martini.Router) {

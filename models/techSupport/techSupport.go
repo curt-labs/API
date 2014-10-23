@@ -54,7 +54,7 @@ func (t *TechSupport) Get() (err error) {
 	return
 }
 
-func GetAllTechSupportByContact(c contact.Contact) (ts []TechSupport, err error) {
+func (t *TechSupport) GetByContact() (ts []TechSupport, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return
@@ -65,7 +65,7 @@ func GetAllTechSupportByContact(c contact.Contact) (ts []TechSupport, err error)
 		return
 	}
 	defer stmt.Close()
-	rows, err := stmt.Query(c.ID)
+	rows, err := stmt.Query(t.Contact.ID)
 
 	ch := make(chan []TechSupport)
 	go populateTechSupports(rows, ch)

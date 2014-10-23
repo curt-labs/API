@@ -40,12 +40,28 @@ func GetTechSupport(rw http.ResponseWriter, req *http.Request, enc encoding.Enco
 	}
 	return encoding.Must(enc.Encode(t))
 }
+func GetTechSupportByContact(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+	var err error
+	var t techSupport.TechSupport
+	id := params["id"]
+	t.Contact.ID, err = strconv.Atoi(id)
+
+	ts, err := t.GetByContact()
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return err.Error()
+	}
+	return encoding.Must(enc.Encode(ts))
+}
 
 func CreateTechSupport(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
 	contType := req.Header.Get("Content-Type")
 
 	var t techSupport.TechSupport
 	var err error
+
+	contactTypeID, err := strconv.Atoi(params["contactReceiverTypeID"]) //to whom the emails go
+
 	if contType == "application/json" {
 		//json
 		requestBody, err := ioutil.ReadAll(req.Body)
@@ -107,10 +123,24 @@ func CreateTechSupport(rw http.ResponseWriter, req *http.Request, enc encoding.E
 			"Issue: " + t.Issue + "\n"
 
 	var ct contact.ContactType
-	ct.ID = 232 //hard ass coded
-	// ct.ID = 11 //tech services
+	ct.ID = contactTypeID
 	subject := "Email from Aries Tech Support"
 	err = contact.SendEmail(ct, subject, body) //contact type id, subject, techSupport
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return err.Error()
+	}
+
+	//Return JSON
+	return encoding.Must(enc.Encode(t))
+}
+
+func DeleteTechSupport(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+	var err error
+	var t techSupport.TechSupport
+	id, err := strconv.Atoi(params["id"])
+	t.ID = id
+	err = t.Delete()
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return err.Error()
