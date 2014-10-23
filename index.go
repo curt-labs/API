@@ -171,7 +171,7 @@ func main() {
 			r.Put("/:id", contact.UpdateContactReceiver)
 			r.Delete("/:id", contact.DeleteContactReceiver)
 		})
-		r.Post("/sendmail/:id", contact.SendEmail)
+		// r.Post("/sendmail/:id", contact.SendEmail)
 		r.Get("", contact.GetAllContacts)
 		r.Get("/:id", contact.GetContact)
 		r.Post("", contact.AddContact)
