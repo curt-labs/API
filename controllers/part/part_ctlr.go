@@ -446,6 +446,23 @@ func GetPrice(rw http.ResponseWriter, req *http.Request, params martini.Params, 
 	return encoding.Must(enc.Encode(p))
 }
 
+func OldPartNumber(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
+	var p products.Part
+	var err error
+	p.OldPartNumber = params["part"]
+
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+	err = p.GetPartByOldPartNumber()
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+	return encoding.Must(enc.Encode(p))
+}
+
 func CreatePart(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
 	var p products.Part
 	var err error

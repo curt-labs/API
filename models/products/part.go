@@ -57,6 +57,8 @@ var (
 					join ContentType as ct on c.cTypeID = ct.cTypeID
 					where partID = ? && ct.type = 'InstallationSheet'
 					limit 1`
+
+	getPartByOldpartNumber = `select partID, status, dateModified, dateAdded, shortDesc, priceCode, classID, featured, ACESPartTypeID from Part where oldPartNumber = ?`
 	//create
 	createPart = `INSERT INTO Part (partID, status, dateAdded, shortDesc, priceCode, classID, featured, ACESPartTypeID)
 					VALUES(?,?,?,?,?,?,?, ?)`
@@ -106,6 +108,7 @@ type Part struct {
 	AcesPartTypeID    int               `json:"acesPartTypeId,omitempty" xml:"acesPartTypeId,omitempty"`
 	Installations     Installations     `json:"installation,omitempty" xml:"installation,omitempty"`
 	Inventory         PartInventory     `json:"inventory,omitempty" xml:"inventory,omitempty"`
+	OldPartNumber     string            `json:"oldPartNumber,omitempty" xml:"oldPartNumber,omitempty"`
 }
 
 type CustomerPart struct {
@@ -891,6 +894,36 @@ func (p *Part) GetPartCategories(key string) (cats []Category, err error) {
 
 // 	return
 // }
+
+func (p *Part) GetPartByOldPartNumber() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(getPartByOldpartNumber)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	err = stmt.QueryRow(p.OldPartNumber).Scan(
+		&p.ID,
+		&p.Status,
+		&p.DateModified,
+		&p.DateAdded,
+		&p.OldPartNumber,
+		&p.PriceCode,
+		&p.Class.ID,
+		&p.Featured,
+		&p.AcesPartTypeID,
+	)
+	if err != sql.ErrNoRows {
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
 func (p *Part) Create() (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
