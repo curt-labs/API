@@ -14,7 +14,7 @@ type TechSupport struct {
 	VehicleMake   string          `json:"vehicleMake,omitempty" xml:"vehicleMake,omitempty"`
 	VehicleModel  string          `json:"vehicleModel,omitempty" xml:"vehicleModel,omitempty"`
 	VehicleYear   int             `json:"vehicleYear,omitempty" xml:"vehicleYear,omitempty"`
-	PurchaseDate  time.Time       `json:"purchaseDate,omitempty" xml:"purchaseDate,omitempty"`
+	PurchaseDate  *time.Time      `json:"purchaseDate,omitempty" xml:"purchaseDate,omitempty"`
 	PurchasedFrom string          `json:"purchasedFrom,omitempty" xml:"purchasedFrom,omitempty"`
 	DealerName    string          `json:"dealerName,omitempty" xml:"dealerName,omitempty"`
 	ProductCode   string          `json:"productCode,omitempty" xml:"productCode,omitempty"`

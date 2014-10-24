@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -59,11 +60,11 @@ func CreateTechSupport(rw http.ResponseWriter, req *http.Request, enc encoding.E
 
 	var t techSupport.TechSupport
 	var err error
-
 	contactTypeID, err := strconv.Atoi(params["contactReceiverTypeID"]) //to whom the emails go
 	sendEmail, err := strconv.ParseBool(params["sendEmail"])
 
-	if contType == "application/json" {
+	// if contType == "application/json" {
+	if strings.Contains(contType, "application/json") {
 		//json
 		requestBody, err := ioutil.ReadAll(req.Body)
 		if err != nil {
@@ -81,7 +82,8 @@ func CreateTechSupport(rw http.ResponseWriter, req *http.Request, enc encoding.E
 		t.VehicleMake = req.FormValue("vehicle_make")
 		t.VehicleModel = req.FormValue("vehicle_model")
 		t.VehicleYear, err = strconv.Atoi(req.FormValue("vehicle_year"))
-		t.PurchaseDate, err = time.Parse(timeFormat, req.FormValue("purchase_date"))
+		d, err := time.Parse(timeFormat, req.FormValue("purchase_date"))
+		t.PurchaseDate = &d
 		t.PurchasedFrom = req.FormValue("purchased_from")
 		t.DealerName = req.FormValue("dealer_name")
 		t.ProductCode = req.FormValue("product_code")
@@ -101,12 +103,17 @@ func CreateTechSupport(rw http.ResponseWriter, req *http.Request, enc encoding.E
 		t.Contact.State = req.FormValue("state")
 		t.Contact.PostalCode = req.FormValue("postal_code")
 		t.Contact.Country = req.FormValue("country")
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return err.Error()
+		}
 	}
 	err = t.Create()
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return err.Error()
 	}
+
 	if sendEmail == true {
 		//Send Email
 		body :=
