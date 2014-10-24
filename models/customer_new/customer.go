@@ -5,11 +5,9 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/api"
 	"github.com/curt-labs/GoAPI/helpers/conversions"
 	"github.com/curt-labs/GoAPI/helpers/database"
-	// "github.com/curt-labs/GoAPI/helpers/redis"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	"github.com/curt-labs/GoAPI/models/geography"
 	_ "github.com/go-sql-driver/mysql"
-	"log"
 	"math"
 	"net/url"
 	"strconv"
@@ -172,9 +170,10 @@ var (
 	//affects CL methods
 	customerLocation = `select ` + customerLocationFields + `, ` + stateFields + `, ` + countryFields + `
 							from CustomerLocations as cl
+							join Customer as c on cl.cust_id = c.cust_id
 	 						left join States as s on cl.stateID = s.stateID
 	 						left join Country as cty on s.countryID = cty.countryID
-							where cl.cust_id = ?`
+							where c.customerID = ?`
 
 	customerUser = `select cu.id, cu.name, cu.email, cu.date_added, cu.active, cu.isSudo from CustomerUser as cu
 						join Customer as c on cu.cust_ID = c.cust_id
@@ -412,12 +411,7 @@ func (c *Customer) GetLocations() (err error) {
 	ch := make(chan CustomerLocations)
 	go populateLocations(rows, ch)
 
-	var cls CustomerLocations
-	cls = <-ch
-	c.Locations = cls
-	if len(cls) == 0 {
-		err = sql.ErrNoRows
-	}
+	c.Locations = <-ch
 
 	return err
 }
@@ -491,7 +485,6 @@ func (c *Customer) Create() (err error) {
 
 	stmt2, err := db.Prepare(updateCustomerId)
 	_, err = stmt2.Exec(c.Id, c.Id)
-	log.Print(stmt2)
 	if err != nil {
 		return err
 	}
@@ -1089,14 +1082,13 @@ func getViewPortWidth(lat1 float64, lon1 float64, lat2 float64, long2 float64) f
 
 //populate  customer
 func populateCustomer(row *sql.Row, ch chan Customer) {
-	populateChan := make(chan int)
 	parentChan := make(chan int)
 
 	var c Customer
 	var err error
 	var name, email, address, address2, city, phone, fax, contactPerson, state, stateAbbr, country, countryAbbr, postalCode, mapixCode, mapixDesc, rep, repCode, dtypeType, dtypeLabel, dtierTier, apiKey *string
 	var logo, web, searchU, icon, shadow, parentId, eLocalUrl *[]byte
-	var lat, lon *float64
+	var lat, lon *string
 	var mapIconId, stateId, countryId, dtypeId, dtierId, dtierSort, custID, mapixCodeID, salesRepID *int
 	var dtypeOnline, dtypeShow, isDummy, showWebsite *bool
 
@@ -1149,138 +1141,6 @@ func populateCustomer(row *sql.Row, ch chan Customer) {
 		ch <- c
 		return
 	}
-	go func() {
-		var coun geography.Country
-		if name != nil {
-			c.Name = *name
-		}
-		if address != nil {
-			c.Address = *address
-		}
-		if address2 != nil {
-			c.Address2 = *address2
-		}
-		if city != nil {
-			c.City = *city
-		}
-		if email != nil {
-			c.Email = *email
-		}
-		if phone != nil {
-			c.Phone = *phone
-		}
-		if fax != nil {
-			c.Fax = *fax
-		}
-		if contactPerson != nil {
-			c.ContactPerson = *contactPerson
-		}
-		if lat != nil {
-			c.Latitude = *lat
-		}
-		if lon != nil {
-			c.Longitude = *lon
-		}
-		if searchU != nil {
-			c.SearchUrl, err = conversions.ByteToUrl(*searchU)
-		}
-		if eLocalUrl != nil {
-			c.ELocalUrl, err = conversions.ByteToUrl(*eLocalUrl)
-		}
-		if logo != nil {
-			c.Logo, err = conversions.ByteToUrl(*logo)
-		}
-		if web != nil {
-			c.Website, err = conversions.ByteToUrl(*web)
-		}
-		if custID != nil {
-			c.CustomerId = *custID
-		}
-		if isDummy != nil {
-			c.IsDummy = *isDummy
-		}
-		if postalCode != nil {
-			c.PostalCode = *postalCode
-		}
-		if mapixCodeID != nil {
-			c.MapixCode.ID = *mapixCodeID
-		}
-		if salesRepID != nil {
-			c.SalesRepresentative.ID = *salesRepID
-		}
-		if apiKey != nil {
-			c.ApiKey = *apiKey
-		}
-		if showWebsite != nil {
-			c.ShowWebsite = *showWebsite
-		}
-		if stateId != nil {
-			c.State.Id = *stateId
-		}
-		if state != nil {
-			c.State.State = *state
-		}
-		if stateAbbr != nil {
-			c.State.Abbreviation = *stateAbbr
-		}
-		if countryId != nil {
-			coun.Id = *countryId
-		}
-		if country != nil {
-			coun.Country = *country
-		}
-		if countryId != nil {
-			coun.Abbreviation = *countryAbbr
-		}
-		if dtypeId != nil {
-			c.DealerType.Id = *dtypeId
-		}
-		if dtypeType != nil {
-			c.DealerType.Type = *dtypeType
-		}
-		if dtypeOnline != nil {
-			c.DealerType.Online = *dtypeOnline
-		}
-		if dtypeShow != nil {
-			c.DealerType.Show = *dtypeShow
-		}
-		if dtypeLabel != nil {
-			c.DealerType.Label = *dtypeLabel
-		}
-		if dtierId != nil {
-			c.DealerTier.Id = *dtierId
-		}
-		if dtierSort != nil {
-			c.DealerTier.Sort = *dtierSort
-		}
-		if dtierTier != nil {
-			c.DealerTier.Tier = *dtierTier
-		}
-		if mapIconId != nil {
-			c.DealerType.MapIcon.Id = *mapIconId
-		}
-		if icon != nil {
-			c.DealerType.MapIcon.MapIcon, err = conversions.ByteToUrl(*icon)
-		}
-		if shadow != nil {
-			c.DealerType.MapIcon.MapIconShadow, err = conversions.ByteToUrl(*shadow)
-		}
-		if mapixCode != nil {
-			c.MapixCode.Code = *mapixCode
-		}
-		if mapixDesc != nil {
-			c.MapixCode.Description = *mapixDesc
-		}
-		if rep != nil {
-			c.SalesRepresentative.Name = *rep
-		}
-		if repCode != nil {
-			c.SalesRepresentative.Code = *repCode
-		}
-
-		c.State.Country = &coun
-		populateChan <- 1
-	}()
 
 	//get parent, if has parent
 	go func() {
@@ -1302,7 +1162,135 @@ func populateCustomer(row *sql.Row, ch chan Customer) {
 		}
 		parentChan <- 1
 	}()
-	<-populateChan
+
+	var coun geography.Country
+	if name != nil {
+		c.Name = *name
+	}
+	if address != nil {
+		c.Address = *address
+	}
+	if address2 != nil {
+		c.Address2 = *address2
+	}
+	if city != nil {
+		c.City = *city
+	}
+	if email != nil {
+		c.Email = *email
+	}
+	if phone != nil {
+		c.Phone = *phone
+	}
+	if fax != nil {
+		c.Fax = *fax
+	}
+	if contactPerson != nil {
+		c.ContactPerson = *contactPerson
+	}
+	if lat != nil && *lat != "" && lon != nil && *lon != "" {
+		c.Latitude, _ = strconv.ParseFloat(*lat, 64)
+		c.Longitude, _ = strconv.ParseFloat(*lon, 64)
+	}
+	if searchU != nil {
+		c.SearchUrl, err = conversions.ByteToUrl(*searchU)
+	}
+	if eLocalUrl != nil {
+		c.ELocalUrl, err = conversions.ByteToUrl(*eLocalUrl)
+	}
+	if logo != nil {
+		c.Logo, err = conversions.ByteToUrl(*logo)
+	}
+	if web != nil {
+		c.Website, err = conversions.ByteToUrl(*web)
+	}
+	if custID != nil {
+		c.CustomerId = *custID
+	}
+	if isDummy != nil {
+		c.IsDummy = *isDummy
+	}
+	if postalCode != nil {
+		c.PostalCode = *postalCode
+	}
+	if mapixCodeID != nil {
+		c.MapixCode.ID = *mapixCodeID
+	}
+	if salesRepID != nil {
+		c.SalesRepresentative.ID = *salesRepID
+	}
+	if apiKey != nil {
+		c.ApiKey = *apiKey
+	}
+	if showWebsite != nil {
+		c.ShowWebsite = *showWebsite
+	}
+	if stateId != nil {
+		c.State.Id = *stateId
+	}
+	if state != nil {
+		c.State.State = *state
+	}
+	if stateAbbr != nil {
+		c.State.Abbreviation = *stateAbbr
+	}
+	if countryId != nil {
+		coun.Id = *countryId
+	}
+	if country != nil {
+		coun.Country = *country
+	}
+	if countryId != nil {
+		coun.Abbreviation = *countryAbbr
+	}
+	if dtypeId != nil {
+		c.DealerType.Id = *dtypeId
+	}
+	if dtypeType != nil {
+		c.DealerType.Type = *dtypeType
+	}
+	if dtypeOnline != nil {
+		c.DealerType.Online = *dtypeOnline
+	}
+	if dtypeShow != nil {
+		c.DealerType.Show = *dtypeShow
+	}
+	if dtypeLabel != nil {
+		c.DealerType.Label = *dtypeLabel
+	}
+	if dtierId != nil {
+		c.DealerTier.Id = *dtierId
+	}
+	if dtierSort != nil {
+		c.DealerTier.Sort = *dtierSort
+	}
+	if dtierTier != nil {
+		c.DealerTier.Tier = *dtierTier
+	}
+	if mapIconId != nil {
+		c.DealerType.MapIcon.Id = *mapIconId
+	}
+	if icon != nil {
+		c.DealerType.MapIcon.MapIcon, err = conversions.ByteToUrl(*icon)
+	}
+	if shadow != nil {
+		c.DealerType.MapIcon.MapIconShadow, err = conversions.ByteToUrl(*shadow)
+	}
+	if mapixCode != nil {
+		c.MapixCode.Code = *mapixCode
+	}
+	if mapixDesc != nil {
+		c.MapixCode.Description = *mapixDesc
+	}
+	if rep != nil {
+		c.SalesRepresentative.Name = *rep
+	}
+	if repCode != nil {
+		c.SalesRepresentative.Code = *repCode
+	}
+
+	c.State.Country = &coun
+
 	<-parentChan
 	ch <- c
 	return

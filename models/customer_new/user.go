@@ -14,10 +14,8 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	"github.com/curt-labs/GoAPI/models/geography"
 	_ "github.com/go-sql-driver/mysql"
-	"log"
 	"net/http"
 	"net/url"
-	"runtime"
 	"strings"
 	"time"
 )
@@ -200,7 +198,6 @@ func (u CustomerUser) UserAuthentication(password string) (cust Customer, err er
 func UserAuthenticationByKey(key string) (cust Customer, err error) {
 	u, err := AuthenticateUserByKey(key)
 	if err != nil {
-		log.Print(err)
 		return cust, AuthError
 	}
 
@@ -230,9 +227,6 @@ func UserAuthenticationByKey(key string) (cust Customer, err error) {
 
 	cust.Users = append(cust.Users, u)
 
-	var m *runtime.MemStats = new(runtime.MemStats)
-	runtime.ReadMemStats(m)
-	log.Println("Memory", m.Alloc, m.StackInuse, m.HeapAlloc)
 	return cust, nil
 }
 

@@ -461,6 +461,7 @@ func main() {
 
 		})
 		m.Group("/dealers", func(r martini.Router) {
+			r.Get("/business/classes", dealers_ctlr_new.GetAllBusinessClasses)
 			r.Get("/etailer", internalCors, dealers_ctlr_new.GetEtailers)
 			r.Get("/local", internalCors, dealers_ctlr_new.GetLocalDealers)
 			r.Get("/local/regions", internalCors, dealers_ctlr_new.GetLocalRegions)     //move to dealers

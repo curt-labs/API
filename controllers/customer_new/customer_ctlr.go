@@ -7,7 +7,6 @@ import (
 	"github.com/curt-labs/GoAPI/models/products"
 	"github.com/go-martini/martini"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
 )
@@ -245,11 +244,13 @@ func SaveCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 	idStr := params["id"]
 	if idStr != "" {
 		c.Id, err = strconv.Atoi(idStr)
-		log.Print(c.Id)
 		err = c.FindCustomerIdFromCustId()
-		log.Print(c.Id, " ", c.CustomerId)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return ""
+		}
+
 		err = c.Basics()
-		log.Print(c.Id, " ", c.CustomerId)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return ""
