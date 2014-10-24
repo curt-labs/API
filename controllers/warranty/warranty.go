@@ -7,7 +7,6 @@ import (
 	"github.com/curt-labs/GoAPI/models/warranty"
 	"github.com/go-martini/martini"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -75,7 +74,6 @@ func CreateWarranty(rw http.ResponseWriter, req *http.Request, enc encoding.Enco
 
 		err = json.Unmarshal(requestBody, &w)
 		if err != nil {
-			log.Print(err)
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return encoding.Must(enc.Encode(false))
 		}
@@ -83,6 +81,7 @@ func CreateWarranty(rw http.ResponseWriter, req *http.Request, enc encoding.Enco
 	} else {
 		//else, form
 		w.PartNumber, err = strconv.Atoi(req.FormValue("part_number"))
+		w.OldPartNumber = req.FormValue("old_part_number")
 		date, err := time.Parse(timeFormat, req.FormValue("date"))
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
