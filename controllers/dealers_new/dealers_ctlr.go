@@ -125,6 +125,15 @@ func GetLocationById(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 	return encoding.Must(enc.Encode(loc))
 }
 
+func GetAllBusinessClasses(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+	classes, err := customer_new.GetAllBusinessClasses()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return err.Error()
+	}
+	return encoding.Must(enc.Encode(classes))
+}
+
 func SearchLocations(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
 	search_term := params["search"]
 	qs := r.URL.Query()
