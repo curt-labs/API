@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 func GetAllContacts(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder) string {
@@ -58,7 +59,7 @@ func AddContact(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder,
 	contactTypeID, err := strconv.Atoi(params["contactReceiverTypeID"]) //to whom the emails go
 	sendEmail, err := strconv.ParseBool(params["sendEmail"])
 
-	if contType == "application/json" {
+	if strings.Contains(contType, "application/json") {
 		//json
 		requestBody, err := ioutil.ReadAll(req.Body)
 		if err != nil {

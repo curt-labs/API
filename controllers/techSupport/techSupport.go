@@ -7,6 +7,7 @@ import (
 	"github.com/curt-labs/GoAPI/models/techSupport"
 	"github.com/go-martini/martini"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -73,6 +74,7 @@ func CreateTechSupport(rw http.ResponseWriter, req *http.Request, enc encoding.E
 		}
 
 		err = json.Unmarshal(requestBody, &t)
+		log.Print(err)
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return encoding.Must(enc.Encode(false))

@@ -7,8 +7,10 @@ import (
 	"github.com/curt-labs/GoAPI/models/warranty"
 	"github.com/go-martini/martini"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -63,7 +65,7 @@ func CreateWarranty(rw http.ResponseWriter, req *http.Request, enc encoding.Enco
 	contactTypeID, err := strconv.Atoi(params["contactReceiverTypeID"]) //to whom the emails go
 	sendEmail, err := strconv.ParseBool(params["sendEmail"])
 
-	if contType == "application/json" {
+	if strings.Contains(contType, "application/json") {
 		//json
 		requestBody, err := ioutil.ReadAll(req.Body)
 		if err != nil {
@@ -73,9 +75,11 @@ func CreateWarranty(rw http.ResponseWriter, req *http.Request, enc encoding.Enco
 
 		err = json.Unmarshal(requestBody, &w)
 		if err != nil {
+			log.Print(err)
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return encoding.Must(enc.Encode(false))
 		}
+
 	} else {
 		//else, form
 		w.PartNumber, err = strconv.Atoi(req.FormValue("part_number"))
