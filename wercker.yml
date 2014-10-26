@@ -6,11 +6,11 @@ build:
         name: 'Build docker image'
         code: |
           docker build -t curtlabs/goapi .
-    - script:
-        name: 'Publish to Docker Hub'
-        code: |
-          docker login -u $DOCKER_USER -p $DOCKER_PASSWORD -e $DOCKER_EMAIL
-          docker push curtlabs/goapi
+    - zvelo/docker-hub-push@1.0.12
+        username: $DOCKER_USERNAME
+        password: $DOCKER_PASS
+        email: $DOCKER_EMAIL
+        image: $DOCKER_IMAGE
 
 deploy:
   steps:
