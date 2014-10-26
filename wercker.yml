@@ -6,7 +6,7 @@ build:
         name: 'Build docker image'
         code: |
           docker build -t curtlabs/goapi .
-    - zvelo/docker-hub-push@1.0.12
+    - zvelo/docker-hub-push@1.0.12:
         username: $DOCKER_USERNAME
         password: $DOCKER_PASS
         email: $DOCKER_EMAIL
