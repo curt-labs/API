@@ -312,7 +312,7 @@ func TestCustomerModel(t *testing.T) {
 			So(err, ShouldBeNil)
 		})
 		Convey("GetCustomerUserFromId()", func() {
-			err = users[0].Get()
+			err = users[0].Get(api)
 			So(users[0], ShouldNotBeNil)
 			So(err, ShouldBeNil)
 		})
