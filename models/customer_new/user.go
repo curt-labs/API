@@ -21,7 +21,7 @@ import (
 )
 
 type CustomerUser struct {
-	Id        string           `json:"-" xml:"-"`
+	Id        string           `json:"id" xml:"id"`
 	Name      string           `json:"name" xml:"name,attr"`
 	Email     string           `json:"email" xml:"email,attr"`
 	DateAdded time.Time        `json:"date_added" xml:"date_added,attr"`
