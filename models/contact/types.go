@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	getAllContactTypesStmt = `select contactTypeID, name from ContactType`
-	getContactTypeStmt     = `select contactTypeID, name from ContactType where contactTypeID = ?`
+	getAllContactTypesStmt = `select contactTypeID, name, showOnWebsite from ContactType`
+	getContactTypeStmt     = `select contactTypeID, name, showOnWebsite from ContactType where contactTypeID = ?`
 	addContactTypeStmt     = `insert into ContactType(name) values (?)`
 	updateContactTypeStmt  = `update ContactType set name = ?, showOnWebsite = ? where contactTypeID = ?`
 	deleteContactTypeStmt  = `delete from ContactType where contactTypeID = ?`
