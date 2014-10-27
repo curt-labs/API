@@ -7,10 +7,10 @@ build:
         code: |
           docker build -t curtlabs/goapi .
     - zvelo/docker-hub-push@1.0.12:
-        username: $DOCKER_USER
-        password: $DOCKER_PASSWORD
+        username: $DOCKER_USERNAME
+        password: $DOCKER_PASS
         email: $DOCKER_EMAIL
-        image: curtlabs/goapi
+        image: $DOCKER_IMAGE
 
 deploy:
   steps:

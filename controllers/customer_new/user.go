@@ -11,6 +11,9 @@ import (
 )
 
 func GetUserById(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+	qs := r.URL.Query()
+	key := qs.Get("key")
+
 	var err error
 	id := params["id"]
 	if id == "" {
@@ -24,7 +27,7 @@ func GetUserById(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 	var user customer_new.CustomerUser
 	user.Id = id
 
-	err = user.Get()
+	err = user.Get(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return ""
@@ -122,6 +125,9 @@ func DeleteCustomerUsersByCustomerID(w http.ResponseWriter, r *http.Request, enc
 }
 
 func UpdateCustomerUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+	qs := r.URL.Query()
+	key := qs.Get("key")
+
 	var err error
 	id := params["id"]
 	if id == "" {
@@ -140,7 +146,7 @@ func UpdateCustomerUser(w http.ResponseWriter, r *http.Request, enc encoding.Enc
 
 	var cu customer_new.CustomerUser
 	cu.Id = id
-	err = cu.Get()
+	err = cu.Get(key)
 
 	if name != "" {
 		cu.Name = name

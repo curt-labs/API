@@ -2,6 +2,7 @@ package customer_new
 
 import (
 	"code.google.com/p/go-uuid/uuid"
+
 	// "crypto/md5"
 	"code.google.com/p/go.crypto/bcrypt"
 	"database/sql"
@@ -21,7 +22,7 @@ import (
 )
 
 type CustomerUser struct {
-	Id        string           `json:"-" xml:"-"`
+	Id        string           `json:"id" xml:"id"`
 	Name      string           `json:"name" xml:"name,attr"`
 	Email     string           `json:"email" xml:"email,attr"`
 	DateAdded time.Time        `json:"date_added" xml:"date_added,attr"`
@@ -505,8 +506,8 @@ func (u *CustomerUser) GetLocation() error {
 
 	err = stmt.QueryRow(u.Id).Scan(
 		&u.Location.Id,
-		&u.Name,
-		&u.Email,
+		&u.Location.Name,
+		&u.Location.Email,
 		&u.Location.Address,
 		&u.Location.City,
 		&u.Location.PostalCode,
@@ -652,7 +653,7 @@ func GetCustomerUserFromKey(key string) (u CustomerUser, err error) {
 	return
 }
 
-func (cu *CustomerUser) Get() error {
+func (cu *CustomerUser) Get(key string) error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -683,6 +684,25 @@ func (cu *CustomerUser) Get() error {
 	if err != nil {
 		return err
 	}
+
+	keyChan := make(chan error)
+	go func() {
+		err := cu.GetKeys()
+		if err == nil {
+			for _, k := range cu.Keys {
+				if strings.ToLower(k.Key) == strings.ToLower(key) {
+					cu.Current = true
+					break
+				}
+			}
+		}
+		keyChan <- err
+	}()
+
+	cu.GetLocation()
+
+	<-keyChan
+
 	return nil
 }
 

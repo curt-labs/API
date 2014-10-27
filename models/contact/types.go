@@ -10,10 +10,10 @@ import (
 )
 
 var (
-	getAllContactTypesStmt = `select contactTypeID, name from ContactType`
-	getContactTypeStmt     = `select contactTypeID, name from ContactType where contactTypeID = ?`
+	getAllContactTypesStmt = `select contactTypeID, name, showOnWebsite from ContactType`
+	getContactTypeStmt     = `select contactTypeID, name, showOnWebsite from ContactType where contactTypeID = ?`
 	addContactTypeStmt     = `insert into ContactType(name) values (?)`
-	updateContactTypeStmt  = `update ContactType set name = ? where contactTypeID = ?`
+	updateContactTypeStmt  = `update ContactType set name = ?, showOnWebsite = ? where contactTypeID = ?`
 	deleteContactTypeStmt  = `delete from ContactType where contactTypeID = ?`
 	getReceiverByType      = `select cr.contactReceiverID, cr.first_name, cr.last_name, cr.email from ContactReceiver_ContactType as crct 
 								left join ContactReceiver as cr on crct.contactReceiverID = cr.contactReceiverID 
@@ -22,8 +22,9 @@ var (
 
 type ContactTypes []ContactType
 type ContactType struct {
-	ID   int
-	Name string
+	ID            int    `json:"id" xml:"id"`
+	Name          string `json:"name" xml: "name"`
+	ShowOnWebsite bool   `json:"show" xml:"show"`
 }
 
 func GetAllContactTypes() (types ContactTypes, err error) {
@@ -49,6 +50,7 @@ func GetAllContactTypes() (types ContactTypes, err error) {
 		err = rows.Scan(
 			&ct.ID,
 			&ct.Name,
+			&ct.ShowOnWebsite,
 		)
 		if err != nil {
 			return
@@ -77,6 +79,7 @@ func (ct *ContactType) Get() error {
 		err = stmt.QueryRow(ct.ID).Scan(
 			&ct.ID,
 			&ct.Name,
+			&ct.ShowOnWebsite,
 		)
 		return err
 	}
@@ -165,7 +168,7 @@ func (ct *ContactType) Update() error {
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(ct.Name, ct.ID)
+	_, err = stmt.Exec(ct.Name, ct.ShowOnWebsite, ct.ID)
 
 	return err
 }

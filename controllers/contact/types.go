@@ -64,6 +64,12 @@ func UpdateContactType(rw http.ResponseWriter, req *http.Request, params martini
 		ct.Name = req.FormValue("name")
 	}
 
+	if req.FormValue("show") != "" {
+		if show, err := strconv.ParseBool(req.FormValue("show")); err == nil {
+			ct.ShowOnWebsite = show
+		}
+	}
+
 	if err = ct.Update(); err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return err.Error()
