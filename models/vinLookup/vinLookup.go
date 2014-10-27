@@ -27,7 +27,7 @@ type CurtVehicle struct {
 	BaseVehicle   BaseVehicle
 	Submodel      Submodel
 	Configuration VehicleConfiguration
-	Parts         []products.Part
+	// Parts         []products.Part
 }
 
 type BaseVehicle struct {
@@ -373,8 +373,11 @@ func (av *AcesVehicle) checkConfigs(responseFields []Field) (configMap map[int]i
 	return configMap, err
 }
 
-func (av *AcesVehicle) getCurtVehicles(configMap map[int]interface{}) (l products.Lookup, err error) { //get CURT vehicles
+//sierra 3500 vin 1GTJK34131E957990
 
+func (av *AcesVehicle) getCurtVehicles(configMap map[int]interface{}) (products.Lookup, error) { //get CURT vehicles
+	var l products.Lookup
+	var err error
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return l, err
@@ -393,7 +396,14 @@ func (av *AcesVehicle) getCurtVehicles(configMap map[int]interface{}) (l product
 	var sub, configKey, configValue *string
 	var subID, configKeyID, configValueID, acesConfigValID *int
 	var cv CurtVehicle
+
+	var pco products.ConfigurationOption
+	var vehicleConfig products.Configuration
+
+	pcoMap := make(map[string][]string)
+
 	for res.Next() {
+
 		err = res.Scan(
 			&cv.ID,
 			&cv.BaseVehicle.ModelID,
@@ -431,45 +441,56 @@ func (av *AcesVehicle) getCurtVehicles(configMap map[int]interface{}) (l product
 			cv.Configuration.AcesValueID = *acesConfigValID
 		}
 
-		// cvs = append(cvs, cv)
-		// //Pop off configs that have non-conforming values
-		// // log.Print("CONFIG TYP", cv.Configuration.TypeID)
-		// if name, ok := configMap[cv.Configuration.TypeID]; ok {
-		// 	// log.Print("CONFIG VAL ", name, " ACES CONVFIG VAL ", cv.Configuration.AcesValueID)
-		// 	if cv.Configuration.AcesValueID != name {
-		// 		cvs = cvs[:len(cvs)-1]
-		// 	}
-		// }
+		//configs - assign to map, flag
+		configValFlag := true
+		if vs, ok := pcoMap[cv.Configuration.Type]; ok {
+			for _, v := range vs {
+				if v == cv.Configuration.Value {
+					configValFlag = false
+				}
+			}
+		}
+		if configValFlag == true {
+			if name, ok := configMap[cv.Configuration.TypeID]; ok {
+				//configMap contains this config type
 
-		//convert to products.Lookup
-		var lookupConfig products.ConfigurationOption
-		var vehicleConfiguration products.Configuration
+				if cv.Configuration.AcesValueID == name {
+					pcoMap[cv.Configuration.Type] = append(pcoMap[cv.Configuration.Type], cv.Configuration.Value)
+
+					//vehicleConfigs (not l.ConfugurationOption)
+					vehicleConfig.Key = cv.Configuration.Type
+					vehicleConfig.Value = cv.Configuration.Value
+					l.Vehicle.Configurations = append(l.Vehicle.Configurations, vehicleConfig)
+				}
+			} else {
+				pcoMap[cv.Configuration.Type] = append(pcoMap[cv.Configuration.Type], cv.Configuration.Value)
+
+				//vehicleConfigs (not l.ConfugurationOption)
+				vehicleConfig.Key = cv.Configuration.Type
+				vehicleConfig.Value = cv.Configuration.Value
+				l.Vehicle.Configurations = append(l.Vehicle.Configurations, vehicleConfig)
+			}
+
+		}
 
 		l.Vehicle.Base.Make = cv.BaseVehicle.MakeName
 		l.Vehicle.Base.Model = cv.BaseVehicle.ModelName
 		l.Vehicle.Base.Year = cv.BaseVehicle.YearID
 		l.Vehicle.Submodel = cv.Submodel.Name
 
-		if name, ok := configMap[cv.Configuration.TypeID]; ok {
+	} //end scan loop
 
-			if cv.Configuration.AcesValueID == name {
-				l.Makes = append(l.Makes, cv.BaseVehicle.MakeName)
-				l.Models = append(l.Models, cv.BaseVehicle.ModelName)
-				l.Years = append(l.Years, cv.BaseVehicle.YearID)
-				l.Submodels = append(l.Submodels, cv.Submodel.Name)
-
-				lookupConfig.Type = cv.Configuration.Type
-				lookupConfig.Options = append(lookupConfig.Options, cv.Configuration.Value)
-
-				vehicleConfiguration.Key = cv.Configuration.Type
-				vehicleConfiguration.Value = cv.Configuration.Value
-
-			}
-			l.Configurations = append(l.Configurations, lookupConfig)
-			l.Vehicle.Configurations = append(l.Vehicle.Configurations, vehicleConfiguration)
-		}
-
+	//assign configs
+	for key, val := range pcoMap {
+		pco.Type = key
+		pco.Options = val
+		l.Configurations = append(l.Configurations, pco)
 	}
+
+	l.Makes = append(l.Makes, l.Vehicle.Base.Make)
+	l.Models = append(l.Models, l.Vehicle.Base.Model)
+	l.Years = append(l.Years, l.Vehicle.Base.Year)
+	l.Submodels = append(l.Submodels, l.Vehicle.Submodel)
 
 	return l, err
 }
