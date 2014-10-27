@@ -161,24 +161,29 @@ const (
 		ACES_CYLINDERS,ACES_RESERVED,DOOR_CNT,BODY_STYLE_DESC,WHL_BAS_SHRST_INCHS,TRK_BED_LEN_DESC,TRANS_CD,TRK_BED_LEN_CD,ENG_FUEL_DESC`
 )
 
-func VinPartLookup(vin string) (ps []products.Part, err error) {
+func VinPartLookup(vin string) (l products.Lookup, err error) {
 	//get ACES vehicles
 	av, configMap, err := getAcesVehicle(vin)
 	if err != nil {
-		return ps, err
+		return l, err
 	}
 
 	//get CURT vehicle
-	l, err := av.getCurtVehicles(configMap)
+	l, err = av.getCurtVehicles(configMap)
 	if err != nil {
-		return ps, err
+		return l, err
 	}
 
+	// log.Print(l)
+
 	//get parts
+	var ps []products.Part
 	ch := make(chan []products.Part)
 	go l.LoadParts(ch)
 	ps = <-ch
-	return ps, err
+
+	l.Parts = ps
+	return l, err
 }
 
 func GetVehicleConfigs(vin string) (l products.Lookup, err error) {
