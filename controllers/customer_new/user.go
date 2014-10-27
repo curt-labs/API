@@ -1,8 +1,11 @@
 package customer_ctlr_new
 
 import (
+	"encoding/json"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/customer_new"
+	"io/ioutil"
+	"strings"
 	// "github.com/curt-labs/GoAPI/models/part"
 	"github.com/go-martini/martini"
 	"log"
@@ -137,34 +140,51 @@ func UpdateCustomerUser(w http.ResponseWriter, r *http.Request, enc encoding.Enc
 			return ""
 		}
 	}
-	name := r.FormValue("name")
-	email := r.FormValue("email")
-	isActive := r.FormValue("isActive")
-	locationID := r.FormValue("locationID")
-	isSudo := r.FormValue("isSudo")
-	notCustomer := r.FormValue("notCustomer")
 
 	var cu customer_new.CustomerUser
 	cu.Id = id
 	err = cu.Get(key)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
 
-	if name != "" {
-		cu.Name = name
-	}
-	if email != "" {
-		cu.Email = email
-	}
-	if isActive != "" {
-		cu.Active, err = strconv.ParseBool(isActive)
-	}
-	if locationID != "" {
-		cu.Location.Id, err = strconv.Atoi(locationID)
-	}
-	if isSudo != "" {
-		cu.Sudo, err = strconv.ParseBool(isSudo)
-	}
-	if notCustomer != "" {
-		cu.Current, err = strconv.ParseBool(notCustomer)
+	if strings.ToLower(r.Header.Get("Content-Type")) == "application/json" {
+		data, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return ""
+		}
+
+		if err := json.Unmarshal(data, &cu); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return ""
+		}
+	} else {
+		name := r.FormValue("name")
+		email := r.FormValue("email")
+		isActive := r.FormValue("isActive")
+		locationID := r.FormValue("locationID")
+		isSudo := r.FormValue("isSudo")
+		notCustomer := r.FormValue("notCustomer")
+		if name != "" {
+			cu.Name = name
+		}
+		if email != "" {
+			cu.Email = email
+		}
+		if isActive != "" {
+			cu.Active, err = strconv.ParseBool(isActive)
+		}
+		if locationID != "" {
+			cu.Location.Id, err = strconv.Atoi(locationID)
+		}
+		if isSudo != "" {
+			cu.Sudo, err = strconv.ParseBool(isSudo)
+		}
+		if notCustomer != "" {
+			cu.Current, err = strconv.ParseBool(notCustomer)
+		}
 	}
 
 	err = cu.UpdateCustomerUser()
