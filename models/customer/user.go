@@ -10,6 +10,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	"github.com/curt-labs/GoAPI/models/geography"
 	_ "github.com/go-sql-driver/mysql"
+	"strconv"
 	// "log"
 	"net/http"
 	"net/url"
@@ -185,7 +186,7 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 	var typeID, tierID, tierSort *int
 	var dealerType, dealerLabel, tier *string
 	var typeOnline, typeShow *bool
-	var lat, lon *float64
+	var lat, lon string
 
 	c.State = &geography.State{}
 	c.State.Country = &geography.Country{}
@@ -263,11 +264,9 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 		c.DealerType.Online = *typeOnline
 		c.DealerType.Show = *typeShow
 	}
-	if lat != nil {
-		c.Latitude = *lat
-	}
-	if lon != nil {
-		c.Longitude = *lon
+	if lat != "" && lon != "" {
+		c.Latitude, _ = strconv.ParseFloat(lat, 64)
+		c.Longitude, _ = strconv.ParseFloat(lon, 64)
 	}
 
 	if searchUrl != nil {
@@ -493,6 +492,11 @@ func (u *CustomerUser) GetLocation() error {
 	u.Location.State = &geography.State{}
 	u.Location.State.Country = &geography.Country{}
 
+	var lat string
+	var lon string
+	var stateId, countryId *int
+	var state, stateAbbr, country, countryAbbr *string
+
 	err = stmt.QueryRow(u.Id).Scan(
 		&u.Location.Id,
 		&u.Name,
@@ -502,19 +506,46 @@ func (u *CustomerUser) GetLocation() error {
 		&u.Location.PostalCode,
 		&u.Location.Phone,
 		&u.Location.Fax,
-		&u.Location.Latitude,
-		&u.Location.Longitude,
+		&lat,
+		&lon,
 		&u.Location.CustomerId,
 		&u.Location.ContactPerson,
 		&u.Location.IsPrimary,
 		&u.Location.ShippingDefault,
-		&u.Location.State.Id,
-		&u.Location.State.State,
-		&u.Location.State.Abbreviation,
-		&u.Location.State.Country.Id,
-		&u.Location.State.Country.Country,
-		&u.Location.State.Country.Abbreviation,
+		&stateId,
+		&state,
+		&stateAbbr,
+		&countryId,
+		&country,
+		&countryAbbr,
 	)
+
+	if lat != "" && lon != "" {
+		u.Location.Latitude, _ = strconv.ParseFloat(lat, 64)
+		u.Location.Longitude, _ = strconv.ParseFloat(lon, 64)
+	}
+
+	var coun geography.Country
+
+	if stateId != nil {
+		u.Location.State.Id = *stateId
+	}
+	if state != nil {
+		u.Location.State.State = *state
+	}
+	if stateAbbr != nil {
+		u.Location.State.Abbreviation = *stateAbbr
+	}
+	if countryId != nil {
+		coun.Id = *countryId
+	}
+	if country != nil {
+		coun.Country = *country
+	}
+	if countryAbbr != nil {
+		coun.Abbreviation = *countryAbbr
+	}
+	u.Location.State.Country = &coun
 
 	if err != nil {
 		return err
