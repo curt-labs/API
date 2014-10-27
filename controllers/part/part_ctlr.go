@@ -68,6 +68,29 @@ func All(w http.ResponseWriter, r *http.Request, params martini.Params, enc enco
 	return encoding.Must(enc.Encode(parts))
 }
 
+func Featured(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+	count := 10
+	qs := r.URL.Query()
+	key := qs.Get("key")
+	if qs.Get("count") != "" {
+		if ct, err := strconv.Atoi(qs.Get("count")); err == nil {
+			if ct > 50 {
+				http.Error(w, fmt.Sprintf("maximum request size is 50, you requested: %d", ct), http.StatusInternalServerError)
+				return ""
+			}
+			count = ct
+		}
+	}
+
+	parts, err := products.Featured(key, count)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(parts))
+}
+
 func Latest(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 	count := 10
 	qs := r.URL.Query()
