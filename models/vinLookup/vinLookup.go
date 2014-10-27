@@ -143,13 +143,13 @@ var (
 								FROM vcdb_Vehicle AS vv
 								LEFT JOIN BaseVehicle AS bv ON bv.ID = vv.BaseVehicleID
 								LEFT JOIN vcdb_Model AS vmd ON vmd.ID = bv.ModelID
-								LEFT JOIN vcdb_Make AS vmk ON vmk.ID = bv.MakeID 
+								LEFT JOIN vcdb_Make AS vmk ON vmk.ID = bv.MakeID
 								LEFT JOIN vcdb_Year AS vyr ON vyr.YearID = bv.YearID
 								LEFT JOIN Submodel AS sm ON sm.ID = vv.SubmodelID
 								LEFT JOIN VehicleConfigAttribute AS vca ON vca.VehicleConfigID = vv.ConfigID
 								LEFT JOIN ConfigAttribute AS ca ON ca.ID = vca.AttributeID
 								LEFT JOIN ConfigAttributeType AS cat ON cat.ID = ca.ConfigAttributeTypeID
-								WHERE bv.AAIABaseVehicleID = ? 
+								WHERE bv.AAIABaseVehicleID = ?
 								AND (sm.AAIASubmodelID = ?  OR sm.AAIASubmodelID IS NULL) `
 
 	getPartID = `SELECT PartNumber FROM vcdb_VehiclePart WHERE VehicleID = ?`
@@ -275,7 +275,6 @@ func getAcesVehicle(vin string) (av AcesVehicle, configMap map[int]interface{}, 
 	if err != nil {
 		return av, configMap, err
 	}
-	// log.Print(string(body))
 
 	var x XMLResponse
 	err = xml.Unmarshal(body, &x)

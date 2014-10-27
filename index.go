@@ -88,6 +88,7 @@ func main() {
 	})
 
 	m.Group("/part", func(r martini.Router) {
+		r.Get("/featured", part_ctlr.Featured)
 		r.Get("/latest", part_ctlr.Latest)
 		r.Get("/old/:part", part_ctlr.OldPartNumber)
 		r.Get("/:part/vehicles", part_ctlr.Vehicles)
@@ -397,31 +398,33 @@ func main() {
 	m.Group("/new", func(r martini.Router) {
 		m.Group("/customer", func(r martini.Router) {
 			r.Get("", customer_ctlr_new.GetCustomer)
-			r.Post("/user/register", customer_ctlr_new.RegisterUser)
+			r.Post("", customer_ctlr_new.GetCustomer)
+
 			r.Post("/auth", customer_ctlr_new.UserAuthentication)
 			r.Get("/auth", customer_ctlr_new.KeyedUserAuthentication)
-			r.Post("", internalCors, customer_ctlr_new.GetCustomer)
-			r.Post("/user", customer_ctlr_new.GetUser)
-			r.Get("/user/:id", customer_ctlr_new.GetUserById)
-			r.Get("/users", customer_ctlr_new.GetUsers)
-			r.Post("/users", customer_ctlr_new.GetUsers)
 
+			r.Post("/user", customer_ctlr_new.RegisterUser)
+			r.Post("/user/register", customer_ctlr_new.RegisterUser)
 			r.Post("/user/resetPassword", customer_ctlr_new.ResetPassword)
 			r.Post("/user/changePassword", customer_ctlr_new.ChangePassword)
+			r.Get("/user/:id", customer_ctlr_new.GetUserById)
+			r.Post("/user/:id", customer_ctlr_new.UpdateCustomerUser)
 			r.Delete("/user/:id", internalCors, customer_ctlr_new.DeleteCustomerUser)
+			r.Any("/users", customer_ctlr_new.GetUsers)
+
 			r.Delete("/allUsersByCustomerID/:id", internalCors, customer_ctlr_new.DeleteCustomerUsersByCustomerID) //Takes CustomerID (UUID)---danger!
 
-			r.Put("/location/json", internalCors, customer_ctlr_new.SaveLocationJson)
-			r.Post("/location/json/:id", internalCors, customer_ctlr_new.SaveLocationJson)
-			r.Put("/location", internalCors, customer_ctlr_new.SaveLocation)
-			r.Post("/location/:id", internalCors, customer_ctlr_new.SaveLocation)
-			r.Delete("/location/:id", internalCors, customer_ctlr_new.DeleteLocation)
+			r.Put("/location/json", customer_ctlr_new.SaveLocationJson)
+			r.Post("/location/json/:id", customer_ctlr_new.SaveLocationJson)
+			r.Put("/location", customer_ctlr_new.SaveLocation)
+			r.Post("/location/:id", customer_ctlr_new.SaveLocation)
+			r.Delete("/location/:id", customer_ctlr_new.DeleteLocation)
 
-			r.Get("/locations", internalCors, customer_ctlr_new.GetLocations)
-			r.Post("/locations", internalCors, customer_ctlr_new.GetLocations)
+			r.Get("/locations", customer_ctlr_new.GetLocations)
+			r.Post("/locations", customer_ctlr_new.GetLocations)
 
-			r.Get("/price/:id", internalCors, customer_ctlr_new.GetCustomerPrice)           //{part id}
-			r.Get("/cartRef/:id", internalCors, customer_ctlr_new.GetCustomerCartReference) //{part id}
+			r.Get("/price/:id", customer_ctlr_new.GetCustomerPrice)           //{part id}
+			r.Get("/cartRef/:id", customer_ctlr_new.GetCustomerCartReference) //{part id}
 
 			// Customer CMS endpoints
 			// All Customer Contents
@@ -446,17 +449,17 @@ func main() {
 			r.Get("/cms/:id/revisions", customer_ctlr_new.GetContentRevisionsById)
 
 			//Customer prices
-			r.Get("/prices/part/:id", internalCors, customer_ctlr_new.GetPricesByPart)         //{id}; id refers to partId
-			r.Get("/prices/sale", internalCors, customer_ctlr_new.GetSales)                    //{start}{end}{id} -all required params; id refers to customerId
-			r.Get("/prices/:id", internalCors, customer_ctlr_new.GetPrice)                     //{id}; id refers to {id} refers to customerPriceId
-			r.Get("/prices", internalCors, customer_ctlr_new.GetAllPrices)                     //returns all {sort=field&direction=dir}
-			r.Post("/prices/:id", internalCors, customer_ctlr_new.CreateUpdatePrice)           //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
-			r.Put("/prices", internalCors, customer_ctlr_new.CreateUpdatePrice)                //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
-			r.Delete("/prices/:id", internalCors, customer_ctlr_new.DeletePrice)               //{id} refers to customerPriceId
-			r.Get("/pricesByCustomer/:id", internalCors, customer_ctlr_new.GetPriceByCustomer) //{id} refers to customerId; returns CustomerPrices
+			r.Get("/prices/part/:id", customer_ctlr_new.GetPricesByPart)         //{id}; id refers to partId
+			r.Get("/prices/sale", customer_ctlr_new.GetSales)                    //{start}{end}{id} -all required params; id refers to customerId
+			r.Get("/prices/:id", customer_ctlr_new.GetPrice)                     //{id}; id refers to {id} refers to customerPriceId
+			r.Get("/prices", customer_ctlr_new.GetAllPrices)                     //returns all {sort=field&direction=dir}
+			r.Post("/prices/:id", customer_ctlr_new.CreateUpdatePrice)           //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
+			r.Put("/prices", customer_ctlr_new.CreateUpdatePrice)                //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
+			r.Delete("/prices/:id", customer_ctlr_new.DeletePrice)               //{id} refers to customerPriceId
+			r.Get("/pricesByCustomer/:id", customer_ctlr_new.GetPriceByCustomer) //{id} refers to customerId; returns CustomerPrices
 
 			r.Post("/:id", customer_ctlr_new.SaveCustomer)
-			r.Delete("/:id", internalCors, customer_ctlr_new.DeleteCustomer)
+			r.Delete("/:id", customer_ctlr_new.DeleteCustomer)
 			r.Put("", customer_ctlr_new.SaveCustomer)
 
 		})

@@ -24,44 +24,49 @@ import (
 
 var (
 	GetPaginatedPartNumbers = `select distinct p.partID
-															from Part as p
-															where p.status = 800 || p.status = 900
-															order by p.partID
-															limit ?,?`
+                               from Part as p
+                               where p.status = 800 || p.status = 900
+                               order by p.partID
+                               limit ?,?`
+	GetFeaturedParts = `select distinct p.partID
+                        from Part as p 
+                        where (p.status = 800 || p.status = 900) && p.featured = 1
+                        order by p.dateAdded desc
+                        limit 0, ?`
 	GetLatestParts = `select distinct p.partID
-										from Part as p
-										where p.status = 800 || p.status = 900
-										order by p.dateAdded desc
-										limit 0,?`
+                      from Part as p
+                      where p.status = 800 || p.status = 900
+                      order by p.dateAdded desc
+                      limit 0,?`
 	SubCategoryIDStmt = `select distinct cp.partID
-								from CatPart as cp
-								join Part as p on cp.partID = p.partID
-								where cp.catID IN(%s) and (p.status = 800 || p.status = 900)
-								order by cp.partID
-								limit %d, %d`
+                         from CatPart as cp
+                         join Part as p on cp.partID = p.partID
+                         where cp.catID IN(%s) and (p.status = 800 || p.status = 900)
+                         order by cp.partID
+                         limit %d, %d`
 	basicsStmt = `select p.status, p.dateAdded, p.dateModified, p.shortDesc, p.partID, p.priceCode, pc.class
-				from Part as p
-				left join Class as pc on p.classID = pc.classID
-				where p.partID = ? && p.status in (800,900) limit 1`
+                from Part as p
+                left join Class as pc on p.classID = pc.classID
+                where p.partID = ? && p.status in (800,900) limit 1`
 	relatedPartStmt = `select distinct relatedID from RelatedPart
-				where partID = ?
-				order by relatedID`
+                where partID = ?
+                order by relatedID`
 	partContentStmt = `select ct.type, con.text
-				from Content as con
-				join ContentBridge as cb on con.contentID = cb.contentID
-				join ContentType as ct on con.cTypeID = ct.cTypeID
-				where cb.partID = ? && LOWER(ct.type) != 'appguide'
-				order by ct.type`
+                from Content as con
+                join ContentBridge as cb on con.contentID = cb.contentID
+                join ContentType as ct on con.cTypeID = ct.cTypeID
+                where cb.partID = ? && LOWER(ct.type) != 'appguide'
+                order by ct.type`
 	partInstallSheetStmt = `select c.text from ContentBridge as cb
-					join Content as c on cb.contentID = c.contentID
-					join ContentType as ct on c.cTypeID = ct.cTypeID
-					where partID = ? && ct.type = 'InstallationSheet'
-					limit 1`
+                    join Content as c on cb.contentID = c.contentID
+                    join ContentType as ct on c.cTypeID = ct.cTypeID
+                    where partID = ? && ct.type = 'InstallationSheet'
+                    limit 1`
 
 	getPartByOldpartNumber = `select partID, status, dateModified, dateAdded, shortDesc, priceCode, classID, featured, ACESPartTypeID from Part where oldPartNumber = ?`
 	//create
 	createPart = `INSERT INTO Part (partID, status, dateAdded, shortDesc, priceCode, classID, featured, ACESPartTypeID)
-					VALUES(?,?,?,?,?,?,?, ?)`
+                    VALUES(?,?,?,?,?,?,?, ?)`
 	createPartAttributeJoin = `INSERT INTO PartAttribute (partID, value, field, sort) VALUES (?,?,?,?)`
 	createVehiclePartJoin   = `INSERT INTO VehiclePart (vehicleID, partID, drilling, exposed, installTime) VALUES (?,?,?,?,?)`
 	createContentBridge     = `INSERT INTO ContentBridge (catID, partID, contentID) VALUES (?,?,?)`
@@ -333,6 +338,52 @@ func All(key string, page, count int) ([]Part, error) {
 	}
 
 	sortutil.AscByField(parts, "ID")
+
+	return parts, nil
+}
+
+func Featured(key string, count int) ([]Part, error) {
+	parts := make([]Part, 0)
+
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return parts, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(GetFeaturedParts)
+	if err != nil {
+		return parts, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(count)
+	if err != nil {
+		return parts, err
+	}
+
+	iter := 0
+	partChan := make(chan int)
+	for rows.Next() {
+		var partID int
+		if err = rows.Scan(&partID); err != nil {
+			return parts, err
+		}
+
+		go func(id int) {
+			p := Part{ID: id}
+			p.Get(key)
+			parts = append(parts, p)
+			partChan <- 1
+		}(partID)
+		iter++
+	}
+
+	for i := 0; i < iter; i++ {
+		<-partChan
+	}
+
+	sortutil.DescByField(parts, "DateAdded")
 
 	return parts, nil
 }
@@ -836,63 +887,63 @@ func (p *Part) GetPartCategories(key string) (cats []Category, err error) {
 
 // func (tree *CategoryTree) CategoryTreeBuilder() {
 
-// 	db, err := sql.Open("mysql", database.ConnectionString())
-// 	if err != nil {
-// 		return
-// 	}
-// 	defer db.Close()
+//  db, err := sql.Open("mysql", database.ConnectionString())
+//  if err != nil {
+//      return
+//  }
+//  defer db.Close()
 
-// 	subQry, err := db.Prepare(SubIDStmt)
-// 	if err != nil {
-// 		return
-// 	}
-// 	defer subQry.Close()
+//  subQry, err := db.Prepare(SubIDStmt)
+//  if err != nil {
+//      return
+//  }
+//  defer subQry.Close()
 
-// 	// Execute against current Category Id
-// 	// to retrieve all category Ids that are children.
-// 	rows, err := subQry.Query(tree.ID)
-// 	if err != nil {
-// 		return
-// 	}
+//  // Execute against current Category Id
+//  // to retrieve all category Ids that are children.
+//  rows, err := subQry.Query(tree.ID)
+//  if err != nil {
+//      return
+//  }
 
-// 	chans := make(chan int, 0)
-// 	var rowCount int
-// 	for rows.Next() {
-// 		var catID int
-// 		if err := rows.Scan(&catID); err != nil {
-// 			continue
-// 		}
+//  chans := make(chan int, 0)
+//  var rowCount int
+//  for rows.Next() {
+//      var catID int
+//      if err := rows.Scan(&catID); err != nil {
+//          continue
+//      }
 
-// 		go func(catID int) {
+//      go func(catID int) {
 
-// 			// Need to parse out string array into ints and populate
-// 			cat := Category{
-// 				ID: catID,
-// 			}
-// 			tree.SubCategories = append(tree.SubCategories, cat.ID)
+//          // Need to parse out string array into ints and populate
+//          cat := Category{
+//              ID: catID,
+//          }
+//          tree.SubCategories = append(tree.SubCategories, cat.ID)
 
-// 			subRows, err := subQry.Query(cat.ID)
-// 			if err == nil && subRows != nil {
-// 				for subRows.Next() {
-// 					var subID int
-// 					if err := subRows.Scan(&subID); err == nil {
-// 						tree.SubCategories = append(tree.SubCategories, subID)
-// 					}
+//          subRows, err := subQry.Query(cat.ID)
+//          if err == nil && subRows != nil {
+//              for subRows.Next() {
+//                  var subID int
+//                  if err := subRows.Scan(&subID); err == nil {
+//                      tree.SubCategories = append(tree.SubCategories, subID)
+//                  }
 
-// 					// subTree.CategoryTreeBuilder()
-// 					// tree.SubCategories = append(tree.SubCategories, subTree.SubCategories...)
-// 				}
-// 			}
-// 			chans <- 1
-// 		}(catID)
-// 		rowCount++
-// 	}
+//                  // subTree.CategoryTreeBuilder()
+//                  // tree.SubCategories = append(tree.SubCategories, subTree.SubCategories...)
+//              }
+//          }
+//          chans <- 1
+//      }(catID)
+//      rowCount++
+//  }
 
-// 	for i := 0; i < rowCount; i++ {
-// 		<-chans
-// 	}
+//  for i := 0; i < rowCount; i++ {
+//      <-chans
+//  }
 
-// 	return
+//  return
 // }
 
 func (p *Part) GetPartByOldPartNumber() (err error) {
