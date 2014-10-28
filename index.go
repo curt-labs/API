@@ -162,6 +162,7 @@ func main() {
 
 	m.Group("/contact", func(r martini.Router) {
 		m.Group("/types", func(r martini.Router) {
+			r.Get("/receivers/:id", contact.GetReceiversByContactType)
 			r.Get("", contact.GetAllContactTypes)
 			r.Get("/:id", contact.GetContactType)
 			r.Post("", contact.AddContactType)

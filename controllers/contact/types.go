@@ -33,6 +33,24 @@ func GetContactType(rw http.ResponseWriter, req *http.Request, params martini.Pa
 	return encoding.Must(enc.Encode(ctype))
 }
 
+//Get receivers of a certain contact type
+func GetReceiversByContactType(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
+	var err error
+	var ctype contact.ContactType
+	var crs contact.ContactReceivers
+
+	if ctype.ID, err = strconv.Atoi(params["id"]); err != nil {
+		http.Error(rw, "Invalid ContactType ID", http.StatusInternalServerError)
+		return "Invalid ContactType ID"
+	}
+	crs, err = ctype.GetReceivers()
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return err.Error()
+	}
+	return encoding.Must(enc.Encode(crs))
+}
+
 func AddContactType(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
 	ct := contact.ContactType{
 		Name: req.FormValue("name"),
