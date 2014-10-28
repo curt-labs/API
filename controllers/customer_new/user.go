@@ -2,6 +2,7 @@ package customer_ctlr_new
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/customer_new"
 	"io/ioutil"
@@ -72,6 +73,64 @@ func ChangePassword(w http.ResponseWriter, r *http.Request, enc encoding.Encoder
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 	}
 	return encoding.Must(enc.Encode(resp))
+}
+
+func GenerateApiKey(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+	qs := r.URL.Query()
+	key := qs.Get("key")
+	if key == "" {
+		key = r.FormValue("key")
+	}
+
+	user, err := customer_new.GetCustomerUserFromKey(key)
+	if err != nil || user.Id == "" {
+		http.Error(w, "failed to authenticate API key; you must provide a private key.", http.StatusInternalServerError)
+		return ""
+	}
+
+	authed := false
+	if user.Sudo == false {
+		for _, k := range user.Keys {
+			if k.Type == customer_new.PRIVATE_KEY_TYPE && k.Key == key {
+				authed = true
+				break
+			}
+		}
+	} else {
+		authed = true
+	}
+
+	if !authed {
+		http.Error(w, "you do not have sufficient permissions to perform this operation.", http.StatusInternalServerError)
+		return ""
+	}
+
+	generateType := params["type"]
+	id := params["id"]
+	if id == "" {
+		http.Error(w, "you must provide a reference to the user whose key should be generated", http.StatusInternalServerError)
+		return ""
+	}
+	if generateType == "" {
+		http.Error(w, "you must provide the type of key to be generated", http.StatusInternalServerError)
+		return ""
+	}
+
+	user = customer_new.CustomerUser{
+		Id: id,
+	}
+	if err := user.Get(key); err != nil {
+		http.Error(w, "failed to retrieve the reference user account", http.StatusInternalServerError)
+		return ""
+	}
+
+	generated, err := user.GenerateApiKey(generateType)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to generate an API key: %s", err.Error()), http.StatusInternalServerError)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(generated))
 }
 
 //a/k/a CreateUser

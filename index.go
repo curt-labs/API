@@ -417,6 +417,7 @@ func main() {
 			r.Post("/user/register", customer_ctlr_new.RegisterUser)
 			r.Post("/user/resetPassword", customer_ctlr_new.ResetPassword)
 			r.Post("/user/changePassword", customer_ctlr_new.ChangePassword)
+			r.Post("/user/:id/key/:type", customer_ctlr_new.GenerateApiKey)
 			r.Get("/user/:id", customer_ctlr_new.GetUserById)
 			r.Post("/user/:id", customer_ctlr_new.UpdateCustomerUser)
 			r.Delete("/user/:id", internalCors, customer_ctlr_new.DeleteCustomerUser)
@@ -427,6 +428,7 @@ func main() {
 			r.Put("/location/json", customer_ctlr_new.SaveLocationJson)
 			r.Post("/location/json/:id", customer_ctlr_new.SaveLocationJson)
 			r.Put("/location", customer_ctlr_new.SaveLocation)
+			r.Get("/location/:id", customer_ctlr_new.GetLocation)
 			r.Post("/location/:id", customer_ctlr_new.SaveLocation)
 			r.Delete("/location/:id", customer_ctlr_new.DeleteLocation)
 

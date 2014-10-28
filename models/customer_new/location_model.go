@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"github.com/curt-labs/GoAPI/helpers/conversions"
 	"github.com/curt-labs/GoAPI/helpers/database"
+
 	// "github.com/curt-labs/goacesapi/helpers/pagination"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
-	"strconv"
 )
 
 type CustomerLocations []CustomerLocation
@@ -22,12 +22,6 @@ var (
 )
 
 func (l *CustomerLocation) Get() error {
-	redis_key := "goapi:customers:location:" + strconv.Itoa(l.Id)
-	data, err := redis.Get(redis_key)
-	if err == nil && len(data) > 0 {
-		err = json.Unmarshal(data, &l)
-		return err
-	}
 
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -40,6 +34,7 @@ func (l *CustomerLocation) Get() error {
 		return err
 	}
 	defer stmt.Close()
+
 	var name, address, city, email, phone, fax, contactPerson, postal []byte
 	err = stmt.QueryRow(l.Id).Scan(
 		&l.Id,
@@ -73,9 +68,7 @@ func (l *CustomerLocation) Get() error {
 		return err
 	}
 
-	go redis.Setex(redis_key, l, 86400)
 	return err
-
 }
 
 func GetAllLocations() (CustomerLocations, error) {
