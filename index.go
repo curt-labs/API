@@ -177,7 +177,7 @@ func main() {
 		// r.Post("/sendmail/:id", contact.SendEmail)
 		r.Get("", contact.GetAllContacts)
 		r.Get("/:id", contact.GetContact)
-		r.Post("/:contactReceiverTypeID/:sendEmail", contact.AddContact) //contactReceiver determines who will receive the email/sendEmail is a bool indicating if email should be sent
+		r.Post("", contact.AddContact)
 		r.Put("/:id", contact.UpdateContact)
 		r.Delete("/:id", contact.DeleteContact)
 	})

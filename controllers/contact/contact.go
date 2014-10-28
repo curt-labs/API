@@ -2,8 +2,10 @@ package contact
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/contact"
+	"github.com/curt-labs/GoAPI/models/geography"
 	"github.com/go-martini/martini"
 	"io/ioutil"
 	"net/http"
@@ -50,30 +52,158 @@ func GetContact(rw http.ResponseWriter, req *http.Request, params martini.Params
 	return encoding.Must(enc.Encode(c))
 }
 
-func AddContact(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+func AddContact(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder) string {
+	var c contact.Contact
+	var ct contact.ContactType
+	var sendEmail bool
+
 	contType := req.Header.Get("Content-Type")
 
-	var c contact.Contact
-	var err error
-
-	contactTypeID, err := strconv.Atoi(params["contactReceiverTypeID"]) //to whom the emails go
-	sendEmail, err := strconv.ParseBool(params["sendEmail"])
-
 	if strings.Contains(contType, "application/json") {
-		//json
+		//this is our json payload
+		var formData map[string]interface{}
+
 		requestBody, err := ioutil.ReadAll(req.Body)
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return encoding.Must(enc.Encode(false))
+			return err.Error()
 		}
 
-		err = json.Unmarshal(requestBody, &c)
-		if err != nil {
+		if err = json.Unmarshal(requestBody, &formData); err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return encoding.Must(enc.Encode(false))
+			return err.Error()
 		}
-	} else {
-		//else, form
+
+		//require contact type
+		if str_id, found := formData["contactType"]; !found {
+			http.Error(rw, "Invalid Contact Type ID", http.StatusInternalServerError)
+			return "Invalid Contact Type ID"
+		} else {
+			if ct.ID, err = strconv.Atoi(str_id.(string)); err != nil {
+				return "Invalid Contact Type ID"
+			}
+			if err = ct.Get(); err != nil {
+				return err.Error()
+			}
+			c.Type = ct.Name
+		}
+
+		//require email
+		if email, found := formData["email"]; !found {
+			http.Error(rw, "Email is required", http.StatusInternalServerError)
+			return "Email is required"
+		} else {
+			c.Email = email.(string)
+		}
+
+		//require first name
+		if first, found := formData["firstName"]; !found {
+			http.Error(rw, "First name is required", http.StatusInternalServerError)
+			return "First name is required"
+		} else {
+			c.FirstName = first.(string)
+		}
+
+		//require last name
+		if last, found := formData["lastName"]; !found {
+			http.Error(rw, "Last name is required", http.StatusInternalServerError)
+			return "Last name is required"
+		} else {
+			c.LastName = last.(string)
+		}
+
+		if phone, found := formData["phoneNumber"]; found {
+			c.Phone = phone.(string)
+		}
+		if address1, found := formData["address1"]; found {
+			c.Address1 = address1.(string)
+		}
+		if address1, found := formData["address2"]; found {
+			c.Address1 = address1.(string)
+		}
+		if city, found := formData["city"]; found {
+			c.City = city.(string)
+		}
+		if st, found := formData["state"]; found {
+			id, err := strconv.Atoi(st.(string))
+			if id > 0 && err == nil {
+				countries, err := geography.GetAllCountriesAndStates()
+				if err == nil {
+					for _, ctry := range countries {
+						for _, state := range *ctry.States {
+							if state.Id == id {
+								c.State = state.State
+								c.Country = ctry.Country
+								break
+							}
+						}
+					}
+				}
+			}
+		}
+		if postal, found := formData["postalCode"]; found {
+			c.PostalCode = postal.(string)
+		}
+
+		switch ct.ID {
+		case 15: //become a dealer
+
+			//require business name
+			businessName, found := formData["businessName"]
+			if !found {
+				http.Error(rw, "Business name is required", http.StatusInternalServerError)
+				return "Business name is required"
+			}
+
+			//require business type
+			businessType, found := formData["businessType"]
+			if !found {
+				http.Error(rw, "Business type is required", http.StatusInternalServerError)
+				return "Business type is required"
+			}
+
+			formMessage, found := formData["message"]
+			if found {
+				c.Message = formMessage.(string)
+			}
+
+			c.Subject = "Become a Dealer"
+			c.Message = fmt.Sprintf(
+				`This contact is interested in becoming a Dealer.\n
+				Name: %s\n
+				Business: %s\n
+				Business Type: %s\n
+				Email: %s\n
+				Phone: %s\n
+				Address 1: %s\n
+				Address 2: %s\n
+				City, State, Zip: %s, %s %s\n
+				Country: %s\n
+				Message: %s\n`,
+				c.FirstName+" "+c.LastName,
+				businessName,
+				businessType,
+				c.Email,
+				c.Phone,
+				c.Address1,
+				c.Address2,
+				c.City, c.State, c.PostalCode,
+				c.Country,
+				c.Message,
+			)
+		default: //everything else
+			if subject, found := formData["subject"]; found {
+				c.Subject = subject.(string)
+			}
+			if message, found := formData["message"]; found {
+				c.Message = message.(string)
+			}
+		}
+
+		if send_email, found := formData["sendEmail"]; found {
+			sendEmail, _ = strconv.ParseBool(send_email.(string))
+		}
+	} else { //form post parameters
 		c = contact.Contact{
 			FirstName:  req.FormValue("first_name"),
 			LastName:   req.FormValue("last_name"),
@@ -89,38 +219,61 @@ func AddContact(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder,
 			PostalCode: req.FormValue("postal_code"),
 			Country:    req.FormValue("country"),
 		}
+
+		//TODO: this needs work
+
+		if req.FormValue("send_email") != "" {
+			sendEmail, _ = strconv.ParseBool(req.FormValue("send_email"))
+		}
 	}
 	if err := c.Add(); err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return err.Error()
 	}
-	if sendEmail == true {
-		//Send Email
-		body :=
-			"From: " + c.FirstName + " " + c.LastName + "\n" +
-				"Email: " + c.Email + "\n" +
-				"Phone: " + c.Phone + "\n" +
-				"Subject: " + c.Subject + "\n" +
-				"Time: " + c.Created.String() + "\n" +
-				"Type: " + c.Type + "\n" +
-				"Address1: " + c.Address1 + "\n" +
-				"Address2: " + c.Address2 + "\n" +
-				"City: " + c.City + "\n" +
-				"State: " + c.State + "\n" +
-				"PostalCode: " + c.PostalCode + "\n" +
-				"Country: " + c.Country + "\n\n" +
-				"Message: " + c.Message + "\n"
 
-		var ct contact.ContactType
-		ct.ID = contactTypeID
-		subject := "Email from Contact Form"
-		err = contact.SendEmail(ct, subject, body) //contact type id, subject, techSupport
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return err.Error()
+	if sendEmail {
+		var emailBody string
+
+		switch ct.ID {
+		case 15: //Become a dealer
+			emailBody = c.Message
+		default: //everything else
+			emailBody = fmt.Sprintf(
+				`From: %s %s\n
+				 Phone: %s\n
+				 Subject: %s\n
+				 Time: %s\n
+				 Type: %s\n
+				 Address1: %s\n
+				 Address2: %s\n
+				 City: %s\n
+				 State: %s\n
+				 PostalCode: %s\n
+				 Country: %s\n
+				 Message: %s\n`,
+				c.Email,
+				c.Phone,
+				c.Subject,
+				c.Created.String(),
+				c.Type,
+				c.Address1,
+				c.Address2,
+				c.City,
+				c.State,
+				c.PostalCode,
+				c.Country,
+				c.Message,
+			)
+		}
+		if emailBody != "" {
+			subject := "Email from Contact Form"
+			if err := contact.SendEmail(ct, subject, emailBody); err != nil {
+				http.Error(rw, err.Error(), http.StatusInternalServerError)
+				return err.Error()
+			}
 		}
 	}
-	//Return object
+
 	return encoding.Must(enc.Encode(c))
 }
 
