@@ -6,7 +6,7 @@ import (
 )
 
 func TestTechSupport(t *testing.T) {
-	Convey("Test Create TechSupport", t, func() {
+	Convey("Test Create AppGuide", t, func() {
 		var err error
 		var ag ApplicationGuide
 
@@ -23,6 +23,7 @@ func TestTechSupport(t *testing.T) {
 
 		//get by site
 		ags, err := ag.GetBySite()
+
 		So(err, ShouldBeNil)
 		So(len(ags), ShouldBeGreaterThanOrEqualTo, 1)
 

@@ -2,11 +2,11 @@ package applicationGuide
 
 import (
 	"database/sql"
-
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/models/products"
 	"github.com/curt-labs/GoAPI/models/site_new"
 	_ "github.com/go-sql-driver/mysql"
+	"log"
 )
 
 type ApplicationGuide struct {
@@ -15,16 +15,17 @@ type ApplicationGuide struct {
 	Website  site_new.Website  `json:"website,omitempty" xml:"website,omitempty"`
 	FileType string            `json:"fileType,omitempty" xml:"fileType,omitempty"`
 	Category products.Category `json:"category,omitempty" xml:"category,omitempty"`
+	Icon     string            `json:"icon,omitempty" xml:"icon,omitempty"`
 }
 
 const (
-	fields = ` ag.url, ag.websiteID, ag.fileType, ag.catID `
+	fields = ` ag.url, ag.websiteID, ag.fileType, ag.catID, ag.icon `
 )
 
 var (
-	createApplicationGuide     = `insert into ApplicationGuides (url, websiteID, fileType, catID) values (?,?,?,?)`
+	createApplicationGuide     = `insert into ApplicationGuides (url, websiteID, fileType, catID, icon) values (?,?,?,?,?)`
 	deleteApplicationGuide     = `delete from ApplicationGuides where ID = ?`
-	getApplicationGuide        = `select ag.ID, ` + fields + ` from ApplicationGuides as ag where ag.ID = ? `
+	getApplicationGuide        = `select ag.ID, ` + fields + `, c.catTitle from ApplicationGuides as ag left join Categories as c on c.catID = ag.catID where ag.ID = ? `
 	getApplicationGuides       = `select ag.ID, ` + fields + `, c.catTitle from ApplicationGuides as ag left join Categories as c on c.catID = ag.catID`
 	getApplicationGuidesBySite = `select ag.ID, ` + fields + `, c.catTitle from ApplicationGuides as ag left join Categories as c on c.catID = ag.catID where websiteID = ?`
 )
@@ -77,7 +78,7 @@ func (ag *ApplicationGuide) Create() (err error) {
 		return err
 	}
 	defer stmt.Close()
-	res, err := stmt.Exec(ag.Url, ag.Website.ID, ag.FileType, ag.Category.ID)
+	res, err := stmt.Exec(ag.Url, ag.Website.ID, ag.FileType, ag.Category.ID, ag.Icon)
 	if err != nil {
 		return err
 	}
@@ -110,18 +111,28 @@ func (ag *ApplicationGuide) Delete() (err error) {
 func populateApplicationGuide(row *sql.Row, ch chan ApplicationGuide) {
 	var ag ApplicationGuide
 	var catID *int
+	var icon []byte
+	var catName *string
 	err := row.Scan(
 		&ag.ID,
 		&ag.Url,
 		&ag.Website.ID,
 		&ag.FileType,
 		&catID,
+		&icon,
+		&catName,
 	)
 	if err != nil {
 		ch <- ag
 	}
 	if catID != nil {
 		ag.Category.ID = *catID
+	}
+	if catName != nil {
+		ag.Category.Title = *catName
+	}
+	if icon != nil {
+		ag.Icon = string(icon[:])
 	}
 	ch <- ag
 	return
@@ -131,6 +142,7 @@ func populateApplicationGuides(rows *sql.Rows, ch chan []ApplicationGuide) {
 	var ag ApplicationGuide
 	var ags []ApplicationGuide
 	var catID *int
+	var icon []byte
 	var catName *string
 	for rows.Next() {
 		err := rows.Scan(
@@ -139,9 +151,11 @@ func populateApplicationGuides(rows *sql.Rows, ch chan []ApplicationGuide) {
 			&ag.Website.ID,
 			&ag.FileType,
 			&catID,
+			&icon,
 			&catName,
 		)
 		if err != nil {
+			log.Print(err)
 			ch <- ags
 		}
 		if catID != nil {
@@ -149,6 +163,9 @@ func populateApplicationGuides(rows *sql.Rows, ch chan []ApplicationGuide) {
 		}
 		if catName != nil {
 			ag.Category.Title = *catName
+		}
+		if icon != nil {
+			ag.Icon = string(icon[:])
 		}
 		ags = append(ags, ag)
 	}
