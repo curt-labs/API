@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"github.com/curt-labs/GoAPI/controllers/applicationGuide"
 	"github.com/curt-labs/GoAPI/controllers/blog"
 	"github.com/curt-labs/GoAPI/controllers/cartIntegration"
 	"github.com/curt-labs/GoAPI/controllers/category"
@@ -180,6 +181,14 @@ func main() {
 		r.Post("", contact.AddContact)
 		r.Put("/:id", contact.UpdateContact)
 		r.Delete("/:id", contact.DeleteContact)
+	})
+
+	m.Group("/applicationGuide", func(r martini.Router) {
+		r.Get("/website/:id", applicationGuide.GetApplicationGuidesByWebsite)
+		r.Get("/:id", applicationGuide.GetApplicationGuide)
+		r.Delete("/:id", internalCors, applicationGuide.DeleteApplicationGuide)
+		r.Post("", internalCors, applicationGuide.CreateApplicationGuide)
+
 	})
 
 	m.Group("/faqs", func(r martini.Router) {
