@@ -106,7 +106,7 @@ var (
 	customerUserFromKey = `select cu.* from CustomerUser as cu
 								join ApiKey as ak on cu.id = ak.user_id
 								join ApiKeyType as akt on ak.type_id = akt.id
-								where akt.type != ? && ak.api_key = ?
+								where UPPER(akt.type) != ? && UPPER(ak.api_key) = UPPER(?)
 								limit 1`
 
 	customerUserFromId = `select cu.* from CustomerUser as cu
@@ -158,41 +158,56 @@ const (
 	PRIVATE_KEY_TYPE = "PRIVATE"
 )
 
-func (u CustomerUser) UserAuthentication(password string) (cust Customer, err error) {
-
-	err = u.AuthenticateUser(password)
+func AuthenticateUserByKey(key string) (u CustomerUser, err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		return cust, AuthError
+		return u, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(customerUserKeyAuth)
+	if err != nil {
+		return u, err
+	}
+	defer stmt.Close()
+	t := time.Now()
+	t1 := t.Add(time.Duration(-6) * time.Hour) //6 hours ago
+	Timer := t1.String()
+	KeyType := api_helpers.AUTH_KEY_TYPE
+	params := []interface{}{
+		KeyType,
+		key,
+		Timer,
+	}
+	var dbPass, custId, customerId string
+	var passConversion []byte //bools
+	err = stmt.QueryRow(params...).Scan(
+		&u.Id,
+		&u.Name,
+		&u.Email,
+		&dbPass,     //Not Used
+		&customerId, //Not Used
+		&u.DateAdded,
+		&u.Active,
+		&u.Location.Id,
+		&u.Sudo,
+		&custId, //Not Used
+		&u.Current,
+		&passConversion, //Not Used
+	)
+	if err != nil {
+		return u, err
 	}
 
-	keyChan := make(chan int)
-	locChan := make(chan int)
-
+	resetChan := make(chan int)
 	go func() {
-		if kErr := u.GetKeys(); kErr != nil {
-			err = kErr
+		if resetErr := u.ResetAuthentication(); resetErr != nil {
+			err = resetErr
 		}
-		keyChan <- 1
+		resetChan <- 1
 	}()
 
-	go func() {
-		if lErr := u.GetLocation(); lErr != nil {
-			err = lErr
-		}
-		locChan <- 1
-	}()
-
-	cust, err = u.GetCustomer()
-	if err != sql.ErrNoRows {
-		if err != nil {
-			return cust, AuthError
-		}
-	}
-	<-keyChan
-	<-locChan
-
-	cust.Users = append(cust.Users, u)
-
+	<-resetChan
 	return
 }
 
@@ -229,6 +244,131 @@ func UserAuthenticationByKey(key string) (cust Customer, err error) {
 	cust.Users = append(cust.Users, u)
 
 	return cust, nil
+}
+
+func GetCustomerIdFromKey(key string) (id int, err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return id, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(customerIDFromKey)
+	if err != nil {
+		return id, err
+	}
+	defer stmt.Close()
+
+	err = stmt.QueryRow(key).Scan(&id)
+	if err != nil {
+		return id, err
+	}
+	return id, err
+}
+
+func GetCustomerUserFromKey(key string) (u CustomerUser, err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return u, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(customerUserFromKey)
+	if err != nil {
+		return u, err
+	}
+	defer stmt.Close()
+
+	var dbPass, custId, passConversion, customerId string
+	err = stmt.QueryRow(api_helpers.AUTH_KEY_TYPE, key).Scan(
+		&u.Id,
+		&u.Name,
+		&u.Email,
+		&dbPass, //Not Used
+		&custId, //Not Used
+		&u.DateAdded,
+		&u.Active,
+		&u.Location.Id,
+		&u.Sudo,
+		&customerId,     //Not Used
+		&u.Current,      //Not Used
+		&passConversion, //Not Used
+	)
+	if err != nil {
+		err = errors.New("Invalid key")
+		return
+	}
+
+	u.GetLocation()
+	u.GetKeys()
+	return
+}
+
+//Takes UUID CustomerID; deletes all CustomerUser with that CustID and their API Keys
+func DeleteCustomerUsersByCustomerID(customerID int) error {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(getUsersByCustomerID)
+	if err != nil {
+		return err
+	}
+	res, err := stmt.Query(customerID)
+	if err != nil {
+		return err
+	}
+	for res.Next() {
+		var tempCustUser CustomerUser
+		err = res.Scan(&tempCustUser.Id)
+		if err != nil {
+			return err
+		}
+		err = tempCustUser.Delete()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (u CustomerUser) UserAuthentication(password string) (cust Customer, err error) {
+
+	err = u.AuthenticateUser(password)
+	if err != nil {
+		return cust, AuthError
+	}
+
+	keyChan := make(chan int)
+	locChan := make(chan int)
+
+	go func() {
+		if kErr := u.GetKeys(); kErr != nil {
+			err = kErr
+		}
+		keyChan <- 1
+	}()
+
+	go func() {
+		if lErr := u.GetLocation(); lErr != nil {
+			err = lErr
+		}
+		locChan <- 1
+	}()
+
+	cust, err = u.GetCustomer()
+	if err != sql.ErrNoRows {
+		if err != nil {
+			return cust, AuthError
+		}
+	}
+	<-keyChan
+	<-locChan
+
+	cust.Users = append(cust.Users, u)
+
+	return
 }
 
 func (u CustomerUser) GetCustomer() (c Customer, err error) {
@@ -407,59 +547,6 @@ func (u *CustomerUser) AuthenticateUser(pass string) error {
 	return nil
 }
 
-func AuthenticateUserByKey(key string) (u CustomerUser, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return u, err
-	}
-	defer db.Close()
-
-	stmt, err := db.Prepare(customerUserKeyAuth)
-	if err != nil {
-		return u, err
-	}
-	defer stmt.Close()
-	t := time.Now()
-	t1 := t.Add(time.Duration(-6) * time.Hour) //6 hours ago
-	Timer := t1.String()
-	KeyType := api_helpers.AUTH_KEY_TYPE
-	params := []interface{}{
-		KeyType,
-		key,
-		Timer,
-	}
-	var dbPass, custId, customerId string
-	var passConversion []byte //bools
-	err = stmt.QueryRow(params...).Scan(
-		&u.Id,
-		&u.Name,
-		&u.Email,
-		&dbPass,     //Not Used
-		&customerId, //Not Used
-		&u.DateAdded,
-		&u.Active,
-		&u.Location.Id,
-		&u.Sudo,
-		&custId, //Not Used
-		&u.Current,
-		&passConversion, //Not Used
-	)
-	if err != nil {
-		return u, err
-	}
-
-	resetChan := make(chan int)
-	go func() {
-		if resetErr := u.ResetAuthentication(); resetErr != nil {
-			err = resetErr
-		}
-		resetChan <- 1
-	}()
-
-	<-resetChan
-	return
-}
-
 func (u *CustomerUser) GetKeys() error {
 	var keys []ApiCredentials
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -592,65 +679,6 @@ func (u *CustomerUser) ResetAuthentication() error {
 		}
 	}
 	return nil
-}
-
-func GetCustomerIdFromKey(key string) (id int, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return id, err
-	}
-	defer db.Close()
-
-	stmt, err := db.Prepare(customerIDFromKey)
-	if err != nil {
-		return id, err
-	}
-	defer stmt.Close()
-
-	err = stmt.QueryRow(key).Scan(&id)
-	if err != nil {
-		return id, err
-	}
-	return id, err
-}
-
-func GetCustomerUserFromKey(key string) (u CustomerUser, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return u, err
-	}
-	defer db.Close()
-
-	stmt, err := db.Prepare(customerUserFromKey)
-	if err != nil {
-		return u, err
-	}
-	defer stmt.Close()
-
-	params := []interface{}{
-		api_helpers.AUTH_KEY_TYPE,
-		key,
-	}
-	var dbPass, custId, passConversion, customerId string
-	err = stmt.QueryRow(params...).Scan(
-		&u.Id,
-		&u.Name,
-		&u.Email,
-		&dbPass, //Not Used
-		&custId, //Not Used
-		&u.DateAdded,
-		&u.Active,
-		&u.Location.Id,
-		&u.Sudo,
-		&customerId,     //Not Used
-		&u.Current,      //Not Used
-		&passConversion, //Not Used
-	)
-	if err != nil {
-		err = errors.New("Invalid key")
-		return
-	}
-	return
 }
 
 func (cu *CustomerUser) Get(key string) error {
@@ -811,42 +839,60 @@ func (cu *CustomerUser) Register(pass string, customerID int, isActive bool, loc
 	return cu, nil
 }
 
-func (cu *CustomerUser) generateAPIKey(keyType string) (string, error) {
+func (cu *CustomerUser) generateAPIKey(keyType string) (*ApiCredentials, error) {
 
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer db.Close()
 	tx, err := db.Begin()
 
 	stmt, err := tx.Prepare(insertAPIKey)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	typeID, err := getAPIKeyTypeReference(keyType)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	_, err = stmt.Exec(cu.Id, typeID)
 	if err != nil {
 		tx.Rollback()
-		return "", err
+		return nil, err
 	}
 	tx.Commit()
 
-	var apiKey *string
+	var apiKey string
 	stmt, err = db.Prepare(getCustomerUserKeysWithoutAuth)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	err = stmt.QueryRow(cu.Id, keyType).Scan(&apiKey, &keyType)
+	rows, err := stmt.Query(cu.Id, keyType)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return *apiKey, nil
+
+	for rows.Next() {
+		var kt string
+		err = rows.Scan(&apiKey, &kt)
+		if err != nil {
+			return nil, err
+		}
+
+		if strings.ToLower(kt) == strings.ToLower(keyType) {
+			cred := ApiCredentials{}
+			cred.Key = apiKey
+			cred.Type = keyType
+			cred.TypeId = typeID
+			cred.DateAdded = time.Now()
+			return &cred, nil
+		}
+	}
+
+	return nil, fmt.Errorf("%s", "failed to generate new key")
 }
 
 func getAPIKeyTypeReference(keyType string) (string, error) {
@@ -967,36 +1013,6 @@ func (cu *CustomerUser) Delete() error {
 	return nil
 }
 
-//Takes UUID CustomerID; deletes all CustomerUser with that CustID and their API Keys
-func DeleteCustomerUsersByCustomerID(customerID int) error {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	stmt, err := db.Prepare(getUsersByCustomerID)
-	if err != nil {
-		return err
-	}
-	res, err := stmt.Query(customerID)
-	if err != nil {
-		return err
-	}
-	for res.Next() {
-		var tempCustUser CustomerUser
-		err = res.Scan(&tempCustUser.Id)
-		if err != nil {
-			return err
-		}
-		err = tempCustUser.Delete()
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-
-}
-
 func (cu *CustomerUser) deleteApiKey(keyType string) error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1022,6 +1038,14 @@ func (cu *CustomerUser) deleteApiKey(keyType string) error {
 	tx.Commit()
 
 	return nil
+}
+
+func (cu *CustomerUser) GenerateApiKey(keyType string) (*ApiCredentials, error) {
+	if err := cu.deleteApiKey(keyType); err != nil {
+		return nil, err
+	}
+
+	return cu.generateAPIKey(keyType)
 }
 
 func (cu *CustomerUser) BindApiAccess() error {

@@ -19,7 +19,8 @@ const (
 func GetLocation(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var c customer_new.CustomerLocation
 	var err error
-	c.Id, err = strconv.Atoi(r.FormValue("id"))
+
+	c.Id, err = strconv.Atoi(params["id"])
 	if err != nil {
 		return err.Error()
 	}
@@ -28,8 +29,10 @@ func GetLocation(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 	if err != nil {
 		return err.Error()
 	}
+
 	return encoding.Must(enc.Encode(c))
 }
+
 func GetAllLocations(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 	var c customer_new.CustomerLocations
 	var err error

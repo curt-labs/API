@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"github.com/curt-labs/GoAPI/helpers/slack"
-	"github.com/curt-labs/GoAPI/models/customer"
+	"github.com/curt-labs/GoAPI/models/customer_new"
 	"github.com/go-martini/martini"
 	"github.com/segmentio/analytics-go"
 	"net/http"
@@ -51,7 +51,7 @@ func checkAuth(r *http.Request) bool {
 		return false
 	}
 
-	user, err := customer.GetCustomerUserFromKey(key)
+	user, err := customer_new.GetCustomerUserFromKey(key)
 	if err != nil || user.Id == "" {
 		return false
 	}
