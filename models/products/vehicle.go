@@ -5,7 +5,6 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	_ "github.com/go-sql-driver/mysql"
-	"log"
 	"strings"
 )
 
@@ -130,7 +129,6 @@ func (l *Lookup) LoadParts(ch chan []Part) {
 		if err := p.Get(l.CustomerKey); err == nil && p.ShortDesc != "" {
 			parts = append(parts, p)
 		} else {
-			log.Println(err)
 			parts = append(parts[:i], parts[i+1:]...)
 		}
 	}

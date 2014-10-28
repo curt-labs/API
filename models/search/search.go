@@ -1,7 +1,9 @@
 package search
 
 import (
+	"encoding/json"
 	"errors"
+	"github.com/curt-labs/GoAPI/helpers/slack"
 	"github.com/mattbaird/elastigo/lib"
 	"os"
 )
@@ -36,9 +38,22 @@ func Dsl(query string, fields []string) (interface{}, error) {
 		},
 	}
 
+	var msg slack.Message
+	msg.Channel = "debugging"
+	msg.Username = "ninnemana"
+	js, err := json.Marshal(msg)
+	if err == nil {
+		msg.Text = string(js)
+		msg.Send()
+	}
+
 	var args map[string]interface{}
 	res, e := con.Search("curt", "", args, qry)
 	if e != nil {
+		msg.Text = res.String()
+		msg.Send()
+		msg.Text = e.Error()
+		msg.Send()
 		return nil, e
 	}
 

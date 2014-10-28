@@ -6,7 +6,6 @@ import (
 	"github.com/curt-labs/GoAPI/models/products"
 	"github.com/curt-labs/GoAPI/models/site_new"
 	_ "github.com/go-sql-driver/mysql"
-	"log"
 )
 
 type ApplicationGuide struct {
@@ -155,7 +154,6 @@ func populateApplicationGuides(rows *sql.Rows, ch chan []ApplicationGuide) {
 			&catName,
 		)
 		if err != nil {
-			log.Print(err)
 			ch <- ags
 		}
 		if catID != nil {

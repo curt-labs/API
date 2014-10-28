@@ -1,7 +1,6 @@
 package pagination
 
 import (
-	"log"
 	"strconv"
 )
 
@@ -28,7 +27,7 @@ func Paginate(pageStr, resultsStr string, wholeArray []interface{}) Objects {
 	if resultsStr != "" {
 		results, err = strconv.Atoi(resultsStr)
 		if err != nil {
-			log.Print("DANG ", err)
+			return o
 		}
 	}
 

@@ -6,7 +6,6 @@ import (
 	"github.com/curt-labs/GoAPI/models/webProperty"
 	"github.com/go-martini/martini"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
 )
@@ -53,7 +52,6 @@ func Save_Json(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, 
 }
 
 func SaveType_Json(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
-	log.Print("YOYER")
 	var w webProperty_model.WebPropertyType
 	var err error
 	idStr := params["id"]

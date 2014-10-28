@@ -7,7 +7,6 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
-	"log"
 	"strconv"
 	"time"
 )
@@ -142,7 +141,7 @@ func (p *Price) Update() (err error) {
 	if err != nil {
 		return err
 	}
-	log.Print(p.Price)
+
 	defer stmt.Close()
 	_, err = stmt.Exec(p.PartId, p.Type, p.Price, p.Enforced, p.Id)
 	if err != nil {

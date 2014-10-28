@@ -8,7 +8,6 @@ import (
 	// "github.com/curt-labs/goacesapi/helpers/pagination"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
-	"log"
 	"strconv"
 )
 
@@ -114,7 +113,7 @@ func (p *Price) Create() error {
 	if err != nil {
 		return err
 	}
-	log.Print("You are here")
+
 	stmt, err := tx.Prepare(createPrice)
 	res, err := stmt.Exec(p.CustID, p.PartID, p.Price, p.IsSale, p.SaleStart, p.SaleEnd)
 	if err != nil {
@@ -253,6 +252,6 @@ func (c *Customer) GetPricesBySaleRange(startDate, endDate time.Time) (Prices, e
 		res.Scan(&p.ID, &p.CustID, &p.PartID, &p.Price, &p.IsSale, &p.SaleStart, &p.SaleEnd)
 		ps = append(ps, p)
 	}
-	log.Print("EN")
+
 	return ps, nil
 }

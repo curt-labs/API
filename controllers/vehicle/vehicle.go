@@ -6,7 +6,6 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/products"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -74,7 +73,7 @@ func Query(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string 
 				l.Filter, _ = apifilter.PartFilter(l.Parts, nil)
 			}
 		case <-time.After(5 * time.Second):
-			log.Println("LoadParts timed out")
+
 		}
 	}
 

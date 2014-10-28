@@ -7,7 +7,6 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	"github.com/curt-labs/GoAPI/models/products"
 	_ "github.com/go-sql-driver/mysql"
-	"log"
 	"sort"
 	"strconv"
 	"strings"
@@ -45,24 +44,16 @@ func PartFilter(parts []products.Part, specs []interface{}) ([]Options, error) {
 	}()
 
 	select {
-	case err := <-attrChan:
-		if err != nil {
-			log.Printf("filter error: %s\n", err.Error())
-		}
-	case err := <-priceChan:
-		if err != nil {
-			log.Printf("filter error: %s\n", err.Error())
-		}
-	case err := <-catChan:
-		if err != nil {
-			log.Printf("filter error: %s\n", err.Error())
-		}
-	case err := <-classChan:
-		if err != nil {
-			log.Printf("filter error: %s\n", err.Error())
-		}
+	case <-attrChan:
+
+	case <-priceChan:
+
+	case <-catChan:
+
+	case <-classChan:
+
 	case <-time.After(1 * time.Second):
-		log.Println("filter generation timed out")
+
 	}
 
 	sortutil.AscByField(filtered, "Key")

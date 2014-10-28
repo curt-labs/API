@@ -14,7 +14,6 @@ import (
 	"github.com/curt-labs/GoAPI/models/customer/content"
 	"github.com/curt-labs/GoAPI/models/vehicle"
 	_ "github.com/go-sql-driver/mysql"
-	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -29,7 +28,7 @@ var (
                                order by p.partID
                                limit ?,?`
 	GetFeaturedParts = `select distinct p.partID
-                        from Part as p 
+                        from Part as p
                         where (p.status = 800 || p.status = 900) && p.featured = 1
                         order by p.dateAdded desc
                         limit 0, ?`
@@ -170,7 +169,6 @@ func (p *Part) FromDatabase() error {
 	go func() {
 		attrErr := p.GetAttributes()
 		if attrErr != nil {
-			log.Printf("Attribute Error: %s", attrErr.Error())
 			errs = append(errs, attrErr.Error())
 		}
 		attrChan <- 1

@@ -17,20 +17,20 @@ func TestVinLookup(t *testing.T) {
 		vs, err := VinPartLookup(buickVin)
 		if err != sql.ErrNoRows {
 			So(err, ShouldBeNil)
-			So(len(vs), ShouldBeGreaterThanOrEqualTo, 1)
+			So(len(vs.Parts), ShouldBeGreaterThanOrEqualTo, 1)
 
 		}
 		if err != sql.ErrNoRows {
 			vs, err = VinPartLookup(taurusVin)
 			So(err, ShouldBeNil)
-			So(len(vs), ShouldBeGreaterThanOrEqualTo, 1)
+			So(len(vs.Parts), ShouldBeGreaterThanOrEqualTo, 1)
 
 			//Make sure it's a Taurus - VINs should be constant
 			i := rand.Intn(len(vs))
-			So(vs[i].BaseVehicle.ModelName, ShouldEqual, "Taurus")
+			So(vs.Vehicle.Base.Model, ShouldEqual, "Taurus")
 
 			//We have 2010 Taurus Hitches
-			So(len(vs[i].Parts), ShouldBeGreaterThanOrEqualTo, 1)
+			So(len(vs.Parts), ShouldBeGreaterThanOrEqualTo, 1)
 		}
 
 	})
