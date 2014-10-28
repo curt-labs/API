@@ -25,8 +25,8 @@ var (
 	createApplicationGuide     = `insert into ApplicationGuides (url, websiteID, fileType, catID) values (?,?,?,?)`
 	deleteApplicationGuide     = `delete from ApplicationGuides where ID = ?`
 	getApplicationGuide        = `select ag.ID, ` + fields + ` from ApplicationGuides as ag where ag.ID = ? `
-	getApplicationGuides       = `select ag.ID, ` + fields + ` from ApplicationGuides as ag `
-	getApplicationGuidesBySite = `select ag.ID, ` + fields + ` from ApplicationGuides as ag  where websiteID = ?`
+	getApplicationGuides       = `select ag.ID, ` + fields + `, c.catTitle from ApplicationGuides as ag left join Categories as c on c.catID = ag.catID`
+	getApplicationGuidesBySite = `select ag.ID, ` + fields + `, c.catTitle from ApplicationGuides as ag left join Categories as c on c.catID = ag.catID where websiteID = ?`
 )
 
 func (ag *ApplicationGuide) Get() (err error) {
@@ -131,6 +131,7 @@ func populateApplicationGuides(rows *sql.Rows, ch chan []ApplicationGuide) {
 	var ag ApplicationGuide
 	var ags []ApplicationGuide
 	var catID *int
+	var catName *string
 	for rows.Next() {
 		err := rows.Scan(
 			&ag.ID,
@@ -138,12 +139,16 @@ func populateApplicationGuides(rows *sql.Rows, ch chan []ApplicationGuide) {
 			&ag.Website.ID,
 			&ag.FileType,
 			&catID,
+			&catName,
 		)
 		if err != nil {
 			ch <- ags
 		}
 		if catID != nil {
 			ag.Category.ID = *catID
+		}
+		if catName != nil {
+			ag.Category.Title = *catName
 		}
 		ags = append(ags, ag)
 	}
