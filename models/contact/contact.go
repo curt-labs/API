@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/email"
+	"github.com/curt-labs/GoAPI/models/customer_new"
 	_ "github.com/go-sql-driver/mysql"
 	"strings"
 	"time"
@@ -40,6 +41,11 @@ type Contact struct {
 	State      string    `json:"state,omitempty" xml:"state,omitempty"`
 	PostalCode string    `json:"postalCode,omitempty" xml:"postalCode,omitempty"`
 	Country    string    `json:"country,omitempty" xml:"country,omitempty"`
+}
+type DealerContact struct {
+	Contact
+	BusinessName string
+	BusinessType customer_new.DealerType
 }
 
 func GetAllContacts(page, count int) (contacts Contacts, err error) {

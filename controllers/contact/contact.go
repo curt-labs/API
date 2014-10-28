@@ -65,11 +65,13 @@ func AddContact(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder)
 
 		requestBody, err := ioutil.ReadAll(req.Body)
 		if err != nil {
+
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return err.Error()
 		}
 
 		if err = json.Unmarshal(requestBody, &formData); err != nil {
+
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return err.Error()
 		}
@@ -79,7 +81,8 @@ func AddContact(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder)
 			http.Error(rw, "Invalid Contact Type ID", http.StatusInternalServerError)
 			return "Invalid Contact Type ID"
 		} else {
-			if ct.ID, err = strconv.Atoi(str_id.(string)); err != nil {
+			// if ct.ID, err = strconv.Atoi(str_id.(string)); err != nil {
+			if ct.ID = int(str_id.(float64)); err != nil {
 				return "Invalid Contact Type ID"
 			}
 			if err = ct.Get(); err != nil {
@@ -141,6 +144,7 @@ func AddContact(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder)
 				}
 			}
 		}
+
 		if postal, found := formData["postalCode"]; found {
 			c.PostalCode = postal.(string)
 		}
@@ -154,7 +158,6 @@ func AddContact(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder)
 				http.Error(rw, "Business name is required", http.StatusInternalServerError)
 				return "Business name is required"
 			}
-
 			//require business type
 			businessType, found := formData["businessType"]
 			if !found {
@@ -191,6 +194,7 @@ func AddContact(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder)
 				c.Country,
 				c.Message,
 			)
+
 		default: //everything else
 			if subject, found := formData["subject"]; found {
 				c.Subject = subject.(string)
@@ -201,7 +205,7 @@ func AddContact(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder)
 		}
 
 		if send_email, found := formData["sendEmail"]; found {
-			sendEmail, _ = strconv.ParseBool(send_email.(string))
+			sendEmail = send_email.(bool)
 		}
 	} else { //form post parameters
 		c = contact.Contact{
@@ -230,7 +234,6 @@ func AddContact(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder)
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return err.Error()
 	}
-
 	if sendEmail {
 		var emailBody string
 
@@ -271,6 +274,7 @@ func AddContact(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder)
 				http.Error(rw, err.Error(), http.StatusInternalServerError)
 				return err.Error()
 			}
+
 		}
 	}
 
