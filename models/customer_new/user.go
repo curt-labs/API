@@ -84,7 +84,7 @@ var (
 									cl.cust_id, cl.contact_person, cl.isprimary, cl.ShippingDefault,
 									s.stateID, s.state, s.abbr as state_abbr, cty.countryID, cty.name as cty_name, cty.abbr as cty_abbr
 									from CustomerUser as cu
-									join CustomerLocations as cl on cu.cust_ID = cl.cust_id
+									join CustomerLocations as cl on cu.locationID = cl.locationID
 									left join States as s on cl.stateID = s.stateID
 									left join Country as cty on s.countryID = cty.countryID
 									where cu.id = ?`
