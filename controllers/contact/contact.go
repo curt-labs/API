@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func GetAllContacts(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder) string {
@@ -82,7 +83,7 @@ func AddContact(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder)
 			return "Invalid Contact Type ID"
 		} else {
 			// if ct.ID, err = strconv.Atoi(str_id.(string)); err != nil {
-			if ct.ID = int(str_id.(float64)); err != nil {
+			if ct.ID, err = strconv.Atoi(str_id.(string)); err != nil {
 				return "Invalid Contact Type ID"
 			}
 			if err = ct.Get(); err != nil {
@@ -212,7 +213,7 @@ func AddContact(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder)
 			FirstName:  req.FormValue("first_name"),
 			LastName:   req.FormValue("last_name"),
 			Email:      req.FormValue("email"),
-			Phone:      req.FormValue("phone"),
+			Phone:      req.FormValue("phoneNumber"),
 			Subject:    req.FormValue("subject"),
 			Message:    req.FormValue("message"),
 			Type:       req.FormValue("type"),
@@ -223,6 +224,7 @@ func AddContact(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder)
 			PostalCode: req.FormValue("postal_code"),
 			Country:    req.FormValue("country"),
 		}
+		c.Created = time.Now()
 
 		//TODO: this needs work
 
@@ -242,18 +244,20 @@ func AddContact(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder)
 			emailBody = c.Message
 		default: //everything else
 			emailBody = fmt.Sprintf(
-				`From: %s %s\n
-				 Phone: %s\n
-				 Subject: %s\n
-				 Time: %s\n
-				 Type: %s\n
-				 Address1: %s\n
-				 Address2: %s\n
-				 City: %s\n
-				 State: %s\n
-				 PostalCode: %s\n
-				 Country: %s\n
-				 Message: %s\n`,
+				`From: %s 
+				 Email: %s
+				 Phone: %s
+				 Subject: %s
+				 Time: %s
+				 Type: %s
+				 Address1: %s
+				 Address2: %s
+				 City: %s
+				 State: %s
+				 PostalCode: %s
+				 Country: %s
+				 Message: %s`,
+				c.FirstName+" "+c.LastName,
 				c.Email,
 				c.Phone,
 				c.Subject,
