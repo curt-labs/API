@@ -179,7 +179,7 @@ func main() {
 		// r.Post("/sendmail/:id", contact.SendEmail)
 		r.Get("", contact.GetAllContacts)
 		r.Get("/:id", contact.GetContact)
-		r.Post("", contact.AddContact)
+		r.Post("/:contactTypeID", contact.AddDealerContact)
 		r.Put("/:id", contact.UpdateContact)
 		r.Delete("/:id", contact.DeleteContact)
 	})
