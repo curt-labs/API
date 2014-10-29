@@ -128,7 +128,7 @@ func (l *Lookup) LoadParts(ch chan []Part) {
 	for i, p := range l.Parts {
 		if err := p.Get(l.CustomerKey); err == nil && p.ShortDesc != "" {
 			parts = append(parts, p)
-		} else {
+		} else if len(parts) > 0 {
 			parts = append(parts[:i], parts[i+1:]...)
 		}
 	}

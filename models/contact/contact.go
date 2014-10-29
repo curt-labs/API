@@ -12,14 +12,14 @@ import (
 )
 
 var (
-	getAllContactsStmt = `select contactID, first_name, last_name, email, phone, subject, message, 
+	getAllContactsStmt = `select contactID, first_name, last_name, email, phone, subject, message,
                           createdDate, type, address1, address2, city, state, postalcode, country
                           from Contact limit ?, ?`
-	getContactStmt = `select contactID, first_name, last_name, email, phone, subject, message, 
+	getContactStmt = `select contactID, first_name, last_name, email, phone, subject, message,
                       createdDate, type, address1, address2, city, state, postalcode, country from Contact where contactID = ?`
-	addContactStmt = `insert into Contact(createdDate, first_name, last_name, email, phone, subject, 
+	addContactStmt = `insert into Contact(createdDate, first_name, last_name, email, phone, subject,
                       message, type, address1, address2, city, state, postalcode, country) values (NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-	updateContactStmt = `update Contact set first_name = ?, last_name = ?, email = ?, phone = ?, subject = ?, 
+	updateContactStmt = `update Contact set first_name = ?, last_name = ?, email = ?, phone = ?, subject = ?,
                          message = ?, type = ?, address1 = ?, address2 = ?, city = ?, state = ?, postalCode = ?, country = ? where contactID = ?`
 	deleteContactStmt = `delete from Contact where contactID = ?`
 )
@@ -149,6 +149,9 @@ func (c *Contact) Get() error {
 			&country,
 		)
 		if err != nil {
+			if err == sql.ErrNoRows {
+				return nil
+			}
 			return err
 		}
 		if addr1 != nil {

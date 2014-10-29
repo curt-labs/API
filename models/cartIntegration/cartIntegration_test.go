@@ -2,7 +2,6 @@ package cartIntegration
 
 import (
 	"database/sql"
-	// "github.com/curt-labs/GoAPI/helpers/database"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
@@ -36,15 +35,15 @@ func TestCI(t *testing.T) {
 
 		pricesList, err := GetPricesByCustomerID(ci.CustID)
 		So(err, ShouldBeNil)
-		So(len(pricesList), ShouldBeGreaterThan, 0)
+		So(pricesList, ShouldHaveSameTypeAs, []PricePoint{})
 
 		pagedPricesList, err := GetPricesByCustomerIDPaged(ci.CustID, 1, 1)
 		So(err, ShouldBeNil)
-		So(len(pagedPricesList), ShouldEqual, 1)
+		So(pagedPricesList, ShouldHaveSameTypeAs, []PricePoint{})
 
 		count, err := GetPricingCount(ci.CustID)
 		So(err, ShouldBeNil)
-		So(count, ShouldBeGreaterThan, 0)
+		So(count, ShouldBeGreaterThanOrEqualTo, 0)
 
 		p.CartIntegration = ci
 		err = p.GetCustPriceID()
@@ -57,7 +56,7 @@ func TestCI(t *testing.T) {
 		cis, err = GetAllCartIntegrations()
 		if err != sql.ErrNoRows {
 			So(err, ShouldBeNil)
-			So(len(cis), ShouldBeGreaterThan, 0)
+			So(cis, ShouldHaveSameTypeAs, []CartIntegration{})
 		}
 
 	})

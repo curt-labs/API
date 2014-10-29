@@ -31,6 +31,7 @@ func TestGetReviews(t *testing.T) {
 		Convey("Testing C_UD", func() {
 			Convey("Testing Create()", func() {
 				var l Review
+				l.PartID = 11000
 				l.Name = "testName"
 				l.ReviewText = "Long description"
 				err := l.Create()

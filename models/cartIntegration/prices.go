@@ -2,7 +2,7 @@ package cartIntegration
 
 import (
 	"database/sql"
-	"errors"
+	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/models/products"
 	_ "github.com/go-sql-driver/mysql"
@@ -49,7 +49,7 @@ var (
 							WHERE p.status = 800 OR p.status = 900
 							ORDER BY p.partID`
 
-	getPricePoint = `SELECT custPartID FROM CartIntegration WHERE custID = ? AND partID = ?`
+	getIntegration = `SELECT custPartID FROM CartIntegration WHERE custID = ? AND partID = ? limit 1`
 )
 
 //all pricepoints
@@ -203,29 +203,17 @@ func (p *PricePoint) GetCustPriceID() (err error) {
 		return err
 	}
 	defer db.Close()
-	stmt, err := db.Prepare(getPricePoint)
+
+	stmt, err := db.Prepare(getIntegration)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
-	res, err := stmt.Query(p.CartIntegration.CustID, p.CartIntegration.PartID)
 
-	var cpid *int
-	var TooManyIDs []int
-	for res.Next() {
-		err = res.Scan(&cpid)
-		if err != nil {
-			return err
-		}
-		//Too many price ID's for one part?
-		TooManyIDs = append(TooManyIDs, *cpid)
-		if len(TooManyIDs) > 1 {
-			errors.New("Too many ID's ")
-			return err
-		}
-		if cpid != nil {
-			p.CartIntegration.CustPartID = *cpid
-		}
+	row := stmt.QueryRow(p.CartIntegration.CustID, p.CartIntegration.PartID)
+	if row == nil {
+		return fmt.Errorf("%s", "failed to retrieve integration")
 	}
-	return err
+
+	return row.Scan(&p.CartIntegration.CustPartID)
 }

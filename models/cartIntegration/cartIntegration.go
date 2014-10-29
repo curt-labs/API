@@ -3,6 +3,7 @@ package cartIntegration
 import (
 	"database/sql"
 	"github.com/curt-labs/GoAPI/helpers/database"
+
 	// "github.com/curt-labs/GoAPI/models/products"
 	_ "github.com/go-sql-driver/mysql"
 	// "strconv"
@@ -20,7 +21,7 @@ var (
 	getAllCI       = `select referenceID, partID, custPartID, custID from CartIntegration`
 	getCIsByPartID = `select referenceID, partID, custPartID, custID from CartIntegration where partID = ?`
 	getCIsByCustID = `select referenceID, partID, custPartID, custID from CartIntegration where custID = ?`
-	getCI          = `select referenceID, partID, custPartID, custID from CartIntegration where referenceID = ?`
+	getCI          = `select referenceID, partID, custPartID, custID from CartIntegration where custID = ? && partID = ?`
 	insertCI       = `insert into CartIntegration (partID, custPartID, custID) values (?,?,?)`
 	updateCI       = `update CartIntegration set partID = ?, custPartID = ?, custID = ? where referenceID = ?`
 	deleteCI       = `delete from CartIntegration where referenceID = ?`
@@ -71,6 +72,7 @@ func GetCartIntegrationsByPart(ci CartIntegration) (cis []CartIntegration, err e
 	}
 	return cis, err
 }
+
 func GetCartIntegrationsByCustomer(ci CartIntegration) (cis []CartIntegration, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -105,34 +107,41 @@ func (c *CartIntegration) Get() (err error) {
 		return err
 	}
 	defer stmt.Close()
-	err = stmt.QueryRow(c.ID).Scan(&c.ID, &c.PartID, &c.CustPartID, &c.CustID)
-	if err != nil {
+	err = stmt.QueryRow(c.CustID, c.PartID).Scan(&c.ID, &c.PartID, &c.CustPartID, &c.CustID)
+	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
 	return nil
 }
 
 func (c *CartIntegration) Create() (err error) {
+	if err := c.Get(); err == nil && c.ID > 0 {
+		return c.Update()
+	}
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
 	}
 	defer db.Close()
+
 	stmt, err := db.Prepare(insertCI)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
+
 	res, err := stmt.Exec(c.PartID, c.CustPartID, c.CustID)
 	if err != nil {
 		return err
 	}
+
 	id, err := res.LastInsertId()
 	if err != nil {
 		return err
 	}
 	c.ID = int(id)
-	return err
+	return nil
 }
 
 func (c *CartIntegration) Update() (err error) {

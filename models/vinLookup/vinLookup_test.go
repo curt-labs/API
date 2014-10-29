@@ -2,8 +2,8 @@ package vinLookup
 
 import (
 	"database/sql"
+	"github.com/curt-labs/GoAPI/models/products"
 	. "github.com/smartystreets/goconvey/convey"
-	"math/rand"
 	"testing"
 )
 
@@ -26,7 +26,6 @@ func TestVinLookup(t *testing.T) {
 			So(len(vs.Parts), ShouldBeGreaterThanOrEqualTo, 1)
 
 			//Make sure it's a Taurus - VINs should be constant
-			i := rand.Intn(len(vs))
 			So(vs.Vehicle.Base.Model, ShouldEqual, "Taurus")
 
 			//We have 2010 Taurus Hitches
@@ -38,27 +37,27 @@ func TestVinLookup(t *testing.T) {
 		v, err := GetVehicleConfigs(caddyVin)
 		if err != sql.ErrNoRows {
 			So(err, ShouldBeNil)
-			So(len(v), ShouldBeGreaterThanOrEqualTo, 1)
+			So(len(v.Configurations), ShouldBeGreaterThanOrEqualTo, 1)
 
 			//get random vehicleConfig
-			i := rand.Intn(len(v))
+			// i := rand.Intn(len(v.Configurations))
 
 			//get parts
-			parts, err := v[i].GetPartsFromVehicleConfig()
-			if err != sql.ErrNoRows {
-				So(err, ShouldBeNil)
-				So(len(parts), ShouldBeGreaterThanOrEqualTo, 1)
-			}
+			// parts, err := v.
+			// if err != sql.ErrNoRows {
+			// 	So(err, ShouldBeNil)
+			// 	So(len(parts), ShouldBeGreaterThanOrEqualTo, 1)
+			// }
 		}
 
 	})
 	Convey("Testing Bad Vin", t, func() {
 		vs, err := VinPartLookup(bogusVin)
 		So(err, ShouldNotBeNil)
-		So(vs, ShouldBeNil)
+		So(vs, ShouldHaveSameTypeAs, products.Lookup{})
 
 		vcs, err := GetVehicleConfigs(bogusVin)
 		So(err, ShouldNotBeNil)
-		So(vcs, ShouldBeNil)
+		So(vcs, ShouldHaveSameTypeAs, products.Lookup{})
 	})
 }

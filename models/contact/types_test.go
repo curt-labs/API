@@ -10,32 +10,6 @@ func TestTypes(t *testing.T) {
 	var err error
 	var ct ContactType
 
-	Convey("Testing Gets", t, func() {
-		Convey("Testing GetAll()", func() {
-			types, err := GetAllContactTypes()
-			So(len(types), ShouldBeGreaterThanOrEqualTo, 0)
-			So(err, ShouldBeNil)
-		})
-
-		Convey("Testing Get()", func() {
-			Convey("ContactType with ID of 0", func() {
-				ct = ContactType{}
-				err = ct.Get()
-
-				So(ct.ID, ShouldEqual, 0)
-				So(err, ShouldNotBeNil)
-			})
-
-			Convey("ContactType with non-zero ID", func() {
-				ct = ContactType{ID: 1}
-				err = ct.Get()
-
-				So(ct.ID, ShouldNotEqual, 0)
-				So(err, ShouldBeNil)
-			})
-		})
-	})
-
 	Convey("Testing Add/Update/Delete", t, func() {
 		ct = ContactType{
 			Name: "TEST",
@@ -81,7 +55,6 @@ func TestTypes(t *testing.T) {
 
 					Convey("Test Join", func() {
 						err = cr.CreateTypeJoin(ct)
-						t.Log(err)
 						crs, err := ct.GetReceivers()
 						if err != sql.ErrNoRows {
 							So(err, ShouldBeNil)
@@ -108,6 +81,35 @@ func TestTypes(t *testing.T) {
 			ctype := ContactType{}
 			err = ctype.Delete()
 			So(err, ShouldNotBeNil)
+		})
+	})
+
+	Convey("Testing Gets", t, func() {
+		Convey("Testing GetAll()", func() {
+			types, err := GetAllContactTypes()
+			So(len(types), ShouldBeGreaterThanOrEqualTo, 0)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("Testing Get()", func() {
+			Convey("ContactType with ID of 0", func() {
+				ct = ContactType{}
+				err = ct.Get()
+
+				So(ct.ID, ShouldEqual, 0)
+				So(err, ShouldNotBeNil)
+			})
+
+			Convey("ContactType with non-zero ID", func() {
+				ct2 := ContactType{ID: 1}
+				ct2.Name = "TESTER"
+				ct2.ShowOnWebsite = true
+				ct2.Add()
+				err = ct2.Get()
+
+				So(ct2.ID, ShouldNotEqual, 0)
+				So(err, ShouldBeNil)
+			})
 		})
 	})
 }

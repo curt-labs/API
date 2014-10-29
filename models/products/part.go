@@ -274,7 +274,7 @@ func (p *Part) Get(key string) error {
 
 	redis_key := fmt.Sprintf("part:%d", p.ID)
 
-	part_bytes, err := redis.Get(redis_key)
+	part_bytes, _ := redis.Get(redis_key)
 	if len(part_bytes) > 0 {
 		json.Unmarshal(part_bytes, &p)
 	}
