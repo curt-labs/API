@@ -83,7 +83,7 @@ func CreateTechSupport(rw http.ResponseWriter, req *http.Request, enc encoding.E
 		t.VehicleModel = req.FormValue("vehicle_model")
 		t.VehicleYear, err = strconv.Atoi(req.FormValue("vehicle_year"))
 		d, err := time.Parse(timeFormat, req.FormValue("purchase_date"))
-		t.PurchaseDate = &d
+		t.PurchaseDate = d
 		t.PurchasedFrom = req.FormValue("purchased_from")
 		t.DealerName = req.FormValue("dealer_name")
 		t.ProductCode = req.FormValue("product_code")
