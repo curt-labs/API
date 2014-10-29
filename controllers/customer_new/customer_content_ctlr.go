@@ -6,7 +6,6 @@ import (
 	"github.com/curt-labs/GoAPI/models/customer_new/content"
 	"github.com/go-martini/martini"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
 )
@@ -120,7 +119,6 @@ func UpdatePartContent(w http.ResponseWriter, r *http.Request, params martini.Pa
 	}
 
 	if err = content.Save(id, 0, key); err != nil {
-		log.Print(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}

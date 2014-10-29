@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	_ "github.com/go-sql-driver/mysql"
-	"log"
 	"net/url"
 	"time"
 )
@@ -27,7 +26,7 @@ var (
 )
 
 func UniqueVideos() (videos []Video_Old, err error) {
-	log.Print("UV")
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return
@@ -64,7 +63,6 @@ func UniqueVideos() (videos []Video_Old, err error) {
 		v.Screenshot, err = url.Parse(*screen)
 		videos = append(videos, v)
 	}
-	log.Print(videos)
 
 	return
 }

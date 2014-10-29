@@ -9,7 +9,6 @@ import (
 	"strings"
 	// "github.com/curt-labs/GoAPI/models/part"
 	"github.com/go-martini/martini"
-	"log"
 	"net/http"
 	"strconv"
 )
@@ -43,10 +42,12 @@ func ResetPassword(w http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 	email := r.FormValue("email")
 	custID := r.FormValue("customerID")
 	if email == "" {
-		log.Print("No email provided.")
+		http.Error(w, "no email provided", http.StatusInternalServerError)
+		return ""
 	}
 	if custID == "" {
-		log.Print("customerID is null.")
+		http.Error(w, "customerID cannot be blank", http.StatusInternalServerError)
+		return ""
 	}
 
 	var user customer_new.CustomerUser
@@ -145,7 +146,6 @@ func RegisterUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) 
 	cust_ID, err := strconv.Atoi(r.FormValue("cust_ID"))
 	notCustomer, err := strconv.ParseBool(r.FormValue("notCustomer"))
 
-	log.Print("NAME", name)
 	var user customer_new.CustomerUser
 	user.Email = email
 	user.Name = name
@@ -264,7 +264,6 @@ func AuthenticateUser(w http.ResponseWriter, r *http.Request, enc encoding.Encod
 
 	cust, err := user.UserAuthentication(pass)
 	if err != nil {
-		log.Print(err)
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return ""
 	}

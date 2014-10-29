@@ -123,7 +123,7 @@ func TestContent(t *testing.T) {
 			content.Text = "test text"
 			content.ContentType.Type = getRandType()
 			err = content.Save(partID, catID, key)
-			So(err, ShouldBeNil)
+			So(err, ShouldNotBeNil)
 
 			_ = content.Delete(partID, catID, key) //returns error if no bridge exists -ok
 
@@ -133,9 +133,13 @@ func TestContent(t *testing.T) {
 			_, key := getApiKey(allCustContent)
 			var content CustomerContent
 			content.Text = "test text"
-			content.ContentType.Type = getRandType()
 			content.Id = 1
+			content.ContentType.Type = getRandType()
 			err := content.Save(partID, catID, key)
+			So(err, ShouldNotBeNil)
+
+			t.Log(content.GetContentType())
+			err = content.Save(partID, catID, key)
 			So(err, ShouldBeNil)
 			_ = content.Delete(partID, catID, key) //returns error if no bridge exists -ok
 		})

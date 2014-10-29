@@ -2,7 +2,6 @@ package email
 
 import (
 	"errors"
-	"log"
 	"net/smtp"
 	"os"
 	"regexp"
@@ -82,18 +81,13 @@ func Send(tos []string, subject string, body string, html bool) error {
 	)
 	// Connect to the server, authenticate, set the sender and recipient,
 	// and send the email all in one step.
-	err := smtp.SendMail(
+	return smtp.SendMail(
 		fullserver,
 		auth,
 		creds.Address,
 		tos,
 		msg,
 	)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	return nil
 }
 
 func IsEmail(emailString string) bool {

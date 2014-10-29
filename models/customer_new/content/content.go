@@ -84,9 +84,9 @@ var (
 								cc.userID = cu.id, cc.typeID = ?, cc.deleted = ?
 								where ak.api_key = ? and cc.id = ?`
 	insertCustomerContent = `insert into CustomerContent (
-									text, custID, modified, userID, typeID, deleted
+									text, custID, added, modified, userID, typeID, deleted
 								)
-								select ?, c.cust_id, now(), cu.id, ?, 0
+								select ?, c.cust_id, now(), now(), cu.id, ?, 0
 								from Customer as c
 								join CustomerUser as cu on c.cust_id = cu.cust_ID
 								join ApiKey as ak on cu.id = ak.user_id
@@ -406,11 +406,13 @@ func GetCustomerContentRevisions(id int, key string) (revs []CustomerContentRevi
 }
 
 func (content *CustomerContent) Save(partID, catID int, key string) error { //TODO - I would determine create/update in the controller
-	// If the Id is 0, we're adding a new
-	// content piece; so we'll invoke that
-	// method and return it's error
-	if content.Id == 0 {
-		return content.insert(partID, catID, key)
+
+	if content.ContentType.Id == 0 && content.ContentType.Type == "" {
+		return errors.New("content type must be provided")
+	} else {
+		if err := content.GetContentType(); err != nil {
+			return errors.New("faield to retrieve content type")
+		}
 	}
 
 	// Validate
@@ -418,11 +420,11 @@ func (content *CustomerContent) Save(partID, catID int, key string) error { //TO
 		return errors.New("Invalid content text: Content text was empty; if attempting to remove, use deletion endpoint.")
 	}
 
-	if content.ContentType.Id < 1 {
-		err := content.GetContentType()
-		if err != nil || content.ContentType.Id == 0 {
-			return errors.New("Failed to match up to a content type.")
-		}
+	// If the Id is 0, we're adding a new
+	// content piece; so we'll invoke that
+	// method and return it's error
+	if content.Id == 0 {
+		return content.insert(partID, catID, key)
 	}
 
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -454,6 +456,7 @@ func (content *CustomerContent) Save(partID, catID int, key string) error { //TO
 	err = content.bridge(partID, catID)
 	return err
 }
+
 func (content *CustomerContent) Delete(partID, catID int, key string) error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -513,7 +516,7 @@ func (content *CustomerContent) insert(partID, catID int, key string) error {
 
 	if err != nil {
 		tx.Rollback()
-		return errors.New("Error executing statement.")
+		return err
 	}
 	err = tx.Commit()
 	id, err := res.LastInsertId()
@@ -591,6 +594,8 @@ func AllCustomerContentTypes() (types []ContentType, err error) {
 	if err != nil {
 		return types, err
 	}
+	defer stmt.Close()
+
 	res, err := stmt.Query()
 	for res.Next() {
 		var ct ContentType

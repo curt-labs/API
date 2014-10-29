@@ -13,7 +13,7 @@ func TestGetBlogs(t *testing.T) {
 			var bs Blogs
 			var err error
 			bs, err = GetAll()
-			So(bs, ShouldNotBeNil)
+			So(bs, ShouldHaveSameTypeAs, Blogs{})
 			So(err, ShouldBeNil)
 			So(len(bs), ShouldNotBeNil)
 
@@ -42,7 +42,7 @@ func TestGetBlogs(t *testing.T) {
 
 		Convey("Testing GetAllCategories()", func() {
 			qs, err := GetAllCategories()
-			So(qs, ShouldNotBeNil)
+			So(qs, ShouldHaveSameTypeAs, Categories{})
 			So(err, ShouldBeNil)
 		})
 		Convey("Testing Search()", func() {

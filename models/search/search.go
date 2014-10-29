@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-func Dsl(query string, fields []string) (interface{}, error) {
+func Dsl(query string, fields []string) (elastigo.SearchResult, error) {
 
 	var con *elastigo.Conn
 	if host := os.Getenv("ELASTICSEARCH_IP"); host != "" {
@@ -19,7 +19,7 @@ func Dsl(query string, fields []string) (interface{}, error) {
 		}
 	}
 	if con == nil {
-		return nil, errors.New("failed to connect to elasticsearch")
+		return elastigo.SearchResult{}, errors.New("failed to connect to elasticsearch")
 	}
 
 	qry := map[string]interface{}{
@@ -37,10 +37,5 @@ func Dsl(query string, fields []string) (interface{}, error) {
 	}
 
 	var args map[string]interface{}
-	res, e := con.Search("curt", "", args, qry)
-	if e != nil {
-		return nil, e
-	}
-
-	return res, nil
+	return con.Search("curt", "", args, qry)
 }

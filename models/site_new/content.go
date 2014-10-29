@@ -59,11 +59,11 @@ var (
 
 	//operations
 	createRevision = `INSERT INTO SiteContentRevision (contentID, content_text, createdOn, active) VALUES (?,?,?,?)`
-	createContent  = `INSERT INTO SiteContent 
+	createContent  = `INSERT INTO SiteContent
 						(content_type, page_title, createdDate, meta_title, meta_description, keywords, isPrimary, published, active, slug, requireAuthentication, canonical, websiteID)
 						VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`
 	updateRevision = `UPDATE SiteContentRevision SET contentID = ?, content_text = ?, active = ? WHERE revisionID = ?`
-	updateContent  = `UPDATE SiteContent SET 
+	updateContent  = `UPDATE SiteContent SET
 					content_type = ?, page_title = ?,  meta_title = ?, meta_description = ?, keywords = ?, isPrimary = ?, published = ?, active = ?, slug = ?, requireAuthentication = ?, canonical  = ?, websiteID = ?
 					WHERE contentID = ?`
 
@@ -373,6 +373,7 @@ func (c *Content) Create() (err error) {
 	if err != nil {
 		return err
 	}
+
 	defer stmt.Close()
 	c.CreatedDate = time.Now()
 	res, err := stmt.Exec(

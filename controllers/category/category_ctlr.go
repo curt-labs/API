@@ -8,7 +8,6 @@ import (
 	"github.com/curt-labs/GoAPI/models/products"
 	"github.com/go-martini/martini"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -173,8 +172,6 @@ func GetParts(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, para
 			}
 		}
 	}
-
-	log.Println(specs)
 
 	if err := cat.GetParts(key, page, count, nil, &specs); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

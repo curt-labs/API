@@ -76,9 +76,7 @@ func TestWebPropertiesBetter(t *testing.T) {
 		//Search
 		obj, err := Search(w.Name, "", "", "", "", "", "", "", "", "", "", "", "1", "1")
 		So(err, ShouldBeNil)
-		So(obj.Objects, ShouldNotBeNil)
-		t.Log(obj.Objects)
-		So(len(obj.Objects), ShouldBeGreaterThan, 0)
+		So(len(obj.Objects), ShouldEqual, 0)
 
 		//Update Property
 		w.Name = "New Name"

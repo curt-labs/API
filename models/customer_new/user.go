@@ -429,6 +429,9 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 		&parentId,  //c.parentID
 	)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			err = nil
+		}
 		return c, err
 	}
 	c.Latitude, err = conversions.ByteToFloat(lat)
@@ -614,6 +617,9 @@ func (u *CustomerUser) GetLocation() error {
 		&countryAbbr,
 	)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil
+		}
 		return err
 	}
 	var coun geography.Country
@@ -660,9 +666,15 @@ func (u *CustomerUser) ResetAuthentication() error {
 	}
 	var a ApiCredentials
 
+	a.TypeId, err = getAPIKeyTypeReference(api_helpers.AUTH_KEY_TYPE)
+	if err != nil {
+		return fmt.Errorf("failed to retrieve key type reference %s", "")
+	}
+
 	var dateAdded string
 	err = stmt.QueryRow(params...).Scan(&a.Key, &a.Type, &a.TypeId, &dateAdded)
 	if err != nil {
+		_, err = u.GenerateApiKey(api_helpers.AUTH_KEY_TYPE)
 		return err
 	} else {
 		loc, _ := time.LoadLocation("US/Central")

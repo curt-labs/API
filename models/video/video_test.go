@@ -122,7 +122,7 @@ func TestVideo_New(t *testing.T) {
 		cdns, err := v.GetCdnFiles()
 		if err != sql.ErrNoRows {
 			So(err, ShouldBeNil)
-			So(len(cdns), ShouldBeGreaterThan, 0)
+			So(cdns, ShouldHaveSameTypeAs, CdnFiles{})
 		}
 
 		//Delete

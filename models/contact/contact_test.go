@@ -9,32 +9,6 @@ func TestContacts(t *testing.T) {
 	var err error
 	var c Contact
 
-	Convey("Testing Gets", t, func() {
-		Convey("Testing GetAll()", func() {
-			contacts, err := GetAllContacts(1, 1)
-			So(len(contacts), ShouldBeGreaterThanOrEqualTo, 0)
-			So(err, ShouldBeNil)
-		})
-
-		Convey("Testing Get()", func() {
-			Convey("Contact with ID of 0", func() {
-				c = Contact{}
-				err = c.Get()
-
-				So(c.ID, ShouldEqual, 0)
-				So(err, ShouldNotBeNil)
-			})
-
-			Convey("Contact with non-zero ID", func() {
-				c = Contact{ID: 1}
-				err = c.Get()
-
-				So(c.ID, ShouldNotEqual, 0)
-				So(err, ShouldBeNil)
-			})
-		})
-	})
-
 	Convey("Testing Add/Update/Delete", t, func() {
 		c = Contact{
 			FirstName: "TEST",
@@ -170,6 +144,32 @@ func TestContacts(t *testing.T) {
 			con := Contact{}
 			err = con.Delete()
 			So(err, ShouldNotBeNil)
+		})
+	})
+
+	Convey("Testing Gets", t, func() {
+		Convey("Testing GetAll()", func() {
+			contacts, err := GetAllContacts(1, 1)
+			So(len(contacts), ShouldBeGreaterThanOrEqualTo, 0)
+			So(err, ShouldBeNil)
+		})
+
+		Convey("Testing Get()", func() {
+			Convey("Contact with ID of 0", func() {
+				c = Contact{}
+				err = c.Get()
+
+				So(c.ID, ShouldEqual, 0)
+				So(err, ShouldNotBeNil)
+			})
+
+			Convey("Contact with non-zero ID", func() {
+				c = Contact{ID: 1}
+				err = c.Get()
+
+				So(c.ID, ShouldNotEqual, 0)
+				So(err, ShouldBeNil)
+			})
 		})
 	})
 }

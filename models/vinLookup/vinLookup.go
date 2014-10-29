@@ -166,6 +166,8 @@ func VinPartLookup(vin string) (l products.Lookup, err error) {
 	av, configMap, err := getAcesVehicle(vin)
 	if err != nil {
 		return l, err
+	} else if av.AAIABaseVehicleID == 0 {
+		return l, errors.New("failed to decode VIN")
 	}
 
 	//get CURT vehicle
@@ -191,7 +193,10 @@ func GetVehicleConfigs(vin string) (l products.Lookup, err error) {
 	av, configMap, err := getAcesVehicle(vin)
 	if err != nil {
 		return l, err
+	} else if av.AAIABaseVehicleID == 0 {
+		return l, errors.New("failed to decode VIN")
 	}
+
 	//get CURT vehicle
 	l, err = av.getCurtVehicles(configMap)
 	return l, err
