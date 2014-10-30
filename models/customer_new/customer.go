@@ -140,7 +140,7 @@ type MapPolygon struct {
 }
 
 const (
-	customerFields = ` c.customerID, c.name, c.email, c.address,  c.city, c.stateID, c.phone, c.fax, c.contact_person, c.dealer_type,
+	customerFields = ` c.cust_id, c.name, c.email, c.address,  c.city, c.stateID, c.phone, c.fax, c.contact_person, c.dealer_type,
 				c.latitude,c.longitude,  c.website, c.customerID, c.isDummy, c.parentID, c.searchURL, c.eLocalURL, c.logo,c.address2,
 				c.postal_code, c.mCodeID, c.salesRepID, c.APIKey, c.tier, c.showWebsite `
 	stateFields            = ` s.state, s.abbr, s.countryID `
@@ -166,18 +166,18 @@ var (
 				left join DealerTiers as dtr on c.tier = dtr.ID
 				left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
 				left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
-				where c.customerID = ? `
+				where c.cust_id = ? `
 	//affects CL methods
 	customerLocation = `select ` + customerLocationFields + `, ` + stateFields + `, ` + countryFields + `
 							from CustomerLocations as cl
 							join Customer as c on cl.cust_id = c.cust_id
 	 						left join States as s on cl.stateID = s.stateID
 	 						left join Country as cty on s.countryID = cty.countryID
-							where c.customerID = ?`
+							where c.cust_id = ?`
 
 	customerUser = `select cu.id, cu.name, cu.email, cu.date_added, cu.active, cu.isSudo from CustomerUser as cu
 						join Customer as c on cu.cust_ID = c.cust_id
-						where c.customerID = ?
+						where c.cust_id = ?
 						&& cu.active = 1`
 	customerPrice = `select distinct cp.price from ApiKey as ak
 						join CustomerUser cu on ak.user_id = cu.id
@@ -411,7 +411,10 @@ func (c *Customer) GetLocations() (err error) {
 	ch := make(chan CustomerLocations)
 	go populateLocations(rows, ch)
 
-	c.Locations = <-ch
+	var loc CustomerLocations
+	loc = <-ch
+
+	c.Locations = loc
 
 	return err
 }
@@ -1619,7 +1622,6 @@ func populateLocations(rows *sql.Rows, ch chan CustomerLocations) {
 			coun.Abbreviation = *countryAbbr
 		}
 		l.State.Country = &coun
-
 		ls = append(ls, l)
 	}
 	ch <- ls
@@ -1721,6 +1723,7 @@ func populateLocation(row *sql.Row, ch chan CustomerLocation) {
 		coun.Abbreviation = *countryAbbr
 	}
 	l.State.Country = &coun
+
 	ch <- l
 	return
 }

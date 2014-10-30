@@ -123,7 +123,7 @@ func TestContent(t *testing.T) {
 			content.Text = "test text"
 			content.ContentType.Type = getRandType()
 			err = content.Save(partID, catID, key)
-			So(err, ShouldNotBeNil)
+			So(err, ShouldBeNil)
 
 			_ = content.Delete(partID, catID, key) //returns error if no bridge exists -ok
 
@@ -136,7 +136,7 @@ func TestContent(t *testing.T) {
 			content.Id = 1
 			content.ContentType.Type = getRandType()
 			err := content.Save(partID, catID, key)
-			So(err, ShouldNotBeNil)
+			So(err, ShouldBeNil)
 
 			t.Log(content.GetContentType())
 			err = content.Save(partID, catID, key)

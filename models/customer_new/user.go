@@ -823,21 +823,26 @@ func (cu *CustomerUser) Register(pass string, customerID int, isActive bool, loc
 
 	// Public key:
 	go func() {
-		_, err := cu.generateAPIKey(PUBLIC_KEY_TYPE)
+		pub, err := cu.generateAPIKey(PUBLIC_KEY_TYPE)
+		cu.Keys = append(cu.Keys, *pub)
 		pubChan <- err
 	}()
 
 	// Private key:
 	go func() {
-		_, err := cu.generateAPIKey(PRIVATE_KEY_TYPE)
+		pri, err := cu.generateAPIKey(PRIVATE_KEY_TYPE)
+		cu.Keys = append(cu.Keys, *pri)
 		privChan <- err
 	}()
 
 	// Auth Key:
 	go func() {
-		_, err := cu.generateAPIKey(AUTH_KEY_TYPE)
+		auth, err := cu.generateAPIKey(AUTH_KEY_TYPE)
+		cu.Keys = append(cu.Keys, *auth)
 		authChan <- err
+
 	}()
+
 	if e := <-pubChan; e != nil {
 		return cu, e
 	}
@@ -902,6 +907,7 @@ func (cu *CustomerUser) generateAPIKey(keyType string) (*ApiCredentials, error) 
 			cred.DateAdded = time.Now()
 			return &cred, nil
 		}
+
 	}
 
 	return nil, fmt.Errorf("%s", "failed to generate new key")

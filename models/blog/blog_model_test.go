@@ -24,6 +24,7 @@ func TestGetBlogs(t *testing.T) {
 						ID: bs[x].ID,
 					}
 					err = b.Get()
+					t.Log("title", b)
 					So(err, ShouldBeNil)
 					So(b.Title, ShouldNotEqual, "")
 					So(b.Slug, ShouldNotEqual, "")
