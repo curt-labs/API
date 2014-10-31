@@ -93,16 +93,6 @@ func GetAllTechSupport() (ts []TechSupport, err error) {
 }
 
 func (t *TechSupport) Create() (err error) {
-
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return
-	}
-	defer db.Close()
-	stmt, err := db.Prepare(createTechSupport)
-	if err != nil {
-		return
-	}
 	//add contact if null
 	if t.Contact.ID == 0 {
 		t.Contact.Type = "TechSupport"
@@ -114,8 +104,24 @@ func (t *TechSupport) Create() (err error) {
 		} else {
 			return errors.New("Contact is required.")
 		}
+		err = t.Contact.Get()
+		if err != nil {
+			return err
+		}
+
+	}
+
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(createTechSupport)
+	if err != nil {
+		return
 	}
 	defer stmt.Close()
+
 	res, err := stmt.Exec(
 		t.VehicleMake,
 		t.VehicleModel,
@@ -128,6 +134,7 @@ func (t *TechSupport) Create() (err error) {
 		t.Issue,
 		t.Contact.ID,
 	)
+
 	if err != nil {
 		return
 	}
@@ -136,6 +143,7 @@ func (t *TechSupport) Create() (err error) {
 		return
 	}
 	t.ID = int(id)
+
 	return
 }
 

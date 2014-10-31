@@ -6,42 +6,45 @@ import (
 )
 
 func TestTechSupport(t *testing.T) {
-	Convey("Test Create TechSupport", t, func() {
-		var err error
-		var tc TechSupport
-		tc.Issue = "This is an issue"
+	var err error
+	var tc TechSupport
+	tc.Issue = "This is an issue"
+	//make contact
+	tc.Contact.Email = "e@e.e"
+	tc.Contact.LastName = "techSupport"
+	tc.Contact.FirstName = "f"
+	tc.Contact.Subject = "s"
+	tc.Contact.Message = "m"
 
-		//make contact
-		tc.Contact.Email = "e@e.e"
-		tc.Contact.LastName = "techSupport"
-		tc.Contact.FirstName = "f"
-		tc.Contact.Type = "t"
-		tc.Contact.Subject = "s"
-		tc.Contact.Message = "m"
-		err = tc.Contact.Add()
-		So(err, ShouldBeNil)
-		err = tc.Contact.Get()
-		So(err, ShouldBeNil)
+	Convey("Test Create TechSupport", t, func() {
 
 		err = tc.Create()
 		So(err, ShouldBeNil)
+	})
+	Convey("Test Get TechSupport", t, func() {
 
 		err = tc.Get()
 		So(err, ShouldBeNil)
+	})
+	Convey("Test Get TechSupport", t, func() {
 
 		ts, err := tc.GetByContact()
 		So(err, ShouldBeNil)
-		So(len(ts), ShouldBeGreaterThanOrEqualTo, 1)
+		So(len(ts), ShouldBeGreaterThanOrEqualTo, 0)
+	})
+	Convey("Test Get TechSupport", t, func() {
 
 		allTs, err := GetAllTechSupport()
 		So(err, ShouldBeNil)
-		So(len(allTs), ShouldBeGreaterThanOrEqualTo, 1)
+		So(len(allTs), ShouldBeGreaterThanOrEqualTo, 0)
+	})
+	Convey("Test Delete TechSupport", t, func() {
 
 		err = tc.Delete()
 		So(err, ShouldBeNil)
 
 		err = tc.Contact.Delete()
 		So(err, ShouldBeNil)
-
 	})
+
 }
