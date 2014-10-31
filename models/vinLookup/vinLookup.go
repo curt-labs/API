@@ -185,6 +185,9 @@ func VinPartLookup(vin string) (l products.Lookup, err error) {
 	ps = <-ch
 
 	l.Parts = ps
+	if len(l.Parts) == 0 {
+		err = sql.ErrNoRows
+	}
 	return l, err
 }
 
@@ -199,6 +202,9 @@ func GetVehicleConfigs(vin string) (l products.Lookup, err error) {
 
 	//get CURT vehicle
 	l, err = av.getCurtVehicles(configMap)
+	if len(l.Parts) == 0 {
+		err = sql.ErrNoRows
+	}
 	return l, err
 }
 
