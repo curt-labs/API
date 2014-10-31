@@ -50,23 +50,5 @@ func TestNews(t *testing.T) {
 		err = n.Delete()
 		So(err, ShouldBeNil)
 	})
-	// Convey("Test Get-Alls", t, func() {
-	// 	var err error
-	// 	ns, err := GetAll()
-	// 	if err != sql.ErrNoRows {
-	// 		So(err, ShouldBeNil)
-	// 		So(len(ns), ShouldBeGreaterThan, 0)
-	// 	}
-	// 	ts, err := GetTitles("1", "1")
-	// 	if err != sql.ErrNoRows {
-	// 		So(err, ShouldBeNil)
-	// 		So(len(ts.Objects), ShouldBeGreaterThan, 0)
-	// 	}
-	// 	ls, err := GetLeads("1", "1")
-	// 	if err != sql.ErrNoRows {
-	// 		So(err, ShouldBeNil)
-	// 		So(len(ls.Objects), ShouldBeGreaterThan, 0)
-	// 	}
 
-	// })
 }
