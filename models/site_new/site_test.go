@@ -2,232 +2,190 @@ package site_new
 
 import (
 	"database/sql"
-	"github.com/curt-labs/GoAPI/helpers/database"
 	. "github.com/smartystreets/goconvey/convey"
 	"math/rand"
 	"testing"
 )
 
-func getRandomMenuWithContents() (m Menu, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return m, err
-	}
-	defer db.Close()
-	stmt, err := db.Prepare("select DISTINCT(msc.menuID) from Menu_SiteContent as msc  WHERE contentID > 0  ORDER BY RAND() LIMIT 1")
-	if err != nil {
-		return m, err
-	}
-	defer stmt.Close()
-	err = stmt.QueryRow().Scan(&m.Id)
-	if err != nil {
-		return m, err
-	}
-	return m, err
-}
-
 func TestSite_New(t *testing.T) {
-	Convey("Testing Gets", t, func() {
-		Convey("Testing GetAllMenus", func() {
+	var c Content
+	var r ContentRevision
+	var m Menu
+	var err error
 
-			ms, err := GetAllMenus()
-			So(err, ShouldBeNil)
-			//if thar' be menus, get random menu
-			if len(ms) > 0 {
-				i := rand.Intn(len(ms))
-				menu := ms[i]
-
-				//get by id
-				err = menu.Get()
-				if err != sql.ErrNoRows { //check for empty db
-					So(menu, ShouldNotBeNil)
-					So(menu.DisplayName, ShouldNotBeNil)
-
-					So(err, ShouldBeNil)
-				}
-				//get by name
-				err = menu.GetByName()
-				So(err, ShouldBeNil)
-
-				//get menu's contents
-				err = menu.GetContents()
-				t.Log(err)
-				if err != sql.ErrNoRows {
-					So(err, ShouldBeNil)
-					// So(len(menu.Contents), ShouldBeGreaterThan, 0)
-				}
-
-			}
-		})
-		Convey("Test with random menu", func() {
-			m, err := getRandomMenuWithContents()
-			if err != sql.ErrNoRows {
-				err = m.GetContents()
-				So(err, ShouldBeNil)
-				So(len(m.Contents), ShouldBeGreaterThan, 0)
-			}
-
-		})
-		Convey("Testing GetAll Contents", func() {
-			cs, err := GetAllContents()
-			if err != sql.ErrNoRows {
-				So(err, ShouldBeNil)
-				So(len(cs), ShouldBeGreaterThan, 0)
-				i := rand.Intn(len(cs))
-				c := cs[i] //random content object
-				Convey("Testing GetContent", func() {
-					err = c.Get()
-					So(err, ShouldBeNil)
-					So(c, ShouldNotBeNil)
-					Convey("Testing Get Revisions", func() {
-						err = c.GetContentRevisions()
-						if err != sql.ErrNoRows {
-							So(err, ShouldBeNil)
-							So(len(c.ContentRevisions), ShouldBeGreaterThan, 0)
-						}
-						err = c.GetLatestRevision()
-						if err != sql.ErrNoRows {
-							So(err, ShouldBeNil)
-							So(c.ContentRevisions, ShouldNotBeNil)
-						}
-					})
-				})
-				Convey("Testing GetContentBySlug", func() {
-					err = c.GetBySlug()
-					So(err, ShouldBeNil)
-				})
-			}
-		})
-		Convey("Testing ContentRevisions", func() {
-			cr, err := GetAllContentRevisions()
-			if err != sql.ErrNoRows {
-				So(err, ShouldBeNil)
-				So(len(cr), ShouldBeGreaterThan, 0)
-				i := rand.Intn(len(cr))
-				r := cr[i] //random revision
-				err = r.Get()
-				So(err, ShouldBeNil)
-				So(r, ShouldNotBeNil)
-			}
-		})
+	Convey("Testing Create Menus", t, func() {
+		m.Name = "name"
+		m.ShowOnSitemap = true
+		err := m.Create()
+		So(err, ShouldBeNil)
 	})
-	Convey("Testing Content CRUD", t, func() {
-		var c Content
+	Convey("Testing Update Menus", t, func() {
+
+		m.Name = "name2"
+		m.ShowOnSitemap = false
+		err = m.Update()
+		So(err, ShouldBeNil)
+	})
+
+	Convey("Testing Create Content", t, func() {
 		c.Type = "type"
 		c.Title = "title"
 		c.MetaTitle = "mTitle"
 		c.MetaDescription = "mDesc"
 		err := c.Create()
 		So(err, ShouldBeNil)
-		c.Get()
-		So(c.Title, ShouldEqual, "title")
+	})
+	Convey("Testing Update Content", t, func() {
 		c.Type = "type2"
 		c.Title = "title2"
 		c.MetaTitle = "mTitle2"
 		c.MetaDescription = "mDesc2"
+		c.Slug = "testSlug"
 		err = c.Update()
 		So(err, ShouldBeNil)
-		c.Get()
+
+	})
+	Convey("Testing Create Revision", t, func() {
+
+		//Revisions
+		r.Text = "text"
+		r.Active = true
+		r.ContentId = c.Id
+		err = r.Create()
+		So(err, ShouldBeNil)
+	})
+	Convey("Testing Update Revision", t, func() {
+		r.Text = "text2"
+		r.Active = false
+		err = r.Update()
+		So(err, ShouldBeNil)
+
+	})
+	Convey("Testing Get Menus", t, func() {
+		err = m.Get()
+		So(m.Name, ShouldEqual, "name2")
+		So(err, ShouldBeNil)
+
+		ms, err := GetAllMenus()
+		So(err, ShouldBeNil)
+		So(len(ms), ShouldBeGreaterThan, 0)
+
+		err = m.GetByName()
+		So(err, ShouldBeNil)
+
+		err = m.GetContents()
+		if err != sql.ErrNoRows {
+			So(err, ShouldBeNil)
+			// So(len(m.Contents), ShouldBeGreaterThan, 0)
+		}
+	})
+	Convey("Testing Get Revisions", t, func() {
+		err = r.Get()
+		So(r.Text, ShouldEqual, "text2")
+		So(err, ShouldBeNil)
+
+		cr, err := GetAllContentRevisions()
+		if err != sql.ErrNoRows {
+			So(err, ShouldBeNil)
+			So(len(cr), ShouldBeGreaterThan, 0)
+			i := rand.Intn(len(cr))
+			r := cr[i] //random revision
+			err = r.Get()
+			So(err, ShouldBeNil)
+			So(r, ShouldNotBeNil)
+		}
+	})
+	Convey("Testing Get Content", t, func() {
+
+		err = c.Get()
 		So(c.Title, ShouldEqual, "title2")
+		So(err, ShouldBeNil)
+
+		Convey("Testing Get Revisions", func() {
+			err = c.GetContentRevisions()
+			if err != sql.ErrNoRows {
+				So(err, ShouldBeNil)
+				So(len(c.ContentRevisions), ShouldBeGreaterThan, 0)
+			}
+			err = c.GetLatestRevision()
+			if err != sql.ErrNoRows {
+				So(err, ShouldBeNil)
+				So(c.ContentRevisions, ShouldNotBeNil)
+			}
+		})
+		Convey("Testing GetAllContents", func() {
+			cs, err := GetAllContents()
+			So(err, ShouldBeNil)
+			So(len(cs), ShouldBeGreaterThanOrEqualTo, 0)
+		})
+		Convey("Testing GetContentBySlug", func() {
+			err = c.GetBySlug()
+			So(err, ShouldBeNil)
+		})
+	})
+
+	Convey("Testing Menu-Content Joins", t, func() {
+		err = m.JoinToContent(c)
+		So(err, ShouldBeNil)
+
+		//check actual join
+		err = m.GetContents()
+		So(err, ShouldBeNil)
+
+		So(len(m.Contents), ShouldBeGreaterThan, 0)
+		err = m.DeleteMenuContentJoin(c)
+		So(err, ShouldBeNil)
+
+	})
+
+	Convey("Testing Delete Content", t, func() {
 		err = c.Delete()
 		So(err, ShouldBeNil)
 	})
 
-	Convey("Testing Revision CRUD", t, func() {
-		var r ContentRevision
-		//get rand content, for its id, tis a FK relation
-		cs, err := GetAllContents()
-		if err != sql.ErrNoRows {
-			So(err, ShouldBeNil)
-			i := rand.Intn(len(cs))
-			c := cs[i] //random content object
+	Convey("Testing Delete Revision", t, func() {
+		err = r.Delete()
+		So(err, ShouldBeNil)
 
-			r.Text = "text"
-			r.Active = true
-			r.ContentId = c.Id
-
-			err = r.Create()
-			So(err, ShouldBeNil)
-			r.Get()
-			So(r.Text, ShouldEqual, "text")
-			r.Text = "text2"
-			r.Active = false
-			err = r.Update()
-			So(err, ShouldBeNil)
-			r.Get()
-			So(r.Text, ShouldEqual, "text2")
-			err = r.Delete()
-			So(err, ShouldBeNil)
-		}
 	})
-	Convey("Testing Menu CRUD", t, func() {
-		var m Menu
-		m.Name = "name"
-		m.ShowOnSitemap = true
-		err := m.Create()
-		So(err, ShouldBeNil)
-		m.Get()
-		So(m.Name, ShouldEqual, "name")
-		m.Name = "name2"
-		m.ShowOnSitemap = false
-		err = m.Update()
-		So(err, ShouldBeNil)
-		m.Get()
-		So(m.Name, ShouldEqual, "name2")
+	Convey("Testing Delete Menu", t, func() {
 		err = m.Delete()
 		So(err, ShouldBeNil)
 	})
-	Convey("Testing Menu-Content Joins", t, func() {
-		var m Menu
-		m.Name = "name"
-		err := m.Create()
-		So(err, ShouldBeNil)
-		var c Content
-		c.Title = "title"
-		err = c.Create()
-		So(err, ShouldBeNil)
-		err = m.JoinToContent(c)
-		So(err, ShouldBeNil)
-		err = m.DeleteMenuContentJoin(c)
-		So(err, ShouldBeNil)
-		//cleanup
-		m.Delete()
-		c.Delete()
-	})
-
 }
 
 func TestWebsite(t *testing.T) {
-	Convey("Testing CRUD", t, func() {
-		var w Website
-		var err error
-		//create
+	var w Website
+	var err error
+	Convey("Testing Create Website", t, func() {
 		w.Url = "www.example.com"
 		err = w.Create()
 		So(err, ShouldBeNil)
-		//update
+	})
+	Convey("Testing Update Website", t, func() {
+
 		w.Description = "Desc"
 		err = w.Update()
 		So(err, ShouldBeNil)
-		//get
+	})
+	Convey("Testing Get Website", t, func() {
 		err = w.Get()
 		So(err, ShouldBeNil)
-		//delete
-		err = w.Delete()
-		So(err, ShouldBeNil)
-
 	})
-	Convey("Testing GetAll-s", t, func() {
+	Convey("Testing GetAll Websites", t, func() {
 		ws, err := GetAllWebsites()
 		if err != sql.ErrNoRows {
 			So(err, ShouldBeNil)
 			So(len(ws), ShouldBeGreaterThan, 0)
 		}
-		var w Website
-		w.ID = 1
+	})
+	Convey("Testing GetSiteDetails", t, func() {
 		err = w.GetDetails()
 		So(err, ShouldBeNil)
-		t.Log(w)
-
 	})
+	Convey("Testing Delete Website", t, func() {
+		err = w.Delete()
+		So(err, ShouldBeNil)
+	})
+
 }
