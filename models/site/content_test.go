@@ -33,18 +33,20 @@ func TestContents(t *testing.T) {
 			var cp ContentPage
 			var err error
 			ms, err := GetAllMenus()
-			So(err, ShouldBeNil)
-			//if thar' be menus, get random menu
-			if len(ms) > 0 {
-				i := rand.Intn(len(ms))
-				menu := ms[i]
-				err = cp.GetContentPageByName(menu.Id, true)
-				if err != sql.ErrNoRows { //check for empty db
-					So(cp, ShouldNotBeNil)
-					So(cp.SiteContent, ShouldNotBeNil)
-					So(cp.Revision, ShouldNotBeNil)
-					So(cp.MenuWithContent, ShouldNotBeNil)
-					So(err, ShouldBeNil)
+			if err != sql.ErrNoRows {
+				So(err, ShouldBeNil)
+				//if thar' be menus, get random menu
+				if len(ms) > 0 {
+					i := rand.Intn(len(ms))
+					menu := ms[i]
+					err = cp.GetContentPageByName(menu.Id, true)
+					if err != sql.ErrNoRows { //check for empty db
+						So(cp, ShouldNotBeNil)
+						So(cp.SiteContent, ShouldNotBeNil)
+						So(cp.Revision, ShouldNotBeNil)
+						So(cp.MenuWithContent, ShouldNotBeNil)
+						So(err, ShouldBeNil)
+					}
 				}
 			}
 		})
@@ -59,6 +61,7 @@ func TestContents(t *testing.T) {
 	})
 	Convey("GetSitemapCP", t, func() {
 		cps, err := GetSitemapCP()
+		t.Log("ERR", err)
 		if err != sql.ErrNoRows {
 			So(err, ShouldBeNil)
 			So(len(cps), ShouldBeGreaterThan, 0)

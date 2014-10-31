@@ -335,6 +335,9 @@ func GetSitemapCP() (cps ContentPages, err error) {
 	var cType, title, mTitle, mDesc, slug, canon *string
 	var cp ContentPage
 	res, err := stmt.Query()
+	if err != nil {
+		return cps, err
+	}
 	for res.Next() {
 		err = res.Scan(
 			&cp.SiteContent.Id,
@@ -353,11 +356,10 @@ func GetSitemapCP() (cps ContentPages, err error) {
 			&canon,
 			&cp.SiteContent.WebsiteId,
 		)
-		if err != sql.ErrNoRows {
-			if err != nil {
-				return cps, err
-			}
+		if err != nil {
+			return cps, err
 		}
+
 		if cType != nil {
 			cp.SiteContent.Type = *cType
 		}
@@ -384,6 +386,9 @@ func GetSitemapCP() (cps ContentPages, err error) {
 		// 	}
 		// }
 		cps = append(cps, cp)
+	}
+	if len(cps) == 0 {
+		err = sql.ErrNoRows
 	}
 
 	return cps, err

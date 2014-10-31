@@ -199,6 +199,9 @@ func GetFooterSitemap() (ms MenuWithContents, err error) {
 		}
 		ms = append(ms, m)
 	}
+	if len(ms) == 0 {
+		err = sql.ErrNoRows
+	}
 	return ms, err
 
 }
@@ -246,6 +249,9 @@ func GetMenuSitemap() (ms MenuWithContents, err error) {
 			ms = append(ms, m)
 		}
 
+	}
+	if len(ms) == 0 {
+		err = sql.ErrNoRows
 	}
 	return ms, err
 }
