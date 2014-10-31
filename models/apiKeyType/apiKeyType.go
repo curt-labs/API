@@ -9,10 +9,11 @@ import (
 )
 
 var (
-	getApiKeyType    = "SELECT id, type, date_added FROM ApiKeyType WHERE id = ? "
-	getKeyByDateType = "SELECT id FROM ApiKeyType WHERE type = ?  AND date_added = ?"
-	createApiKeyType = "INSERT INTO ApiKeyType (id, type, date_added) VALUES (UUID(),?,?)"
-	deleteApiKeyType = "DELETE FROM ApiKeyType WHERE id = ? "
+	getApiKeyType     = "SELECT id, type, date_added FROM ApiKeyType WHERE id = ? "
+	getAllApiKeyTypes = "SELECT id, type, date_added FROM ApiKeyType "
+	getKeyByDateType  = "SELECT id FROM ApiKeyType WHERE type = ?  AND date_added = ?"
+	createApiKeyType  = "INSERT INTO ApiKeyType (id, type, date_added) VALUES (UUID(),?,?)"
+	deleteApiKeyType  = "DELETE FROM ApiKeyType WHERE id = ? "
 )
 
 type ApiKeyType struct {
@@ -37,6 +38,26 @@ func (a *ApiKeyType) Get() (err error) {
 		return
 	}
 	return
+}
+
+func GetAllApiKeyTypes() (as []ApiKeyType, err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(getAllApiKeyTypes)
+	if err != nil {
+		return
+	}
+	defer stmt.Close()
+	res, err := stmt.Query() //returns *sql.Rows
+	var a ApiKeyType
+	for res.Next() {
+		err = res.Scan(&a.ID, &a.Type, &a.DateAdded)
+		as = append(as, a)
+	}
+	return as, err
 }
 
 func (a *ApiKeyType) Create() (err error) {
