@@ -8,129 +8,34 @@ import (
 func TestSalesReps(t *testing.T) {
 	var err error
 	var rep SalesRep
-	var lastSalesRepID int
-
-	//create a test rep
-	testRep := SalesRep{
-		Name: "Test SalesRep",
-		Code: "9999",
-	}
-	testRep.Add()
-
-	//run our tests
-	Convey("Testing Gets", t, func() {
-		Convey("Testing GetAll()", func() {
-			reps, err := GetAllSalesReps()
-
-			So(len(reps), ShouldBeGreaterThanOrEqualTo, 0)
-			So(err, ShouldBeNil)
-		})
-
-		Convey("Testing Get()", func() {
-			Convey("SalesRep with ID of 0", func() {
-				err = rep.Get()
-
-				So(rep.ID, ShouldEqual, 0)
-				So(rep.Name, ShouldEqual, "")
-				So(rep.Code, ShouldEqual, "")
-			})
-
-			Convey("SalesRep with non-zero ID", func() {
-				rep = SalesRep{ID: testRep.ID}
-				err = rep.Get()
-
-				So(rep.ID, ShouldNotEqual, 0)
-				So(err, ShouldBeNil)
-			})
-		})
-	})
 
 	Convey("Testing Add()", t, func() {
-		Convey("Empty SalesRep", func() {
-			rep = SalesRep{}
-			err = rep.Add()
-
-			So(rep.ID, ShouldEqual, 0)
-			So(rep.Name, ShouldEqual, "")
-			So(rep.Code, ShouldEqual, "")
-			So(err, ShouldNotBeNil)
-		})
-		Convey("Missing name", func() {
-			rep = SalesRep{
-				Code: "9999",
-			}
-
-			err = rep.Add()
-
-			So(rep.ID, ShouldEqual, 0)
-			So(err, ShouldNotBeNil)
-		})
-		Convey("Valid SalesRep", func() {
-			rep = SalesRep{
-				Name: "Test SalesRep",
-				Code: "9999",
-			}
-
-			err = rep.Add()
-
-			So(rep.ID, ShouldBeGreaterThan, 0)
-			So(rep.Name, ShouldNotEqual, "")
-			So(rep.Code, ShouldNotEqual, "")
-			So(err, ShouldBeNil)
-
-			lastSalesRepID = rep.ID
-		})
+		rep.Name = "Name"
+		err = rep.Add()
+		So(err, ShouldBeNil)
 	})
 
 	Convey("Testing Update()", t, func() {
-		Convey("Empty SalesRep", func() {
-			rep = SalesRep{}
-			err = rep.Update()
+		rep.Name = "testname"
+		err = rep.Update()
+		So(err, ShouldBeNil)
+	})
 
-			So(rep.ID, ShouldEqual, 0)
-			So(err, ShouldNotBeNil)
-		})
+	Convey("Testing Gets()", t, func() {
+		err = rep.Get()
+		So(rep.ID, ShouldNotEqual, 0)
+		So(rep.Name, ShouldEqual, "testname")
 
-		Convey("Missing Name", func() {
-			rep = SalesRep{
-				Code: "9999",
-			}
-			err = rep.Update()
-
-			So(rep.ID, ShouldEqual, 0)
-			So(err, ShouldNotBeNil)
-		})
-
-		Convey("Last Added SalesRep", func() {
-			rep = SalesRep{ID: lastSalesRepID}
-			rep.Name = "Test SalesRep"
-			rep.Code = "9999"
-
-			err = rep.Update()
-
-			So(rep.ID, ShouldNotEqual, 0)
-			So(rep.Name, ShouldNotEqual, "")
-			So(rep.Code, ShouldNotEqual, "")
-			So(err, ShouldBeNil)
-		})
+		reps, err := GetAllSalesReps()
+		So(len(reps), ShouldBeGreaterThan, 0)
+		So(err, ShouldBeNil)
 	})
 
 	Convey("Testing Delete()", t, func() {
 		Convey("Empty SalesRep", func() {
-			rep = SalesRep{}
 			err = rep.Delete()
-
-			So(err, ShouldNotBeNil)
-		})
-
-		Convey("Last Updated Group", func() {
-			rep = SalesRep{ID: lastSalesRepID}
-			err = rep.Delete()
-
 			So(err, ShouldBeNil)
 		})
 	})
 
-	//delete our test record
-	testRep.Delete()
 }
