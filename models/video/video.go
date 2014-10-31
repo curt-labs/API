@@ -7,24 +7,25 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	"github.com/curt-labs/GoAPI/models/products"
 	_ "github.com/go-sql-driver/mysql"
+	"log"
 	"strconv"
 	"time"
 )
 
 type Video struct {
-	ID           int             `json:"id,omitempty" xml:"id,omitempty"`
-	Title        string          `json:"title, omitempty" xml:"title,omitempty"`
-	VideoType    VideoType       `json:"videoType,omitempty" xml:"v,omitempty"`
-	Description  string          `json:"description,omitempty" xml:"description,omitempty"`
-	DateAdded    time.Time       `json:"dateAdded,omitempty" xml:"dateAdded,omitempty"`
-	DateModified time.Time       `json:"dateModified,omitempty" xml:"dateModified,omitempty"`
-	IsPrimary    bool            `json:"isPrimary,omitempty" xml:"v,omitempty"`
-	Thumbnail    string          `json:"thumbnail,omitempty" xml:"thumbnail,omitempty"`
-	Channels     Channels        `json:"channels,omitempty" xml:"channels,omitempty"`
-	Files        CdnFiles        `json:"files,omitempty" xml:"files,omitempty"`
-	Categories   []Category      `json:"categories,omitempty" xml:"categories,omitempty"`
-	Parts        []products.Part `json:"parts,omitempty" xml:"parts,omitempty"`
-	WebsiteId    int             `json:"websiteId,omitempty" xml:"websiteId,omitempty"` //TODO
+	ID           int                 `json:"id,omitempty" xml:"id,omitempty"`
+	Title        string              `json:"title, omitempty" xml:"title,omitempty"`
+	VideoType    VideoType           `json:"videoType,omitempty" xml:"v,omitempty"`
+	Description  string              `json:"description,omitempty" xml:"description,omitempty"`
+	DateAdded    time.Time           `json:"dateAdded,omitempty" xml:"dateAdded,omitempty"`
+	DateModified time.Time           `json:"dateModified,omitempty" xml:"dateModified,omitempty"`
+	IsPrimary    bool                `json:"isPrimary,omitempty" xml:"v,omitempty"`
+	Thumbnail    string              `json:"thumbnail,omitempty" xml:"thumbnail,omitempty"`
+	Channels     Channels            `json:"channels,omitempty" xml:"channels,omitempty"`
+	Files        CdnFiles            `json:"files,omitempty" xml:"files,omitempty"`
+	Categories   []products.Category `json:"categories,omitempty" xml:"categories,omitempty"`
+	Parts        []products.Part     `json:"parts,omitempty" xml:"parts,omitempty"`
+	WebsiteId    int                 `json:"websiteId,omitempty" xml:"websiteId,omitempty"` //TODO
 }
 type Videos []Video
 
@@ -99,8 +100,8 @@ var (
 	getPartVideos    = `SELECT ` + videoFields + `, ` + videoTypeFields + ` FROM VideoNew AS v LEFT JOIN videoType AS vt ON vt.vTypeID = v.subjectTypeID 
 						LEFT JOIN VideoJoin AS vj on vj.videoID = v.ID WHERE vj.partID = ? ORDER BY v.title `
 	getVideoChannels = `SELECT ` + channelFields + `, ` + channelTypeFields + ` FROM VideoChannels AS vc 
-					 JOIN Channel AS c on c.ID = vc.channelID
-					 JOIN ChannelType AS ct ON ct.ID = c.typeID
+					  JOIN Channel AS c on c.ID = vc.channelID
+					 LEFT JOIN ChannelType AS ct ON ct.ID = c.typeID
 					WHERE vc.videoID = ?`
 	getVideoCdns = `SELECT ` + cdnFileFields + `, ` + cdnFileTypeFields + ` FROM CdnFile AS cf 
 						LEFT JOIN CdnFileType AS cft ON cft.ID = cf.typeID 
@@ -212,9 +213,6 @@ func (v *Video) GetVideoDetails() (err error) {
 	<-baseChan
 	<-chanChan
 	<-cdnChan
-	close(baseChan)
-	close(chanChan)
-	close(cdnChan)
 	go redis.Setex(redis_key, v, 86400)
 	return nil
 }
@@ -304,11 +302,13 @@ func (v *Video) GetChannels() (chs Channels, err error) {
 	if err != nil {
 		return chs, err
 	}
+
 	if err == nil {
 		ch := make(chan Channels)
 		go populateChannels(rows, ch)
 		chs = <-ch
 	}
+	log.Print(v.ID, chs)
 	go redis.Setex(redis_key, chs, 86400)
 	return chs, err
 }
@@ -656,7 +656,7 @@ func (v *Video) CreateJoinPart(p products.Part) (err error) {
 }
 
 //HTML5
-func (v *Video) CreateJoinCategory(c Category) (err error) {
+func (v *Video) CreateJoinCategory(c products.Category) (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -742,7 +742,7 @@ func (v *Video) DeleteJoinPart(p products.Part) (err error) {
 }
 
 //HTML5
-func (v *Video) DeleteJoinCategory(c Category) (err error) {
+func (v *Video) DeleteJoinCategory(c products.Category) (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1570,10 +1570,11 @@ func populateChannels(rows *sql.Rows, ch chan Channels) {
 	var chs Channels
 	var c Channel
 	var link, foreign, title, tName, tDesc *string
+	var ctypeId *int
 	for rows.Next() {
 		err := rows.Scan(
 			&c.ID,
-			&c.Type.ID,
+			&ctypeId,
 			&link,
 			&c.EmbedCode,
 			&foreign,
@@ -1584,12 +1585,17 @@ func populateChannels(rows *sql.Rows, ch chan Channels) {
 			&tName,
 			&tDesc,
 		)
+		log.Print(c)
 		if err != nil {
+			log.Print(err)
 			ch <- Channels{}
 			return
 		}
 		if link != nil {
 			c.Link = *link
+		}
+		if ctypeId != nil {
+			c.Type.ID = *ctypeId
 		}
 		if foreign != nil {
 			c.ForiegnID = *foreign

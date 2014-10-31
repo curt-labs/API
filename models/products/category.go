@@ -121,6 +121,9 @@ var (
 		join Content as c on cb.contentID = c.contentID
 		left join ContentType as ct on c.cTypeID = ct.cTypeID
 		where cb.catID = ?`
+	createCategory = `insert into Categories (dateAdded, parentID, catTitle, shortDesc, longDesc, image, isLifestyle, codeId, sort, vehicleSpecific, vehicleRequired, metaTitle, metaDesc, metaKeywords, icon, path)
+						values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+	deleteCategory = `delete from Categories where catID = ? `
 )
 
 const (
@@ -146,6 +149,9 @@ type Category struct {
 	SubCategories   []Category               `json:"sub_categories,omitempty" xml:"sub_categories,omitempty"`
 	ProductListing  *PaginatedProductListing `json:"product_listing,omitempty" xml:"product_listing,omitempty"`
 	Filter          interface{}              `json:"filter,omitempty" xml:"filter,omitempty"`
+	MetaTitle       string                   `json:"metaTitle,omitempty" xml:"v,omitempty"`
+	MetaDescription string                   `json:"metaDescription,omitempty" xml:"metaDescription,omitempty"`
+	MetaKeywords    string                   `json:"metaKeywords,omitempty" xml:"metaKeywords,omitempty"`
 }
 
 func PopulateCategoryMulti(rows *sql.Rows, ch chan []Category) {
@@ -754,4 +760,62 @@ func (c *Category) GetPartCount(key string, v *Vehicle, specs *map[string][]stri
 	c.ProductListing.TotalItems = *total
 
 	return nil
+}
+
+func (c *Category) Create() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(createCategory)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	res, err := stmt.Exec(
+		c.DateAdded,
+		c.ParentID,
+		c.Title,
+		c.ShortDesc,
+		c.LongDesc,
+		c.Image,
+		c.IsLifestyle,
+		c.ColorCode,
+		c.Sort,
+		c.VehicleSpecific,
+		c.VehicleRequired,
+		c.MetaTitle,
+		c.MetaDescription,
+		c.MetaKeywords,
+		c.Icon,
+		c.Image,
+	)
+	if err != nil {
+		return err
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return err
+	}
+	c.ID = int(id)
+	return err
+}
+
+func (c *Category) Delete() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(deleteCategory)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(c.ID)
+	if err != nil {
+		return err
+	}
+	return err
 }
