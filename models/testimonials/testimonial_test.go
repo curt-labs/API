@@ -16,6 +16,8 @@ func TestTestimonials(t *testing.T) {
 	})
 	Convey("Update", t, func() {
 		test.Content = "New Content"
+		test.Active = true
+		test.Approved = true
 		err = test.Update()
 		So(err, ShouldBeNil)
 
@@ -26,11 +28,11 @@ func TestTestimonials(t *testing.T) {
 		So(err, ShouldBeNil)
 	})
 	Convey("GetAll - No paging", t, func() {
-		ts, err := GetAllTestimonials(0, 0, false)
-		if err != sql.ErrNoRows {
-			So(err, ShouldBeNil)
-			So(len(ts), ShouldBeGreaterThan, 0)
-		}
+		ts, err := GetAllTestimonials(0, 1, false)
+		// if err != sql.ErrNoRows {
+		So(err, ShouldBeNil)
+		So(len(ts), ShouldBeGreaterThan, 0)
+		// }
 	})
 
 	Convey("GetAll - Paged", t, func() {
@@ -49,10 +51,10 @@ func TestTestimonials(t *testing.T) {
 		}
 
 	})
-	// Convey("Delete", t, func() {
-	// 	err = test.Delete()
-	// 	So(err, ShouldBeNil)
+	Convey("Delete", t, func() {
+		err = test.Delete()
+		So(err, ShouldBeNil)
 
-	// })
+	})
 
 }
