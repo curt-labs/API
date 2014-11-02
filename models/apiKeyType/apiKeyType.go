@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	_ "github.com/go-sql-driver/mysql"
-	"log"
 	"time"
 )
 
@@ -22,6 +21,10 @@ type ApiKeyType struct {
 	DateAdded time.Time
 }
 
+type Scanner interface {
+	Scan(...interface{}) error
+}
+
 func (a *ApiKeyType) Get() (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -33,10 +36,8 @@ func (a *ApiKeyType) Get() (err error) {
 		return
 	}
 	defer stmt.Close()
-	err = stmt.QueryRow(a.ID).Scan(&a.ID, &a.Type, &a.DateAdded)
-	if err != nil {
-		return
-	}
+	res := stmt.QueryRow(a.ID)
+	a, err = ScanKey(res)
 	return
 }
 
@@ -52,12 +53,25 @@ func GetAllApiKeyTypes() (as []ApiKeyType, err error) {
 	}
 	defer stmt.Close()
 	res, err := stmt.Query() //returns *sql.Rows
-	var a ApiKeyType
+	// var a ApiKeyType
+	// for res.Next() {
+	// 	err = res.Scan(&a.ID, &a.Type, &a.DateAdded)
+	// 	as = append(as, a)
+	// }
 	for res.Next() {
-		err = res.Scan(&a.ID, &a.Type, &a.DateAdded)
-		as = append(as, a)
+		a, err := ScanKey(res)
+		if err != nil {
+			return as, err
+		}
+		as = append(as, *a)
 	}
 	return as, err
+}
+
+func ScanKey(s Scanner) (*ApiKeyType, error) {
+	a := &ApiKeyType{}
+	err := s.Scan(&a.ID, &a.Type, &a.DateAdded)
+	return a, err
 }
 
 func (a *ApiKeyType) Create() (err error) {
@@ -86,7 +100,6 @@ func (a *ApiKeyType) Create() (err error) {
 	if err != nil {
 		return err
 	}
-	log.Print("A", a.ID)
 	return
 }
 
