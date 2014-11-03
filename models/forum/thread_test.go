@@ -55,6 +55,7 @@ func TestThreads(t *testing.T) {
 	Convey("Testing Add()", t, func() {
 		Convey("Add Empty Thread", func() {
 			th = Thread{}
+			th.TopicID = top.ID
 			err = th.Add()
 			So(err, ShouldBeNil)
 		})
