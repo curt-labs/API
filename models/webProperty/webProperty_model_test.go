@@ -43,6 +43,8 @@ func TestWebPropertiesBetter(t *testing.T) {
 
 		//Create Web Property
 		w.WebPropertyRequirements = append(w.WebPropertyRequirements, wr)
+		w.WebPropertyNotes = append(w.WebPropertyNotes, wn)
+		w.WebPropertyType = wt
 		err = w.Create()
 		So(err, ShouldBeNil)
 		So(w, ShouldNotBeNil)
