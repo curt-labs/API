@@ -19,6 +19,7 @@ type ApiKeyType struct {
 	ID        string
 	Type      string
 	DateAdded time.Time
+	time.Time
 }
 
 type Scanner interface {
@@ -38,6 +39,7 @@ func (a *ApiKeyType) Get() (err error) {
 	defer stmt.Close()
 	res := stmt.QueryRow(a.ID)
 	a, err = ScanKey(res)
+
 	return
 }
 
@@ -53,11 +55,7 @@ func GetAllApiKeyTypes() (as []ApiKeyType, err error) {
 	}
 	defer stmt.Close()
 	res, err := stmt.Query() //returns *sql.Rows
-	// var a ApiKeyType
-	// for res.Next() {
-	// 	err = res.Scan(&a.ID, &a.Type, &a.DateAdded)
-	// 	as = append(as, a)
-	// }
+
 	for res.Next() {
 		a, err := ScanKey(res)
 		if err != nil {
@@ -90,6 +88,7 @@ func (a *ApiKeyType) Create() (err error) {
 	if err != nil {
 		return
 	}
+
 	stmt, err = db.Prepare(getKeyByDateType)
 	if err != nil {
 		return err

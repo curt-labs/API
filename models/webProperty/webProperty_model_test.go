@@ -12,13 +12,12 @@ import (
 )
 
 func TestWebPropertiesBetter(t *testing.T) {
+	var w WebProperty
+	var wr WebPropertyRequirement
+	var wn WebPropertyNote
+	var wt WebPropertyType
+	var err error
 	Convey("Testing Create", t, func() {
-		var w WebProperty
-		var wr WebPropertyRequirement
-		var wn WebPropertyNote
-		var wt WebPropertyType
-		var err error
-
 		//New WebProperty
 		w.Name = "test prop"
 		w.Url = "www.hotdavid.com"
@@ -32,24 +31,9 @@ func TestWebPropertiesBetter(t *testing.T) {
 		wr.ReqType = "Req Type"
 		err = wr.Create()
 		So(err, ShouldBeNil)
-
-		wr.Compliance = true
-		err = wr.Update()
-		So(err, ShouldBeNil)
-
-		err = wr.Get()
-		So(err, ShouldBeNil)
-
 		//Test Note
 		wn.Text = "Note text"
 		err = wn.Create()
-		So(err, ShouldBeNil)
-
-		wn.Text = "New Text"
-		err = wn.Update()
-		So(err, ShouldBeNil)
-
-		err = wn.Get()
 		So(err, ShouldBeNil)
 
 		//Test Type
@@ -57,8 +41,32 @@ func TestWebPropertiesBetter(t *testing.T) {
 		err = wt.Create()
 		So(err, ShouldBeNil)
 
+		//Create Web Property
+		w.WebPropertyRequirements = append(w.WebPropertyRequirements, wr)
+		err = w.Create()
+		So(err, ShouldBeNil)
+		So(w, ShouldNotBeNil)
+	})
+	Convey("Testing Update", t, func() {
+		wr.Compliance = true
+		err = wr.Update()
+		So(err, ShouldBeNil)
+		wn.Text = "New Text"
+		err = wn.Update()
+		So(err, ShouldBeNil)
 		wt.Type = "B type"
 		err = wt.Update()
+		So(err, ShouldBeNil)
+		//Update Property
+		w.Name = "New Name"
+		err = w.Update()
+		So(err, ShouldBeNil)
+	})
+	Convey("Testing Get", t, func() {
+		err = wr.Get()
+		So(err, ShouldBeNil)
+
+		err = wn.Get()
 		So(err, ShouldBeNil)
 
 		err = wt.Get()
@@ -68,24 +76,40 @@ func TestWebPropertiesBetter(t *testing.T) {
 		w.WebPropertyNotes = append(w.WebPropertyNotes, wn)
 		w.WebPropertyType = wt
 
-		//Create Web Property
-		err = w.Create()
-		So(err, ShouldBeNil)
-		So(w, ShouldNotBeNil)
-
 		//Search
 		obj, err := Search(w.Name, "", "", "", "", "", "", "", "", "", "", "", "1", "1")
 		So(err, ShouldBeNil)
 		So(len(obj.Objects), ShouldEqual, 0)
 
-		//Update Property
-		w.Name = "New Name"
-		err = w.Update()
-		So(err, ShouldBeNil)
 		//Get Property
 		err = w.Get()
 		So(err, ShouldBeNil)
+	})
+	Convey("Testing GetAll", t, func() {
+		ws, err := GetAll()
+		if err != sql.ErrNoRows {
+			So(err, ShouldBeNil)
+			So(len(ws), ShouldBeGreaterThan, 0)
+		}
+		ns, err := GetAllWebPropertyNotes()
+		if err != sql.ErrNoRows {
+			So(err, ShouldBeNil)
+			So(len(ns), ShouldBeGreaterThan, 0)
+		}
 
+		rs, err := GetAllWebPropertyRequirements()
+		if err != sql.ErrNoRows {
+			So(err, ShouldBeNil)
+			So(len(rs), ShouldBeGreaterThan, 0)
+		}
+		ts, err := GetAllWebPropertyTypes()
+		if err != sql.ErrNoRows {
+			So(err, ShouldBeNil)
+			So(len(ts), ShouldBeGreaterThan, 0)
+		}
+
+	})
+	Convey("Testing GetAll", t, func() {
 		//Deletes
 		err = w.Delete()
 		So(err, ShouldBeNil)
@@ -96,30 +120,6 @@ func TestWebPropertiesBetter(t *testing.T) {
 
 		err = wr.Delete()
 		So(err, ShouldBeNil)
-
-		Convey("Testing GetAll", func() {
-			ws, err := GetAll()
-			if err != sql.ErrNoRows {
-				So(err, ShouldBeNil)
-				So(len(ws), ShouldBeGreaterThan, 0)
-			}
-			ns, err := GetAllWebPropertyNotes()
-			if err != sql.ErrNoRows {
-				So(err, ShouldBeNil)
-				So(len(ns), ShouldBeGreaterThan, 0)
-			}
-			rs, err := GetAllWebPropertyRequirements()
-			if err != sql.ErrNoRows {
-				So(err, ShouldBeNil)
-				So(len(rs), ShouldBeGreaterThan, 0)
-			}
-			ts, err := GetAllWebPropertyTypes()
-			if err != sql.ErrNoRows {
-				So(err, ShouldBeNil)
-				So(len(ts), ShouldBeGreaterThan, 0)
-			}
-
-		})
 
 	})
 
