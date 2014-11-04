@@ -2,7 +2,6 @@ package faq_controller
 
 import (
 	"github.com/curt-labs/GoAPI/helpers/encoding"
-	"github.com/curt-labs/GoAPI/helpers/pagination"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	"github.com/curt-labs/GoAPI/models/faq"
 	"github.com/go-martini/martini"
@@ -125,32 +124,6 @@ func Delete(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, param
 		return err.Error()
 	}
 	return encoding.Must(enc.Encode(f))
-}
-
-func GetQuestions(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
-	var l pagination.Objects
-	var err error
-	page := r.FormValue("page")
-	results := r.FormValue("results")
-
-	l, err = faq_model.GetQuestions(page, results)
-	if err != nil {
-		return err.Error()
-	}
-	return encoding.Must(enc.Encode(l))
-}
-
-func GetAnswers(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
-	var l pagination.Objects
-	var err error
-	page := r.FormValue("page")
-	results := r.FormValue("results")
-
-	l, err = faq_model.GetAnswers(page, results)
-	if err != nil {
-		return err.Error()
-	}
-	return encoding.Must(enc.Encode(l))
 }
 
 func Search(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {

@@ -194,8 +194,6 @@ func main() {
 
 	m.Group("/faqs", func(r martini.Router) {
 		r.Get("", faq_controller.GetAll)                        //get all faqs; takes optional sort param {sort=true} to sort by question
-		r.Get("/questions", faq_controller.GetQuestions)        //get questions!{page, results} - all parameters are optional
-		r.Get("/answers", faq_controller.GetAnswers)            //get answers!{page, results} - all parameters are optional
 		r.Get("/search", faq_controller.Search)                 //takes {question, answer, page, results} - all parameters are optional
 		r.Get("/(:id)", faq_controller.Get)                     //get by id {id}
 		r.Put("", internalCors, faq_controller.Create)          //takes {question, answer}; returns object with new ID
