@@ -94,26 +94,31 @@ func TestCustomerUser(t *testing.T) {
 	Convey("Testing User Registration/ChangePass/Auth ", t, func() {
 		Convey("Testing Register()", func() {
 			var cu CustomerUser
+			var err error
 			cu.Email = "bob@bob.com"
-			pass := "test"
-			customerID := 888
-			isActive := true
-			locationID := 1
-			isSudo := true
-			cust_ID := 1
-			notCustomer := false
-			custUser, err := cu.Register(pass, customerID, isActive, locationID, isSudo, cust_ID, notCustomer)
-			So(custUser, ShouldNotBeNil)
+			cu.Password = "test"
+			cu.OldCustomerID = 888
+			cu.Active = true
+			cu.Location.Id = 1
+			cu.Sudo = true
+			cu.CustomerID = 1
+			cu.Current = false
+			err = cu.Create()
+			So(cu, ShouldNotBeNil)
 			So(err, ShouldBeNil)
 			Convey("BindAPIAccess", func() {
 				err = cu.BindApiAccess()
 				So(err, ShouldBeNil)
 				So(len(cu.Keys), ShouldEqual, 3)
 			})
-			Convey("BindLocation", func() {
-				err = cu.BindLocation()
+			// Convey("BindLocation", func() {
+			// 	err = cu.BindLocation()
+			// 	So(err, ShouldBeNil)
+			// 	So(cu.Location, ShouldNotBeNil)
+			// })
+			Convey("Get Location", func() {
+				err = cu.GetLocation()
 				So(err, ShouldBeNil)
-				So(cu.Location, ShouldNotBeNil)
 			})
 			Convey("Update CustomerUser", func() {
 				cu.Name = "Peanut"
@@ -129,7 +134,7 @@ func TestCustomerUser(t *testing.T) {
 				So(cu.Id, ShouldNotBeNil)
 				oldPass := "test"
 				newPass := "jerk"
-				str, err := cu.ChangePass(oldPass, newPass, customerID)
+				str, err := cu.ChangePass(oldPass, newPass)
 				So(err, ShouldBeNil)
 				So(str, ShouldEqual, "success")
 				Convey("Now, Authenticate", func() {
@@ -153,8 +158,8 @@ func TestCustomerUser(t *testing.T) {
 				})
 			})
 			Convey("Delete CustUsers by CustomerID", func() {
-				t.Log(customerID)
-				err = DeleteCustomerUsersByCustomerID(customerID)
+				t.Log(cu.OldCustomerID)
+				err = DeleteCustomerUsersByCustomerID(cu.OldCustomerID)
 				So(err, ShouldBeNil)
 			})
 		})

@@ -22,15 +22,18 @@ import (
 )
 
 type CustomerUser struct {
-	Id        string           `json:"id" xml:"id"`
-	Name      string           `json:"name" xml:"name,attr"`
-	Email     string           `json:"email" xml:"email,attr"`
-	DateAdded time.Time        `json:"date_added" xml:"date_added,attr"`
-	Active    bool             `json:"active" xml:"active,attr"`
-	Sudo      bool             `json:"sudo" xml:"sudo,attr"`
-	Current   bool             `json:"current" xml:"current,attr"`
-	Location  CustomerLocation `json:"location" xml:"location"`
-	Keys      []ApiCredentials `json:"keys" xml:"keys"`
+	Id            string           `json:"id" xml:"id"`
+	Name          string           `json:"name" xml:"name,attr"`
+	Email         string           `json:"email" xml:"email,attr"`
+	Password      string           `json:"password,omitempty" xml:"password,omitempty"`
+	OldCustomerID int              `json:"oldCustomerId,omitempty" xml:"oldCustomerId,omitempty"`
+	DateAdded     time.Time        `json:"date_added" xml:"date_added,attr"`
+	Active        bool             `json:"active" xml:"active,attr"`
+	Location      CustomerLocation `json:"location" xml:"location"`
+	Sudo          bool             `json:"sudo" xml:"sudo,attr"`
+	CustomerID    int              `json:"customerId,omitempty" xml:"customerId,omitempty"`
+	Current       bool             `json:"current" xml:"current,attr"`
+	Keys          []ApiCredentials `json:"keys" xml:"keys"`
 }
 
 type ApiCredentials struct {
@@ -179,19 +182,19 @@ func AuthenticateUserByKey(key string) (u CustomerUser, err error) {
 		key,
 		Timer,
 	}
-	var dbPass, custId, customerId string
+	var dbPass string
 	var passConversion []byte //bools
 	err = stmt.QueryRow(params...).Scan(
 		&u.Id,
 		&u.Name,
 		&u.Email,
-		&dbPass,     //Not Used
-		&customerId, //Not Used
+		&dbPass, //Not Used
+		&u.OldCustomerID,
 		&u.DateAdded,
 		&u.Active,
 		&u.Location.Id,
 		&u.Sudo,
-		&custId, //Not Used
+		&u.CustomerID,
 		&u.Current,
 		&passConversion, //Not Used
 	)
@@ -279,19 +282,19 @@ func GetCustomerUserFromKey(key string) (u CustomerUser, err error) {
 	}
 	defer stmt.Close()
 
-	var dbPass, custId, passConversion, customerId string
+	var dbPass, passConversion string
 	err = stmt.QueryRow(api_helpers.AUTH_KEY_TYPE, key).Scan(
 		&u.Id,
 		&u.Name,
 		&u.Email,
 		&dbPass, //Not Used
-		&custId, //Not Used
+		&u.OldCustomerID,
 		&u.DateAdded,
 		&u.Active,
 		&u.Location.Id,
 		&u.Sudo,
-		&customerId,     //Not Used
-		&u.Current,      //Not Used
+		&u.CustomerID,
+		&u.Current,
 		&passConversion, //Not Used
 	)
 	if err != nil {
@@ -706,18 +709,18 @@ func (cu *CustomerUser) Get(key string) error {
 	}
 	defer stmt.Close()
 
-	var dbPass, custId, customerId, passConversion string
+	var dbPass, passConversion string
 	err = stmt.QueryRow(cu.Id).Scan(
 		&cu.Id,
 		&cu.Name,
 		&cu.Email,
 		&dbPass, //Not Used
-		&custId, //Not User
+		&cu.OldCustomerID,
 		&cu.DateAdded,
 		&cu.Active,
 		&cu.Location.Id,
 		&cu.Sudo,
-		&customerId, //Not Used
+		&cu.CustomerID,
 		&cu.Current,
 		&passConversion, //Not Used
 	)
@@ -777,41 +780,42 @@ func (cu *CustomerUser) UpdateCustomerUser() error {
 }
 
 //Create CustomerUser
-func (cu *CustomerUser) Register(pass string, customerID int, isActive bool, locationID int, isSudo bool, cust_ID int, notCustomer bool) (*CustomerUser, error) {
-
-	encryptPass, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
+func (cu *CustomerUser) Create() error {
+	var err error
+	encryptPass, err := bcrypt.GenerateFromPassword([]byte(cu.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return nil, errors.New("Failed to generate UUID.")
+		return errors.New("Failed to generate UUID.")
 	}
 
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer db.Close()
 	tx, err := db.Begin()
 
 	stmt, err := tx.Prepare(insertCustomerUser)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	_, err = stmt.Exec(cu.Name, cu.Email, encryptPass, customerID, isActive, locationID, isSudo, cust_ID, notCustomer)
+	_, err = stmt.Exec(cu.Name, cu.Email, encryptPass, cu.OldCustomerID, cu.Active, cu.Location.Id, cu.Sudo, cu.CustomerID, cu.Current)
 	if err != nil {
 		tx.Rollback()
-		return nil, err
+		return err
 	}
 	if err = tx.Commit(); err != nil {
-		return nil, err
+		return err
 	}
+
 	stmt, err = db.Prepare(getRegisteredUsersId) // needs to be set on the customer user object in order to generate the keys
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	var userID *string
 	if err = stmt.QueryRow(cu.Email, encryptPass).Scan(&userID); err != nil || userID == nil {
-		return nil, err
+		return err
 	}
 
 	cu.Id = *userID
@@ -844,17 +848,97 @@ func (cu *CustomerUser) Register(pass string, customerID int, isActive bool, loc
 	}()
 
 	if e := <-pubChan; e != nil {
-		return cu, e
+		return e
 	}
 	if e := <-privChan; e != nil {
-		return cu, e
+		return e
 	}
 	if e := <-authChan; e != nil {
-		return cu, e
+		return e
 	}
 
-	return cu, nil
+	return nil
 }
+
+// //Create CustomerUser
+// func (cu *CustomerUser) Register(pass string, customerID int, isActive bool, locationID int, isSudo bool, cust_ID int, notCustomer bool) (*CustomerUser, error) {
+
+// 	encryptPass, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
+// 	if err != nil {
+// 		return nil, errors.New("Failed to generate UUID.")
+// 	}
+
+// 	db, err := sql.Open("mysql", database.ConnectionString())
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	defer db.Close()
+// 	tx, err := db.Begin()
+
+// 	stmt, err := tx.Prepare(insertCustomerUser)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	_, err = stmt.Exec(cu.Name, cu.Email, encryptPass, customerID, isActive, locationID, isSudo, cust_ID, notCustomer)
+// 	if err != nil {
+// 		tx.Rollback()
+// 		return nil, err
+// 	}
+// 	if err = tx.Commit(); err != nil {
+// 		return nil, err
+// 	}
+// 	stmt, err = db.Prepare(getRegisteredUsersId) // needs to be set on the customer user object in order to generate the keys
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	var userID *string
+// 	if err = stmt.QueryRow(cu.Email, encryptPass).Scan(&userID); err != nil || userID == nil {
+// 		return nil, err
+// 	}
+
+// 	cu.Id = *userID
+
+// 	// then create API keys for the user
+// 	pubChan := make(chan error)
+// 	privChan := make(chan error)
+// 	authChan := make(chan error)
+
+// 	// Public key:
+// 	go func() {
+// 		pub, err := cu.generateAPIKey(PUBLIC_KEY_TYPE)
+// 		cu.Keys = append(cu.Keys, *pub)
+// 		pubChan <- err
+// 	}()
+
+// 	// Private key:
+// 	go func() {
+// 		pri, err := cu.generateAPIKey(PRIVATE_KEY_TYPE)
+// 		cu.Keys = append(cu.Keys, *pri)
+// 		privChan <- err
+// 	}()
+
+// 	// Auth Key:
+// 	go func() {
+// 		auth, err := cu.generateAPIKey(AUTH_KEY_TYPE)
+// 		cu.Keys = append(cu.Keys, *auth)
+// 		authChan <- err
+
+// 	}()
+
+// 	if e := <-pubChan; e != nil {
+// 		return cu, e
+// 	}
+// 	if e := <-privChan; e != nil {
+// 		return cu, e
+// 	}
+// 	if e := <-authChan; e != nil {
+// 		return cu, e
+// 	}
+
+// 	return cu, nil
+// }
 
 func (cu *CustomerUser) generateAPIKey(keyType string) (*ApiCredentials, error) {
 
@@ -961,7 +1045,7 @@ func (cu *CustomerUser) ResetPass(custID string) (string, error) {
 	return randPass, nil
 }
 
-func (cu *CustomerUser) ChangePass(oldPass, newPass string, custID int) (string, error) {
+func (cu *CustomerUser) ChangePass(oldPass, newPass string) (string, error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return "", err
@@ -1093,58 +1177,58 @@ func (cu *CustomerUser) BindApiAccess() error {
 	return nil
 }
 
-func (cu *CustomerUser) BindLocation() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
+// func (cu *CustomerUser) BindLocation() error {
+// 	db, err := sql.Open("mysql", database.ConnectionString())
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer db.Close()
 
-	stmt, err := db.Prepare(getCustomerUserLocation)
-	if err != nil {
-		return err
-	}
-	var coun geography.Country
-	var countryId *int
-	var country, countryAbbr *string
-	err = stmt.QueryRow(cu.Id).Scan(
-		&cu.Location.Id,
-		&cu.Location.Name,
-		&cu.Location.Address,
-		&cu.Location.City,
-		&cu.Location.State.Id,
-		&cu.Location.State.State,
-		&cu.Location.State.Abbreviation,
-		&countryId,
-		&country,
-		&countryAbbr,
-		&cu.Location.Email,
-		&cu.Location.Phone,
-		&cu.Location.Fax,
-		&cu.Location.Latitude,
-		&cu.Location.Longitude,
-		&cu.Location.CustomerId,
-		&cu.Location.ContactPerson,
-		&cu.Location.IsPrimary,
-		&cu.Location.PostalCode,
-		&cu.Location.ShippingDefault,
-	)
-	if countryId != nil {
-		coun.Id = *countryId
-	}
-	if country != nil {
-		coun.Country = *country
-	}
-	if countryAbbr != nil {
-		coun.Abbreviation = *countryAbbr
-	}
-	cu.Location.State.Country = &coun
+// 	stmt, err := db.Prepare(getCustomerUserLocation)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	var coun geography.Country
+// 	var countryId *int
+// 	var country, countryAbbr *string
+// 	err = stmt.QueryRow(cu.Id).Scan(
+// 		&cu.Location.Id,
+// 		&cu.Location.Name,
+// 		&cu.Location.Address,
+// 		&cu.Location.City,
+// 		&cu.Location.State.Id,
+// 		&cu.Location.State.State,
+// 		&cu.Location.State.Abbreviation,
+// 		&countryId,
+// 		&country,
+// 		&countryAbbr,
+// 		&cu.Location.Email,
+// 		&cu.Location.Phone,
+// 		&cu.Location.Fax,
+// 		&cu.Location.Latitude,
+// 		&cu.Location.Longitude,
+// 		&cu.Location.CustomerId,
+// 		&cu.Location.ContactPerson,
+// 		&cu.Location.IsPrimary,
+// 		&cu.Location.PostalCode,
+// 		&cu.Location.ShippingDefault,
+// 	)
+// 	if countryId != nil {
+// 		coun.Id = *countryId
+// 	}
+// 	if country != nil {
+// 		coun.Country = *country
+// 	}
+// 	if countryAbbr != nil {
+// 		coun.Abbreviation = *countryAbbr
+// 	}
+// 	cu.Location.State.Country = &coun
 
-	if err != nil {
-		return err
-	}
-	return nil
-}
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }
 
 type ApiRequest struct {
 	User        CustomerUser `json:"user" xml:"user"`

@@ -62,14 +62,13 @@ func ResetPassword(w http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 
 func ChangePassword(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 	email := r.FormValue("email")
-	custID, err := strconv.Atoi(r.FormValue("customerID"))
 	oldPass := r.FormValue("oldPass")
 	newPass := r.FormValue("newPass")
 
 	var user customer_new.CustomerUser
 	user.Email = email
 
-	resp, err := user.ChangePass(oldPass, newPass, custID)
+	resp, err := user.ChangePass(oldPass, newPass)
 	if err != nil || resp == "" {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 	}
@@ -117,9 +116,7 @@ func GenerateApiKey(w http.ResponseWriter, r *http.Request, params martini.Param
 		return ""
 	}
 
-	user = customer_new.CustomerUser{
-		Id: id,
-	}
+	user.Id = id
 	if err := user.Get(key); err != nil {
 		http.Error(w, "failed to retrieve the reference user account", http.StatusInternalServerError)
 		return ""
@@ -146,11 +143,32 @@ func RegisterUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) 
 	cust_ID, err := strconv.Atoi(r.FormValue("cust_ID"))
 	notCustomer, err := strconv.ParseBool(r.FormValue("notCustomer"))
 
+	if email == "" || pass == "" {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return "Email and password are required."
+	}
+
 	var user customer_new.CustomerUser
 	user.Email = email
-	user.Name = name
-	cu, err := user.Register(pass, customerID, isActive, locationID, isSudo, cust_ID, notCustomer)
-	if err != nil || cu == nil {
+	user.Password = pass
+	if name != "" {
+		user.Name = name
+	}
+	if customerID != 0 {
+		user.OldCustomerID = customerID
+	}
+	if locationID != 0 {
+		user.Location.Id = locationID
+	}
+	if cust_ID != 0 {
+		user.CustomerID = cust_ID
+	}
+	user.Active = isActive
+	user.Sudo = isSudo
+	user.Current = notCustomer
+	err = user.Create()
+	// cu, err := user.Register(pass, customerID, isActive, locationID, isSudo, cust_ID, notCustomer)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return ""
 	}
@@ -159,10 +177,11 @@ func RegisterUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) 
 }
 func DeleteCustomerUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	id := params["id"]
+	var err error
 
 	var cu customer_new.CustomerUser
 	cu.Id = id
-	err := cu.Delete()
+	err = cu.Delete()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return ""
