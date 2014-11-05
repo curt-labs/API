@@ -298,11 +298,6 @@ var (
 								left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
 								where (dt.dealer_type = 2 or dt.dealer_type = 3) and c.isDummy = false
 								and dt.show = true and (lower(cl.name) like ? || lower(c.name) like ?)`
-	locationById = `select ` + customerLocationFields + `, ` + stateFields + `, ` + countryFields + `
-								from CustomerLocations as cl
-								join States as s on cl.stateID = s.stateID
-								left join country as cty on cty.countryID = s.countryID
-								where cl.locationID = ?`
 
 	searchDealerLocations = `select ` + customerLocationFields + `, ` + stateFields + `, ` + countryFields + `, ` + dealerTypeFields + `, ` + dealerTierFields + `, ` + mapIconFields + `, ` + mapixCodeFields + `, ` + salesRepFields + ` ,` + showSiteFields + `
 								from CustomerLocations as cl
@@ -526,6 +521,7 @@ func (c *Customer) GetCustomer() (err error) {
 	// return nil
 }
 
+//redundant with Get - uses SQL joins; faster?
 func (c *Customer) Basics() (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1131,26 +1127,6 @@ func GetWhereToBuyDealers() (customers []Customer, err error) {
 
 	go redis.Setex(redis_key, customers, 86400)
 	return customers, err
-}
-
-func GetLocationById(id int) (location CustomerLocation, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return location, err
-	}
-	defer db.Close()
-
-	stmt, err := db.Prepare(locationById)
-	if err != nil {
-		return location, err
-	}
-	row := stmt.QueryRow(id)
-	loc, err := ScanLocation(row)
-	if err != nil {
-		return location, err
-	}
-	location = *loc
-	return location, err
 }
 
 func SearchLocations(term string) (locations []DealerLocation, err error) {

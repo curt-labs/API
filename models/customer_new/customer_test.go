@@ -197,13 +197,13 @@ func TestCustomerModel(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(customers, ShouldHaveSameTypeAs, []Customer{})
 		})
-		Convey("Testing GetLocationById()", func() {
-			var err error
-			id := 1
-			location, err := GetLocationById(id)
-			So(err, ShouldBeNil)
-			So(location, ShouldHaveSameTypeAs, CustomerLocation{})
-		})
+		// Convey("Testing GetLocationById()", func() {
+		// 	var err error
+		// 	id := 1
+		// 	location, err := GetLocationById(id)
+		// 	So(err, ShouldBeNil)
+		// 	So(location, ShouldHaveSameTypeAs, CustomerLocation{})
+		// })
 		Convey("Testing SearchLocations()", func() {
 			var err error
 			term := "hitch"

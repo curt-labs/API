@@ -3,41 +3,14 @@ package customer_new
 import (
 	_ "github.com/go-sql-driver/mysql"
 	. "github.com/smartystreets/goconvey/convey"
-	"math/rand"
-
 	"testing"
 )
 
 func TestCustomerLocations(t *testing.T) {
+	var l CustomerLocation
+	var err error
 	Convey("Testing Locations", t, func() {
-		Convey("Testing GetAll()", func() {
-			Locations, err := GetAllLocations()
-			So(Locations, ShouldNotBeNil)
-			So(err, ShouldBeNil)
-			x := rand.Intn(len(Locations))
-			Location := Locations[x]
-			var testLoc CustomerLocation
-			testLoc.Id = Location.Id
 
-			Convey("Get", func() {
-				err = testLoc.Get()
-				So(err, ShouldBeNil)
-				So(testLoc, ShouldNotBeNil)
-			})
-			Convey("Get Bad stmt", func() {
-				getLocation = "bad"
-				err = testLoc.Get()
-				So(err, ShouldNotBeNil)
-			})
-			// Convey("GetAll Bad stmt", func() {
-			// 	getLocations = "bad"
-			// 	locs, err := GetAllLocations()
-			// 	So(err, ShouldNotBeNil)
-			// 	So(locs, ShouldBeNil)
-			// })
-
-		})
-		var l CustomerLocation
 		Convey("Testing Create", func() {
 			l.Name = "test"
 			l.Address = "testA"
@@ -56,20 +29,32 @@ func TestCustomerLocations(t *testing.T) {
 			l.ShippingDefault = false
 			err := l.Create()
 			So(err, ShouldBeNil)
-
-			Convey("Update", func() {
-				l.Name = "Chuck Norris"
-				err := l.Update()
-				So(err, ShouldBeNil)
-				So(l.Name, ShouldNotEqual, "test")
-
-			})
-			Convey("Delete", func() {
-				err := l.Delete()
-				So(err, ShouldBeNil)
-
-			})
 		})
+
+		Convey("Update", func() {
+			l.Name = "Chuck Norris"
+			err := l.Update()
+			So(err, ShouldBeNil)
+			So(l.Name, ShouldNotEqual, "test")
+
+		})
+		Convey("Testing GetAll()", func() {
+			locations, err := GetAllLocations()
+			So(locations, ShouldNotBeNil)
+			So(err, ShouldBeNil)
+		})
+		Convey("Get", func() {
+			err = l.Get()
+			So(err, ShouldBeNil)
+			So(l, ShouldNotBeNil)
+		})
+
+		Convey("Delete", func() {
+			err := l.Delete()
+			So(err, ShouldBeNil)
+
+		})
+
 	})
 
 }

@@ -115,14 +115,16 @@ func GetLocationById(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 		http.Error(w, "You must supply a location identification number.", http.StatusInternalServerError)
 		return ""
 	}
-
-	loc, err := customer_new.GetLocationById(id)
+	var l customer_new.CustomerLocation
+	l.Id = id
+	// loc, err := customer_new.GetLocationById(id)
+	err = l.Get()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
 
-	return encoding.Must(enc.Encode(loc))
+	return encoding.Must(enc.Encode(l))
 }
 
 func GetAllBusinessClasses(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
