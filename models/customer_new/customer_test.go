@@ -15,67 +15,29 @@ const (
 	inputTimeFormat = "01/02/2006"
 )
 
-// var (
-// 	getCustWithLocationAndParts = `SELECT customerID, cp.partID, apiKey FROM Customer AS c
-// 								LEFT JOIN CustomerLocations AS cl on cl.cust_id = c.CustomerID
-// 								LEFT JOIN CustomerPricing AS cp ON cp.cust_id = c.CustomerID
-// 								WHERE cl.locationID IS NOT NULL
-// 								AND cp.partID IS NOT NULL ORDER BY RAND()LIMIT 1`
+func BenchmarkCustomerGet(b *testing.B) {
+	Convey("testing get", b, func() {
+		var c Customer
+		c.Id = 1
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			_ = c.Get()
+		}
 
-// 	getPublicKeyAndPart = `SELECT a.api_key, cp.partID FROM  ApiKey AS a JOIN customerUser AS cu ON a.user_id = cu.id JOIN customerPricing AS cp on cp.cust_id = cu.cust_id
-// 					WHERE cu.name = "Alex Ninneman" AND a.type_id = "209A05AD-7D42-4C88-B5FA-FEEACDD19AC2" LIMIT 1`
-// )
+	})
+}
+func BenchmarkCustomerBasics(b *testing.B) {
+	Convey("testing basics ", b, func() {
+		var c Customer
+		c.Id = 1
 
-// func getRandomCustWithLocParts() (cust Customer, partID int, apiKey string, err error) {
-// 	db, err := sql.Open("mysql", database.ConnectionString())
-// 	if err != nil {
-// 		return cust, partID, apiKey, err
-// 	}
-// 	defer db.Close()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			_ = c.Basics()
+		}
 
-// 	stmt, err := db.Prepare(getCustWithLocationAndParts)
-// 	if err != nil {
-// 		return cust, partID, apiKey, err
-// 	}
-// 	defer stmt.Close()
-// 	var c Customer
-// 	var api string
-// 	err = stmt.QueryRow().Scan(&c.Id, &partID, &api)
-
-// 	users, err := cust.GetUsers()
-// 	if err == nil && len(users) > 0 {
-// 		if err = users[0].GetKeys(); err == nil {
-// 			for _, k := range users[0].Keys {
-// 				if strings.ToLower(k.Type) == "public" {
-// 					apiKey = k.Key
-// 					break
-// 				}
-// 			}
-// 		}
-// 	}
-
-// 	return cust, partID, apiKey, err
-// }
-
-// func getAPIKeyAndPart() (apiKey string, partId int) {
-// 	db, err := sql.Open("mysql", database.ConnectionString())
-// 	if err != nil {
-// 		return apiKey, partId
-// 	}
-// 	defer db.Close()
-
-// 	stmt, err := db.Prepare(getPublicKeyAndPart)
-// 	if err != nil {
-// 		return apiKey, partId
-// 	}
-// 	defer stmt.Close()
-// 	err = stmt.QueryRow().Scan(&apiKey, &partId)
-// 	if err != nil {
-// 		return apiKey, partId
-// 	}
-// 	return apiKey, partId
-// }
-
+	})
+}
 func TestCustomerModel(t *testing.T) {
 	Convey("Testing Customer Model", t, func() {
 		var c Customer

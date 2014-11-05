@@ -3,8 +3,10 @@ package geography
 import (
 	"database/sql"
 	"github.com/curt-labs/GoAPI/helpers/database"
+	"github.com/curt-labs/GoAPI/helpers/redis"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	_ "github.com/go-sql-driver/mysql"
+	"strconv"
 )
 
 var (
@@ -165,6 +167,8 @@ func GetStateMap() (map[int]State, error) {
 	states, err := GetAllStates()
 	for _, state := range states {
 		stateMap[state.Id] = state
+		redis_key := "state:" + strconv.Itoa(state.Id)
+		err = redis.Set(redis_key, state)
 	}
 	return stateMap, err
 }
@@ -174,6 +178,8 @@ func GetCountryMap() (map[int]Country, error) {
 	countries, err := GetAllCountries()
 	for _, country := range countries {
 		countryMap[country.Id] = country
+		redis_key := "country:" + strconv.Itoa(country.Id)
+		err = redis.Set(redis_key, country)
 	}
 	return countryMap, err
 }

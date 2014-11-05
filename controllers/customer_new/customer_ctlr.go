@@ -7,6 +7,7 @@ import (
 	"github.com/curt-labs/GoAPI/models/products"
 	"github.com/go-martini/martini"
 	"io/ioutil"
+
 	"net/http"
 	"strconv"
 )
@@ -98,14 +99,19 @@ func GetCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) s
 		userChan <- err
 	}()
 
-	err = c.GetCustomer()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return ""
-	}
+	custChan := make(chan int)
+	go func() {
+		err = c.GetCustomer()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			custChan <- 1
+			return
+		}
+		custChan <- 1
+	}()
 
 	<-userChan
-
+	<-custChan
 	return encoding.Must(enc.Encode(c))
 }
 

@@ -29,12 +29,12 @@ func TestCustomerLocations(t *testing.T) {
 				err = testLoc.Get()
 				So(err, ShouldNotBeNil)
 			})
-			Convey("GetAll Bad stmt", func() {
-				getLocations = "bad"
-				locs, err := GetAllLocations()
-				So(err, ShouldNotBeNil)
-				So(locs, ShouldBeNil)
-			})
+			// Convey("GetAll Bad stmt", func() {
+			// 	getLocations = "bad"
+			// 	locs, err := GetAllLocations()
+			// 	So(err, ShouldNotBeNil)
+			// 	So(locs, ShouldBeNil)
+			// })
 
 		})
 		var l CustomerLocation
