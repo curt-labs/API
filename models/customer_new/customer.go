@@ -8,7 +8,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	"github.com/curt-labs/GoAPI/models/geography"
 	_ "github.com/go-sql-driver/mysql"
-	// "log"
+	"log"
 	"math"
 	"net/url"
 	"strconv"
@@ -162,7 +162,9 @@ const (
 
 var (
 	//New
-	getCustomer = `select ` + customerFields + ` from Customer as c where c.cust_id = ? `
+	getCustomer    = `select ` + customerFields + ` from Customer as c where c.cust_id = ? `
+	getDealerTypes = `select dt.dealer_type, ` + dealerTypeFields + ` from DealerTypes as dt`
+	getDealerTiers = `select dtr.ID, ` + dealerTierFields + ` from DealerTiers as dtr`
 
 	//Old
 	findCustomerIdFromCustId = `select customerID from Customer where cust_id = ?`
@@ -370,7 +372,7 @@ func (c *Customer) Get() error {
 	defer stmt.Close()
 	res := stmt.QueryRow(c.Id)
 	c, err = ScanCustomerFields(res)
-	//get geo
+	//get geography
 	geoChan := make(chan int)
 	go func() {
 		stateMap, err := geography.GetStateMap()
@@ -389,8 +391,126 @@ func (c *Customer) Get() error {
 		}
 		geoChan <- 1
 	}()
+	typeChan := make(chan int)
+	go func() {
+		typeMap, err := DealerTypeMap()
+		if err != nil {
+			return
+		}
+		if dType, ok := typeMap[c.DealerType.Id]; ok {
+			c.DealerType = dType
+		}
+		typeChan <- 1
+	}()
+	tierChan := make(chan int)
+	go func() {
+		tierMap, err := DealerTierMap()
+		if err != nil {
+			log.Print("ERR", err)
+			return
+		}
+		if dTier, ok := tierMap[c.DealerTier.Id]; ok {
+			c.DealerTier = dTier
+		}
+		tierChan <- 1
+	}()
+
+	<-tierChan
+	<-typeChan
 	<-geoChan
+
 	return err
+}
+
+func DealerTypeMap() (map[int]DealerType, error) {
+	typeMap := make(map[int]DealerType)
+	var err error
+	dTypes, err := GetDealerTypes()
+	if err != nil {
+		return typeMap, err
+	}
+	for _, dType := range dTypes {
+		typeMap[dType.Id] = dType
+	}
+	return typeMap, err
+}
+
+func GetDealerTypes() ([]DealerType, error) {
+	var dType DealerType
+	var dTypes []DealerType
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return dTypes, err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(getDealerTypes)
+	if err != nil {
+		return dTypes, err
+	}
+	defer stmt.Close()
+	res, err := stmt.Query()
+	if err != nil {
+		return dTypes, err
+	}
+	for res.Next() {
+		err = res.Scan(
+			&dType.Id,
+			&dType.Type,
+			&dType.Online,
+			&dType.Show,
+			&dType.Label,
+		)
+		if err != nil {
+			return dTypes, err
+		}
+		dTypes = append(dTypes, dType)
+	}
+	return dTypes, err
+}
+
+func DealerTierMap() (map[int]DealerTier, error) {
+	tierMap := make(map[int]DealerTier)
+	var err error
+	dTiers, err := GetDealerTiers()
+	if err != nil {
+		return tierMap, err
+	}
+	for _, dTier := range dTiers {
+		tierMap[dTier.Id] = dTier
+	}
+	return tierMap, err
+}
+
+func GetDealerTiers() ([]DealerTier, error) {
+	var dTier DealerTier
+	var dTiers []DealerTier
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return dTiers, err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(getDealerTiers)
+	if err != nil {
+		return dTiers, err
+	}
+	defer stmt.Close()
+	res, err := stmt.Query()
+	if err != nil {
+		return dTiers, err
+	}
+	for res.Next() {
+		err = res.Scan(
+			&dTier.Id,
+			&dTier.Tier,
+			&dTier.Sort,
+		)
+		if err != nil {
+			return dTiers, err
+		}
+
+		dTiers = append(dTiers, dTier)
+	}
+	return dTiers, err
 }
 
 func ScanCustomerFields(res Scanner) (*Customer, error) {
