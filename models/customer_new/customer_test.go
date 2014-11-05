@@ -85,6 +85,7 @@ func TestCustomerModel(t *testing.T) {
 		c.Name = "testCustomer"
 		c.Address = "Nowhere"
 		c.CustomerId = 666
+		c.State.Id = 1 //TODO
 		err = c.Create()
 		So(err, ShouldBeNil)
 
@@ -145,6 +146,9 @@ func TestCustomerModel(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		err = c.Basics()
+		So(err, ShouldBeNil)
+
+		err = c.Get() //New
 		So(err, ShouldBeNil)
 
 		err = c.GetLocations()
