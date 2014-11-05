@@ -160,6 +160,9 @@ const (
 	customerLocationFields = ` cl.locationID, cl.name, cl.address, cl.city, cl.stateID,  cl.email, cl.phone, cl.fax,
 							cl.latitude, cl.longitude, cl.cust_id, cl.contact_person, cl.isprimary, cl.postalCode, cl.ShippingDefault `
 	showSiteFields = ` c.showWebsite, c.website, c.eLocalURL `
+
+	//redis
+	custPrefix = "customer:"
 )
 
 var (
@@ -358,7 +361,7 @@ var (
 
 func (c *Customer) Get() error {
 	var err error
-	redis_key := "customer:" + strconv.Itoa(c.Id)
+	redis_key := custPrefix + strconv.Itoa(c.Id)
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &c)
@@ -648,7 +651,7 @@ func (c *Customer) Create() (err error) {
 	if err != nil {
 		return err
 	}
-
+	err = redis.Set(custPrefix+strconv.Itoa(c.Id), c)
 	return err
 }
 
@@ -698,6 +701,7 @@ func (c *Customer) Update() (err error) {
 	if err != nil {
 		return err
 	}
+	err = redis.Set(custPrefix+strconv.Itoa(c.Id), c)
 	return nil
 }
 
@@ -716,7 +720,8 @@ func (c *Customer) Delete() (err error) {
 	if err != nil {
 		return err
 	}
-	return nil
+	err = redis.Delete(custPrefix + strconv.Itoa(c.Id))
+	return err
 }
 
 func (c *Customer) GetUsers() (users []CustomerUser, err error) {

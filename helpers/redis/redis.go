@@ -121,3 +121,19 @@ func Lpush(key string, obj interface{}) error {
 	_, err = conn.Do("LPUSH", fmt.Sprintf("%s:%s", Prefix, key), data)
 	return err
 }
+
+func Delete(key string) error {
+	var err error
+	pool := RedisPool(true)
+	if pool == nil {
+		return errors.New(PoolAllocationErr)
+	}
+
+	conn := pool.Get()
+	if err := conn.Send("select", Db); err != nil {
+		return err
+	}
+
+	_, err = conn.Do("DEL", fmt.Sprintf("%s:%s", Prefix, key))
+	return err
+}
