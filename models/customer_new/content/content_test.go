@@ -92,118 +92,85 @@ func easyCatPart() (partID, catID int) {
 }
 
 func TestContent(t *testing.T) {
-	Convey("Testing Content", t, func() {
+	var cc CustomerContent
+	var ct ContentType
+	var ccr CustomerContentRevision
+	var err error
+	_, key := getApiKey(allCustContent)
+	partID, catID := easyCatPart()
 
-		Convey("Testing AllCustomerContent()", func() {
-			_, key := getApiKey(allCustContent)
-			content, err := AllCustomerContent(key)
-			var allCn []CustomerContent
-			So(content, ShouldHaveSameTypeAs, allCn)
-			So(err, ShouldBeNil)
-		})
-		Convey("Testing GetCustomerContent()", func() {
-			id, key := getApiKey(allCustContent)
-			content, err := GetCustomerContent(id, key)
-			var cn CustomerContent
-			So(content, ShouldHaveSameTypeAs, cn)
-			So(err, ShouldBeNil)
-		})
-		Convey("Testing GetCustomerContentRevisions()", func() {
-			var con []CustomerContentRevision
-			id, key := getApiKey(allCustContent)
-			content, err := GetCustomerContentRevisions(id, key)
-			So(content, ShouldHaveSameTypeAs, con)
-			So(err, ShouldBeNil)
-		})
-		Convey("Testing Save()", func() {
-			var err error
-			partID, catID := easyCatPart()
-			_, key := getApiKey(allCustContent)
-			var content CustomerContent
-			content.Text = "test text"
-			content.ContentType.Type = getRandType()
-			err = content.Save(partID, catID, key)
-			So(err, ShouldBeNil)
+	Convey("Testing Create", t, func() {
+		cc.Text = "test text"
+		err = cc.Save(11000, 1, key)
 
-			_ = content.Delete(partID, catID, key) //returns error if no bridge exists -ok
+		ccr.NewText = "new text"
+		err = ccr.Create()
+		So(err, ShouldBeNil)
 
-		})
-		Convey("Testing Save()Update", func() {
-			partID, catID := easyCatPart()
-			_, key := getApiKey(allCustContent)
-			var content CustomerContent
-			content.Text = "test text"
-			content.Id = 1
-			content.ContentType.Type = getRandType()
-			err := content.Save(partID, catID, key)
-			So(err, ShouldBeNil)
+		ct.Type = "test type"
+		err = ct.Create()
+		So(err, ShouldBeNil)
 
-			t.Log(content.GetContentType())
-			err = content.Save(partID, catID, key)
-			So(err, ShouldBeNil)
-			_ = content.Delete(partID, catID, key) //returns error if no bridge exists -ok
-		})
-		Convey("Testing GetContentType()", func() {
-			var c CustomerContent
-			c.ContentType.Type = getRandType()
-			err := c.GetContentType()
-			So(err, ShouldBeNil)
-			So(c.ContentType, ShouldNotBeNil)
-
-		})
-		Convey("AllCustomerContentTypes()", func() {
-			cts, err := AllCustomerContentTypes()
-			So(err, ShouldBeNil)
-			So(cts, ShouldNotBeNil)
-		})
 	})
+
+	Convey("Testing AllCustomerContent()", t, func() {
+		_, key := getApiKey(allCustContent)
+		content, err := AllCustomerContent(key)
+		var allCn []CustomerContent
+		So(content, ShouldHaveSameTypeAs, allCn)
+		So(err, ShouldBeNil)
+	})
+	Convey("Testing GetCustomerContent()", t, func() {
+		id, key := getApiKey(allCustContent)
+		content, err := GetCustomerContent(id, key)
+		var cn CustomerContent
+		So(content, ShouldHaveSameTypeAs, cn)
+		So(err, ShouldBeNil)
+	})
+	Convey("Testing GetCustomerContentRevisions()", t, func() {
+		var con []CustomerContentRevision
+		id, key := getApiKey(allCustContent)
+		content, err := GetCustomerContentRevisions(id, key)
+		So(content, ShouldHaveSameTypeAs, con)
+		So(err, ShouldBeNil)
+	})
+	Convey("Testing Save()", t, func() {
+		var err error
+		partID, catID := easyCatPart()
+		_, key := getApiKey(allCustContent)
+		cc.Text = "test text"
+		cc.ContentType = ct
+		err = cc.Save(partID, catID, key)
+		So(err, ShouldBeNil)
+
+	})
+	Convey("Testing Save()Update", t, func() {
+		_, key := getApiKey(allCustContent)
+		cc.Text = "test text"
+		cc.Id = 1
+		cc.ContentType = ct
+		err := cc.Save(partID, catID, key)
+		So(err, ShouldBeNil)
+
+	})
+	Convey("Testing GetContentType()", t, func() {
+		cc.ContentType = ct
+		err := cc.GetContentType()
+		So(err, ShouldBeNil)
+		So(cc.ContentType, ShouldNotBeNil)
+
+	})
+	Convey("AllCustomerContentTypes()", t, func() {
+		cts, err := AllCustomerContentTypes()
+		So(err, ShouldBeNil)
+		So(cts, ShouldNotBeNil)
+	})
+	Convey("Test Delete", t, func() {
+		err = ccr.Delete()
+		So(err, ShouldBeNil)
+		err = ct.Delete()
+		So(err, ShouldBeNil)
+		_ = cc.Delete(partID, catID, key) //returns error if no bridge exists -ok
+	})
+
 }
-
-//Comparisons to old customer content model
-// func TestContentComparedToOldModel(t *testing.T) {
-// 	Convey("ComparativeTests", t, func() {
-// 		id, key := getApiKey(allCustContent)
-
-// 		allCon, err := AllCustomerContent(key)
-// 		So(err, ShouldBeNil)
-// 		var c CustomerContent
-// 		if len(allCon) > 0 {
-// 			c = allCon[rand.Intn(len(allCon))]
-// 		}
-
-// 		allCon2, err := custcontent.AllCustomerContent(key)
-// 		var c2 custcontent.CustomerContent
-// 		if len(allCon2) > 0 {
-// 			c2 = allCon2[rand.Intn(len(allCon2))]
-// 		}
-
-// 		Convey("AllContent", func() {
-// 			content, err := AllCustomerContent(key)
-// 			So(err, ShouldBeNil)
-// 			oldContent, err := custcontent.AllCustomerContent(key)
-// 			So(err, ShouldBeNil)
-// 			So(len(content), ShouldEqual, len(oldContent))
-// 		})
-// 		Convey("Content Revisions", func() {
-// 			content, err := GetCustomerContentRevisions(id, key)
-// 			So(err, ShouldBeNil)
-// 			oldContent, err := custcontent.GetCustomerContentRevisions(id, key)
-// 			So(err, ShouldBeNil)
-// 			So(len(content), ShouldEqual, len(oldContent))
-// 		})
-// 		Convey("ContentType", func() {
-// 			indexedType, err := c.GetContentType()
-// 			So(err, ShouldBeNil)
-// 			oldindexedType, err := c2.GetContentType()
-// 			So(err, ShouldBeNil)
-// 			So(indexedType.Type, ShouldEqual, oldindexedType.Type)
-// 		})
-// 		Convey("AllCustContentTypes", func() {
-// 			types, err := AllCustomerContentTypes()
-// 			So(err, ShouldBeNil)
-// 			oldTypes, err := custcontent.AllCustomerContentTypes()
-// 			So(err, ShouldBeNil)
-// 			So(len(types), ShouldEqual, len(oldTypes))
-// 		})
-// 	})
-// }
