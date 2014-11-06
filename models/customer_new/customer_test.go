@@ -152,11 +152,19 @@ func TestCustomerModel(t *testing.T) {
 		err = cl.Delete()
 		So(err, ShouldBeNil)
 
+		err = cu.Delete()
+		So(err, ShouldBeNil)
+
 		//clean apiKeyTypes
 
 		err = pub.Delete()
+		So(err, ShouldBeNil)
+
 		err = pri.Delete()
+		So(err, ShouldBeNil)
+
 		err = aut.Delete()
+		So(err, ShouldBeNil)
 
 	})
 

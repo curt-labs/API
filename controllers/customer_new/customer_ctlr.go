@@ -12,49 +12,6 @@ import (
 	"strconv"
 )
 
-func UserAuthentication(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
-	email := r.FormValue("email")
-	pass := r.FormValue("password")
-	user := customer_new.CustomerUser{
-		Email: email,
-	}
-
-	cust, err := user.UserAuthentication(pass)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusForbidden)
-		return ""
-	}
-
-	return encoding.Must(enc.Encode(cust))
-}
-
-func KeyedUserAuthentication(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
-	qs := r.URL.Query()
-	key := qs.Get("key")
-
-	cust, err := customer_new.UserAuthenticationByKey(key)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusForbidden)
-		return ""
-	}
-
-	return encoding.Must(enc.Encode(cust))
-}
-func ResetAuthentication(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string { //Testing only
-	var err error
-	qs := r.URL.Query()
-	id := qs.Get("id")
-	var u customer_new.CustomerUser
-	u.Id = id
-	err = u.ResetAuthentication()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return ""
-	}
-
-	return "Success"
-}
-
 func GetCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 	qs := r.URL.Query()
 	key := qs.Get("key")
@@ -67,15 +24,7 @@ func GetCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) s
 		return ""
 	}
 
-	id, err := customer_new.GetCustomerIdFromKey(key)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return ""
-	}
-
-	c := customer_new.Customer{
-		Id: id,
-	}
+	c, err := customer_new.AuthenticateAndGetCustomer(key)
 
 	userChan := make(chan error)
 	go func() {
@@ -127,22 +76,15 @@ func GetLocations(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return ""
 	}
-
-	id, err := customer_new.GetCustomerIdFromKey(key)
+	c, err := customer_new.AuthenticateAndGetCustomer(key)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return ""
-	}
-	c := customer_new.Customer{
-		Id: id,
-	}
-	err = c.GetLocations()
-	if err != nil {
-		return err.Error()
 	}
 	return encoding.Must(enc.Encode(c.Locations))
 }
 
+//TODO - redundant
 func GetUsers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	qs := r.URL.Query()
 	key := qs.Get("key")
@@ -176,6 +118,7 @@ func GetUsers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, para
 	return encoding.Must(enc.Encode(users))
 }
 
+//Todo redundant
 func GetUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 	key := r.FormValue("key")
 

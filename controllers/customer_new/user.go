@@ -13,6 +13,55 @@ import (
 	"strconv"
 )
 
+//Post - Form Authentication
+func AuthenticateUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+	email := r.FormValue("email")
+	pass := r.FormValue("pass")
+
+	var user customer_new.CustomerUser
+	user.Email = email
+	user.Password = pass
+
+	err := user.AuthenticateUser()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return ""
+	}
+	cust, err := user.GetCustomer()
+
+	return encoding.Must(enc.Encode(cust))
+}
+
+//Get - Key (in params) Authentication
+func KeyedUserAuthentication(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+	qs := r.URL.Query()
+	key := qs.Get("key")
+
+	cust, err := customer_new.AuthenticateAndGetCustomer(key)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(cust))
+}
+
+//Makes user currnt
+func ResetAuthentication(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string { //Testing only
+	var err error
+	qs := r.URL.Query()
+	id := qs.Get("id")
+	var u customer_new.CustomerUser
+	u.Id = id
+	err = u.ResetAuthentication()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+
+	return "Success"
+}
+
 func GetUserById(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	qs := r.URL.Query()
 	key := qs.Get("key")
@@ -53,7 +102,7 @@ func ResetPassword(w http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 	var user customer_new.CustomerUser
 	user.Email = email
 
-	resp, err := user.ResetPass(custID)
+	resp, err := user.ResetPass()
 	if err != nil || resp == "" {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 	}
@@ -68,11 +117,11 @@ func ChangePassword(w http.ResponseWriter, r *http.Request, enc encoding.Encoder
 	var user customer_new.CustomerUser
 	user.Email = email
 
-	resp, err := user.ChangePass(oldPass, newPass)
-	if err != nil || resp == "" {
+	err := user.ChangePass(oldPass, newPass)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 	}
-	return encoding.Must(enc.Encode(resp))
+	return encoding.Must(enc.Encode("Success"))
 }
 
 func GenerateApiKey(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
@@ -122,7 +171,7 @@ func GenerateApiKey(w http.ResponseWriter, r *http.Request, params martini.Param
 		return ""
 	}
 
-	generated, err := user.GenerateApiKey(generateType)
+	generated, err := user.GenerateAPIKey(generateType)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to generate an API key: %s", err.Error()), http.StatusInternalServerError)
 		return ""
@@ -272,20 +321,4 @@ func UpdateCustomerUser(w http.ResponseWriter, r *http.Request, enc encoding.Enc
 	}
 
 	return encoding.Must(enc.Encode(cu))
-}
-
-func AuthenticateUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
-	email := r.FormValue("email")
-	pass := r.FormValue("pass")
-
-	var user customer_new.CustomerUser
-	user.Email = email
-
-	cust, err := user.UserAuthentication(pass)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return ""
-	}
-
-	return encoding.Must(enc.Encode(cust))
 }

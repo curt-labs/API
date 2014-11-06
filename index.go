@@ -408,7 +408,7 @@ func main() {
 			r.Get("", customer_ctlr_new.GetCustomer)
 			r.Post("", customer_ctlr_new.GetCustomer)
 
-			r.Post("/auth", customer_ctlr_new.UserAuthentication)
+			r.Post("/auth", customer_ctlr_new.AuthenticateUser)
 			r.Get("/auth", customer_ctlr_new.KeyedUserAuthentication)
 
 			r.Post("/user", customer_ctlr_new.RegisterUser)
