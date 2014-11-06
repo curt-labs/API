@@ -799,6 +799,7 @@ func (c *Category) Create() (err error) {
 		return err
 	}
 	c.ID = int(id)
+	err = redis.Setex("category:"+strconv.Itoa(c.ID), c, 86400)
 	return err
 }
 
@@ -817,5 +818,6 @@ func (c *Category) Delete() (err error) {
 	if err != nil {
 		return err
 	}
+	err = redis.Delete("category:" + strconv.Itoa(c.ID))
 	return err
 }

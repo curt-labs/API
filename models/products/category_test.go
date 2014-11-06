@@ -26,16 +26,22 @@ func generateAPIkey() (apiKey string) {
 }
 
 func TestTopTierCategories(t *testing.T) {
+	var cat Category
+	cat.ParentID = 0
+	cat.IsLifestyle = false
+	cat.Title = "test cat"
+
+	Convey("Create", t, func() {
+		err := cat.Create()
+		So(err, ShouldBeNil)
+	})
+
 	Convey("Test TopTierCategories()", t, func() {
-		// cats, err := TopTierCategories("9300f7bc-2ca6-11e4-8758-42010af0fd79")
 		cats, err := TopTierCategories(generateAPIkey())
 		So(cats, ShouldNotBeNil)
 		So(err, ShouldBeNil)
 		So(cats, ShouldHaveSameTypeAs, []Category{})
 	})
-}
-
-func TestGetCategoryByTitle(t *testing.T) {
 
 	Convey("Test GetCategoryByTitle", t, func() {
 		Convey("with ``", func() {
@@ -58,9 +64,6 @@ func TestGetCategoryByTitle(t *testing.T) {
 		})
 	})
 
-}
-
-func TestGetCategoryById(t *testing.T) {
 	Convey("Test GetCategoryById", t, func() {
 		Convey("with 0", func() {
 			cat, err := GetCategoryById(0)
@@ -76,9 +79,7 @@ func TestGetCategoryById(t *testing.T) {
 			So(err, ShouldBeNil)
 		})
 	})
-}
 
-func TestSubCategories(t *testing.T) {
 	Convey("Test Subcategories()", t, func() {
 		Convey("with invalid category", func() {
 			var cat Category
@@ -98,10 +99,7 @@ func TestSubCategories(t *testing.T) {
 		})
 
 	})
-}
 
-///TODO - fix me; feels like bad goroutine
-func TestGetCategory(t *testing.T) {
 	Convey("Test GetCategory()", t, func() {
 		Convey("with empty category", func() {
 			cat := Category{
@@ -126,17 +124,22 @@ func TestGetCategory(t *testing.T) {
 			So(cat.ProductListing, ShouldBeNil)
 		})
 
-		Convey("with `1` category with parts", func() {
-			cat := Category{
-				ID: 1,
-			}
+		// Convey("with `1` category with parts", func() {
+		// 	cat := Category{
+		// 		ID: 1,
+		// 	}
 
-			err := cat.GetCategory("9300f7bc-2ca6-11e4-8758-42010af0fd79", 0, 10, false, nil, nil)
-			So(cat, ShouldHaveSameTypeAs, Category{})
-			So(err, ShouldBeNil)
-			So(cat.ProductListing, ShouldNotBeNil)
-			So(len(cat.ProductListing.Parts), ShouldBeLessThanOrEqualTo, 10)
-		})
+		// 	err := cat.GetCategory("9300f7bc-2ca6-11e4-8758-42010af0fd79", 0, 10, false, nil, nil)
+		// 	So(cat, ShouldHaveSameTypeAs, Category{})
+		// 	So(err, ShouldBeNil)
+		// 	So(cat.ProductListing, ShouldNotBeNil)
+		// 	So(len(cat.ProductListing.Parts), ShouldBeLessThanOrEqualTo, 10)
+		// })
+
+	})
+	Convey("Delete", t, func() {
+		err := cat.Delete()
+		So(err, ShouldBeNil)
 
 	})
 }

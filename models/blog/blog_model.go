@@ -173,7 +173,7 @@ func GetAllCategories() (Categories, error) {
 }
 func (c *Category) Get() error {
 	var err error
-	redis_key := "blogs:category" + strconv.Itoa(c.ID)
+	redis_key := "blogs:category:" + strconv.Itoa(c.ID)
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &c)
@@ -200,7 +200,7 @@ func (c *Category) Get() error {
 func (b *Blog) Get() error {
 	var err error
 
-	redis_key := "blogs:" + strconv.Itoa(b.ID)
+	redis_key := "blog:" + strconv.Itoa(b.ID)
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &b)
@@ -289,6 +289,7 @@ func (b *Blog) Create() error {
 	}
 	tx.Commit()
 	b.createCatBridge()
+	err = redis.Setex("blog:"+strconv.Itoa(b.ID), b, 86400)
 	return nil
 }
 
@@ -315,8 +316,12 @@ func (c *Category) Create() error {
 		tx.Rollback()
 		return err
 	}
-	tx.Commit()
-	return nil
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	err = redis.Setex("blogs:category:"+strconv.Itoa(c.ID), c, 86400)
+	return err
 }
 
 func (c *Category) Delete() error {
@@ -338,6 +343,10 @@ func (c *Category) Delete() error {
 	}
 	tx.Commit()
 	err = c.deleteCatBridgeByCategory()
+	if err != nil {
+		return err
+	}
+	err = redis.Delete("blogs:category:" + strconv.Itoa(c.ID))
 	return err
 }
 func (b *Blog) createCatBridge() error {
@@ -367,7 +376,6 @@ func (b *Blog) createCatBridge() error {
 	return nil
 }
 
-//implement redis caching - redis get - else db - redis.Setex (see message)
 func (b *Blog) Update() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -399,7 +407,7 @@ func (b *Blog) Update() error {
 		createCatChan <- 1
 	}()
 	<-createCatChan
-
+	err = redis.Setex("blog:"+strconv.Itoa(b.ID), b, 86400)
 	return nil
 }
 
@@ -463,6 +471,10 @@ func (b *Blog) Delete() error {
 	}
 	tx.Commit()
 	err = b.deleteCatBridge()
+	if err != nil {
+		return err
+	}
+	err = redis.Delete("blog:" + strconv.Itoa(b.ID))
 	return err
 }
 

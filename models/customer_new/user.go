@@ -230,7 +230,6 @@ func AuthenticateUserByKey(key string) (u CustomerUser, err error) {
 	return
 }
 
-// func UserAuthenticationByKey(key string) (cust Customer, err error) {
 func AuthenticateAndGetCustomer(key string) (cust Customer, err error) {
 	u, err := AuthenticateUserByKey(key)
 	if err != nil {

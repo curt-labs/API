@@ -127,6 +127,8 @@ func TestGetConfigurations(t *testing.T) {
 			err = l.GetConfigurations()
 			So(err, ShouldEqual, nil)
 			So(l.Configurations, ShouldNotEqual, nil)
+			//TODO fix - runtime error
+
 			if (len(l.Configurations)) > 0 {
 				So(len(l.Configurations), ShouldNotEqual, 0)
 				idx := 0
