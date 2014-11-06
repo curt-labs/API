@@ -3,10 +3,9 @@ package testimonials
 import (
 	"database/sql"
 	"errors"
-	"time"
-
 	"github.com/curt-labs/GoAPI/helpers/database"
 	_ "github.com/go-sql-driver/mysql"
+	"time"
 )
 
 var (
@@ -90,8 +89,6 @@ func GetAllTestimonials(page int, count int, randomize bool) (tests Testimonials
 
 		tests = append(tests, t)
 	}
-	defer rows.Close()
-
 	return
 }
 
