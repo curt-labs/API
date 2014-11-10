@@ -108,7 +108,7 @@ var (
 	customerUserFromKey = `select cu.* from CustomerUser as cu
 								join ApiKey as ak on cu.id = ak.user_id
 								join ApiKeyType as akt on ak.type_id = akt.id
-								where UPPER(akt.type) != ? && UPPER(ak.api_key) = UPPER(?)
+								where UPPER(akt.type) = ? && UPPER(ak.api_key) = UPPER(?)
 								limit 1`
 
 	customerUserFromId = `select cu.* from CustomerUser as cu
@@ -163,18 +163,20 @@ func ScanUser(res Scanner) (*CustomerUser, error) {
 	var cu CustomerUser
 	var err error
 	var passConversionByte []byte
+	var oldId *int
+	var cur *bool
 	err = res.Scan(
 		&cu.Id,
 		&cu.Name,
 		&cu.Email,
 		&cu.Password,
-		&cu.OldCustomerID,
+		&oldId,
 		&cu.DateAdded,
 		&cu.Active,
 		&cu.Location.Id,
 		&cu.Sudo,
 		&cu.CustomerID,
-		&cu.Current,
+		&cur,
 		&passConversionByte,
 	)
 	if err != nil {
@@ -186,6 +188,12 @@ func ScanUser(res Scanner) (*CustomerUser, error) {
 		if errConver != nil {
 			cu.PasswordConversion = false
 		}
+	}
+	if oldId != nil {
+		cu.OldCustomerID = *oldId
+	}
+	if cur != nil {
+		cu.Current = *cur
 	}
 	return &cu, err
 }
