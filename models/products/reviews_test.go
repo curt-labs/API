@@ -29,9 +29,22 @@ func TestGetReviews(t *testing.T) {
 		})
 
 		Convey("Testing C_UD", func() {
+			p := Part{
+				ID:        999999,
+				Status:    900,
+				ShortDesc: "TEST",
+				PriceCode: 129,
+				Class: Class{
+					ID: 1,
+				},
+				Featured:       false,
+				AcesPartTypeID: 1212,
+			}
+			p.Create()
+
 			Convey("Testing Create()", func() {
 				var l Review
-				l.PartID = 11000
+				l.PartID = 999999
 				l.Name = "testName"
 				l.ReviewText = "Long description"
 				err := l.Create()
@@ -64,6 +77,8 @@ func TestGetReviews(t *testing.T) {
 					})
 				})
 			})
+
+			p.Delete()
 		})
 		Convey("Testing Bad Get()", func() {
 			var l Review
