@@ -44,7 +44,7 @@ const (
 )
 
 func (p *Price) Get() error {
-	redis_key := "goapi:customers:price" + strconv.Itoa(p.ID)
+	redis_key := "goapi:price:" + strconv.Itoa(p.ID)
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &p)
@@ -74,7 +74,7 @@ func (p *Price) Get() error {
 func GetAllPrices() (Prices, error) {
 	var ps Prices
 	var err error
-	redis_key := "goapi:customers:prices"
+	redis_key := "goapi:prices"
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &ps)
@@ -126,7 +126,11 @@ func (p *Price) Create() error {
 		tx.Rollback()
 		return err
 	}
-	tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	redis.Setex("goapi:prices:"+strconv.Itoa(p.ID), p, 86400)
 	return nil
 }
 func (p *Price) Update() error {
@@ -146,7 +150,11 @@ func (p *Price) Update() error {
 		tx.Rollback()
 		return err
 	}
-	tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	err = redis.Setex("goapi:prices:"+strconv.Itoa(p.ID), p, 86400)
 	return nil
 }
 
@@ -166,13 +174,17 @@ func (p *Price) Delete() error {
 		tx.Rollback()
 		return err
 	}
-	tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	err = redis.Delete("goapi:prices:" + strconv.Itoa(p.ID))
 	return nil
 }
 
 func (c *Customer) GetPricesByCustomer() (CustomerPrices, error) {
 	var cps CustomerPrices
-	redis_key := "goapi:customers:prices" + strconv.Itoa(c.Id)
+	redis_key := "goapi:customers:prices:" + strconv.Itoa(c.Id)
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &cps)
@@ -203,7 +215,7 @@ func (c *Customer) GetPricesByCustomer() (CustomerPrices, error) {
 
 func GetPricesByPart(partID int) (Prices, error) {
 	var ps Prices
-	redis_key := "goapi:prices:part" + strconv.Itoa(partID)
+	redis_key := "goapi:prices:part:" + strconv.Itoa(partID)
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &ps)
