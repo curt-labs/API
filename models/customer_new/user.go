@@ -165,9 +165,10 @@ func ScanUser(res Scanner) (*CustomerUser, error) {
 	var passConversionByte []byte
 	var oldId *int
 	var cur *bool
+	var name *string
 	err = res.Scan(
 		&cu.Id,
-		&cu.Name,
+		&name,
 		&cu.Email,
 		&cu.Password,
 		&oldId,
@@ -188,6 +189,9 @@ func ScanUser(res Scanner) (*CustomerUser, error) {
 		if errConver != nil {
 			cu.PasswordConversion = false
 		}
+	}
+	if name != nil {
+		cu.Name = *name
 	}
 	if oldId != nil {
 		cu.OldCustomerID = *oldId
