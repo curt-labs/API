@@ -8,7 +8,6 @@ import (
 	"github.com/curt-labs/GoAPI/models/geography"
 	"github.com/go-martini/martini"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -71,13 +70,11 @@ func AddDealerContact(rw http.ResponseWriter, req *http.Request, enc encoding.En
 		//this is our json payload
 		requestBody, err := ioutil.ReadAll(req.Body)
 		if err != nil {
-			log.Print(err)
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return err.Error()
 		}
 
 		if err = json.Unmarshal(requestBody, &d); err != nil {
-			log.Print(err)
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return err.Error()
 		}
@@ -110,7 +107,6 @@ func AddDealerContact(rw http.ResponseWriter, req *http.Request, enc encoding.En
 	}
 
 	if err := d.Add(); err != nil {
-		log.Print(err)
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return err.Error()
 	}
