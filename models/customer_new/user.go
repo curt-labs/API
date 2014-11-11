@@ -13,7 +13,6 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	"github.com/curt-labs/GoAPI/models/geography"
 	_ "github.com/go-sql-driver/mysql"
-	// "log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -65,7 +64,7 @@ var (
 								where cu.email = ? && cu.password = ?
 								limit 1`
 
-	customerUserAuth = `select cu.password, cu.passwordConverted from CustomerUser as cu
+	customerUserAuth = `select cu.id, cu.password, cu.passwordConverted from CustomerUser as cu
 							where email = ?
 							&& active = 1
 							limit 1`
@@ -289,12 +288,17 @@ func (u *CustomerUser) AuthenticateUser() error {
 	var dbPass string
 	var passConversionByte []byte
 	var passConversion bool
+	var id *string
 	err = stmt.QueryRow(u.Email).Scan(
+		&id,
 		&dbPass,
 		&passConversionByte,
 	)
 	if err != nil {
 		return err
+	}
+	if id != nil {
+		u.Id = *id
 	}
 	if passConversionByte != nil {
 		passConversion, err = strconv.ParseBool(string(passConversionByte))
@@ -338,6 +342,7 @@ func (u *CustomerUser) AuthenticateUser() error {
 
 	<-resetChan
 	u.Current = true
+
 	return nil
 }
 

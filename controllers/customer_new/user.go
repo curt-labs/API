@@ -5,18 +5,17 @@ import (
 	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/customer_new"
-	"io/ioutil"
-	"strings"
-	// "github.com/curt-labs/GoAPI/models/part"
 	"github.com/go-martini/martini"
+	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 //Post - Form Authentication
 func AuthenticateUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 	email := r.FormValue("email")
-	pass := r.FormValue("pass")
+	pass := r.FormValue("password")
 
 	var user customer_new.CustomerUser
 	user.Email = email
