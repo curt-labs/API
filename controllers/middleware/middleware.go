@@ -5,13 +5,14 @@ import (
 	"github.com/curt-labs/GoAPI/models/customer_new"
 	"github.com/go-martini/martini"
 	"github.com/segmentio/analytics-go"
+	"log"
 	"net/http"
 	"strings"
 	"time"
 )
 
 var (
-	ExcusedRoutes = []string{"/customer/auth", "/new/customer/auth", "/new/customer/user/register"}
+	ExcusedRoutes = []string{"/customer/auth", "/customer/user", "/new/customer/auth", "/new/customer/user/register"}
 )
 
 func Meddler() martini.Handler {
@@ -28,6 +29,7 @@ func Meddler() martini.Handler {
 		if !excused {
 			authed := checkAuth(r)
 			if !authed {
+				log.Println("failed on auth")
 				http.Error(res, "Unauthorized", http.StatusUnauthorized)
 				return
 			}

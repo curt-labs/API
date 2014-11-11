@@ -10,7 +10,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	"github.com/curt-labs/GoAPI/models/geography"
 	_ "github.com/go-sql-driver/mysql"
-	//"log"
+	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -623,6 +623,7 @@ func GetCustomerIdFromKey(key string) (id int, err error) {
 }
 
 func GetCustomerUserFromKey(key string) (u CustomerUser, err error) {
+	log.Println("here in get customer user from key")
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return
@@ -655,6 +656,7 @@ func GetCustomerUserFromKey(key string) (u CustomerUser, err error) {
 		&passconv,
 	)
 	if err != nil {
+		log.Println(err)
 		err = errors.New("Invalid key")
 	}
 
