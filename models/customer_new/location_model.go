@@ -74,7 +74,7 @@ func (l *CustomerLocation) Get() error {
 func GetAllLocations() (CustomerLocations, error) {
 	var ls CustomerLocations
 	var err error
-	redis_key := "goapi:customers:locations"
+	redis_key := "customers:locations"
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &ls)

@@ -936,7 +936,7 @@ func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, er
 }
 
 func GetLocalRegions() (regions []StateRegion, err error) {
-	redis_key := "goapi:local:regions"
+	redis_key := "local:regions"
 	data, err := redis.Get(redis_key)
 	if len(data) > 0 && err != nil {
 		err = json.Unmarshal(data, &regions)
@@ -1019,7 +1019,7 @@ func GetLocalRegions() (regions []StateRegion, err error) {
 }
 
 func GetLocalDealerTiers() (tiers []DealerTier, err error) {
-	redis_key := "goapi:local:tiers"
+	redis_key := "local:tiers"
 	data, err := redis.Get(redis_key)
 	if len(data) > 0 && err != nil {
 		err = json.Unmarshal(data, &tiers)
@@ -1053,7 +1053,7 @@ func GetLocalDealerTiers() (tiers []DealerTier, err error) {
 }
 
 func GetLocalDealerTypes() (graphics []MapGraphics, err error) {
-	redis_key := "goapi:local:types"
+	redis_key := "local:types"
 	data, err := redis.Get(redis_key)
 	if len(data) > 0 && err != nil {
 		err = json.Unmarshal(data, &graphics)
@@ -1101,7 +1101,7 @@ func GetLocalDealerTypes() (graphics []MapGraphics, err error) {
 }
 
 func GetWhereToBuyDealers() (customers []Customer, err error) {
-	redis_key := "goapi:dealers:wheretobuy"
+	redis_key := "dealers:wheretobuy"
 	data, err := redis.Get(redis_key)
 	if len(data) > 0 && err != nil {
 		err = json.Unmarshal(data, &customers)
