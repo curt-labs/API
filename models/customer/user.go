@@ -653,23 +653,6 @@ func GetCustomerUserFromKey(key string) (u CustomerUser, err error) {
 		&passconv,
 	)
 	if err != nil {
-		err = nil
-		err = stmt.QueryRow(api_helpers.PRIVATE_KEY_TYPE, key).Scan(
-			&u.Id,
-			&u.Name,
-			&u.Email,
-			&dbpass,
-			&custID,
-			&u.DateAdded,
-			&u.Active,
-			&u.Location.Id,
-			&u.Sudo,
-			&customerID,
-			&u.Current,
-			&passconv,
-		)
-	}
-	if err != nil {
 		err = errors.New("Invalid key")
 	}
 
