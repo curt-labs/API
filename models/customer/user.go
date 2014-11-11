@@ -10,10 +10,10 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	"github.com/curt-labs/GoAPI/models/geography"
 	_ "github.com/go-sql-driver/mysql"
-	"strconv"
-	// "log"
+	//"log"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -377,17 +377,17 @@ func (u *CustomerUser) AuthenticateUser(pass string) error {
 		}
 	}
 
-	//resetChan := make(chan int)
-	//go func() {
-	//	if resetErr := u.ResetAuthentication(); resetErr != nil {
-	//		err = resetErr
-	//	}
-	//	resetChan <- 1
-	//}()
+	resetChan := make(chan int)
+	go func() {
+		if resetErr := u.ResetAuthentication(); resetErr != nil {
+			err = resetErr
+		}
+		resetChan <- 1
+	}()
 
 	u.Current = true
 
-	//<-resetChan
+	<-resetChan
 
 	return nil
 }
@@ -570,17 +570,19 @@ func (u *CustomerUser) ResetAuthentication() error {
 	var key ApiCredentials
 	var apiKeyTypeId string
 
+	var datedAddedStr string
 	err = stmt.QueryRow(api_helpers.AUTH_KEY_TYPE, u.Id).Scan(
 		&key.Key,
 		&key.Type,
 		&apiKeyTypeId,
-		&key.DateAdded,
+		&datedAddedStr,
 	)
+
+	key.DateAdded, err = time.Parse("2006-01-02 15:04:05", datedAddedStr)
 
 	if err != nil {
 		return err
 	}
-
 	stmt, err = db.Prepare(resetUserAuthenticationStmt)
 	if err != nil {
 		return err

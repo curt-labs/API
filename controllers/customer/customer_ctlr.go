@@ -3,6 +3,7 @@ package customer_ctlr
 import (
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/customer"
+	//"log"
 	"net/http"
 )
 
