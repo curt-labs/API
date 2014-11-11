@@ -166,7 +166,10 @@ const (
 )
 
 var (
-
+	getCustomerIdFromKeyStmt = `select c.customerID from Customer as c
+                                join CustomerUser as cu on c.cust_id = cu.cust_ID
+                                join ApiKey as ak on cu.id = ak.user_id
+                                where ak.api_key = ? limit 1`
 	//Old
 	findCustomerIdFromCustId = `select customerID from Customer where cust_id = ?`
 	basics                   = `select ` + customerFields + `, ` + stateFields + `, ` + countryFields + `, ` + dealerTypeFields + `, ` + dealerTierFields + `, ` + mapIconFields + `, ` + mapixCodeFields + `, ` + salesRepFields + `
@@ -521,6 +524,25 @@ func (c *Customer) GetCustomer() (err error) {
 	// return nil
 }
 
+func (c *Customer) GetCustomerIdFromKey(key string) error {
+	var err error
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(getCustomerIdFromKeyStmt)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	err = stmt.QueryRow(key).Scan(&c.Id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 //redundant with Get - uses SQL joins; faster?
 func (c *Customer) Basics() (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -572,7 +594,8 @@ func (c *Customer) GetLocations() (err error) {
 		c.Locations = append(c.Locations, *loc)
 	}
 	defer rows.Close()
-	err = redis.Set(redis_key, c.Locations)
+
+	err = redis.Setex(redis_key, c.Locations, 86400)
 	return err
 }
 

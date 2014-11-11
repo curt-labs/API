@@ -57,6 +57,7 @@ func TestUser(t *testing.T) {
 				pubKey = key.Key
 			}
 		}
+		t.Log(pubKey)
 
 		err := cu.Get(authKey)
 		So(err, ShouldBeNil)

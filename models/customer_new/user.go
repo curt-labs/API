@@ -100,11 +100,7 @@ var (
 									set ak.date_added = NOW()
 									where ak.type_id = ?
 									&& ak.user_id = ?`
-	customerIDFromKey = `select c.cust_id from Customer as c
-								join CustomerUser as cu on c.cust_id = cu.cust_ID
-								join ApiKey as ak on cu.id = ak.user_id
-								where ak.api_key = ?
-								limit 1`
+
 	customerUserFromKey = `select cu.* from CustomerUser as cu
 								join ApiKey as ak on cu.id = ak.user_id
 								join ApiKeyType as akt on ak.type_id = akt.id
