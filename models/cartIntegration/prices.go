@@ -100,6 +100,7 @@ func GetPricesByCustomerID(custID int) (priceslist []PricePoint, err error) {
 		err = p.toString()
 		priceslist = append(priceslist, p)
 	}
+	defer res.Close()
 	return priceslist, err
 }
 
@@ -152,6 +153,7 @@ func GetPricesByCustomerIDPaged(custID int, page, count int) (priceslist []Price
 		err = p.toString()
 		priceslist = append(priceslist, p)
 	}
+	defer res.Close()
 	return priceslist, err
 }
 

@@ -112,6 +112,7 @@ func GetAll() (Blogs, error) {
 		<-bcChan
 		bs = append(bs, b)
 	}
+	defer res.Close()
 	go redis.Setex(redis_key, bs, 86400)
 	return bs, err
 }
@@ -137,6 +138,7 @@ func getAllBlogCategories() (BlogCategories, error) {
 		res.Scan(&temp.ID, &temp.BlogPostID, &temp.BlogCategoryID, &temp.Category.ID, &temp.Category.Name, &temp.Category.Slug, &temp.Category.Active)
 		bcs = append(bcs, temp)
 	}
+	defer res.Close()
 	return bcs, err
 }
 
@@ -167,6 +169,7 @@ func GetAllCategories() (Categories, error) {
 		res.Scan(&c.ID, &c.Name, &c.Slug, &c.Active)
 		cs = append(cs, c)
 	}
+	defer res.Close()
 	go redis.Setex(redis_key, cs, 86400)
 
 	return cs, err
@@ -259,6 +262,7 @@ func (b *Blog) Get() error {
 		}()
 		<-bcChan
 	}
+	defer res.Close()
 	go redis.Setex(redis_key, b, 86400)
 	return err
 }

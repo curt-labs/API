@@ -624,6 +624,7 @@ func (cu *CustomerUser) GenerateAPIKey(keyType string) (*ApiCredentials, error) 
 		}
 
 	}
+	defer rows.Close()
 
 	return nil, fmt.Errorf("%s", "failed to generate new key")
 }

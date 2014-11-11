@@ -101,6 +101,7 @@ func GetAll() (Newses, error) {
 		}
 		fs = append(fs, n)
 	}
+	defer res.Close()
 	go redis.Setex(redis_key, fs, 86400)
 	return fs, nil
 }
@@ -135,6 +136,7 @@ func GetTitles(pageStr, resultsStr string) (pagination.Objects, error) {
 		res.Scan(&f.Title)
 		fs = append(fs, f)
 	}
+	defer res.Close()
 	l = pagination.Paginate(pageStr, resultsStr, fs)
 
 	go redis.Setex(redis_key, l, 86400)
@@ -169,6 +171,7 @@ func GetLeads(pageStr, resultsStr string) (pagination.Objects, error) {
 		res.Scan(&f.Lead)
 		fs = append(fs, f)
 	}
+	defer res.Close()
 	l = pagination.Paginate(pageStr, resultsStr, fs)
 
 	go redis.Setex(redis_key, l, 86400)
@@ -198,6 +201,7 @@ func Search(title, lead, content, publishStart, publishEnd, active, slug, pageSt
 		res.Scan(&n.ID, &n.Title, &n.Lead, &n.Content, &n.PublishStart, &n.PublishEnd, &n.Active, &n.Slug)
 		fs = append(fs, n)
 	}
+	defer res.Close()
 	l = pagination.Paginate(pageStr, resultsStr, fs)
 	return l, err
 }

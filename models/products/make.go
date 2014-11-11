@@ -43,6 +43,7 @@ func (l *Lookup) GetMakes() error {
 			l.Makes = append(l.Makes, ma)
 		}
 	}
+	defer res.Close()
 
 	l.Pagination = Pagination{
 		TotalItems:    len(l.Makes),

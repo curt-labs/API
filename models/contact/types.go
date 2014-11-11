@@ -145,6 +145,7 @@ func (ct *ContactType) GetReceivers() (crs ContactReceivers, err error) {
 		}
 		crs = append(crs, cr)
 	}
+	defer res.Close()
 	return crs, err
 }
 

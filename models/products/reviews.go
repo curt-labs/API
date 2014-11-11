@@ -86,6 +86,7 @@ func (p *Part) GetActiveApprovedReviews() error {
 			ratingCounter = ratingCounter + r.Rating
 		}
 	}
+	defer rows.Close()
 
 	p.Reviews = reviews
 	if len(reviews) > 0 {
@@ -146,6 +147,7 @@ func GetAll() (revs Reviews, err error) {
 
 		revs = append(revs, r)
 	}
+	defer res.Close()
 	go redis.Setex(redis_key, revs, 86400)
 	return revs, err
 }

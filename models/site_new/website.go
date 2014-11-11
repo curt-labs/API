@@ -104,6 +104,7 @@ func GetAllWebsites() (ws Websites, err error) {
 		}
 		ws = append(ws, w)
 	}
+	defer res.Close()
 	return ws, err
 }
 

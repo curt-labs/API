@@ -571,6 +571,7 @@ func (c *Customer) GetLocations() (err error) {
 		}
 		c.Locations = append(c.Locations, *loc)
 	}
+	defer rows.Close()
 	err = redis.Set(redis_key, c.Locations)
 	return err
 }
@@ -751,6 +752,7 @@ func (c *Customer) GetUsers() (users []CustomerUser, err error) {
 		u.Name, err = conversions.ByteToString(name)
 		users = append(users, u)
 	}
+	defer res.Close()
 	if err != nil {
 		return users, err
 	}
@@ -812,6 +814,7 @@ func GetEtailers() (dealers []Customer, err error) {
 		}
 		dealers = append(dealers, *cust)
 	}
+	defer rows.Close()
 
 	return dealers, err
 }
@@ -926,13 +929,14 @@ func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, er
 		}
 		dealers = append(dealers, *l)
 	}
+	defer res.Close()
 
 	sortutil.AscByField(dealers, "Distance")
 	return
 }
 
 func GetLocalRegions() (regions []StateRegion, err error) {
-	redis_key := "goapi:local:regions"
+	redis_key := "local:regions"
 	data, err := redis.Get(redis_key)
 	if len(data) > 0 && err != nil {
 		err = json.Unmarshal(data, &regions)
@@ -1009,12 +1013,13 @@ func GetLocalRegions() (regions []StateRegion, err error) {
 
 		regions = append(regions, reg)
 	}
+	defer res.Close()
 	go redis.Set(redis_key, regions)
 	return
 }
 
 func GetLocalDealerTiers() (tiers []DealerTier, err error) {
-	redis_key := "goapi:local:tiers"
+	redis_key := "local:tiers"
 	data, err := redis.Get(redis_key)
 	if len(data) > 0 && err != nil {
 		err = json.Unmarshal(data, &tiers)
@@ -1042,12 +1047,13 @@ func GetLocalDealerTiers() (tiers []DealerTier, err error) {
 		}
 		tiers = append(tiers, t)
 	}
+	defer res.Close()
 	go redis.Setex(redis_key, tiers, 86400)
 	return
 }
 
 func GetLocalDealerTypes() (graphics []MapGraphics, err error) {
-	redis_key := "goapi:local:types"
+	redis_key := "local:types"
 	data, err := redis.Get(redis_key)
 	if len(data) > 0 && err != nil {
 		err = json.Unmarshal(data, &graphics)
@@ -1089,12 +1095,13 @@ func GetLocalDealerTypes() (graphics []MapGraphics, err error) {
 		g.DealerType.MapIcon.MapIconShadow, err = conversions.ByteToUrl(shadow)
 		graphics = append(graphics, g)
 	}
+	defer res.Close()
 	go redis.Setex(redis_key, graphics, 86400)
 	return
 }
 
 func GetWhereToBuyDealers() (customers []Customer, err error) {
-	redis_key := "goapi:dealers:wheretobuy"
+	redis_key := "dealers:wheretobuy"
 	data, err := redis.Get(redis_key)
 	if len(data) > 0 && err != nil {
 		err = json.Unmarshal(data, &customers)
@@ -1124,7 +1131,7 @@ func GetWhereToBuyDealers() (customers []Customer, err error) {
 		}
 		customers = append(customers, *cust)
 	}
-
+	defer res.Close()
 	go redis.Setex(redis_key, customers, 86400)
 	return customers, err
 }
@@ -1153,6 +1160,7 @@ func SearchLocations(term string) (locations []DealerLocation, err error) {
 		}
 		locations = append(locations, *loc)
 	}
+	defer res.Close()
 
 	return locations, err
 }
@@ -1182,6 +1190,7 @@ func SearchLocationsByType(term string) (locations DealerLocations, err error) {
 
 		locations = append(locations, *loc)
 	}
+	defer res.Close()
 
 	return locations, err
 }
@@ -1221,6 +1230,7 @@ func SearchLocationsByLatLng(loc GeoLocation) (locations []DealerLocation, err e
 		}
 		locations = append(locations, *loc)
 	}
+	defer res.Close()
 
 	return locations, err
 }

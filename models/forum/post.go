@@ -63,6 +63,7 @@ func GetAllPosts() (posts Posts, err error) {
 			posts = append(posts, post)
 		}
 	}
+	defer rows.Close()
 
 	return
 }

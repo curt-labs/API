@@ -43,6 +43,7 @@ func (l *Lookup) GetYears() error {
 			l.Years = append(l.Years, year)
 		}
 	}
+	defer res.Close()
 
 	l.Pagination = Pagination{
 		TotalItems:    len(l.Years),

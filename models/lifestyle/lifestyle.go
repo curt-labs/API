@@ -161,6 +161,7 @@ func GetAll() (ls Lifestyles, err error) {
 
 		ls = append(ls, l)
 	}
+	defer res.Close()
 	go redis.Setex(redis_key, ls, 86400)
 	return ls, err
 }
@@ -223,6 +224,7 @@ func getAllContent() (cs Contents, err error) {
 		}
 		cs = append(cs, c)
 	}
+	defer res.Close()
 	return cs, err
 }
 
@@ -247,6 +249,7 @@ func getAllTowables() (ts Towables, err error) {
 		}
 		ts = append(ts, t)
 	}
+	defer res.Close()
 	return ts, err
 }
 
@@ -272,6 +275,7 @@ func (l *Lifestyle) GetContents() (err error) {
 		}
 		l.Contents = append(l.Contents, c)
 	}
+	defer res.Close()
 	return err
 }
 
@@ -296,6 +300,7 @@ func (l *Lifestyle) GetTowables() (err error) {
 		}
 		l.Towables = append(l.Towables, t)
 	}
+	defer res.Close()
 	return err
 }
 

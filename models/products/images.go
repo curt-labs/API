@@ -72,6 +72,7 @@ func (p *Part) GetImages() error {
 			}
 		}
 	}
+	defer rows.Close()
 
 	p.Images = images
 

@@ -153,6 +153,7 @@ func GetAllMenus() (ms Menus, err error) {
 		}
 		ms = append(ms, m)
 	}
+	defer res.Close()
 	return ms, err
 }
 
@@ -237,6 +238,7 @@ func (m *Menu) GetContents() (err error) {
 		}
 		m.Contents = append(m.Contents, c)
 	}
+	defer res.Close()
 	return err
 }
 

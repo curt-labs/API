@@ -63,6 +63,7 @@ func UniqueVideos() (videos []Video_Old, err error) {
 		v.Screenshot, err = url.Parse(*screen)
 		videos = append(videos, v)
 	}
+	defer rows.Close()
 
 	return
 }

@@ -47,6 +47,7 @@ func GetAllCartIntegrations() (cis []CartIntegration, err error) {
 		}
 		cis = append(cis, c)
 	}
+	defer res.Close()
 	return cis, err
 }
 
@@ -70,6 +71,7 @@ func GetCartIntegrationsByPart(ci CartIntegration) (cis []CartIntegration, err e
 		}
 		cis = append(cis, c)
 	}
+	defer res.Close()
 	return cis, err
 }
 
@@ -93,6 +95,7 @@ func GetCartIntegrationsByCustomer(ci CartIntegration) (cis []CartIntegration, e
 		}
 		cis = append(cis, c)
 	}
+	defer res.Close()
 	return cis, err
 }
 

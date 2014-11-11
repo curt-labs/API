@@ -188,5 +188,6 @@ func populateWarranties(rows *sql.Rows, ch chan []Warranty) {
 		}
 		ws = append(ws, w)
 	}
+	defer rows.Close()
 	ch <- ws
 }

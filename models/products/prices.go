@@ -66,6 +66,7 @@ func (p *Part) GetPricing() error {
 			p.Pricing = append(p.Pricing, pr)
 		}
 	}
+	defer rows.Close()
 
 	go redis.Setex(redis_key, p.Pricing, 86400)
 

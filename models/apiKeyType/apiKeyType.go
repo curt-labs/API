@@ -63,6 +63,7 @@ func GetAllApiKeyTypes() (as []ApiKeyType, err error) {
 		}
 		as = append(as, *a)
 	}
+	defer res.Close()
 	return as, err
 }
 

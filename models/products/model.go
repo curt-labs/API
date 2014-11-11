@@ -43,6 +43,7 @@ func (l *Lookup) GetModels() error {
 			l.Models = append(l.Models, m)
 		}
 	}
+	defer res.Close()
 
 	l.Pagination = Pagination{
 		TotalItems:    len(l.Models),

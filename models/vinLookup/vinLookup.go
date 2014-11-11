@@ -237,6 +237,7 @@ func (v *CurtVehicle) GetPartsFromVehicleConfig() (ps []products.Part, err error
 
 		ps = append(ps, p)
 	}
+	defer res.Close()
 	return ps, err
 }
 
@@ -489,6 +490,7 @@ func (av *AcesVehicle) getCurtVehicles(configMap map[int]interface{}) (products.
 		l.Vehicle.Submodel = cv.Submodel.Name
 
 	} //end scan loop
+	defer res.Close()
 
 	//assign configs
 	for key, val := range pcoMap {

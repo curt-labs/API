@@ -67,6 +67,7 @@ func GetAllTopics() (topics Topics, err error) {
 			topics = append(topics, topic)
 		}
 	}
+	defer rows.Close()
 
 	return
 }
@@ -146,6 +147,7 @@ func (g *Group) GetTopics() error {
 			g.Topics = append(g.Topics, topic)
 		}
 	}
+	defer rows.Close()
 
 	return nil
 }
