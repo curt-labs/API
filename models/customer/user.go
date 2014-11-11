@@ -414,7 +414,7 @@ func AuthenticateUserByKey(key string) (u CustomerUser, err error) {
 
 	u.Location = &CustomerLocation{}
 
-	err = stmt.QueryRow(api_helpers.AUTH_KEY_TYPE, key, tstr).Scan(
+	err = stmt.QueryRow(api_helpers.PRIVATE_KEY_TYPE, key, tstr).Scan(
 		&u.Id,
 		&u.Name,
 		&u.Email,
