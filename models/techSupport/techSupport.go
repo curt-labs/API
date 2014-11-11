@@ -209,6 +209,7 @@ func populateTechSupports(rows *sql.Rows, ch chan []TechSupport) {
 		}
 		ts = append(ts, t)
 	}
+	defer rows.Close()
 	ch <- ts
 	return
 }

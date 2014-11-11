@@ -103,6 +103,8 @@ func GetAllPartContent(key string) (content []PartContent, err error) {
 		}
 
 	}
+	defer res.Close()
+
 	for k, _ := range rawContent {
 		pCon := PartContent{
 			PartId:  k,
@@ -161,6 +163,7 @@ func GetPartContent(partID int, key string) (content []CustomerContent, err erro
 		}
 		content = append(content, cc)
 	}
+	defer res.Close()
 	return
 }
 
@@ -218,5 +221,6 @@ func GetGroupedPartContent(ids []string, key string) (content map[int][]Customer
 		}
 		content[partId] = append(content[partId], cc)
 	}
+	defer res.Close()
 	return
 }

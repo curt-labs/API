@@ -82,6 +82,7 @@ func GetAllCategoryContent(key string) (content []CategoryContent, err error) {
 			c.Hidden = *deleted
 		}
 	}
+	defer res.Close()
 
 	for k, _ := range rawContent {
 		catCon := CategoryContent{
@@ -137,5 +138,6 @@ func GetCategoryContent(catID int, key string) (content []CustomerContent, err e
 		}
 		content = append(content, c)
 	}
+	defer res.Close()
 	return
 }

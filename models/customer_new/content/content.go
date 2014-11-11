@@ -297,6 +297,7 @@ func AllCustomerContent(key string) (content []CustomerContent, err error) {
 		err = c.GetRevisions()
 		content = append(content, c)
 	}
+	defer res.Close()
 	return
 }
 
@@ -345,6 +346,7 @@ func GetCustomerContent(id int, key string) (c CustomerContent, err error) {
 			return c, err
 		}
 	}
+	defer rows.Close()
 
 	if pId != nil {
 		partId, err = conversions.ByteToInt(pId)
@@ -427,6 +429,7 @@ func (cc *CustomerContent) GetRevisions() (err error) {
 		}
 		cc.Revisions = append(cc.Revisions, r)
 	}
+	defer res.Close()
 	return err
 }
 
@@ -487,6 +490,7 @@ func GetCustomerContentRevisions(id int, key string) (revs []CustomerContentRevi
 		ccr.User = users[ccr.User.Id]
 		revs = append(revs, ccr)
 	}
+	defer res.Close()
 	return
 }
 
@@ -690,5 +694,6 @@ func AllCustomerContentTypes() (types []ContentType, err error) {
 		}
 		types = append(types, ct)
 	}
+	defer res.Close()
 	return
 }

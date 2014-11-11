@@ -247,6 +247,7 @@ func GetAllContents() (cs Contents, err error) {
 		}
 		cs = append(cs, c)
 	}
+	defer res.Close()
 	return cs, err
 }
 
@@ -303,6 +304,7 @@ func (c *Content) GetContentRevisions() (err error) {
 		}
 		c.ContentRevisions = append(c.ContentRevisions, rev)
 	}
+	defer res.Close()
 	return err
 }
 
@@ -358,6 +360,7 @@ func GetAllContentRevisions() (cr ContentRevisions, err error) {
 		}
 		cr = append(cr, rev)
 	}
+	defer res.Close()
 	return cr, err
 }
 

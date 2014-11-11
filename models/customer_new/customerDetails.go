@@ -65,6 +65,7 @@ func GetDealerTypes() ([]DealerType, error) {
 		}
 		dTypes = append(dTypes, dType)
 	}
+	defer res.Close()
 	return dTypes, err
 }
 
@@ -113,6 +114,7 @@ func GetDealerTiers() ([]DealerTier, error) {
 
 		dTiers = append(dTiers, dTier)
 	}
+	defer res.Close()
 	return dTiers, err
 }
 
@@ -144,6 +146,7 @@ func GetMapIcons() ([]MapIcon, error) {
 		}
 		mis = append(mis, mi)
 	}
+	defer res.Close()
 	return mis, err
 }
 
@@ -191,6 +194,7 @@ func GetMapixCodes() ([]MapixCode, error) {
 		}
 		mcs = append(mcs, mc)
 	}
+	defer res.Close()
 	return mcs, err
 }
 
@@ -235,5 +239,6 @@ func GetSalesReps() ([]SalesRepresentative, error) {
 		}
 		srs = append(srs, sr)
 	}
+	defer res.Close()
 	return srs, err
 }

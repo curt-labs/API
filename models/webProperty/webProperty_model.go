@@ -281,6 +281,7 @@ func GetByCustomer(CustID int) (ws WebProperties, err error) {
 		<-requirementsChan
 		ws = append(ws, w)
 	}
+	defer res.Close()
 	go redis.Setex(redis_key, ws, 86400)
 	return
 }

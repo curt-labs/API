@@ -89,6 +89,7 @@ func GetAllTestimonials(page int, count int, randomize bool) (tests Testimonials
 
 		tests = append(tests, t)
 	}
+	defer rows.Close()
 	return
 }
 

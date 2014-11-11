@@ -338,6 +338,7 @@ func (l *Lookup) GetConfigurations() error {
 			count++
 		}
 	}
+	defer res.Close()
 
 	for i := 0; i < count; i++ {
 		<-ch
@@ -373,7 +374,6 @@ func (v Vehicle) getDefinedConfigurations() (*map[int][]DefinedConfiguration, er
 	if err != nil || rows == nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	for rows.Next() {
 		var name string
@@ -400,6 +400,7 @@ func (v Vehicle) getDefinedConfigurations() (*map[int][]DefinedConfiguration, er
 			configs[dc.ConfigID] = append(configs[dc.ConfigID], dc)
 		}
 	}
+	defer rows.Close()
 
 	return &configs, nil
 }
@@ -549,6 +550,7 @@ func (c *Configuration) getVcdbOptions(v Vehicle) ([]string, error) {
 			opts = append(opts, val)
 		}
 	}
+	defer res.Close()
 
 	return opts, nil
 }
@@ -586,6 +588,7 @@ func (c *Configuration) getCurtOptions(v Vehicle) ([]string, error) {
 			opts = append(opts, val)
 		}
 	}
+	defer res.Close()
 
 	if !hasOther && len(opts) < 2 {
 		opts = append(opts, "Other")

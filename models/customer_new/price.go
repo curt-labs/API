@@ -98,7 +98,7 @@ func GetAllPrices() (Prices, error) {
 		err = res.Scan(&p.ID, &p.CustID, &p.PartID, &p.Price, &p.IsSale, &p.SaleStart, &p.SaleEnd)
 		ps = append(ps, p)
 	}
-
+	defer res.Close()
 	go redis.Setex(redis_key, ps, 86400)
 	return ps, nil
 }

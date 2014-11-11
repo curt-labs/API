@@ -90,6 +90,7 @@ func (p *Part) GetPartPackaging() error {
 			pkgs = append(pkgs, pkg)
 		}
 	}
+	defer rows.Close()
 
 	p.Packages = pkgs
 

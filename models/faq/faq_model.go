@@ -95,6 +95,7 @@ func GetAll() (Faqs, error) {
 		}
 		fs = append(fs, f)
 	}
+	defer res.Close()
 	go redis.Setex(redis_key, fs, 86400)
 	return fs, nil
 }

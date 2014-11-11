@@ -61,6 +61,7 @@ func GetAllThreads() (threads Threads, err error) {
 			threads = append(threads, thread)
 		}
 	}
+	defer rows.Close()
 
 	return
 }
@@ -138,6 +139,7 @@ func (t *Topic) GetThreads() error {
 			t.Threads = append(t.Threads, thread)
 		}
 	}
+	defer rows.Close()
 
 	return nil
 }

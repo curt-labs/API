@@ -155,6 +155,7 @@ func (m *Menu) GetMenuItemsByMenuId() (ms MenuItems, err error) {
 		}
 		ms = append(ms, mi)
 	}
+	defer res.Close()
 
 	return ms, err
 }
@@ -199,6 +200,7 @@ func GetFooterSitemap() (ms MenuWithContents, err error) {
 		}
 		ms = append(ms, m)
 	}
+	defer res.Close()
 	if len(ms) == 0 {
 		err = sql.ErrNoRows
 	}
@@ -250,6 +252,7 @@ func GetMenuSitemap() (ms MenuWithContents, err error) {
 		}
 
 	}
+	defer res.Close()
 	if len(ms) == 0 {
 		err = sql.ErrNoRows
 	}
@@ -389,5 +392,6 @@ func GetAllMenus() (ms Menus, err error) {
 		}
 		ms = append(ms, m)
 	}
+	defer res.Close()
 	return ms, err
 }

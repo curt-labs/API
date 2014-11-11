@@ -77,6 +77,7 @@ func (p *Part) GetVideos() error {
 		v.TypeIcon, _ = url.Parse(*icon)
 		videos = append(videos, v)
 	}
+	defer rows.Close()
 
 	p.Videos = videos
 

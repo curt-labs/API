@@ -54,6 +54,8 @@ func (p *Part) GetAttributes() (err error) {
 			attrs = append(attrs, attr)
 		}
 	}
+	defer rows.Close()
+
 	p.Attributes = attrs
 
 	go redis.Setex(redis_key, p.Attributes, redis.CacheTimeout)

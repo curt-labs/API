@@ -60,6 +60,7 @@ func GetAllGroups() (groups Groups, err error) {
 			groups = append(groups, group)
 		}
 	}
+	defer rows.Close()
 
 	return
 }

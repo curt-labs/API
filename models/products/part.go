@@ -330,6 +330,7 @@ func All(key string, page, count int) ([]Part, error) {
 		}(partID)
 		iter++
 	}
+	defer rows.Close()
 
 	for i := 0; i < iter; i++ {
 		<-partChan
@@ -376,6 +377,7 @@ func Featured(key string, count int) ([]Part, error) {
 		}(partID)
 		iter++
 	}
+	defer rows.Close()
 
 	for i := 0; i < iter; i++ {
 		<-partChan
@@ -422,6 +424,7 @@ func Latest(key string, count int) ([]Part, error) {
 		}(partID)
 		iter++
 	}
+	defer rows.Close()
 
 	for i := 0; i < iter; i++ {
 		<-partChan

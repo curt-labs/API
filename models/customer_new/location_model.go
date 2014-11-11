@@ -129,6 +129,7 @@ func GetAllLocations() (CustomerLocations, error) {
 		}
 		ls = append(ls, l)
 	}
+	defer res.Close()
 	go redis.Setex(redis_key, ls, 86400)
 	return ls, err
 }

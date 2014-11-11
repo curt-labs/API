@@ -206,6 +206,7 @@ func PopulateCategoryMulti(rows *sql.Rows, ch chan []Category) {
 
 		cats = append(cats, initCat)
 	}
+	defer rows.Close()
 
 	ch <- cats
 }
@@ -319,6 +320,7 @@ func TopTierCategories(key string) (cats []Category, err error) {
 			iter++
 		}
 	}
+	defer catRows.Close()
 
 	for i := 0; i < iter; i++ {
 		<-ch
@@ -564,6 +566,7 @@ func (c *Category) GetContent() (content []Content, err error) {
 			content = append(content, con)
 		}
 	}
+	defer conRows.Close()
 
 	return
 }
@@ -663,7 +666,6 @@ func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *
 		if err != nil || rows == nil {
 			return err
 		}
-		defer rows.Close()
 
 		for rows.Next() {
 			var ct *int
@@ -672,6 +674,7 @@ func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *
 				ids = append(ids, *id)
 			}
 		}
+		defer rows.Close()
 
 		ch := make(chan error)
 		for _, id := range ids {
@@ -739,6 +742,7 @@ func (c *Category) GetPartCount(key string, v *Vehicle, specs *map[string][]stri
 		for rows.Next() {
 			counter++
 		}
+		defer rows.Close()
 		total = &counter
 	} else {
 		stmt, err := db.Prepare(CategoryPartCountStmt)

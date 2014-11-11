@@ -49,6 +49,7 @@ func GetAllSalesReps() (reps SalesReps, err error) {
 			reps = append(reps, rep)
 		}
 	}
+	defer rows.Close()
 
 	return
 }

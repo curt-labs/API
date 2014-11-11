@@ -45,6 +45,7 @@ func (l *Lookup) GetSubmodels() error {
 			l.Submodels = append(l.Submodels, m)
 		}
 	}
+	defer res.Close()
 
 	l.Pagination = Pagination{
 		TotalItems:    len(l.Submodels),

@@ -217,6 +217,7 @@ func (v *Vehicle) GetNotes(partId int) (notes []string, err error) {
 			notes = append(notes, note)
 		}
 	}
+	defer rows.Close()
 
 	return
 }
@@ -249,7 +250,6 @@ func ReverseLookup(partId int) (vehicles []Vehicle, err error) {
 		return
 	}
 
-	defer rows.Close()
 	vehicleArray := make(map[int]Vehicle, 0)
 
 	for rows.Next() {
@@ -281,6 +281,7 @@ func ReverseLookup(partId int) (vehicles []Vehicle, err error) {
 		}
 		vehicleArray[v.ID] = v
 	}
+	defer rows.Close()
 
 	for _, v := range vehicleArray {
 		vehicles = append(vehicles, v)

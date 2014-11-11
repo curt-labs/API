@@ -221,6 +221,7 @@ func (cr *ContactReceiver) GetContactTypes() (err error) {
 		}
 		cr.ContactTypes = append(cr.ContactTypes, ct)
 	}
+	defer res.Close()
 	return err
 }
 

@@ -387,6 +387,7 @@ func GetSitemapCP() (cps ContentPages, err error) {
 		// }
 		cps = append(cps, cp)
 	}
+	defer res.Close()
 	if len(cps) == 0 {
 		err = sql.ErrNoRows
 	}

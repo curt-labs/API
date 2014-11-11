@@ -173,6 +173,7 @@ func (l *Lookup) loadVehicleParts(ch chan error) {
 			l.Parts = append(l.Parts, p)
 		}
 	}
+	defer rows.Close()
 
 	ch <- nil
 	return
@@ -204,6 +205,7 @@ func (l *Lookup) loadBaseVehicleParts(ch chan error) {
 			l.Parts = append(l.Parts, p)
 		}
 	}
+	defer rows.Close()
 
 	ch <- nil
 	return

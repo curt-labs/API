@@ -7,7 +7,6 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	"github.com/curt-labs/GoAPI/models/products"
 	_ "github.com/go-sql-driver/mysql"
-	"log"
 	"strconv"
 	"time"
 )
@@ -308,7 +307,6 @@ func (v *Video) GetChannels() (chs Channels, err error) {
 		go populateChannels(rows, ch)
 		chs = <-ch
 	}
-	log.Print(v.ID, chs)
 	go redis.Setex(redis_key, chs, 86400)
 	return chs, err
 }
@@ -1121,6 +1119,7 @@ func GetAllCdnFileTypes() (cts []CdnFileType, err error) {
 		}
 		cts = append(cts, c)
 	}
+	defer res.Close()
 	go redis.Setex(redis_key, cts, 86400)
 	return cts, err
 }
@@ -1251,6 +1250,7 @@ func GetAllVideoTypes() (vts []VideoType, err error) {
 		}
 		vts = append(vts, vt)
 	}
+	defer rows.Close()
 	go redis.Setex(redis_key, vts, 86400)
 	return vts, err
 }
@@ -1379,6 +1379,7 @@ func GetAllChannelTypes() (cts []ChannelType, err error) {
 		}
 		cts = append(cts, c)
 	}
+	defer res.Close()
 	go redis.Setex(redis_key, cts, 86400)
 	return cts, err
 }
@@ -1510,6 +1511,7 @@ func populateVideos(rows *sql.Rows, ch chan Videos) {
 		}
 		vs = append(vs, v)
 	}
+	defer rows.Close()
 	ch <- vs
 	return
 }
@@ -1561,6 +1563,7 @@ func populateCdns(rows *sql.Rows, ch chan CdnFiles) {
 
 		cs = append(cs, c)
 	}
+	defer rows.Close()
 	ch <- cs
 	return
 }
@@ -1585,9 +1588,7 @@ func populateChannels(rows *sql.Rows, ch chan Channels) {
 			&tName,
 			&tDesc,
 		)
-		log.Print(c)
 		if err != nil {
-			log.Print(err)
 			ch <- Channels{}
 			return
 		}
@@ -1611,6 +1612,7 @@ func populateChannels(rows *sql.Rows, ch chan Channels) {
 		}
 		chs = append(chs, c)
 	}
+	defer rows.Close()
 	ch <- chs
 	return
 }
