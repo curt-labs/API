@@ -108,7 +108,7 @@ var (
 	customerUserFromKey = `select cu.* from CustomerUser as cu
 								join ApiKey as ak on cu.id = ak.user_id
 								join ApiKeyType as akt on ak.type_id = akt.id
-								where UPPER(akt.type) = ? && UPPER(ak.api_key) = UPPER(?)
+								where UPPER(akt.type) != ? && UPPER(ak.api_key) = UPPER(?)
 								limit 1`
 
 	customerUserFromId = `select cu.* from CustomerUser as cu

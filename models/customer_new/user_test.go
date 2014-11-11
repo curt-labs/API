@@ -48,9 +48,13 @@ func TestUser(t *testing.T) {
 	})
 	Convey("Testing Auth", t, func() {
 		var authKey string
+		var pubKey string
 		for _, key := range cu.Keys {
 			if key.Type == "AUTHENTICATION" {
 				authKey = key.Key
+			}
+			if key.Type == "PUBLIC" {
+				pubKey = key.Key
 			}
 		}
 
@@ -65,7 +69,7 @@ func TestUser(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(customer, ShouldNotBeNil)
 
-		user2, err := GetCustomerUserFromKey(authKey)
+		user2, err := GetCustomerUserFromKey(pubKey)
 		So(err, ShouldBeNil)
 		So(user2, ShouldNotBeNil)
 
