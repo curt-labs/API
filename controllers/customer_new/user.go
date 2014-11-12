@@ -42,6 +42,14 @@ func AuthenticateUser(w http.ResponseWriter, r *http.Request, enc encoding.Encod
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return ""
 	}
+	//if sudo
+	if user.Sudo == true {
+		err = cust.GetUsers()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return ""
+		}
+	}
 
 	return encoding.Must(enc.Encode(cust))
 }

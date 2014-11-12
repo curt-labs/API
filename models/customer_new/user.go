@@ -64,7 +64,7 @@ var (
 								where cu.email = ? && cu.password = ?
 								limit 1`
 
-	customerUserAuth = `select cu.id, cu.password, cu.passwordConverted from CustomerUser as cu
+	customerUserAuth = `select cu.id, cu.name, cu.email, cu.password, cu.customerID, cu.date_added, cu.active,cu.locationID, cu.isSudo, cu.cust_ID, cu.passwordConverted from CustomerUser as cu
 							where email = ?
 							&& active = 1
 							limit 1`
@@ -288,10 +288,21 @@ func (u *CustomerUser) AuthenticateUser() error {
 	var dbPass string
 	var passConversionByte []byte
 	var passConversion bool
-	var id *string
+	var sudo, active *bool
+	var id, name, email *string
+	var dateAdded *time.Time
+	var oldId, locId, custId *int
 	err = stmt.QueryRow(u.Email).Scan(
 		&id,
+		&name,
+		&email,
 		&dbPass,
+		&oldId,
+		&dateAdded,
+		&active,
+		&locId,
+		&sudo,
+		&custId,
 		&passConversionByte,
 	)
 	if err != nil {
@@ -299,6 +310,30 @@ func (u *CustomerUser) AuthenticateUser() error {
 	}
 	if id != nil {
 		u.Id = *id
+	}
+	if name != nil {
+		u.Name = *name
+	}
+	if email != nil {
+		u.Email = *email
+	}
+	if oldId != nil {
+		u.OldCustomerID = *oldId
+	}
+	if dateAdded != nil {
+		u.DateAdded = *dateAdded
+	}
+	if active != nil {
+		u.Active = *active
+	}
+	if locId != nil {
+		u.Location.Id = *locId
+	}
+	if sudo != nil {
+		u.Sudo = *sudo
+	}
+	if custId != nil {
+		u.CustomerID = *custId
 	}
 	if passConversionByte != nil {
 		passConversion, err = strconv.ParseBool(string(passConversionByte))
