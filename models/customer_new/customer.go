@@ -744,16 +744,16 @@ func (c *Customer) Delete() (err error) {
 	return err
 }
 
-func (c *Customer) GetUsers() (users []CustomerUser, err error) {
+func (c *Customer) GetUsers() (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		return users, err
+		return err
 	}
 	defer db.Close()
 
 	stmt, err := db.Prepare(customerUser)
 	if err != nil {
-		return users, err
+		return err
 	}
 	defer stmt.Close()
 
@@ -770,16 +770,16 @@ func (c *Customer) GetUsers() (users []CustomerUser, err error) {
 			&u.Sudo,
 		)
 		if err != nil {
-			return users, err
+			return err
 		}
 		u.Name, err = conversions.ByteToString(name)
-		users = append(users, u)
+		c.Users = append(c.Users, u)
 	}
 	defer res.Close()
 	if err != nil {
-		return users, err
+		return err
 	}
-	return users, err
+	return err
 }
 
 func GetCustomerPrice(api_key string, part_id int) (price float64, err error) {

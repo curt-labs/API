@@ -26,7 +26,22 @@ func AuthenticateUser(w http.ResponseWriter, r *http.Request, enc encoding.Encod
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return ""
 	}
+	err = user.GetLocation()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return ""
+	}
+
+	err = user.GetKeys()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return ""
+	}
 	cust, err := user.GetCustomer()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return ""
+	}
 
 	return encoding.Must(enc.Encode(cust))
 }

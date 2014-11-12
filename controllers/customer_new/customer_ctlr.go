@@ -88,11 +88,11 @@ func GetUsers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, para
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
-	users, err := cust.GetUsers()
+	err = cust.GetUsers()
 	if err != nil {
 		return err.Error()
 	}
-	return encoding.Must(enc.Encode(users))
+	return encoding.Must(enc.Encode(cust.Users))
 }
 
 //Todo redundant

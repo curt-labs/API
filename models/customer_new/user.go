@@ -417,6 +417,12 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 	}
 
 	c = *cust
+	// err = c.GetUsers()
+	// if err != nil {
+	// 	return c, err
+	// }
+	// log.Print("users", c.Users)
+	c.Users = append(c.Users, u)
 	err = c.GetLocations()
 	if err != nil {
 		return c, err
