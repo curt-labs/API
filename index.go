@@ -411,7 +411,7 @@ func main() {
 			r.Post("/auth", customer_ctlr_new.AuthenticateUser)
 			r.Get("/auth", customer_ctlr_new.KeyedUserAuthentication)
 
-			r.Post("/user", customer_ctlr_new.RegisterUser)
+			r.Post("/user", customer_ctlr_new.GetUser)
 			r.Post("/user/register", customer_ctlr_new.RegisterUser)
 			r.Post("/user/resetPassword", customer_ctlr_new.ResetPassword)
 			r.Post("/user/changePassword", customer_ctlr_new.ChangePassword)
