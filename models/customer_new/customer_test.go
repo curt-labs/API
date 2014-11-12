@@ -106,9 +106,9 @@ func TestCustomerModel(t *testing.T) {
 		err = c.FindCustomerIdFromCustId()
 		So(err, ShouldBeNil)
 
-		users, err := c.GetUsers()
+		err = c.GetUsers()
 		So(err, ShouldBeNil)
-		So(users, ShouldHaveSameTypeAs, []CustomerUser{})
+		So(c.Users, ShouldHaveSameTypeAs, []CustomerUser{})
 
 		//Create Part
 		var part products.Part
