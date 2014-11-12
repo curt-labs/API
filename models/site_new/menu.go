@@ -31,7 +31,7 @@ const (
 var (
 	getMenu         = ` SELECT ` + menuFields + ` FROM Menu AS m WHERE menuID = ? `
 	getAllMenus     = ` SELECT ` + menuFields + ` FROM Menu AS m`
-	getMenuContents = `SELECT ` + siteContentFields + `, ` + menuSiteContentFields + `  from menu_sitecontent as msc JOIN SiteContent AS s ON s.contentID = msc.ContentID  WHERE msc.menuID = ?`
+	getMenuContents = `SELECT ` + siteContentFields + `, ` + menuSiteContentFields + `  from Menu_SiteContent as msc JOIN SiteContent AS s ON s.contentID = msc.ContentID  WHERE msc.menuID = ?`
 	getMenuByName   = ` SELECT ` + menuFields + ` FROM Menu AS m WHERE menu_name = ? `
 	//operations
 	createMenu                    = `INSERT INTO Menu (menu_name, isPrimary, active, display_name, requireAuthentication, showOnSiteMap, sort, websiteID) VALUES(?,?,?,?,?,?,?,?)`
