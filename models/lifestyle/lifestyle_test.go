@@ -27,7 +27,7 @@ func TestGetLifestyles(t *testing.T) {
 		err = l.Update()
 		So(err, ShouldBeNil)
 		err = l.Get()
-		t.Log(l)
+
 		So(err, ShouldBeNil)
 		So(l, ShouldNotBeNil)
 		So(l.Name, ShouldEqual, "newName")
@@ -37,7 +37,7 @@ func TestGetLifestyles(t *testing.T) {
 		//Gets
 		ls, err := GetAll()
 		So(err, ShouldBeNil)
-		So(len(ls), ShouldBeGreaterThan, 0)
+		So(ls, ShouldHaveSameTypeAs, Lifestyles{})
 
 		err = l.Get()
 		So(err, ShouldBeNil)

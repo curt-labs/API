@@ -16,26 +16,21 @@ func TestSite_New(t *testing.T) {
 	Convey("Testing Create Menus", t, func() {
 		m.Name = "name"
 		m.ShowOnSitemap = true
-		err := m.Create()
+		err = m.Create()
 		So(err, ShouldBeNil)
-	})
-	Convey("Testing Update Menus", t, func() {
-
+		//Update menu
 		m.Name = "name2"
 		m.ShowOnSitemap = false
 		err = m.Update()
 		So(err, ShouldBeNil)
-	})
-
-	Convey("Testing Create Content", t, func() {
+		//Create content
 		c.Type = "type"
 		c.Title = "title"
 		c.MetaTitle = "mTitle"
 		c.MetaDescription = "mDesc"
-		err := c.Create()
+		err = c.Create()
 		So(err, ShouldBeNil)
-	})
-	Convey("Testing Update Content", t, func() {
+		//update content
 		c.Type = "type2"
 		c.Title = "title2"
 		c.MetaTitle = "mTitle2"
@@ -44,24 +39,20 @@ func TestSite_New(t *testing.T) {
 		err = c.Update()
 		So(err, ShouldBeNil)
 
-	})
-	Convey("Testing Create Revision", t, func() {
-
+		//create revisions
 		//Revisions
 		r.Text = "text"
 		r.Active = true
 		r.ContentId = c.Id
 		err = r.Create()
 		So(err, ShouldBeNil)
-	})
-	Convey("Testing Update Revision", t, func() {
+		//update revisions
 		r.Text = "text2"
 		r.Active = false
 		err = r.Update()
 		So(err, ShouldBeNil)
 
-	})
-	Convey("Testing Get Menus", t, func() {
+		//get menus
 		err = m.Get()
 		So(m.Name, ShouldEqual, "name2")
 		So(err, ShouldBeNil)
@@ -78,8 +69,7 @@ func TestSite_New(t *testing.T) {
 			So(err, ShouldBeNil)
 			// So(len(m.Contents), ShouldBeGreaterThan, 0)
 		}
-	})
-	Convey("Testing Get Revisions", t, func() {
+		//get revisions
 		err = r.Get()
 		So(r.Text, ShouldEqual, "text2")
 		So(err, ShouldBeNil)
@@ -94,37 +84,33 @@ func TestSite_New(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(r, ShouldNotBeNil)
 		}
-	})
-	Convey("Testing Get Content", t, func() {
+		//get content
 
 		err = c.Get()
 		So(c.Title, ShouldEqual, "title2")
 		So(err, ShouldBeNil)
 
-		Convey("Testing Get Revisions", func() {
-			err = c.GetContentRevisions()
-			if err != sql.ErrNoRows {
-				So(err, ShouldBeNil)
-				So(len(c.ContentRevisions), ShouldBeGreaterThan, 0)
-			}
-			err = c.GetLatestRevision()
-			if err != sql.ErrNoRows {
-				So(err, ShouldBeNil)
-				So(c.ContentRevisions, ShouldNotBeNil)
-			}
-		})
-		Convey("Testing GetAllContents", func() {
-			cs, err := GetAllContents()
+		//get revisions/content
+		//get revisions
+		err = c.GetContentRevisions()
+		if err != sql.ErrNoRows {
 			So(err, ShouldBeNil)
-			So(len(cs), ShouldBeGreaterThanOrEqualTo, 0)
-		})
-		Convey("Testing GetContentBySlug", func() {
-			err = c.GetBySlug()
+			So(len(c.ContentRevisions), ShouldBeGreaterThan, 0)
+		}
+		err = c.GetLatestRevision()
+		if err != sql.ErrNoRows {
 			So(err, ShouldBeNil)
-		})
-	})
+			So(c.ContentRevisions, ShouldNotBeNil)
+		}
+		//get contents
+		cs, err := GetAllContents()
+		So(err, ShouldBeNil)
+		So(len(cs), ShouldBeGreaterThanOrEqualTo, 0)
+		//get contents by slug
+		err = c.GetBySlug()
+		So(err, ShouldBeNil)
 
-	Convey("Testing Menu-Content Joins", t, func() {
+		//menu-content join
 		err = m.JoinToContent(c)
 		So(err, ShouldBeNil)
 
@@ -136,19 +122,14 @@ func TestSite_New(t *testing.T) {
 		err = m.DeleteMenuContentJoin(c)
 		So(err, ShouldBeNil)
 
-	})
-
-	Convey("Testing Delete Content", t, func() {
+		//delete content
 		err = c.Delete()
 		So(err, ShouldBeNil)
-	})
-
-	Convey("Testing Delete Revision", t, func() {
+		//delete revision
 		err = r.Delete()
 		So(err, ShouldBeNil)
 
-	})
-	Convey("Testing Delete Menu", t, func() {
+		//delete menu
 		err = m.Delete()
 		So(err, ShouldBeNil)
 	})
