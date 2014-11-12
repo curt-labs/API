@@ -12,29 +12,29 @@ const (
 	inputTimeFormat = "01/02/2006"
 )
 
-func BenchmarkCustomerGet(b *testing.B) {
-	Convey("testing get", b, func() {
-		var c Customer
-		c.Id = 1
-		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
-			_ = c.Get()
-		}
+// func BenchmarkCustomerGet(b *testing.B) {
+// 	Convey("testing get", b, func() {
+// 		var c Customer
+// 		c.Id = 1
+// 		b.ResetTimer()
+// 		for i := 0; i < b.N; i++ {
+// 			_ = c.Get()
+// 		}
 
-	})
-}
-func BenchmarkCustomerBasics(b *testing.B) {
-	Convey("testing basics ", b, func() {
-		var c Customer
-		c.Id = 1
+// 	})
+// }
+// func BenchmarkCustomerBasics(b *testing.B) {
+// 	Convey("testing basics ", b, func() {
+// 		var c Customer
+// 		c.Id = 1
 
-		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
-			_ = c.Basics()
-		}
+// 		b.ResetTimer()
+// 		for i := 0; i < b.N; i++ {
+// 			_ = c.Basics()
+// 		}
 
-	})
-}
+// 	})
+// }
 func TestCustomerModel(t *testing.T) {
 	Convey("Testing Customer Model", t, func() {
 		var c Customer
