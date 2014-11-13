@@ -72,9 +72,8 @@ func TestCustomerModel(t *testing.T) {
 		cu.CustomerID = c.CustomerId
 		cu.Current = false
 
-		So(err, ShouldBeNil)
-		err = cu.Create()
-		So(err, ShouldBeNil)
+		// err = cu.Create()
+		// So(err, ShouldBeNil)
 
 		// cu = *someuser
 		c.Users = append(c.Users, cu)
