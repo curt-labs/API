@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestTechSupport(t *testing.T) {
+func TestAppGuides(t *testing.T) {
 	Convey("Test Create AppGuide", t, func() {
 		var err error
 		var ag ApplicationGuide
@@ -33,4 +33,50 @@ func TestTechSupport(t *testing.T) {
 
 	})
 
+}
+
+func BenchmarkGetAppGuide(b *testing.B) {
+	var ag ApplicationGuide
+	ag.FileType = "pdf"
+	ag.Url = "http://google.com"
+	ag.Website.ID = 1
+
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		ag.Create()
+		b.StartTimer()
+		ag.Get()
+		b.StopTimer()
+		ag.Delete()
+	}
+}
+
+func BenchmarkGetBySite(b *testing.B) {
+	var ag ApplicationGuide
+	ag.FileType = "pdf"
+	ag.Url = "http://google.com"
+	ag.Website.ID = 1
+
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		ag.Create()
+		b.StartTimer()
+		ag.GetBySite()
+		b.StopTimer()
+		ag.Delete()
+	}
+}
+
+func BenchmarkDeleteAppGuide(b *testing.B) {
+	var ag ApplicationGuide
+	ag.FileType = "pdf"
+	ag.Url = "http://google.com"
+	ag.Website.ID = 1
+
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		ag.Create()
+		b.StartTimer()
+		ag.Delete()
+	}
 }

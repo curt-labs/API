@@ -22,7 +22,7 @@ func TestTestimonials(t *testing.T) {
 
 	})
 
-	Convey("GetAll - No paging", t, func() {
+	Convey("Get testimonial", t, func() {
 		err = test.Get()
 		So(err, ShouldBeNil)
 	})
@@ -53,4 +53,68 @@ func TestTestimonials(t *testing.T) {
 
 	})
 
+}
+
+func BenchmarkGetAllTestimonials(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GetAllTestimonials(0, 1, false)
+	}
+}
+
+func BenchmarkGetTestimonial(b *testing.B) {
+	test := setupDummyTestimonial()
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		test.Create()
+		b.StartTimer()
+		test.Get()
+		b.StopTimer()
+		test.Delete()
+	}
+}
+
+func BenchmarkCreateTestimonial(b *testing.B) {
+	test := setupDummyTestimonial()
+	for i := 0; i < b.N; i++ {
+		b.StartTimer()
+		test.Create()
+		b.StopTimer()
+		test.Delete()
+	}
+}
+
+func BenchmarkUpdateTestimonial(b *testing.B) {
+	test := setupDummyTestimonial()
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		test.Create()
+		b.StartTimer()
+		test.Content = "This is a good test."
+		test.Update()
+		b.StopTimer()
+		test.Delete()
+	}
+}
+
+func BenchmarkDeleteTestimonial(b *testing.B) {
+	test := setupDummyTestimonial()
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		test.Create()
+		b.StartTimer()
+		test.Delete()
+	}
+}
+
+func setupDummyTestimonial() *Testimonial {
+	return &Testimonial{
+		Rating:    5,
+		Title:     "Test Test",
+		Content:   "This is a test.",
+		Approved:  true,
+		Active:    true,
+		FirstName: "TESTER",
+		LastName:  "TESTER",
+		Location:  "Testville, Oklahoma",
+	}
 }
