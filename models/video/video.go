@@ -133,10 +133,10 @@ var (
 	createCdnType      = `INSERT INTO CdnFileType (mimeType, title, description) VALUES(?,?,?)`
 	updateCdnType      = `UPDATE CdnFileType SET mimeType = ?, title = ?, description = ? WHERE ID = ?`
 	deleteCdnType      = `DELETE FROM CdnFileType WHERE ID = ?`
-	getVideoType       = `SELECT vTypeID, name, icon FROM VideoType WHERE vTypeID = ?`
-	createVideoType    = `INSERT INTO VideoType (name, icon) VALUES (?,?)`
-	updateVideoType    = `UPDATE VideoType SET name = ?, icon = ? WHERE vTypeID = ?`
-	deleteVideoType    = `DELETE FROM VideoType WHERE vTypeID = ?`
+	getVideoType       = `SELECT vTypeID, name, icon FROM videoType WHERE vTypeID = ?`
+	createVideoType    = `INSERT INTO videoType (name, icon) VALUES (?,?)`
+	updateVideoType    = `UPDATE videoType SET name = ?, icon = ? WHERE vTypeID = ?`
+	deleteVideoType    = `DELETE FROM videoType WHERE vTypeID = ?`
 	getChannelType     = `SELECT ID, name, description FROM ChannelType WHERE ID = ?`
 	getAllChannelTypes = `SELECT ID, name, description FROM ChannelType `
 	createChannelType  = `INSERT INTO ChannelType (name, description) VALUES (?,?)`
