@@ -54,3 +54,20 @@ func TestGetFaqs(t *testing.T) {
 	})
 
 }
+
+func BenchmarkFaq(b *testing.B) {
+	Convey("Testing Get", b, func() {
+		b.StopTimer()
+		var f Faq
+		f.Question = "test"
+		_ = f.Create()
+
+		b.StartTimer()
+		for i := 0; i < b.N; i++ {
+			_ = f.Get()
+		}
+		b.StopTimer()
+		_ = f.Delete()
+	})
+
+}
