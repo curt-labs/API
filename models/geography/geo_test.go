@@ -26,3 +26,21 @@ func TestGeography(t *testing.T) {
 		})
 	})
 }
+
+func BenchmarkGetAllCountriesAndStates(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GetAllCountriesAndStates()
+	}
+}
+
+func BenchmarkGetAllCountries(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GetAllCountries()
+	}
+}
+
+func BenchmarkGetAllStates(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GetAllStates()
+	}
+}

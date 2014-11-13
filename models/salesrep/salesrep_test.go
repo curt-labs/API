@@ -37,5 +37,55 @@ func TestSalesReps(t *testing.T) {
 			So(err, ShouldBeNil)
 		})
 	})
+}
 
+func BenchmarkGetAllSalesReps(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GetAllSalesReps()
+	}
+}
+
+func BenchmarkGetSalesRep(b *testing.B) {
+	s := SalesRep{Name: "TESTER", Code: "9999"}
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		s.Add()
+		b.StartTimer()
+		s.Get()
+		b.StopTimer()
+		s.Delete()
+	}
+}
+
+func BenchmarkAddSalesRep(b *testing.B) {
+	s := SalesRep{Name: "TESTER", Code: "9999"}
+	for i := 0; i < b.N; i++ {
+		b.StartTimer()
+		s.Add()
+		b.StopTimer()
+		s.Delete()
+	}
+}
+
+func BenchmarkUpdateSalesRep(b *testing.B) {
+	s := SalesRep{Name: "TESTER", Code: "9999"}
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		s.Add()
+		b.StartTimer()
+		s.Code = "99999"
+		s.Update()
+		b.StopTimer()
+		s.Delete()
+	}
+}
+
+func BenchmarkDeleteSalesRep(b *testing.B) {
+	s := SalesRep{Name: "TESTER", Code: "9999"}
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		s.Add()
+		b.StartTimer()
+		s.Delete()
+	}
 }
