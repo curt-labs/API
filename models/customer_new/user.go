@@ -196,6 +196,7 @@ func ScanUser(res Scanner) (*CustomerUser, error) {
 	}
 	return &cu, err
 }
+
 func AuthenticateUserByKey(key string) (u CustomerUser, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -221,6 +222,9 @@ func AuthenticateUserByKey(key string) (u CustomerUser, err error) {
 	res := stmt.QueryRow(params...)
 	user, err := ScanUser(res)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return u, fmt.Errorf("error: %s", "user does not exist")
+		}
 		return u, err
 	}
 	u = *user
@@ -397,10 +401,20 @@ func GetCustomerUserFromKey(key string) (u CustomerUser, err error) {
 
 	res := stmt.QueryRow(api_helpers.AUTH_KEY_TYPE, key)
 	user, err := ScanUser(res)
+	if err != nil {
+		err = fmt.Errorf("error: %s", "user does not exist")
+		return
+	}
 
 	u = *user
-	u.GetLocation()
+	locChan := make(chan error)
+	go func() {
+		locChan <- u.GetLocation()
+	}()
+
 	u.GetKeys()
+	<-locChan
+
 	return
 }
 
@@ -445,23 +459,22 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 		return c, err
 	}
 	defer stmt.Close()
+
 	res := stmt.QueryRow(u.Id)
-	cust, err := ScanCustomer(res)
-	if err != nil {
+	if err := c.ScanCustomer(res); err != nil {
+		if err == sql.ErrNoRows {
+			err = fmt.Errorf("error: %s", "user not bound to customer")
+		}
 		return c, err
 	}
 
-	c = *cust
-	// err = c.GetUsers()
-	// if err != nil {
-	// 	return c, err
-	// }
-	// log.Print("users", c.Users)
-	c.Users = append(c.Users, u)
-	err = c.GetLocations()
-	if err != nil {
-		return c, err
-	}
+	locChan := make(chan error)
+	go func() {
+		locChan <- c.GetLocations()
+	}()
+	c.GetUsers()
+
+	<-locChan
 
 	return
 }
@@ -585,7 +598,7 @@ func (u *CustomerUser) ResetAuthentication() error {
 
 	a.TypeId, err = getAPIKeyTypeReference(api_helpers.AUTH_KEY_TYPE)
 	if err != nil {
-		return fmt.Errorf("failed to retrieve key type reference %s", "")
+		return fmt.Errorf("error: %s", "failed to retrieve key type reference")
 	}
 
 	var dateAdded string
@@ -772,6 +785,9 @@ func (cu *CustomerUser) Get(key string) error {
 		&passConversion, //Not Used
 	)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("error: %s", "user does not exist")
+		}
 		return err
 	}
 
@@ -874,21 +890,27 @@ func (cu *CustomerUser) Create() error {
 	// Public key:
 	go func() {
 		pub, err := cu.GenerateAPIKey(PUBLIC_KEY_TYPE)
-		cu.Keys = append(cu.Keys, *pub)
+		if pub != nil {
+			cu.Keys = append(cu.Keys, *pub)
+		}
 		pubChan <- err
 	}()
 
 	// Private key:
 	go func() {
 		pri, err := cu.GenerateAPIKey(PRIVATE_KEY_TYPE)
-		cu.Keys = append(cu.Keys, *pri)
+		if pri != nil {
+			cu.Keys = append(cu.Keys, *pri)
+		}
 		privChan <- err
 	}()
 
 	// Auth Key:
 	go func() {
 		auth, err := cu.GenerateAPIKey(AUTH_KEY_TYPE)
-		cu.Keys = append(cu.Keys, *auth)
+		if auth != nil {
+			cu.Keys = append(cu.Keys, *auth)
+		}
 		authChan <- err
 
 	}()

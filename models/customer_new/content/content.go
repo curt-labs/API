@@ -9,7 +9,6 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"html"
 
-	// "strconv"
 	"strings"
 	"time"
 )
@@ -162,30 +161,6 @@ func (ct *ContentType) Create() error {
 	ct.Id = int(id)
 	return err
 }
-func (ccr *CustomerContentRevision) Create() error {
-	var err error
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	stmt, err := db.Prepare(createContentRevision)
-	if err != nil {
-		return err
-	}
-	ccr.Date = time.Now()
-	defer stmt.Close()
-	res, err := stmt.Exec(ccr.User.Id, ccr.OldText, ccr.NewText, ccr.Date, ccr.ChangeType, ccr.ContentId, ccr.OldContentType.Id, ccr.NewContentType.Id)
-	if err != nil {
-		return err
-	}
-	id, err := res.LastInsertId()
-	if err != nil {
-		return err
-	}
-	ccr.Id = int(id)
-	return err
-}
 
 func (ct *ContentType) Delete() error {
 	var err error
@@ -200,25 +175,6 @@ func (ct *ContentType) Delete() error {
 	}
 	defer stmt.Close()
 	_, err = stmt.Exec(ct.Id)
-	if err != nil {
-		return err
-	}
-	return err
-}
-
-func (ccr *CustomerContentRevision) Delete() error {
-	var err error
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	stmt, err := db.Prepare(deleteContentRevision)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	_, err = stmt.Exec(ccr.Id)
 	if err != nil {
 		return err
 	}

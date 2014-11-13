@@ -51,8 +51,8 @@ var (
 	getAllCategories         = "SELECT b.blogCategoryID, b.name, b.slug, b.active FROM BlogCategories AS b"
 	stmtGetAllBlogCategories = "SELECT bc.postCategoryID, bc.blogPostID, bc.blogCategoryID, b.blogCategoryID, b.name, b.slug, b.active FROM BlogPost_BlogCategory AS bc LEFT JOIN blogCategories AS b ON b.blogCategoryID = bc.blogCategoryID"
 	getBlog                  = "SELECT b.blogPostID, b.post_title ,b.slug, COALESCE(b.post_text,'') ,COALESCE(b.publishedDate,''), COALESCE(b.createdDate,''), COALESCE(b.lastModified,''), b.userID, COALESCE(b.meta_title,''), COALESCE(b.meta_description,''), COALESCE(b.keywords,''), b.active FROM  BlogPosts AS b WHERE b.blogPostID = ?"
-	create                   = `INSERT INTO BlogPosts (post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active)
-								VALUES (?,?,?,?,?,?,?,?,?,?,?)`
+	create                   = `INSERT INTO BlogPosts (post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active, thumbnail)
+								VALUES (?,?,?,?,?,?,?,?,?,?,?, ?)`
 	getCategory            = "SELECT blogCategoryID, name, slug,active FROM BlogCategories WHERE blogCategoryID = ?"
 	createCategory         = "INSERT INTO BlogCategories (name,slug,active) VALUES (?,?,?)"
 	deleteCategory         = "DELETE FROM BlogCategories WHERE blogCategoryID = ?"
@@ -174,31 +174,6 @@ func GetAllCategories() (Categories, error) {
 
 	return cs, err
 }
-func (c *Category) Get() error {
-	var err error
-	redis_key := "blogs:category:" + strconv.Itoa(c.ID)
-	data, err := redis.Get(redis_key)
-	if err == nil && len(data) > 0 {
-		err = json.Unmarshal(data, &c)
-		return err
-	}
-
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	stmt, err := db.Prepare(getCategory)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	err = stmt.QueryRow(c.ID).Scan(&c.ID, &c.Name, &c.Slug, &c.Active)
-
-	go redis.Setex(redis_key, c, 86400)
-	return err
-}
 
 func (b *Blog) Get() error {
 	var err error
@@ -280,7 +255,7 @@ func (b *Blog) Create() error {
 	stmt, err := tx.Prepare(create)
 	b.LastModified = time.Now()
 	b.CreatedDate = time.Now()
-	res, err := stmt.Exec(b.Title, b.Slug, b.Text, b.CreatedDate, b.PublishedDate, b.LastModified, b.UserID, b.MetaTitle, b.MetaDescription, b.Keywords, b.Active)
+	res, err := stmt.Exec(b.Title, b.Slug, b.Text, b.CreatedDate, b.PublishedDate, b.LastModified, b.UserID, b.MetaTitle, b.MetaDescription, b.Keywords, b.Active, "")
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -297,7 +272,7 @@ func (b *Blog) Create() error {
 	return nil
 }
 
-func (c *Category) Create() error {
+func (b *Blog) Delete() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -307,52 +282,21 @@ func (c *Category) Create() error {
 	if err != nil {
 		return err
 	}
-	stmt, err := tx.Prepare(createCategory)
-
-	res, err := stmt.Exec(c.Name, c.Slug, c.Active)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	id, err := res.LastInsertId()
-	c.ID = int(id)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	err = tx.Commit()
-	if err != nil {
-		return err
-	}
-	err = redis.Setex("blogs:category:"+strconv.Itoa(c.ID), c, 86400)
-	return err
-}
-
-func (c *Category) Delete() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-	stmt, err := tx.Prepare(deleteCategory)
-
-	_, err = stmt.Exec(c.ID)
+	stmt, err := tx.Prepare(deleteBlog)
+	_, err = stmt.Exec(b.ID)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 	tx.Commit()
-	err = c.deleteCatBridgeByCategory()
-	if err != nil {
-		return err
+	err = b.deleteCatBridge()
+	if err == nil {
+		redis.Delete("blog:" + strconv.Itoa(b.ID))
 	}
-	err = redis.Delete("blogs:category:" + strconv.Itoa(c.ID))
+
 	return err
 }
+
 func (b *Blog) createCatBridge() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -436,6 +380,93 @@ func (b *Blog) deleteCatBridge() error {
 	return nil
 }
 
+func (c *Category) Get() error {
+	var err error
+	redis_key := "blogs:category:" + strconv.Itoa(c.ID)
+	data, err := redis.Get(redis_key)
+	if err == nil && len(data) > 0 {
+		err = json.Unmarshal(data, &c)
+		return err
+	}
+
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(getCategory)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	err = stmt.QueryRow(c.ID).Scan(&c.ID, &c.Name, &c.Slug, &c.Active)
+
+	go redis.Setex(redis_key, c, 86400)
+	return err
+}
+
+func (c *Category) Create() error {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	stmt, err := tx.Prepare(createCategory)
+
+	res, err := stmt.Exec(c.Name, c.Slug, c.Active)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	id, err := res.LastInsertId()
+	c.ID = int(id)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	redis.Setex("blogs:category:"+strconv.Itoa(c.ID), c, redis.CacheTimeout)
+
+	return nil
+}
+
+func (c *Category) Delete() error {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	stmt, err := tx.Prepare(deleteCategory)
+
+	_, err = stmt.Exec(c.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+
+	err = c.deleteCatBridgeByCategory()
+	if err == nil {
+		redis.Delete("blogs:category:" + strconv.Itoa(c.ID))
+	}
+
+	return err
+}
+
 func (c *Category) deleteCatBridgeByCategory() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -455,31 +486,6 @@ func (c *Category) deleteCatBridgeByCategory() error {
 	tx.Commit()
 
 	return nil
-}
-
-func (b *Blog) Delete() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-	stmt, err := tx.Prepare(deleteBlog)
-	_, err = stmt.Exec(b.ID)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	tx.Commit()
-	err = b.deleteCatBridge()
-	if err != nil {
-		return err
-	}
-	err = redis.Delete("blog:" + strconv.Itoa(b.ID))
-	return err
 }
 
 func Search(title, slug, text, publishedDate, createdDate, lastModified, userID, metaTitle, metaDescription, keywords, active, pageStr, resultsStr string) (pagination.Objects, error) {

@@ -785,7 +785,7 @@ func (c *Category) Create() (err error) {
 		c.LongDesc,
 		c.Image,
 		c.IsLifestyle,
-		c.ColorCode,
+		0, // this should be selected from the ColorCode table
 		c.Sort,
 		c.VehicleSpecific,
 		c.VehicleRequired,
@@ -803,7 +803,8 @@ func (c *Category) Create() (err error) {
 		return err
 	}
 	c.ID = int(id)
-	err = redis.Setex("category:"+strconv.Itoa(c.ID), c, 86400)
+	redis.Setex("category:"+strconv.Itoa(c.ID), c, redis.CacheTimeout)
+
 	return err
 }
 
@@ -813,15 +814,17 @@ func (c *Category) Delete() (err error) {
 		return err
 	}
 	defer db.Close()
+
 	stmt, err := db.Prepare(deleteCategory)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
+
 	_, err = stmt.Exec(c.ID)
-	if err != nil {
-		return err
+	if err == nil {
+		redis.Delete("category:" + strconv.Itoa(c.ID))
 	}
-	err = redis.Delete("category:" + strconv.Itoa(c.ID))
+
 	return err
 }
