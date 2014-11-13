@@ -108,8 +108,8 @@ var (
 						WHERE vcf.videoID = ? `
 
 	createVideo             = `INSERT INTO VideoNew (subjectTypeID, title, description, dateAdded, dateModified, isPrimary, thumbnail) VALUES(?, ?, ?, ?, ?, ?, ?)`
-	updateVideo             = `UPDATE videoNew SET subjectTypeID = ?, title = ?, description = ?, isPrimary = ?, thumbnail = ? WHERE ID = ?`
-	deleteVideo             = `DELETE FROM videoNew WHERE ID = ?`
+	updateVideo             = `UPDATE VideoNew SET subjectTypeID = ?, title = ?, description = ?, isPrimary = ?, thumbnail = ? WHERE ID = ?`
+	deleteVideo             = `DELETE FROM VideoNew WHERE ID = ?`
 	joinVideoCdn            = `INSERT INTO VideoCdnFiles(cdnID, videoID) VALUES(?,?)`
 	joinVideoChannel        = `INSERT INTO VideoChannels( channelID, videoID) VALUES(?,?)`
 	joinVideoPart           = `INSERT INTO VideoJoin(videoID, partID, catID, websiteID, isPrimary) VALUES(?,?,0,?,?)`
