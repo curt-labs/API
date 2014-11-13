@@ -101,3 +101,97 @@ func TestGetBlogs(t *testing.T) {
 	})
 
 }
+
+func BenchmarkGetAllBlogs(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GetAll()
+	}
+}
+
+func BenchmarkGetAllBlogCategories(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GetAllCategories()
+	}
+}
+
+/**
+TODO: I think Redis is making it so where these don't run right
+func BenchmarkGetBlog(b *testing.B) {
+	blog := Blog{
+		UserID:          1,
+		MetaTitle:       "Test",
+		MetaDescription: "Test",
+		Keywords:        "Test",
+		Active:          true,
+	}
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		blog.Create()
+		b.StartTimer()
+		blog.Get()
+		b.StopTimer()
+		blog.Delete()
+	}
+}
+func BenchmarkGetCategory(b *testing.B) {
+	cat := Category{
+		Name:   "TESTER",
+		Slug:   "TESTER",
+		Active: false,
+	}
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		cat.Create()
+		b.StartTimer()
+		cat.Get()
+		b.StopTimer()
+		cat.Delete()
+	}
+}
+**/
+
+func BenchmarkUpdateBlog(b *testing.B) {
+	blog := setupDummyBlog()
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		blog.Create()
+		b.StartTimer()
+		blog.Text = "Blog post magic. Whoop! Whoop!"
+		blog.Update()
+		b.StopTimer()
+		blog.Delete()
+	}
+}
+
+func BenchmarkDeleteBlog(b *testing.B) {
+	blog := setupDummyBlog()
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		blog.Create()
+		b.StartTimer()
+		blog.Delete()
+	}
+}
+
+func BenchmarkDeleteCategory(b *testing.B) {
+	cat := Category{
+		Name: "TESTER",
+		Slug: "TESTER",
+	}
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		cat.Create()
+		b.StartTimer()
+		cat.Delete()
+	}
+}
+
+func setupDummyBlog() *Blog {
+	return &Blog{
+		UserID:          1,
+		MetaTitle:       "Test",
+		MetaDescription: "Test",
+		Keywords:        "Test",
+		Active:          true,
+	}
+}
