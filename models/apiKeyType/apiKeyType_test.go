@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestTechSupport(t *testing.T) {
+func TestApiKeyType(t *testing.T) {
 	Convey("Test Create AppGuide", t, func() {
 		var err error
 		var akt ApiKeyType
@@ -27,7 +27,43 @@ func TestTechSupport(t *testing.T) {
 		//delete
 		err = akt.Delete()
 		So(err, ShouldBeNil)
-
 	})
+}
 
+func BenchmarkGetAllApiKeyTypes(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GetAllApiKeyTypes()
+	}
+}
+
+func BenchmarkGetApiKeyType(b *testing.B) {
+	akt := ApiKeyType{Type: "TESTER"}
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		akt.Create()
+		b.StartTimer()
+		akt.Get()
+		b.StopTimer()
+		akt.Delete()
+	}
+}
+
+func BenchmarkCreateApiKeyType(b *testing.B) {
+	akt := ApiKeyType{Type: "TESTER"}
+	for i := 0; i < b.N; i++ {
+		b.StartTimer()
+		akt.Create()
+		b.StopTimer()
+		akt.Delete()
+	}
+}
+
+func BenchmarkDeleteApiKeyType(b *testing.B) {
+	akt := ApiKeyType{Type: "TESTER"}
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		akt.Create()
+		b.StartTimer()
+		akt.Delete()
+	}
 }

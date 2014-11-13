@@ -7,6 +7,8 @@ import (
 	"github.com/curt-labs/GoAPI/models/products"
 	"github.com/go-martini/martini"
 	"io/ioutil"
+	"log"
+
 	// "log"
 	"net/http"
 	"strconv"
@@ -36,6 +38,7 @@ func GetCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) s
 
 	err = c.GetCustomer()
 	if err != nil {
+		log.Println(err.Error())
 		http.Error(w, "Error getting customer.", http.StatusServiceUnavailable)
 		return ""
 	}

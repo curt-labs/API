@@ -38,7 +38,6 @@ func TestWarranties(t *testing.T) {
 		Convey("DELETE", func() {
 			err = w.Delete()
 			So(err, ShouldBeNil)
-			t.Log(w)
 			Convey("Cleanup", func() {
 				//cleanup contact
 				if w.Contact.ID > 0 {

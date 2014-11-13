@@ -3,6 +3,7 @@ package customer_new
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/api"
 	"github.com/curt-labs/GoAPI/helpers/conversions"
 	"github.com/curt-labs/GoAPI/helpers/database"
@@ -10,7 +11,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	"github.com/curt-labs/GoAPI/models/geography"
 	_ "github.com/go-sql-driver/mysql"
-	// "log"
+
 	"math"
 	"net/url"
 	"strconv"
@@ -47,6 +48,7 @@ type Customer struct {
 	ShowWebsite         bool                `json:"showWebsite,omitempty" xml:"showWebsite,omitempty"`
 	SalesRepresentative SalesRepresentative `json:"salesRepresentative,omitempty" xml:"salesRepresentative,omitempty"`
 }
+
 type Customers []Customer
 
 type Scanner interface {
@@ -150,13 +152,13 @@ const (
 	customerFields = ` c.cust_id, c.name, c.email, c.address,  c.city, c.stateID, c.phone, c.fax, c.contact_person, c.dealer_type,
 				c.latitude,c.longitude,  c.website, c.customerID, c.isDummy, c.parentID, c.searchURL, c.eLocalURL, c.logo,c.address2,
 				c.postal_code, c.mCodeID, c.salesRepID, c.APIKey, c.tier, c.showWebsite `
-	stateFields            = ` s.state, s.abbr, s.countryID `
+	stateFields            = ` IFNULL(s.state, ""), IFNULL(s.abbr, ""), IFNULL(s.countryID, "0") `
 	countryFields          = ` cty.name, cty.abbr `
-	dealerTypeFields       = ` dt.type, dt.online, dt.show, dt.label `
-	dealerTierFields       = ` dtr.tier, dtr.sort `
-	mapIconFields          = ` mi.mapicon, mi.mapiconshadow ` //joins on dealer_type usually
-	mapixCodeFields        = ` mpx.code, mpx.description `
-	salesRepFields         = ` sr.name, sr.code `
+	dealerTypeFields       = ` IFNULL(dt.type, ""), IFNULL(dt.online, ""), IFNULL(dt.show, ""), IFNULL(dt.label, "") `
+	dealerTierFields       = ` IFNULL(dtr.tier, ""), IFNULL(dtr.sort, "") `
+	mapIconFields          = ` IFNULL(mi.mapicon, ""), IFNULL(mi.mapiconshadow, "") ` //joins on dealer_type usually
+	mapixCodeFields        = ` IFNULL(mpx.code, ""), IFNULL(mpx.description, "") `
+	salesRepFields         = ` IFNULL(sr.name, ""), IFNULL(sr.code, "") `
 	customerLocationFields = ` cl.locationID, cl.name, cl.address, cl.city, cl.stateID,  cl.email, cl.phone, cl.fax,
 							cl.latitude, cl.longitude, cl.cust_id, cl.contact_person, cl.isprimary, cl.postalCode, cl.ShippingDefault `
 	showSiteFields = ` c.showWebsite, c.website, c.eLocalURL `
@@ -171,7 +173,8 @@ var (
                                 join ApiKey as ak on cu.id = ak.user_id
                                 where ak.api_key = ? limit 1`
 	//Old
-	findCustomerIdFromCustId = `select customerID from Customer where cust_id = ?`
+	findCustomerIdFromCustId = `select customerID from Customer where cust_id = ? limit 1`
+	findCustIdFromCustomerId = `select cust_id from Customer where customerID = ? limit 1`
 	basics                   = `select ` + customerFields + `, ` + stateFields + `, ` + countryFields + `, ` + dealerTypeFields + `, ` + dealerTierFields + `, ` + mapIconFields + `, ` + mapixCodeFields + `, ` + salesRepFields + `
 			from Customer as c
 				left join States as s on c.stateID = s.stateID
@@ -216,7 +219,7 @@ var (
 				left join DealerTiers as dtr on c.tier = dtr.ID
 				left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
 				left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
-				where dt.online = 1 && c.isDummy = 0`
+				where dt.online = 1 && c.isDummy = 0 order by c.name`
 
 	localDealers = `select ` + customerLocationFields + `, ` + stateFields + `, ` + countryFields + `, ` + dealerTypeFields + `, ` + dealerTierFields + `, ` + mapIconFields + `, ` + mapixCodeFields + `, ` + salesRepFields + ` ,` + showSiteFields + `
 						from CustomerLocations as cl
@@ -363,8 +366,8 @@ func (c *Customer) Get() error {
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &c)
-		if err != nil {
-			return err
+		if err == nil {
+			return nil
 		}
 	}
 
@@ -373,65 +376,40 @@ func (c *Customer) Get() error {
 		return err
 	}
 	defer db.Close()
+
 	stmt, err := db.Prepare(getCustomer)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
+
 	res := stmt.QueryRow(c.Id)
 	c, err = ScanCustomerTableFields(res)
-	//get geography
-	geoChan := make(chan int)
-	go func() {
-		redis_key := "state:" + strconv.Itoa(c.State.Id)
-		data, err := redis.Get(redis_key)
-		if err == nil && len(data) > 0 {
-			err = json.Unmarshal(data, &c.State)
-			if err != nil {
-				return
-			}
-
-			redis_key_country := "country:" + strconv.Itoa(c.State.Country.Id)
-			data, err = redis.Get(redis_key_country)
-			if err == nil && len(data) > 0 {
-				err = json.Unmarshal(data, &c.State.Country)
-				if err != nil {
-					return
-				}
-			}
-		} else {
-			stateMap, err := geography.GetStateMap()
-			if err != nil {
-				return
-			}
-			countryMap, err := geography.GetCountryMap()
-			if err != nil {
-				return
-			}
-			if state, ok := stateMap[c.State.Id]; ok {
-				c.State = state
-				if country, ok := countryMap[c.State.Country.Id]; ok {
-					*c.State.Country = country
-				}
-			}
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil
 		}
-		geoChan <- 1
-	}()
+		return err
+	}
+
 	typeChan := make(chan int)
 	go func() {
 		//check redis
 		redis_key := "dealerType:" + strconv.Itoa(c.DealerType.Id)
 		data, err := redis.Get(redis_key)
 		if err == nil && len(data) > 0 {
-			err = json.Unmarshal(data, &c.DealerType)
-		} else {
-			typeMap, err := DealerTypeMap()
-			if err != nil {
-				return
-			}
-			if dType, ok := typeMap[c.DealerType.Id]; ok {
-				c.DealerType = dType
-			}
+			json.Unmarshal(data, &c.DealerType)
+			typeChan <- 1
+			return
+		}
+
+		typeMap, err := DealerTypeMap()
+		if err != nil {
+			typeChan <- 1
+			return
+		}
+		if dType, ok := typeMap[c.DealerType.Id]; ok {
+			c.DealerType = dType
 		}
 		typeChan <- 1
 	}()
@@ -441,16 +419,17 @@ func (c *Customer) Get() error {
 		redis_key := "dealerTier:" + strconv.Itoa(c.DealerTier.Id)
 		data, err := redis.Get(redis_key)
 		if err == nil && len(data) > 0 {
-			err = json.Unmarshal(data, &c.DealerTier)
-		} else {
-			tierMap, err := DealerTierMap()
-			if err != nil {
-				return
-			}
+			json.Unmarshal(data, &c.DealerTier)
+			tierChan <- 1
+			return
+		}
+		tierMap, err := DealerTierMap()
+		if err == nil {
 			if dTier, ok := tierMap[c.DealerTier.Id]; ok {
 				c.DealerTier = dTier
 			}
 		}
+
 		tierChan <- 1
 	}()
 	mapixChan := make(chan int)
@@ -459,16 +438,17 @@ func (c *Customer) Get() error {
 		redis_key := "mapixCode:" + strconv.Itoa(c.MapixCode.ID)
 		data, err := redis.Get(redis_key)
 		if err == nil && len(data) > 0 {
-			err = json.Unmarshal(data, &c.MapixCode)
-		} else {
-			mapixMap, err := MapixMap()
-			if err != nil {
-				return
-			}
+			json.Unmarshal(data, &c.MapixCode)
+			mapixChan <- 1
+			return
+		}
+		mapixMap, err := MapixMap()
+		if err == nil {
 			if mapix, ok := mapixMap[c.MapixCode.ID]; ok {
 				c.MapixCode = mapix
 			}
 		}
+
 		mapixChan <- 1
 	}()
 	repChan := make(chan int)
@@ -477,51 +457,76 @@ func (c *Customer) Get() error {
 		redis_key := "salesRep:" + strconv.Itoa(c.SalesRepresentative.ID)
 		data, err := redis.Get(redis_key)
 		if err == nil && len(data) > 0 {
-			err = json.Unmarshal(data, &c.SalesRepresentative)
-		} else {
-			repMap, err := SalesRepMap()
-			if err != nil {
-				return
-			}
+			json.Unmarshal(data, &c.SalesRepresentative)
+			repChan <- 1
+			return
+		}
+		repMap, err := SalesRepMap()
+		if err == nil {
 			if rep, ok := repMap[c.SalesRepresentative.ID]; ok {
 				c.SalesRepresentative = rep
 			}
 		}
+
 		repChan <- 1
 	}()
+
+	//get geography
+	redis_key_state := "state:" + strconv.Itoa(c.State.Id)
+	data, err = redis.Get(redis_key_state)
+	if err == nil && len(data) > 0 {
+		err = json.Unmarshal(data, &c.State)
+		if err == nil {
+			redis_key_country := "country:" + strconv.Itoa(c.State.Country.Id)
+			data, err = redis.Get(redis_key_country)
+			if err == nil && len(data) > 0 {
+				json.Unmarshal(data, &c.State.Country)
+			}
+		}
+	} else {
+		stateMap, stateErr := geography.GetStateMap()
+		countryMap, countryErr := geography.GetCountryMap()
+		if stateErr == nil && countryErr == nil {
+			if state, ok := stateMap[c.State.Id]; ok {
+				c.State = state
+				if country, ok := countryMap[c.State.Country.Id]; ok {
+					*c.State.Country = country
+				}
+			}
+		}
+	}
+
 	//TODO mapicons
 	<-repChan
 	<-mapixChan
 	<-tierChan
 	<-typeChan
-	<-geoChan
-	err = redis.Setex(redis_key, c, 86400)
-	return err
+
+	redis.Setex(redis_key, c, redis.CacheTimeout)
+
+	return nil
 }
 
 func (c *Customer) GetCustomer() (err error) {
 
-	locationChan := make(chan int)
-	basicsChan := make(chan int)
-	var locErr, basErr error
+	basicsChan := make(chan error)
 
 	go func() {
-		locErr = c.GetLocations()
-		locationChan <- 1
-	}()
-	go func() {
-		basErr = c.Get() //was Basics
-		basicsChan <- 1
+		err := c.Basics()
+		if err == nil {
+			basicsChan <- c.GetUsers()
+		}
+		basicsChan <- err
 	}()
 
-	<-locationChan
-	<-basicsChan
+	c.GetLocations()
+	err = <-basicsChan
 
-	if locErr != nil && basErr != nil {
-		err = sql.ErrNoRows
+	if err == sql.ErrNoRows {
+		err = fmt.Errorf("error: %s", "failed to retrieve")
 	}
+
 	return err
-	// return nil
 }
 
 func (c *Customer) GetCustomerIdFromKey(key string) error {
@@ -556,13 +561,8 @@ func (c *Customer) Basics() (err error) {
 		return err
 	}
 	defer stmt.Close()
-	row := stmt.QueryRow(c.Id)
 
-	c, err = ScanCustomer(row)
-	if err != nil {
-		return err
-	}
-	return err
+	return c.ScanCustomer(stmt.QueryRow(c.Id))
 }
 
 func (c *Customer) GetLocations() (err error) {
@@ -595,7 +595,8 @@ func (c *Customer) GetLocations() (err error) {
 	}
 	defer rows.Close()
 
-	err = redis.Setex(redis_key, c.Locations, 86400)
+	redis.Setex(redis_key, c.Locations, redis.CacheTimeout)
+
 	return err
 }
 
@@ -611,6 +612,24 @@ func (c *Customer) FindCustomerIdFromCustId() (err error) { //Jesus, really?
 	}
 	defer stmt.Close()
 	err = stmt.QueryRow(c.Id).Scan(&c.CustomerId)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+func (c *Customer) FindCustIdFromCustomerId() (err error) { //Jesus, really?
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(findCustIdFromCustomerId)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	err = stmt.QueryRow(c.CustomerId).Scan(&c.Id)
 	if err != nil {
 		return err
 	}
@@ -668,10 +687,7 @@ func (c *Customer) Create() (err error) {
 
 	stmt2, err := db.Prepare(updateCustomerId)
 	_, err = stmt2.Exec(c.Id, c.Id)
-	if err != nil {
-		return err
-	}
-	err = redis.Set(custPrefix+strconv.Itoa(c.Id), c)
+
 	return err
 }
 
@@ -740,8 +756,9 @@ func (c *Customer) Delete() (err error) {
 	if err != nil {
 		return err
 	}
-	err = redis.Delete(custPrefix + strconv.Itoa(c.Id))
-	return err
+	redis.Delete(custPrefix + strconv.Itoa(c.Id))
+
+	return nil
 }
 
 func (c *Customer) GetUsers() (err error) {
@@ -830,14 +847,14 @@ func GetEtailers() (dealers []Customer, err error) {
 	if err != nil {
 		return dealers, err
 	}
-	for rows.Next() {
-		cust, err := ScanCustomer(rows)
-		if err != nil {
-			return dealers, err
-		}
-		dealers = append(dealers, *cust)
-	}
 	defer rows.Close()
+
+	for rows.Next() {
+		var cust Customer
+		if err := cust.ScanCustomer(rows); err == nil {
+			dealers = append(dealers, cust)
+		}
+	}
 
 	return dealers, err
 }
@@ -1147,15 +1164,18 @@ func GetWhereToBuyDealers() (customers []Customer, err error) {
 	if err != nil {
 		return customers, err
 	}
+	defer res.Close()
+
 	for res.Next() {
-		cust, err := ScanCustomer(res)
-		if err != nil {
+		var cust Customer
+		if err := cust.ScanCustomer(res); err != nil {
 			return customers, err
 		}
-		customers = append(customers, *cust)
+		customers = append(customers, cust)
 	}
-	defer res.Close()
+
 	go redis.Setex(redis_key, customers, 86400)
+
 	return customers, err
 }
 
@@ -1279,62 +1299,61 @@ func getViewPortWidth(lat1 float64, lon1 float64, lat2 float64, long2 float64) f
 }
 
 //Scan Methods
-func ScanCustomer(res Scanner) (*Customer, error) {
-	var c Customer
+func (c *Customer) ScanCustomer(res Scanner) error {
 	var err error
-	var name, email, address, address2, city, phone, fax, contactPerson, state, stateAbbr, country, countryAbbr, postalCode, mapixCode, mapixDesc, rep, repCode, dtypeType, dtypeLabel, dtierTier, apiKey *string
+	var country, countryAbbr, dealerType, dealerTypeOnline, dealerTypeShow, dealerTypeLabel *string
+	var dealerTier, dealerTierSort *string
 	var logo, web, searchU, icon, shadow, parentId, eLocalUrl *[]byte
 	var lat, lon *string
-	var mapIconId, stateId, countryId, dtypeId, dtierId, dtierSort, custID, mapixCodeID, salesRepID *int
-	var dtypeOnline, dtypeShow, isDummy, showWebsite *bool
+	var mapIconId, countryId *int
 
 	err = res.Scan(
 		&c.Id,
-		&name,
-		&email,
-		&address,
-		&city,
-		&stateId,
-		&phone,
-		&fax,
-		&contactPerson,
-		&dtypeId,
+		&c.Name,
+		&c.Email,
+		&c.Address,
+		&c.City,
+		&c.State.Id,
+		&c.Phone,
+		&c.Fax,
+		&c.ContactPerson,
+		&c.DealerType.Id,
 		&lat,
 		&lon,
 		&web,
-		&custID,
-		&isDummy,
+		&c.CustomerId,
+		&c.IsDummy,
 		&parentId,
 		&searchU,
 		&eLocalUrl,
 		&logo,
-		&address2,
-		&postalCode,
-		&mapixCodeID,
-		&salesRepID,
-		&apiKey,
-		&dtierId,
-		&showWebsite,
-		&state,
-		&stateAbbr,
+		&c.Address2,
+		&c.PostalCode,
+		&c.MapixCode.ID,
+		&c.SalesRepresentative.ID,
+		&c.ApiKey,
+		&c.DealerTier.Id,
+		&c.ShowWebsite,
+		&c.State.State,
+		&c.State.Abbreviation,
 		&countryId,
 		&country,
 		&countryAbbr,
-		&dtypeType,
-		&dtypeOnline,
-		&dtypeShow,
-		&dtypeLabel,
-		&dtierTier,
-		&dtierSort,
+		&dealerType,
+		&dealerTypeOnline,
+		&dealerTypeShow,
+		&dealerTypeLabel,
+		&dealerTier,
+		&dealerTierSort,
 		&icon,
 		&shadow,
-		&mapixCode,
-		&mapixDesc,
-		&rep,
-		&repCode,
+		&c.MapixCode.Code,
+		&c.MapixCode.Description,
+		&c.SalesRepresentative.Name,
+		&c.SalesRepresentative.Code,
 	)
 	if err != nil {
-		return &c, err
+		return err
 	}
 
 	//get parent, if has parent
@@ -1342,13 +1361,16 @@ func ScanCustomer(res Scanner) (*Customer, error) {
 	go func() {
 		if parentId != nil {
 			parentInt, err := conversions.ByteToInt(*parentId)
-			if err != nil {
-				return
-			}
-			if parentInt != 0 {
-				par := Customer{Id: parentInt}
+			if err == nil && parentInt > 0 {
+				par := Customer{CustomerId: parentInt}
+				if err := par.FindCustIdFromCustomerId(); err != nil {
+					parentChan <- 1
+					return
+				}
+
 				err = par.GetCustomer()
 				if err != nil {
+					parentChan <- 1
 					return
 				}
 				c.Parent = &par
@@ -1356,33 +1378,8 @@ func ScanCustomer(res Scanner) (*Customer, error) {
 		}
 		parentChan <- 1
 	}()
-	<-parentChan
 
 	var coun geography.Country
-	if name != nil {
-		c.Name = *name
-	}
-	if address != nil {
-		c.Address = *address
-	}
-	if address2 != nil {
-		c.Address2 = *address2
-	}
-	if city != nil {
-		c.City = *city
-	}
-	if email != nil {
-		c.Email = *email
-	}
-	if phone != nil {
-		c.Phone = *phone
-	}
-	if fax != nil {
-		c.Fax = *fax
-	}
-	if contactPerson != nil {
-		c.ContactPerson = *contactPerson
-	}
 	if lat != nil && *lat != "" && lon != nil && *lon != "" {
 		c.Latitude, _ = strconv.ParseFloat(*lat, 64)
 		c.Longitude, _ = strconv.ParseFloat(*lon, 64)
@@ -1399,69 +1396,36 @@ func ScanCustomer(res Scanner) (*Customer, error) {
 	if web != nil {
 		c.Website, err = conversions.ByteToUrl(*web)
 	}
-	if custID != nil {
-		c.CustomerId = *custID
-	}
-	if isDummy != nil {
-		c.IsDummy = *isDummy
-	}
-	if postalCode != nil {
-		c.PostalCode = *postalCode
-	}
-	if mapixCodeID != nil {
-		c.MapixCode.ID = *mapixCodeID
-	}
-	if salesRepID != nil {
-		c.SalesRepresentative.ID = *salesRepID
-	}
-	if apiKey != nil {
-		c.ApiKey = *apiKey
-	}
-	if showWebsite != nil {
-		c.ShowWebsite = *showWebsite
-	}
-	if stateId != nil {
-		c.State.Id = *stateId
-	}
-	if state != nil {
-		c.State.State = *state
-	}
-	if stateAbbr != nil {
-		c.State.Abbreviation = *stateAbbr
-	}
 	if countryId != nil {
 		coun.Id = *countryId
 	}
 	if country != nil {
 		coun.Country = *country
 	}
-	if countryId != nil {
+	if countryAbbr != nil {
 		coun.Abbreviation = *countryAbbr
 	}
-	if dtypeId != nil {
-		c.DealerType.Id = *dtypeId
+	c.State.Country = &coun
+
+	if dealerType != nil {
+		c.DealerType.Type = *dealerType
 	}
-	if dtypeType != nil {
-		c.DealerType.Type = *dtypeType
+	if dealerTypeOnline != nil {
+		c.DealerType.Online, _ = strconv.ParseBool(*dealerTypeOnline)
 	}
-	if dtypeOnline != nil {
-		c.DealerType.Online = *dtypeOnline
+	if dealerTypeShow != nil {
+		c.DealerType.Show, _ = strconv.ParseBool(*dealerTypeShow)
 	}
-	if dtypeShow != nil {
-		c.DealerType.Show = *dtypeShow
+	if dealerTypeLabel != nil {
+		c.DealerType.Label = *dealerTypeLabel
 	}
-	if dtypeLabel != nil {
-		c.DealerType.Label = *dtypeLabel
+	if dealerTier != nil {
+		c.DealerTier.Tier = *dealerTier
 	}
-	if dtierId != nil {
-		c.DealerTier.Id = *dtierId
+	if dealerTierSort != nil {
+		c.DealerTier.Sort, _ = strconv.Atoi(*dealerTierSort)
 	}
-	if dtierSort != nil {
-		c.DealerTier.Sort = *dtierSort
-	}
-	if dtierTier != nil {
-		c.DealerTier.Tier = *dtierTier
-	}
+
 	if mapIconId != nil {
 		c.DealerType.MapIcon.Id = *mapIconId
 	}
@@ -1471,21 +1435,10 @@ func ScanCustomer(res Scanner) (*Customer, error) {
 	if shadow != nil {
 		c.DealerType.MapIcon.MapIconShadow, err = conversions.ByteToUrl(*shadow)
 	}
-	if mapixCode != nil {
-		c.MapixCode.Code = *mapixCode
-	}
-	if mapixDesc != nil {
-		c.MapixCode.Description = *mapixDesc
-	}
-	if rep != nil {
-		c.SalesRepresentative.Name = *rep
-	}
-	if repCode != nil {
-		c.SalesRepresentative.Code = *repCode
-	}
 
-	c.State.Country = &coun
-	return &c, err
+	<-parentChan
+
+	return nil
 }
 
 func ScanCustomerTableFields(res Scanner) (*Customer, error) {
@@ -1690,7 +1643,7 @@ func ScanLocation(res Scanner) (*CustomerLocation, error) {
 	if country != nil {
 		coun.Country = *country
 	}
-	if countryId != nil {
+	if countryAbbr != nil {
 		coun.Abbreviation = *countryAbbr
 	}
 	l.State.Country = &coun
@@ -1801,7 +1754,7 @@ func ScanDealerLocation(res Scanner) (*DealerLocation, error) {
 	if country != nil {
 		coun.Country = *country
 	}
-	if countryId != nil {
+	if countryAbbr != nil {
 		coun.Abbreviation = *countryAbbr
 	}
 	if dtypeType != nil {

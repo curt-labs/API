@@ -94,7 +94,6 @@ func easyCatPart() (partID, catID int) {
 func TestContent(t *testing.T) {
 	var cc CustomerContent
 	var ct ContentType
-	var ccr CustomerContentRevision
 	var err error
 	_, key := getApiKey(allCustContent)
 	partID, catID := easyCatPart()
@@ -102,10 +101,6 @@ func TestContent(t *testing.T) {
 	Convey("Testing Create", t, func() {
 		cc.Text = "test text"
 		err = cc.Save(11000, 1, key)
-
-		ccr.NewText = "new text"
-		err = ccr.Create()
-		So(err, ShouldBeNil)
 
 		ct.Type = "test type"
 		err = ct.Create()
@@ -166,8 +161,6 @@ func TestContent(t *testing.T) {
 		So(cts, ShouldNotBeNil)
 	})
 	Convey("Test Delete", t, func() {
-		err = ccr.Delete()
-		So(err, ShouldBeNil)
 		err = ct.Delete()
 		So(err, ShouldBeNil)
 		_ = cc.Delete(partID, catID, key) //returns error if no bridge exists -ok

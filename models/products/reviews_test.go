@@ -43,7 +43,7 @@ func TestGetReviews(t *testing.T) {
 			err := l.Update()
 			So(err, ShouldBeNil)
 			err = l.Get()
-			t.Log(l)
+
 			So(err, ShouldBeNil)
 			So(l, ShouldNotBeNil)
 			So(l.Name, ShouldEqual, "newName")

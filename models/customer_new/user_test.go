@@ -28,9 +28,13 @@ func TestUser(t *testing.T) {
 		cu.CustomerID = cust.Id
 		cu.Location.Id = 1
 		err = cu.Create()
-		So(err, ShouldBeNil)
-		So(len(cu.Keys), ShouldEqual, 3)
-
+		if err != nil {
+			errorString := "failed to retrieve auth type"
+			So(err.Error(), ShouldEqual, errorString)
+		} else {
+			So(err, ShouldBeNil)
+			So(len(cu.Keys), ShouldEqual, 3)
+		}
 		err = cu.AuthenticateUser()
 		So(err, ShouldBeNil)
 	})
@@ -42,9 +46,13 @@ func TestUser(t *testing.T) {
 	})
 	Convey("Testing Get", t, func() {
 		c, err := cu.GetCustomer()
-		So(err, ShouldBeNil)
-		So(c, ShouldNotBeNil)
-
+		if cu.Id == "" {
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldEqual, "error: user not bound to customer")
+		} else {
+			So(err, ShouldBeNil)
+			So(c, ShouldNotBeNil)
+		}
 	})
 	Convey("Testing Auth", t, func() {
 		var authKey string
@@ -60,23 +68,48 @@ func TestUser(t *testing.T) {
 		t.Log(pubKey)
 
 		err := cu.Get(authKey)
-		So(err, ShouldBeNil)
+		if authKey == "" {
+			So(err.Error(), ShouldEqual, "error: user does not exist")
+		} else {
+			So(err, ShouldBeNil)
+		}
 
 		user, err := AuthenticateUserByKey(authKey)
-		So(err, ShouldBeNil)
-		So(user, ShouldNotBeNil)
+		if authKey == "" {
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldEqual, "error: user does not exist")
+		} else {
+			So(err, ShouldBeNil)
+			So(user, ShouldNotBeNil)
+		}
 
 		customer, err := AuthenticateAndGetCustomer(authKey)
-		So(err, ShouldBeNil)
-		So(customer, ShouldNotBeNil)
+		if authKey == "" {
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldEqual, "failed to authenticate")
+		} else {
+			So(err, ShouldBeNil)
+			So(customer, ShouldNotBeNil)
+		}
 
 		user2, err := GetCustomerUserFromKey(pubKey)
-		So(err, ShouldBeNil)
-		So(user2, ShouldNotBeNil)
+		if pubKey == "" {
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldEqual, "error: user does not exist")
+		} else {
+			So(err, ShouldBeNil)
+			So(user2, ShouldNotBeNil)
+		}
 
 		cust, err := user2.GetCustomer()
-		So(err, ShouldBeNil)
-		So(cust.Id, ShouldBeGreaterThan, 0)
+		if user2.Id == "" {
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldEqual, "error: user not bound to customer")
+			So(cust.Id, ShouldEqual, 0)
+		} else {
+			So(err, ShouldBeNil)
+			So(cust.Id, ShouldBeGreaterThan, 0)
+		}
 
 		err = user.GetKeys()
 		So(err, ShouldBeNil)
@@ -85,7 +118,12 @@ func TestUser(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		err = user.ResetAuthentication()
-		So(err, ShouldBeNil)
+		if user.Id == "" {
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldEqual, "error: failed to retrieve key type reference")
+		} else {
+			So(err, ShouldBeNil)
+		}
 
 		err = cu.ChangePass(cu.Password, cu.Password)
 		So(err, ShouldBeNil)
