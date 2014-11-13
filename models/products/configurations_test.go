@@ -129,12 +129,13 @@ func TestGetConfigurations(t *testing.T) {
 			So(l.Configurations, ShouldNotEqual, nil)
 			//TODO fix - runtime error
 
-			if (len(l.Configurations)) > 0 {
+			if len(l.Configurations) > 0 {
 				So(len(l.Configurations), ShouldNotEqual, 0)
 				idx := 0
 				if len(l.Configurations) > 1 {
 					idx = rand.Intn(len(l.Submodels) - 1)
 				}
+				t.Log(idx)
 
 				So(l.Configurations[idx], ShouldNotEqual, nil)
 				So(l.Configurations[idx].Type, ShouldNotEqual, nil)
