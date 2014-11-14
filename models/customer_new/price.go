@@ -4,11 +4,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"github.com/curt-labs/GoAPI/helpers/database"
-	"time"
-	// "github.com/curt-labs/goacesapi/helpers/pagination"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
 	"strconv"
+	"time"
 )
 
 type Price struct {

@@ -135,6 +135,7 @@ type DealerLocation struct {
 	MapixCode           MapixCode           `json:"mapixCode,omitempty" xml:"mapixCode,omitempty"`
 }
 type DealerLocations []DealerLocation
+
 type StateRegion struct {
 	Id           int          `json:"id,omitempty" xml:"id,omitempty"`
 	Name         string       `json:"name,omitempty" xml:"name,omitempty"`
@@ -762,6 +763,7 @@ func (c *Customer) Delete() (err error) {
 }
 
 func (c *Customer) GetUsers() (err error) {
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
