@@ -58,6 +58,117 @@ func TestCI(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(cis, ShouldHaveSameTypeAs, []CartIntegration{})
 		}
-
 	})
+}
+
+func BenchmarkGetAllCartIntegrations(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GetAllCartIntegrations()
+	}
+}
+
+func BenchmarkGetCartIntegration(b *testing.B) {
+	ci := setupDummyCartIntegration()
+	ci.Create()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		ci.Get()
+	}
+	b.StopTimer()
+	ci.Delete()
+}
+
+func BenchmarkGetCartIntegrationByPart(b *testing.B) {
+	ci := setupDummyCartIntegration()
+	ci.Create()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		GetCartIntegrationsByPart(*ci)
+	}
+	b.StopTimer()
+	ci.Delete()
+}
+
+func BenchmarkGetCartIngegrationByCustomer(b *testing.B) {
+	ci := setupDummyCartIntegration()
+	ci.Create()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		GetCartIntegrationsByCustomer(*ci)
+	}
+	b.StopTimer()
+	ci.Delete()
+}
+
+func BenchmarkGetPricesByCustomerID(b *testing.B) {
+	ci := setupDummyCartIntegration()
+	ci.Create()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		GetPricesByCustomerID(ci.CustID)
+	}
+	b.StopTimer()
+	ci.Delete()
+}
+
+func BenchmarkGetPricesByCustomerIDPaged(b *testing.B) {
+	ci := setupDummyCartIntegration()
+	ci.Create()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		GetPricesByCustomerIDPaged(ci.CustID, 1, 1)
+	}
+	b.StopTimer()
+	ci.Delete()
+}
+
+func BenchmarkGetPricingCount(b *testing.B) {
+	ci := setupDummyCartIntegration()
+	ci.Create()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		GetPricingCount(ci.CustID)
+	}
+	b.StopTimer()
+	ci.Delete()
+}
+
+func BenchmarkCreateCartIntegration(b *testing.B) {
+	ci := setupDummyCartIntegration()
+	for i := 0; i < b.N; i++ {
+		ci.Create()
+		b.StopTimer()
+		ci.Delete()
+		b.StartTimer()
+	}
+}
+
+func BenchmarkUpdateCartIntegration(b *testing.B) {
+	ci := setupDummyCartIntegration()
+	ci.Create()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		ci.PartID = 987654
+		ci.Update()
+	}
+	b.StopTimer()
+	ci.Delete()
+}
+
+func BenchmarkDeleteCartIntegration(b *testing.B) {
+	ci := setupDummyCartIntegration()
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		ci.Create()
+		b.StartTimer()
+		ci.Delete()
+	}
+}
+
+func setupDummyCartIntegration() *CartIntegration {
+	return &CartIntegration{
+		PartID:     999999,
+		CustID:     999999,
+		CustPartID: 123456789,
+	}
 }

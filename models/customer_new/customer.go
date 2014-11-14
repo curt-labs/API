@@ -135,6 +135,7 @@ type DealerLocation struct {
 	MapixCode           MapixCode           `json:"mapixCode,omitempty" xml:"mapixCode,omitempty"`
 }
 type DealerLocations []DealerLocation
+
 type StateRegion struct {
 	Id           int          `json:"id,omitempty" xml:"id,omitempty"`
 	Name         string       `json:"name,omitempty" xml:"name,omitempty"`
@@ -762,6 +763,7 @@ func (c *Customer) Delete() (err error) {
 }
 
 func (c *Customer) GetUsers() (err error) {
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -776,6 +778,9 @@ func (c *Customer) GetUsers() (err error) {
 
 	res, err := stmt.Query(c.Id)
 	var name []byte
+	iter := 0
+	userChan := make(chan error)
+
 	for res.Next() {
 		var u CustomerUser
 		err = res.Scan(
@@ -787,15 +792,24 @@ func (c *Customer) GetUsers() (err error) {
 			&u.Sudo,
 		)
 		if err != nil {
-			return err
+			continue
 		}
 		u.Name, err = conversions.ByteToString(name)
-		c.Users = append(c.Users, u)
+
+		go func(user CustomerUser) {
+			user.GetKeys()
+			user.GetLocation()
+			c.Users = append(c.Users, user)
+			userChan <- nil
+		}(u)
+		iter++
 	}
 	defer res.Close()
-	if err != nil {
-		return err
+
+	for i := 0; i < iter; i++ {
+		<-userChan
 	}
+
 	return err
 }
 

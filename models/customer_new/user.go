@@ -472,7 +472,17 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 	go func() {
 		locChan <- c.GetLocations()
 	}()
-	c.GetUsers()
+
+	if u.Sudo {
+		if err := c.GetUsers(); err == nil {
+			for i, user := range c.Users {
+				if user.Id == u.Id {
+					c.Users[i].Current = true
+					break
+				}
+			}
+		}
+	}
 
 	<-locChan
 
