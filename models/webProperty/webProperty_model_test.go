@@ -126,3 +126,243 @@ func TestWebPropertiesBetter(t *testing.T) {
 	})
 
 }
+func BenchmarkCreateDeleteWebProperty(b *testing.B) {
+	Convey("Testing WebProperties", b, func() {
+		b.ResetTimer()
+		var w WebProperty
+		w.Name = "test"
+		w.CustID = 1
+		w.BadgeID = "666"
+		w.Url = "www.test.com"
+		b.StartTimer()
+		for i := 0; i < b.N; i++ {
+			w.Create()
+			w.Delete()
+		}
+		b.StopTimer()
+
+	})
+}
+
+func BenchmarkCreateDeleteWebPropertyRequirement(b *testing.B) {
+	Convey("Testing Requirements", b, func() {
+		b.ResetTimer()
+		var w WebPropertyRequirement
+		w.Requirement = "test req"
+		b.StartTimer()
+		for i := 0; i < b.N; i++ {
+			w.Create()
+			w.Delete()
+		}
+		b.StopTimer()
+
+	})
+}
+func BenchmarkCreateDeleteWebPropertyNote(b *testing.B) {
+	Convey("Testing Note", b, func() {
+		b.ResetTimer()
+		var w WebPropertyNote
+		w.Text = "test note"
+		b.StartTimer()
+		for i := 0; i < b.N; i++ {
+			w.Create()
+			w.Delete()
+		}
+		b.StopTimer()
+
+	})
+}
+func BenchmarkCreateDeleteWebPropertyType(b *testing.B) {
+	Convey("Testing Type", b, func() {
+		b.ResetTimer()
+		var w WebPropertyType
+		w.Type = "test type"
+		b.StartTimer()
+		for i := 0; i < b.N; i++ {
+			w.Create()
+			w.Delete()
+		}
+		b.StopTimer()
+
+	})
+}
+
+func BenchmarkGetWebProperty(b *testing.B) {
+	Convey("Testing WebProperties", b, func() {
+		b.ResetTimer()
+		var w WebProperty
+		w.Name = "test"
+		w.CustID = 1
+		w.BadgeID = "666"
+		w.Url = "www.test.com"
+		w.Create()
+		b.StartTimer()
+		for i := 0; i < b.N; i++ {
+			w.Get()
+		}
+		b.StopTimer()
+		w.Delete()
+	})
+}
+func BenchmarkGetWebPropertyRequirement(b *testing.B) {
+	Convey("Testing Requirements", b, func() {
+		b.ResetTimer()
+		var w WebPropertyRequirement
+		w.Requirement = "test req"
+		w.Create()
+		b.StartTimer()
+		for i := 0; i < b.N; i++ {
+			w.Get()
+		}
+		b.StopTimer()
+		w.Delete()
+	})
+}
+func BenchmarkGetWebPropertyNote(b *testing.B) {
+	Convey("Testing Note", b, func() {
+		b.ResetTimer()
+		var w WebPropertyNote
+		w.Text = "test note"
+		w.Create()
+		b.StartTimer()
+		for i := 0; i < b.N; i++ {
+			w.Get()
+		}
+		b.StopTimer()
+		w.Delete()
+	})
+}
+func BenchmarkGetWebPropertyType(b *testing.B) {
+	Convey("Testing Type", b, func() {
+		b.ResetTimer()
+		var w WebPropertyType
+		w.Type = "test type"
+		w.Create()
+		b.StartTimer()
+		for i := 0; i < b.N; i++ {
+			w.Get()
+		}
+		b.StopTimer()
+		w.Delete()
+	})
+}
+
+func BenchmarkGetAllWebProperty(b *testing.B) {
+	Convey("Testing WebProperties", b, func() {
+		b.ResetTimer()
+		var w WebProperty
+		w.Name = "test"
+		w.CustID = 1
+		w.BadgeID = "666"
+		w.Url = "www.test.com"
+		w.Create()
+		b.StartTimer()
+		for i := 0; i < b.N; i++ {
+			_, _ = GetAll()
+		}
+		b.StopTimer()
+		w.Delete()
+	})
+}
+func BenchmarkGetAllWebPropertyRequirement(b *testing.B) {
+	Convey("Testing Requirements", b, func() {
+		b.ResetTimer()
+		var w WebPropertyRequirement
+		w.Requirement = "test req"
+		w.Create()
+		b.StartTimer()
+		for i := 0; i < b.N; i++ {
+			_, _ = GetAllWebPropertyRequirements()
+		}
+		b.StopTimer()
+		w.Delete()
+	})
+}
+func BenchmarkGetAllWebPropertyNote(b *testing.B) {
+	Convey("Testing Note", b, func() {
+		b.ResetTimer()
+		var w WebPropertyNote
+		w.Text = "test note"
+		w.Create()
+		b.StartTimer()
+		for i := 0; i < b.N; i++ {
+			_, _ = GetAllWebPropertyNotes()
+		}
+		b.StopTimer()
+		w.Delete()
+	})
+}
+func BenchmarkGetAllWebPropertyType(b *testing.B) {
+	Convey("Testing Type", b, func() {
+		b.ResetTimer()
+		var w WebPropertyType
+		w.Type = "test type"
+		w.Create()
+		b.StartTimer()
+		for i := 0; i < b.N; i++ {
+			_, _ = GetAllWebPropertyTypes()
+		}
+		b.StopTimer()
+		w.Delete()
+	})
+}
+
+func BenchmarkUpdateWebProperty(b *testing.B) {
+	Convey("Testing WebProperties", b, func() {
+		b.ResetTimer()
+		var w WebProperty
+		w.Name = "test"
+		w.CustID = 1
+		w.BadgeID = "666"
+		w.Url = "www.test.com"
+		w.Create()
+		b.StartTimer()
+		for i := 0; i < b.N; i++ {
+			w.Update()
+		}
+		b.StopTimer()
+		w.Delete()
+	})
+}
+func BenchmarkUpdateWebPropertyRequirement(b *testing.B) {
+	Convey("Testing Requirements", b, func() {
+		b.ResetTimer()
+		var w WebPropertyRequirement
+		w.Requirement = "test req"
+		w.Create()
+		b.StartTimer()
+		for i := 0; i < b.N; i++ {
+			w.Update()
+		}
+		b.StopTimer()
+		w.Delete()
+	})
+}
+func BenchmarkUpdateWebPropertyNote(b *testing.B) {
+	Convey("Testing Note", b, func() {
+		b.ResetTimer()
+		var w WebPropertyNote
+		w.Text = "test note"
+		w.Create()
+		b.StartTimer()
+		for i := 0; i < b.N; i++ {
+			w.Update()
+		}
+		b.StopTimer()
+		w.Delete()
+	})
+}
+func BenchmarkUpdateWebPropertyType(b *testing.B) {
+	Convey("Testing Type", b, func() {
+		b.ResetTimer()
+		var w WebPropertyType
+		w.Type = "test type"
+		w.Create()
+		b.StartTimer()
+		for i := 0; i < b.N; i++ {
+			w.Update()
+		}
+		b.StopTimer()
+		w.Delete()
+	})
+}
