@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"github.com/go-martini/martini"
+	"net/http"
+	"regexp"
 )
 
 type Encoder interface {
@@ -63,4 +66,35 @@ func (_ TextEncoder) Encode(v ...interface{}) (string, error) {
 		}
 	}
 	return buf.String(), nil
+}
+
+//
+var rxAccept = regexp.MustCompile(`(?:xml|html|plain|json)\/?$`)
+
+func MapEncoder(c martini.Context, w http.ResponseWriter, r *http.Request) {
+	accept := r.Header.Get("Accept")
+	if accept == "*/*" {
+		accept = r.Header.Get("Content-Type")
+	}
+	matches := rxAccept.FindStringSubmatch(accept)
+
+	dt := "json"
+	if len(matches) == 1 {
+		dt = matches[0]
+	}
+	switch dt {
+	case "xml":
+
+		c.MapTo(XmlEncoder{}, (*Encoder)(nil))
+		w.Header().Set("Content-Type", "application/xml")
+	case "plain":
+		c.MapTo(TextEncoder{}, (*Encoder)(nil))
+		w.Header().Set("Content-Type", "text/plain")
+	case "html":
+		c.MapTo(TextEncoder{}, (*Encoder)(nil))
+		w.Header().Set("Content-Type", "text/html")
+	default:
+		c.MapTo(JsonEncoder{}, (*Encoder)(nil))
+		w.Header().Set("Content-Type", "application/json")
+	}
 }
