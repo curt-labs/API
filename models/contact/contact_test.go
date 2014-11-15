@@ -173,3 +173,61 @@ func TestContacts(t *testing.T) {
 		})
 	})
 }
+
+func BenchmarkGetAllContacts(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GetAllContacts(1, 1)
+	}
+}
+
+func BenchmarkGetContact(b *testing.B) {
+	c := setupDummyContact()
+	c.Add()
+	for i := 0; i < b.N; i++ {
+		c.Get()
+	}
+	c.Delete()
+}
+
+func BenchmarkAddContact(b *testing.B) {
+	c := setupDummyContact()
+	for i := 0; i < b.N; i++ {
+		c.Add()
+		b.StopTimer()
+		c.Delete()
+		b.StartTimer()
+	}
+}
+
+func BenchmarkUpdateContact(b *testing.B) {
+	c := setupDummyContact()
+	c.Add()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		c.FirstName = "TESTER"
+		c.LastName = "TESTER"
+		c.Update()
+	}
+	b.StopTimer()
+	c.Delete()
+}
+
+func BenchmarkDeleteContact(b *testing.B) {
+	c := setupDummyContact()
+	c.Add()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		c.Delete()
+	}
+}
+
+func setupDummyContact() *Contact {
+	return &Contact{
+		FirstName: "TEST",
+		LastName:  "TEST",
+		Email:     "test@test.com",
+		Type:      "TEST",
+		Subject:   "TEST",
+		Message:   "Testing this awesome code!",
+	}
+}
