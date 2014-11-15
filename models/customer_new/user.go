@@ -262,7 +262,7 @@ func AuthenticateAndGetCustomer(key string) (cust Customer, err error) {
 		}
 		locChan <- 1
 	}()
-	cust, err = u.GetCustomer()
+	cust, err = u.GetCustomer(key)
 	if err != sql.ErrNoRows {
 		if err != nil {
 			return cust, AuthError
@@ -447,7 +447,7 @@ func DeleteCustomerUsersByCustomerID(customerID int) error {
 	return nil
 }
 
-func (u CustomerUser) GetCustomer() (c Customer, err error) {
+func (u CustomerUser) GetCustomer(key string) (c Customer, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return c, err
@@ -461,7 +461,7 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 	defer stmt.Close()
 
 	res := stmt.QueryRow(u.Id)
-	if err := c.ScanCustomer(res); err != nil {
+	if err := c.ScanCustomer(res, key); err != nil {
 		if err == sql.ErrNoRows {
 			err = fmt.Errorf("error: %s", "user not bound to customer")
 		}
@@ -474,14 +474,7 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 	}()
 
 	if u.Sudo {
-		if err := c.GetUsers(); err == nil {
-			for i, user := range c.Users {
-				if user.Id == u.Id {
-					c.Users[i].Current = true
-					break
-				}
-			}
-		}
+		c.GetUsers(key)
 	}
 
 	<-locChan

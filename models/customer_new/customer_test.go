@@ -89,10 +89,10 @@ func TestCustomerModel(t *testing.T) {
 		So(len(c.Locations), ShouldBeGreaterThan, 0)
 
 		//Gets
-		err = c.GetCustomer() //kills c.Locations
+		err = c.GetCustomer("") //kills c.Locations
 		So(err, ShouldBeNil)
 
-		err = c.Basics()
+		err = c.Basics("")
 		So(err, ShouldBeNil)
 
 		err = c.Get() //New
@@ -105,7 +105,7 @@ func TestCustomerModel(t *testing.T) {
 		err = c.FindCustomerIdFromCustId()
 		So(err, ShouldBeNil)
 
-		err = c.GetUsers()
+		err = c.GetUsers("")
 		So(err, ShouldBeNil)
 		So(c.Users, ShouldHaveSameTypeAs, []CustomerUser{})
 
@@ -145,7 +145,7 @@ func TestCustomerModel(t *testing.T) {
 	Convey("testing general gets", t, func() {
 		Convey("Testing GetEtailers()", func() {
 			var err error
-			dealers, err := GetEtailers()
+			dealers, err := GetEtailers("")
 			So(err, ShouldBeNil)
 			So(dealers, ShouldHaveSameTypeAs, []Customer{})
 		})
@@ -177,7 +177,7 @@ func TestCustomerModel(t *testing.T) {
 		})
 		Convey("Testing GetWhereToBuyDealers()", func() {
 			var err error
-			customers, err := GetWhereToBuyDealers()
+			customers, err := GetWhereToBuyDealers("")
 			So(err, ShouldBeNil)
 			So(customers, ShouldHaveSameTypeAs, []Customer{})
 		})

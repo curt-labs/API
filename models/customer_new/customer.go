@@ -508,14 +508,14 @@ func (c *Customer) Get() error {
 	return nil
 }
 
-func (c *Customer) GetCustomer() (err error) {
+func (c *Customer) GetCustomer(key string) (err error) {
 
 	basicsChan := make(chan error)
 
 	go func() {
-		err := c.Basics()
+		err := c.Basics(key)
 		if err == nil {
-			basicsChan <- c.GetUsers()
+			basicsChan <- c.GetUsers(key)
 		}
 		basicsChan <- err
 	}()
@@ -550,7 +550,7 @@ func (c *Customer) GetCustomerIdFromKey(key string) error {
 }
 
 //redundant with Get - uses SQL joins; faster?
-func (c *Customer) Basics() (err error) {
+func (c *Customer) Basics(key string) (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -563,7 +563,7 @@ func (c *Customer) Basics() (err error) {
 	}
 	defer stmt.Close()
 
-	return c.ScanCustomer(stmt.QueryRow(c.Id))
+	return c.ScanCustomer(stmt.QueryRow(c.Id), key)
 }
 
 func (c *Customer) GetLocations() (err error) {
@@ -762,7 +762,7 @@ func (c *Customer) Delete() (err error) {
 	return nil
 }
 
-func (c *Customer) GetUsers() (err error) {
+func (c *Customer) GetUsers(key string) (err error) {
 
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -780,6 +780,7 @@ func (c *Customer) GetUsers() (err error) {
 	var name []byte
 	iter := 0
 	userChan := make(chan error)
+	lowerKey := strings.ToLower(key)
 
 	for res.Next() {
 		var u CustomerUser
@@ -797,10 +798,20 @@ func (c *Customer) GetUsers() (err error) {
 		u.Name, err = conversions.ByteToString(name)
 
 		go func(user CustomerUser) {
-			user.GetKeys()
+			if err := user.GetKeys(); err == nil {
+				for _, k := range user.Keys {
+					if k.Key == lowerKey {
+						user.Current = true
+						break
+					}
+				}
+			}
+
 			user.GetLocation()
+
 			c.Users = append(c.Users, user)
 			userChan <- nil
+
 		}(u)
 		iter++
 	}
@@ -846,7 +857,7 @@ func GetCustomerCartReference(api_key string, part_id int) (ref int, err error) 
 	return ref, err
 }
 
-func GetEtailers() (dealers []Customer, err error) {
+func GetEtailers(key string) (dealers []Customer, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return dealers, err
@@ -865,7 +876,7 @@ func GetEtailers() (dealers []Customer, err error) {
 
 	for rows.Next() {
 		var cust Customer
-		if err := cust.ScanCustomer(rows); err == nil {
+		if err := cust.ScanCustomer(rows, key); err == nil {
 			dealers = append(dealers, cust)
 		}
 	}
@@ -1154,7 +1165,7 @@ func GetLocalDealerTypes() (graphics []MapGraphics, err error) {
 	return
 }
 
-func GetWhereToBuyDealers() (customers []Customer, err error) {
+func GetWhereToBuyDealers(key string) (customers []Customer, err error) {
 	redis_key := "dealers:wheretobuy"
 	data, err := redis.Get(redis_key)
 	if len(data) > 0 && err != nil {
@@ -1182,7 +1193,7 @@ func GetWhereToBuyDealers() (customers []Customer, err error) {
 
 	for res.Next() {
 		var cust Customer
-		if err := cust.ScanCustomer(res); err != nil {
+		if err := cust.ScanCustomer(res, key); err != nil {
 			return customers, err
 		}
 		customers = append(customers, cust)
@@ -1313,7 +1324,7 @@ func getViewPortWidth(lat1 float64, lon1 float64, lat2 float64, long2 float64) f
 }
 
 //Scan Methods
-func (c *Customer) ScanCustomer(res Scanner) error {
+func (c *Customer) ScanCustomer(res Scanner, key string) error {
 	var err error
 	var country, countryAbbr, dealerType, dealerTypeOnline, dealerTypeShow, dealerTypeLabel *string
 	var dealerTier, dealerTierSort *string
@@ -1382,7 +1393,7 @@ func (c *Customer) ScanCustomer(res Scanner) error {
 					return
 				}
 
-				err = par.GetCustomer()
+				err = par.GetCustomer(key)
 				if err != nil {
 					parentChan <- 1
 					return

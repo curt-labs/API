@@ -7,7 +7,7 @@ import (
 	"github.com/curt-labs/GoAPI/models/products"
 	"github.com/go-martini/martini"
 	"io/ioutil"
-	"log"
+	"strings"
 
 	// "log"
 	"net/http"
@@ -36,12 +36,21 @@ func GetCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) s
 		return ""
 	}
 
-	err = c.GetCustomer()
+	err = c.GetCustomer(key)
 	if err != nil {
-		log.Println(err.Error())
 		http.Error(w, "Error getting customer.", http.StatusServiceUnavailable)
 		return ""
 	}
+
+	lowerKey := strings.ToLower(key)
+	for i, u := range c.Users {
+		for _, k := range u.Keys {
+			if strings.ToLower(k.Key) == lowerKey {
+				c.Users[i].Current = true
+			}
+		}
+	}
+
 	return encoding.Must(enc.Encode(c))
 }
 
@@ -86,12 +95,12 @@ func GetUsers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, para
 		return ""
 	}
 
-	cust, err := user.GetCustomer()
+	cust, err := user.GetCustomer(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
-	err = cust.GetUsers()
+	err = cust.GetUsers(key)
 	if err != nil {
 		return err.Error()
 	}
@@ -169,6 +178,17 @@ func GetCustomerCartReference(w http.ResponseWriter, r *http.Request, enc encodi
 }
 
 func SaveCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+	qs := r.URL.Query()
+	key := qs.Get("key")
+	if key == "" {
+		key = r.FormValue("key")
+	}
+
+	if key == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return ""
+	}
+
 	var c customer_new.Customer
 	var err error
 	idStr := params["id"]
@@ -180,7 +200,7 @@ func SaveCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 			return ""
 		}
 
-		err = c.Basics()
+		err = c.Basics(key)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return ""

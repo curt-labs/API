@@ -45,7 +45,7 @@ func TestUser(t *testing.T) {
 
 	})
 	Convey("Testing Get", t, func() {
-		c, err := cu.GetCustomer()
+		c, err := cu.GetCustomer("")
 		if cu.Id == "" {
 			So(err, ShouldNotBeNil)
 			So(err.Error(), ShouldEqual, "error: user not bound to customer")
@@ -101,7 +101,7 @@ func TestUser(t *testing.T) {
 			So(user2, ShouldNotBeNil)
 		}
 
-		cust, err := user2.GetCustomer()
+		cust, err := user2.GetCustomer(pubKey)
 		if user2.Id == "" {
 			So(err, ShouldNotBeNil)
 			So(err.Error(), ShouldEqual, "error: user not bound to customer")

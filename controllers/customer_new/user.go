@@ -37,7 +37,13 @@ func AuthenticateUser(w http.ResponseWriter, r *http.Request, enc encoding.Encod
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return ""
 	}
-	cust, err := user.GetCustomer()
+
+	var key string
+	if len(user.Keys) != 0 {
+		key = user.Keys[0].Key
+	}
+
+	cust, err := user.GetCustomer(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return ""

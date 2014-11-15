@@ -21,7 +21,7 @@ func GetEtailers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 		return ""
 	}
 
-	dealers, err := customer_new.GetEtailers()
+	dealers, err := customer_new.GetEtailers(key)
 	if err != nil {
 		return err.Error()
 	}
@@ -96,7 +96,18 @@ func GetLocalDealerTypes(w http.ResponseWriter, r *http.Request, enc encoding.En
 }
 
 func PlatinumEtailers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	cust, err := customer_new.GetWhereToBuyDealers()
+	qs := r.URL.Query()
+	key := qs.Get("key")
+	if key == "" {
+		key = r.FormValue("key")
+	}
+
+	if key == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return ""
+	}
+
+	cust, err := customer_new.GetWhereToBuyDealers(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""

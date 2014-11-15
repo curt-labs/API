@@ -15,6 +15,7 @@ type Faq struct {
 	Question string `json:"question,omitempty" xml:"question,omitempty"`
 	Answer   string `json:"answer,omitempty" xml:"answer,omitempty"`
 }
+
 type Faqs []Faq
 
 type Pagination struct {
@@ -36,39 +37,10 @@ var (
 	search       = "SELECT faqID, question, answer FROM FAQ WHERE question LIKE ? AND answer LIKE ? "
 )
 
-func (f *Faq) Get() error {
-	var err error
-	redis_key := "goadmin:faq:" + strconv.Itoa(f.ID)
-	data, err := redis.Get(redis_key)
-	if err == nil && len(data) > 0 {
-		err = json.Unmarshal(data, &f)
-		return err
-	}
-
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	stmt, err := db.Prepare(getFaq)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-
-	err = stmt.QueryRow(f.ID).Scan(&f.ID, &f.Question, &f.Answer)
-	if err != nil {
-		return err
-	}
-	go redis.Setex(redis_key, f, 86400)
-	return nil
-}
-
 func GetAll() (Faqs, error) {
 	var fs Faqs
 	var err error
-	redis_key := "goadmin:faq"
+	redis_key := "faq"
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &fs)
@@ -126,6 +98,40 @@ func Search(question, answer, pageStr, resultsStr string) (pagination.Objects, e
 
 	p = pagination.Paginate(pageStr, resultsStr, fs)
 	return p, err
+}
+
+func (f *Faq) Get() error {
+	var err error
+	redis_key := "faq:" + strconv.Itoa(f.ID)
+	data, err := redis.Get(redis_key)
+	if err == nil && len(data) > 0 {
+		err = json.Unmarshal(data, &f)
+		return err
+	}
+
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(getFaq)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	err = stmt.QueryRow(f.ID).Scan(&f.ID, &f.Question, &f.Answer)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			err = nil
+		}
+		return err
+	}
+
+	go redis.Setex(redis_key, f, redis.CacheTimeout)
+
+	return nil
 }
 
 func (f *Faq) Create() error {
