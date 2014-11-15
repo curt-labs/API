@@ -101,3 +101,58 @@ func TestReceivers(t *testing.T) {
 		})
 	})
 }
+
+func BenchmarkGetAllContactReceivers(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GetAllContactReceivers()
+	}
+}
+
+func BenchmarkGetContactReceiver(b *testing.B) {
+	cr := setupDummyReceiver()
+	cr.Add()
+	for i := 0; i < b.N; i++ {
+		cr.Get()
+	}
+	cr.Delete()
+}
+
+func BenchmarkAddReceiver(b *testing.B) {
+	cr := setupDummyReceiver()
+	for i := 0; i < b.N; i++ {
+		cr.Add()
+		b.StopTimer()
+		cr.Delete()
+		b.StartTimer()
+	}
+}
+
+func BenchmarkUpdateReceiver(b *testing.B) {
+	cr := setupDummyReceiver()
+	cr.Add()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		cr.FirstName = "JOHN"
+		cr.LastName = "TESTER"
+		cr.Update()
+	}
+	b.StopTimer()
+	cr.Delete()
+}
+
+func BenchmarkDeleteReceiver(b *testing.B) {
+	cr := setupDummyReceiver()
+	cr.Add()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		cr.Delete()
+	}
+}
+
+func setupDummyReceiver() *ContactReceiver {
+	return &ContactReceiver{
+		FirstName: "TESTER",
+		LastName:  "TESTER",
+		Email:     "test@test.com",
+	}
+}
