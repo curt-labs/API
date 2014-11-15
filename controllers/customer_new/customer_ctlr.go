@@ -65,11 +65,19 @@ func GetLocations(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return ""
 	}
-	c, err := customer_new.AuthenticateAndGetCustomer(key)
+
+	cu, err := customer_new.GetCustomerUserFromKey(key)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return ""
 	}
+
+	c, err := cu.GetCustomer(key)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return ""
+	}
+
 	return encoding.Must(enc.Encode(c.Locations))
 }
 
