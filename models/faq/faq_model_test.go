@@ -52,22 +52,62 @@ func TestGetFaqs(t *testing.T) {
 		So(err, ShouldBeNil)
 
 	})
-
 }
 
-func BenchmarkFaq(b *testing.B) {
-	Convey("Testing Get", b, func() {
-		b.StopTimer()
-		var f Faq
-		f.Question = "test"
-		_ = f.Create()
+func BenchmarkGetAllFaq(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GetAll()
+	}
+}
 
+func BenchmarkGetFaq(b *testing.B) {
+	f := setupDummyFaq()
+	f.Create()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		f.Get()
+	}
+	b.StopTimer()
+	f.Delete()
+}
+
+func BenchmarkCreateFaq(b *testing.B) {
+	f := setupDummyFaq()
+	for i := 0; i < b.N; i++ {
+		f.Create()
+		b.StopTimer()
+		f.Delete()
 		b.StartTimer()
-		for i := 0; i < b.N; i++ {
-			_ = f.Get()
-		}
-		b.StopTimer()
-		_ = f.Delete()
-	})
+	}
+}
 
+func BenchmarkUpdateFaq(b *testing.B) {
+	f := setupDummyFaq()
+	f.Create()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		f.Question = "Testing for real?"
+		f.Answer = "You betcha."
+		f.Update()
+	}
+	b.StopTimer()
+	f.Delete()
+}
+
+func BenchmarkDeleteFaq(b *testing.B) {
+	f := setupDummyFaq()
+	f.Create()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		f.Delete()
+	}
+	b.StopTimer()
+	f.Delete()
+}
+
+func setupDummyFaq() *Faq {
+	return &Faq{
+		Question: "Testing 123?",
+		Answer:   "Yes...this is a test.",
+	}
 }

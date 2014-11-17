@@ -113,3 +113,56 @@ func TestTypes(t *testing.T) {
 		})
 	})
 }
+
+func BenchmarkGetAllContactTypes(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GetAllContactTypes()
+	}
+}
+
+func BenchmarkGetContactType(b *testing.B) {
+	ct := setupDummyContactType()
+	ct.Add()
+	for i := 0; i < b.N; i++ {
+		ct.Get()
+	}
+	ct.Delete()
+}
+
+func BenchmarkAddContactType(b *testing.B) {
+	ct := setupDummyContactType()
+	for i := 0; i < b.N; i++ {
+		ct.Add()
+		b.StopTimer()
+		ct.Delete()
+		b.StartTimer()
+	}
+}
+
+func BenchmarkUpdateContactType(b *testing.B) {
+	ct := setupDummyContactType()
+	ct.Add()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		ct.Name = "TESTING"
+		ct.Update()
+	}
+	b.StopTimer()
+	ct.Delete()
+}
+
+func BenchmarkDeleteContactType(b *testing.B) {
+	ct := setupDummyContactType()
+	ct.Add()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		ct.Delete()
+	}
+}
+
+func setupDummyContactType() *ContactType {
+	return &ContactType{
+		Name:          "TESTER",
+		ShowOnWebsite: false,
+	}
+}
