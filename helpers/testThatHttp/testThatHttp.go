@@ -5,6 +5,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/go-martini/martini"
 	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -38,4 +39,7 @@ func Request(reqType string, route string, paramKey string, paramVal string, han
 	request.Header.Set("Content-Type", cType) //content-type=form,json,etc
 	Response = httptest.NewRecorder()
 	m.ServeHTTP(Response, request)
+	if Response.Code != 200 {
+		log.Print("Response Error: ", Response)
+	}
 }

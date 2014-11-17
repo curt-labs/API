@@ -16,9 +16,14 @@ func GetApplicationGuide(rw http.ResponseWriter, req *http.Request, enc encoding
 	var ag applicationGuide.ApplicationGuide
 	id := params["id"]
 	ag.ID, err = strconv.Atoi(id)
+	if err != nil {
+		http.Error(rw, err.Error(), 666)
+		return err.Error()
+	}
 
 	err = ag.Get()
 	if err != nil {
+
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return err.Error()
 	}
@@ -62,13 +67,19 @@ func CreateApplicationGuide(rw http.ResponseWriter, req *http.Request, enc encod
 	} else {
 		//else, form
 		ag.Url = req.FormValue("url")
-		ag.Website.ID, err = strconv.Atoi(req.FormValue("website_id"))
+		web := req.FormValue("website_id")
 		ag.FileType = req.FormValue("file_type")
-		ag.Category.ID, err = strconv.Atoi(req.FormValue("category_id"))
+		cat := req.FormValue("category_id")
 
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return err.Error()
+		}
+		if web != "" {
+			ag.Website.ID, err = strconv.Atoi(web)
+		}
+		if cat != "" {
+			ag.Category.ID, err = strconv.Atoi(cat)
 		}
 	}
 	err = ag.Create()
