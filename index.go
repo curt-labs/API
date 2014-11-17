@@ -196,8 +196,8 @@ func main() {
 		r.Get("", faq_controller.GetAll)                        //get all faqs; takes optional sort param {sort=true} to sort by question
 		r.Get("/search", faq_controller.Search)                 //takes {question, answer, page, results} - all parameters are optional
 		r.Get("/(:id)", faq_controller.Get)                     //get by id {id}
-		r.Put("", internalCors, faq_controller.Create)          //takes {question, answer}; returns object with new ID
-		r.Post("/(:id)", internalCors, faq_controller.Update)   //{id, question and/or answer}
+		r.Post("", internalCors, faq_controller.Create)         //takes {question, answer}; returns object with new ID
+		r.Put("/(:id)", internalCors, faq_controller.Update)    //{id, question and/or answer}
 		r.Delete("/(:id)", internalCors, faq_controller.Delete) //{id}
 		r.Delete("", internalCors, faq_controller.Delete)       //{?id=id}
 	})
@@ -265,7 +265,7 @@ func main() {
 		r.Get("/leads", news_controller.GetLeads)              //get leads!{page, results} - all parameters are optional
 		r.Get("/search", news_controller.Search)               //takes {title, lead, content, publishStart, publishEnd, active, slug, page, results, page, results} - all parameters are optional
 		r.Get("/:id", news_controller.Get)                     //get by id {id}
-		r.Put("", internalCors, news_controller.Create)        //takes {question, answer}; returns object with new ID
+		r.Post("", internalCors, news_controller.Create)       //takes {question, answer}; returns object with new ID
 		r.Post("/:id", internalCors, news_controller.Update)   //{id, question and/or answer}
 		r.Delete("/:id", internalCors, news_controller.Delete) //{id}
 		r.Delete("", internalCors, news_controller.Delete)     //{id}
