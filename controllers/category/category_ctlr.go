@@ -8,6 +8,7 @@ import (
 	"github.com/curt-labs/GoAPI/models/products"
 	"github.com/go-martini/martini"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -28,7 +29,13 @@ func GetCategory(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 	var count int
 	var cat products.Category
 	var l products.Lookup
-	data, _ := ioutil.ReadAll(r.Body)
+
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Print(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
 
 	qs := r.URL.Query()
 	key := qs.Get("key")
@@ -38,7 +45,6 @@ func GetCategory(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 
 	// Load Vehicle from Request
 	l.Vehicle = vehicle.LoadVehicle(r)
-
 	defer r.Body.Close()
 	specs := make(map[string][]string, 0)
 	if strings.Contains(r.Header.Get("Content-Type"), "json") && len(data) > 0 {
@@ -125,7 +131,11 @@ func SubCategories(w http.ResponseWriter, r *http.Request, enc encoding.Encoder,
 }
 
 func GetParts(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	data, _ := ioutil.ReadAll(r.Body)
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
 	key := params["key"]
 	catID, err := strconv.Atoi(params["id"])
 	qs := r.URL.Query()
@@ -145,16 +155,15 @@ func GetParts(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, para
 	} else {
 		cat.ID = catID
 	}
-
 	count, _ := strconv.Atoi(qs.Get("count"))
 	page, _ := strconv.Atoi(qs.Get("page"))
 
 	defer r.Body.Close()
 	specs := make(map[string][]string, 0)
 	if strings.Contains(r.Header.Get("Content-Type"), "json") && len(data) > 0 {
-
 		var fs []FilterSpecifications
 		if err = json.Unmarshal(data, &fs); err == nil {
+
 			for _, f := range fs {
 				specs[f.Key] = f.Values
 			}
@@ -173,10 +182,9 @@ func GetParts(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, para
 		}
 	}
 
-	if err := cat.GetParts(key, page, count, nil, &specs); err != nil {
+	if err = cat.GetParts(key, page, count, nil, &specs); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
-
 	return encoding.Must(enc.Encode(cat.ProductListing))
 }
