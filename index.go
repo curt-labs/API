@@ -210,8 +210,8 @@ func main() {
 		r.Post("/categories", internalCors, blog_controller.CreateBlogCategory)
 		r.Delete("/categories/:id", internalCors, blog_controller.DeleteBlogCategory)
 		r.Get("/:id", blog_controller.GetBlog)                     //get blog by {id}
-		r.Post("/:id", internalCors, blog_controller.UpdateBlog)   //create {post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active} returns new id
-		r.Put("", internalCors, blog_controller.CreateBlog)        //update {post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active} required{id}
+		r.Put("/:id", internalCors, blog_controller.UpdateBlog)    //create {post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active} returns new id
+		r.Post("", internalCors, blog_controller.CreateBlog)       //update {post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active} required{id}
 		r.Delete("/:id", internalCors, blog_controller.DeleteBlog) //{?id=id}
 		r.Delete("", internalCors, blog_controller.DeleteBlog)     //{id}
 	})

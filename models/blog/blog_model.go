@@ -273,6 +273,11 @@ func (b *Blog) Create() error {
 }
 
 func (b *Blog) Delete() error {
+	var err error
+	err = b.deleteCatBridge()
+	if err != nil {
+		return err
+	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -289,7 +294,6 @@ func (b *Blog) Delete() error {
 		return err
 	}
 	tx.Commit()
-	err = b.deleteCatBridge()
 	if err == nil {
 		redis.Delete("blog:" + strconv.Itoa(b.ID))
 	}
@@ -440,6 +444,12 @@ func (c *Category) Create() error {
 }
 
 func (c *Category) Delete() error {
+	var err error
+	err = c.deleteCatBridgeByCategory()
+	if err != nil {
+		return err
+	}
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -459,7 +469,6 @@ func (c *Category) Delete() error {
 	}
 	tx.Commit()
 
-	err = c.deleteCatBridgeByCategory()
 	if err == nil {
 		redis.Delete("blogs:category:" + strconv.Itoa(c.ID))
 	}
