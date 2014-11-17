@@ -11,7 +11,6 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	"github.com/curt-labs/GoAPI/models/geography"
 	_ "github.com/go-sql-driver/mysql"
-
 	"math"
 	"net/url"
 	"strconv"
@@ -355,8 +354,7 @@ var (
 	createCustomer = `insert into Customer (name, email, address,  city, stateID, phone, fax, contact_person, dealer_type, latitude,longitude,  website, customerID, isDummy, parentID, searchURL,
 					eLocalURL, logo,address2, postal_code, mCodeID, salesRepID, APIKey, tier, showWebsite) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
 
-	updateCustomerId = ` update Customer set customerID = ? where cust_id = ?`
-	updateCustomer   = `update Customer set name = ?, email = ?, address = ?, city = ?, stateID = ?, phone = ?, fax = ?, contact_person = ?, dealer_type = ?, latitude = ?, longitude = ?,  website = ?, customerID = ?,
+	updateCustomer = `update Customer set name = ?, email = ?, address = ?, city = ?, stateID = ?, phone = ?, fax = ?, contact_person = ?, dealer_type = ?, latitude = ?, longitude = ?,  website = ?, customerID = ?,
 					isDummy = ?, parentID = ?, searchURL = ?, eLocalURL = ?, logo = ?, address2 = ?, postal_code = ?, mCodeID = ?, salesRepID = ?, APIKey = ?, tier = ?, showWebsite = ? where cust_id = ?`
 	deleteCustomer = `delete from Customer where cust_id = ?`
 )
@@ -652,7 +650,6 @@ func (c *Customer) Create() (err error) {
 	if c.Parent != nil {
 		parentId = c.Parent.Id
 	}
-
 	res, err := stmt.Exec(
 		c.Name,
 		c.Email,
@@ -685,9 +682,6 @@ func (c *Customer) Create() (err error) {
 	}
 	id, err := res.LastInsertId()
 	c.Id = int(id)
-
-	stmt2, err := db.Prepare(updateCustomerId)
-	_, err = stmt2.Exec(c.Id, c.Id)
 
 	return err
 }

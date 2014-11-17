@@ -3,11 +3,7 @@ package cartIntegration
 import (
 	"database/sql"
 	"github.com/curt-labs/GoAPI/helpers/database"
-
-	// "github.com/curt-labs/GoAPI/models/products"
 	_ "github.com/go-sql-driver/mysql"
-	// "strconv"
-	// "time"
 )
 
 type CartIntegration struct {
@@ -20,7 +16,7 @@ type CartIntegration struct {
 var (
 	getAllCI       = `select referenceID, partID, custPartID, custID from CartIntegration`
 	getCIsByPartID = `select referenceID, partID, custPartID, custID from CartIntegration where partID = ?`
-	getCIsByCustID = `select referenceID, partID, custPartID, custID from CartIntegration where custID = ?`
+	getCIsByCustID = `select referenceID, partID, custPartID, custID from CartIntegration where custID = (select cust_id from Customer where customerID =  ?)`
 	getCI          = `select referenceID, partID, custPartID, custID from CartIntegration where custID = ? && partID = ?`
 	insertCI       = `insert into CartIntegration (partID, custPartID, custID) values (?,?,?)`
 	updateCI       = `update CartIntegration set partID = ?, custPartID = ?, custID = ? where referenceID = ?`

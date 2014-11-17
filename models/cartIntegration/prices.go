@@ -65,6 +65,9 @@ func GetPricesByCustomerID(custID int) (priceslist []PricePoint, err error) {
 	}
 	defer stmt.Close()
 	res, err := stmt.Query(custID, custID)
+	if err != nil {
+		return priceslist, err
+	}
 	var p PricePoint
 	var cpid, isSale *int
 	var price *float64
@@ -78,6 +81,7 @@ func GetPricesByCustomerID(custID int) (priceslist []PricePoint, err error) {
 			&ss,
 			&se,
 		)
+
 		if err != nil {
 			return priceslist, err
 		}
@@ -100,7 +104,6 @@ func GetPricesByCustomerID(custID int) (priceslist []PricePoint, err error) {
 		err = p.toString()
 		priceslist = append(priceslist, p)
 	}
-	defer res.Close()
 	return priceslist, err
 }
 

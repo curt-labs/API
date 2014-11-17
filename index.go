@@ -223,8 +223,8 @@ func main() {
 		r.Get("/part/:id", internalCors, cartIntegration.GetCIbyPart)
 		r.Get("/customer/:id", internalCors, cartIntegration.GetCIbyCustomer) //shallower object than GetCustomerPricing
 		r.Get("/:id", internalCors, cartIntegration.GetCI)
-		r.Post("/:id", internalCors, cartIntegration.SaveCI)
-		r.Put("", internalCors, cartIntegration.SaveCI)
+		r.Put("/:id", internalCors, cartIntegration.SaveCI)
+		r.Post("", internalCors, cartIntegration.SaveCI)
 		r.Delete("/:id", internalCors, cartIntegration.DeleteCI)
 	})
 

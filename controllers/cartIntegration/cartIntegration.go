@@ -164,15 +164,13 @@ func DeleteCI(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, para
 
 func GetCustomerPricing(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var err error
-
 	custID, err := strconv.Atoi(params["custID"])
 	if custID == 0 {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
-
 	prices, err := cartIntegration.GetPricesByCustomerID(custID)
-	if custID == 0 {
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
