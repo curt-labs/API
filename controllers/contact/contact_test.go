@@ -87,7 +87,7 @@ func TestContact(t *testing.T) {
 		So(ct, ShouldHaveSameTypeAs, contact.ContactType{})
 
 		//test update contact receiver using form
-		form = url.Values{"first_name": {"new test name"}, "last_name": {"new test last name"}}
+		form = url.Values{"first_name": {"new test name"}, "last_name": {"new test last name"}, "contact_types": {strconv.Itoa(ct.ID)}}
 		v = form.Encode()
 		body = strings.NewReader(v)
 		testThatHttp.Request("put", "/contact/receivers/", ":id", strconv.Itoa(cr.ID), UpdateContactReceiver, body, "application/x-www-form-urlencoded")

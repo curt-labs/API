@@ -86,6 +86,18 @@ func UpdateContactReceiver(rw http.ResponseWriter, req *http.Request, params mar
 		cr.Email = req.FormValue("email")
 	}
 
+	types := req.FormValue("contact_types")
+	typeArray := strings.Split(types, ",")
+	for _, t := range typeArray {
+		var ct contact.ContactType
+		ct.ID, err = strconv.Atoi(t)
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return err.Error()
+		}
+		cr.ContactTypes = append(cr.ContactTypes, ct)
+	}
+
 	if err = cr.Update(); err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return err.Error()
