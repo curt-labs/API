@@ -445,7 +445,8 @@ func main() {
 			// Customer Part Content
 			r.Get("/cms/part", customer_ctlr_new.AllPartContent)
 			r.Get("/cms/part/:id", customer_ctlr_new.UniquePartContent)
-			r.Post("/cms/part/:id", customer_ctlr_new.UpdatePartContent) //partId
+			r.Put("/cms/part/:id", customer_ctlr_new.UpdatePartContent) //partId
+			r.Post("/cms/part/:id", customer_ctlr_new.CreatePartContent)
 			r.Delete("/cms/part/:id", customer_ctlr_new.DeletePartContent)
 
 			// Customer Category Content
