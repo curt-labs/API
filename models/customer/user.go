@@ -177,7 +177,7 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 	defer stmt.Close()
 
 	var parentID, mapIconId *int
-	var logoUrl, searchUrl, websiteUrl, mapIconUrl, mapShadowUrl *string
+	var logoUrl, searchUrl, websiteUrl, mapIconUrl, mapShadowUrl, mcode, mdesc *string
 	var salesRep, salesRepCode *string
 
 	var stateID, countryID *int
@@ -218,13 +218,13 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 		&typeShow,
 		&dealerLabel,
 		&tierID,
-		&c.DealerTier.Tier,
-		&c.DealerTier.Sort,
+		&tier,
+		&tierSort,
 		&mapIconId,
 		&mapIconUrl,
 		&mapShadowUrl,
-		&c.MapixCode,
-		&c.MapixDescription,
+		&mcode,
+		&mdesc,
 		&salesRep,
 		&salesRepCode,
 		&parentID,
@@ -292,6 +292,13 @@ func (u CustomerUser) GetCustomer() (c Customer, err error) {
 		c.DealerType.MapIcon.Id = *mapIconId
 	}
 
+	if mcode != nil {
+		c.MapixCode = *mcode
+	}
+
+	if mdesc != nil {
+		c.MapixDescription = *mdesc
+	}
 	if salesRep != nil {
 		c.SalesRepresentative = *salesRep
 	}

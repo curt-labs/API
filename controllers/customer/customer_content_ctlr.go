@@ -29,7 +29,7 @@ func GetAllContent(w http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 func GetContentById(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 	params := r.URL.Query()
 	key := params.Get("key")
-	id, err := strconv.Atoi(params.Get(":id"))
+	id, err := strconv.Atoi(params.Get("id"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -78,10 +78,10 @@ func AllPartContent(w http.ResponseWriter, r *http.Request, enc encoding.Encoder
 	return encoding.Must(enc.Encode(content))
 }
 
-func UniquePartContent(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
-	params := r.URL.Query()
-	key := params.Get("key")
-	partID, err := strconv.Atoi(params.Get(":id"))
+func UniquePartContent(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+	qs := r.URL.Query()
+	key := qs.Get("key")
+	partID, err := strconv.Atoi(params["id"])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""

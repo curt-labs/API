@@ -72,6 +72,8 @@ func UpdateContactType(rw http.ResponseWriter, req *http.Request, params martini
 		return "Invalid ContactType ID"
 	}
 
+	//json?
+
 	if err = ct.Get(); err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return err.Error()
