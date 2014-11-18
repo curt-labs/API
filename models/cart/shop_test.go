@@ -20,7 +20,6 @@ func TestGet(t *testing.T) {
 					So(err, ShouldNotBeNil)
 				})
 			}
-
 		})
 	})
 
