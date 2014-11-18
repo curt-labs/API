@@ -3,6 +3,7 @@ package database
 import (
 	"flag"
 	"fmt"
+	"gopkg.in/mgo.v2"
 	"os"
 )
 
@@ -44,9 +45,20 @@ func VintelligencePass() string {
 	return "curtman:Oct2013!"
 }
 
-func MongoConnectionString() string {
-	if addr := os.Getenv("MONGO_URL"); addr != "" {
-		return addr
+func MongoConnectionString() *mgo.DialInfo {
+	var info mgo.DialInfo
+	addr := os.Getenv("MONGO_URL")
+	if addr == "" {
+		addr = "127.0.0.1"
 	}
-	return "127.0.0.1"
+
+	info.Addrs = append(info.Addrs, addr)
+	info.Username = os.Getenv("MONGO_CART_USERNAME")
+	info.Password = os.Getenv("MONGO_CART_PASSWORD")
+	info.Database = os.Getenv("MONGO_CART_DATABASE")
+	if info.Database == "" {
+		info.Database = "CurtCart"
+	}
+
+	return &info
 }

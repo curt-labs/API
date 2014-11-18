@@ -37,10 +37,11 @@ type MetaField struct {
 
 func SinceId(id string) ([]Customer, error) {
 	custs := []Customer{}
-	sess, err := mgo.Dial(database.MongoConnectionString())
+	sess, err := mgo.DialWithInfo(database.MongoConnectionString())
 	if err != nil {
 		return custs, err
 	}
+	defer sess.Close()
 
 	c := sess.DB("CurtCart").C("customer")
 	qs := bson.M{
@@ -54,10 +55,11 @@ func SinceId(id string) ([]Customer, error) {
 }
 
 func (c *Customer) Get() error {
-	sess, err := mgo.Dial(database.MongoConnectionString())
+	sess, err := mgo.DialWithInfo(database.MongoConnectionString())
 	if err != nil {
 		return err
 	}
+	defer sess.Close()
 
 	col := sess.DB("CurtCart").C("customer")
 

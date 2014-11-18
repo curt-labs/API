@@ -1,9 +1,12 @@
 package cart
 
 import (
+	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/database"
+	"github.com/curt-labs/GoAdmin/helpers/geocoding"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
+	"net/url"
 	"time"
 )
 
@@ -16,7 +19,7 @@ type Shop struct {
 	CountryName             string        `json:"country_name" xml:"country>name" bson:"country_name"`
 	CreatedAt               time.Time     `json:"created_at" xml:"created_at,attr" bson:"created_at"`
 	Currency                string        `json:"currency" xml:"currency,attr" bson:"currency"`
-	Domain                  string        `json:"domain" xml:"domain,attr" bson:"domain"`
+	Domain                  *url.URL      `json:"domain" xml:"domain,attr" bson:"domain"`
 	Email                   string        `json:"email" xml:"email" bson:"email"`
 	Latitude                float64       `json:"latitude" xml:"geo>latitude" bson:"latitude"`
 	Longitude               float64       `json:"longitude" xml:"geo>longitude" bson:"longitude"`
@@ -27,20 +30,20 @@ type Shop struct {
 	Phone                   string        `json:"phone" xml:"phone,attr" bson:"phone"`
 	Province                string        `json:"province" xml:"province,attr" bson:"province"`
 	ProvinceCode            string        `json:"province_code" xml:"province_code,attr" bson:"province_code"`
-	Public                  string        `json:"public" xml:"public,attr" bson:"public"`
+	Public                  bool          `json:"public" xml:"public,attr" bson:"public"`
 	ShopOwner               string        `json:"shop_owner" xml:"shop_owner,attr" bson:"shop_owner"`
 	Source                  string        `json:"source" xml:"source,attr" bson:"source"`
 	TaxShipping             bool          `json:"tax_shipping" xml:"taxing>tax_shipping,attr" bson:"tax_shipping"`
-	TaxesInclude            bool          `json:"taxes_included" xml:"taxing>taxes_included,attr" bson:"taxes_included"`
+	TaxesIncluded           bool          `json:"taxes_included" xml:"taxing>taxes_included,attr" bson:"taxes_included"`
 	CountyTaxes             bool          `json:"county_taxes" xml:"taxing>county_taxes,attr" bson:"county_taxes"`
 	Timezone                string        `json:"timezone" xml:"timezone,attr" bson:"timezone"`
-	Zip                     string        `json:"zip" xml:"zip>attr" bson:"zip"`
+	Zip                     string        `json:"zip" xml:"zip,attr" bson:"zip"`
 	HasStorefront           bool          `json:"has_storefront" xml:"has_storefront,attr" bson:"has_storefront"`
 }
 
 func GetShop(id string) (*Shop, error) {
 
-	sess, err := mgo.Dial(database.MongoConnectionString())
+	sess, err := mgo.DialWithInfo(database.MongoConnectionString())
 	if err != nil {
 		return nil, err
 	}
@@ -59,19 +62,50 @@ func GetShop(id string) (*Shop, error) {
 // This method is used explicitly for generating test data
 // DO NOT EXPOSE
 func insertTestData() string {
-	sess, err := mgo.Dial(database.MongoConnectionString())
+	sess, err := mgo.DialWithInfo(database.MongoConnectionString())
 	if err != nil {
 		return ""
 	}
 
-	collection := sess.DB("CurtCart").C("shop")
-
 	sh := Shop{}
 	sh.Id = bson.NewObjectId()
 	sh.Name = "Test Shop"
+	sh.Address1 = "1119 Sunset Lane"
+	sh.City = "Altoona"
+	sh.Province = "Wisconsin"
+	sh.ProvinceCode = "WI"
+	sh.Country = "US"
+	sh.CountryCode = "US"
+	sh.CountryName = "United States"
+	sh.Zip = "54720"
+	sh.CreatedAt = time.Now()
+	sh.Currency = "USD"
+	sh.Domain, _ = url.Parse("http://store.ninneman.org")
+	sh.Email = "alex@ninneman.org"
+	sh.MoneyFormat = "$"
+	sh.MoneyWithCurrencyFormat = "$ USD"
+	sh.PasswordEnabled = true
+	sh.Phone = "7153082604"
+	sh.Public = false
+	sh.ShopOwner = "Alex Ninneman"
+	sh.TaxShipping = true
+	sh.TaxesIncluded = false
+	sh.CountyTaxes = false
+	sh.Timezone = "US/Central"
+	sh.HasStorefront = false
 
-	if err := collection.Insert(sh); err != nil {
+	l := geocoding.Lookup{
+		Address: fmt.Sprintf("%s, %s, %s %s", sh.Address1, sh.City, sh.ProvinceCode, sh.Zip),
+	}
+	resp, err := l.Search()
+	if err == nil && len(resp.Results) > 0 {
+		sh.Longitude = resp.Results[0].Geometry.Location.Longitude
+		sh.Latitude = resp.Results[0].Geometry.Location.Latitude
+	}
+
+	if err := sess.DB("CurtCart").C("shop").Insert(sh); err != nil {
 		return ""
 	}
+
 	return sh.Id.String()
 }
