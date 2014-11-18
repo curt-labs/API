@@ -51,3 +51,62 @@ func TestGetLifestyles(t *testing.T) {
 
 	})
 }
+
+func BenchmarkGetAllLifestyles(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GetAll()
+	}
+}
+
+func BenchmarkGetLifestyle(b *testing.B) {
+	ls := setupDummyLifestyle()
+	ls.Create()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		ls.Get()
+	}
+	b.StopTimer()
+	ls.Delete()
+}
+
+func BenchmarkCreateLifestyle(b *testing.B) {
+	ls := setupDummyLifestyle()
+	for i := 0; i < b.N; i++ {
+		ls.Create()
+		b.StopTimer()
+		ls.Delete()
+		b.StartTimer()
+	}
+}
+
+func BenchmarkUpdateLifestyle(b *testing.B) {
+	ls := setupDummyLifestyle()
+	ls.Create()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		ls.ShortDesc = "TEST"
+		ls.LongDesc = "THIS IS A TEST"
+		ls.Update()
+	}
+	b.StopTimer()
+	ls.Delete()
+}
+
+func BenchmarkDeleteLifestyle(b *testing.B) {
+	ls := setupDummyLifestyle()
+	ls.Create()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		ls.Delete()
+	}
+	b.StopTimer()
+	ls.Delete()
+}
+
+func setupDummyLifestyle() *Lifestyle {
+	return &Lifestyle{
+		Name:      "TESTER",
+		ShortDesc: "TESTER",
+		LongDesc:  "TESTER TESTER",
+	}
+}
