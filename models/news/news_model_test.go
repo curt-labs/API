@@ -52,3 +52,79 @@ func TestNews(t *testing.T) {
 	})
 
 }
+
+func BenchmarkGetAllNews(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GetAll()
+	}
+}
+
+func BenchmarkGetTitles(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GetTitles("1", "1")
+	}
+}
+
+func BenchmarkGetLeads(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GetLeads("1", "1")
+	}
+}
+
+func BenchmarkSearch(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		Search("Title", "", "", "", "", "", "", "1", "1")
+	}
+}
+
+func BenchmarkGetNews(b *testing.B) {
+	n := setupDummyNews()
+	n.Create()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		n.Get()
+	}
+	b.StopTimer()
+	n.Delete()
+}
+
+func BenchmarkCreateNews(b *testing.B) {
+	n := setupDummyNews()
+	for i := 0; i < b.N; i++ {
+		n.Create()
+		b.StopTimer()
+		n.Delete()
+		b.StartTimer()
+	}
+}
+
+func BenchmarkUpdateNews(b *testing.B) {
+	n := setupDummyNews()
+	n.Create()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		n.Title = "TEST TIME"
+		n.Content = "This is a awesome test."
+		n.Update()
+	}
+	b.StopTimer()
+	n.Delete()
+}
+
+func BenchmarkDeleteNews(b *testing.B) {
+	n := setupDummyNews()
+	n.Create()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		n.Delete()
+	}
+	b.StopTimer()
+	n.Delete()
+}
+
+func setupDummyNews() *News {
+	return &News{
+		Title:   "TESTER",
+		Content: "TEST TEST TEST",
+	}
+}
