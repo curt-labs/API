@@ -12,7 +12,7 @@ import (
 	"testing"
 )
 
-func TestNews(t *testing.T) {
+func TestCategory(t *testing.T) {
 	var c products.Category
 	var cs []products.Category
 	// var parts []products.Part

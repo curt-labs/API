@@ -12,7 +12,7 @@ import (
 	"testing"
 )
 
-func TestNews(t *testing.T) {
+func TestApplicationGuide(t *testing.T) {
 	var a applicationGuide.ApplicationGuide
 	var err error
 	Convey("Testing ApplicationGuide", t, func() {

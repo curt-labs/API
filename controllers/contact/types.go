@@ -1,12 +1,11 @@
 package contact
 
 import (
-	"net/http"
-	"strconv"
-
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/contact"
 	"github.com/go-martini/martini"
+	"net/http"
+	"strconv"
 )
 
 func GetAllContactTypes(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder) string {
