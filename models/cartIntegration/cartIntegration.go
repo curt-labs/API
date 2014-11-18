@@ -16,7 +16,7 @@ type CartIntegration struct {
 var (
 	getAllCI       = `select referenceID, partID, custPartID, custID from CartIntegration`
 	getCIsByPartID = `select referenceID, partID, custPartID, custID from CartIntegration where partID = ?`
-	getCIsByCustID = `select referenceID, partID, custPartID, custID from CartIntegration where custID = (select cust_id from Customer where customerID =  ?)`
+	getCIsByCustID = `select referenceID, partID, custPartID, custID from CartIntegration where custID =  ?`
 	getCI          = `select referenceID, partID, custPartID, custID from CartIntegration where custID = ? && partID = ?`
 	insertCI       = `insert into CartIntegration (partID, custPartID, custID) values (?,?,?)`
 	updateCI       = `update CartIntegration set partID = ?, custPartID = ?, custID = ? where referenceID = ?`
@@ -83,6 +83,10 @@ func GetCartIntegrationsByCustomer(ci CartIntegration) (cis []CartIntegration, e
 	}
 	defer stmt.Close()
 	res, err := stmt.Query(ci.CustID)
+	if err != nil {
+		return cis, err
+	}
+
 	var c CartIntegration
 	for res.Next() {
 		err = res.Scan(&c.ID, &c.PartID, &c.CustPartID, &c.CustID)
