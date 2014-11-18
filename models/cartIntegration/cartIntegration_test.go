@@ -2,17 +2,38 @@ package cartIntegration
 
 import (
 	"database/sql"
+	"github.com/curt-labs/GoAPI/models/customer_new"
+	"github.com/curt-labs/GoAPI/models/products"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
 
 func TestCI(t *testing.T) {
+	//setup
+	var part products.Part
+	var price customer_new.Price
+	var cust customer_new.Customer
+	var err error
+	cust.CustomerId = 666
+	cust.Create()
+
+	part.ShortDesc = "test"
+	part.ID = 123456789
+	part.Status = 800
+	err = part.Create()
+	if err != nil {
+		err = nil
+		err = part.Update()
+	}
+	price.CustID = cust.CustomerId
+	price.PartID = part.ID
+	price.Create()
+
 	Convey("Testing CartIntegration", t, func() {
 		var ci CartIntegration
 		var p PricePoint
-		var err error
-		ci.PartID = 11000
-		ci.CustID = 1
+		ci.PartID = part.ID
+		ci.CustID = cust.Id
 		ci.CustPartID = 123456789
 
 		err = ci.Create()
@@ -59,6 +80,10 @@ func TestCI(t *testing.T) {
 			So(cis, ShouldHaveSameTypeAs, []CartIntegration{})
 		}
 	})
+	//cleanup
+	cust.Delete()
+	part.Delete()
+	price.Delete()
 }
 
 func BenchmarkGetAllCartIntegrations(b *testing.B) {

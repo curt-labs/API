@@ -12,10 +12,10 @@ import (
 	"testing"
 )
 
-func TestNews(t *testing.T) {
+func TestCategory(t *testing.T) {
 	var c products.Category
 	var cs []products.Category
-	var parts []products.Part
+	// var parts []products.Part
 	var err error
 
 	//setup
@@ -34,9 +34,6 @@ func TestNews(t *testing.T) {
 
 	Convey("Testing Category", t, func() {
 		//test create
-		// form := url.Values{"url": {"test"}, "fileType": {"pdf"}, "website_id": {"1"}}
-		// v := form.Encode()
-		// body := strings.NewReader(v)
 		testThatHttp.Request("get", "/category", "", "", Parents, nil, "")
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &cs)
@@ -62,14 +59,14 @@ func TestNews(t *testing.T) {
 		So(cs, ShouldHaveSameTypeAs, []products.Category{})
 		So(len(cs), ShouldBeGreaterThan, 0)
 
-		// //TODO - test hangs at 185 on category_ctlr
-		// filterSpecs.Key = ""
-		// filterSpecs.Values = []string{""}
+		// //TODO - test hangs at line 670 in parts/category model; same with curl request - needs rewrite
+		// filterSpecs.Key = "foo"
+		// filterSpecs.Values = []string{"bar"}
 		// filterArray := make([]FilterSpecifications, 0)
 		// filterArray = append(filterArray, filterSpecs)
 		// bodyBytes, _ = json.Marshal(filterArray)
 		// bodyJson = bytes.NewReader(bodyBytes)
-		// testThatHttp.Request("get", "/category/", ":id/parts", strconv.Itoa(cat.ID)+"/parts", GetParts, bodyJson, "application/json")
+		// testThatHttp.Request("get", "/category/", ":id/parts", strconv.Itoa(cat.ID)+"/parts", GetParts, bodyJson, "")
 		// So(testThatHttp.Response.Code, ShouldEqual, 200)
 		// err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &parts)
 		// So(err, ShouldBeNil)

@@ -1,12 +1,11 @@
 package contact
 
 import (
-	"net/http"
-	"strconv"
-
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/contact"
 	"github.com/go-martini/martini"
+	"net/http"
+	"strconv"
 )
 
 func GetAllContactTypes(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder) string {
@@ -72,6 +71,8 @@ func UpdateContactType(rw http.ResponseWriter, req *http.Request, params martini
 		http.Error(rw, "Invalid ContactType ID", http.StatusInternalServerError)
 		return "Invalid ContactType ID"
 	}
+
+	//json?
 
 	if err = ct.Get(); err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)

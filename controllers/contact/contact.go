@@ -2,6 +2,7 @@ package contact
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/contact"
@@ -11,7 +12,10 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	// "time"
+)
+
+var (
+	noEmail = flag.Bool("noEmail", false, "Do not send email")
 )
 
 func GetAllContacts(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder) string {
@@ -54,6 +58,8 @@ func GetContact(rw http.ResponseWriter, req *http.Request, params martini.Params
 }
 
 func AddDealerContact(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+	flag.Parse()
+
 	var d contact.DealerContact
 	var ct contact.ContactType
 	var subject string
@@ -143,7 +149,7 @@ func AddDealerContact(rw http.ResponseWriter, req *http.Request, enc encoding.En
 		emailBody += emailAppend1
 	}
 
-	if emailBody != "" {
+	if emailBody != "" && *noEmail == false {
 		if err := contact.SendEmail(ct, subject, emailBody); err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return err.Error()

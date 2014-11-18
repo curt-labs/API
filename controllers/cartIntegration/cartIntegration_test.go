@@ -86,7 +86,6 @@ func TestCartIntegration(t *testing.T) {
 		var count int
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &count)
-		t.Log(string(testThatHttp.Response.Body.Bytes()))
 		So(err, ShouldBeNil)
 		So(count, ShouldBeGreaterThan, 0)
 
