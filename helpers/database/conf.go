@@ -43,3 +43,10 @@ func VintelligencePass() string {
 	}
 	return "curtman:Oct2013!"
 }
+
+func MongoConnectionString() string {
+	if addr := os.Getenv("MONGO_URL"); addr != "" {
+		return addr
+	}
+	return "127.0.0.1"
+}
