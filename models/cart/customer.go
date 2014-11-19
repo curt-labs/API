@@ -26,6 +26,8 @@ type Customer struct {
 	TotalSpent       float64           `json:"total_spent" xml:"total_spent,attr" bson:"total_spent"`
 	UpdatedAt        time.Time         `json:"updated_at" xml:"updated_at,attr" bson:"updated_at"`
 	VerifiedEmail    bool              `json:"verified_email" xml:"verified_email,attr" bson:"verified_email"`
+	Get              func() error
+	GetAddresses     func() error
 }
 
 type MetaField struct {

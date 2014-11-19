@@ -36,6 +36,11 @@ func Dsl(query string, fields []string) (elastigo.SearchResult, error) {
 		},
 	}
 
+	// Get the brands that this customer is subscribed to
+	// and iterate over those brands hitting the search endpoint for all.
+	// This will require us to join all brand results together into one
+	// big SearchResult.
+
 	var args map[string]interface{}
-	return con.Search("curt", "", args, qry)
+	return con.Search("*", "", args, qry)
 }
