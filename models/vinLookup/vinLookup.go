@@ -176,8 +176,6 @@ func VinPartLookup(vin string) (l products.Lookup, err error) {
 		return l, err
 	}
 
-	// log.Print(l)
-
 	//get parts
 	var ps []products.Part
 	ch := make(chan []products.Part)
@@ -326,6 +324,14 @@ func getAcesVehicle(vin string) (av AcesVehicle, configMap map[int]interface{}, 
 			}
 		}
 	}
+	//return code error?
+	rc := x.Body.DecodeVinResponse.VinResponse
+	returnCode, err := strconv.Atoi(rc.ReturnCode)
+	if returnCode > 2 {
+		err = errors.New("Error decoding VIN. Return Code: " + rc.ReturnCode)
+		return av, configMap, err
+	}
+
 	//check out them configs
 	configMap, err = av.checkConfigs(x.Body.DecodeVinResponse.VinResponse.Fields)
 

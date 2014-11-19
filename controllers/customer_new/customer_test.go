@@ -20,7 +20,15 @@ func TestCustomer(t *testing.T) {
 	var cu customer_new.CustomerUser
 	var content custcontent.CustomerContent
 	var partContent custcontent.PartContent
+	var categoryContent custcontent.CustomerContent
 	var ct custcontent.ContentType
+	var crs custcontent.CustomerContentRevisions
+	var contents []custcontent.CustomerContent
+	var catContent custcontent.CategoryContent
+	var catContents []custcontent.CategoryContent
+
+	catContent.CategoryId = 1
+
 	ct.Type = "test"
 	ct.Create()
 
@@ -56,6 +64,17 @@ func TestCustomer(t *testing.T) {
 		So(content, ShouldHaveSameTypeAs, custcontent.CustomerContent{})
 		So(content.Id, ShouldBeGreaterThan, 0)
 
+		categoryContent.Text = "new content"
+		categoryContent.ContentType.Id = 1
+		bodyBytes, _ = json.Marshal(categoryContent)
+		bodyJson = bytes.NewReader(bodyBytes)
+		testThatHttp.Request("post", "/new/customer/cms/category/", ":id", strconv.Itoa(catContent.CategoryId)+"?key="+apiKey, CreateCategoryContent, bodyJson, "application/json")
+		So(testThatHttp.Response.Code, ShouldEqual, 200)
+		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &categoryContent)
+		So(err, ShouldBeNil)
+		So(categoryContent, ShouldHaveSameTypeAs, custcontent.CustomerContent{})
+		So(categoryContent.Id, ShouldBeGreaterThan, 0)
+
 		//test update part content
 		content.Text = "newerer content"
 		bodyBytes, _ = json.Marshal(content)
@@ -70,7 +89,14 @@ func TestCustomer(t *testing.T) {
 		//test get part content (unique)
 		testThatHttp.Request("get", "/new/customer/cms/part/", ":id", strconv.Itoa(11000)+"?key="+apiKey, UniquePartContent, nil, "")
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
-		var contents []custcontent.CustomerContent
+
+		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &contents)
+		So(err, ShouldBeNil)
+		So(contents, ShouldHaveSameTypeAs, []custcontent.CustomerContent{})
+
+		//test get all part content
+		testThatHttp.Request("get", "/new/customer/cms/part", "", "?key="+apiKey, AllPartContent, nil, "")
+		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &contents)
 		So(err, ShouldBeNil)
 		So(contents, ShouldHaveSameTypeAs, []custcontent.CustomerContent{})
@@ -82,12 +108,34 @@ func TestCustomer(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(contents, ShouldHaveSameTypeAs, []custcontent.CustomerContent{})
 
+		//test get unique category content
+		catContent.Content = append(catContent.Content, content) //setup some category Content
+		testThatHttp.Request("get", "/new/customer/cms/category/", ":id", strconv.Itoa(catContent.CategoryId)+"?key="+apiKey, UniqueCategoryContent, nil, "")
+		So(testThatHttp.Response.Code, ShouldEqual, 200)
+		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &catContents)
+		So(err, ShouldBeNil)
+		So(catContents, ShouldHaveSameTypeAs, []custcontent.CategoryContent{})
+
 		//test get all content
 		testThatHttp.Request("get", "/new/customer/cms", "", "?key="+apiKey, GetAllContent, nil, "")
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &contents)
 		So(err, ShouldBeNil)
 		So(contents, ShouldHaveSameTypeAs, []custcontent.CustomerContent{})
+
+		//test get content by id
+		testThatHttp.Request("get", "/new/customer/cms/", ":id", strconv.Itoa(content.Id)+"?key="+apiKey, GetContentById, nil, "")
+		So(testThatHttp.Response.Code, ShouldEqual, 200)
+		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &content)
+		So(err, ShouldBeNil)
+		So(content, ShouldHaveSameTypeAs, custcontent.CustomerContent{})
+
+		//test get content revisions by id
+		testThatHttp.Request("get", "/new/customer/cms/", ":id/revisions", strconv.Itoa(content.Id)+"/revisions?key="+apiKey, GetContentRevisionsById, nil, "")
+		So(testThatHttp.Response.Code, ShouldEqual, 200)
+		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &crs)
+		So(err, ShouldBeNil)
+		So(crs, ShouldHaveSameTypeAs, custcontent.CustomerContentRevisions{})
 
 		//test get all content types
 		testThatHttp.Request("get", "/new/customer/cms/content_types", "", "?key="+apiKey, GetAllContentTypes, nil, "")
@@ -106,6 +154,15 @@ func TestCustomer(t *testing.T) {
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &partContent)
 		So(err, ShouldBeNil)
 		So(partContent, ShouldHaveSameTypeAs, custcontent.PartContent{})
+
+		//test delete category content
+		bodyBytes, _ = json.Marshal(content)
+		bodyJson = bytes.NewReader(bodyBytes)
+		testThatHttp.Request("delete", "/new/customer/cms/category/", ":id", strconv.Itoa(catContent.CategoryId)+"?key="+apiKey, DeleteCategoryContent, bodyJson, "application/json")
+		So(testThatHttp.Response.Code, ShouldEqual, 200)
+		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &content)
+		So(err, ShouldBeNil)
+		So(content, ShouldHaveSameTypeAs, custcontent.CustomerContent{})
 
 	})
 	//teardown

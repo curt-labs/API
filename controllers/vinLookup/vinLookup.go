@@ -13,7 +13,7 @@ func GetParts(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, para
 
 	parts, err := vinLookup.VinPartLookup(vin)
 	if err != nil {
-		return ""
+		return err.Error()
 	}
 	//return array of vehicles containing array of parts
 	return encoding.Must(enc.Encode(parts))
@@ -24,7 +24,8 @@ func GetConfigs(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, pa
 
 	configs, err := vinLookup.GetVehicleConfigs(vin)
 	if err != nil {
-		return ""
+		return err.Error()
+
 	}
 
 	return encoding.Must(enc.Encode(configs))
@@ -40,7 +41,8 @@ func GetPartsFromVehicleID(w http.ResponseWriter, r *http.Request, enc encoding.
 	v.ID = id
 	parts, err := v.GetPartsFromVehicleConfig()
 	if err != nil {
-		return ""
+		return err.Error()
+
 	}
 	return encoding.Must(enc.Encode(parts))
 
