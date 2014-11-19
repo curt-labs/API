@@ -7,10 +7,10 @@ import (
 	"github.com/curt-labs/GoAPI/models/customer_new"
 	"github.com/curt-labs/GoAPI/models/customer_new/content"
 	. "github.com/smartystreets/goconvey/convey"
-	// "net/url"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestCustomer(t *testing.T) {
@@ -57,7 +57,9 @@ func TestCustomer(t *testing.T) {
 		content.ContentType.Id = 1
 		bodyBytes, _ := json.Marshal(content)
 		bodyJson := bytes.NewReader(bodyBytes)
+		thyme := time.Now()
 		testThatHttp.Request("post", "/new/customer/cms/part/", ":id", strconv.Itoa(11000)+"?key="+apiKey, CreatePartContent, bodyJson, "application/json")
+		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &content)
 		So(err, ShouldBeNil)
@@ -68,7 +70,9 @@ func TestCustomer(t *testing.T) {
 		categoryContent.ContentType.Id = 1
 		bodyBytes, _ = json.Marshal(categoryContent)
 		bodyJson = bytes.NewReader(bodyBytes)
+		thyme = time.Now()
 		testThatHttp.Request("post", "/new/customer/cms/category/", ":id", strconv.Itoa(catContent.CategoryId)+"?key="+apiKey, CreateCategoryContent, bodyJson, "application/json")
+		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &categoryContent)
 		So(err, ShouldBeNil)
@@ -85,6 +89,17 @@ func TestCustomer(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(content, ShouldHaveSameTypeAs, custcontent.CustomerContent{})
 		So(content.Id, ShouldBeGreaterThan, 0)
+
+		//test update category content
+		categoryContent.Text = "newerer content"
+		bodyBytes, _ = json.Marshal(categoryContent)
+		bodyJson = bytes.NewReader(bodyBytes)
+		testThatHttp.Request("put", "/new/customer/cms/part/", ":id", strconv.Itoa(catContent.CategoryId)+"?key="+apiKey, UpdateCategoryContent, bodyJson, "application/json")
+		So(testThatHttp.Response.Code, ShouldEqual, 200)
+		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &categoryContent)
+		So(err, ShouldBeNil)
+		So(categoryContent, ShouldHaveSameTypeAs, custcontent.CustomerContent{})
+		So(categoryContent.Id, ShouldBeGreaterThan, 0)
 
 		//test get part content (unique)
 		testThatHttp.Request("get", "/new/customer/cms/part/", ":id", strconv.Itoa(11000)+"?key="+apiKey, UniquePartContent, nil, "")
