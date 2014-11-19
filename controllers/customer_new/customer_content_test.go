@@ -83,7 +83,9 @@ func TestCustomer(t *testing.T) {
 		content.Text = "newerer content"
 		bodyBytes, _ = json.Marshal(content)
 		bodyJson = bytes.NewReader(bodyBytes)
+		thyme = time.Now()
 		testThatHttp.Request("put", "/new/customer/cms/part/", ":id", strconv.Itoa(11000)+"?key="+apiKey, UpdatePartContent, bodyJson, "application/json")
+		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &content)
 		So(err, ShouldBeNil)
@@ -94,7 +96,9 @@ func TestCustomer(t *testing.T) {
 		categoryContent.Text = "newerer content"
 		bodyBytes, _ = json.Marshal(categoryContent)
 		bodyJson = bytes.NewReader(bodyBytes)
+		thyme = time.Now()
 		testThatHttp.Request("put", "/new/customer/cms/part/", ":id", strconv.Itoa(catContent.CategoryId)+"?key="+apiKey, UpdateCategoryContent, bodyJson, "application/json")
+		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &categoryContent)
 		So(err, ShouldBeNil)
@@ -102,22 +106,27 @@ func TestCustomer(t *testing.T) {
 		So(categoryContent.Id, ShouldBeGreaterThan, 0)
 
 		//test get part content (unique)
+		thyme = time.Now()
 		testThatHttp.Request("get", "/new/customer/cms/part/", ":id", strconv.Itoa(11000)+"?key="+apiKey, UniquePartContent, nil, "")
+		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
-
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &contents)
 		So(err, ShouldBeNil)
 		So(contents, ShouldHaveSameTypeAs, []custcontent.CustomerContent{})
 
 		//test get all part content
+		thyme = time.Now()
 		testThatHttp.Request("get", "/new/customer/cms/part", "", "?key="+apiKey, AllPartContent, nil, "")
+		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &contents)
 		So(err, ShouldBeNil)
 		So(contents, ShouldHaveSameTypeAs, []custcontent.CustomerContent{})
 
 		//test get category content (all content)
+		thyme = time.Now()
 		testThatHttp.Request("get", "/new/customer/cms/part", "", "?key="+apiKey, AllCategoryContent, nil, "")
+		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &contents)
 		So(err, ShouldBeNil)
@@ -125,35 +134,45 @@ func TestCustomer(t *testing.T) {
 
 		//test get unique category content
 		catContent.Content = append(catContent.Content, content) //setup some category Content
+		thyme = time.Now()
 		testThatHttp.Request("get", "/new/customer/cms/category/", ":id", strconv.Itoa(catContent.CategoryId)+"?key="+apiKey, UniqueCategoryContent, nil, "")
+		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &catContents)
 		So(err, ShouldBeNil)
 		So(catContents, ShouldHaveSameTypeAs, []custcontent.CategoryContent{})
 
 		//test get all content
+		thyme = time.Now()
 		testThatHttp.Request("get", "/new/customer/cms", "", "?key="+apiKey, GetAllContent, nil, "")
+		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &contents)
 		So(err, ShouldBeNil)
 		So(contents, ShouldHaveSameTypeAs, []custcontent.CustomerContent{})
 
 		//test get content by id
+		thyme = time.Now()
 		testThatHttp.Request("get", "/new/customer/cms/", ":id", strconv.Itoa(content.Id)+"?key="+apiKey, GetContentById, nil, "")
+		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &content)
 		So(err, ShouldBeNil)
 		So(content, ShouldHaveSameTypeAs, custcontent.CustomerContent{})
 
 		//test get content revisions by id
+		thyme = time.Now()
 		testThatHttp.Request("get", "/new/customer/cms/", ":id/revisions", strconv.Itoa(content.Id)+"/revisions?key="+apiKey, GetContentRevisionsById, nil, "")
+		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &crs)
 		So(err, ShouldBeNil)
 		So(crs, ShouldHaveSameTypeAs, custcontent.CustomerContentRevisions{})
 
 		//test get all content types
+		thyme = time.Now()
 		testThatHttp.Request("get", "/new/customer/cms/content_types", "", "?key="+apiKey, GetAllContentTypes, nil, "")
+		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		var cts []custcontent.ContentType
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &cts)
@@ -164,7 +183,9 @@ func TestCustomer(t *testing.T) {
 		//test delete part content
 		bodyBytes, _ = json.Marshal(content)
 		bodyJson = bytes.NewReader(bodyBytes)
+		thyme = time.Now()
 		testThatHttp.Request("delete", "/new/customer/cms/part/", ":id", strconv.Itoa(11000)+"?key="+apiKey, DeletePartContent, bodyJson, "application/json")
+		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &partContent)
 		So(err, ShouldBeNil)
@@ -173,7 +194,9 @@ func TestCustomer(t *testing.T) {
 		//test delete category content
 		bodyBytes, _ = json.Marshal(content)
 		bodyJson = bytes.NewReader(bodyBytes)
+		thyme = time.Now()
 		testThatHttp.Request("delete", "/new/customer/cms/category/", ":id", strconv.Itoa(catContent.CategoryId)+"?key="+apiKey, DeleteCategoryContent, bodyJson, "application/json")
+		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &content)
 		So(err, ShouldBeNil)
