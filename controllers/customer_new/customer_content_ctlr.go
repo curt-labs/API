@@ -216,6 +216,35 @@ func UniqueCategoryContent(w http.ResponseWriter, r *http.Request, params martin
 	return encoding.Must(enc.Encode(content))
 }
 
+func CreateCategoryContent(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+	// Get the key from the query string
+	qs := r.URL.Query()
+	key := qs.Get("key")
+	id, err := strconv.Atoi(params["id"])
+	// Defer the body closing until we're finished
+	defer r.Body.Close()
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+
+	var content custcontent.CustomerContent
+	err = json.Unmarshal(body, &content)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+
+	if err = content.Save(0, id, key); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(content))
+}
+
 func UpdateCategoryContent(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
 	// Get the key from the query string
 	qs := r.URL.Query()

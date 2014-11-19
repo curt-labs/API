@@ -423,10 +423,10 @@ func main() {
 			r.Delete("/allUsersByCustomerID/:id", internalCors, customer_ctlr_new.DeleteCustomerUsersByCustomerID) //Takes CustomerID (UUID)---danger!
 
 			r.Put("/location/json", customer_ctlr_new.SaveLocationJson)
-			r.Post("/location/json/:id", customer_ctlr_new.SaveLocationJson)
-			r.Put("/location", customer_ctlr_new.SaveLocation)
+			r.Put("/location/json/:id", customer_ctlr_new.SaveLocationJson)
+			r.Post("/location", customer_ctlr_new.SaveLocation)
 			r.Get("/location/:id", customer_ctlr_new.GetLocation)
-			r.Post("/location/:id", customer_ctlr_new.SaveLocation)
+			r.Put("/location/:id", customer_ctlr_new.SaveLocation)
 			r.Delete("/location/:id", customer_ctlr_new.DeleteLocation)
 
 			r.Get("/locations", customer_ctlr_new.GetLocations)

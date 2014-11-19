@@ -172,6 +172,11 @@ var (
                                 join CustomerUser as cu on c.cust_id = cu.cust_ID
                                 join ApiKey as ak on cu.id = ak.user_id
                                 where ak.api_key = ? limit 1`
+
+	getCustIdFromKeyStmt = `select c.cust_ID from Customer as c
+                                join CustomerUser as cu on c.cust_id = cu.cust_ID
+                                join ApiKey as ak on cu.id = ak.user_id
+                                where ak.api_key = ? limit 1`
 	//Old
 	findCustomerIdFromCustId = `select customerID from Customer where cust_id = ? limit 1`
 	findCustIdFromCustomerId = `select cust_id from Customer where customerID = ? limit 1`
@@ -200,14 +205,14 @@ var (
 	customerPrice = `select distinct cp.price from ApiKey as ak
 						join CustomerUser cu on ak.user_id = cu.id
 						join Customer c on cu.cust_ID = c.cust_id
-						join CustomerPricing cp on c.customerID = cp.cust_id
+						join CustomerPricing cp on c.cust_ID = cp.cust_id
 						where api_key = ?
 						and cp.partID = ?`
 
 	customerPart = `select distinct ci.custPartID from ApiKey as ak
 						join CustomerUser cu on ak.user_id = cu.id
 						join Customer c on cu.cust_ID = c.cust_id
-						join CartIntegration ci on c.customerID = ci.custID
+						join CartIntegration ci on c.cust_ID = ci.custID
 						where ak.api_key = ?
 						and ci.partID = ?`
 	etailers = `select ` + customerFields + `, ` + stateFields + `, ` + countryFields + `, ` + dealerTypeFields + `, ` + dealerTierFields + `, ` + mapIconFields + `, ` + mapixCodeFields + `, ` + salesRepFields + `
@@ -357,6 +362,7 @@ var (
 	updateCustomer = `update Customer set name = ?, email = ?, address = ?, city = ?, stateID = ?, phone = ?, fax = ?, contact_person = ?, dealer_type = ?, latitude = ?, longitude = ?,  website = ?, customerID = ?,
 					isDummy = ?, parentID = ?, searchURL = ?, eLocalURL = ?, logo = ?, address2 = ?, postal_code = ?, mCodeID = ?, salesRepID = ?, APIKey = ?, tier = ?, showWebsite = ? where cust_id = ?`
 	deleteCustomer = `delete from Customer where cust_id = ?`
+	joinUser       = `update CustomerUser set cust_ID = ? where id = ?`
 )
 
 func (c *Customer) Get() error {
@@ -507,7 +513,6 @@ func (c *Customer) Get() error {
 }
 
 func (c *Customer) GetCustomer(key string) (err error) {
-
 	basicsChan := make(chan error)
 
 	go func() {
@@ -528,6 +533,7 @@ func (c *Customer) GetCustomer(key string) (err error) {
 	return err
 }
 
+//gets cust_id, not customerId
 func (c *Customer) GetCustomerIdFromKey(key string) error {
 	var err error
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -535,7 +541,7 @@ func (c *Customer) GetCustomerIdFromKey(key string) error {
 		return err
 	}
 	defer db.Close()
-	stmt, err := db.Prepare(getCustomerIdFromKeyStmt)
+	stmt, err := db.Prepare(getCustIdFromKeyStmt)
 	if err != nil {
 		return err
 	}
@@ -560,7 +566,6 @@ func (c *Customer) Basics(key string) (err error) {
 		return err
 	}
 	defer stmt.Close()
-
 	return c.ScanCustomer(stmt.QueryRow(c.Id), key)
 }
 
@@ -815,6 +820,24 @@ func (c *Customer) GetUsers(key string) (err error) {
 		<-userChan
 	}
 
+	return err
+}
+
+func (c *Customer) JoinUser(u CustomerUser) error {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(joinUser)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(c.Id, u.Id)
+	if err != nil {
+		return err
+	}
 	return err
 }
 

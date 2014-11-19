@@ -1,6 +1,7 @@
 package warranty
 
 import (
+	"github.com/curt-labs/GoAPI/models/contact"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 	"time"
@@ -49,4 +50,67 @@ func TestWarranties(t *testing.T) {
 		})
 
 	})
+}
+
+func BenchmarkGetAllWarranties(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GetAllWarranties()
+	}
+}
+
+func BenchmarkGetWarranty(b *testing.B) {
+	w := setupDummyWarranty()
+	w.Create()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		w.Get()
+	}
+	b.StopTimer()
+	w.Delete()
+}
+
+func BenchmarkGetWarrantyByContact(b *testing.B) {
+	w := setupDummyWarranty()
+	w.Create()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		w.GetByContact()
+	}
+	b.StopTimer()
+	w.Delete()
+}
+
+func BenchmarkCreateWarranty(b *testing.B) {
+	w := setupDummyWarranty()
+	for i := 0; i < b.N; i++ {
+		w.Create()
+		b.StopTimer()
+		w.Delete()
+		b.StartTimer()
+	}
+}
+
+func BenchmarkDeleteWarranty(b *testing.B) {
+	w := setupDummyWarranty()
+	w.Create()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		w.Delete()
+	}
+}
+
+func setupDummyWarranty() *Warranty {
+	date := time.Now()
+	return &Warranty{
+		Date:       &date,
+		PartNumber: 999999,
+		Contact: contact.Contact{
+			Email:     "test@test.com",
+			FirstName: "TESTER",
+			LastName:  "TESTER",
+			Type:      "TESTER",
+			Subject:   "TESTER",
+			Message:   "This is a test.",
+		},
+	}
 }

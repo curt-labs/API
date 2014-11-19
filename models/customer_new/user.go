@@ -13,7 +13,6 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	"github.com/curt-labs/GoAPI/models/geography"
 	_ "github.com/go-sql-driver/mysql"
-	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -403,7 +402,6 @@ func GetCustomerUserFromKey(key string) (u CustomerUser, err error) {
 	res := stmt.QueryRow(api_helpers.AUTH_KEY_TYPE, key)
 	user, err := ScanUser(res)
 	if err != nil {
-		log.Print(key, " ", err)
 		err = fmt.Errorf("error: %s", "user does not exist")
 		return
 	}

@@ -176,8 +176,6 @@ func VinPartLookup(vin string) (l products.Lookup, err error) {
 		return l, err
 	}
 
-	// log.Print(l)
-
 	//get parts
 	var ps []products.Part
 	ch := make(chan []products.Part)
@@ -324,6 +322,26 @@ func getAcesVehicle(vin string) (av AcesVehicle, configMap map[int]interface{}, 
 			if field.Value != "" {
 				av.AcesID, err = strconv.Atoi(field.Value)
 			}
+		}
+	}
+	//return code error?
+	rc := x.Body.DecodeVinResponse.VinResponse
+	returnCode, err := strconv.Atoi(rc.ReturnCode)
+
+	if returnCode > 3 {
+		switch returnCode {
+		case 4:
+			err = errors.New("Could not decode. Check digit calculates properly. Return Code: " + rc.ReturnCode)
+			return av, configMap, err
+		case 5:
+			err = errors.New("Could not decode. Check digit does not calculate properly. Return Code: " + rc.ReturnCode)
+			return av, configMap, err
+		case 6:
+			err = errors.New("Customer is not licensed to receive data. Return Code: " + rc.ReturnCode)
+			return av, configMap, err
+		default:
+			err = errors.New("Error decoding VIN. Return Code: " + rc.ReturnCode)
+			return av, configMap, err
 		}
 	}
 	//check out them configs

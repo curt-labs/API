@@ -5,6 +5,7 @@ import (
 	"github.com/curt-labs/GoAPI/models/customer_new"
 	"github.com/go-martini/martini"
 	"github.com/segmentio/analytics-go"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -53,6 +54,7 @@ func checkAuth(r *http.Request) bool {
 
 	user, err := customer_new.GetCustomerUserFromKey(key)
 	if err != nil || user.Id == "" {
+		log.Print(err)
 		return false
 	}
 
