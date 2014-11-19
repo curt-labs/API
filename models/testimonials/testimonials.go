@@ -8,13 +8,17 @@ import (
 	"time"
 )
 
+const (
+	testimonialFields = ` t.testimonialID, t.rating, t.title, t.testimonial, t.dateAdded, t.approved, t.active, t.first_name, t.last_name, t.location, t.brandID `
+)
+
 var (
-	getAllTestimonialsStmt    = `select * from Testimonial where active = 1 && approved = 1 order by dateAdded desc`
-	getTestimonialsByPageStmt = `select * from Testimonial where active = 1 && approved = 1 order by dateAdded desc limit ?,?`
-	getRandomTestimonalsStmt  = `select * from Testimonial where active = 1 && approved = 1 order by Rand() limit ?`
-	getTestimonialStmt        = `select * from Testimonial where testimonialID = ?`
-	createTestimonial         = `insert into Testimonial (rating, title, testimonial, dateAdded, approved, active, first_name, last_name, location) values (?,?,?,?,?,?,?,?,?)`
-	updateTestimonial         = `update Testimonial set rating = ?, title = ?, testimonial = ?, approved = ?, active = ?, first_name = ?, last_name = ?, location = ? where testimonialID = ?`
+	getAllTestimonialsStmt    = `select ` + testimonialFields + ` from Testimonial as t where t.active = 1 && t.approved = 1 order by t.dateAdded desc`
+	getTestimonialsByPageStmt = `select ` + testimonialFields + ` from Testimonial as t  where t.active = 1 && t.approved = 1 order by t.dateAdded desc limit ?,?`
+	getRandomTestimonalsStmt  = `select ` + testimonialFields + ` from Testimonial as t  where t.active = 1 && t.approved = 1 order by Rand() limit ?`
+	getTestimonialStmt        = `select ` + testimonialFields + ` from Testimonial as t  where t.testimonialID = ?`
+	createTestimonial         = `insert into Testimonial (rating, title, testimonial, dateAdded, approved, active, first_name, last_name, location, brandID) values (?,?,?,?,?,?,?,?,?,?)`
+	updateTestimonial         = `update Testimonial set rating = ?, title = ?, testimonial = ?, approved = ?, active = ?, first_name = ?, last_name = ?, location = ?, brandID = ? where testimonialID = ?`
 	deleteTestimonial         = `delete from Testimonial where testimonialID = ?`
 )
 
@@ -30,6 +34,7 @@ type Testimonial struct {
 	FirstName string    `json:"firstName,omitempty" xml:"firstName,omitempty"`
 	LastName  string    `json:"lastName,omitempty" xml:"lastName,omitempty"`
 	Location  string    `json:"location,omitempty" xml:"location,omitempty"`
+	BrandID   int       `json:"brandId,omitempty" xml:"brandId,omitempty"`
 }
 
 func GetAllTestimonials(page int, count int, randomize bool) (tests Testimonials, err error) {
@@ -82,6 +87,7 @@ func GetAllTestimonials(page int, count int, randomize bool) (tests Testimonials
 			&t.FirstName,
 			&t.LastName,
 			&t.Location,
+			&t.BrandID,
 		)
 		if err != nil {
 			return
@@ -121,6 +127,7 @@ func (t *Testimonial) Get() error {
 		&t.FirstName,
 		&t.LastName,
 		&t.Location,
+		&t.BrandID,
 	)
 
 	return err
@@ -138,7 +145,7 @@ func (t *Testimonial) Create() (err error) {
 	}
 	defer stmt.Close()
 	t.DateAdded = time.Now()
-	res, err := stmt.Exec(t.Rating, t.Title, t.Content, t.DateAdded, t.Approved, t.Active, t.FirstName, t.LastName, t.Location)
+	res, err := stmt.Exec(t.Rating, t.Title, t.Content, t.DateAdded, t.Approved, t.Active, t.FirstName, t.LastName, t.Location, t.BrandID)
 	if err != nil {
 		return err
 	}
@@ -159,7 +166,7 @@ func (t *Testimonial) Update() (err error) {
 	}
 	defer stmt.Close()
 	t.DateAdded = time.Now()
-	_, err = stmt.Exec(t.Rating, t.Title, t.Content, t.Approved, t.Active, t.FirstName, t.LastName, t.Location, t.ID)
+	_, err = stmt.Exec(t.Rating, t.Title, t.Content, t.Approved, t.Active, t.FirstName, t.LastName, t.Location, t.BrandID, t.ID)
 	if err != nil {
 		return err
 	}
