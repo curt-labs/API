@@ -164,3 +164,46 @@ func TestVideo_New(t *testing.T) {
 	})
 
 }
+
+func BenchmarkGetAllVideos(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GetAllVideos()
+	}
+}
+
+func BenchmarkGetPartVideos(b *testing.B) {
+	p := products.Part{ID: 11000}
+	for i := 0; i < b.N; i++ {
+		GetPartVideos(p)
+	}
+}
+
+func BenchmarkGetAllChannels(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GetAllChannels()
+	}
+}
+
+func BenchmarkGetAllCdnFiles(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GetAllCdnFiles()
+	}
+}
+
+func BenchmarkGetAllCdnFileTypes(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GetAllCdnFileTypes()
+	}
+}
+
+func BenchmarkGetAllVideoTypes(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GetAllVideoTypes()
+	}
+}
+
+func BenchmarkGetAllChannelTypes(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GetAllChannelTypes()
+	}
+}

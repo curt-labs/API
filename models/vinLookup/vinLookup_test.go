@@ -7,12 +7,14 @@ import (
 	"testing"
 )
 
-func TestVinLookup(t *testing.T) {
-	buickVin := "1g4ha5em2au000001"
-	taurusVin := "1fahp2fw5ag100583"
-	caddyVin := "1g6da5egxa0100211"
-	bogusVin := "123456789"
+var (
+	buickVin  = "1g4ha5em2au000001"
+	taurusVin = "1fahp2fw5ag100583"
+	caddyVin  = "1g6da5egxa0100211"
+	bogusVin  = "123456789"
+)
 
+func TestVinLookup(t *testing.T) {
 	Convey("Testing VinPartLookup", t, func() {
 		vs, err := VinPartLookup(buickVin)
 		if err != sql.ErrNoRows {
@@ -60,4 +62,16 @@ func TestVinLookup(t *testing.T) {
 		So(err, ShouldNotBeNil)
 		So(vcs, ShouldHaveSameTypeAs, products.Lookup{})
 	})
+}
+
+func BenchmarkVinPartLookup(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		VinPartLookup(buickVin)
+	}
+}
+
+func BenchmarkGetVehicleConfigs(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GetVehicleConfigs(buickVin)
+	}
 }
