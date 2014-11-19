@@ -7,14 +7,13 @@ import (
 	"github.com/curt-labs/GoAPI/models/products"
 	"github.com/go-martini/martini"
 	"io/ioutil"
-	"strings"
-
-	// "log"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
-func GetCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+func GetCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+	var err error
 	qs := r.URL.Query()
 	key := qs.Get("key")
 	if key == "" {
@@ -27,15 +26,12 @@ func GetCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) s
 	}
 
 	var c customer_new.Customer
-	var err error
-
 	//get id from key
 	err = c.GetCustomerIdFromKey(key)
 	if err != nil {
 		http.Error(w, "Error getting customer.", http.StatusServiceUnavailable)
 		return ""
 	}
-
 	err = c.GetCustomer(key)
 	if err != nil {
 		http.Error(w, "Error getting customer.", http.StatusServiceUnavailable)
@@ -77,7 +73,6 @@ func GetLocations(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return ""
 	}
-
 	return encoding.Must(enc.Encode(c.Locations))
 }
 
@@ -152,11 +147,11 @@ func GetCustomerPrice(w http.ResponseWriter, r *http.Request, enc encoding.Encod
 		p.ID, err = strconv.Atoi(params["id"])
 	}
 
-	part, err := customer_new.GetCustomerPrice(key, p.ID)
+	price, err := customer_new.GetCustomerPrice(key, p.ID)
 	if err != nil {
 		return err.Error()
 	}
-	return encoding.Must(enc.Encode(part))
+	return encoding.Must(enc.Encode(price))
 }
 
 func GetCustomerCartReference(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {

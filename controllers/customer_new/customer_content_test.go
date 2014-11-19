@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-func TestCustomer(t *testing.T) {
+func TestCustomerContent(t *testing.T) {
 
 	//customer_new - for db setup only
 	var c customer_new.Customer
@@ -51,7 +51,7 @@ func TestCustomer(t *testing.T) {
 
 	// custCon.Save(11000, 1, apiKey)
 
-	Convey("Testing Customer_New", t, func() {
+	Convey("Testing Customer_New/Customer_content", t, func() {
 		//test create part content
 		content.Text = "new content"
 		content.ContentType.Id = 1
