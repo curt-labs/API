@@ -1,10 +1,12 @@
 package cart_ctlr
 
 import (
+	"encoding/json"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/cart"
 	"github.com/go-martini/martini"
 	"gopkg.in/mgo.v2/bson"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 	"time"
@@ -63,6 +65,101 @@ func GetCustomers(w http.ResponseWriter, req *http.Request, params martini.Param
 	}
 
 	return encoding.Must(enc.Encode(custs))
+}
+
+func GetCustomer(w http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
+
+	customerId := params["id"]
+
+	if !bson.IsObjectIdHex(customerId) {
+		http.Error(w, "invalid customer reference", http.StatusInternalServerError)
+		return ""
+	}
+
+	c := cart.Customer{
+		Id: bson.ObjectIdHex(customerId),
+	}
+	if err := c.Get(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(c))
+}
+
+func AddCustomer(w http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
+
+	var c cart.Customer
+	defer req.Body.Close()
+
+	data, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+
+	if err = json.Unmarshal(data, &c); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+
+	if err = c.Insert(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(c))
+}
+
+func EditCustomer(w http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
+
+	var c cart.Customer
+	defer req.Body.Close()
+
+	data, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+
+	if err = json.Unmarshal(data, &c); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+
+	customerId := params["id"]
+
+	if !bson.IsObjectIdHex(customerId) {
+		http.Error(w, "invalid customer reference", http.StatusInternalServerError)
+		return ""
+	}
+	c.Id = bson.ObjectIdHex(customerId)
+
+	if err = c.Update(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(c))
+}
+
+func DeleteCustomer(w http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
+
+	var c cart.Customer
+	customerId := params["id"]
+
+	if !bson.IsObjectIdHex(customerId) {
+		http.Error(w, "invalid customer reference", http.StatusInternalServerError)
+		return ""
+	}
+	c.Id = bson.ObjectIdHex(customerId)
+
+	if err := c.Delete(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(c))
 }
 
 func GetAddresses(w http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {

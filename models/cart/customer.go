@@ -1,6 +1,7 @@
 package cart
 
 import (
+	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -26,6 +27,7 @@ type Customer struct {
 	TotalSpent       float64           `json:"total_spent" xml:"total_spent,attr" bson:"total_spent"`
 	UpdatedAt        time.Time         `json:"updated_at" xml:"updated_at,attr" bson:"updated_at"`
 	VerifiedEmail    bool              `json:"verified_email" xml:"verified_email,attr" bson:"verified_email"`
+	Orders           []interface{}     `json:"orders" xml:"orders" bson:"orders"`
 }
 
 type MetaField struct {
@@ -35,6 +37,7 @@ type MetaField struct {
 	Value     string `json:"value" xml:"value,attr" bson:"value"`
 }
 
+// Get all customers since a defined Id.
 func CustomersSinceId(id bson.ObjectId, page, limit int, created_at_min, created_at_max, updated_at_min, updated_at_max *time.Time) ([]Customer, error) {
 	custs := []Customer{}
 	sess, err := mgo.DialWithInfo(database.MongoConnectionString())
@@ -78,6 +81,18 @@ func CustomersSinceId(id bson.ObjectId, page, limit int, created_at_min, created
 	return custs, err
 }
 
+func CustomerCount() (int, error) {
+
+	sess, err := mgo.DialWithInfo(database.MongoConnectionString())
+	if err != nil {
+		return 0, err
+	}
+	defer sess.Close()
+
+	return sess.DB("CurtCart").C("customer").Count()
+}
+
+// Get a customer.
 func (c *Customer) Get() error {
 	sess, err := mgo.DialWithInfo(database.MongoConnectionString())
 	if err != nil {
@@ -88,4 +103,100 @@ func (c *Customer) Get() error {
 	col := sess.DB("CurtCart").C("customer")
 
 	return col.Find(bson.M{"_id": c.Id}).One(&c)
+}
+
+// Add new customer.
+func (c *Customer) Insert() error {
+	if c.Email == "" {
+		return fmt.Errorf("error: %s", "invalid email address")
+	}
+	if c.FirstName == "" {
+		return fmt.Errorf("error: %s", "invalid first anem")
+	}
+	if c.LastName == "" {
+		return fmt.Errorf("error: %s", "invalid last name")
+	}
+	if c.Id.Hex() == "" {
+		c.Id = bson.NewObjectId()
+	}
+	if c.CreatedAt.IsZero() {
+		c.CreatedAt = time.Now()
+	}
+	c.UpdatedAt = time.Now()
+
+	sess, err := mgo.DialWithInfo(database.MongoConnectionString())
+	if err != nil {
+		return err
+	}
+	defer sess.Close()
+
+	col := sess.DB("CurtCart").C("customer")
+
+	_, err = col.UpsertId(c.Id, c)
+
+	return err
+}
+
+// Update a customer.
+// Updates updated_at, accepts_marketing, addresses, default_address,
+// email, first_name, last_name, meta_fields, note, state, tags.
+func (c *Customer) Update() error {
+	if c.Id.Hex() == "" {
+		return fmt.Errorf("error: %s", "cannot update a customer that doesn't exist")
+	}
+	if c.Email == "" {
+		return fmt.Errorf("error: %s", "invalid email address")
+	}
+	if c.FirstName == "" {
+		return fmt.Errorf("error: %s", "invalid first anem")
+	}
+	if c.LastName == "" {
+		return fmt.Errorf("error: %s", "invalid last name")
+	}
+
+	c.UpdatedAt = time.Now()
+
+	sess, err := mgo.DialWithInfo(database.MongoConnectionString())
+	if err != nil {
+		return err
+	}
+	defer sess.Close()
+
+	var change = mgo.Change{
+		ReturnNew: true,
+		Update: bson.M{
+			"$set": bson.M{
+				"accepts_marketing": c.AcceptsMarketing,
+				"addresses":         c.Addresses,
+				"default_address":   c.DefaultAddress,
+				"email":             c.Email,
+				"first_name":        c.FirstName,
+				"last_name":         c.LastName,
+				"meta_fields":       c.MetaFields,
+				"note":              c.Note,
+				"state":             c.State,
+				"tags":              c.Tags,
+			},
+		},
+	}
+
+	_, err = sess.DB("CurtCart").C("customer").FindId(c.Id).Apply(change, c)
+
+	return err
+}
+
+// Delete a customer.
+// A customer can't be deleted if they have existing orders
+func (c *Customer) Delete() error {
+	if c.Id.Hex() == "" {
+		return fmt.Errorf("error: %s", "invalid customer reference")
+	}
+
+	sess, err := mgo.DialWithInfo(database.MongoConnectionString())
+	if err != nil {
+		return err
+	}
+	defer sess.Close()
+
+	return sess.DB("CurtCart").C("customer").RemoveId(c.Id)
 }

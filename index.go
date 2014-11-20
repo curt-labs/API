@@ -221,6 +221,10 @@ func main() {
 	m.Group("/shopify", func(r martini.Router) {
 		// Customers
 		r.Get("/customers", cart_ctlr.GetCustomers)
+		r.Get("/customers/:id", cart_ctlr.GetCustomer)
+		r.Post("/customers", cart_ctlr.AddCustomer)
+		r.Put("/customers/:id", cart_ctlr.EditCustomer)
+		r.Delete("/customers/:id", cart_ctlr.DeleteCustomer)
 
 		// Addresses
 		r.Get("/customers/:id/addresses", cart_ctlr.GetAddresses)
