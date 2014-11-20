@@ -461,11 +461,11 @@ func main() {
 
 			//Customer prices
 			r.Get("/prices/part/:id", customer_ctlr_new.GetPricesByPart)         //{id}; id refers to partId
-			r.Get("/prices/sale", customer_ctlr_new.GetSales)                    //{start}{end}{id} -all required params; id refers to customerId
+			r.Post("/prices/sale", customer_ctlr_new.GetSales)                   //{start}{end}{id} -all required params; id refers to customerId
 			r.Get("/prices/:id", customer_ctlr_new.GetPrice)                     //{id}; id refers to {id} refers to customerPriceId
 			r.Get("/prices", customer_ctlr_new.GetAllPrices)                     //returns all {sort=field&direction=dir}
-			r.Post("/prices/:id", customer_ctlr_new.CreateUpdatePrice)           //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
-			r.Put("/prices", customer_ctlr_new.CreateUpdatePrice)                //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
+			r.Put("/prices/:id", customer_ctlr_new.CreateUpdatePrice)            //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
+			r.Post("/prices", customer_ctlr_new.CreateUpdatePrice)               //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
 			r.Delete("/prices/:id", customer_ctlr_new.DeletePrice)               //{id} refers to customerPriceId
 			r.Get("/pricesByCustomer/:id", customer_ctlr_new.GetPriceByCustomer) //{id} refers to customerId; returns CustomerPrices
 

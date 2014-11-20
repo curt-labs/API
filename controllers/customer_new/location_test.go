@@ -4,9 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
-	// "github.com/curt-labs/GoAPI/models/cartIntegration"
 	"github.com/curt-labs/GoAPI/models/customer_new"
-	// "github.com/curt-labs/GoAPI/models/products"
 	. "github.com/smartystreets/goconvey/convey"
 	"net/url"
 	"strconv"
@@ -18,26 +16,13 @@ import (
 func TestCustomerLocation(t *testing.T) {
 	var err error
 	var loc customer_new.CustomerLocation
-	// var c customer_new.Customer
 	var cu customer_new.CustomerUser
-	// var p products.Part
-	// p.ID = 123
-	// p.Create()
-	// var price customer_new.Price
-	// price.PartID = p.ID
-	// price.Price = 1000000
-
-	// var ci cartIntegration.CartIntegration
-	// ci.PartID = p.ID
-	// ci.CustPartID = 987654321
 
 	//setup
-	// cu.CustomerID = c.Id
 	cu.Name = "test cust user"
 	cu.Email = "pretend@test.com"
 	cu.Password = "test"
 	cu.Sudo = true
-	// cu.Create()
 	var apiKey string
 	for _, key := range cu.Keys {
 		if strings.ToLower(key.Type) == "public" {
@@ -103,5 +88,4 @@ func TestCustomerLocation(t *testing.T) {
 	})
 	//teardown
 	cu.Delete()
-	// c.Delete()
 }

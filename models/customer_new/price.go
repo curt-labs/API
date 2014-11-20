@@ -6,6 +6,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
+	"log"
 	"strconv"
 	"time"
 )
@@ -143,7 +144,7 @@ func (p *Price) Update() error {
 		return err
 	}
 	stmt, err := tx.Prepare(updatePrice)
-
+	log.Print("update ", p.SaleEnd)
 	_, err = stmt.Exec(p.CustID, p.PartID, p.Price, p.IsSale, p.SaleStart, p.SaleEnd, p.ID)
 	if err != nil {
 		tx.Rollback()
@@ -251,7 +252,7 @@ func (c *Customer) GetPricesBySaleRange(startDate, endDate time.Time) (Prices, e
 	}
 
 	defer db.Close()
-
+	log.Print(startDate, endDate)
 	stmt, err := db.Prepare(getPricesBySaleRange)
 	if err != nil {
 		return ps, err

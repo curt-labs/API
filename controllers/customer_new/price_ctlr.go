@@ -88,25 +88,45 @@ func CreateUpdatePrice(rw http.ResponseWriter, r *http.Request, enc encoding.Enc
 
 	if custID != "" {
 		w.CustID, err = strconv.Atoi(custID)
+		if err != nil {
+			return err.Error()
+		}
 	}
 	if partID != "" {
 		w.PartID, err = strconv.Atoi(partID)
+		if err != nil {
+			return err.Error()
+		}
 	}
 	if price != "" {
 		w.Price, err = strconv.ParseFloat(price, 64)
+		if err != nil {
+			return err.Error()
+		}
 	}
 	if isSale != "" {
-		w.IsSale, err = strconv.Atoi(isSale)
+		saleBool, err := strconv.ParseBool(isSale)
+		if err != nil {
+			return err.Error()
+		}
+		if saleBool == true {
+			w.IsSale = 1
+		}
 	}
 	if saleStart != "" {
 		w.SaleStart, err = time.Parse(inputTimeFormat, saleStart)
+		if err != nil {
+			return err.Error()
+		}
 	}
 	if saleEnd != "" {
 		w.SaleEnd, err = time.Parse(inputTimeFormat, saleEnd)
+		if err != nil {
+			return err.Error()
+		}
 	}
 
 	if w.ID > 0 {
-
 		err = w.Update()
 	} else {
 
@@ -179,7 +199,6 @@ func GetSales(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, par
 	var err error
 	var ps customer_new.Prices
 	var c customer_new.Customer
-
 	id := r.FormValue("id")
 	if id != "" {
 		c.Id, err = strconv.Atoi(id)
@@ -187,11 +206,16 @@ func GetSales(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, par
 			return err.Error()
 		}
 	} else {
-		return "No Customer Id Supplied."
+		id = params["id"]
+		if id == "" {
+			return "No Customer Id Supplied."
+		}
+		c.Id, err = strconv.Atoi(id)
 	}
 
 	start := r.FormValue("start")
 	end := r.FormValue("end")
+
 	startDate, err := time.Parse(inputTimeFormat, start)
 	endDate, err := time.Parse(inputTimeFormat, end)
 	if err != nil {
@@ -213,6 +237,7 @@ func GetPriceByCustomer(rw http.ResponseWriter, r *http.Request, enc encoding.En
 	var c customer_new.Customer
 
 	id := r.FormValue("id")
+
 	if id != "" {
 		c.Id, err = strconv.Atoi(id)
 		if err != nil {
@@ -227,7 +252,6 @@ func GetPriceByCustomer(rw http.ResponseWriter, r *http.Request, enc encoding.En
 			return ""
 		}
 	}
-
 	ps, err = c.GetPricesByCustomer()
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
