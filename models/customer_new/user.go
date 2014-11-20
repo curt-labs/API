@@ -141,7 +141,7 @@ var (
 								limit 1`
 
 	updateCustomerUser   = `UPDATE CustomerUser SET name = ?, email = ?, active = ?, locationID = ?, isSudo = ?, NotCustomer = ? WHERE id = ?`
-	getUsersByCustomerID = `SELECT id FROM CustomerUser WHERE customerID = ?`
+	getUsersByCustomerID = `SELECT id FROM CustomerUser WHERE cust_id = ?`
 )
 
 var (
@@ -420,6 +420,7 @@ func GetCustomerUserFromKey(key string) (u CustomerUser, err error) {
 
 //Takes UUID CustomerID; deletes all CustomerUser with that CustID and their API Keys
 func DeleteCustomerUsersByCustomerID(customerID int) error {
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
