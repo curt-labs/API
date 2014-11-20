@@ -72,6 +72,25 @@ func TestCustomerLocation(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(loc, ShouldHaveSameTypeAs, customer_new.CustomerLocation{})
 
+		//test get location
+		thyme = time.Now()
+		testThatHttp.Request("get", "/new/customer/location/", ":id", strconv.Itoa(loc.Id)+"?key="+apiKey, GetLocation, bodyJson, "application/json")
+		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
+		So(testThatHttp.Response.Code, ShouldEqual, 200)
+		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &loc)
+		So(err, ShouldBeNil)
+		So(loc, ShouldHaveSameTypeAs, customer_new.CustomerLocation{})
+
+		//test get location
+		thyme = time.Now()
+		testThatHttp.Request("get", "/new/customer/location", "", "?key="+apiKey, GetAllLocations, bodyJson, "application/json")
+		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
+		So(testThatHttp.Response.Code, ShouldEqual, 200)
+		var locs customer_new.CustomerLocations
+		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &locs)
+		So(err, ShouldBeNil)
+		So(locs, ShouldHaveSameTypeAs, customer_new.CustomerLocations{})
+
 		//test delete location
 		thyme = time.Now()
 		testThatHttp.Request("delete", "/new/customer/location", "", "?key="+apiKey, DeleteLocation, bodyJson, "application/json")
