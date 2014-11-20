@@ -4,6 +4,7 @@ import (
 	"flag"
 	"github.com/curt-labs/GoAPI/controllers/applicationGuide"
 	"github.com/curt-labs/GoAPI/controllers/blog"
+	"github.com/curt-labs/GoAPI/controllers/cart"
 	"github.com/curt-labs/GoAPI/controllers/cartIntegration"
 	"github.com/curt-labs/GoAPI/controllers/category"
 	"github.com/curt-labs/GoAPI/controllers/contact"
@@ -215,6 +216,15 @@ func main() {
 		r.Post("", internalCors, blog_controller.CreateBlog)       //update {post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active} required{id}
 		r.Delete("/:id", internalCors, blog_controller.DeleteBlog) //{?id=id}
 		r.Delete("", internalCors, blog_controller.DeleteBlog)     //{id}
+	})
+
+	m.Group("/shopify", func(r martini.Router) {
+		// Customers
+		r.Get("/customers", cart_ctlr.GetCustomers)
+
+		// Addresses
+		r.Get("/customers/:id/addresses", cart_ctlr.GetAddresses)
+
 	})
 
 	m.Group("/cart", func(r martini.Router) {

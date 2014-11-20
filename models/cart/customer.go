@@ -26,8 +26,6 @@ type Customer struct {
 	TotalSpent       float64           `json:"total_spent" xml:"total_spent,attr" bson:"total_spent"`
 	UpdatedAt        time.Time         `json:"updated_at" xml:"updated_at,attr" bson:"updated_at"`
 	VerifiedEmail    bool              `json:"verified_email" xml:"verified_email,attr" bson:"verified_email"`
-	Get              func() error
-	GetAddresses     func() error
 }
 
 type MetaField struct {
@@ -37,7 +35,7 @@ type MetaField struct {
 	Value     string `json:"value" xml:"value,attr" bson:"value"`
 }
 
-func SinceId(id string) ([]Customer, error) {
+func CustomersSinceId(id bson.ObjectId, page, limit int, created_at_min, created_at_max, updated_at_min, updated_at_max *time.Time) ([]Customer, error) {
 	custs := []Customer{}
 	sess, err := mgo.DialWithInfo(database.MongoConnectionString())
 	if err != nil {
@@ -48,10 +46,34 @@ func SinceId(id string) ([]Customer, error) {
 	c := sess.DB("CurtCart").C("customer")
 	qs := bson.M{
 		"_id": bson.M{
-			"$gt": id,
+			"$gt": id.String(),
 		},
 	}
-	c.Find(qs)
+	if created_at_min != nil || created_at_max != nil {
+		createdQs := bson.M{}
+		if created_at_min != nil {
+			createdQs["&qt"] = created_at_min.String()
+		}
+		if created_at_max != nil {
+			createdQs["&lt"] = created_at_max.String()
+		}
+		qs["created_at"] = createdQs
+	}
+	if updated_at_min != nil || updated_at_max != nil {
+		updatedQs := bson.M{}
+		if updated_at_min != nil {
+			updatedQs["&qt"] = updated_at_min.String()
+		}
+		if updated_at_max != nil {
+			updatedQs["&lt"] = updated_at_max.String()
+		}
+		qs["updated_at"] = updatedQs
+	}
+
+	if page == 1 {
+		page = 0
+	}
+	c.Find(qs).Skip(page * limit).Limit(limit)
 
 	return custs, err
 }
