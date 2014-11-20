@@ -112,6 +112,7 @@ func main() {
 		r.Put("", internalCors, part_ctlr.CreatePart)
 		r.Delete("/:id", internalCors, part_ctlr.DeletePart)
 	})
+
 	m.Group("/price", func(r martini.Router) {
 		r.Get("/:id", internalCors, part_ctlr.GetPrice)
 		r.Put("", internalCors, part_ctlr.SavePrice)
@@ -288,7 +289,6 @@ func main() {
 		r.Get("/menu/get", site.GetMenuWithContent)
 		r.Get("/menu/get/id", site.GetMenuByContentId)
 		r.Get("/menu/sitemap", site.GetMenuSitemap)
-
 	})
 
 	m.Group("/landingPage", func(r martini.Router) {
@@ -327,7 +327,6 @@ func main() {
 		r.Delete("/:id", internalCors, webProperty_controller.DeleteWebProperty)     //{id}
 		r.Post("/:id", internalCors, webProperty_controller.CreateUpdateWebProperty) //
 		r.Put("", internalCors, webProperty_controller.CreateUpdateWebProperty)      //can create notes(text) and requirements (requirement, by requirement=requirementID) while creating a property
-
 	})
 
 	m.Group("/salesrep", func(r martini.Router) {
@@ -511,10 +510,9 @@ func main() {
 			r.Put("", site_new.SaveSite)
 			r.Post("/:id", site_new.SaveSite)
 			r.Delete("/:id", site_new.DeleteSite)
-
 		})
-
 	})
+
 	//option 1 - two calls - ultimately returns parts
 	m.Get("/vin/configs/:vin", vinLookup.GetConfigs)                    //returns vehicles - user must call vin/vehicle with vehicleID to get parts
 	m.Get("/vin/vehicleID/:vehicleID", vinLookup.GetPartsFromVehicleID) //returns array of parts
