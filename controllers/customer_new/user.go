@@ -7,6 +7,7 @@ import (
 	"github.com/curt-labs/GoAPI/models/customer_new"
 	"github.com/go-martini/martini"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -42,7 +43,6 @@ func AuthenticateUser(w http.ResponseWriter, r *http.Request, enc encoding.Encod
 	if len(user.Keys) != 0 {
 		key = user.Keys[0].Key
 	}
-
 	cust, err := user.GetCustomer(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
@@ -56,7 +56,7 @@ func AuthenticateUser(w http.ResponseWriter, r *http.Request, enc encoding.Encod
 func KeyedUserAuthentication(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 	qs := r.URL.Query()
 	key := qs.Get("key")
-
+	log.Print("key", key)
 	cust, err := customer_new.AuthenticateAndGetCustomer(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
