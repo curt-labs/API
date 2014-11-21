@@ -49,7 +49,6 @@ func GetLocalDealers(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 		return ""
 	}
 	// Get the latlng
-
 	latlng := params["latlng"]
 	if latlng == "" {
 		latlng = qs.Get("latlng")
@@ -60,11 +59,11 @@ func GetLocalDealers(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 		center = qs.Get("center")
 	}
 
-	dealers, err := customer_new.GetLocalDealers(center, latlng)
+	dealerLocations, err := customer_new.GetLocalDealers(center, latlng)
 	if err != nil {
 		return err.Error()
 	}
-	return encoding.Must(enc.Encode(dealers))
+	return encoding.Must(enc.Encode(dealerLocations))
 
 }
 

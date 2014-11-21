@@ -361,8 +361,10 @@ var (
 
 	updateCustomer = `update Customer set name = ?, email = ?, address = ?, city = ?, stateID = ?, phone = ?, fax = ?, contact_person = ?, dealer_type = ?, latitude = ?, longitude = ?,  website = ?, customerID = ?,
 					isDummy = ?, parentID = ?, searchURL = ?, eLocalURL = ?, logo = ?, address2 = ?, postal_code = ?, mCodeID = ?, salesRepID = ?, APIKey = ?, tier = ?, showWebsite = ? where cust_id = ?`
-	deleteCustomer = `delete from Customer where cust_id = ?`
-	joinUser       = `update CustomerUser set cust_ID = ? where id = ?`
+	deleteCustomer   = `delete from Customer where cust_id = ?`
+	joinUser         = `update CustomerUser set cust_ID = ? where id = ?`
+	createDealerType = `insert into DealerTypes (type, online, label) values(?,?,?)`
+	deleteDealerType = `delete from DealerTypes where dealer_type= ?`
 )
 
 func (c *Customer) Get() error {
@@ -1215,7 +1217,6 @@ func GetWhereToBuyDealers(key string) (customers []Customer, err error) {
 		}
 		customers = append(customers, cust)
 	}
-
 	go redis.Setex(redis_key, customers, 86400)
 
 	return customers, err
@@ -1318,6 +1319,47 @@ func SearchLocationsByLatLng(loc GeoLocation) (locations []DealerLocation, err e
 	defer res.Close()
 
 	return locations, err
+}
+
+//Dealer Types
+func (d *DealerType) Create() error {
+	var err error
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(createDealerType)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	res, err := stmt.Exec(d.Type, d.Online, d.Label)
+	if err != nil {
+		return err
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return err
+	}
+	d.Id = int(id)
+	return err
+}
+
+func (d *DealerType) Delete() error {
+	var err error
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(deleteDealerType)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(d.Id)
+	return err
 }
 
 func (g *GeoLocation) LatitudeRadians() float64 {
