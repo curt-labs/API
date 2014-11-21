@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
+	"github.com/curt-labs/GoAPI/models/apiKeyType"
 	"github.com/curt-labs/GoAPI/models/cartIntegration"
 	"github.com/curt-labs/GoAPI/models/customer_new"
 	"github.com/curt-labs/GoAPI/models/products"
@@ -28,7 +29,16 @@ func TestCustomer(t *testing.T) {
 	ci.PartID = p.ID
 	ci.CustPartID = 987654321
 
-	//setup
+	//setup apiKeyTypes
+	var pub, pri, auth apiKeyType.ApiKeyType
+	pub.Type = "public"
+	pri.Type = "private"
+	auth.Type = "authentication"
+	pub.Create()
+	pri.Create()
+	auth.Create()
+
+	//setup user
 	cu.CustomerID = c.Id
 	cu.Name = "test cust user"
 	cu.Email = "pretend@test.com"
@@ -170,4 +180,7 @@ func TestCustomer(t *testing.T) {
 	p.Delete()
 	price.Delete()
 	ci.Delete()
+	pub.Delete()
+	pri.Delete()
+	auth.Delete()
 }

@@ -3,6 +3,7 @@ package customer_ctlr_new
 import (
 	"encoding/json"
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
+	"github.com/curt-labs/GoAPI/models/apiKeyType"
 	"github.com/curt-labs/GoAPI/models/customer_new"
 	. "github.com/smartystreets/goconvey/convey"
 	"net/url"
@@ -18,6 +19,15 @@ func TestCustomerUser(t *testing.T) {
 	var c customer_new.Customer
 	c.Name = "Dog Bountyhunter"
 	c.Create()
+
+	//setup apiKeyTypes
+	var pub, pri, auth apiKeyType.ApiKeyType
+	pub.Type = "public"
+	pri.Type = "private"
+	auth.Type = "authentication"
+	pub.Create()
+	pri.Create()
+	auth.Create()
 
 	var apiKey string
 
@@ -147,6 +157,9 @@ func TestCustomerUser(t *testing.T) {
 	})
 	//teardown
 	c.Delete()
+	pub.Delete()
+	pri.Delete()
+	auth.Delete()
 
 	//incase
 	cu.Delete()

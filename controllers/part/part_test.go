@@ -23,6 +23,7 @@ func TestParts(t *testing.T) {
 	var cat products.Category
 	cat.Create()
 
+	//setup apiKeyTypes
 	var pub, pri, auth apiKeyType.ApiKeyType
 	pub.Type = "public"
 	pri.Type = "private"
@@ -30,11 +31,12 @@ func TestParts(t *testing.T) {
 	pub.Create()
 	pri.Create()
 	auth.Create()
+
 	var c customer_new.Customer
 	c.Name = "test man"
 	c.Create()
-	cu.CustomerID = c.Id
 
+	cu.CustomerID = c.Id
 	cu.Name = "test cust user"
 	cu.Email = "pretend@test.com"
 	cu.Password = "test"
@@ -172,7 +174,7 @@ func TestParts(t *testing.T) {
 		So(p, ShouldHaveSameTypeAs, products.Part{})
 
 	})
-	cu.Delete()
+	// cu.Delete()
 	p.Delete()
 	cat.Delete()
 	pub.Delete()

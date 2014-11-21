@@ -382,7 +382,6 @@ func Prices(w http.ResponseWriter, r *http.Request, params martini.Params, enc e
 		price, custErr := customer.GetCustomerPrice(key, p.ID)
 		if custErr != nil {
 			err = custErr
-			log.Print("cust", err)
 		}
 
 		p.Pricing = append(p.Pricing, products.Price{0, 0, "Customer", price, false, time.Now()})
@@ -393,7 +392,6 @@ func Prices(w http.ResponseWriter, r *http.Request, params martini.Params, enc e
 	<-custChan
 
 	if err != nil {
-		log.Print(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
