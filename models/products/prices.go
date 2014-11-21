@@ -7,6 +7,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
+	"log"
 	"strconv"
 	"time"
 )
@@ -29,7 +30,11 @@ var (
 	createPrice  = `INSERT INTO Price (partID, priceType, price, enforced) VALUES (?,?,?,?) `
 	updatePrice  = `UPDATE Price SET partID = ?, priceType = ?, price = ?, enforced = ? WHERE priceID = ?`
 	deletePrice  = `DELETE FROM Price WHERE priceID = ?`
-	deletePrices = `DELETE FROM Prices WHERE partID = ?`
+	deletePrices = `DELETE FROM Price WHERE partID = ?`
+)
+
+const (
+	timeFormat = "2006-01-02 15:04:05"
 )
 
 func (p *Part) GetPricing() error {
@@ -76,7 +81,7 @@ func (p *Part) GetPricing() error {
 //by priceId
 func (p *Price) Get() error {
 	redis_key := fmt.Sprintf("pricing:" + strconv.Itoa(p.Id))
-
+	log.Print(p.Id)
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		if err = json.Unmarshal(data, &p); err != nil {
@@ -95,12 +100,21 @@ func (p *Price) Get() error {
 		return err
 	}
 	defer qry.Close()
-
-	err = qry.QueryRow(p.Id).Scan(&p.Id, &p.PartId, &p.Type, &p.Price, &p.Enforced, &p.DateModified)
+	var mod *string
+	err = qry.QueryRow(p.Id).Scan(
+		&p.Id,
+		&p.PartId,
+		&p.Type,
+		&p.Price,
+		&p.Enforced,
+		&mod,
+	)
 	if err != nil {
 		return err
 	}
-
+	if mod != nil {
+		p.DateModified, err = time.Parse(timeFormat, *mod)
+	}
 	go redis.Setex(redis_key, p, 86400)
 
 	return nil

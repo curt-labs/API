@@ -10,6 +10,7 @@ import (
 	"github.com/go-martini/martini"
 	"github.com/ninnemana/analytics-go"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -373,6 +374,7 @@ func Prices(w http.ResponseWriter, r *http.Request, params martini.Params, enc e
 	var err error
 	go func() {
 		err = p.GetPricing()
+		log.Print("p", err)
 		priceChan <- 1
 	}()
 
@@ -380,6 +382,7 @@ func Prices(w http.ResponseWriter, r *http.Request, params martini.Params, enc e
 		price, custErr := customer.GetCustomerPrice(key, p.ID)
 		if custErr != nil {
 			err = custErr
+			log.Print("cust", err)
 		}
 
 		p.Pricing = append(p.Pricing, products.Price{0, 0, "Customer", price, false, time.Now()})
@@ -390,6 +393,7 @@ func Prices(w http.ResponseWriter, r *http.Request, params martini.Params, enc e
 	<-custChan
 
 	if err != nil {
+		log.Print(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
@@ -544,9 +548,9 @@ func UpdatePart(rw http.ResponseWriter, req *http.Request, params martini.Params
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return encoding.Must(enc.Encode(false))
 	}
-
+	log.Print("UPDA", p.ID)
 	err = p.Update()
-
+	log.Print(p.ID)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -558,7 +562,7 @@ func DeletePart(rw http.ResponseWriter, req *http.Request, params martini.Params
 	var p products.Part
 	var err error
 	idStr := params["id"]
-
+	log.Print(idStr, "idstr")
 	p.ID, err = strconv.Atoi(idStr)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
