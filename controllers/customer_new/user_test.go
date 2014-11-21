@@ -69,13 +69,57 @@ func TestCustomerUser(t *testing.T) {
 		So(c, ShouldHaveSameTypeAs, customer_new.Customer{})
 
 		//test keyed user authentication
-		// thyme = time.Now()
-		// testThatHttp.Request("get", "/new/customer/auth", "", "?key="+apiKey, KeyedUserAuthentication, nil, "")
-		// So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
-		// So(testThatHttp.Response.Code, ShouldEqual, 200)
-		// err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &c)
-		// So(err, ShouldBeNil)
-		// So(c, ShouldHaveSameTypeAs, customer_new.Customer{})
+		thyme = time.Now()
+		testThatHttp.Request("get", "/new/customer/auth", "", "?key="+apiKey, KeyedUserAuthentication, nil, "")
+		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
+		So(testThatHttp.Response.Code, ShouldEqual, 200)
+		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &c)
+		So(err, ShouldBeNil)
+		So(c, ShouldHaveSameTypeAs, customer_new.Customer{})
+
+		//test get user by id
+		thyme = time.Now()
+		testThatHttp.Request("get", "/new/customer/", ":id", cu.Id+"?key="+apiKey, GetUserById, nil, "")
+		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
+		So(testThatHttp.Response.Code, ShouldEqual, 200)
+		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &cu)
+		So(err, ShouldBeNil)
+		So(cu, ShouldHaveSameTypeAs, customer_new.CustomerUser{})
+
+		//test change user password
+		form = url.Values{"email": {"magic@underpants.com"}, "oldPass": {"robthepoor"}, "newPass": {"prolife"}}
+		v = form.Encode()
+		body = strings.NewReader(v)
+		thyme = time.Now()
+		testThatHttp.Request("post", "/new/customer/user/changePassword", "", "?key="+apiKey, ChangePassword, body, "application/x-www-form-urlencoded")
+		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
+		So(testThatHttp.Response.Code, ShouldEqual, 200)
+		var result string
+		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &result)
+		So(err, ShouldBeNil)
+		So(result, ShouldHaveSameTypeAs, "Success")
+
+		//test reset  user password
+		form = url.Values{"email": {"magic@underpants.com"}, "customerID": {strconv.Itoa(c.CustomerId)}}
+		v = form.Encode()
+		body = strings.NewReader(v)
+		thyme = time.Now()
+		testThatHttp.Request("post", "/new/customer/user/resetPassword", "", "?key="+apiKey, ResetPassword, body, "application/x-www-form-urlencoded")
+		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
+		So(testThatHttp.Response.Code, ShouldEqual, 200)
+		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &result)
+		So(err, ShouldBeNil)
+		So(result, ShouldHaveSameTypeAs, "Success")
+
+		//test generate api key
+		thyme = time.Now()
+		testThatHttp.Request("post", "/new/customer/user/", ":id/key/:type", cu.Id+"/key/PRIVATE?key="+apiKey, GenerateApiKey, nil, "")
+		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
+		So(testThatHttp.Response.Code, ShouldEqual, 200)
+		var newKey customer_new.ApiCredentials
+		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &newKey)
+		So(err, ShouldBeNil)
+		So(newKey.Key, ShouldHaveSameTypeAs, "string")
 
 		//test delete customer users by customerId
 		var cu2 customer_new.CustomerUser
@@ -89,7 +133,6 @@ func TestCustomerUser(t *testing.T) {
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &response)
 		So(err, ShouldBeNil)
 		So(response, ShouldHaveSameTypeAs, "this is a string")
-		// c.GetUsers(apiKey)
 
 		//test delete customer user
 		thyme = time.Now()
