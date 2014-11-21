@@ -151,7 +151,7 @@ func SearchCustomers(query string, shopId bson.ObjectId) ([]Customer, error) {
 	defer sess.Close()
 
 	qs := bson.M{
-		"$**": bson.M{
+		"$text": bson.M{
 			"$search": query,
 		},
 		"shop_id": shopId,
@@ -211,7 +211,7 @@ func (c *Customer) Insert() error {
 	idx := mgo.Index{
 		Key:        []string{"email", "first_name", "last_name", "meta_fields", "note", "state"},
 		Background: true,
-		Sparse:     true,
+		Sparse:     false,
 		DropDups:   true,
 	}
 	col.EnsureIndex(idx)

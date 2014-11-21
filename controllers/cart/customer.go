@@ -68,7 +68,7 @@ func GetCustomers(w http.ResponseWriter, req *http.Request, params martini.Param
 	}
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		generateError("", err, w, req)
 		return ""
 	}
 
@@ -80,7 +80,7 @@ func GetCustomer(w http.ResponseWriter, req *http.Request, params martini.Params
 	customerId := params["id"]
 
 	if !bson.IsObjectIdHex(customerId) {
-		http.Error(w, "invalid customer reference", http.StatusInternalServerError)
+		generateError("invalid customer reference", nil, w, req)
 		return ""
 	}
 
@@ -89,7 +89,7 @@ func GetCustomer(w http.ResponseWriter, req *http.Request, params martini.Params
 		ShopId: shop.Id,
 	}
 	if err := c.Get(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		generateError(err.Error(), err, w, req)
 		return ""
 	}
 
@@ -103,19 +103,19 @@ func AddCustomer(w http.ResponseWriter, req *http.Request, params martini.Params
 
 	data, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		generateError(err.Error(), err, w, req)
 		return ""
 	}
 
 	if err = json.Unmarshal(data, &c); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		generateError(err.Error(), err, w, req)
 		return ""
 	}
 
 	c.ShopId = shop.Id
 
 	if err = c.Insert(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		generateError(err.Error(), err, w, req)
 		return ""
 	}
 
@@ -129,26 +129,26 @@ func EditCustomer(w http.ResponseWriter, req *http.Request, params martini.Param
 
 	data, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		generateError(err.Error(), err, w, req)
 		return ""
 	}
 
 	if err = json.Unmarshal(data, &c); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		generateError(err.Error(), err, w, req)
 		return ""
 	}
 
 	customerId := params["id"]
 
 	if !bson.IsObjectIdHex(customerId) {
-		http.Error(w, "invalid customer reference", http.StatusInternalServerError)
+		generateError("invalid customer reference", nil, w, req)
 		return ""
 	}
 	c.Id = bson.ObjectIdHex(customerId)
 	c.ShopId = shop.Id
 
 	if err = c.Update(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		generateError(err.Error(), err, w, req)
 		return ""
 	}
 
@@ -161,14 +161,14 @@ func DeleteCustomer(w http.ResponseWriter, req *http.Request, params martini.Par
 	customerId := params["id"]
 
 	if !bson.IsObjectIdHex(customerId) {
-		http.Error(w, "invalid customer reference", http.StatusInternalServerError)
+		generateError("invalid customer reference", nil, w, req)
 		return ""
 	}
 	c.Id = bson.ObjectIdHex(customerId)
 	c.ShopId = shop.Id
 
 	if err := c.Delete(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		generateError(err.Error(), err, w, req)
 		return ""
 	}
 
@@ -179,9 +179,30 @@ func SearchCustomer(w http.ResponseWriter, req *http.Request, params martini.Par
 	qs := req.URL.Query()
 	custs, err := cart.SearchCustomers(qs.Get("query"), shop.Id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		generateError(err.Error(), err, w, req)
 		return ""
 	}
 
 	return encoding.Must(enc.Encode(custs))
+}
+
+func GetCustomerOrders(w http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder, shop *cart.Shop) string {
+
+	customerId := params["id"]
+
+	if !bson.IsObjectIdHex(customerId) {
+		generateError("invalid customer reference", nil, w, req)
+		return ""
+	}
+
+	c := cart.Customer{
+		Id:     bson.ObjectIdHex(customerId),
+		ShopId: shop.Id,
+	}
+	if err := c.Get(); err != nil {
+		generateError(err.Error(), err, w, req)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(c.Orders))
 }

@@ -222,6 +222,7 @@ func main() {
 		r.Get("/customers", cart_ctlr.GetCustomers)
 		r.Get("/customers/search", cart_ctlr.SearchCustomer)
 		r.Get("/customers/:id", cart_ctlr.GetCustomer)
+		r.Get("/customers/:id/orders", cart_ctlr.GetCustomerOrders)
 		r.Post("/customers", cart_ctlr.AddCustomer)
 		r.Put("/customers/:id", cart_ctlr.EditCustomer)
 		r.Delete("/customers/:id", cart_ctlr.DeleteCustomer)

@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/slack"
 	"github.com/curt-labs/GoAPI/models/cart"
@@ -8,7 +9,9 @@ import (
 	"github.com/go-martini/martini"
 	"github.com/segmentio/analytics-go"
 	"gopkg.in/mgo.v2/bson"
+	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -36,7 +39,8 @@ func Meddler() martini.Handler {
 		// to the shopping cart middleware
 		if strings.Contains(strings.ToLower(r.URL.String()), "/shopify") {
 			if err := mapCart(c, res, r); err != nil {
-				http.Error(res, err.Error(), http.StatusInternalServerError)
+				generateError("", err, res, r)
+				// http.Error(res, err.Error(), http.StatusInternalServerError)
 				return
 			}
 			excused = true
@@ -152,4 +156,40 @@ func logRequest(r *http.Request, reqTime time.Duration) {
 		}
 		m.Send()
 	}
+}
+
+type MiddlewareErr struct {
+	Message     string     `json:"message" xml:"message"`
+	Error       error      `json:"error" xml:"error"`
+	RequestBody string     `json:"request_body" xml:"request_body"`
+	QueryString url.Values `json:"query_string" xml:"query_string"`
+}
+
+func generateError(msg string, err error, res http.ResponseWriter, r *http.Request) {
+	var e MiddlewareErr
+	if msg != "" {
+		e.Message = msg
+	} else if err != nil {
+		e.Message = err.Error()
+	}
+
+	if r != nil && r.Body != nil {
+		defer r.Body.Close()
+
+		e.Error = err
+		data, readErr := ioutil.ReadAll(r.Body)
+		if readErr == nil {
+			e.RequestBody = string(data)
+		}
+		e.QueryString = r.URL.Query()
+	}
+
+	js, jsErr := json.Marshal(e)
+	if jsErr != nil {
+		http.Error(res, e.Message, http.StatusInternalServerError)
+		return
+	}
+
+	http.Error(res, string(js), http.StatusInternalServerError)
+	return
 }
