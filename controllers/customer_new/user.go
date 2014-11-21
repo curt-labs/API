@@ -66,21 +66,20 @@ func KeyedUserAuthentication(w http.ResponseWriter, r *http.Request, enc encodin
 	return encoding.Must(enc.Encode(cust))
 }
 
-//Makes user currnt
-func ResetAuthentication(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string { //Testing only
-	var err error
-	qs := r.URL.Query()
-	id := qs.Get("id")
-	var u customer_new.CustomerUser
-	u.Id = id
-	err = u.ResetAuthentication()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return ""
-	}
-
-	return "Success"
-}
+//Makes user current
+// func ResetAuthentication(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string { //Testing only
+// 	var err error
+// 	qs := r.URL.Query()
+// 	id := qs.Get("id")
+// 	var u customer_new.CustomerUser
+// 	u.Id = id
+// 	err = u.ResetAuthentication()
+// 	if err != nil {
+// 		http.Error(w, err.Error(), http.StatusInternalServerError)
+// 		return ""
+// 	}
+// 	return "Success"
+// }
 
 func GetUserById(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	qs := r.URL.Query()
@@ -133,12 +132,13 @@ func ChangePassword(w http.ResponseWriter, r *http.Request, enc encoding.Encoder
 	email := r.FormValue("email")
 	oldPass := r.FormValue("oldPass")
 	newPass := r.FormValue("newPass")
-
+	log.Print("old pass ", oldPass)
 	var user customer_new.CustomerUser
 	user.Email = email
 
 	err := user.ChangePass(oldPass, newPass)
 	if err != nil {
+		log.Print(err)
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 	}
 	return encoding.Must(enc.Encode("Success"))
@@ -211,7 +211,7 @@ func RegisterUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) 
 	isSudo, err := strconv.ParseBool(r.FormValue("isSudo"))
 	cust_ID, err := strconv.Atoi(r.FormValue("cust_ID"))
 	notCustomer, err := strconv.ParseBool(r.FormValue("notCustomer"))
-
+	log.Print("pass creation ", pass)
 	if email == "" || pass == "" {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return "Email and password are required."

@@ -13,6 +13,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	"github.com/curt-labs/GoAPI/models/geography"
 	_ "github.com/go-sql-driver/mysql"
+	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -74,8 +75,8 @@ var (
 	customerUserKeyAuth = `select cu.* from CustomerUser as cu
 								join ApiKey as ak on cu.id = ak.user_id
 								join ApiKeyType as akt on ak.type_id = akt.id
-								where UPPER(akt.type) = ?
-								&& ak.api_key = ?
+								where UPPER(akt.type) != ?
+								&& ak.api_key = UPPER(?)
 								&& cu.active = 1 && ak.date_added >= ?`
 	customerUserKeys = `select ak.api_key, akt.type, ak.date_added from ApiKey as ak
 								join ApiKeyType as akt on ak.type_id = akt.id
@@ -347,7 +348,7 @@ func (u *CustomerUser) AuthenticateUser() error {
 	// Attempt to compare bcrypt strings
 	err = bcrypt.CompareHashAndPassword([]byte(dbPass), []byte(pass))
 	if err != nil {
-
+		log.Print(err, pass)
 		// Compare unsuccessful
 
 		enc_pass, err := api_helpers.Md5Encrypt(pass)
@@ -737,6 +738,7 @@ func (cu *CustomerUser) ResetPass() (string, error) {
 }
 
 func (cu *CustomerUser) ChangePass(oldPass, newPass string) error {
+	cu.Password = oldPass
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
