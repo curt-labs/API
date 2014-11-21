@@ -160,10 +160,12 @@ func TestCustomer(t *testing.T) {
 			customer.DefaultAddress = &addr
 			customer.Note = "Holy shit this is easy"
 
+			tmpCust := customer
 			os.Setenv("MONGO_URL", "0.0.0.1")
 			err = customer.Update()
 			So(err, ShouldNotBeNil)
 			os.Setenv("MONGO_URL", "")
+			customer = tmpCust
 
 			err = customer.Update()
 			So(err, ShouldBeNil)

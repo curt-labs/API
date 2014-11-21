@@ -174,3 +174,14 @@ func DeleteCustomer(w http.ResponseWriter, req *http.Request, params martini.Par
 
 	return encoding.Must(enc.Encode(c))
 }
+
+func SearchCustomer(w http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder, shop *cart.Shop) string {
+	qs := req.URL.Query()
+	custs, err := cart.SearchCustomers(qs.Get("query"), shop.Id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(custs))
+}

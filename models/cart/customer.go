@@ -138,6 +138,30 @@ func CustomerCount(shopId bson.ObjectId) (int, error) {
 	return sess.DB("CurtCart").C("customer").Find(bson.M{"shop_id": shopId}).Count()
 }
 
+func SearchCustomers(query string, shopId bson.ObjectId) ([]Customer, error) {
+	var custs []Customer
+	if query == "" {
+		return custs, fmt.Errorf("error: %s", "invalid query")
+	}
+
+	sess, err := mgo.DialWithInfo(database.MongoConnectionString())
+	if err != nil {
+		return custs, err
+	}
+	defer sess.Close()
+
+	qs := bson.M{
+		"$**": bson.M{
+			"$search": query,
+		},
+		"shop_id": shopId,
+	}
+
+	err = sess.DB("CurtCart").C("customer").Find(qs).All(&custs)
+
+	return custs, err
+}
+
 // Get a customer.
 func (c *Customer) Get() error {
 	sess, err := mgo.DialWithInfo(database.MongoConnectionString())
@@ -179,8 +203,20 @@ func (c *Customer) Insert() error {
 	col := sess.DB("CurtCart").C("customer")
 
 	_, err = col.UpsertId(c.Id, c)
+	if err != nil {
+		return err
+	}
 
-	return err
+	// index the document
+	idx := mgo.Index{
+		Key:        []string{"email", "first_name", "last_name", "meta_fields", "note", "state"},
+		Background: true,
+		Sparse:     true,
+		DropDups:   true,
+	}
+	col.EnsureIndex(idx)
+
+	return nil
 }
 
 // Update a customer.
