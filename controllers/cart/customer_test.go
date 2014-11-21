@@ -8,7 +8,6 @@ import (
 	"github.com/martini-contrib/render"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
@@ -24,7 +23,6 @@ var _ = Describe("Customer", func() {
 	Context("List All Customers", func() {
 		It("returns a 500 status code", func() {
 			Request("GET", "/shopify/customers", GetCustomers)
-			log.Println(response.Body.String())
 			Expect(response.Code).To(Equal(500))
 		})
 	})
