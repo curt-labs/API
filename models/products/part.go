@@ -14,6 +14,7 @@ import (
 	"github.com/curt-labs/GoAPI/models/customer/content"
 	"github.com/curt-labs/GoAPI/models/vehicle"
 	_ "github.com/go-sql-driver/mysql"
+	// "log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -64,8 +65,8 @@ var (
 
 	getPartByOldpartNumber = `select partID, status, dateModified, dateAdded, shortDesc, priceCode, classID, featured, ACESPartTypeID from Part where oldPartNumber = ?`
 	//create
-	createPart = `INSERT INTO Part (partID, status, dateAdded, shortDesc, priceCode, classID, featured, ACESPartTypeID)
-                    VALUES(?,?,?,?,?,?,?, ?)`
+	createPart = `INSERT INTO Part (partID, status, dateAdded, shortDesc, oldPartNumber, priceCode, classID, featured, ACESPartTypeID)
+                    VALUES(?,?,?,?,?,?,?,?,?)`
 	createPartAttributeJoin = `INSERT INTO PartAttribute (partID, value, field, sort) VALUES (?,?,?,?)`
 	createVehiclePartJoin   = `INSERT INTO VehiclePart (vehicleID, partID, drilling, exposed, installTime) VALUES (?,?,?,?,?)`
 	createContentBridge     = `INSERT INTO ContentBridge (catID, partID, contentID) VALUES (?,?,?)`
@@ -963,7 +964,7 @@ func (p *Part) GetPartByOldPartNumber() (err error) {
 		&p.Status,
 		&p.DateModified,
 		&p.DateAdded,
-		&p.OldPartNumber,
+		&p.ShortDesc,
 		&p.PriceCode,
 		&p.Class.ID,
 		&p.Featured,
@@ -995,6 +996,7 @@ func (p *Part) Create() (err error) {
 		p.Status,
 		p.DateAdded,
 		p.ShortDesc,
+		p.OldPartNumber,
 		p.PriceCode,
 		p.Class.ID,
 		p.Featured,
@@ -1148,17 +1150,10 @@ func (p *Part) Create() (err error) {
 }
 
 func (p *Part) Delete() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	stmt, err := db.Prepare(deletePart)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	_, err = stmt.Exec(p.ID)
+
+	var price Price
+	price.PartId = p.ID
+	err = price.DeleteByPart()
 	if err != nil {
 		return err
 	}
@@ -1166,7 +1161,6 @@ func (p *Part) Delete() (err error) {
 	pajChan := make(chan int)
 	diChan := make(chan int)
 	dcbChan := make(chan int)
-	priceChan := make(chan int)
 	revChan := make(chan int)
 	imageChan := make(chan int)
 	relatedChan := make(chan int)
@@ -1201,17 +1195,7 @@ func (p *Part) Delete() (err error) {
 		dcbChan <- 1
 		return err
 	}()
-	go func() (err error) {
-		var price Price
-		price.PartId = p.ID
-		err = price.DeleteByPart()
-		if err != nil {
-			priceChan <- 1
-			return err
-		}
-		priceChan <- 1
-		return err
-	}()
+
 	go func() (err error) {
 		var review Review
 		review.PartID = p.ID
@@ -1278,13 +1262,27 @@ func (p *Part) Delete() (err error) {
 	<-pajChan
 	<-diChan
 	<-dcbChan
-	<-priceChan
 	<-revChan
 	<-imageChan
 	<-relatedChan
 	<-pcjChan
 	<-videoChan
 	<-packChan
+
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(deletePart)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(p.ID)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

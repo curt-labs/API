@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
+	"github.com/curt-labs/GoAPI/models/apiKeyType"
 	"github.com/curt-labs/GoAPI/models/customer_new"
 	"github.com/curt-labs/GoAPI/models/customer_new/content"
 	. "github.com/smartystreets/goconvey/convey"
@@ -34,6 +35,16 @@ func TestCustomerContent(t *testing.T) {
 
 	c.Name = "test cust"
 	c.Create()
+
+	//setup apiKeyTypes
+	var pub, pri, auth apiKeyType.ApiKeyType
+	pub.Type = "public"
+	pri.Type = "private"
+	auth.Type = "authentication"
+	pub.Create()
+	pri.Create()
+	auth.Create()
+
 	cu.CustomerID = c.Id
 	cu.Name = "test cust user"
 	cu.Email = "pretend@test.com"
@@ -207,6 +218,8 @@ func TestCustomerContent(t *testing.T) {
 	c.Delete()
 	cu.Delete()
 	ct.Delete()
+	pub.Delete()
+	pri.Delete()
+	auth.Delete()
 
-	// custCon.Delete(11000, 1, apiKey)
 }
