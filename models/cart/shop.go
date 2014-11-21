@@ -3,7 +3,7 @@ package cart
 import (
 	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/database"
-	"github.com/curt-labs/GoAdmin/helpers/geocoding"
+	"github.com/curt-labs/GoAPI/helpers/geocoding"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"net/url"
@@ -41,30 +41,29 @@ type Shop struct {
 	HasStorefront           bool          `json:"has_storefront" xml:"has_storefront,attr" bson:"has_storefront"`
 }
 
-func GetShop(id string) (*Shop, error) {
+func (sh *Shop) Get() error {
 
 	sess, err := mgo.DialWithInfo(database.MongoConnectionString())
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer sess.Close()
 
-	sh := Shop{}
 	c := sess.DB("CurtCart").C("shop")
-	err = c.Find(bson.M{"_id": id}).One(&sh)
+	err = c.Find(bson.M{"_id": sh.Id}).One(&sh)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return &sh, nil
+	return nil
 }
 
 // This method is used explicitly for generating test data
 // DO NOT EXPOSE
-func insertTestData() string {
+func insertTestData() *bson.ObjectId {
 	sess, err := mgo.DialWithInfo(database.MongoConnectionString())
 	if err != nil {
-		return ""
+		return nil
 	}
 
 	sh := Shop{}
@@ -104,8 +103,8 @@ func insertTestData() string {
 	}
 
 	if err := sess.DB("CurtCart").C("shop").Insert(sh); err != nil {
-		return ""
+		return nil
 	}
 
-	return sh.Id.String()
+	return &sh.Id
 }

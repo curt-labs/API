@@ -16,7 +16,8 @@ const (
 	TimeLayout = "2006-01-02 15:04"
 )
 
-func GetCustomers(w http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
+func GetCustomers(w http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder, shop *cart.Shop) string {
+
 	var since_id bson.ObjectId
 	var created_at_min *time.Time
 	var created_at_max *time.Time
@@ -58,145 +59,150 @@ func GetCustomers(w http.ResponseWriter, req *http.Request, params martini.Param
 		}
 	}
 
-	custs, err := cart.CustomersSinceId(since_id, page, limit, created_at_min, created_at_max, updated_at_min, updated_at_max)
+	var custs []cart.Customer
+	var err error
+	if since_id.Hex() != "" {
+		custs, err = cart.CustomersSinceId(since_id, page, limit, created_at_min, created_at_max, updated_at_min, updated_at_max)
+	} else {
+		custs, err = cart.GetCustomers(shop.Id, page, limit, created_at_min, created_at_max, updated_at_min, updated_at_max)
+	}
+
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		generateError("", err, w, req)
 		return ""
 	}
 
 	return encoding.Must(enc.Encode(custs))
 }
 
-func GetCustomer(w http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
+func GetCustomer(w http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder, shop *cart.Shop) string {
 
 	customerId := params["id"]
 
 	if !bson.IsObjectIdHex(customerId) {
-		http.Error(w, "invalid customer reference", http.StatusInternalServerError)
+		generateError("invalid customer reference", nil, w, req)
 		return ""
 	}
 
 	c := cart.Customer{
-		Id: bson.ObjectIdHex(customerId),
+		Id:     bson.ObjectIdHex(customerId),
+		ShopId: shop.Id,
 	}
 	if err := c.Get(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		generateError(err.Error(), err, w, req)
 		return ""
 	}
 
 	return encoding.Must(enc.Encode(c))
 }
 
-func AddCustomer(w http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
+func AddCustomer(w http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder, shop *cart.Shop) string {
 
 	var c cart.Customer
 	defer req.Body.Close()
 
 	data, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		generateError(err.Error(), err, w, req)
 		return ""
 	}
 
 	if err = json.Unmarshal(data, &c); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		generateError(err.Error(), err, w, req)
 		return ""
 	}
+
+	c.ShopId = shop.Id
 
 	if err = c.Insert(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		generateError(err.Error(), err, w, req)
 		return ""
 	}
 
 	return encoding.Must(enc.Encode(c))
 }
 
-func EditCustomer(w http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
+func EditCustomer(w http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder, shop *cart.Shop) string {
 
 	var c cart.Customer
 	defer req.Body.Close()
 
 	data, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		generateError(err.Error(), err, w, req)
 		return ""
 	}
 
 	if err = json.Unmarshal(data, &c); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		generateError(err.Error(), err, w, req)
 		return ""
 	}
 
 	customerId := params["id"]
 
 	if !bson.IsObjectIdHex(customerId) {
-		http.Error(w, "invalid customer reference", http.StatusInternalServerError)
+		generateError("invalid customer reference", nil, w, req)
 		return ""
 	}
 	c.Id = bson.ObjectIdHex(customerId)
+	c.ShopId = shop.Id
 
 	if err = c.Update(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		generateError(err.Error(), err, w, req)
 		return ""
 	}
 
 	return encoding.Must(enc.Encode(c))
 }
 
-func DeleteCustomer(w http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
+func DeleteCustomer(w http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder, shop *cart.Shop) string {
 
 	var c cart.Customer
 	customerId := params["id"]
 
 	if !bson.IsObjectIdHex(customerId) {
-		http.Error(w, "invalid customer reference", http.StatusInternalServerError)
+		generateError("invalid customer reference", nil, w, req)
 		return ""
 	}
 	c.Id = bson.ObjectIdHex(customerId)
+	c.ShopId = shop.Id
 
 	if err := c.Delete(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		generateError(err.Error(), err, w, req)
 		return ""
 	}
 
 	return encoding.Must(enc.Encode(c))
 }
 
-func GetAddresses(w http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
-	customerId := params["id"]
-	limit := 50
-	page := 1
+func SearchCustomer(w http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder, shop *cart.Shop) string {
 	qs := req.URL.Query()
+	custs, err := cart.SearchCustomers(qs.Get("query"), shop.Id)
+	if err != nil {
+		generateError(err.Error(), err, w, req)
+		return ""
+	}
 
-	if l := qs.Get("limit"); l != "" {
-		lmt, err := strconv.Atoi(l)
-		if err == nil && lmt != 0 {
-			limit = lmt
-		}
-	}
-	if p := qs.Get("page"); p != "" {
-		pg, err := strconv.Atoi(p)
-		if err == nil && pg != 0 {
-			page = pg
-		}
-	}
+	return encoding.Must(enc.Encode(custs))
+}
+
+func GetCustomerOrders(w http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder, shop *cart.Shop) string {
+
+	customerId := params["id"]
 
 	if !bson.IsObjectIdHex(customerId) {
-		http.Error(w, "invalid customer reference", http.StatusInternalServerError)
+		generateError("invalid customer reference", nil, w, req)
 		return ""
 	}
 
 	c := cart.Customer{
-		Id: bson.ObjectIdHex(customerId),
+		Id:     bson.ObjectIdHex(customerId),
+		ShopId: shop.Id,
 	}
 	if err := c.Get(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		generateError(err.Error(), err, w, req)
 		return ""
 	}
 
-	addr := c.Addresses[:limit]
-	if page > 1 && len(c.Addresses) >= ((page-1)*limit) {
-		addr = c.Addresses[((page - 1) / limit):limit]
-	}
-	return encoding.Must(enc.Encode(addr))
+	return encoding.Must(enc.Encode(c.Orders))
 }

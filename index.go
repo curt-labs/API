@@ -191,7 +191,6 @@ func main() {
 		r.Get("/:id", applicationGuide.GetApplicationGuide)
 		r.Delete("/:id", internalCors, applicationGuide.DeleteApplicationGuide)
 		r.Post("", internalCors, applicationGuide.CreateApplicationGuide)
-
 	})
 
 	m.Group("/faqs", func(r martini.Router) {
@@ -221,14 +220,15 @@ func main() {
 	m.Group("/shopify", func(r martini.Router) {
 		// Customers
 		r.Get("/customers", cart_ctlr.GetCustomers)
+		r.Get("/customers/search", cart_ctlr.SearchCustomer)
 		r.Get("/customers/:id", cart_ctlr.GetCustomer)
+		r.Get("/customers/:id/orders", cart_ctlr.GetCustomerOrders)
 		r.Post("/customers", cart_ctlr.AddCustomer)
 		r.Put("/customers/:id", cart_ctlr.EditCustomer)
 		r.Delete("/customers/:id", cart_ctlr.DeleteCustomer)
 
 		// Addresses
 		r.Get("/customers/:id/addresses", cart_ctlr.GetAddresses)
-
 	})
 
 	m.Group("/cart", func(r martini.Router) {
@@ -360,6 +360,7 @@ func main() {
 		r.Post("/:contactReceiverTypeID/:sendEmail", techSupport.CreateTechSupport) //contactType determines who receives the email/sendEmail is a bool indicating if email should be sent
 		r.Delete("/:id", techSupport.DeleteTechSupport)
 	})
+
 	m.Group("/warranty", func(r martini.Router) {
 		r.Get("/all", warranty.GetAllWarranties)
 		r.Get("/contact/:id", warranty.GetWarrantyByContact)
@@ -412,7 +413,6 @@ func main() {
 		r.Post("/:id", videos_ctlr.SaveVideo)
 		r.Post("", videos_ctlr.SaveVideo)
 		r.Delete("/:id", videos_ctlr.DeleteVideo)
-
 	})
 
 	//NEW Customer & Dealer endpoints - Seems to work. Feeling brave?

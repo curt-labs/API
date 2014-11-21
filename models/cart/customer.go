@@ -10,9 +10,10 @@ import (
 
 type Customer struct {
 	Id               bson.ObjectId     `json:"id" xml:"id" bson:"_id"`
+	ShopId           bson.ObjectId     `json:"-" xml:"-" bson:"shop_id"`
 	AcceptsMarketing bool              `json:"accepts_marketing" xml:"accepts_marketing,attr" bson:"accepts_marketing"`
 	Addresses        []CustomerAddress `json:"addresses" xml:"addresses>addres" bson:"addresses"`
-	DefaultAddress   []CustomerAddress `json:"default_address" xml:"default_address" bson:"default_address"`
+	DefaultAddress   *CustomerAddress  `json:"default_address" xml:"default_address" bson:"default_address"`
 	CreatedAt        time.Time         `json:"created_at" xml:"created_at,attr" bson:"created_at"`
 	Email            string            `json:"email" xml:"email,attr" bson:"email"`
 	FirstName        string            `json:"first_name" xml:"first_name,attr" bson:"first_name"`
@@ -81,7 +82,52 @@ func CustomersSinceId(id bson.ObjectId, page, limit int, created_at_min, created
 	return custs, err
 }
 
-func CustomerCount() (int, error) {
+// Get all customers.
+func GetCustomers(id bson.ObjectId, page, limit int, created_at_min, created_at_max, updated_at_min, updated_at_max *time.Time) ([]Customer, error) {
+	custs := []Customer{}
+	sess, err := mgo.DialWithInfo(database.MongoConnectionString())
+	if err != nil {
+		return custs, err
+	}
+	defer sess.Close()
+
+	c := sess.DB("CurtCart").C("customer")
+	qs := bson.M{
+		"shop_id": id,
+	}
+	if created_at_min != nil || created_at_max != nil {
+		createdQs := bson.M{}
+		if created_at_min != nil {
+			createdQs["&qt"] = created_at_min.String()
+		}
+		if created_at_max != nil {
+			createdQs["&lt"] = created_at_max.String()
+		}
+		qs["created_at"] = createdQs
+	}
+	if updated_at_min != nil || updated_at_max != nil {
+		updatedQs := bson.M{}
+		if updated_at_min != nil {
+			updatedQs["&qt"] = updated_at_min.String()
+		}
+		if updated_at_max != nil {
+			updatedQs["&lt"] = updated_at_max.String()
+		}
+		qs["updated_at"] = updatedQs
+	}
+
+	if page == 1 {
+		page = 0
+	}
+	c.Find(qs).Skip(page * limit).Limit(limit).All(&custs)
+
+	return custs, err
+}
+
+func CustomerCount(shopId bson.ObjectId) (int, error) {
+	if shopId.Hex() == "" {
+		return 0, fmt.Errorf("error: %s", "invalid shop reference")
+	}
 
 	sess, err := mgo.DialWithInfo(database.MongoConnectionString())
 	if err != nil {
@@ -89,7 +135,31 @@ func CustomerCount() (int, error) {
 	}
 	defer sess.Close()
 
-	return sess.DB("CurtCart").C("customer").Count()
+	return sess.DB("CurtCart").C("customer").Find(bson.M{"shop_id": shopId}).Count()
+}
+
+func SearchCustomers(query string, shopId bson.ObjectId) ([]Customer, error) {
+	var custs []Customer
+	if query == "" {
+		return custs, fmt.Errorf("error: %s", "invalid query")
+	}
+
+	sess, err := mgo.DialWithInfo(database.MongoConnectionString())
+	if err != nil {
+		return custs, err
+	}
+	defer sess.Close()
+
+	qs := bson.M{
+		"$text": bson.M{
+			"$search": query,
+		},
+		"shop_id": shopId,
+	}
+
+	err = sess.DB("CurtCart").C("customer").Find(qs).All(&custs)
+
+	return custs, err
 }
 
 // Get a customer.
@@ -102,7 +172,7 @@ func (c *Customer) Get() error {
 
 	col := sess.DB("CurtCart").C("customer")
 
-	return col.Find(bson.M{"_id": c.Id}).One(&c)
+	return col.Find(bson.M{"_id": c.Id, "shop_id": c.ShopId}).One(&c)
 }
 
 // Add new customer.
@@ -133,8 +203,20 @@ func (c *Customer) Insert() error {
 	col := sess.DB("CurtCart").C("customer")
 
 	_, err = col.UpsertId(c.Id, c)
+	if err != nil {
+		return err
+	}
 
-	return err
+	// index the document
+	idx := mgo.Index{
+		Key:        []string{"email", "first_name", "last_name", "meta_fields", "note", "state"},
+		Background: true,
+		Sparse:     false,
+		DropDups:   true,
+	}
+	col.EnsureIndex(idx)
+
+	return nil
 }
 
 // Update a customer.
@@ -180,7 +262,7 @@ func (c *Customer) Update() error {
 		},
 	}
 
-	_, err = sess.DB("CurtCart").C("customer").FindId(c.Id).Apply(change, c)
+	_, err = sess.DB("CurtCart").C("customer").Find(bson.M{"_id": c.Id, "shop_id": c.ShopId}).Apply(change, c)
 
 	return err
 }
@@ -197,6 +279,10 @@ func (c *Customer) Delete() error {
 		return err
 	}
 	defer sess.Close()
+
+	if err := c.Get(); err != nil {
+		return err
+	}
 
 	return sess.DB("CurtCart").C("customer").RemoveId(c.Id)
 }
