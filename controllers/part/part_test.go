@@ -72,6 +72,11 @@ func TestParts(t *testing.T) {
 		err = p.BindCustomer(apiKey) //setup
 		So(err, ShouldBeNil)
 
+		var custPrice customer_new.Price
+		custPrice.CustID = c.Id
+		custPrice.PartID = p.ID
+		custPrice.Create()
+
 		//test create price
 		price.Price = 987
 		price.PartId = p.ID
@@ -102,7 +107,7 @@ func TestParts(t *testing.T) {
 
 		//test get part prices
 		thyme = time.Now()
-		testThatHttp.Request("get", "/part/", ":id/prices", strconv.Itoa(p.ID)+"/prices?key="+apiKey, Prices, nil, "")
+		testThatHttp.Request("get", "/part/", ":part/prices", strconv.Itoa(p.ID)+"/prices?key="+apiKey, Prices, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		var prices []products.Price
@@ -173,8 +178,10 @@ func TestParts(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(p, ShouldHaveSameTypeAs, products.Part{})
 
+		custPrice.Delete()
+
 	})
-	// cu.Delete()
+	cu.Delete()
 	p.Delete()
 	cat.Delete()
 	pub.Delete()

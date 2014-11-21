@@ -4,13 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
-	"github.com/curt-labs/GoAPI/models/customer"
+	"github.com/curt-labs/GoAPI/models/customer_new"
 	"github.com/curt-labs/GoAPI/models/products"
 	"github.com/curt-labs/GoAPI/models/vehicle"
 	"github.com/go-martini/martini"
 	"github.com/ninnemana/analytics-go"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -374,12 +373,11 @@ func Prices(w http.ResponseWriter, r *http.Request, params martini.Params, enc e
 	var err error
 	go func() {
 		err = p.GetPricing()
-		log.Print("p", err)
 		priceChan <- 1
 	}()
 
 	go func() {
-		price, custErr := customer.GetCustomerPrice(key, p.ID)
+		price, custErr := customer_new.GetCustomerPrice(key, p.ID)
 		if custErr != nil {
 			err = custErr
 		}
@@ -546,9 +544,7 @@ func UpdatePart(rw http.ResponseWriter, req *http.Request, params martini.Params
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return encoding.Must(enc.Encode(false))
 	}
-	log.Print("UPDA", p.ID)
 	err = p.Update()
-	log.Print(p.ID)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -560,7 +556,6 @@ func DeletePart(rw http.ResponseWriter, req *http.Request, params martini.Params
 	var p products.Part
 	var err error
 	idStr := params["id"]
-	log.Print(idStr, "idstr")
 	p.ID, err = strconv.Atoi(idStr)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
