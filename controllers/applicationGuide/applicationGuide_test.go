@@ -62,6 +62,9 @@ func TestApplicationGuide(t *testing.T) {
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &a)
 		So(err, ShouldBeNil)
 
+		//cleanup
+		err = jsonAppGuide.Delete()
+
 	})
 }
 
