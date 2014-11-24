@@ -7,13 +7,12 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/render"
+	"github.com/rakyll/pb"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"time"
-
-	"github.com/rakyll/pb"
 )
 
 type result struct {

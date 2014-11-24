@@ -40,7 +40,7 @@ func TestApplicationGuide(t *testing.T) {
 		So(jsonAppGuide, ShouldHaveSameTypeAs, applicationGuide.ApplicationGuide{})
 
 		//test get
-		testThatHttp.Request("get", "/applicationGuide/", ":id", strconv.Itoa(a.ID), GetApplicationGuide, nil, "application/x-www-form-urlencoded")
+		testThatHttp.Request("get", "/applicationGuide/", ":id", strconv.Itoa(a.ID), GetApplicationGuide, nil, "")
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &a)
 		So(err, ShouldBeNil)
@@ -48,7 +48,7 @@ func TestApplicationGuide(t *testing.T) {
 		So(a.Url, ShouldEqual, "test")
 
 		//test get by website
-		testThatHttp.Request("get", "/applicationGuide/website/", ":id", strconv.Itoa(a.Website.ID), GetApplicationGuidesByWebsite, nil, "application/x-www-form-urlencoded")
+		testThatHttp.Request("get", "/applicationGuide/website/", ":id", strconv.Itoa(a.Website.ID), GetApplicationGuidesByWebsite, nil, "")
 		var as []applicationGuide.ApplicationGuide
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &as)
@@ -57,10 +57,18 @@ func TestApplicationGuide(t *testing.T) {
 		So(a.Url, ShouldEqual, "test")
 
 		//test delete
-		testThatHttp.Request("delete", "/applicationGuide/", ":id", strconv.Itoa(a.ID), DeleteApplicationGuide, nil, "application/x-www-form-urlencoded")
+		testThatHttp.Request("delete", "/applicationGuide/", ":id", strconv.Itoa(a.ID), DeleteApplicationGuide, nil, "")
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &a)
 		So(err, ShouldBeNil)
 
+		//cleanup
+		err = jsonAppGuide.Delete()
+
 	})
+}
+
+func BenchmarkApplicationGuide(b *testing.B) {
+	testThatHttp.RequestBenchmark(b.N, "GET", "/applicationGuide/1", nil, GetApplicationGuide)
+	testThatHttp.RequestBenchmark(b.N, "GET", "/applicationGuide/1", nil, GetApplicationGuidesByWebsite)
 }

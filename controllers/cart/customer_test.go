@@ -112,8 +112,7 @@ func TestAddCustomer(t *testing.T) {
 
 		resp := httprunner.JsonRequest("POST", "/shopify/customers", &qs, cart.Shop{}, AddCustomer)
 		So(resp.Code, ShouldEqual, 500)
-		t.Log(string(resp.Body.Bytes()))
-		So(json.Unmarshal(resp.Body.Bytes(), &cart.Customer{}), ShouldNotBeNil)
+		So(json.Unmarshal(resp.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
 	})
 
 	Convey("with shop identifier", t, func() {

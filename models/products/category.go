@@ -522,10 +522,10 @@ func (c *Category) GetCategory(key string, page int, count int, ignoreParts bool
 		if len(strArr) > 1 {
 			cType = strArr[1]
 		}
-		c.Content = append(c.Content, Content{
-			Key:   cType,
-			Value: con.Text,
-		})
+		var co Content
+		co.ContentType.Type = cType
+		co.Text = con.Text
+		c.Content = append(c.Content, co)
 	}
 
 	prods := <-partChan
@@ -562,7 +562,7 @@ func (c *Category) GetContent() (content []Content, err error) {
 
 	for conRows.Next() {
 		var con Content
-		if err := conRows.Scan(&con.Key, &con.Value); err == nil {
+		if err := conRows.Scan(&con.ContentType.Type, &con.Text); err == nil {
 			content = append(content, con)
 		}
 	}

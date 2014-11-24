@@ -27,7 +27,7 @@ func (b *Runner) Run() {
 		b.bar.Finish()
 	}
 
-	printReport(b.N, b.results, b.Output, time.Now().Sub(start))
+	printReport(b.N, b.results, b.Output, time.Now().Sub(start), b.Req.URL)
 	close(b.results)
 }
 

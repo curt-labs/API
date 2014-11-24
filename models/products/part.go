@@ -121,12 +121,6 @@ type CustomerPart struct {
 	CartReference int     `json:"cart_reference" xml:"cart_reference,attr"`
 }
 
-type Content struct {
-	ID    int    `json:"id,omitempty" xml:"id,omitempty"`
-	Key   string `json:"key" xml:"key,attr"`
-	Value string `json:"value" xml:",chardata"`
-}
-
 type PaginatedProductListing struct {
 	Parts         []Part `json:"parts" xml:"parts"`
 	TotalItems    int    `json:"total_items" xml:"total_items,attr"`
@@ -598,14 +592,14 @@ func (p *Part) GetContent() error {
 	for rows.Next() {
 		var con Content
 		err = rows.Scan(
-			&con.Key,
-			&con.Value,
+			&con.ContentType.Type,
+			&con.Text,
 		)
 		if err != nil {
 			return err
 		}
 
-		if strings.Contains(strings.ToLower(con.Key), "install") {
+		if strings.Contains(strings.ToLower(con.ContentType.Type), "install") {
 			//sheetUrl, _ := url.Parse(con.Value)
 			p.InstallSheet, _ = url.Parse(api_helpers.API_DOMAIN + "/part/" + strconv.Itoa(p.ID) + ".pdf")
 		} else {
@@ -648,10 +642,10 @@ func (p *Part) BindCustomer(key string) error {
 			if len(strArr) > 1 {
 				cType = strArr[1]
 			}
-			p.Content = append(p.Content, Content{
-				Key:   cType,
-				Value: con.Text,
-			})
+			var c Content
+			c.ContentType.Type = cType
+			c.Text = con.Text
+			p.Content = append(p.Content, c)
 		}
 		contentChan <- 1
 	}()
@@ -865,10 +859,10 @@ func (p *Part) GetPartCategories(key string) (cats []Category, err error) {
 				if len(strArr) > 1 {
 					cType = strArr[1]
 				}
-				cat.Content = append(cat.Content, Content{
-					Key:   cType,
-					Value: con.Text,
-				})
+				var catCon Content
+				catCon.ContentType.Type = cType
+				catCon.Text = con.Text
+				cat.Content = append(cat.Content, catCon)
 			}
 			customerChan <- 1
 		}()

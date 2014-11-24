@@ -18,7 +18,7 @@ import (
 	"testing"
 )
 
-func TestNews(t *testing.T) {
+func TestFaqs(t *testing.T) {
 	var f faq_model.Faq
 	var err error
 	Convey("Test Faqs", t, func() {
@@ -60,7 +60,6 @@ func TestNews(t *testing.T) {
 		var l pagination.Objects
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &l)
 		So(len(l.Objects), ShouldBeGreaterThan, 0)
-		t.Log(l.Objects)
 
 		//test delete
 		testThatHttp.Request("delete", "/faqs/", ":id", strconv.Itoa(f.ID), Delete, nil, "application/x-www-form-urlencoded")
@@ -68,4 +67,10 @@ func TestNews(t *testing.T) {
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &f)
 		So(f, ShouldHaveSameTypeAs, faq_model.Faq{})
 	})
+}
+
+func BenchmarkGetFaqs(b *testing.B) {
+
+	testThatHttp.RequestBenchmark(b.N, "GET", "/faqs/1", nil, Get)
+	testThatHttp.RequestBenchmark(b.N, "GET", "/faqs", nil, GetAll)
 }

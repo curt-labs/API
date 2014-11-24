@@ -11,9 +11,9 @@ import (
 )
 
 var (
-	getAllForumTopics   = `select * from ForumTopic`
-	getForumTopic       = `select * from ForumTopic where topicID = ?`
-	getForumGroupTopics = `select ft.* from ForumTopic ft
+	getAllForumTopics   = `select topicID, TopicGroupID, name, description, image, createdDate, active, closed from ForumTopic`
+	getForumTopic       = `select topicID, TopicGroupID, name, description, image, createdDate, active, closed from ForumTopic where topicID = ?`
+	getForumGroupTopics = `select ft.topicID, ft.TopicGroupID, ft.name, ft.description, ft.image, ft.createdDate, ft.active, ft.closed from ForumTopic ft
                               inner join ForumGroup fg on ft.TopicGroupID = fg.forumGroupID
                               where ft.TopicGroupID = ?`
 	addForumTopic    = `insert into ForumTopic(TopicGroupID, name, description, image, createdDate, active, closed) values (?,?,?,?,UTC_TIMESTAMP(),?,?)`
