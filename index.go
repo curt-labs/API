@@ -4,6 +4,7 @@ import (
 	"flag"
 	"github.com/curt-labs/GoAPI/controllers/applicationGuide"
 	"github.com/curt-labs/GoAPI/controllers/blog"
+	"github.com/curt-labs/GoAPI/controllers/brand"
 	"github.com/curt-labs/GoAPI/controllers/cart"
 	"github.com/curt-labs/GoAPI/controllers/cartIntegration"
 	"github.com/curt-labs/GoAPI/controllers/category"
@@ -77,6 +78,14 @@ func main() {
 	})
 
 	m.Post("/vehicle", vehicle.Query)
+
+	m.Group("/brands", func(r martini.Router) {
+		r.Get("", brand_ctlr.GetAllBrands)
+		r.Post("", brand_ctlr.CreateBrand)
+		r.Get("/:id", brand_ctlr.GetBrand)
+		r.Put("/:id", brand_ctlr.UpdateBrand)
+		r.Delete("/:id", brand_ctlr.DeleteBrand)
+	})
 
 	m.Group("/category", func(r martini.Router) {
 		r.Get("", category_ctlr.Parents)
