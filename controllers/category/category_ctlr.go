@@ -68,15 +68,17 @@ func GetCategory(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 			}
 		}
 	}
-
+	log.Print(page, count, id, l.Vehicle, specs)
 	// Get Category
 	if err != nil { // get by title
+
 		cat, err = products.GetCategoryByTitle(params["id"])
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return ""
 		}
 	} else { // get by id
+
 		cat.ID = id
 		if err = cat.GetCategory(key, page, count, false, &l.Vehicle, &specs); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

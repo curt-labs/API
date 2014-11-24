@@ -2,10 +2,13 @@ package contact
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"flag"
+	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
 	"github.com/curt-labs/GoAPI/models/contact"
+	_ "github.com/go-sql-driver/mysql"
 	. "github.com/smartystreets/goconvey/convey"
 	"net/url"
 	"strconv"
@@ -172,4 +175,65 @@ func TestContact(t *testing.T) {
 		So(err, ShouldBeNil)
 
 	})
+}
+
+func BenchmarkBrands(b *testing.B) {
+	testThatHttp.RequestBenchmark(b.N, "GET", "/contact/"+randContact(), nil, GetContact)
+	testThatHttp.RequestBenchmark(b.N, "GET", "/contact", nil, GetAllContacts)
+	testThatHttp.RequestBenchmark(b.N, "GET", "/contact/types/"+randType(), nil, GetContactType)
+	testThatHttp.RequestBenchmark(b.N, "GET", "/contact/types", nil, GetAllContactTypes)
+	testThatHttp.RequestBenchmark(b.N, "GET", "/contact/types/receivers/"+randType(), nil, GetReceiversByContactType)
+	testThatHttp.RequestBenchmark(b.N, "GET", "/contact/reciever/"+randReceiver(), nil, GetContactReceiver)
+	testThatHttp.RequestBenchmark(b.N, "GET", "/contact/reciever", nil, GetAllContactReceivers)
+}
+
+func randType() (str string) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return ""
+	}
+	defer db.Close()
+	stmt, err := db.Prepare("select contactTypeID from ContactType order by RAND() limit 1")
+	if err != nil {
+		return ""
+	}
+	defer stmt.Close()
+	var i int
+	err = stmt.QueryRow().Scan(&i)
+	str = strconv.Itoa(i)
+	return str
+}
+
+func randContact() (str string) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return ""
+	}
+	defer db.Close()
+	stmt, err := db.Prepare("select contactID from Contact order by RAND() limit 1")
+	if err != nil {
+		return ""
+	}
+	defer stmt.Close()
+	var i int
+	err = stmt.QueryRow().Scan(&i)
+	str = strconv.Itoa(i)
+	return str
+}
+
+func randReceiver() (str string) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return ""
+	}
+	defer db.Close()
+	stmt, err := db.Prepare("select contactRecieverID from ContactReceiver order by RAND() limit 1")
+	if err != nil {
+		return ""
+	}
+	defer stmt.Close()
+	var i int
+	err = stmt.QueryRow().Scan(&i)
+	str = strconv.Itoa(i)
+	return str
 }

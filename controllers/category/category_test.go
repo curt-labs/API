@@ -8,8 +8,8 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 	// "net/url"
 	"strconv"
-	// "strings"
 	"testing"
+	"time"
 )
 
 func TestCategory(t *testing.T) {
@@ -33,35 +33,44 @@ func TestCategory(t *testing.T) {
 	p.Create()
 
 	Convey("Testing Category", t, func() {
-		//test create
+		//test get parents
+		thyme := time.Now()
 		testThatHttp.Request("get", "/category", "", "", Parents, nil, "")
-		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &cs)
+
+		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
+		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		So(err, ShouldBeNil)
 		So(cs, ShouldHaveSameTypeAs, []products.Category{})
 		So(len(cs), ShouldBeGreaterThan, 0)
 
+		//test get category
 		var filterSpecs FilterSpecifications
 		filterSpecs.Key = "foo"
 		filterSpecs.Values = []string{"bar"}
 		bodyBytes, _ := json.Marshal(filterSpecs)
 		bodyJson := bytes.NewReader(bodyBytes)
+		thyme = time.Now()
 		testThatHttp.Request("post", "/category/", ":id", strconv.Itoa(cat.ID), GetCategory, bodyJson, "application/json")
-		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &c)
+
+		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()*8)
 		So(err, ShouldBeNil)
+		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		So(c, ShouldHaveSameTypeAs, products.Category{})
 
+		//test get subcategories
+		thyme = time.Now()
 		testThatHttp.Request("get", "/category/", ":id/subs", strconv.Itoa(cat.ID)+"/subs", SubCategories, nil, "application/json")
-		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &cs)
+
+		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(err, ShouldBeNil)
+		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		So(cs, ShouldHaveSameTypeAs, []products.Category{})
 		So(len(cs), ShouldBeGreaterThan, 0)
 
 		// //TODO - test hangs at line 670 in parts/category model; same with curl request - needs rewrite
-		// filterSpecs.Key = "foo"
-		// filterSpecs.Values = []string{"bar"}
 		// filterArray := make([]FilterSpecifications, 0)
 		// filterArray = append(filterArray, filterSpecs)
 		// bodyBytes, _ = json.Marshal(filterArray)
@@ -78,4 +87,11 @@ func TestCategory(t *testing.T) {
 	cat.Delete()
 	sub.Delete()
 	p.Delete()
+}
+
+func BenchmarkBrands(b *testing.B) {
+	testThatHttp.RequestBenchmark(b.N, "GET", "/category", nil, Parents)
+	testThatHttp.RequestBenchmark(b.N, "GET", "/category/1", nil, GetCategory)
+	testThatHttp.RequestBenchmark(b.N, "GET", "/category/1/subs", nil, SubCategories)
+
 }
