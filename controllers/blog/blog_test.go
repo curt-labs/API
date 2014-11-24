@@ -101,3 +101,10 @@ func TestBlog(t *testing.T) {
 
 	})
 }
+
+func BenchmarkBlog(b *testing.B) {
+	testThatHttp.RequestBenchmark(b.N, "GET", "/blog/1", nil, GetBlog)
+	testThatHttp.RequestBenchmark(b.N, "GET", "/blog", nil, GetAll)
+	testThatHttp.RequestBenchmark(b.N, "GET", "/blog/categories", nil, GetAllCategories)
+	testThatHttp.RequestBenchmark(b.N, "GET", "/blog/category/1", nil, GetBlogCategory)
+}

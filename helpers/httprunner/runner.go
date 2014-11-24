@@ -3,12 +3,11 @@ package httprunner
 import (
 	"bytes"
 	"github.com/go-martini/martini"
+	"github.com/rakyll/pb"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
-
-	"github.com/rakyll/pb"
 )
 
 type result struct {
