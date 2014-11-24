@@ -69,6 +69,7 @@ func (_ TextEncoder) Encode(v ...interface{}) (string, error) {
 }
 
 //
+
 var rxAccept = regexp.MustCompile(`(?:xml|html|plain|json)\/?$`)
 
 func MapEncoder(c martini.Context, w http.ResponseWriter, r *http.Request) {

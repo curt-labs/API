@@ -9,32 +9,32 @@ import (
 )
 
 func TestSinceId(t *testing.T) {
-	Convey("Testing Customer Gets with no shop", t, func() {
-		Convey("Testing SinceId with bad connection", func() {
+	Convey("Testing CustomerSinceId with no shop", t, func() {
+		Convey("with bad connection", func() {
 			os.Setenv("MONGO_URL", "0.0.0.1")
-			custs, err := CustomersSinceId(bson.NewObjectId(), 0, 0, nil, nil, nil, nil)
+			custs, err := CustomersSinceId(bson.NewObjectId(), bson.NewObjectId(), 0, 0, nil, nil, nil, nil)
 			So(err, ShouldNotBeNil)
 			So(custs, ShouldHaveSameTypeAs, []Customer{})
 			os.Setenv("MONGO_URL", "")
 		})
-		Convey("Testing SinceId with no Id", func() {
-			custs, err := CustomersSinceId(bson.NewObjectId(), 0, 0, nil, nil, nil, nil)
+		Convey("with no Id", func() {
+			custs, err := CustomersSinceId(bson.NewObjectId(), bson.NewObjectId(), 0, 0, nil, nil, nil, nil)
 			So(err, ShouldBeNil)
 			So(custs, ShouldHaveSameTypeAs, []Customer{})
 		})
-		Convey("Testing SinceId with no Id and created dates", func() {
+		Convey("with no Id and created dates", func() {
 			created_min, _ := time.Parse(time.RFC3339Nano, time.Now().AddDate(-1, 0, 0).Format(time.RFC3339Nano))
 			created_max, _ := time.Parse(time.RFC3339Nano, time.Now().Format(time.RFC3339Nano))
 
-			custs, err := CustomersSinceId(bson.NewObjectId(), 0, 0, &created_min, &created_max, nil, nil)
+			custs, err := CustomersSinceId(bson.NewObjectId(), bson.NewObjectId(), 0, 0, &created_min, &created_max, nil, nil)
 			So(err, ShouldBeNil)
 			So(custs, ShouldHaveSameTypeAs, []Customer{})
 		})
-		Convey("Testing SinceId with no Id and created, updated dates", func() {
+		Convey("with no Id and created, updated dates", func() {
 			created_min, _ := time.Parse(time.RFC3339Nano, time.Now().AddDate(-1, 0, 0).Format(time.RFC3339Nano))
 			created_max, _ := time.Parse(time.RFC3339Nano, time.Now().Format(time.RFC3339Nano))
 
-			custs, err := CustomersSinceId(bson.NewObjectId(), 1, 0, &created_min, &created_max, &created_min, &created_max)
+			custs, err := CustomersSinceId(bson.NewObjectId(), bson.NewObjectId(), 1, 0, &created_min, &created_max, &created_min, &created_max)
 			So(err, ShouldBeNil)
 			So(custs, ShouldHaveSameTypeAs, []Customer{})
 		})
@@ -82,7 +82,7 @@ func TestCustomer(t *testing.T) {
 	})
 
 	Convey("Generating a Test Shop and testing Customer functions", t, func() {
-		if id := insertTestData(); id != nil {
+		if id := InsertTestData(); id != nil {
 			shop := Shop{
 				Id: *id,
 			}

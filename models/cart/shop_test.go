@@ -23,7 +23,7 @@ func TestGet(t *testing.T) {
 			So(err, ShouldNotBeNil)
 		})
 		Convey("create a test shop", func() {
-			if id := insertTestData(); id != nil {
+			if id := InsertTestData(); id != nil {
 				Convey("with Id", func() {
 					shop := Shop{
 						Id: *id,

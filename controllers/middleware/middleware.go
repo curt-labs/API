@@ -40,7 +40,6 @@ func Meddler() martini.Handler {
 		if strings.Contains(strings.ToLower(r.URL.String()), "/shopify") {
 			if err := mapCart(c, res, r); err != nil {
 				generateError("", err, res, r)
-				// http.Error(res, err.Error(), http.StatusInternalServerError)
 				return
 			}
 			excused = true
