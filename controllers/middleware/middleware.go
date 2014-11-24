@@ -46,11 +46,12 @@ func Meddler() martini.Handler {
 		}
 
 		if !excused {
-			authed := checkAuth(r)
-			if !authed {
+			user := checkAuth(r)
+			if user == nil {
 				http.Error(res, "Unauthorized", http.StatusUnauthorized)
 				return
 			}
+			c.Map(user)
 		}
 
 		c.Next()
@@ -94,7 +95,7 @@ func mapCart(c martini.Context, res http.ResponseWriter, r *http.Request) error 
 	return nil
 }
 
-func checkAuth(r *http.Request) bool {
+func checkAuth(r *http.Request) *customer_new.CustomerUser {
 	qs := r.URL.Query()
 	key := qs.Get("key")
 	if key == "" {
@@ -104,17 +105,17 @@ func checkAuth(r *http.Request) bool {
 		key = r.Header.Get("key")
 	}
 	if key == "" {
-		return false
+		return nil
 	}
 
 	user, err := customer_new.GetCustomerUserFromKey(key)
 	if err != nil || user.Id == "" {
-		return false
+		return nil
 	}
 
 	go user.LogApiRequest(r)
 
-	return true
+	return &user
 }
 
 func logRequest(r *http.Request, reqTime time.Duration) {
