@@ -11,9 +11,9 @@ import (
 )
 
 var (
-	getAllForumPosts       = `select * from ForumPost`
-	getForumPost           = `select * from ForumPost where postID = ?`
-	getForumThreadPosts    = `select * from ForumPost where threadID = ?`
+	getAllForumPosts       = `select postID, parentID, threadID, createdDate, title, post, name, email, company, notify, approved, active, IPAddress, flag, sticky from ForumPost`
+	getForumPost           = `select postID, parentID, threadID, createdDate, title, post, name, email, company, notify, approved, active, IPAddress, flag, sticky from ForumPost where postID = ?`
+	getForumThreadPosts    = `select postID, parentID, threadID, createdDate, title, post, name, email, company, notify, approved, active, IPAddress, flag, sticky from ForumPost where threadID = ?`
 	addForumPost           = `insert into ForumPost(parentID,threadID,createdDate,title,post,name,email,company,notify,approved,active,IPAddress,flag,sticky) values(?,?,UTC_TIMESTAMP(),?,?,?,?,?,?,?,1,?,?,?)`
 	updateForumPost        = `update ForumPost set parentID = ?, threadID = ?, title = ?, post = ?, name = ?, email = ?, company = ?, notify = ?, approved = ?, IPAddress = ?, flag = ?, sticky = ? where postID = ?`
 	deleteForumPost        = `delete from ForumPost where postID = ?`
