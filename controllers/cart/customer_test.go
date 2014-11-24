@@ -1,83 +1,133 @@
 package cart_ctlr
 
 import (
+	"bytes"
+	"encoding/json"
 	"github.com/curt-labs/GoAPI/controllers/middleware"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
+	"github.com/curt-labs/GoAPI/helpers/httprunner"
 	"github.com/curt-labs/GoAPI/models/cart"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/render"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	"log"
+	. "github.com/smartystreets/goconvey/convey"
 	"net/http"
 	"net/http/httptest"
-	"regexp"
+	"net/url"
+	"strings"
 	"testing"
 )
-
-var _ = Describe("Customer", func() {
-	// var (
-	// 	body []byte
-	// 	err  error
-	// )
-
-	Context("List All Customers", func() {
-		It("returns a 500 status code", func() {
-			Request("GET", "/shopify/customers", GetCustomers)
-			log.Println(response.Body.String())
-			Expect(response.Code).To(Equal(500))
-		})
-	})
-})
 
 var (
 	response *httptest.ResponseRecorder
 )
 
-func TestMain(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Customer Suite")
+func TestGetCustomers(t *testing.T) {
+	Convey("Testing GetCustomers", t, func() {
+		Convey("no shop identifier", func() {
+			Request("GET", "/shopify/customers", nil, GetCustomers)
+			So(response.Code, ShouldEqual, 500)
+			So(response.Body.String(), ShouldNotEqual, "[]")
+
+			vals := make(url.Values, 0)
+			vals.Add("shop", "testing")
+			Request("GET", "/shopify/customers", &vals, GetCustomers)
+			So(response.Code, ShouldEqual, 500)
+			So(response.Body.String(), ShouldNotEqual, "[]")
+
+			vals.Add("since_id", "something")
+			Request("GET", "/shopify/customers", &vals, GetCustomers)
+			So(response.Code, ShouldEqual, 500)
+			So(response.Body.String(), ShouldNotEqual, "[]")
+		})
+		Convey("with shop identifier", func() {
+			shopID := cart.InsertTestData()
+			So(shopID, ShouldNotBeNil)
+
+			val := shopID.Hex()
+			qs := make(url.Values, 0)
+			qs.Add("shop", val)
+
+			Request("GET", "/shopify/customers", &qs, GetCustomers)
+			So(response.Code, ShouldEqual, 200)
+			So(json.Unmarshal(response.Body.Bytes(), &[]cart.Customer{}), ShouldBeNil)
+
+			qs.Add("since_id", "something")
+			Request("GET", "/shopify/customers", &qs, GetCustomers)
+			So(response.Code, ShouldEqual, 200)
+			So(json.Unmarshal(response.Body.Bytes(), &[]cart.Customer{}), ShouldBeNil)
+
+			qs.Add("since_id", val)
+			Request("GET", "/shopify/customers", &qs, GetCustomers)
+			So(response.Code, ShouldEqual, 200)
+			var custs []cart.Customer
+			So(json.Unmarshal(response.Body.Bytes(), &custs), ShouldBeNil)
+			So(len(custs), ShouldEqual, 0)
+		})
+	})
 }
 
-func Request(method, route string, handler martini.Handler) {
-	m := martini.Classic()
-	m.Get(route, handler)
-	m.Use(render.Renderer())
-	m.Use(MapEncoder)
-	m.Use(middleware.Meddler())
-	m.Map(&cart.Shop{})
+func BenchmarkGetCustomers(b *testing.B) {
+	shopID := cart.InsertTestData()
+	if shopID == nil {
+		panic("shopID cannot be nil")
+	}
 
-	request, _ := http.NewRequest(method, route, nil)
+	val := shopID.Hex()
+	qs := make(url.Values, 0)
+	qs.Add("shop", val)
+	qs.Add("since_id", val)
+	RequestBenchmark(b.N, "GET", "/shopify/customers", &qs, GetCustomers)
+}
+
+func Request(method, route string, body *url.Values, handler martini.Handler) {
+	m := martini.Classic()
+	switch strings.ToUpper(method) {
+	case "GET":
+		m.Get(route, handler)
+	case "POST":
+		m.Post(route, handler)
+	case "PUT":
+		m.Put(route, handler)
+	case "PATCH":
+		m.Patch(route, handler)
+	case "DELETE":
+		m.Delete(route, handler)
+	case "HEAD":
+		m.Head(route, handler)
+	default:
+		m.Any(route, handler)
+	}
+
+	m.Use(render.Renderer())
+	m.Use(encoding.MapEncoder)
+	m.Use(middleware.Meddler())
+
+	var request *http.Request
+	if body != nil && strings.ToUpper(method) != "GET" {
+		request, _ = http.NewRequest(method, route, bytes.NewBufferString(body.Encode()))
+	} else if body != nil {
+		request, _ = http.NewRequest(method, route+"?"+body.Encode(), nil)
+	} else {
+		request, _ = http.NewRequest(method, route, nil)
+	}
+
 	response = httptest.NewRecorder()
 	m.ServeHTTP(response, request)
 }
 
-var rxAccept = regexp.MustCompile(`(?:xml|html|plain|json)\/?$`)
+func RequestBenchmark(runs int, method, route string, body *url.Values, handler martini.Handler) {
 
-func MapEncoder(c martini.Context, w http.ResponseWriter, r *http.Request) {
-	accept := r.Header.Get("Accept")
-	if accept == "*/*" {
-		accept = r.Header.Get("Content-Type")
+	opts := httprunner.ReqOpts{
+		Body:    body,
+		Handler: handler,
+		URL:     route,
+		Method:  method,
 	}
-	matches := rxAccept.FindStringSubmatch(accept)
 
-	dt := "json"
-	if len(matches) == 1 {
-		dt = matches[0]
-	}
-	switch dt {
-	case "xml":
+	(&httprunner.Runner{
+		Req: &opts,
+		N:   runs,
+		C:   1,
+	}).Run()
 
-		c.MapTo(encoding.XmlEncoder{}, (*encoding.Encoder)(nil))
-		w.Header().Set("Content-Type", "application/xml")
-	case "plain":
-		c.MapTo(encoding.TextEncoder{}, (*encoding.Encoder)(nil))
-		w.Header().Set("Content-Type", "text/plain")
-	case "html":
-		c.MapTo(encoding.TextEncoder{}, (*encoding.Encoder)(nil))
-		w.Header().Set("Content-Type", "text/html")
-	default:
-		c.MapTo(encoding.JsonEncoder{}, (*encoding.Encoder)(nil))
-		w.Header().Set("Content-Type", "application/json")
-	}
 }

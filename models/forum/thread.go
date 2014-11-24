@@ -10,9 +10,9 @@ import (
 )
 
 var (
-	getAllForumThreads   = `select * from ForumThread`
-	getForumThread       = `select * from ForumThread where threadID = ?`
-	getForumTopicthreads = `select * from ForumThread where topicID = ?`
+	getAllForumThreads   = `select threadID, topicID, createdDate, active, closed from ForumThread`
+	getForumThread       = `select threadID, topicID, createdDate, active, closed from ForumThread where threadID = ?`
+	getForumTopicthreads = `select threadID, topicID, createdDate, active, closed from ForumThread where topicID = ?`
 	addForumThread       = `insert into ForumThread(topicID,createdDate,active,closed) values(?,UTC_TIMESTAMP(), ?, ?)`
 	updateForumThread    = `update ForumThread set topicID = ?, active = ?, closed = ? where threadID = ?`
 	deleteForumThread    = `delete from ForumThread where threadID = ?`

@@ -60,7 +60,7 @@ func (sh *Shop) Get() error {
 
 // This method is used explicitly for generating test data
 // DO NOT EXPOSE
-func insertTestData() *bson.ObjectId {
+func InsertTestData() *bson.ObjectId {
 	sess, err := mgo.DialWithInfo(database.MongoConnectionString())
 	if err != nil {
 		return nil

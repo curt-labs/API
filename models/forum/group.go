@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	getAllForumGroups = `select * from ForumGroup`
-	getForumGroup     = `select * from ForumGroup where forumGroupID = ?`
+	getAllForumGroups = `select forumGroupID, name, description, createdDate from ForumGroup`
+	getForumGroup     = `select forumGroupID, name, description, createdDate from ForumGroup where forumGroupID = ?`
 	addForumGroup     = `insert ForumGroup(name,description,createdDate) values(?,?,UTC_TIMESTAMP())`
 	updateForumGroup  = `update ForumGroup set name = ?, description = ? where forumGroupID = ?`
 	deleteForumGroup  = `delete from ForumGroup where forumGroupID = ?`

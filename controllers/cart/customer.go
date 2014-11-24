@@ -62,7 +62,7 @@ func GetCustomers(w http.ResponseWriter, req *http.Request, params martini.Param
 	var custs []cart.Customer
 	var err error
 	if since_id.Hex() != "" {
-		custs, err = cart.CustomersSinceId(since_id, page, limit, created_at_min, created_at_max, updated_at_min, updated_at_max)
+		custs, err = cart.CustomersSinceId(shop.Id, since_id, page, limit, created_at_min, created_at_max, updated_at_min, updated_at_max)
 	} else {
 		custs, err = cart.GetCustomers(shop.Id, page, limit, created_at_min, created_at_max, updated_at_min, updated_at_max)
 	}

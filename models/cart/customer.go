@@ -39,7 +39,7 @@ type MetaField struct {
 }
 
 // Get all customers since a defined Id.
-func CustomersSinceId(id bson.ObjectId, page, limit int, created_at_min, created_at_max, updated_at_min, updated_at_max *time.Time) ([]Customer, error) {
+func CustomersSinceId(shopId bson.ObjectId, since_id bson.ObjectId, page, limit int, created_at_min, created_at_max, updated_at_min, updated_at_max *time.Time) ([]Customer, error) {
 	custs := []Customer{}
 	sess, err := mgo.DialWithInfo(database.MongoConnectionString())
 	if err != nil {
@@ -49,8 +49,9 @@ func CustomersSinceId(id bson.ObjectId, page, limit int, created_at_min, created
 
 	c := sess.DB("CurtCart").C("customer")
 	qs := bson.M{
+		"shop_id": shopId.String(),
 		"_id": bson.M{
-			"$gt": id.String(),
+			"$gt": since_id.String(),
 		},
 	}
 	if created_at_min != nil || created_at_max != nil {
