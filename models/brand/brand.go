@@ -70,12 +70,22 @@ func (b *Brand) Get() error {
 
 		err = stmt.QueryRow(b.ID).Scan(&b.ID, &b.Name, &b.Code)
 
+		if err == sql.ErrNoRows {
+			return errors.New("Invalid Brand ID")
+		}
+
 		return err
 	}
 	return errors.New("Invalid Brand ID")
 }
 
 func (b *Brand) Create() error {
+	if b.Name == "" {
+		return errors.New("Brand must have a name.")
+	}
+	if b.Code == "" {
+		return errors.New("Brand must have a code.")
+	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -99,6 +109,12 @@ func (b *Brand) Create() error {
 }
 
 func (b *Brand) Update() error {
+	if b.Name == "" {
+		return errors.New("Brand must have a name.")
+	}
+	if b.Code == "" {
+		return errors.New("Brand must have a code.")
+	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
