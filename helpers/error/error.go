@@ -1,4 +1,4 @@
-package cart_ctlr
+package apierror
 
 import (
 	"encoding/json"
@@ -7,28 +7,31 @@ import (
 	"net/url"
 )
 
-type CartErr struct {
+type ApiErr struct {
 	Message     string     `json:"message" xml:"message"`
-	Error       error      `json:"error" xml:"error"`
 	RequestBody string     `json:"request_body" xml:"request_body"`
 	QueryString url.Values `json:"query_string" xml:"query_string"`
 }
 
-func generateError(msg string, err error, res http.ResponseWriter, r *http.Request) {
-	var e CartErr
+func GenerateError(msg string, err error, res http.ResponseWriter, r *http.Request) {
+	e := ApiErr{
+		Message: "",
+	}
 	if msg != "" {
 		e.Message = msg
 	} else if err != nil {
 		e.Message = err.Error()
 	}
-	defer r.Body.Close()
 
-	e.Error = err
-	data, readErr := ioutil.ReadAll(r.Body)
-	if readErr == nil {
-		e.RequestBody = string(data)
+	if r != nil && r.Body != nil {
+		defer r.Body.Close()
+
+		data, readErr := ioutil.ReadAll(r.Body)
+		if readErr == nil {
+			e.RequestBody = string(data)
+		}
+		e.QueryString = r.URL.Query()
 	}
-	e.QueryString = r.URL.Query()
 
 	js, jsErr := json.Marshal(e)
 	if jsErr != nil {
@@ -36,7 +39,7 @@ func generateError(msg string, err error, res http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	res.WriteHeader(http.StatusInternalServerError)
 	res.Write(js)
-	res.Header().Set("StatusCode", "500")
 	return
 }

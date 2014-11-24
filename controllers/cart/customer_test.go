@@ -1,20 +1,15 @@
 package cart_ctlr
 
 import (
-	"bytes"
 	"encoding/json"
-	"github.com/curt-labs/GoAPI/controllers/middleware"
-	"github.com/curt-labs/GoAPI/helpers/encoding"
+	"github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/helpers/httprunner"
 	"github.com/curt-labs/GoAPI/models/cart"
-	"github.com/go-martini/martini"
-	"github.com/martini-contrib/render"
 	. "github.com/smartystreets/goconvey/convey"
-	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"strings"
 	"testing"
+	"time"
 )
 
 var (
@@ -24,18 +19,18 @@ var (
 func TestGetCustomers(t *testing.T) {
 	Convey("Testing GetCustomers", t, func() {
 		Convey("no shop identifier", func() {
-			Request("GET", "/shopify/customers", nil, GetCustomers)
+			response = httprunner.Request("GET", "/shopify/customers", nil, GetCustomers)
 			So(response.Code, ShouldEqual, 500)
 			So(response.Body.String(), ShouldNotEqual, "[]")
 
 			vals := make(url.Values, 0)
 			vals.Add("shop", "testing")
-			Request("GET", "/shopify/customers", &vals, GetCustomers)
+			response = httprunner.Request("GET", "/shopify/customers", &vals, GetCustomers)
 			So(response.Code, ShouldEqual, 500)
 			So(response.Body.String(), ShouldNotEqual, "[]")
 
 			vals.Add("since_id", "something")
-			Request("GET", "/shopify/customers", &vals, GetCustomers)
+			response = httprunner.Request("GET", "/shopify/customers", &vals, GetCustomers)
 			So(response.Code, ShouldEqual, 500)
 			So(response.Body.String(), ShouldNotEqual, "[]")
 		})
@@ -47,19 +42,51 @@ func TestGetCustomers(t *testing.T) {
 			qs := make(url.Values, 0)
 			qs.Add("shop", val)
 
-			Request("GET", "/shopify/customers", &qs, GetCustomers)
+			response = httprunner.Request("GET", "/shopify/customers", &qs, GetCustomers)
 			So(response.Code, ShouldEqual, 200)
 			So(json.Unmarshal(response.Body.Bytes(), &[]cart.Customer{}), ShouldBeNil)
 
 			qs.Add("since_id", "something")
-			Request("GET", "/shopify/customers", &qs, GetCustomers)
+			response = httprunner.Request("GET", "/shopify/customers", &qs, GetCustomers)
 			So(response.Code, ShouldEqual, 200)
 			So(json.Unmarshal(response.Body.Bytes(), &[]cart.Customer{}), ShouldBeNil)
 
-			qs.Add("since_id", val)
-			Request("GET", "/shopify/customers", &qs, GetCustomers)
+			qs.Set("since_id", val)
+			response = httprunner.Request("GET", "/shopify/customers", &qs, GetCustomers)
 			So(response.Code, ShouldEqual, 200)
 			var custs []cart.Customer
+			So(json.Unmarshal(response.Body.Bytes(), &custs), ShouldBeNil)
+			So(len(custs), ShouldEqual, 0)
+
+			created_min := time.Now().AddDate(-1, 0, 0).Format(TimeLayout)
+			created_max := time.Now().Format(TimeLayout)
+			qs.Add("created_at_min", created_min)
+			qs.Add("created_at_max", created_max)
+			response = httprunner.Request("GET", "/shopify/customers", &qs, GetCustomers)
+			So(response.Code, ShouldEqual, 200)
+			So(json.Unmarshal(response.Body.Bytes(), &custs), ShouldBeNil)
+			So(len(custs), ShouldEqual, 0)
+
+			update_min := time.Now().AddDate(-1, 0, 0).Format(TimeLayout)
+			update_max := time.Now().Format(TimeLayout)
+			qs.Add("updated_at_min", update_min)
+			qs.Add("updated_at_max", update_max)
+			response = httprunner.Request("GET", "/shopify/customers", &qs, GetCustomers)
+			So(response.Code, ShouldEqual, 200)
+			So(json.Unmarshal(response.Body.Bytes(), &custs), ShouldBeNil)
+			So(len(custs), ShouldEqual, 0)
+
+			qs.Add("page", "bad")
+			qs.Add("limit", "test")
+			response = httprunner.Request("GET", "/shopify/customers", &qs, GetCustomers)
+			So(response.Code, ShouldEqual, 200)
+			So(json.Unmarshal(response.Body.Bytes(), &custs), ShouldBeNil)
+			So(len(custs), ShouldEqual, 0)
+
+			qs.Set("page", "1")
+			qs.Set("limit", "1")
+			response = httprunner.Request("GET", "/shopify/customers", &qs, GetCustomers)
+			So(response.Code, ShouldEqual, 200)
 			So(json.Unmarshal(response.Body.Bytes(), &custs), ShouldBeNil)
 			So(len(custs), ShouldEqual, 0)
 		})
@@ -76,58 +103,86 @@ func BenchmarkGetCustomers(b *testing.B) {
 	qs := make(url.Values, 0)
 	qs.Add("shop", val)
 	qs.Add("since_id", val)
-	RequestBenchmark(b.N, "GET", "/shopify/customers", &qs, GetCustomers)
+	httprunner.RequestBenchmark(b.N, "GET", "/shopify/customers", &qs, GetCustomers)
 }
 
-func Request(method, route string, body *url.Values, handler martini.Handler) {
-	m := martini.Classic()
-	switch strings.ToUpper(method) {
-	case "GET":
-		m.Get(route, handler)
-	case "POST":
-		m.Post(route, handler)
-	case "PUT":
-		m.Put(route, handler)
-	case "PATCH":
-		m.Patch(route, handler)
-	case "DELETE":
-		m.Delete(route, handler)
-	case "HEAD":
-		m.Head(route, handler)
-	default:
-		m.Any(route, handler)
-	}
+func TestAddCustomer(t *testing.T) {
+	Convey("with no shop identifier", t, func() {
+		qs := make(url.Values, 0)
 
-	m.Use(render.Renderer())
-	m.Use(encoding.MapEncoder)
-	m.Use(middleware.Meddler())
+		resp := httprunner.JsonRequest("POST", "/shopify/customers", &qs, cart.Shop{}, AddCustomer)
+		So(resp.Code, ShouldEqual, 500)
+		So(json.Unmarshal(resp.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
+	})
 
-	var request *http.Request
-	if body != nil && strings.ToUpper(method) != "GET" {
-		request, _ = http.NewRequest(method, route, bytes.NewBufferString(body.Encode()))
-	} else if body != nil {
-		request, _ = http.NewRequest(method, route+"?"+body.Encode(), nil)
-	} else {
-		request, _ = http.NewRequest(method, route, nil)
-	}
+	Convey("with shop identifier", t, func() {
+		shopID := cart.InsertTestData()
+		So(shopID, ShouldNotBeNil)
+		val := shopID.Hex()
+		qs := make(url.Values, 0)
+		qs.Add("shop", val)
 
-	response = httptest.NewRecorder()
-	m.ServeHTTP(response, request)
+		response = httprunner.JsonRequest("POST", "/shopify/customers", &qs, cart.Shop{}, AddCustomer)
+		So(response.Code, ShouldEqual, 500)
+		So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
+
+		cust := cart.Customer{
+			ShopId:    *shopID,
+			FirstName: "Alex",
+			LastName:  "Ninneman",
+		}
+
+		response = httprunner.JsonRequest("POST", "/shopify/customers", &qs, cust, AddCustomer)
+		So(response.Code, ShouldEqual, 500)
+		So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
+
+		cust.Email = "ninnemana@gmail.com"
+		response = httprunner.JsonRequest("POST", "/shopify/customers", &qs, cust, AddCustomer)
+		So(response.Code, ShouldEqual, 200)
+		So(json.Unmarshal(response.Body.Bytes(), &cust), ShouldBeNil)
+	})
 }
 
-func RequestBenchmark(runs int, method, route string, body *url.Values, handler martini.Handler) {
+func TestGetCustomer(t *testing.T) {
+	Convey("no shop identifier", t, func() {
+		response = httprunner.Request("GET", "/shopify/customers/1234", nil, GetCustomers)
+		So(response.Code, ShouldEqual, 500)
+		So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
 
-	opts := httprunner.ReqOpts{
-		Body:    body,
-		Handler: handler,
-		URL:     route,
-		Method:  method,
-	}
+		vals := make(url.Values, 0)
+		vals.Add("shop", "testing")
+		response = httprunner.Request("GET", "/shopify/customers/1234", &vals, GetCustomers)
+		So(response.Code, ShouldEqual, 500)
+		So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
+	})
+	Convey("with shop identifier", t, func() {
+		shopID := cart.InsertTestData()
+		So(shopID, ShouldNotBeNil)
 
-	(&httprunner.Runner{
-		Req: &opts,
-		N:   runs,
-		C:   1,
-	}).Run()
+		val := shopID.Hex()
+		qs := make(url.Values, 0)
+		qs.Add("shop", val)
 
+		Convey("with bad customer reference", func() {
+			response = httprunner.ParamterizedRequest("GET", "/shopify/customers/:id", "/shopify/customers/1234", &qs, GetCustomer)
+			So(response.Code, ShouldEqual, 500)
+			So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
+		})
+
+		Convey("with good customer reference", func() {
+			cust := cart.Customer{
+				ShopId:    *shopID,
+				FirstName: "Alex",
+				LastName:  "Ninneman",
+				Email:     "ninnemana@gmail.com",
+			}
+			response = httprunner.JsonRequest("POST", "/shopify/customers", &qs, cust, AddCustomer)
+			So(response.Code, ShouldEqual, 200)
+			So(json.Unmarshal(response.Body.Bytes(), &cust), ShouldBeNil)
+
+			response = httprunner.ParamterizedRequest("GET", "/shopify/customers/:id", "/shopify/customers/"+cust.Id.Hex(), &qs, GetCustomer)
+			So(response.Code, ShouldEqual, 200)
+			So(json.Unmarshal(response.Body.Bytes(), &cust), ShouldBeNil)
+		})
+	})
 }

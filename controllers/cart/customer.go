@@ -3,6 +3,7 @@ package cart_ctlr
 import (
 	"encoding/json"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
+	"github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/models/cart"
 	"github.com/go-martini/martini"
 	"gopkg.in/mgo.v2/bson"
@@ -68,7 +69,7 @@ func GetCustomers(w http.ResponseWriter, req *http.Request, params martini.Param
 	}
 
 	if err != nil {
-		generateError("", err, w, req)
+		apierror.GenerateError("", err, w, req)
 		return ""
 	}
 
@@ -80,7 +81,7 @@ func GetCustomer(w http.ResponseWriter, req *http.Request, params martini.Params
 	customerId := params["id"]
 
 	if !bson.IsObjectIdHex(customerId) {
-		generateError("invalid customer reference", nil, w, req)
+		apierror.GenerateError("invalid customer reference", nil, w, req)
 		return ""
 	}
 
@@ -89,7 +90,7 @@ func GetCustomer(w http.ResponseWriter, req *http.Request, params martini.Params
 		ShopId: shop.Id,
 	}
 	if err := c.Get(); err != nil {
-		generateError(err.Error(), err, w, req)
+		apierror.GenerateError(err.Error(), err, w, req)
 		return ""
 	}
 
@@ -103,19 +104,19 @@ func AddCustomer(w http.ResponseWriter, req *http.Request, params martini.Params
 
 	data, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		generateError(err.Error(), err, w, req)
+		apierror.GenerateError(err.Error(), err, w, req)
 		return ""
 	}
 
 	if err = json.Unmarshal(data, &c); err != nil {
-		generateError(err.Error(), err, w, req)
+		apierror.GenerateError(err.Error(), err, w, req)
 		return ""
 	}
 
 	c.ShopId = shop.Id
 
 	if err = c.Insert(); err != nil {
-		generateError(err.Error(), err, w, req)
+		apierror.GenerateError(err.Error(), err, w, req)
 		return ""
 	}
 
@@ -129,26 +130,26 @@ func EditCustomer(w http.ResponseWriter, req *http.Request, params martini.Param
 
 	data, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		generateError(err.Error(), err, w, req)
+		apierror.GenerateError(err.Error(), err, w, req)
 		return ""
 	}
 
 	if err = json.Unmarshal(data, &c); err != nil {
-		generateError(err.Error(), err, w, req)
+		apierror.GenerateError(err.Error(), err, w, req)
 		return ""
 	}
 
 	customerId := params["id"]
 
 	if !bson.IsObjectIdHex(customerId) {
-		generateError("invalid customer reference", nil, w, req)
+		apierror.GenerateError("invalid customer reference", nil, w, req)
 		return ""
 	}
 	c.Id = bson.ObjectIdHex(customerId)
 	c.ShopId = shop.Id
 
 	if err = c.Update(); err != nil {
-		generateError(err.Error(), err, w, req)
+		apierror.GenerateError(err.Error(), err, w, req)
 		return ""
 	}
 
@@ -161,14 +162,14 @@ func DeleteCustomer(w http.ResponseWriter, req *http.Request, params martini.Par
 	customerId := params["id"]
 
 	if !bson.IsObjectIdHex(customerId) {
-		generateError("invalid customer reference", nil, w, req)
+		apierror.GenerateError("invalid customer reference", nil, w, req)
 		return ""
 	}
 	c.Id = bson.ObjectIdHex(customerId)
 	c.ShopId = shop.Id
 
 	if err := c.Delete(); err != nil {
-		generateError(err.Error(), err, w, req)
+		apierror.GenerateError(err.Error(), err, w, req)
 		return ""
 	}
 
@@ -179,7 +180,7 @@ func SearchCustomer(w http.ResponseWriter, req *http.Request, params martini.Par
 	qs := req.URL.Query()
 	custs, err := cart.SearchCustomers(qs.Get("query"), shop.Id)
 	if err != nil {
-		generateError(err.Error(), err, w, req)
+		apierror.GenerateError(err.Error(), err, w, req)
 		return ""
 	}
 
@@ -191,7 +192,7 @@ func GetCustomerOrders(w http.ResponseWriter, req *http.Request, params martini.
 	customerId := params["id"]
 
 	if !bson.IsObjectIdHex(customerId) {
-		generateError("invalid customer reference", nil, w, req)
+		apierror.GenerateError("invalid customer reference", nil, w, req)
 		return ""
 	}
 
@@ -200,7 +201,7 @@ func GetCustomerOrders(w http.ResponseWriter, req *http.Request, params martini.
 		ShopId: shop.Id,
 	}
 	if err := c.Get(); err != nil {
-		generateError(err.Error(), err, w, req)
+		apierror.GenerateError(err.Error(), err, w, req)
 		return ""
 	}
 

@@ -34,13 +34,9 @@ func (b *Runner) Run() {
 func (b *Runner) worker(wg *sync.WaitGroup, ch chan *http.Request) {
 
 	for req := range ch {
-		// staticOpts := martini.StaticOptions{
-		// 	SkipLogging: true,
-		// }
 		m := martini.New()
 		r := martini.NewRouter()
 
-		// martini.StaticOptions.SkipLogging = true
 		switch strings.ToUpper(req.Method) {
 		case "GET":
 			r.Get(b.Req.URL, b.Req.Handler)
@@ -103,7 +99,7 @@ func (b *Runner) run() {
 		if b.Qps > 0 {
 			<-throttle
 		}
-		jobs <- b.Req.Request()
+		jobs <- b.Req.GenerateRequest()
 	}
 	close(jobs)
 
