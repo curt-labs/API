@@ -9,7 +9,7 @@ import (
 )
 
 type Customer struct {
-	Id               bson.ObjectId     `json:"id" xml:"id" bson:"_id"`
+	Id               bson.ObjectId     `json:"id,omitempty" xml:"id" bson:"_id"`
 	ShopId           bson.ObjectId     `json:"-" xml:"-" bson:"shop_id"`
 	AcceptsMarketing bool              `json:"accepts_marketing" xml:"accepts_marketing,attr" bson:"accepts_marketing"`
 	Addresses        []CustomerAddress `json:"addresses" xml:"addresses>addres" bson:"addresses"`
