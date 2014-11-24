@@ -1,7 +1,6 @@
 package httprunner
 
 import (
-	"github.com/curt-labs/GoAPI/controllers/middleware"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/render"
@@ -27,36 +26,39 @@ func (b *Runner) Run() {
 		b.bar.Finish()
 	}
 
-	printReport(b.N, b.results, b.Output, time.Now().Sub(start), b.Req.URL)
+	if b.Output != "none" {
+		printReport(b.N, b.results, b.Output, time.Now().Sub(start), b.Req.URL)
+	}
 	close(b.results)
 }
 
 func (b *Runner) worker(wg *sync.WaitGroup, ch chan *http.Request) {
 
 	for req := range ch {
+
 		m := martini.New()
 		r := martini.NewRouter()
 
 		switch strings.ToUpper(req.Method) {
 		case "GET":
-			r.Get(b.Req.URL, b.Req.Handler)
+			r.Get(b.Req.ParameterizedURL, b.Req.Handler)
 		case "POST":
-			r.Post(b.Req.URL, b.Req.Handler)
+			r.Post(b.Req.ParameterizedURL, b.Req.Handler)
 		case "PUT":
-			r.Put(b.Req.URL, b.Req.Handler)
+			r.Put(b.Req.ParameterizedURL, b.Req.Handler)
 		case "PATCH":
-			r.Patch(b.Req.URL, b.Req.Handler)
+			r.Patch(b.Req.ParameterizedURL, b.Req.Handler)
 		case "DELETE":
-			r.Delete(b.Req.URL, b.Req.Handler)
+			r.Delete(b.Req.ParameterizedURL, b.Req.Handler)
 		case "HEAD":
-			r.Head(b.Req.URL, b.Req.Handler)
+			r.Head(b.Req.ParameterizedURL, b.Req.Handler)
 		default:
-			r.Any(b.Req.URL, b.Req.Handler)
+			r.Any(b.Req.ParameterizedURL, b.Req.Handler)
 		}
 
 		m.Use(render.Renderer())
 		m.Use(encoding.MapEncoder)
-		m.Use(middleware.Meddler())
+		// m.Use(b.Req.Middleware)
 		m.MapTo(r, (*martini.Routes)(nil))
 
 		s := time.Now()
@@ -95,6 +97,7 @@ func (b *Runner) run() {
 			b.worker(&wg, jobs)
 		}()
 	}
+
 	for i := 0; i < b.N; i++ {
 		if b.Qps > 0 {
 			<-throttle

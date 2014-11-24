@@ -96,14 +96,24 @@ func TestGetCustomers(t *testing.T) {
 func BenchmarkGetCustomers(b *testing.B) {
 	shopID := cart.InsertTestData()
 	if shopID == nil {
-		panic("shopID cannot be nil")
+		b.Error("shopID cannot be nil")
+		b.Fail()
 	}
 
 	val := shopID.Hex()
 	qs := make(url.Values, 0)
 	qs.Add("shop", val)
 	qs.Add("since_id", val)
-	httprunner.RequestBenchmark(b.N, "GET", "/shopify/customers", &qs, GetCustomers)
+	(&httprunner.BenchmarkOptions{
+		Method:             "GET",
+		Route:              "/shopify/customers",
+		ParameterizedRoute: "/shopify/customers",
+		Handler:            GetCustomer,
+		QueryString:        &qs,
+		JsonBody:           nil,
+		Runs:               b.N,
+	}).RequestBenchmark()
+
 }
 
 func TestAddCustomer(t *testing.T) {
@@ -164,7 +174,7 @@ func TestGetCustomer(t *testing.T) {
 		qs.Add("shop", val)
 
 		Convey("with bad customer reference", func() {
-			response = httprunner.ParamterizedRequest("GET", "/shopify/customers/:id", "/shopify/customers/1234", &qs, GetCustomer)
+			response = httprunner.ParameterizedRequest("GET", "/shopify/customers/:id", "/shopify/customers/1234", &qs, GetCustomer)
 			So(response.Code, ShouldEqual, 500)
 			So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
 		})
@@ -180,9 +190,72 @@ func TestGetCustomer(t *testing.T) {
 			So(response.Code, ShouldEqual, 200)
 			So(json.Unmarshal(response.Body.Bytes(), &cust), ShouldBeNil)
 
-			response = httprunner.ParamterizedRequest("GET", "/shopify/customers/:id", "/shopify/customers/"+cust.Id.Hex(), &qs, GetCustomer)
+			response = httprunner.ParameterizedRequest("GET", "/shopify/customers/:id", "/shopify/customers/"+cust.Id.Hex(), &qs, GetCustomer)
 			So(response.Code, ShouldEqual, 200)
 			So(json.Unmarshal(response.Body.Bytes(), &cust), ShouldBeNil)
 		})
 	})
+}
+
+func BenchmarkAddCustomer(b *testing.B) {
+	shopID := cart.InsertTestData()
+	if shopID == nil {
+		b.Error("failed to create a shop")
+		b.Fail()
+	}
+
+	val := shopID.Hex()
+	qs := make(url.Values, 0)
+	qs.Add("shop", val)
+
+	cust := cart.Customer{
+		ShopId:    *shopID,
+		FirstName: "Alex",
+		LastName:  "Ninneman",
+		Email:     "ninnemana@gmail.com",
+	}
+
+	cust.Email = "ninnemana@gmail.com"
+	(&httprunner.BenchmarkOptions{
+		Method:             "POST",
+		Route:              "/shopify/customers",
+		ParameterizedRoute: "/shopify/customers",
+		Handler:            AddCustomer,
+		QueryString:        &qs,
+		JsonBody:           cust,
+		Runs:               b.N,
+	}).RequestBenchmark()
+}
+
+func BenchmarkGetCustomer(b *testing.B) {
+	shopID := cart.InsertTestData()
+	if shopID == nil {
+		b.Error("failed to create a shop")
+		b.Fail()
+	}
+
+	val := shopID.Hex()
+	qs := make(url.Values, 0)
+	qs.Add("shop", val)
+
+	cust := cart.Customer{
+		ShopId:    *shopID,
+		FirstName: "Alex",
+		LastName:  "Ninneman",
+		Email:     "ninnemana@gmail.com",
+	}
+	if err := cust.Insert(); err != nil {
+		b.Error(err.Error())
+		b.Fail()
+	}
+
+	(&httprunner.BenchmarkOptions{
+		Method:             "GET",
+		Route:              "/shopify/customers/" + cust.Id.Hex(),
+		ParameterizedRoute: "/shopify/customers/:id",
+		Handler:            GetCustomers,
+		QueryString:        &qs,
+		JsonBody:           nil,
+		Runs:               b.N,
+	}).RequestBenchmark()
 }
