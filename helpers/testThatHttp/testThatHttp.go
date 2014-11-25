@@ -4,7 +4,6 @@ import (
 	"github.com/codegangsta/martini-contrib/render"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/httprunner"
-	"github.com/curt-labs/GoAPI/models/customer_new"
 	"github.com/go-martini/martini"
 	"io"
 	"log"
@@ -48,29 +47,13 @@ func Request(reqType string, route string, paramKey string, paramVal string, han
 }
 
 func RequestBenchmark(runs int, method, route string, body *url.Values, handler martini.Handler) {
-	//create customerUser and key
-	var cu customer_new.CustomerUser
-	cu.Name = "test cust user"
-	cu.Email = "pretend@test.com"
-	cu.Password = "test"
-	cu.Sudo = true
-	cu.Create()
-	var apiKey string
-	for _, key := range cu.Keys {
-		if strings.ToLower(key.Type) == "public" {
-			apiKey = key.Key
-		}
-	}
 
 	(&httprunner.BenchmarkOptions{
 		Method:      method,
-		Route:       route + "?key=" + apiKey,
+		Route:       route,
 		Handler:     handler,
 		Runs:        runs,
 		QueryString: body,
 	}).RequestBenchmark()
-
-	//teardown
-	cu.Delete()
 
 }

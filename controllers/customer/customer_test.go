@@ -135,7 +135,6 @@ func BenchmarkCustomer(b *testing.B) {
 			apiKey = key.Key
 		}
 	}
-	b.Log("APIKEY", apiKey)
 
 	qs := make(url.Values, 0)
 	qs.Add("key", apiKey)
