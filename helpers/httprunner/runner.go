@@ -198,6 +198,49 @@ func ParameterizedRequest(method, prepared_route string, route string, body *url
 	return response
 }
 
+func ParameterizedJsonRequest(method, prepared_route string, route string, qs *url.Values, iface interface{}, handler martini.Handler) *httptest.ResponseRecorder {
+	m := martini.New()
+	r := martini.NewRouter()
+	switch strings.ToUpper(method) {
+	case "GET":
+		r.Get(prepared_route, handler)
+	case "POST":
+		r.Post(prepared_route, handler)
+	case "PUT":
+		r.Put(prepared_route, handler)
+	case "PATCH":
+		r.Patch(prepared_route, handler)
+	case "DELETE":
+		r.Delete(prepared_route, handler)
+	case "HEAD":
+		r.Head(prepared_route, handler)
+	default:
+		r.Any(prepared_route, handler)
+	}
+
+	m.Use(render.Renderer())
+	m.Use(encoding.MapEncoder)
+	m.Use(middleware.Meddler())
+	m.Action(r.Handle)
+
+	js, err := json.Marshal(iface)
+	if err != nil {
+		return nil
+	}
+
+	if qs != nil {
+		route = route + "?" + qs.Encode()
+	}
+
+	request, _ := http.NewRequest(method, route, bytes.NewBuffer(js))
+	request.Header.Set("Content-Type", "application/json")
+
+	response := httptest.NewRecorder()
+	m.ServeHTTP(response, request)
+
+	return response
+}
+
 func JsonRequest(method, route string, qs *url.Values, iface interface{}, handler martini.Handler) *httptest.ResponseRecorder {
 	m := martini.New()
 	r := martini.NewRouter()

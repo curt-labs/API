@@ -17,6 +17,16 @@ const (
 	TimeLayout = "2006-01-02 15:04"
 )
 
+// Get a list of all customers for a
+// given shop.
+// Params (optional):
+// @since_id bson.ObjectId
+// @created_at_min time.Time 2006-01-02 15:04
+// @created_at_max time.Time 2006-01-02 15:04
+// @updated_at_min time.Time 2006-01-02 15:04
+// @updated_at_max time.Time 2006-01-02 15:04
+// @page int
+// @limit int
 func GetCustomers(w http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder, shop *cart.Shop) string {
 
 	var since_id bson.ObjectId
@@ -76,6 +86,8 @@ func GetCustomers(w http.ResponseWriter, req *http.Request, params martini.Param
 	return encoding.Must(enc.Encode(custs))
 }
 
+// Get a specific customer for a
+// given shop.
 func GetCustomer(w http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder, shop *cart.Shop) string {
 
 	customerId := params["id"]
@@ -97,6 +109,8 @@ func GetCustomer(w http.ResponseWriter, req *http.Request, params martini.Params
 	return encoding.Must(enc.Encode(c))
 }
 
+// Create a customer for a
+// given shop.
 func AddCustomer(w http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder, shop *cart.Shop) string {
 
 	var c cart.Customer
@@ -123,6 +137,8 @@ func AddCustomer(w http.ResponseWriter, req *http.Request, params martini.Params
 	return encoding.Must(enc.Encode(c))
 }
 
+// Edit an existing customer for a
+// given shop.
 func EditCustomer(w http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder, shop *cart.Shop) string {
 
 	var c cart.Customer
@@ -156,6 +172,8 @@ func EditCustomer(w http.ResponseWriter, req *http.Request, params martini.Param
 	return encoding.Must(enc.Encode(c))
 }
 
+// Delete a customer for a given shop.
+// Note: Can't delete if the customer has existing orders.
 func DeleteCustomer(w http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder, shop *cart.Shop) string {
 
 	var c cart.Customer
@@ -173,9 +191,12 @@ func DeleteCustomer(w http.ResponseWriter, req *http.Request, params martini.Par
 		return ""
 	}
 
-	return encoding.Must(enc.Encode(c))
+	return ""
 }
 
+// Search customer records for a given shop.
+// Params:
+// @query string
 func SearchCustomer(w http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder, shop *cart.Shop) string {
 	qs := req.URL.Query()
 	custs, err := cart.SearchCustomers(qs.Get("query"), shop.Id)
@@ -187,6 +208,8 @@ func SearchCustomer(w http.ResponseWriter, req *http.Request, params martini.Par
 	return encoding.Must(enc.Encode(custs))
 }
 
+// Get order history for a specific customer
+// of a given shop.
 func GetCustomerOrders(w http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder, shop *cart.Shop) string {
 
 	customerId := params["id"]
