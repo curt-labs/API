@@ -184,3 +184,73 @@ func TestCustomer(t *testing.T) {
 	pri.Delete()
 	auth.Delete()
 }
+
+func BenchmarkCRUDCustomer(b *testing.B) {
+	//get apiKey by creating customeruser
+	var cu customer_new.CustomerUser
+	var apiKey string
+	cu.Name = "test cust user"
+	cu.Email = "pretend@test.com"
+	cu.Password = "test"
+	cu.Sudo = true
+	cu.Create()
+	for _, key := range cu.Keys {
+		if strings.ToLower(key.Type) == "public" {
+			apiKey = key.Key
+		}
+	}
+
+	qs := make(url.Values, 0)
+	qs.Add("key", apiKey)
+
+	Convey("Customer", b, func() {
+		var c customer_new.Customer
+		c.Name = "Freddy Krueger"
+		c.Email = "freddy@elm.st"
+		var locs customer_new.CustomerLocations
+
+		//create
+		(&httprunner.BenchmarkOptions{
+			Method:             "POST",
+			Route:              "/new/customer",
+			ParameterizedRoute: "/new/customer",
+			Handler:            SaveCustomer,
+			QueryString:        &qs,
+			JsonBody:           c,
+			Runs:               b.N,
+		}).RequestBenchmark()
+
+		//get
+		(&httprunner.BenchmarkOptions{
+			Method:             "GET",
+			Route:              "/new/customer",
+			ParameterizedRoute: "/new/customer/" + c.Id,
+			Handler:            GetCustomer,
+			QueryString:        &qs,
+			JsonBody:           c,
+			Runs:               b.N,
+		}).RequestBenchmark()
+
+		//get unique
+		(&httprunner.BenchmarkOptions{
+			Method:             "GET",
+			Route:              "/new/customer",
+			ParameterizedRoute: "/new/customer/" + c.Id,
+			Handler:            GetLocations,
+			QueryString:        &qs,
+			JsonBody:           nil,
+			Runs:               b.N,
+		}).RequestBenchmark()
+
+		//delete
+		(&httprunner.BenchmarkOptions{
+			Method:             "DELETE",
+			Route:              "/new/customer",
+			ParameterizedRoute: "/new/customer" + c.Id,
+			Handler:            DeleteCustomer,
+			QueryString:        &qs,
+			JsonBody:           nil,
+			Runs:               b.N,
+		}).RequestBenchmark()
+	})
+}
