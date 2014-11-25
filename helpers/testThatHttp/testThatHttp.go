@@ -62,20 +62,13 @@ func RequestBenchmark(runs int, method, route string, body *url.Values, handler 
 		}
 	}
 
-	//opts
-	opts := httprunner.ReqOpts{
-		Body:    body,
-		Handler: handler,
-		URL:     route + "?key=" + apiKey,
-		Method:  method,
-	}
-
-	//run
-	(&httprunner.Runner{
-		Req: &opts,
-		N:   runs,
-		C:   1,
-	}).Run()
+	(&httprunner.BenchmarkOptions{
+		Method:      method,
+		Route:       route + "?key=" + apiKey,
+		Handler:     handler,
+		Runs:        runs,
+		QueryString: body,
+	}).RequestBenchmark()
 
 	//teardown
 	cu.Delete()

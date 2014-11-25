@@ -23,27 +23,44 @@ type result struct {
 }
 
 type ReqOpts struct {
-	Method     string
-	URL        string
-	Header     http.Header
-	Username   string
-	Password   string
-	Handler    martini.Handler
-	Middleware []martini.Handler
-	Body       *url.Values
+	Method           string
+	URL              string
+	ParameterizedURL string
+	Header           http.Header
+	Username         string
+	Password         string
+	Handler          martini.Handler
+	Middleware       []martini.Handler
+	Body             string
 	// OriginalHost represents the original host name user is provided.
 	// Request host is an resolved IP. TLS/SSL handshakes may require
 	// the original server name, keep it to initate the TLS client.
 	OriginalHost string
 }
 
+type BenchmarkOptions struct {
+	Method             string
+	Route              string
+	ParameterizedRoute string
+	Header             http.Header
+	Username           string
+	Password           string
+	Handler            martini.Handler
+	Middleware         []martini.Handler
+	QueryString        *url.Values
+	JsonBody           interface{}
+	Output             string
+	Runs               int
+	ConcurrentUsers    int
+}
+
 // Creates a req object from req options
 func (r *ReqOpts) GenerateRequest() *http.Request {
 	var req *http.Request
-	if r.Body != nil && strings.ToUpper(r.Method) != "GET" {
-		req, _ = http.NewRequest(r.Method, r.URL, bytes.NewBufferString(r.Body.Encode()))
-	} else if r.Body != nil {
-		req, _ = http.NewRequest(r.Method, r.URL+"?"+r.Body.Encode(), nil)
+	if r.Body != "" && strings.ToUpper(r.Method) != "GET" {
+		req, _ = http.NewRequest(r.Method, r.URL, bytes.NewBufferString(r.Body))
+	} else if r.Body != "" {
+		req, _ = http.NewRequest(r.Method, r.URL+"?"+r.Body, nil)
 	} else {
 		req, _ = http.NewRequest(r.Method, r.URL, nil)
 	}
@@ -142,7 +159,7 @@ func Request(method, route string, body *url.Values, handler martini.Handler) *h
 	return response
 }
 
-func ParamterizedRequest(method, prepared_route string, route string, body *url.Values, handler martini.Handler) *httptest.ResponseRecorder {
+func ParameterizedRequest(method, prepared_route string, route string, body *url.Values, handler martini.Handler) *httptest.ResponseRecorder {
 	m := martini.New()
 	r := martini.NewRouter()
 	switch strings.ToUpper(method) {
@@ -224,18 +241,38 @@ func JsonRequest(method, route string, qs *url.Values, iface interface{}, handle
 	return response
 }
 
-func RequestBenchmark(runs int, method, route string, body *url.Values, handler martini.Handler) {
+func (opts *BenchmarkOptions) RequestBenchmark() {
 
-	opts := ReqOpts{
-		Body:    body,
-		Handler: handler,
-		URL:     route,
-		Method:  method,
+	var body string
+	if opts.JsonBody != nil {
+		js, err := json.Marshal(opts.JsonBody)
+		if err != nil {
+			return
+		}
+		body = string(js)
+	} else if opts.QueryString != nil {
+		opts.Route = opts.Route + "?" + opts.QueryString.Encode()
 	}
 
-	(&Runner{
-		Req: &opts,
-		N:   runs,
-		C:   1,
-	}).Run()
+	if opts.ConcurrentUsers == 0 {
+		opts.ConcurrentUsers = 1
+	}
+
+	runner := &Runner{
+		Req: &ReqOpts{
+			Body:             body,
+			Handler:          opts.Handler,
+			URL:              opts.Route,
+			ParameterizedURL: opts.ParameterizedRoute,
+			Method:           opts.Method,
+			Header:           opts.Header,
+			Username:         opts.Username,
+			Password:         opts.Password,
+			Middleware:       opts.Middleware,
+		},
+		N:      opts.Runs,
+		C:      opts.ConcurrentUsers,
+		Output: opts.Output,
+	}
+	runner.Run()
 }
