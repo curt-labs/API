@@ -75,7 +75,7 @@ func TestCustomerPrice(t *testing.T) {
 		//test get all customer price
 		thyme = time.Now()
 		testThatHttp.Request("get", "/new/customer/prices", "", "?key="+apiKey, GetAllPrices, nil, "")
-		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
+		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()*4) //Long
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &ps)
 		So(err, ShouldBeNil)

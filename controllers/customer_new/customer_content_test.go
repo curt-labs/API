@@ -3,11 +3,13 @@ package customer_ctlr_new
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/httprunner"
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
 	"github.com/curt-labs/GoAPI/models/apiKeyType"
 	"github.com/curt-labs/GoAPI/models/customer_new"
 	"github.com/curt-labs/GoAPI/models/customer_new/content"
 	. "github.com/smartystreets/goconvey/convey"
+	"net/url"
 	"strconv"
 	"strings"
 	"testing"
@@ -77,6 +79,7 @@ func TestCustomerContent(t *testing.T) {
 		So(content, ShouldHaveSameTypeAs, custcontent.CustomerContent{})
 		So(content.Id, ShouldBeGreaterThan, 0)
 
+		//create category content
 		categoryContent.Text = "new content"
 		categoryContent.ContentType.Id = 1
 		bodyBytes, _ = json.Marshal(categoryContent)
@@ -203,7 +206,7 @@ func TestCustomerContent(t *testing.T) {
 		So(partContent, ShouldHaveSameTypeAs, custcontent.PartContent{})
 
 		//test delete category content
-		bodyBytes, _ = json.Marshal(content)
+		bodyBytes, _ = json.Marshal(categoryContent)
 		bodyJson = bytes.NewReader(bodyBytes)
 		thyme = time.Now()
 		testThatHttp.Request("delete", "/new/customer/cms/category/", ":id", strconv.Itoa(catContent.CategoryId)+"?key="+apiKey, DeleteCategoryContent, bodyJson, "application/json")
@@ -223,3 +226,96 @@ func TestCustomerContent(t *testing.T) {
 	auth.Delete()
 
 }
+
+func TestCreatePartContent(t *testing.T) {
+	var cu customer_new.CustomerUser
+	var apiKey string
+	cu.Name = "test cust user"
+	cu.Email = "pretend@test.com"
+	cu.Password = "test"
+	cu.Sudo = true
+	cu.Create()
+
+	for _, key := range cu.Keys {
+		if strings.ToLower(key.Type) == "public" {
+			apiKey = key.Key
+		}
+	}
+	Convey("Create Part Content", t, func() {
+		var content custcontent.CustomerContent
+		content.Text = "new content"
+		content.ContentType.Id = 1
+
+		qs := make(url.Values, 0)
+		qs.Add("key", apiKey)
+
+		resp := httprunner.JsonRequest("POST", "/new/customer/cms/part/11000", &qs, content, CreatePartContent)
+		So(resp.Code, ShouldEqual, 200)
+		So(json.Unmarshal(resp.Body.Bytes(), &content), ShouldBeNil)
+
+		resp = httprunner.JsonRequest("DELETE", "/new/customer/cms/part/11000", &qs, content, DeletePartContent)
+		So(resp.Code, ShouldEqual, 200)
+		So(json.Unmarshal(resp.Body.Bytes(), &content), ShouldBeNil)
+
+	})
+	cu.Delete()
+}
+
+func BenchmarkCreatePartContent(b *testing.B) {
+	//get apiKey by creating customeruser
+	var cu customer_new.CustomerUser
+	var apiKey string
+	cu.Name = "test cust user"
+	cu.Email = "pretend@test.com"
+	cu.Password = "test"
+	cu.Sudo = true
+	cu.Create()
+	for _, key := range cu.Keys {
+		if strings.ToLower(key.Type) == "public" {
+			apiKey = key.Key
+		}
+	}
+
+	qs := make(url.Values, 0)
+	qs.Add("key", apiKey)
+
+	var content custcontent.CustomerContent
+	content.Text = "new content"
+	content.ContentType.Id = 1
+
+	(&httprunner.BenchmarkOptions{
+		Method:             "POST",
+		Route:              "/new/customer/cms/part",
+		ParameterizedRoute: "/new/customer/cms/part/11000",
+		Handler:            CreatePartContent,
+		QueryString:        &qs,
+		JsonBody:           content,
+		Runs:               b.N,
+	}).RequestBenchmark()
+
+	cu.Delete()
+}
+
+// func BenchmarkCustomer(b *testing.B) {
+// 	//create customer
+// 	var cu customer_new.CustomerUser
+// 	var apiKey string
+// 	cu.Name = "test cust user"
+// 	cu.Email = "pretend@test.com"
+// 	cu.Password = "test"
+// 	cu.Sudo = true
+// 	cu.Create()
+
+// 	for _, key := range cu.Keys {
+// 		if strings.ToLower(key.Type) == "public" {
+// 			apiKey = key.Key
+// 		}
+// 	}
+
+// 	qs := make(url.Values, 0)
+// 	qs.Add("key", apiKey)
+
+// 	testThatHttp.RequestBenchmark(b.N, "POST", "/customer", &qs, GetCustomer)
+
+// 	cu.Delete()
+// }
