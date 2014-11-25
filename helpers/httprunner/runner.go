@@ -49,6 +49,7 @@ type BenchmarkOptions struct {
 	Middleware         []martini.Handler
 	QueryString        *url.Values
 	JsonBody           interface{}
+	FormBody           url.Values
 	Output             string
 	Runs               int
 	ConcurrentUsers    int
@@ -252,6 +253,8 @@ func (opts *BenchmarkOptions) RequestBenchmark() {
 		body = string(js)
 	} else if opts.QueryString != nil {
 		opts.Route = opts.Route + "?" + opts.QueryString.Encode()
+	} else if opts.FormBody != nil {
+		body = opts.FormBody.Encode()
 	}
 
 	if opts.ConcurrentUsers == 0 {

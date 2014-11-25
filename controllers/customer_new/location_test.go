@@ -3,6 +3,7 @@ package customer_ctlr_new
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/httprunner"
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
 	"github.com/curt-labs/GoAPI/models/customer_new"
 	. "github.com/smartystreets/goconvey/convey"
@@ -16,20 +17,6 @@ import (
 func TestCustomerLocation(t *testing.T) {
 	var err error
 	var loc customer_new.CustomerLocation
-	var cu customer_new.CustomerUser
-
-	//setup
-	cu.Name = "test cust user"
-	cu.Email = "pretend@test.com"
-	cu.Password = "test"
-	cu.Sudo = true
-	var apiKey string
-	for _, key := range cu.Keys {
-		if strings.ToLower(key.Type) == "public" {
-			apiKey = key.Key
-		}
-	}
-	t.Log("APIKEY", apiKey)
 
 	Convey("Testing Customer_New/Location", t, func() {
 		//test create customer location
@@ -37,7 +24,7 @@ func TestCustomerLocation(t *testing.T) {
 		v := form.Encode()
 		body := strings.NewReader(v)
 		thyme := time.Now()
-		testThatHttp.Request("post", "/new/customer/location", "", "?key="+apiKey, SaveLocation, body, "application/x-www-form-urlencoded")
+		testThatHttp.Request("post", "/new/customer/location", "", "", SaveLocation, body, "application/x-www-form-urlencoded")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &loc)
@@ -50,7 +37,7 @@ func TestCustomerLocation(t *testing.T) {
 		bodyBytes, _ := json.Marshal(loc)
 		bodyJson := bytes.NewReader(bodyBytes)
 		thyme = time.Now()
-		testThatHttp.Request("put", "/new/customer/location/", ":id", strconv.Itoa(loc.Id)+"?key="+apiKey, SaveLocation, bodyJson, "application/json")
+		testThatHttp.Request("put", "/new/customer/location/", ":id", strconv.Itoa(loc.Id), SaveLocation, bodyJson, "application/json")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &loc)
@@ -59,16 +46,16 @@ func TestCustomerLocation(t *testing.T) {
 
 		//test get location
 		thyme = time.Now()
-		testThatHttp.Request("get", "/new/customer/location/", ":id", strconv.Itoa(loc.Id)+"?key="+apiKey, GetLocation, bodyJson, "application/json")
+		testThatHttp.Request("get", "/new/customer/location/", ":id", strconv.Itoa(loc.Id), GetLocation, bodyJson, "application/json")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &loc)
 		So(err, ShouldBeNil)
 		So(loc, ShouldHaveSameTypeAs, customer_new.CustomerLocation{})
 
-		//test get location
+		//test get all locations
 		thyme = time.Now()
-		testThatHttp.Request("get", "/new/customer/location", "", "?key="+apiKey, GetAllLocations, bodyJson, "application/json")
+		testThatHttp.Request("get", "/new/customer/location", "", "", GetAllLocations, bodyJson, "application/json")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		var locs customer_new.CustomerLocations
@@ -78,7 +65,7 @@ func TestCustomerLocation(t *testing.T) {
 
 		//test delete location
 		thyme = time.Now()
-		testThatHttp.Request("delete", "/new/customer/location", "", "?key="+apiKey, DeleteLocation, bodyJson, "application/json")
+		testThatHttp.Request("delete", "/new/customer/location/", ":id", strconv.Itoa(loc.Id), DeleteLocation, bodyJson, "application/json")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &loc)
@@ -86,6 +73,61 @@ func TestCustomerLocation(t *testing.T) {
 		So(loc, ShouldHaveSameTypeAs, customer_new.CustomerLocation{})
 
 	})
-	//teardown
-	cu.Delete()
+}
+
+func BenchmarkCRUDCustomerLocation(b *testing.B) {
+
+	qs := make(url.Values, 0)
+	var loc customer_new.CustomerLocation
+
+	Convey("CustomerLocation", b, func() {
+		form := url.Values{"name": {"Dave Grohl"}, "address": {"404 S. Barstow St."}, "city": {"Eau Claire"}}
+		//create
+		(&httprunner.BenchmarkOptions{
+			Method:             "POST",
+			Route:              "/new/customer/location",
+			ParameterizedRoute: "/new/customer/location",
+			Handler:            SaveLocation,
+			QueryString:        &qs,
+			JsonBody:           loc,
+			FormBody:           form,
+			Runs:               b.N,
+		}).RequestBenchmark()
+
+		//get
+		(&httprunner.BenchmarkOptions{
+			Method:             "GET",
+			Route:              "/new/customer/location",
+			ParameterizedRoute: "/new/customer/location/" + strconv.Itoa(loc.Id),
+			Handler:            GetLocation,
+			QueryString:        &qs,
+			JsonBody:           loc,
+			FormBody:           nil,
+			Runs:               b.N,
+		}).RequestBenchmark()
+
+		//get all
+		(&httprunner.BenchmarkOptions{
+			Method:             "GET",
+			Route:              "/new/customer/location",
+			ParameterizedRoute: "/new/customer/location",
+			Handler:            GetLocations,
+			QueryString:        &qs,
+			JsonBody:           loc,
+			FormBody:           nil,
+			Runs:               b.N,
+		}).RequestBenchmark()
+
+		//delete
+		(&httprunner.BenchmarkOptions{
+			Method:             "DELETE",
+			Route:              "/new/customer/location",
+			ParameterizedRoute: "/new/customer/location/" + strconv.Itoa(loc.Id),
+			Handler:            DeleteLocation,
+			QueryString:        &qs,
+			JsonBody:           loc,
+			FormBody:           nil,
+			Runs:               b.N,
+		}).RequestBenchmark()
+	})
 }
