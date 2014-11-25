@@ -3,6 +3,7 @@ package applicationGuide
 import (
 	"encoding/json"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
+	"github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/models/applicationGuide"
 	"github.com/go-martini/martini"
 	"io/ioutil"
@@ -17,15 +18,12 @@ func GetApplicationGuide(rw http.ResponseWriter, req *http.Request, enc encoding
 	id := params["id"]
 	ag.ID, err = strconv.Atoi(id)
 	if err != nil {
-		http.Error(rw, err.Error(), 666)
-		return err.Error()
+		apierror.GenerateError("Trouble converting ID parameter", err, rw, req)
 	}
 
 	err = ag.Get()
 	if err != nil {
-
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Error getting Application Guide", err, rw, req)
 	}
 	return encoding.Must(enc.Encode(ag))
 }
@@ -38,8 +36,7 @@ func GetApplicationGuidesByWebsite(rw http.ResponseWriter, req *http.Request, en
 
 	ags, err := ag.GetBySite()
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Error getting Application Guides", err, rw, req)
 	}
 	return encoding.Must(enc.Encode(ags))
 }
@@ -55,14 +52,12 @@ func CreateApplicationGuide(rw http.ResponseWriter, req *http.Request, enc encod
 		//json
 		requestBody, err := ioutil.ReadAll(req.Body)
 		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return encoding.Must(enc.Encode(false))
+			apierror.GenerateError("Error reading request body", err, rw, req)
 		}
 
 		err = json.Unmarshal(requestBody, &ag)
 		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return encoding.Must(enc.Encode(false))
+			apierror.GenerateError("Error decoding request body", err, rw, req)
 		}
 	} else {
 		//else, form
@@ -72,8 +67,7 @@ func CreateApplicationGuide(rw http.ResponseWriter, req *http.Request, enc encod
 		cat := req.FormValue("category_id")
 
 		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return err.Error()
+			apierror.GenerateError("Error parsing form", err, rw, req)
 		}
 		if web != "" {
 			ag.Website.ID, err = strconv.Atoi(web)
@@ -81,11 +75,13 @@ func CreateApplicationGuide(rw http.ResponseWriter, req *http.Request, enc encod
 		if cat != "" {
 			ag.Category.ID, err = strconv.Atoi(cat)
 		}
+		if err != nil {
+			apierror.GenerateError("Error parsing category ID or website ID", err, rw, req)
+		}
 	}
 	err = ag.Create()
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Error creating Application Guide", err, rw, req)
 	}
 
 	//Return JSON
@@ -99,8 +95,7 @@ func DeleteApplicationGuide(rw http.ResponseWriter, req *http.Request, enc encod
 	ag.ID = id
 	err = ag.Delete()
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Error deleting Application Guide", err, rw, req)
 	}
 
 	//Return JSON
