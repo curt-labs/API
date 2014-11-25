@@ -227,7 +227,9 @@ func TestCustomerContent(t *testing.T) {
 
 }
 
-func TestCreatePartContent(t *testing.T) {
+//using httptestrunner
+func TestCreateDeletePartContent(t *testing.T) {
+	//get apiKey by creating customeruser
 	var cu customer_new.CustomerUser
 	var apiKey string
 	cu.Name = "test cust user"
@@ -241,7 +243,7 @@ func TestCreatePartContent(t *testing.T) {
 			apiKey = key.Key
 		}
 	}
-	Convey("Create Part Content", t, func() {
+	Convey("Create & Delete Part Content", t, func() {
 		var content custcontent.CustomerContent
 		content.Text = "new content"
 		content.ContentType.Id = 1
@@ -256,12 +258,13 @@ func TestCreatePartContent(t *testing.T) {
 		resp = httprunner.JsonRequest("DELETE", "/new/customer/cms/part/11000", &qs, content, DeletePartContent)
 		So(resp.Code, ShouldEqual, 200)
 		So(json.Unmarshal(resp.Body.Bytes(), &content), ShouldBeNil)
-
 	})
+
+	//teardown customer user
 	cu.Delete()
 }
 
-func BenchmarkCreatePartContent(b *testing.B) {
+func BenchmarkCRUDContent(b *testing.B) {
 	//get apiKey by creating customeruser
 	var cu customer_new.CustomerUser
 	var apiKey string
@@ -279,43 +282,105 @@ func BenchmarkCreatePartContent(b *testing.B) {
 	qs := make(url.Values, 0)
 	qs.Add("key", apiKey)
 
-	var content custcontent.CustomerContent
-	content.Text = "new content"
-	content.ContentType.Id = 1
+	Convey("Part Content", b, func() {
+		var partContent custcontent.CustomerContent
+		partContent.Text = "new content"
+		partContent.ContentType.Id = 1
 
-	(&httprunner.BenchmarkOptions{
-		Method:             "POST",
-		Route:              "/new/customer/cms/part",
-		ParameterizedRoute: "/new/customer/cms/part/11000",
-		Handler:            CreatePartContent,
-		QueryString:        &qs,
-		JsonBody:           content,
-		Runs:               b.N,
-	}).RequestBenchmark()
+		//create
+		(&httprunner.BenchmarkOptions{
+			Method:             "POST",
+			Route:              "/new/customer/cms/part",
+			ParameterizedRoute: "/new/customer/cms/part/11000",
+			Handler:            CreatePartContent,
+			QueryString:        &qs,
+			JsonBody:           partContent,
+			Runs:               b.N,
+		}).RequestBenchmark()
 
+		//get all
+		(&httprunner.BenchmarkOptions{
+			Method:             "GET",
+			Route:              "/new/customer/cms/part",
+			ParameterizedRoute: "/new/customer/cms/part",
+			Handler:            AllPartContent,
+			QueryString:        &qs,
+			JsonBody:           partContent,
+			Runs:               b.N,
+		}).RequestBenchmark()
+
+		//get unique
+		(&httprunner.BenchmarkOptions{
+			Method:             "GET",
+			Route:              "/new/customer/cms/part",
+			ParameterizedRoute: "/new/customer/cms/part/11000",
+			Handler:            UniquePartContent,
+			QueryString:        &qs,
+			JsonBody:           partContent,
+			Runs:               b.N,
+		}).RequestBenchmark()
+
+		//delete
+		(&httprunner.BenchmarkOptions{
+			Method:             "DELETE",
+			Route:              "/new/customer/cms/part",
+			ParameterizedRoute: "/new/customer/cms/part/11000",
+			Handler:            DeletePartContent,
+			QueryString:        &qs,
+			JsonBody:           partContent,
+			Runs:               b.N,
+		}).RequestBenchmark()
+	})
+	Convey("Category Content", b, func() {
+		var categoryContent custcontent.CustomerContent
+		categoryContent.Text = "new content"
+		categoryContent.ContentType.Id = 1
+
+		//create
+		(&httprunner.BenchmarkOptions{
+			Method:             "POST",
+			Route:              "/new/customer/cms/category",
+			ParameterizedRoute: "/new/customer/cms/category/1",
+			Handler:            CreateCategoryContent,
+			QueryString:        &qs,
+			JsonBody:           categoryContent,
+			Runs:               b.N,
+		}).RequestBenchmark()
+
+		//get all
+		(&httprunner.BenchmarkOptions{
+			Method:             "GET",
+			Route:              "/new/customer/cms/category",
+			ParameterizedRoute: "/new/customer/cms/category",
+			Handler:            AllCategoryContent,
+			QueryString:        &qs,
+			JsonBody:           categoryContent,
+			Runs:               b.N,
+		}).RequestBenchmark()
+
+		//get unique
+		(&httprunner.BenchmarkOptions{
+			Method:             "GET",
+			Route:              "/new/customer/cms/category",
+			ParameterizedRoute: "/new/customer/cms/category/1",
+			Handler:            UniqueCategoryContent,
+			QueryString:        &qs,
+			JsonBody:           categoryContent,
+			Runs:               b.N,
+		}).RequestBenchmark()
+
+		//delete
+		(&httprunner.BenchmarkOptions{
+			Method:             "DELETE",
+			Route:              "/new/customer/cms/category",
+			ParameterizedRoute: "/new/customer/cms/category/1",
+			Handler:            DeleteCategoryContent,
+			QueryString:        &qs,
+			JsonBody:           categoryContent,
+			Runs:               b.N,
+		}).RequestBenchmark()
+	})
+
+	//teardown customer user
 	cu.Delete()
 }
-
-// func BenchmarkCustomer(b *testing.B) {
-// 	//create customer
-// 	var cu customer_new.CustomerUser
-// 	var apiKey string
-// 	cu.Name = "test cust user"
-// 	cu.Email = "pretend@test.com"
-// 	cu.Password = "test"
-// 	cu.Sudo = true
-// 	cu.Create()
-
-// 	for _, key := range cu.Keys {
-// 		if strings.ToLower(key.Type) == "public" {
-// 			apiKey = key.Key
-// 		}
-// 	}
-
-// 	qs := make(url.Values, 0)
-// 	qs.Add("key", apiKey)
-
-// 	testThatHttp.RequestBenchmark(b.N, "POST", "/customer", &qs, GetCustomer)
-
-// 	cu.Delete()
-// }
