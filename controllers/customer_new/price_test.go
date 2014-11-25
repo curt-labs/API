@@ -2,6 +2,7 @@ package customer_ctlr_new
 
 import (
 	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/httprunner"
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
 	"github.com/curt-labs/GoAPI/models/customer_new"
 	. "github.com/smartystreets/goconvey/convey"
@@ -16,23 +17,9 @@ func TestCustomerPrice(t *testing.T) {
 	var err error
 	var p customer_new.Price
 	var ps customer_new.Prices
-	var cu customer_new.CustomerUser
 	var c customer_new.Customer
 	c.Name = "Dog Bountyhunter"
 	c.Create()
-
-	// //setup
-	cu.Name = "test cust user"
-	cu.Email = "pretend@test.com"
-	cu.Password = "test"
-	cu.Sudo = true
-	cu.Create()
-	var apiKey string
-	for _, key := range cu.Keys {
-		if strings.ToLower(key.Type) == "public" {
-			apiKey = key.Key
-		}
-	}
 
 	Convey("Testing Customer_New/Price", t, func() {
 		//test create customer price
@@ -40,7 +27,7 @@ func TestCustomerPrice(t *testing.T) {
 		v := form.Encode()
 		body := strings.NewReader(v)
 		thyme := time.Now()
-		testThatHttp.Request("post", "/new/customer/prices", "", "?key="+apiKey, CreateUpdatePrice, body, "application/x-www-form-urlencoded")
+		testThatHttp.Request("post", "/new/customer/prices", "", "", CreateUpdatePrice, body, "application/x-www-form-urlencoded")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &p)
@@ -53,7 +40,7 @@ func TestCustomerPrice(t *testing.T) {
 		v = form.Encode()
 		body = strings.NewReader(v)
 		thyme = time.Now()
-		testThatHttp.Request("post", "/new/customer/prices/", ":id", strconv.Itoa(p.ID)+"?key="+apiKey, CreateUpdatePrice, body, "application/x-www-form-urlencoded")
+		testThatHttp.Request("post", "/new/customer/prices/", ":id", strconv.Itoa(p.ID), CreateUpdatePrice, body, "application/x-www-form-urlencoded")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &p)
@@ -65,7 +52,7 @@ func TestCustomerPrice(t *testing.T) {
 
 		//test get customer price
 		thyme = time.Now()
-		testThatHttp.Request("get", "/new/customer/prices/", ":id", strconv.Itoa(p.ID)+"?key="+apiKey, GetPrice, nil, "")
+		testThatHttp.Request("get", "/new/customer/prices/", ":id", strconv.Itoa(p.ID), GetPrice, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &p)
@@ -74,7 +61,7 @@ func TestCustomerPrice(t *testing.T) {
 
 		//test get all customer price
 		thyme = time.Now()
-		testThatHttp.Request("get", "/new/customer/prices", "", "?key="+apiKey, GetAllPrices, nil, "")
+		testThatHttp.Request("get", "/new/customer/prices", "", "", GetAllPrices, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()*4) //Long
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &ps)
@@ -83,7 +70,7 @@ func TestCustomerPrice(t *testing.T) {
 
 		//test get customer price by part
 		thyme = time.Now()
-		testThatHttp.Request("get", "/new/customer/prices/part/", ":id", strconv.Itoa(p.ID)+"?key="+apiKey, GetPricesByPart, nil, "")
+		testThatHttp.Request("get", "/new/customer/prices/part/", ":id", strconv.Itoa(p.ID), GetPricesByPart, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &ps)
@@ -92,7 +79,7 @@ func TestCustomerPrice(t *testing.T) {
 
 		//test get customer price by customer
 		thyme = time.Now()
-		testThatHttp.Request("get", "/new/customer/pricesByCustomer/", ":id", strconv.Itoa(c.Id)+"?key="+apiKey, GetPriceByCustomer, nil, "")
+		testThatHttp.Request("get", "/new/customer/pricesByCustomer/", ":id", strconv.Itoa(c.Id), GetPriceByCustomer, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &p)
@@ -104,7 +91,7 @@ func TestCustomerPrice(t *testing.T) {
 		v = form.Encode()
 		body = strings.NewReader(v)
 		thyme = time.Now()
-		testThatHttp.Request("post", "/new/customer/prices/sale", "", "?key="+apiKey, GetSales, body, "application/x-www-form-urlencoded")
+		testThatHttp.Request("post", "/new/customer/prices/sale", "", "", GetSales, body, "application/x-www-form-urlencoded")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &ps)
@@ -113,7 +100,7 @@ func TestCustomerPrice(t *testing.T) {
 
 		//test delete customer price
 		thyme = time.Now()
-		testThatHttp.Request("delete", "/new/customer/prices/", ":id", strconv.Itoa(p.ID)+"?key="+apiKey, DeletePrice, nil, "")
+		testThatHttp.Request("delete", "/new/customer/prices/", ":id", strconv.Itoa(p.ID), DeletePrice, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &p)
@@ -121,6 +108,90 @@ func TestCustomerPrice(t *testing.T) {
 		So(p, ShouldHaveSameTypeAs, customer_new.Price{})
 	})
 	//teardown
-	cu.Delete()
+	c.Delete()
+}
+
+func BenchmarkCRUDCustomerPrice(b *testing.B) {
+	var p customer_new.Price
+	var c customer_new.Customer
+	c.Name = "Axl Rose"
+	c.Create()
+	qs := make(url.Values, 0)
+
+	Convey("CustomerPrice", b, func() {
+		form := url.Values{"custID": {strconv.Itoa(c.Id)}, "partID": {"11000"}, "price": {"123456"}}
+		//create
+		(&httprunner.BenchmarkOptions{
+			Method:             "POST",
+			Route:              "/new/customer/prices",
+			ParameterizedRoute: "/new/customer/prices",
+			Handler:            CreateUpdatePrice,
+			QueryString:        &qs,
+			JsonBody:           p,
+			FormBody:           form,
+			Runs:               b.N,
+		}).RequestBenchmark()
+
+		//get
+		(&httprunner.BenchmarkOptions{
+			Method:             "GET",
+			Route:              "/new/customer/prices",
+			ParameterizedRoute: "/new/customer/prices/" + strconv.Itoa(p.ID),
+			Handler:            GetPrice,
+			QueryString:        &qs,
+			JsonBody:           p,
+			FormBody:           nil,
+			Runs:               b.N,
+		}).RequestBenchmark()
+
+		//get all
+		(&httprunner.BenchmarkOptions{
+			Method:             "GET",
+			Route:              "/new/customer/prices",
+			ParameterizedRoute: "/new/customer/prices",
+			Handler:            GetAllPrices,
+			QueryString:        &qs,
+			JsonBody:           p,
+			FormBody:           nil,
+			Runs:               b.N,
+		}).RequestBenchmark()
+
+		//get by part
+		(&httprunner.BenchmarkOptions{
+			Method:             "GET",
+			Route:              "/new/customer/prices/part",
+			ParameterizedRoute: "/new/customer/prices/part/" + strconv.Itoa(p.ID),
+			Handler:            GetPricesByPart,
+			QueryString:        &qs,
+			JsonBody:           p,
+			FormBody:           nil,
+			Runs:               b.N,
+		}).RequestBenchmark()
+
+		//get by
+		(&httprunner.BenchmarkOptions{
+			Method:             "GET",
+			Route:              "/new/customer/pricesByCustomer",
+			ParameterizedRoute: "/new/customer/pricesByCustomer/" + strconv.Itoa(c.Id),
+			Handler:            GetPriceByCustomer,
+			QueryString:        &qs,
+			JsonBody:           p,
+			FormBody:           nil,
+			Runs:               b.N,
+		}).RequestBenchmark()
+
+		//delete
+		(&httprunner.BenchmarkOptions{
+			Method:             "DELETE",
+			Route:              "/new/customer/prices",
+			ParameterizedRoute: "/new/customer/prices/" + strconv.Itoa(p.ID),
+			Handler:            DeleteLocation,
+			QueryString:        &qs,
+			JsonBody:           p,
+			FormBody:           nil,
+			Runs:               b.N,
+		}).RequestBenchmark()
+	})
+	//teardown
 	c.Delete()
 }
