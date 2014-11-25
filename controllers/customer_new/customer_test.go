@@ -3,12 +3,14 @@ package customer_ctlr_new
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/httprunner"
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
 	"github.com/curt-labs/GoAPI/models/apiKeyType"
 	"github.com/curt-labs/GoAPI/models/cartIntegration"
 	"github.com/curt-labs/GoAPI/models/customer_new"
 	"github.com/curt-labs/GoAPI/models/products"
 	. "github.com/smartystreets/goconvey/convey"
+	"net/url"
 	"strconv"
 	"strings"
 	"testing"
@@ -207,7 +209,7 @@ func BenchmarkCRUDCustomer(b *testing.B) {
 		var c customer_new.Customer
 		c.Name = "Freddy Krueger"
 		c.Email = "freddy@elm.st"
-		var locs customer_new.CustomerLocations
+		// var locs customer_new.CustomerLocations
 
 		//create
 		(&httprunner.BenchmarkOptions{
@@ -224,19 +226,71 @@ func BenchmarkCRUDCustomer(b *testing.B) {
 		(&httprunner.BenchmarkOptions{
 			Method:             "GET",
 			Route:              "/new/customer",
-			ParameterizedRoute: "/new/customer/" + c.Id,
+			ParameterizedRoute: "/new/customer/" + strconv.Itoa(c.Id),
 			Handler:            GetCustomer,
 			QueryString:        &qs,
-			JsonBody:           c,
+			JsonBody:           nil,
 			Runs:               b.N,
 		}).RequestBenchmark()
 
-		//get unique
+		//get locations
 		(&httprunner.BenchmarkOptions{
 			Method:             "GET",
 			Route:              "/new/customer",
-			ParameterizedRoute: "/new/customer/" + c.Id,
+			ParameterizedRoute: "/new/customer",
 			Handler:            GetLocations,
+			QueryString:        &qs,
+			JsonBody:           nil,
+			Runs:               b.N,
+		}).RequestBenchmark()
+
+		//get user
+		(&httprunner.BenchmarkOptions{
+			Method:             "GET",
+			Route:              "/new/customer/user",
+			ParameterizedRoute: "/new/customer/user",
+			Handler:            GetUser,
+			QueryString:        &qs,
+			JsonBody:           nil,
+			Runs:               b.N,
+		}).RequestBenchmark()
+
+		//get users
+		(&httprunner.BenchmarkOptions{
+			Method:             "GET",
+			Route:              "/new/customer/users",
+			ParameterizedRoute: "/new/customer/users",
+			Handler:            GetUsers,
+			QueryString:        &qs,
+			JsonBody:           nil,
+			Runs:               b.N,
+		}).RequestBenchmark()
+
+		//set up price & part
+		var p products.Part
+		p.ID = 123
+		p.Create()
+		var price customer_new.Price
+		price.CustID = c.Id
+		price.Create()
+
+		//get price
+		(&httprunner.BenchmarkOptions{
+			Method:             "GET",
+			Route:              "/new/customer/price",
+			ParameterizedRoute: "/new/customer/price/" + strconv.Itoa(p.ID),
+			Handler:            GetUser,
+			QueryString:        &qs,
+			JsonBody:           nil,
+			Runs:               b.N,
+		}).RequestBenchmark()
+
+		//get cart ref
+		(&httprunner.BenchmarkOptions{
+			Method:             "GET",
+			Route:              "/new/customer/cartRef",
+			ParameterizedRoute: "/new/customer/cartRef/" + strconv.Itoa(p.ID),
+			Handler:            GetUser,
 			QueryString:        &qs,
 			JsonBody:           nil,
 			Runs:               b.N,
@@ -246,11 +300,18 @@ func BenchmarkCRUDCustomer(b *testing.B) {
 		(&httprunner.BenchmarkOptions{
 			Method:             "DELETE",
 			Route:              "/new/customer",
-			ParameterizedRoute: "/new/customer" + c.Id,
+			ParameterizedRoute: "/new/customer/" + strconv.Itoa(c.Id),
 			Handler:            DeleteCustomer,
 			QueryString:        &qs,
 			JsonBody:           nil,
 			Runs:               b.N,
 		}).RequestBenchmark()
+
+		//tear down price and part
+		price.Delete()
+		p.Delete()
 	})
+	//teardown customer user
+	cu.Delete()
+
 }

@@ -27,11 +27,12 @@ type report struct {
 	sizeTotal      int64
 
 	endpoint string
+	method   string
 
 	output string
 }
 
-func printReport(size int, results chan *result, output string, total time.Duration, endpoint string) {
+func printReport(size int, results chan *result, output string, total time.Duration, endpoint string, method string) {
 	r := &report{
 		output:         output,
 		results:        results,
@@ -39,6 +40,7 @@ func printReport(size int, results chan *result, output string, total time.Durat
 		statusCodeDist: make(map[int]int),
 		errorDist:      make(map[string]int),
 		endpoint:       endpoint,
+		method:         method,
 	}
 	r.finalize()
 }
@@ -78,7 +80,7 @@ func (r *report) print() {
 		r.fastest = r.lats[0]
 		r.slowest = r.lats[len(r.lats)-1]
 		fmt.Printf("\nSummary:\n")
-		fmt.Printf("  Endpoint: %s \n", r.endpoint)
+		fmt.Printf("  Method: %s \n  Endpoint: %s \n", r.method, r.endpoint)
 		fmt.Printf("  Total:\t%4.4f secs.\n", r.total.Seconds())
 		fmt.Printf("  Slowest:\t%4.4f secs.\n", r.slowest)
 		fmt.Printf("  Fastest:\t%4.4f secs.\n", r.fastest)

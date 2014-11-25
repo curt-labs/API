@@ -27,7 +27,7 @@ func (b *Runner) Run() {
 	}
 
 	if b.Output != "none" {
-		printReport(b.N, b.results, b.Output, time.Now().Sub(start), b.Req.URL)
+		printReport(b.N, b.results, b.Output, time.Now().Sub(start), b.Req.URL, b.Req.Method)
 	}
 	close(b.results)
 }
