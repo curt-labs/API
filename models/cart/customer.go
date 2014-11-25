@@ -285,5 +285,9 @@ func (c *Customer) Delete() error {
 		return err
 	}
 
+	if c.Orders != nil && len(c.Orders) > 0 {
+		return fmt.Errorf("error: %s", "can't remove a customer that has order information")
+	}
+
 	return sess.DB("CurtCart").C("customer").RemoveId(c.Id)
 }
