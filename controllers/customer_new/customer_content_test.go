@@ -224,7 +224,7 @@ func TestCustomerContent(t *testing.T) {
 	pub.Delete()
 	pri.Delete()
 	auth.Delete()
-
+	//TODO customeruser is not being deleted
 }
 
 //using httptestrunner

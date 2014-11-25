@@ -2,6 +2,7 @@ package customer_ctlr_new
 
 import (
 	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/httprunner"
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
 	"github.com/curt-labs/GoAPI/models/apiKeyType"
 	"github.com/curt-labs/GoAPI/models/customer_new"
@@ -164,4 +165,42 @@ func TestCustomerUser(t *testing.T) {
 	//incase
 	cu.Delete()
 
+}
+
+func BenchmarkCRUDCustomerUser(b *testing.B) {
+	var cu customer_new.CustomerUser
+	var c customer_new.Customer
+	c.Name = "Mick Mattleson"
+	c.Create()
+
+	qs := make(url.Values, 0)
+
+	Convey("CustomerUser", b, func() {
+		form := url.Values{"name": {"Mitt Romney"}, "email": {"magic@underpants.com"}, "pass": {"robthepoor"}, "customerID": {strconv.Itoa(c.Id)}, "isActive": {"true"}, "locationID": {"1"}, "isSudo": {"true"}, "cust_ID": {"1"}}
+		//create
+		(&httprunner.BenchmarkOptions{
+			Method:             "POST",
+			Route:              "/new/customer/user/register",
+			ParameterizedRoute: "/new/customer/user/register",
+			Handler:            RegisterUser,
+			QueryString:        &qs,
+			JsonBody:           cu,
+			FormBody:           form,
+			Runs:               b.N,
+		}).RequestBenchmark()
+
+		//delete
+		(&httprunner.BenchmarkOptions{
+			Method:             "DELETE",
+			Route:              "/new/customer/user/register",
+			ParameterizedRoute: "/new/customer/user/register/" + cu.Id,
+			Handler:            DeleteCustomerUser,
+			QueryString:        &qs,
+			JsonBody:           cu,
+			FormBody:           nil,
+			Runs:               b.N,
+		}).RequestBenchmark()
+	})
+	cu.Delete()
+	c.Delete()
 }
