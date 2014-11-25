@@ -48,7 +48,6 @@ func GetCategory(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 	defer r.Body.Close()
 	specs := make(map[string][]string, 0)
 	if strings.Contains(r.Header.Get("Content-Type"), "json") && len(data) > 0 {
-
 		var fs []FilterSpecifications
 		if err = json.Unmarshal(data, &fs); err == nil {
 			for _, f := range fs {
@@ -68,17 +67,14 @@ func GetCategory(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 			}
 		}
 	}
-	log.Print(page, count, id, l.Vehicle, specs)
 	// Get Category
 	if err != nil { // get by title
-
 		cat, err = products.GetCategoryByTitle(params["id"])
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return ""
 		}
 	} else { // get by id
-
 		cat.ID = id
 		if err = cat.GetCategory(key, page, count, false, &l.Vehicle, &specs); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

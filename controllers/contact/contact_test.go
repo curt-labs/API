@@ -177,7 +177,7 @@ func TestContact(t *testing.T) {
 	})
 }
 
-func BenchmarkBrands(b *testing.B) {
+func BenchmarkContact(b *testing.B) {
 	testThatHttp.RequestBenchmark(b.N, "GET", "/contact/"+randContact(), nil, GetContact)
 	testThatHttp.RequestBenchmark(b.N, "GET", "/contact", nil, GetAllContacts)
 	testThatHttp.RequestBenchmark(b.N, "GET", "/contact/types/"+randType(), nil, GetContactType)

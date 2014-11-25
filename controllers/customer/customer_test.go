@@ -119,3 +119,35 @@ func TestCustomer(t *testing.T) {
 
 	custCon.Delete(11000, 1, apiKey)
 }
+
+func BenchmarkCustomer(b *testing.B) {
+	//create customer
+	var cu customer_new.CustomerUser
+	var apiKey string
+	cu.Name = "test cust user"
+	cu.Email = "pretend@test.com"
+	cu.Password = "test"
+	cu.Sudo = true
+	cu.Create()
+
+	for _, key := range cu.Keys {
+		if strings.ToLower(key.Type) == "public" {
+			apiKey = key.Key
+		}
+	}
+	b.Log("APIKEY", apiKey)
+
+	qs := make(url.Values, 0)
+	qs.Add("key", apiKey)
+
+	testThatHttp.RequestBenchmark(b.N, "POST", "/customer", &qs, GetCustomer) //TODO form
+	testThatHttp.RequestBenchmark(b.N, "POST", "/customer/user", &qs, GetUser)
+	testThatHttp.RequestBenchmark(b.N, "POST", "/customer/locations", &qs, GetLocations)
+	testThatHttp.RequestBenchmark(b.N, "POST", "/customer/users", &qs, GetUsers)
+	testThatHttp.RequestBenchmark(b.N, "GET", "/cms/content-types", nil, GetAllContentTypes)
+	testThatHttp.RequestBenchmark(b.N, "GET", "/cms/", nil, GetAllContent)
+	testThatHttp.RequestBenchmark(b.N, "GET", "/cms/part", nil, AllPartContent)
+	testThatHttp.RequestBenchmark(b.N, "GET", "/cms/part/11000", nil, UniquePartContent)
+
+	cu.Delete()
+}
