@@ -2,6 +2,7 @@ package customer_ctlr_new
 
 import (
 	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/httprunner"
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
 	"github.com/curt-labs/GoAPI/models/apiKeyType"
@@ -21,14 +22,17 @@ func TestCustomerUser(t *testing.T) {
 	c.Name = "Dog Bountyhunter"
 	c.Create()
 
-	//setup apiKeyTypes
 	var pub, pri, auth apiKeyType.ApiKeyType
-	pub.Type = "public"
-	pri.Type = "private"
-	auth.Type = "authentication"
-	pub.Create()
-	pri.Create()
-	auth.Create()
+	if database.EmptyDb != nil {
+		t.Log("clean db")
+		//setup apiKeyTypes
+		pub.Type = "Public"
+		pri.Type = "Private"
+		auth.Type = "Authentication"
+		pub.Create()
+		pri.Create()
+		auth.Create()
+	}
 
 	var apiKey string
 
@@ -158,12 +162,16 @@ func TestCustomerUser(t *testing.T) {
 	})
 	//teardown
 	c.Delete()
-	pub.Delete()
-	pri.Delete()
-	auth.Delete()
-
 	//incase
 	cu.Delete()
+
+	if database.EmptyDb != nil {
+		err = pub.Delete()
+
+		err = pri.Delete()
+
+		err = auth.Delete()
+	}
 
 }
 
@@ -173,7 +181,20 @@ func BenchmarkCRUDCustomerUser(b *testing.B) {
 	c.Name = "Mick Mattleson"
 	c.Create()
 
+	cu.Name = "user auth test"
+	cu.Email = "auth@test.com"
+	cu.Password = "test"
+	cu.Sudo = true
+	cu.Create()
+	var apiKey string
+	for _, key := range cu.Keys {
+		if strings.ToLower(key.Type) == "public" {
+			apiKey = key.Key
+		}
+	}
+
 	qs := make(url.Values, 0)
+	qs.Add("key", apiKey)
 
 	Convey("CustomerUser", b, func() {
 		form := url.Values{"name": {"Mitt Romney"}, "email": {"magic@underpants.com"}, "pass": {"robthepoor"}, "customerID": {strconv.Itoa(c.Id)}, "isActive": {"true"}, "locationID": {"1"}, "isSudo": {"true"}, "cust_ID": {"1"}}
@@ -189,6 +210,31 @@ func BenchmarkCRUDCustomerUser(b *testing.B) {
 			Runs:               b.N,
 		}).RequestBenchmark()
 
+		//authenticate user
+		form = url.Values{"email": {"magic@underpants.com"}, "password": {"robthepoor"}}
+		(&httprunner.BenchmarkOptions{
+			Method:             "POST",
+			Route:              "/new/customer/auth",
+			ParameterizedRoute: "/new/customer/auth",
+			Handler:            AuthenticateUser,
+			QueryString:        &qs,
+			JsonBody:           nil,
+			FormBody:           nil,
+			Runs:               b.N,
+		}).RequestBenchmark()
+
+		//authenticate user by key
+		(&httprunner.BenchmarkOptions{
+			Method:             "GET",
+			Route:              "/new/customer/auth",
+			ParameterizedRoute: "/new/customer/auth",
+			Handler:            KeyedUserAuthentication,
+			QueryString:        &qs,
+			JsonBody:           nil,
+			FormBody:           nil,
+			Runs:               b.N,
+		}).RequestBenchmark()
+
 		//delete
 		(&httprunner.BenchmarkOptions{
 			Method:             "DELETE",
@@ -200,6 +246,9 @@ func BenchmarkCRUDCustomerUser(b *testing.B) {
 			FormBody:           nil,
 			Runs:               b.N,
 		}).RequestBenchmark()
+
+		form = url.Values{"email": {"magic@underpants.com"}, "password": {"robthepoor"}}
+
 	})
 	cu.Delete()
 	c.Delete()

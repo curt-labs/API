@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/httprunner"
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
-	"github.com/curt-labs/GoAPI/models/apiKeyType"
 	"github.com/curt-labs/GoAPI/models/customer_new"
 	. "github.com/smartystreets/goconvey/convey"
 	"net/url"
@@ -38,15 +37,6 @@ func TestDealers_New(t *testing.T) {
 	c.Latitude = 44.83536
 	c.Longitude = -93.0201
 	err = c.Create()
-
-	//setup apiKeyTypes
-	var pub, pri, auth apiKeyType.ApiKeyType
-	pub.Type = "public"
-	pri.Type = "private"
-	auth.Type = "authentication"
-	pub.Create()
-	pri.Create()
-	auth.Create()
 
 	cu.CustomerID = c.Id
 	cu.Name = "test cust user"
@@ -175,15 +165,12 @@ func TestDealers_New(t *testing.T) {
 	err = dt.Delete()
 	loc.Delete()
 
-	pub.Delete()
-	pri.Delete()
-	auth.Delete()
 }
 
 func BenchmarkCRUDDealers(b *testing.B) {
 	var cu customer_new.CustomerUser
-	cu.Name = "test cust user"
-	cu.Email = "pretend@test.com"
+	cu.Name = "test dealer cust user"
+	cu.Email = "dealer@test.com"
 	cu.Password = "test"
 	cu.Sudo = true
 	cu.Create()
