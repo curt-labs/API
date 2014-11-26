@@ -160,7 +160,7 @@ func Request(method, route string, body *url.Values, handler martini.Handler) *h
 	return response
 }
 
-func ParameterizedRequest(method, prepared_route string, route string, body *url.Values, handler martini.Handler) *httptest.ResponseRecorder {
+func ParameterizedRequest(method, prepared_route string, route string, qs *url.Values, body *url.Values, handler martini.Handler) *httptest.ResponseRecorder {
 	m := martini.New()
 	r := martini.NewRouter()
 	switch strings.ToUpper(method) {
@@ -184,11 +184,13 @@ func ParameterizedRequest(method, prepared_route string, route string, body *url
 	m.Use(middleware.Meddler())
 	m.Action(r.Handle)
 
+	if qs != nil {
+		route = route + "?" + qs.Encode()
+	}
+
 	var request *http.Request
 	if body != nil && strings.ToUpper(method) != "GET" {
 		request, _ = http.NewRequest(method, route, bytes.NewBufferString(body.Encode()))
-	} else if body != nil {
-		request, _ = http.NewRequest(method, route+"?"+body.Encode(), nil)
 	} else {
 		request, _ = http.NewRequest(method, route, nil)
 	}

@@ -140,8 +140,9 @@ func TestCustomer(t *testing.T) {
 			customer.FirstName = "Alex"
 			customer.LastName = "Ninneman"
 			customer.Email = "ninnemana@gmail.com"
+			addrId := bson.NewObjectId()
 			addr := CustomerAddress{
-				Id:           bson.NewObjectId(),
+				Id:           &addrId,
 				Address1:     "1119 Sunset Lane",
 				City:         "Altoona",
 				Company:      "CURT Manufacturing, LLC",
@@ -205,8 +206,7 @@ func TestCustomerCount(t *testing.T) {
 			os.Setenv("MONGO_URL", "")
 		})
 		Convey("Empty Shop ID", func() {
-			var id bson.ObjectId
-			count, err := CustomerCount(id)
+			count, err := CustomerCount("")
 			So(err, ShouldNotBeNil)
 			So(count, ShouldEqual, 0)
 		})
@@ -215,5 +215,26 @@ func TestCustomerCount(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(count, ShouldEqual, 0)
 		})
+	})
+}
+
+func TestSearchCustomers(t *testing.T) {
+	Convey("Bad Connection", t, func() {
+		os.Setenv("MONGO_URL", "0.0.0.1")
+		custs, err := SearchCustomers("", bson.NewObjectId())
+		So(err, ShouldNotBeNil)
+		So(custs, ShouldHaveSameTypeAs, []Customer{})
+		os.Setenv("MONGO_URL", "")
+	})
+	Convey("Empty query", t, func() {
+		custs, err := SearchCustomers("", bson.NewObjectId())
+		So(err, ShouldNotBeNil)
+		So(custs, ShouldHaveSameTypeAs, []Customer{})
+	})
+	Convey("With Query", t, func() {
+		custs, err := SearchCustomers("test", bson.NewObjectId())
+		t.Log("// TODO: This should not return an error eventually")
+		So(err, ShouldNotBeNil)
+		So(custs, ShouldHaveSameTypeAs, []Customer{})
 	})
 }

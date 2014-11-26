@@ -151,7 +151,7 @@ func Test_GetCustomer(t *testing.T) {
 		qs.Add("shop", val)
 
 		Convey("with bad customer reference", func() {
-			response = httprunner.ParameterizedRequest("GET", "/shopify/customers/:id", "/shopify/customers/1234", &qs, GetCustomer)
+			response = httprunner.ParameterizedRequest("GET", "/shopify/customers/:id", "/shopify/customers/1234", &qs, nil, GetCustomer)
 			So(response.Code, ShouldEqual, 500)
 			So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
 		})
@@ -167,11 +167,11 @@ func Test_GetCustomer(t *testing.T) {
 			So(response.Code, ShouldEqual, 200)
 			So(json.Unmarshal(response.Body.Bytes(), &cust), ShouldBeNil)
 
-			response = httprunner.ParameterizedRequest("GET", "/shopify/customers/:id", "/shopify/customers/"+shopID.Hex(), &qs, GetCustomer)
+			response = httprunner.ParameterizedRequest("GET", "/shopify/customers/:id", "/shopify/customers/"+shopID.Hex(), &qs, nil, GetCustomer)
 			So(response.Code, ShouldEqual, 500)
 			So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
 
-			response = httprunner.ParameterizedRequest("GET", "/shopify/customers/:id", "/shopify/customers/"+cust.Id.Hex(), &qs, GetCustomer)
+			response = httprunner.ParameterizedRequest("GET", "/shopify/customers/:id", "/shopify/customers/"+cust.Id.Hex(), &qs, nil, GetCustomer)
 			So(response.Code, ShouldEqual, 200)
 			So(json.Unmarshal(response.Body.Bytes(), &cust), ShouldBeNil)
 		})
@@ -340,7 +340,7 @@ func Test_GetCustomerOrders(t *testing.T) {
 		qs.Add("shop", val)
 
 		Convey("with bad customer reference", func() {
-			response = httprunner.ParameterizedRequest("GET", "/shopify/customers/:id/orders", "/shopify/customers/1234/orders", &qs, GetCustomerOrders)
+			response = httprunner.ParameterizedRequest("GET", "/shopify/customers/:id/orders", "/shopify/customers/1234/orders", &qs, nil, GetCustomerOrders)
 			So(response.Code, ShouldEqual, 500)
 			So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
 		})
@@ -356,12 +356,12 @@ func Test_GetCustomerOrders(t *testing.T) {
 			So(response.Code, ShouldEqual, 200)
 			So(json.Unmarshal(response.Body.Bytes(), &cust), ShouldBeNil)
 
-			response = httprunner.ParameterizedRequest("GET", "/shopify/customers/:id/orders", "/shopify/customers/"+shopID.Hex()+"/orders", &qs, GetCustomerOrders)
+			response = httprunner.ParameterizedRequest("GET", "/shopify/customers/:id/orders", "/shopify/customers/"+shopID.Hex()+"/orders", &qs, nil, GetCustomerOrders)
 			So(response.Code, ShouldEqual, 500)
 			So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
 
 			var orders []interface{}
-			response = httprunner.ParameterizedRequest("GET", "/shopify/customers/:id/orders", "/shopify/customers/"+cust.Id.Hex()+"/orders", &qs, GetCustomerOrders)
+			response = httprunner.ParameterizedRequest("GET", "/shopify/customers/:id/orders", "/shopify/customers/"+cust.Id.Hex()+"/orders", &qs, nil, GetCustomerOrders)
 			So(response.Code, ShouldEqual, 200)
 			So(json.Unmarshal(response.Body.Bytes(), &orders), ShouldBeNil)
 		})

@@ -237,6 +237,11 @@ func main() {
 
 		// Addresses
 		r.Get("/customers/:id/addresses", cart_ctlr.GetAddresses)
+		r.Get("/customers/:id/addresses/:address", cart_ctlr.GetAddress)
+		r.Post("/customers/:id/addresses", cart_ctlr.AddAddress)
+		r.Put("/customers/:id/addresses/:address/default", cart_ctlr.SetDefaultAddress)
+		r.Put("/customers/:id/addresses/:address", cart_ctlr.EditAddress)
+		r.Delete("/customers/:id/addresses/:address", cart_ctlr.DeleteAddress)
 	})
 
 	m.Group("/cart", func(r martini.Router) {
