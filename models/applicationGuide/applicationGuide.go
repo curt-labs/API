@@ -4,14 +4,14 @@ import (
 	"database/sql"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/models/products"
-	"github.com/curt-labs/GoAPI/models/site_new"
+	"github.com/curt-labs/GoAPI/models/site"
 	_ "github.com/go-sql-driver/mysql"
 )
 
 type ApplicationGuide struct {
 	ID       int               `json:"id,omitempty" xml:"id,omitempty"`
 	Url      string            `json:"url,omitempty" xml:"url,omitempty"`
-	Website  site_new.Website  `json:"website,omitempty" xml:"website,omitempty"`
+	Website  site.Website      `json:"website,omitempty" xml:"website,omitempty"`
 	FileType string            `json:"fileType,omitempty" xml:"fileType,omitempty"`
 	Category products.Category `json:"category,omitempty" xml:"category,omitempty"`
 	Icon     string            `json:"icon,omitempty" xml:"icon,omitempty"`

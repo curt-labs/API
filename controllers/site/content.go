@@ -4,67 +4,118 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/site"
 	"github.com/go-martini/martini"
+	// "log"
+	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 )
 
-func GetContentPage(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func GetContent(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+	var c site.Content
 	var err error
-	var cp site.ContentPage
-	err = r.ParseForm()
-	authenticated, err := strconv.ParseBool(r.FormValue("auth"))
-	if err != nil || authenticated == false {
-		http.Error(w, err.Error(), http.StatusForbidden)
-		return ""
+	idStr := params["id"]
+	id, err := strconv.Atoi(idStr)
+
+	if err == nil {
+		//Thar be an Id int
+		c.Id = id
+		err = c.Get()
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusNoContent)
+			return ""
+		}
+	} else {
+		//Thar be a slug
+		c.Slug = idStr
+		err = c.GetBySlug()
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusNoContent)
+			return ""
+		}
 	}
-	name := r.FormValue("name")
-	menuId, err := strconv.Atoi(r.FormValue("menuId"))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return ""
-	}
-
-	cp.SiteContent.Slug = name
-	err = cp.GetContentPageByName(menuId, authenticated)
-
-	return encoding.Must(enc.Encode(cp))
-
+	return encoding.Must(enc.Encode(c))
 }
 
-func GetPrimaryContentPage(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	var err error
-	var cp site.ContentPage
-	err = cp.GetPrimaryContentPage()
+func GetAllContents(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+	m, err := site.GetAllContents()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(rw, err.Error(), http.StatusNoContent)
 		return ""
 	}
-	return encoding.Must(enc.Encode(cp))
+	return encoding.Must(enc.Encode(m))
 }
 
-//super clumsy function; borrowed from v2; TODO--trash it or fix it
-func GetSitemapCP(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func GetContentRevisions(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+	var c site.Content
 	var err error
-	var cps site.ContentPages
-	cps, err = site.GetSitemapCP()
+	idStr := params["id"]
+	c.Id, err = strconv.Atoi(idStr)
+
+	err = c.GetContentRevisions()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(rw, err.Error(), http.StatusNoContent)
 		return ""
 	}
-	return encoding.Must(enc.Encode(cps))
+
+	return encoding.Must(enc.Encode(c))
 }
 
-func GetLandingPage(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func SaveContent(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+	var c site.Content
 	var err error
-	var lp site.LandingPage
-	err = r.ParseForm()
-	lp.Id, err = strconv.Atoi(r.FormValue("id"))
+	idStr := params["id"]
+	if idStr != "" {
+		c.Id, err = strconv.Atoi(idStr)
+		err = c.Get()
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return ""
+		}
+	}
 
-	err = lp.Get()
+	//json
+	requestBody, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return encoding.Must(enc.Encode(false))
+	}
+	err = json.Unmarshal(requestBody, &c)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return encoding.Must(enc.Encode(false))
+	}
+	//create or update
+	if c.Id > 0 {
+		err = c.Update()
+	} else {
+		err = c.Create()
+	}
+
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+	return encoding.Must(enc.Encode(c))
+}
+
+func DeleteContent(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+	var err error
+	var c site.Content
+
+	idStr := params["id"]
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+	c.Id = id
+	err = c.Delete()
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
 
-	return encoding.Must(enc.Encode(lp))
+	return encoding.Must(enc.Encode(c))
 }

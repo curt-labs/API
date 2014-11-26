@@ -1,9 +1,9 @@
-package site_new
+package site
 
 import (
 	"encoding/json"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
-	"github.com/curt-labs/GoAPI/models/site_new"
+	"github.com/curt-labs/GoAPI/models/site"
 	"github.com/go-martini/martini"
 	"io/ioutil"
 	"net/http"
@@ -11,7 +11,7 @@ import (
 )
 
 func GetSiteDetails(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
-	var w site_new.Website
+	var w site.Website
 	var err error
 	idStr := params["id"]
 	id, err := strconv.Atoi(idStr)
@@ -27,7 +27,7 @@ func GetSiteDetails(rw http.ResponseWriter, req *http.Request, enc encoding.Enco
 }
 
 func SaveSite(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
-	var m site_new.Website
+	var m site.Website
 	var err error
 	idStr := params["id"]
 	if idStr != "" {
@@ -66,7 +66,7 @@ func SaveSite(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, p
 
 func DeleteSite(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var err error
-	var m site_new.Website
+	var m site.Website
 
 	idStr := params["id"]
 

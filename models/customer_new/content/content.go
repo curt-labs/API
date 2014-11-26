@@ -131,6 +131,7 @@ var (
 	getRevisionsByContentId = `select ccr.id, ccr.userID, ccr.custID, ccr.old_text, ccr.new_text, ccr.date, ccr.changeType, ccr.contentID, ccr.old_type, ccr.new_type
 								from CustomerContent_Revisions as ccr
 								where contentID = ?`
+	deleteCustomerContentById = `delete from CustomerContent where id = ?`
 )
 
 const (
@@ -652,4 +653,22 @@ func AllCustomerContentTypes() (types []ContentType, err error) {
 	}
 	defer res.Close()
 	return
+}
+
+func (c *CustomerContent) DeleteById() error {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(deleteCustomerContentById)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(c.Id)
+	if err != nil {
+		return err
+	}
+	return err
 }

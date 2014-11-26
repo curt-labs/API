@@ -7,355 +7,112 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-type MenuWithContent struct {
-	Menu     `json:"menu,omitempty" xml:"menu,omitempty"`
-	Contents []MenuItem `json:"contents,omitempty" xml:"contents,omitempty"`
-}
-type MenuWithContents []MenuWithContent
-
 type Menu struct {
-	Id                    int    `json:"id,omitempty" xml:"id,omitempty"`
-	Name                  string `json:"name,omitempty" xml:"name,omitempty"`
-	IsPrimary             bool   `json:"isPrimary,omitempty" xml:"isPrimary,omitempty"`
-	Active                bool   `json:"active,omitempty" xml:"active,omitempty"`
-	DisplayName           string `json:"displayName,omitempty" xml:"displayName,omitempty"`
-	RequireAuthentication bool   `json:"requireAuthentication,omitempty" xml:"requireAuthentication,omitempty"`
-	ShowOnSiteMap         bool   `json:"showOnSiteMap,omitempty" xml:"showOnSiteMap,omitempty"`
-	Sort                  int    `json:"sort,omitempty" xml:"sort,omitempty"`
-	WebsiteId             int    `json:"websiteId,omitempty" xml:"websiteId,omitempty"`
+	Id                    int      `json:"id,omitempty" xml:"id,omitempty"`
+	Name                  string   `json:"name,omitempty" xml:"name,omitempty"`
+	IsPrimary             bool     `json:"isPrimary,omitempty" xml:"isPrimary,omitempty"`
+	Active                bool     `json:"active,omitempty" xml:"active,omitempty"`
+	DisplayName           string   `json:"displayName,omitempty" xml:"displayName,omitempty"`
+	RequireAuthentication bool     `json:"requireAuthentication,omitempty" xml:"requireAuthentication,omitempty"`
+	ShowOnSitemap         bool     `json:"showOnSitemap,omitempty" xml:showOnSitemap,omitempty"`
+	Sort                  int      `json:"sort,omitempty" xml:"sort,omitempty"`
+	WebsiteId             int      `json:"websiteId,omitempty" xml:"websiteId,omitempty"`
+	Contents              Contents `json:"contents,omitempty" xml:"contents,omitempty"`
 }
-
 type Menus []Menu
 
-type MenuItem struct {
-	Menu_SiteContent `json:"menuSiteContent,omitempty" xml:"menuSiteContent,omitempty"`
-	Content          ContentPage `json:"content,omitempty" xml:"content,omitempty"`
-}
-type MenuItems []MenuItem
-
-type Menu_SiteContent struct {
-	Id         int    `json:"id,omitempty" xml:"id,omitempty"`
-	MenuId     int    `json:"menuId,omitempty" xml:"menuId,omitempty"`
-	ContentId  int    `json:"contentId,omitempty" xml:"contentId,omitempty"`
-	Sort       int    `json:"sort,omitempty" xml:"sort,omitempty"`
-	Title      string `json:"title,omitempty" xml:"title,omitempty"`
-	Link       string `json:"link,omitempty" xml:"link,omitempty"`
-	ParentId   int    `json:"parentId,omitempty" xml:"parentId,omitempty"`
-	LinkTarget bool   `json:"linkTarget,omitempty" xml:"linkTarget,omitempty"`
-}
-type Menu_SiteContents []Menu_SiteContent
-
 const (
-	menuColumns            = "m.menuID, m.menu_name, m.isPrimary, m.active, m.display_name, m.requireAuthentication, m.showOnSiteMap, m.sort, m.websiteID" //menu AS m
-	menuSiteContentColumns = "msc.menuContentID, msc.menuID, msc.contentID, msc.menuSort, msc.menuTitle, msc.menuLink, msc.parentID, msc.linkTarget"       //as msc
+	menuFields            = "m.menuID, m.menu_name, m.isPrimary, m.active, m.display_name, m.requireAuthentication, m.showOnSiteMap, m.sort, m.websiteID"                                                                                           //menu AS m
+	menuSiteContentFields = "msc.menuSort, msc.menuTitle, msc.menuLink, msc.parentID, msc.linkTarget"                                                                                                                                               //omits join ids  as msc
+	siteContentFields     = "s.contentID, s.content_type, s.page_title, s.createdDate, s.lastModified, s.meta_title, s.meta_description, s.keywords, s.isPrimary, s.published, s.active, s.slug, s.requireAuthentication, s.canonical, s.contentID" //as s
+
 )
 
 var (
-	getMenuByContentID = `SELECT ` + menuColumns + ` FROM Menu AS m
-							JOIN Menu_SiteContent AS msc ON m.menuID = msc.menuID
-							  WHERE msc.contentID = ? && isPrimary = 0 && m.requireAuthentication = ? && m.websiteID = 1
-							  ORDER BY msc.menuID ASC
-							  LIMIT 1` //TODO - V2 changed this to menuID
-
-	getPrimaryMenu           = `SELECT ` + menuColumns + ` FROM Menu AS m WHERE m.isPrimary = 1 && m.websiteID = 1`
-	getMenu                  = `SELECT ` + menuColumns + ` FROM Menu AS m WHERE m.menuID = ?`
-	getAllMenus              = `SELECT ` + menuColumns + ` FROM Menu AS m `
-	getMenuByName            = `SELECT ` + menuColumns + ` FROM Menu AS m WHERE m.menu_name = ?`
-	getMenuByMenuID          = `SELECT ` + menuColumns + ` FROM Menu AS m WHERE m.menuID = ? && m.websiteID = 1`
-	getMenuItemsByMenuID     = `SELECT ` + menuSiteContentColumns + ` FROM Menu_SiteContent AS msc WHERE msc.menuID = ? ORDER BY menuSort`
-	getFooterSitemap         = `SELECT ` + menuColumns + ` FROM Menu AS m WHERE m.showOnSitemap = 1 && m.websiteID = 1 ORDER BY m.sort`
-	getMenuWithContentByName = `SELECT ` + menuColumns + ` FROM Menu AS m WHERE m.menu_name = ? &&m.websiteID  = 1 LIMIT 1`
-	getAllMenuContents       = `SELECT ` + menuSiteContentColumns + ` FROM Menu_SiteContent AS msc`
-	getMenuSitemap           = `SELECT ` + menuColumns + ` FROM Menu AS m WHERE m.websiteID = 1 ORDER BY m.isPrimary DESC`
-	getMenuIDByContentID     = `select menuID from Menu_SiteContent where contentID = ?`
+	getMenu         = ` SELECT ` + menuFields + ` FROM Menu AS m WHERE menuID = ? `
+	getAllMenus     = ` SELECT ` + menuFields + ` FROM Menu AS m`
+	getMenuContents = `SELECT ` + siteContentFields + `, ` + menuSiteContentFields + `  from Menu_SiteContent as msc JOIN SiteContent AS s ON s.contentID = msc.ContentID  WHERE msc.menuID = ?`
+	getMenuByName   = ` SELECT ` + menuFields + ` FROM Menu AS m WHERE menu_name = ? `
+	//operations
+	createMenu                    = `INSERT INTO Menu (menu_name, isPrimary, active, display_name, requireAuthentication, showOnSiteMap, sort, websiteID) VALUES(?,?,?,?,?,?,?,?)`
+	updateMenu                    = `UPDATE Menu SET menu_name = ?, isPrimary = ?, active = ?, display_name = ?, requireAuthentication = ?, showOnSiteMap = ?, sort = ?, websiteID = ? WHERE menuID = ?`
+	deleteMenu                    = `DELETE FROM Menu WHERE menuID = ?`
+	deleteMenuSiteContentByMenuId = `DELETE FROM Menu_SiteContent WHERE menuID = ?` //used when deleting menu
+	createMenuContentJoin         = `INSERT INTO Menu_SiteContent (menuID, contentID, menuSort, menuTitle, menuLink, parentID, linkTarget) VALUES(?,?,?,?,?,?,?)`
+	deleteMenuSiteContentJoin     = `DELETE FROM Menu_SiteContent WHERE menuID = ? AND contentID = ?`
 )
 
-//get primary menu...with Menu Contents ...primary Menu is just GetMenu, with primary
-func (m *MenuWithContent) GetPrimaryMenu() (err error) {
+//Fetch menu by Id
+func (m *Menu) Get() (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
 	}
 	defer db.Close()
-	stmt, err := db.Prepare(getPrimaryMenu)
+	stmt, err := db.Prepare(getMenu)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
-	err = stmt.QueryRow().Scan(
+	var display *string
+
+	err = stmt.QueryRow(m.Id).Scan(
 		&m.Id,
 		&m.Name,
 		&m.IsPrimary,
 		&m.Active,
-		&m.DisplayName,
+		&display,
 		&m.RequireAuthentication,
-		&m.ShowOnSiteMap,
+		&m.ShowOnSitemap,
 		&m.Sort,
 		&m.WebsiteId,
 	)
 	if err != nil {
 		return err
 	}
-	m.Contents, err = m.Menu.GetMenuItemsByMenuId()
-	return err
-}
-
-func (m *Menu) GetMenuItemsByMenuId() (ms MenuItems, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return ms, err
-	}
-	defer db.Close()
-	stmt, err := db.Prepare(getMenuItemsByMenuID)
-	if err != nil {
-		return ms, err
-	}
-	defer stmt.Close()
-	var mi MenuItem
-	var title, link *string
-	var contentId, parent *int
-	res, err := stmt.Query(m.Id)
-	for res.Next() {
-		err = res.Scan(
-			&mi.Menu_SiteContent.Id,
-			&mi.Menu_SiteContent.MenuId,
-			&contentId,
-			&mi.Menu_SiteContent.Sort,
-			&title,
-			&link,
-			&parent,
-			&mi.Menu_SiteContent.LinkTarget,
-		)
-		if err != nil {
-			return ms, err
-		}
-		if contentId != nil {
-			mi.Menu_SiteContent.ContentId = *contentId
-			mi.Content.SiteContent.Id = *contentId
-		}
-		if title != nil {
-			mi.Menu_SiteContent.Title = *title
-		}
-		if link != nil {
-			mi.Menu_SiteContent.Link = *link
-		}
-		if parent != nil {
-			mi.Menu_SiteContent.ParentId = *parent
-		}
-		if err != nil {
-			return ms, err
-		}
-		//getContent by pageid
-		err = mi.Content.Get()
-		if err != sql.ErrNoRows {
-			if err != nil {
-				return ms, err
-			}
-		}
-		ms = append(ms, mi)
-	}
-	defer res.Close()
-
-	return ms, err
-}
-
-func GetFooterSitemap() (ms MenuWithContents, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return ms, err
-	}
-	defer db.Close()
-
-	stmt, err := db.Prepare(getFooterSitemap)
-	if err != nil {
-		return ms, err
-	}
-	defer stmt.Close()
-	res, err := stmt.Query()
-	var displayName *string
-	var m MenuWithContent
-	for res.Next() {
-		err = res.Scan(
-			&m.Menu.Id,
-			&m.Menu.Name,
-			&m.Menu.IsPrimary,
-			&m.Menu.Active,
-			&displayName,
-			&m.Menu.RequireAuthentication,
-			&m.Menu.ShowOnSiteMap,
-			&m.Menu.Sort,
-			&m.WebsiteId,
-		)
-		if err != nil {
-			return ms, err
-		}
-		if displayName != nil {
-			m.Menu.DisplayName = *displayName
-		}
-
-		m.Contents, err = m.Menu.GetMenuItemsByMenuId()
-		if err != nil {
-			return ms, err
-		}
-		ms = append(ms, m)
-	}
-	defer res.Close()
-	if len(ms) == 0 {
-		err = sql.ErrNoRows
-	}
-	return ms, err
-
-}
-
-func GetMenuSitemap() (ms MenuWithContents, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return ms, err
-	}
-	defer db.Close()
-
-	stmt, err := db.Prepare(getMenuSitemap)
-	if err != nil {
-		return ms, err
-	}
-	defer stmt.Close()
-	var displayName *string
-	var m MenuWithContent
-	res, err := stmt.Query()
-	for res.Next() {
-		err = res.Scan(
-			&m.Menu.Id,
-			&m.Menu.Name,
-			&m.Menu.IsPrimary,
-			&m.Menu.Active,
-			&displayName,
-			&m.Menu.RequireAuthentication,
-			&m.Menu.ShowOnSiteMap,
-			&m.Menu.Sort,
-			&m.Menu.WebsiteId,
-		)
-		if err != nil {
-			return ms, err
-		}
-		if displayName != nil {
-			m.Menu.DisplayName = *displayName
-		}
-
-		m.Contents, err = m.Menu.GetMenuItemsByMenuId()
-		if err != nil {
-			return ms, err
-		}
-		//append only if has contents
-		if len(m.Contents) > 0 {
-			ms = append(ms, m)
-		}
-
-	}
-	defer res.Close()
-	if len(ms) == 0 {
-		err = sql.ErrNoRows
-	}
-	return ms, err
-}
-
-//Generally used for getting content bridge From menu_sitecontent; no actual menu
-func (m *MenuWithContent) GetMenuByContentId(id int, auth bool) (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	stmt, err := db.Prepare(getMenuByContentID)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-
-	var displayName *string
-	err = stmt.QueryRow(id, auth).Scan(
-		&m.Menu.Id,
-		&m.Menu.Name,
-		&m.Menu.IsPrimary,
-		&m.Menu.Active,
-		&displayName,
-		&m.Menu.RequireAuthentication,
-		&m.Menu.ShowOnSiteMap,
-		&m.Menu.Sort,
-		&m.Menu.WebsiteId,
-	)
-	if err != nil {
-
-		return err
-	}
-	if displayName != nil {
-		m.DisplayName = *displayName
-	}
-
-	m.Contents, err = m.GetMenuItemsByMenuId()
-	if err != nil {
-
-		return err
+	if display != nil {
+		m.DisplayName = *display
 	}
 	return err
 }
 
-func GetMenuIdByContentId(ContentId int) (menuId int, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return menuId, err
-	}
-	defer db.Close()
-
-	stmt, err := db.Prepare(getMenuIDByContentID)
-	if err != nil {
-		return menuId, err
-	}
-	defer stmt.Close()
-	err = stmt.QueryRow(ContentId).Scan(&menuId)
-	return menuId, err
-}
-
-func (m *MenuWithContent) GetMenuWithContentByName(name string) (err error) {
+//Fetch up a menu by name
+func (m *Menu) GetByName() (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
 	}
 	defer db.Close()
-
-	stmt, err := db.Prepare(getMenuWithContentByName)
+	stmt, err := db.Prepare(getMenuByName)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
-	var displayName *string
-	err = stmt.QueryRow(name).Scan(
-		&m.Menu.Id,
-		&m.Menu.Name,
-		&m.Menu.IsPrimary,
-		&m.Menu.Active,
-		&displayName,
-		&m.Menu.RequireAuthentication,
-		&m.Menu.ShowOnSiteMap,
-		&m.Menu.Sort,
-		&m.Menu.WebsiteId,
+	var display *string
+
+	err = stmt.QueryRow(m.Name).Scan(
+		&m.Id,
+		&m.Name,
+		&m.IsPrimary,
+		&m.Active,
+		&display,
+		&m.RequireAuthentication,
+		&m.ShowOnSitemap,
+		&m.Sort,
+		&m.WebsiteId,
 	)
 	if err != nil {
 		return err
 	}
-	if displayName != nil {
-		m.Menu.DisplayName = *displayName
+	if display != nil {
+		m.DisplayName = *display
 	}
-
-	m.Contents, err = m.GetMenuItemsByMenuId()
-
 	return err
-
 }
 
-//NEW, non-V2, methods
+//Fetch all menus
 func GetAllMenus() (ms Menus, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -368,30 +125,270 @@ func GetAllMenus() (ms Menus, err error) {
 	}
 	defer stmt.Close()
 
-	var displayName *string
+	var display *string
 	var m Menu
+
 	res, err := stmt.Query()
+	if err != nil {
+		return ms, err
+	}
+
 	for res.Next() {
-		err = res.Scan(
+		res.Scan(
 			&m.Id,
 			&m.Name,
 			&m.IsPrimary,
 			&m.Active,
-			&displayName,
+			&display,
 			&m.RequireAuthentication,
-			&m.ShowOnSiteMap,
+			&m.ShowOnSitemap,
 			&m.Sort,
 			&m.WebsiteId,
 		)
 		if err != nil {
 			return ms, err
 		}
-
-		if displayName != nil {
-			m.DisplayName = *displayName
+		if display != nil {
+			m.DisplayName = *display
 		}
 		ms = append(ms, m)
 	}
 	defer res.Close()
 	return ms, err
+}
+
+//Fetch a menu's contents, including latest revision
+func (m *Menu) GetContents() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(getMenuContents)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	res, err := stmt.Query(m.Id)
+	var cType, title, mTitle, mDesc, slug, canon, menTitle, mLink *string
+
+	var parent *int
+	var c Content
+	for res.Next() {
+		err = res.Scan(
+			&c.Id,
+			&cType,
+			&title,
+			&c.CreatedDate,
+			&c.LastModified,
+			&mTitle,
+			&c.MetaDescription,
+			&c.Keywords,
+			&c.IsPrimary,
+			&c.Published,
+			&c.Active,
+			&slug,
+			&c.RequireAuthentication,
+			&canon,
+			&m.WebsiteId,
+			&c.MenuSort,
+			&menTitle,
+			&mLink,
+			&parent,
+			&c.LinkTarget,
+		)
+		if err != sql.ErrNoRows {
+			if err != nil {
+				return err
+			}
+
+			if cType != nil {
+				c.Type = *cType
+			}
+			if title != nil {
+				c.Title = *title
+			}
+			if mTitle != nil {
+				c.MetaTitle = *mTitle
+			}
+			if mDesc != nil {
+				c.MetaDescription = *mDesc
+			}
+			if slug != nil {
+				c.Slug = *slug
+			}
+			if canon != nil {
+				c.Canonical = *canon
+			}
+			if menTitle != nil {
+				c.MenuTitle = *mTitle
+			}
+			if mLink != nil {
+				c.MenuLink = *mLink
+			}
+			if parent != nil {
+				c.ParentId = *parent
+			}
+			err = c.GetLatestRevision()
+			if err != sql.ErrNoRows {
+				if err != nil {
+					return err
+				}
+			}
+		}
+		m.Contents = append(m.Contents, c)
+	}
+	defer res.Close()
+	return err
+}
+
+//creatin' a menu
+func (m *Menu) Create() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(createMenu)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	res, err := stmt.Exec(
+		m.Name,
+		m.IsPrimary,
+		m.Active,
+		m.DisplayName,
+		m.RequireAuthentication,
+		m.ShowOnSitemap,
+		m.Sort,
+		m.WebsiteId,
+	)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+	id, err := res.LastInsertId()
+	if err != nil {
+		return err
+	}
+	m.Id = int(id)
+	return err
+}
+
+//updatin' a menu
+func (m *Menu) Update() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(updateMenu)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(m.Name,
+		m.IsPrimary,
+		m.Active,
+		m.DisplayName,
+		m.RequireAuthentication,
+		m.ShowOnSitemap,
+		m.Sort,
+		m.WebsiteId,
+		m.Id,
+	)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+//deletin' a menu, takes a content_sitecontent join with
+func (m *Menu) Delete() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+
+	//delete menu content join
+	stmt, err := tx.Prepare(deleteMenuSiteContentByMenuId)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(m.Id)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	//delete menu
+	stmt, err = tx.Prepare(deleteMenu)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(m.Id)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+//thar needs to exists a menu object with id > 0, for thar be a FK relation
+func (m *Menu) JoinToContent(c Content) (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+
+	stmt, err := tx.Prepare(createMenuContentJoin)
+	_, err = stmt.Exec(m.Id, c.Id, c.MenuSort, c.MenuTitle, c.MenuLink, c.ParentId, c.LinkTarget)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	return err
+}
+
+//For deletin' a join
+func (m *Menu) DeleteMenuContentJoin(c Content) (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+
+	stmt, err := tx.Prepare(deleteMenuSiteContentJoin)
+	_, err = stmt.Exec(m.Id, c.Id)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	return err
 }

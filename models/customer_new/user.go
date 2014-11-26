@@ -13,7 +13,6 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	"github.com/curt-labs/GoAPI/models/geography"
 	_ "github.com/go-sql-driver/mysql"
-	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -348,7 +347,6 @@ func (u *CustomerUser) AuthenticateUser() error {
 	// Attempt to compare bcrypt strings
 	err = bcrypt.CompareHashAndPassword([]byte(dbPass), []byte(pass))
 	if err != nil {
-		log.Print(err, pass)
 		// Compare unsuccessful
 
 		enc_pass, err := api_helpers.Md5Encrypt(pass)
@@ -441,6 +439,10 @@ func DeleteCustomerUsersByCustomerID(customerID int) error {
 		if err != nil {
 			return err
 		}
+		for _, key := range tempCustUser.Keys {
+			err = tempCustUser.deleteApiKey(key.Type)
+		}
+
 		err = tempCustUser.Delete()
 		if err != nil {
 			return err

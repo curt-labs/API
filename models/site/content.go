@@ -5,443 +5,597 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/database"
 	// "github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
-	"net/url"
+	// "log"
 	"time"
 )
 
-type ContentPage struct {
-	SiteContent     SiteContent         `json:"siteContent,omitempty" xml:"siteContent,omitempty"`
-	MenuWithContent MenuWithContent     `json:"menuWithContent,omitempty" xml:"menuWithContent,omitempty"`
-	Revision        SiteContentRevision `json:"revision,omitempty" xml:"revision,omitempty"`
+type Content struct {
+	Id                    int              `json:"id,omitempty" xml:"id,omitempty"`
+	Type                  string           `json:"type,omitempty" xml:"type,omitempty"`
+	Title                 string           `json:"title,omitempty" xml:"title,omitempty"`
+	CreatedDate           time.Time        `json:"createdDate,omitempty" xml:"createdDate,omitempty"`
+	LastModified          time.Time        `json:"lastModified,omitempty" xml:"lastModified,omitempty"`
+	MetaTitle             string           `json:"metaTitle,omitempty" xml:"metaTitle,omitempty"`
+	MetaDescription       string           `json:"metaDescription,omitempty" xml:"metaDescription,omitempty"`
+	Keywords              string           `json:"keywords,omitempty" xml:"keywords,omitempty"`
+	IsPrimary             bool             `json:"isPrimary,omitempty" xml:"isPrimary,omitempty"`
+	Published             bool             `json:"published,omitempty" xml:"published,omitempty"`
+	Active                bool             `json:"active,omitempty" xml:"active,omitempty"`
+	Slug                  string           `json:"slug,omitempty" xml:"slug,omitempty"`
+	RequireAuthentication bool             `json:"requireAuthentication,omitempty" xml:"requireAuthentication,omitempty"`
+	Canonical             string           `json:"canonical,omitempty" xml:"canonical,omitempty"`
+	WebsiteId             int              `json:"websiteId,omitempty" xml:"websiteId,omitempty"`
+	ContentRevisions      ContentRevisions `json:"contentRevisions,omitempty" xml:"contentRevisions,omitempty"`
+	MenuSort              int              `json:"menuSort,omitempty" xml:"menuSort,omitempty"`
+	MenuTitle             string           `json:"menuTitle,omitempty" xml:"menuTitle,omitempty"`
+	MenuLink              string           `json:"menuLink,omitempty" xml:"menuLink,omitempty"`
+	ParentId              int              `json:"parentId,omitempty" xml:"parentId,omitempty"`
+	LinkTarget            bool             `json:"linkTarget,omitempty" xml:"v,omitempty"`
 }
 
-type ContentPages []ContentPage
+type Contents []Content
 
-type SiteContent struct {
-	Id                    int       `json:"id,omitempty" xml:"id,omitempty"`
-	Type                  string    `json:"type,omitempty" xml:"type,omitempty"`
-	Title                 string    `json:"title,omitempty" xml:"title,omitempty"`
-	CreatedDate           time.Time `json:"createdDate,omitempty" xml:"createdDate,omitempty"`
-	LastModified          time.Time `json:"lastModified,omitempty" xml:"lastModified,omitempty"`
-	MetaTitle             string    `json:"metaTitle,omitempty" xml:"v,omitempty"`
-	MetaDescription       string    `json:"metaDescription,omitempty" xml:"metaDescription,omitempty"`
-	IsPrimary             bool      `json:"isPrimary,omitempty" xml:"isPrimary,omitempty"`
-	Keywords              string    `json:"isPrimary,omitempty" xml:"isPrimary,omitempty"`
-	Published             bool      `json:"published,omitempty" xml:"published,omitempty"`
-	Active                bool      `json:"active,omitempty" xml:"active,omitempty"`
-	Slug                  string    `json:"slug, omitempty" xml:"slug,omitempty"`
-	RequireAuthentication bool      `json:"requireAuthentication,omitempty" xml:"requireAuthentication,omitempty"`
-	Canonical             string    `json:"canonical,omitempty" xml:"canonical,omitempty"`
-	WebsiteId             int       `json:"websiteId,omitempty" xml:"websiteId,omitempty"`
-}
-
-type SiteContents []SiteContent
-
-type SiteContentRevision struct {
+type ContentRevision struct {
 	Id          int       `json:"id,omitempty" xml:"id,omitempty"`
 	ContentId   int       `json:"contentId,omitempty" xml:"contentId,omitempty"`
-	Text        string    `json:"name,omitempty" xml:"name,omitempty"`
+	Text        string    `json:"text,omitempty" xml:"text,omitempty"`
 	CreatedDate time.Time `json:"createdDate,omitempty" xml:"createdDate,omitempty"`
 	Active      bool      `json:"active,omitempty" xml:"active,omitempty"`
 }
-
-type SiteContentRevisions []SiteContentRevision
-
-type LandingPage struct {
-	Id                int               `json:"id,omitempty" xml:"id,omitempty"`
-	Name              string            `json:"name,omitempty" xml:"name,omitempty"`
-	StartDate         time.Time         `json:"startDate,omitempty" xml:"v,omitempty"`
-	EndDate           time.Time         `json:"endDate,omitempty" xml:"endDate,omitempty"`
-	Url               url.URL           `json:"url,omitempty" xml:"url,omitempty"`
-	PageContent       string            `json:"pageContent,omitempty" xml:"pageContent,omitempty"`
-	LinkClasses       string            `json:"linkClasses,omitempty" xml:"linkClasses,omitempty"`
-	ConversionId      string            `json:"conversionId,omitempty" xml:"conversionId,omitempty"`
-	ConversionLabel   string            `json:"conversionLabel,omitempty" xml:"conversionLabel,omitempty"`
-	NewWindow         bool              `json:"newWindow,omitempty" xml:"newWindow,omitempty"`
-	MenuPosition      string            `json:"menuPosition,omitempty" xml:"menuPosition,omitempty"`
-	LandingPageDatas  LandingPageDatas  `json:"landingPageDatas,omitempty" xml:"landingPageDatas,omitempty"`
-	LandingPageImages LandingPageImages `json:"landingPageImages,omitempty" xml:"landingPageImages,omitempty"`
-	WebsiteId         int               `json:"websiteId,omitempty" xml:"websiteId,omitempty"`
-}
-
-type LandingPages []LandingPage
-
-type LandingPageData struct {
-	Id        int    `json:"id,omitempty" xml:"id,omitempty"`
-	DataKey   string `json:"dataKey,omitempty" xml:"dataKey,omitempty"`
-	DataValue string `json:"dataValue,omitempty" xml:"dataValue,omitempty"`
-}
-type LandingPageDatas []LandingPageData
-
-type LandingPageImage struct {
-	Id   int     `json:"id,omitempty" xml:"id,omitempty"`
-	Url  url.URL `json:"url,omitempty" xml:"url,omitempty"`
-	Sort int     `json:"sort,omitempty" xml:"sort,omitempty"`
-}
-
-type LandingPageImages []LandingPageImage
+type ContentRevisions []ContentRevision
 
 const (
-	siteContentColumns         = "s.contentID, s.content_type, s.page_title, s.createdDate, s.lastModified, s.meta_title, s.meta_description, s.keywords, s.isPrimary, s.published, s.active, s.slug, s.requireAuthentication, s.canonical, s.websiteID" //as s
-	siteContentRevisionColumns = "revisionID, contentID, content_text, createdOn, active"
-	landingPageColumns         = "l.id, l.name, l.startDate, l.endDate, l.url, l.pageContent, l.linkClasses, l.conversionID, l.conversionLabel, l.newWindow, l.menuPosition" //as l
+	siteContentColumns = "s.contentID, s.content_type, s.page_title, s.createdDate, s.lastModified, s.meta_title, s.meta_description, s.keywords, s.isPrimary, s.published, s.active, s.slug, s.requireAuthentication, s.canonical, s.websiteID" //as s
 )
 
 var (
-	getContentPageByName              = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s WHERE s.slug = ?  && s.active = 1 && s.published = 1 && s.websiteID = 1 LIMIT 1`
-	getSiteContentRevisionByContentID = `SELECT ` + siteContentRevisionColumns + ` FROM SiteContentRevision WHERE contentID = ? ORDER BY createdOn DESC LIMIT 1`
-	getContentPageByID                = `select ` + siteContentColumns + ` from SiteContent AS s WHERE s.contentID = ? && s.websiteID = 1 limit 1`
-	getAllSiteContent                 = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s`
-	getAllSiteContentRevisions        = `SELECT ` + siteContentRevisionColumns + ` FROM SiteContentRevision `
-	getPrimaryContentPage             = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s WHERE s.isPrimary = 1 && s.websiteID = 1`
-	getSitemapCP                      = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s WHERE s.contentID NOT IN(SELECT msc.contentID FROM Menu_SiteContent as msc) order by page_title`
-	getLandingPageByID                = `SELECT ` + landingPageColumns + ` FROM LandingPage AS l WHERE id = ? && startDate <= NOW() && endDate >= NOW() limit 1`
+	getLatestRevision      = `SELECT revisionID, content_text, createdOn, active FROM SiteContentRevision AS scr WHERE scr.contentID = ? ORDER BY createdOn DESC LIMIT 1`
+	getContent             = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s WHERE s.contentID = ? `
+	getAllContent          = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s  `
+	getContentRevisions    = `SELECT revisionID, content_text, createdOn, active FROM SiteContentRevision AS scr WHERE scr.contentID = ? `
+	getAllContentRevisions = `SELECT revisionID, content_text, createdOn, active FROM SiteContentRevision AS scr `
+	getContentRevision     = `SELECT revisionID, content_text, createdOn, active FROM SiteContentRevision AS scr WHERE revisionID = ?`
+	getContentBySlug       = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s WHERE s.slug = ? `
+
+	//operations
+	createRevision = `INSERT INTO SiteContentRevision (contentID, content_text, createdOn, active) VALUES (?,?,?,?)`
+	createContent  = `INSERT INTO SiteContent
+						(content_type, page_title, createdDate, meta_title, meta_description, keywords, isPrimary, published, active, slug, requireAuthentication, canonical, websiteID)
+						VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`
+	updateRevision = `UPDATE SiteContentRevision SET contentID = ?, content_text = ?, active = ? WHERE revisionID = ?`
+	updateContent  = `UPDATE SiteContent SET
+					content_type = ?, page_title = ?,  meta_title = ?, meta_description = ?, keywords = ?, isPrimary = ?, published = ?, active = ?, slug = ?, requireAuthentication = ?, canonical  = ?, websiteID = ?
+					WHERE contentID = ?`
+
+	deleteRevision                   = `DELETE FROM SiteContentRevision WHERE revisionID = ?`
+	deleteContent                    = `DELETE FROM SiteContent WHERE contentID = ?`
+	deleteRevisionbyContentID        = `DELETE FROM SiteContentRevision WHERE contentID = ?`
+	deleteMenuSiteContentByContentId = `DELETE FROM Menu_SiteContent WHERE contentID = ?`
 )
 
-//get content page
-func (cp *ContentPage) Get() (err error) {
+//Fetch content by id
+func (c *Content) Get() (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
 	}
 	defer db.Close()
-	stmt, err := db.Prepare(getContentPageByID)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	var cType, title, mTitle, mDesc, slug, canon *string
-	err = stmt.QueryRow(cp.SiteContent.Id).Scan(
-		&cp.SiteContent.Id,
-		&cType,
-		&title,
-		&cp.SiteContent.CreatedDate,
-		&cp.SiteContent.LastModified,
-		&mTitle,
-		&mDesc,
-		&cp.SiteContent.Keywords,
-		&cp.SiteContent.IsPrimary,
-		&cp.SiteContent.Published,
-		&cp.SiteContent.Active,
-		&slug,
-		&cp.SiteContent.RequireAuthentication,
-		&canon,
-		&cp.SiteContent.WebsiteId,
-	)
-	if err != sql.ErrNoRows {
-		if err != nil {
-			return err
-		}
-	}
-	if cType != nil {
-		cp.SiteContent.Type = *cType
-	}
-	if title != nil {
-		cp.SiteContent.Title = *title
-	}
-	if mTitle != nil {
-		cp.SiteContent.MetaTitle = *mTitle
-	}
-	if mDesc != nil {
-		cp.SiteContent.MetaDescription = *mDesc
-	}
-	if slug != nil {
-		cp.SiteContent.Slug = *slug
-	}
-	if canon != nil {
-		cp.SiteContent.Canonical = *canon
-	}
-	//get Revision
-	err = cp.GetRevision()
-
-	return err
-
-}
-
-//by name (slug)
-func (cp *ContentPage) GetContentPageByName(menuId int, auth bool) (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	stmt, err := db.Prepare(getContentPageByName)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	var cType, title, mTitle, mDesc, slug, canon *string
-
-	err = stmt.QueryRow(cp.SiteContent.Slug).Scan(
-		&cp.SiteContent.Id,
-		&cType,
-		&title,
-		&cp.SiteContent.CreatedDate,
-		&cp.SiteContent.LastModified,
-		&mTitle,
-		&mDesc,
-		&cp.SiteContent.Keywords,
-		&cp.SiteContent.IsPrimary,
-		&cp.SiteContent.Published,
-		&cp.SiteContent.Active,
-		&slug,
-		&cp.SiteContent.RequireAuthentication,
-		&canon,
-		&cp.SiteContent.WebsiteId,
-	)
-
-	if err != sql.ErrNoRows {
-		if err != nil {
-			return err
-		}
-	}
-	if cType != nil {
-		cp.SiteContent.Type = *cType
-	}
-	if title != nil {
-		cp.SiteContent.Title = *title
-	}
-	if mTitle != nil {
-		cp.SiteContent.MetaTitle = *mTitle
-	}
-	if mDesc != nil {
-		cp.SiteContent.MetaDescription = *mDesc
-	}
-	if slug != nil {
-		cp.SiteContent.Slug = *slug
-	}
-	if canon != nil {
-		cp.SiteContent.Canonical = *canon
-	}
-
-	//get Revision
-	err = cp.GetRevision()
-
-	if err != sql.ErrNoRows {
-		if err != nil {
-			return err
-		}
-
-	}
-	//get Menu
-	cp.MenuWithContent.Menu.Id = menuId
-
-	err = cp.MenuWithContent.GetMenuByContentId(menuId, auth)
-
-	return err
-
-}
-
-func (c *ContentPage) GetRevision() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	stmt, err := db.Prepare(getSiteContentRevisionByContentID)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-
-	err = stmt.QueryRow(c.SiteContent.Id).Scan(
-		&c.Revision.Id,
-		&c.SiteContent.Id,
-		&c.Revision.Text,
-		&c.Revision.CreatedDate,
-		&c.Revision.Active,
-	)
-	if err != sql.ErrNoRows {
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (cp *ContentPage) GetPrimaryContentPage() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	stmt, err := db.Prepare(getPrimaryContentPage)
+	stmt, err := db.Prepare(getContent)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
 	var cType, title, mTitle, mDesc, slug, canon *string
-	err = stmt.QueryRow().Scan(
-		&cp.SiteContent.Id,
+	err = stmt.QueryRow(c.Id).Scan(
+		&c.Id,
 		&cType,
 		&title,
-		&cp.SiteContent.CreatedDate,
-		&cp.SiteContent.LastModified,
+		&c.CreatedDate,
+		&c.LastModified,
 		&mTitle,
 		&mDesc,
-		&cp.SiteContent.Keywords,
-		&cp.SiteContent.IsPrimary,
-		&cp.SiteContent.Published,
-		&cp.SiteContent.Active,
+		&c.Keywords,
+		&c.IsPrimary,
+		&c.Published,
+		&c.Active,
 		&slug,
-		&cp.SiteContent.RequireAuthentication,
+		&c.RequireAuthentication,
 		&canon,
-		&cp.SiteContent.WebsiteId,
+		&c.WebsiteId,
 	)
-	if err != sql.ErrNoRows {
-		if err != nil {
-			return err
-		}
+	if err != nil {
+		return err
 	}
+
 	if cType != nil {
-		cp.SiteContent.Type = *cType
+		c.Type = *cType
 	}
 	if title != nil {
-		cp.SiteContent.Title = *title
+		c.Title = *title
 	}
 	if mTitle != nil {
-		cp.SiteContent.MetaTitle = *mTitle
+		c.MetaTitle = *mTitle
 	}
 	if mDesc != nil {
-		cp.SiteContent.MetaDescription = *mDesc
+		c.MetaDescription = *mDesc
 	}
 	if slug != nil {
-		cp.SiteContent.Slug = *slug
+		c.Slug = *slug
 	}
 	if canon != nil {
-		cp.SiteContent.Canonical = *canon
+		c.Canonical = *canon
 	}
-	//get Revision
-	err = cp.GetRevision()
+	//get latest revision
+	err = c.GetLatestRevision()
 	return err
 }
 
-func GetSitemapCP() (cps ContentPages, err error) {
+//Fetch content by slug
+func (c *Content) GetBySlug() (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		return cps, err
+		return err
 	}
 	defer db.Close()
-
-	stmt, err := db.Prepare(getSitemapCP)
+	stmt, err := db.Prepare(getContentBySlug)
 	if err != nil {
-		return cps, err
+		return err
 	}
 	defer stmt.Close()
 
 	var cType, title, mTitle, mDesc, slug, canon *string
-	var cp ContentPage
+	err = stmt.QueryRow(c.Slug).Scan(
+		&c.Id,
+		&cType,
+		&title,
+		&c.CreatedDate,
+		&c.LastModified,
+		&mTitle,
+		&mDesc,
+		&c.Keywords,
+		&c.IsPrimary,
+		&c.Published,
+		&c.Active,
+		&slug,
+		&c.RequireAuthentication,
+		&canon,
+		&c.WebsiteId,
+	)
+	if err != nil {
+		return err
+	}
+
+	if cType != nil {
+		c.Type = *cType
+	}
+	if title != nil {
+		c.Title = *title
+	}
+	if mTitle != nil {
+		c.MetaTitle = *mTitle
+	}
+	if mDesc != nil {
+		c.MetaDescription = *mDesc
+	}
+	if slug != nil {
+		c.Slug = *slug
+	}
+	if canon != nil {
+		c.Canonical = *canon
+	}
+	//get latest revision
+	err = c.GetLatestRevision()
+	return err
+}
+
+//Fetch a great many contents
+func GetAllContents() (cs Contents, err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return cs, err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(getAllContent)
+	if err != nil {
+		return cs, err
+	}
+	defer stmt.Close()
+
+	var cType, title, mTitle, mDesc, slug, canon *string
+	var c Content
 	res, err := stmt.Query()
-	if err != nil {
-		return cps, err
-	}
 	for res.Next() {
 		err = res.Scan(
-			&cp.SiteContent.Id,
+			&c.Id,
 			&cType,
 			&title,
-			&cp.SiteContent.CreatedDate,
-			&cp.SiteContent.LastModified,
+			&c.CreatedDate,
+			&c.LastModified,
 			&mTitle,
 			&mDesc,
-			&cp.SiteContent.Keywords,
-			&cp.SiteContent.IsPrimary,
-			&cp.SiteContent.Published,
-			&cp.SiteContent.Active,
+			&c.Keywords,
+			&c.IsPrimary,
+			&c.Published,
+			&c.Active,
 			&slug,
-			&cp.SiteContent.RequireAuthentication,
+			&c.RequireAuthentication,
 			&canon,
-			&cp.SiteContent.WebsiteId,
+			&c.WebsiteId,
 		)
 		if err != nil {
-			return cps, err
+			return cs, err
 		}
 
 		if cType != nil {
-			cp.SiteContent.Type = *cType
+			c.Type = *cType
 		}
 		if title != nil {
-			cp.SiteContent.Title = *title
+			c.Title = *title
 		}
 		if mTitle != nil {
-			cp.SiteContent.MetaTitle = *mTitle
+			c.MetaTitle = *mTitle
 		}
 		if mDesc != nil {
-			cp.SiteContent.MetaDescription = *mDesc
+			c.MetaDescription = *mDesc
 		}
 		if slug != nil {
-			cp.SiteContent.Slug = *slug
+			c.Slug = *slug
 		}
 		if canon != nil {
-			cp.SiteContent.Canonical = *canon
+			c.Canonical = *canon
 		}
-		//get Revision
-		// err = cp.GetRevision()
-		// if err != sql.ErrNoRows {
-		// 	if err != nil {
-		// 		return cps, err
-		// 	}
-		// }
-		cps = append(cps, cp)
+		cs = append(cs, c)
 	}
 	defer res.Close()
-	if len(cps) == 0 {
-		err = sql.ErrNoRows
-	}
-
-	return cps, err
+	return cs, err
 }
 
-func (l *LandingPage) Get() (err error) {
+//Fetch a content's most recent revision
+func (c *Content) GetLatestRevision() (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
 	}
 	defer db.Close()
-
-	stmt, err := db.Prepare(getLandingPageByID)
+	stmt, err := db.Prepare(getLatestRevision)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
-	var link, convId, convLab *string
-	var u []byte
-	err = stmt.QueryRow(l.Id).Scan(
-		&l.Id,
-		&l.Name,
-		&l.StartDate,
-		&l.EndDate,
-		&u,
-		&l.PageContent,
-		&link,
-		&convId,
-		&convLab,
-		&l.NewWindow,
-		&l.MenuPosition,
+	var rev ContentRevision
+	err = stmt.QueryRow(c.Id).Scan(
+		&rev.Id,
+		&rev.Text,
+		&rev.CreatedDate,
+		&rev.Active,
 	)
 
+	c.ContentRevisions = nil //refresh contentrevision array
+	c.ContentRevisions = append(c.ContentRevisions, rev)
+	return err
+}
+
+//Fetch all of thine content's revisions
+func (c *Content) GetContentRevisions() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
 	}
-	if link != nil {
-		l.LinkClasses = *link
+	defer db.Close()
+	stmt, err := db.Prepare(getContentRevisions)
+	if err != nil {
+		return err
 	}
-	if convId != nil {
-		l.ConversionId = *convId
-	}
-	if convLab != nil {
-		l.ConversionLabel = *convLab
-	}
-	if u != nil {
-		tempUrl, err := url.Parse(string(u))
+	defer stmt.Close()
+
+	var rev ContentRevision
+	res, err := stmt.Query(c.Id)
+	for res.Next() {
+		err = res.Scan(
+			&rev.Id,
+			&rev.Text,
+			&rev.CreatedDate,
+			&rev.Active,
+		)
 		if err != nil {
 			return err
 		}
-		l.Url = *tempUrl
+		c.ContentRevisions = append(c.ContentRevisions, rev)
 	}
-	return nil
+	defer res.Close()
+	return err
+}
+
+//Fetch a single revision by Id
+func (rev *ContentRevision) Get() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(getContentRevision)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	err = stmt.QueryRow(rev.Id).Scan(
+		&rev.Id,
+		&rev.Text,
+		&rev.CreatedDate,
+		&rev.Active,
+	)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+//Fetch a great many revisions
+func GetAllContentRevisions() (cr ContentRevisions, err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return cr, err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(getAllContentRevisions)
+	if err != nil {
+		return cr, err
+	}
+	defer stmt.Close()
+
+	var rev ContentRevision
+	res, err := stmt.Query()
+	for res.Next() {
+		err = res.Scan(
+			&rev.Id,
+			&rev.Text,
+			&rev.CreatedDate,
+			&rev.Active,
+		)
+		if err != nil {
+			return cr, err
+		}
+		cr = append(cr, rev)
+	}
+	defer res.Close()
+	return cr, err
+}
+
+//creatin' content
+func (c *Content) Create() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(createContent)
+	if err != nil {
+		return err
+	}
+
+	defer stmt.Close()
+	c.CreatedDate = time.Now()
+	res, err := stmt.Exec(
+		c.Type,
+		c.Title,
+		c.CreatedDate,
+		c.MetaTitle,
+		c.MetaDescription,
+		c.Keywords,
+		c.IsPrimary,
+		c.Published,
+		c.Active,
+		c.Slug,
+		c.RequireAuthentication,
+		c.Canonical,
+		c.WebsiteId,
+	)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return err
+	}
+	c.Id = int(id)
+	//create content revisions
+	for _, cr := range c.ContentRevisions {
+		cr.ContentId = c.Id
+		err = cr.Create()
+		if err != nil {
+			return err
+		}
+	}
+	return err
+}
+
+//updatin' content
+func (c *Content) Update() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(updateContent)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(
+		c.Type,
+		c.Title,
+		c.MetaTitle,
+		c.MetaDescription,
+		c.Keywords,
+		c.IsPrimary,
+		c.Published,
+		c.Active,
+		c.Slug,
+		c.RequireAuthentication,
+		c.Canonical,
+		c.WebsiteId,
+		c.Id,
+	)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	//create/update content revisions
+	for _, cr := range c.ContentRevisions {
+		cr.ContentId = c.Id
+		if cr.Id > 0 {
+			err = cr.Update()
+		} else {
+			err = cr.Create()
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return err
+}
+
+//deletin' content, brings joined revisions and menu join with
+func (c *Content) Delete() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+
+	//adios revisions
+	stmt, err := tx.Prepare(deleteRevisionbyContentID)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(c.Id)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	//adios menu join
+	stmt, err = tx.Prepare(deleteMenuSiteContentByContentId)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(c.Id)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	//adios content
+	stmt, err = tx.Prepare(deleteContent)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(c.Id)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err = tx.Commit()
+	return err
+}
+
+//creatin' a revision, requires content to exist
+func (rev *ContentRevision) Create() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(createRevision)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	rev.CreatedDate = time.Now()
+	res, err := stmt.Exec(rev.ContentId, rev.Text, rev.CreatedDate, rev.Active)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+	id, err := res.LastInsertId()
+	if err != nil {
+		return err
+	}
+	rev.Id = int(id)
+	return err
+}
+
+//updatin' a revision, requires content to exisi
+func (rev *ContentRevision) Update() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(updateRevision)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(rev.ContentId, rev.Text, rev.Active, rev.Id)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+//deletin' a revision
+func (rev *ContentRevision) Delete() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(deleteRevision)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(rev.Id)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	return err
 }

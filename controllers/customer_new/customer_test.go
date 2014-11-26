@@ -3,6 +3,7 @@ package customer_ctlr_new
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/httprunner"
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
 	"github.com/curt-labs/GoAPI/models/apiKeyType"
@@ -31,14 +32,17 @@ func TestCustomer(t *testing.T) {
 	ci.PartID = p.ID
 	ci.CustPartID = 987654321
 
-	//setup apiKeyTypes
 	var pub, pri, auth apiKeyType.ApiKeyType
-	pub.Type = "public"
-	pri.Type = "private"
-	auth.Type = "authentication"
-	pub.Create()
-	pri.Create()
-	auth.Create()
+	if database.EmptyDb != nil {
+		t.Log("clean db")
+		//setup apiKeyTypes
+		pub.Type = "Public"
+		pri.Type = "Private"
+		auth.Type = "Authentication"
+		pub.Create()
+		pri.Create()
+		auth.Create()
+	}
 
 	//setup user
 	cu.CustomerID = c.Id
@@ -178,20 +182,27 @@ func TestCustomer(t *testing.T) {
 
 	})
 	//cleanup
-	cu.Delete()
+	err = cu.Delete()
+	t.Log("CU", err)
 	p.Delete()
 	price.Delete()
 	ci.Delete()
-	pub.Delete()
-	pri.Delete()
-	auth.Delete()
+
+	if database.EmptyDb != nil {
+		err = pub.Delete()
+
+		err = pri.Delete()
+
+		err = auth.Delete()
+	}
+
 }
 
 func BenchmarkCRUDCustomer(b *testing.B) {
 	//get apiKey by creating customeruser
 	var cu customer_new.CustomerUser
 	var apiKey string
-	cu.Name = "test cust user"
+	cu.Name = "test cust benchmark user"
 	cu.Email = "pretend@test.com"
 	cu.Password = "test"
 	cu.Sudo = true
