@@ -3,10 +3,12 @@ package dealers_ctlr_new
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/curt-labs/GoAPI/helpers/httprunner"
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
 	"github.com/curt-labs/GoAPI/models/apiKeyType"
 	"github.com/curt-labs/GoAPI/models/customer_new"
 	. "github.com/smartystreets/goconvey/convey"
+	"net/url"
 	"strconv"
 	"strings"
 	"testing"
@@ -176,4 +178,152 @@ func TestDealers_New(t *testing.T) {
 	pub.Delete()
 	pri.Delete()
 	auth.Delete()
+}
+
+func BenchmarkCRUDDealers(b *testing.B) {
+	var cu customer_new.CustomerUser
+	cu.Name = "test cust user"
+	cu.Email = "pretend@test.com"
+	cu.Password = "test"
+	cu.Sudo = true
+	cu.Create()
+	var apiKey string
+	for _, key := range cu.Keys {
+		if strings.ToLower(key.Type) == "public" {
+			apiKey = key.Key
+		}
+	}
+
+	qs := make(url.Values, 0)
+	qs.Set("key", apiKey)
+
+	qs2 := make(url.Values, 0)
+	qs2.Set("key", apiKey)
+	qs2.Set("latlng", "43.853282,-95.571675,45.800981,-90.468526&center=44.83536,-93.0201")
+
+	Convey("CustomerDealers", b, func() {
+		//get etailers
+		(&httprunner.BenchmarkOptions{
+			Method:             "GET",
+			Route:              "/new/dealers/etailer",
+			ParameterizedRoute: "/new/dealers/etailer",
+			Handler:            GetEtailers,
+			QueryString:        &qs,
+			JsonBody:           nil,
+			FormBody:           nil,
+			Runs:               b.N,
+		}).RequestBenchmark()
+
+		//get local dealers
+		(&httprunner.BenchmarkOptions{
+			Method:             "GET",
+			Route:              "/new/dealers/local",
+			ParameterizedRoute: "/new/dealers/local",
+			Handler:            GetLocalDealers,
+			QueryString:        &qs2,
+			JsonBody:           nil,
+			FormBody:           nil,
+			Runs:               b.N,
+		}).RequestBenchmark()
+		//get local dealers
+		(&httprunner.BenchmarkOptions{
+			Method:             "GET",
+			Route:              "/new/dealers/local/regions",
+			ParameterizedRoute: "/new/dealers/local/regions",
+			Handler:            GetLocalRegions,
+			QueryString:        &qs,
+			JsonBody:           nil,
+			FormBody:           nil,
+			Runs:               b.N,
+		}).RequestBenchmark()
+		//get local dealers
+		(&httprunner.BenchmarkOptions{
+			Method:             "GET",
+			Route:              "/new/dealers/local/types",
+			ParameterizedRoute: "/new/dealers/local/types",
+			Handler:            GetLocalDealerTypes,
+			QueryString:        &qs,
+			JsonBody:           nil,
+			FormBody:           nil,
+			Runs:               b.N,
+		}).RequestBenchmark()
+		//get local dealers
+		(&httprunner.BenchmarkOptions{
+			Method:             "GET",
+			Route:              "/new/dealers/local/tiers",
+			ParameterizedRoute: "/new/dealers/local/tiers",
+			Handler:            GetLocalDealerTiers,
+			QueryString:        &qs,
+			JsonBody:           nil,
+			FormBody:           nil,
+			Runs:               b.N,
+		}).RequestBenchmark()
+		//get local dealers
+		(&httprunner.BenchmarkOptions{
+			Method:             "GET",
+			Route:              "/new/dealers/etailer/platinum",
+			ParameterizedRoute: "/new/dealers/etailer/platinum",
+			Handler:            PlatinumEtailers,
+			QueryString:        &qs,
+			JsonBody:           nil,
+			FormBody:           nil,
+			Runs:               b.N,
+		}).RequestBenchmark()
+		//get local dealers
+		(&httprunner.BenchmarkOptions{
+			Method:             "GET",
+			Route:              "/new/dealers/location/",
+			ParameterizedRoute: "/new/dealers/location/1",
+			Handler:            GetLocationById,
+			QueryString:        &qs,
+			JsonBody:           nil,
+			FormBody:           nil,
+			Runs:               b.N,
+		}).RequestBenchmark()
+		//get local dealers
+		(&httprunner.BenchmarkOptions{
+			Method:             "GET",
+			Route:              "/new/dealers/business/classes",
+			ParameterizedRoute: "/new/dealers/business/classes",
+			Handler:            GetAllBusinessClasses,
+			QueryString:        &qs,
+			JsonBody:           nil,
+			FormBody:           nil,
+			Runs:               b.N,
+		}).RequestBenchmark()
+		//get local dealers
+		(&httprunner.BenchmarkOptions{
+			Method:             "GET",
+			Route:              "/new/dealers/search/",
+			ParameterizedRoute: "/new/dealers/search/hitch",
+			Handler:            SearchLocations,
+			QueryString:        &qs,
+			JsonBody:           nil,
+			FormBody:           nil,
+			Runs:               b.N,
+		}).RequestBenchmark()
+		//get local dealers
+		(&httprunner.BenchmarkOptions{
+			Method:             "GET",
+			Route:              "/new/dealers/search/type/",
+			ParameterizedRoute: "/new/dealers/search/type/installer",
+			Handler:            SearchLocationsByType,
+			QueryString:        &qs,
+			JsonBody:           nil,
+			FormBody:           nil,
+			Runs:               b.N,
+		}).RequestBenchmark()
+		//get local dealers
+		(&httprunner.BenchmarkOptions{
+			Method:             "GET",
+			Route:              "/new/dealers/search/geo/",
+			ParameterizedRoute: "/new/dealers/search/geo/44.83536/-93.0201",
+			Handler:            SearchLocationsByLatLng,
+			QueryString:        &qs,
+			JsonBody:           nil,
+			FormBody:           nil,
+			Runs:               b.N,
+		}).RequestBenchmark()
+	})
+	cu.Delete()
 }
