@@ -21,7 +21,7 @@ import (
 	"github.com/curt-labs/GoAPI/controllers/part"
 	"github.com/curt-labs/GoAPI/controllers/salesrep"
 	"github.com/curt-labs/GoAPI/controllers/search"
-	"github.com/curt-labs/GoAPI/controllers/site_new"
+	"github.com/curt-labs/GoAPI/controllers/site"
 	"github.com/curt-labs/GoAPI/controllers/techSupport"
 	"github.com/curt-labs/GoAPI/controllers/testimonials"
 	"github.com/curt-labs/GoAPI/controllers/vehicle"
@@ -346,6 +346,29 @@ func main() {
 
 	m.Get("/search/:term", search_ctlr.Search)
 
+	m.Group("/site", func(r martini.Router) {
+		m.Group("/menu", func(r martini.Router) {
+			r.Get("/all", site.GetAllMenus)
+			r.Get("/:id", site.GetMenu)                      //may pass id (int) or name(string)
+			r.Get("/contents/:id", site.GetMenuWithContents) //may pass id (int) or name(string)
+			r.Put("", site.SaveMenu)
+			r.Post("/:id", site.SaveMenu)
+			r.Delete("/:id", site.DeleteMenu)
+		})
+		m.Group("/content", func(r martini.Router) {
+			r.Get("/all", site.GetAllContents)
+			r.Get("/:id", site.GetContent) //may pass id (int) or slug(string)
+			r.Get("/:id/revisions", site.GetContentRevisions)
+			r.Put("", site.SaveContent)
+			r.Post("/:id", site.SaveContent)
+			r.Delete("/:id", site.DeleteContent)
+		})
+		r.Get("/details/:id", site.GetSiteDetails)
+		r.Put("", site.SaveSite)
+		r.Post("/:id", site.SaveSite)
+		r.Delete("/:id", site.DeleteSite)
+	})
+
 	m.Group("/techSupport", func(r martini.Router) {
 		r.Get("/all", techSupport.GetAllTechSupport)
 		r.Get("/contact/:id", techSupport.GetTechSupportByContact)
@@ -494,30 +517,6 @@ func main() {
 			r.Get("/search/geo/:latitude/:longitude", internalCors, dealers_ctlr_new.SearchLocationsByLatLng)
 		})
 		m.Get("/dealer/location/:id", internalCors, dealers_ctlr_new.GetLocationById)
-
-		//New, more better site endpoints - will not work with current .mfg travesty
-		m.Group("/site", func(r martini.Router) {
-			m.Group("/menu", func(r martini.Router) {
-				r.Get("/all", site_new.GetAllMenus)
-				r.Get("/:id", site_new.GetMenu)                      //may pass id (int) or name(string)
-				r.Get("/contents/:id", site_new.GetMenuWithContents) //may pass id (int) or name(string)
-				r.Put("", site_new.SaveMenu)
-				r.Post("/:id", site_new.SaveMenu)
-				r.Delete("/:id", site_new.DeleteMenu)
-			})
-			m.Group("/content", func(r martini.Router) {
-				r.Get("/all", site_new.GetAllContents)
-				r.Get("/:id", site_new.GetContent) //may pass id (int) or slug(string)
-				r.Get("/:id/revisions", site_new.GetContentRevisions)
-				r.Put("", site_new.SaveContent)
-				r.Post("/:id", site_new.SaveContent)
-				r.Delete("/:id", site_new.DeleteContent)
-			})
-			r.Get("/details/:id", site_new.GetSiteDetails)
-			r.Put("", site_new.SaveSite)
-			r.Post("/:id", site_new.SaveSite)
-			r.Delete("/:id", site_new.DeleteSite)
-		})
 	})
 
 	//option 1 - two calls - ultimately returns parts

@@ -1,4 +1,4 @@
-package site_new
+package site
 
 import (
 	"database/sql"

@@ -1,8 +1,8 @@
-package site_new
+package site
 
 import (
 	"github.com/curt-labs/GoAPI/helpers/encoding"
-	"github.com/curt-labs/GoAPI/models/site_new"
+	"github.com/curt-labs/GoAPI/models/site"
 	"github.com/go-martini/martini"
 	// "log"
 	"encoding/json"
@@ -11,34 +11,34 @@ import (
 	"strconv"
 )
 
-func GetMenu(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
-	var m site_new.Menu
+func GetContent(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+	var c site.Content
 	var err error
 	idStr := params["id"]
 	id, err := strconv.Atoi(idStr)
 
 	if err == nil {
 		//Thar be an Id int
-		m.Id = id
-		err = m.Get()
+		c.Id = id
+		err = c.Get()
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusNoContent)
 			return ""
 		}
 	} else {
-		//Thar be a name
-		m.Name = idStr
-		err = m.GetByName()
+		//Thar be a slug
+		c.Slug = idStr
+		err = c.GetBySlug()
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusNoContent)
 			return ""
 		}
 	}
-	return encoding.Must(enc.Encode(m))
+	return encoding.Must(enc.Encode(c))
 }
 
-func GetAllMenus(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
-	m, err := site_new.GetAllMenus()
+func GetAllContents(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+	m, err := site.GetAllContents()
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusNoContent)
 		return ""
@@ -46,45 +46,28 @@ func GetAllMenus(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder
 	return encoding.Must(enc.Encode(m))
 }
 
-func GetMenuWithContents(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
-	var m site_new.Menu
+func GetContentRevisions(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+	var c site.Content
 	var err error
 	idStr := params["id"]
-	id, err := strconv.Atoi(idStr)
+	c.Id, err = strconv.Atoi(idStr)
 
-	if err == nil {
-		//Thar be an Id int
-		m.Id = id
-		err = m.Get()
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusNoContent)
-			return ""
-		}
-	} else {
-		//Thar be a name
-		m.Name = idStr
-		err = m.GetByName()
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusNoContent)
-			return ""
-		}
-	}
-	err = m.GetContents()
+	err = c.GetContentRevisions()
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusNoContent)
 		return ""
 	}
 
-	return encoding.Must(enc.Encode(m))
+	return encoding.Must(enc.Encode(c))
 }
 
-func SaveMenu(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
-	var m site_new.Menu
+func SaveContent(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+	var c site.Content
 	var err error
 	idStr := params["id"]
 	if idStr != "" {
-		m.Id, err = strconv.Atoi(idStr)
-		err = m.Get()
+		c.Id, err = strconv.Atoi(idStr)
+		err = c.Get()
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return ""
@@ -97,28 +80,28 @@ func SaveMenu(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, p
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return encoding.Must(enc.Encode(false))
 	}
-	err = json.Unmarshal(requestBody, &m)
+	err = json.Unmarshal(requestBody, &c)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return encoding.Must(enc.Encode(false))
 	}
 	//create or update
-	if m.Id > 0 {
-		err = m.Update()
+	if c.Id > 0 {
+		err = c.Update()
 	} else {
-		err = m.Create()
+		err = c.Create()
 	}
 
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
-	return encoding.Must(enc.Encode(m))
+	return encoding.Must(enc.Encode(c))
 }
 
-func DeleteMenu(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+func DeleteContent(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var err error
-	var m site_new.Menu
+	var c site.Content
 
 	idStr := params["id"]
 
@@ -127,12 +110,12 @@ func DeleteMenu(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder,
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
-	m.Id = id
-	err = m.Delete()
+	c.Id = id
+	err = c.Delete()
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
 
-	return encoding.Must(enc.Encode(m))
+	return encoding.Must(enc.Encode(c))
 }
