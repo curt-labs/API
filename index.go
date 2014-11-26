@@ -21,7 +21,6 @@ import (
 	"github.com/curt-labs/GoAPI/controllers/part"
 	"github.com/curt-labs/GoAPI/controllers/salesrep"
 	"github.com/curt-labs/GoAPI/controllers/search"
-	"github.com/curt-labs/GoAPI/controllers/site"
 	"github.com/curt-labs/GoAPI/controllers/site_new"
 	"github.com/curt-labs/GoAPI/controllers/techSupport"
 	"github.com/curt-labs/GoAPI/controllers/testimonials"
@@ -302,20 +301,6 @@ func main() {
 		r.Delete("/:id", part_ctlr.DeleteReview)
 	})
 
-	m.Group("/site", func(r martini.Router) {
-		r.Get("/page/get", site.GetContentPage)
-		r.Get("/page/primary", site.GetPrimaryContentPage)
-		r.Get("/page/sitemap", site.GetSitemapCP)
-		r.Get("/menu/primary", site.GetPrimaryMenu)
-		r.Get("/menu/footer/sitemap", site.GetFooterSitemap)
-		r.Get("/menu/get", site.GetMenuWithContent)
-		r.Get("/menu/get/id", site.GetMenuByContentId)
-		r.Get("/menu/sitemap", site.GetMenuSitemap)
-	})
-
-	m.Group("/landingPage", func(r martini.Router) {
-		r.Get("/get", site.GetLandingPage)
-	})
 	m.Group("/webProperties", func(r martini.Router) {
 		//Passing JSON in the request body?
 
