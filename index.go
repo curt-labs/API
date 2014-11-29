@@ -9,9 +9,7 @@ import (
 	"github.com/curt-labs/GoAPI/controllers/cartIntegration"
 	"github.com/curt-labs/GoAPI/controllers/category"
 	"github.com/curt-labs/GoAPI/controllers/contact"
-	"github.com/curt-labs/GoAPI/controllers/customer"
 	"github.com/curt-labs/GoAPI/controllers/customer_new"
-	"github.com/curt-labs/GoAPI/controllers/dealers"
 	"github.com/curt-labs/GoAPI/controllers/dealers_new"
 	"github.com/curt-labs/GoAPI/controllers/faq"
 	"github.com/curt-labs/GoAPI/controllers/forum"
@@ -126,47 +124,6 @@ func main() {
 		r.Post("", internalCors, part_ctlr.SavePrice)
 		r.Put("/:id", internalCors, part_ctlr.SavePrice)
 		r.Delete("/:id", internalCors, part_ctlr.DeletePrice)
-	})
-
-	m.Group("/customer", func(r martini.Router) {
-		r.Post("", customer_ctlr.GetCustomer)
-		r.Post("/user", customer_ctlr.GetUser)
-		r.Post("/locations", customer_ctlr.GetLocations)
-		r.Post("/users", customer_ctlr.GetUsers) // requires no user to be marked as sudo
-		// Customer CMS endpoints
-
-		// Content Types
-		r.Get("/cms/content_types", customer_ctlr.GetAllContentTypes)
-
-		// All Customer Content
-		r.Get("/cms", customer_ctlr.GetAllContent)
-
-		// Customer Part Content
-		r.Get("/cms/part", customer_ctlr.AllPartContent)
-		r.Get("/cms/part/:id", customer_ctlr.UniquePartContent)
-		r.Post("/cms/part/:id", customer_ctlr.UpdatePartContent)
-		r.Delete("/cms/part/:id", customer_ctlr.DeletePartContent)
-
-		// Customer Category Content
-		r.Get("/cms/category", customer_ctlr.AllCategoryContent)
-		r.Get("/cms/category/:id", customer_ctlr.UniqueCategoryContent)
-		r.Post("/cms/category/:id", customer_ctlr.UpdateCategoryContent)
-		r.Delete("/cms/category/:id", customer_ctlr.DeleteCategoryContent)
-
-		// Customer Content By Content Id
-		r.Get("/cms/:id", customer_ctlr.GetContentById)
-		r.Get("/cms/:id/revisions", customer_ctlr.GetContentRevisionsById)
-		r.Post("/auth", customer_ctlr.UserAuthentication)
-		r.Get("/auth", customer_ctlr.KeyedUserAuthentication)
-		//Customer prices
-		r.Get("/prices/part/:id", internalCors, customer_ctlr_new.GetPricesByPart)         //{id}; id refers to partId
-		r.Get("/prices/sale", internalCors, customer_ctlr_new.GetSales)                    //{start}{end}{id} -all required params; id refers to customerId
-		r.Get("/prices/:id", internalCors, customer_ctlr_new.GetPrice)                     //{id}; id refers to {id} refers to customerPriceId
-		r.Get("/prices", internalCors, customer_ctlr_new.GetAllPrices)                     //returns all {sort=field&direction=dir}
-		r.Post("/prices/:id", internalCors, customer_ctlr_new.CreateUpdatePrice)           //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
-		r.Put("/prices", internalCors, customer_ctlr_new.CreateUpdatePrice)                //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
-		r.Delete("/prices/:id", internalCors, customer_ctlr_new.DeletePrice)               //{id} refers to customerPriceId
-		r.Get("/pricesByCustomer/:id", internalCors, customer_ctlr_new.GetPriceByCustomer) //{id} refers to customerId; returns CustomerPrices
 	})
 
 	m.Group("/contact", func(r martini.Router) {
@@ -474,7 +431,7 @@ func main() {
 			// All Customer Contents
 			r.Get("/cms", customer_ctlr_new.GetAllContent)
 			// Content Types
-			r.Get("/cms/content_types", customer_ctlr.GetAllContentTypes)
+			r.Get("/cms/content_types", customer_ctlr_new.GetAllContentTypes)
 
 			// Customer Part Content
 			r.Get("/cms/part", customer_ctlr_new.AllPartContent)
@@ -529,30 +486,6 @@ func main() {
 	m.Get("/vin/vehicleID/:vehicleID", vinLookup.GetPartsFromVehicleID) //returns array of parts
 	//option 2 - one call - returns vehicles with parts
 	m.Get("/vin/:vin", vinLookup.GetParts) //returns vehicles+configs with associated parts -or- an array of parts if only one vehicle config matches
-
-	// m.Get("/customer/auth/keyedUser", internalCors, customer_ctlr_new.KeyedUserAuthentication)
-	// m.Post("/customer/auth/new", internalCors, customer_ctlr_new.UserAuthentication)
-	// // m.Get("/customer/auth/oldKeyedUser", internalCors, customer_ctlr.KeyedUserAuthentication)
-	// m.Get("/customer/auth/resetAuth", internalCors, customer_ctlr_new.ResetAuthentication)
-
-	/**** INTERNAL USE ONLY ****/
-	// These endpoints will not work to the public eye when deployed on CURT's
-	// servers. We will have restrictions in place to prevent access...sorry :/
-	m.Group("/dealers", func(r martini.Router) {
-		r.Get("/etailer", internalCors, dealers_ctlr.Etailers)
-		r.Get("/etailer/platinum", internalCors, dealers_ctlr.PlatinumEtailers)
-		r.Get("/local", internalCors, dealers_ctlr.LocalDealers)
-		r.Get("/local/regions", internalCors, dealers_ctlr.LocalRegions)
-		r.Get("/local/tiers", internalCors, dealers_ctlr.LocalDealerTiers)
-		r.Get("/local/types", internalCors, dealers_ctlr.LocalDealerTypes)
-		r.Get("/search", internalCors, dealers_ctlr.SearchLocations)
-		r.Get("/search/:search", internalCors, dealers_ctlr.SearchLocations)
-		r.Get("/search/type", internalCors, dealers_ctlr.SearchLocationsByType)
-		r.Get("/search/type/:search", internalCors, dealers_ctlr.SearchLocationsByType)
-		r.Get("/search/geo", internalCors, dealers_ctlr.SearchLocationsByLatLng)
-		r.Get("/search/geo/:latitude/:longitude", internalCors, dealers_ctlr.SearchLocationsByLatLng)
-	})
-	m.Get("/dealer/location/:id", internalCors, dealers_ctlr.GetLocation)
 
 	m.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "http://labs.curtmfg.com/", http.StatusFound)

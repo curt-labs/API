@@ -7,7 +7,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
-	"github.com/curt-labs/GoAPI/models/customer/content"
+	"github.com/curt-labs/GoAPI/models/customer_new/content"
 	_ "github.com/go-sql-driver/mysql"
 	"net/url"
 	"strconv"

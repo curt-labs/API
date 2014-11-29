@@ -5,7 +5,7 @@ import (
 	// "errors"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
-	"github.com/curt-labs/GoAPI/models/customer"
+	customer "github.com/curt-labs/GoAPI/models/customer_new"
 	"github.com/curt-labs/GoAPI/models/webProperty"
 	"github.com/go-martini/martini"
 	"io/ioutil"
@@ -73,14 +73,20 @@ func Get(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params m
 
 func GetByPrivateKey(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var err error
-	//get private key & custID
+	var webProperties webProperty_model.WebProperties
+
 	privateKey := r.FormValue("key")
-	custID, err := customer.GetCustomerIdFromKey(privateKey)
-	ws, err := webProperty_model.GetByCustomer(custID)
-	if err != nil {
+	cust := customer.Customer{}
+
+	if err = cust.GetCustomerIdFromKey(privateKey); err != nil {
 		return err.Error()
 	}
-	return encoding.Must(enc.Encode(ws))
+
+	if webProperties, err = webProperty_model.GetByCustomer(cust.Id); err != nil {
+		return err.Error()
+	}
+
+	return encoding.Must(enc.Encode(webProperties))
 }
 
 func GetAllTypes(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
@@ -140,8 +146,13 @@ func CreateUpdateWebProperty(rw http.ResponseWriter, r *http.Request, enc encodi
 	var err error
 	//get private key & custID
 	privateKey := r.FormValue("key")
-	custID, err := customer.GetCustomerIdFromKey(privateKey)
-	w.CustID = custID
+	cust := customer.Customer{}
+
+	if err = cust.GetCustomerIdFromKey(privateKey); err != nil {
+		return err.Error()
+	}
+
+	w.CustID = cust.Id
 
 	//determine content type
 	contType := r.Header.Get("Content-Type")

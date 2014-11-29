@@ -5,7 +5,7 @@ import (
 	"errors"
 	"github.com/curt-labs/GoAPI/helpers/conversions"
 	"github.com/curt-labs/GoAPI/helpers/database"
-	"github.com/curt-labs/GoAPI/models/customer"
+	customer "github.com/curt-labs/GoAPI/models/customer_new"
 	_ "github.com/go-sql-driver/mysql"
 	"html"
 
@@ -439,8 +439,8 @@ func GetCustomerContentRevisions(id int, key string) (revs []CustomerContentRevi
 			ccr.OldContentType.AllowHtml = *octa
 		}
 		if _, ok := users[ccr.User.Id]; !ok {
-			u, err := customer.GetCustomerUserById(ccr.User.Id)
-			if err == nil {
+			u := customer.CustomerUser{}
+			if err := u.Get(ccr.User.Id); err == nil {
 				users[ccr.User.Id] = u
 			}
 		}
