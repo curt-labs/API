@@ -5,7 +5,7 @@ import (
 	"errors"
 	"github.com/curt-labs/GoAPI/helpers/conversions"
 	"github.com/curt-labs/GoAPI/helpers/database"
-	customer "github.com/curt-labs/GoAPI/models/customer_new"
+	"github.com/curt-labs/GoAPI/models/customer"
 	_ "github.com/go-sql-driver/mysql"
 	"html"
 

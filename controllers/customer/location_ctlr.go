@@ -1,10 +1,10 @@
-package customer_ctlr_new
+package customer_ctlr
 
 import (
 	"encoding/json"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
-	"github.com/curt-labs/GoAPI/models/customer_new"
+	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/go-martini/martini"
 	"io/ioutil"
 	"net/http"
@@ -17,7 +17,7 @@ const (
 )
 
 func GetLocation(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	var c customer_new.CustomerLocation
+	var c customer.CustomerLocation
 	var err error
 
 	c.Id, err = strconv.Atoi(params["id"])
@@ -34,10 +34,10 @@ func GetLocation(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 }
 
 func GetAllLocations(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
-	var c customer_new.CustomerLocations
+	var c customer.CustomerLocations
 	var err error
 
-	c, err = customer_new.GetAllLocations()
+	c, err = customer.GetAllLocations()
 	if err != nil {
 		return err.Error()
 	}
@@ -54,7 +54,7 @@ func GetAllLocations(rw http.ResponseWriter, r *http.Request, enc encoding.Encod
 }
 
 func SaveLocation(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	var w customer_new.CustomerLocation
+	var w customer.CustomerLocation
 	var err error
 	err = r.ParseForm()
 
@@ -140,7 +140,7 @@ func SaveLocation(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder,
 }
 
 func SaveLocationJson(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	var l customer_new.CustomerLocation
+	var l customer.CustomerLocation
 	var err error
 	id := params["id"]
 	if id != "" {
@@ -176,7 +176,7 @@ func SaveLocationJson(w http.ResponseWriter, r *http.Request, enc encoding.Encod
 }
 
 func DeleteLocation(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	var w customer_new.CustomerLocation
+	var w customer.CustomerLocation
 	var err error
 
 	id := params["id"]

@@ -1,9 +1,9 @@
-package customer_ctlr_new
+package customer_ctlr
 
 import (
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
-	"github.com/curt-labs/GoAPI/models/customer_new"
+	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/go-martini/martini"
 	"net/http"
 	"strconv"
@@ -16,7 +16,7 @@ const (
 )
 
 func GetPrice(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	var c customer_new.Price
+	var c customer.Price
 	var err error
 	id := r.FormValue("id")
 	if id != "" {
@@ -39,10 +39,10 @@ func GetPrice(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, par
 	return encoding.Must(enc.Encode(c))
 }
 func GetAllPrices(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
-	var c customer_new.Prices
+	var c customer.Prices
 	var err error
 
-	c, err = customer_new.GetAllPrices()
+	c, err = customer.GetAllPrices()
 	if err != nil {
 		return err.Error()
 	}
@@ -59,7 +59,7 @@ func GetAllPrices(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 }
 
 func CreateUpdatePrice(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	var w customer_new.Price
+	var w customer.Price
 	var err error
 
 	id := r.FormValue("id")
@@ -140,7 +140,7 @@ func CreateUpdatePrice(rw http.ResponseWriter, r *http.Request, enc encoding.Enc
 }
 
 func DeletePrice(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	var w customer_new.Price
+	var w customer.Price
 	var err error
 
 	id := r.FormValue("id")
@@ -162,7 +162,7 @@ func DeletePrice(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 }
 func GetPricesByPart(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var err error
-	var ps customer_new.Prices
+	var ps customer.Prices
 	var partID int
 
 	id := r.FormValue("id")
@@ -178,7 +178,7 @@ func GetPricesByPart(rw http.ResponseWriter, r *http.Request, enc encoding.Encod
 			return err.Error()
 		}
 	}
-	ps, err = customer_new.GetPricesByPart(partID)
+	ps, err = customer.GetPricesByPart(partID)
 
 	sort := r.FormValue("sort")
 	direction := r.FormValue("direction")
@@ -197,8 +197,8 @@ func GetPricesByPart(rw http.ResponseWriter, r *http.Request, enc encoding.Encod
 
 func GetSales(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var err error
-	var ps customer_new.Prices
-	var c customer_new.Customer
+	var ps customer.Prices
+	var c customer.Customer
 	id := r.FormValue("id")
 	if id != "" {
 		c.Id, err = strconv.Atoi(id)
@@ -233,8 +233,8 @@ func GetSales(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, par
 
 func GetPriceByCustomer(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var err error
-	var ps customer_new.CustomerPrices
-	var c customer_new.Customer
+	var ps customer.CustomerPrices
+	var c customer.Customer
 
 	id := r.FormValue("id")
 

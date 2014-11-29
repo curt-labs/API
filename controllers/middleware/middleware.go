@@ -5,7 +5,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/helpers/slack"
 	"github.com/curt-labs/GoAPI/models/cart"
-	"github.com/curt-labs/GoAPI/models/customer_new"
+	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/go-martini/martini"
 	"github.com/segmentio/analytics-go"
 	"gopkg.in/mgo.v2/bson"
@@ -93,7 +93,7 @@ func mapCart(c martini.Context, res http.ResponseWriter, r *http.Request) error 
 	return nil
 }
 
-func checkAuth(r *http.Request) *customer_new.CustomerUser {
+func checkAuth(r *http.Request) *customer.CustomerUser {
 	qs := r.URL.Query()
 	key := qs.Get("key")
 	if key == "" {
@@ -106,7 +106,7 @@ func checkAuth(r *http.Request) *customer_new.CustomerUser {
 		return nil
 	}
 
-	user, err := customer_new.GetCustomerUserFromKey(key)
+	user, err := customer.GetCustomerUserFromKey(key)
 	if err != nil || user.Id == "" {
 		return nil
 	}

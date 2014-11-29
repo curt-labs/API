@@ -1,4 +1,4 @@
-package customer_new
+package customer
 
 // import (
 // 	"database/sql"

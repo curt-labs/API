@@ -3,7 +3,7 @@ package geography
 import (
 	"encoding/json"
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
-	"github.com/curt-labs/GoAPI/models/customer_new"
+	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/curt-labs/GoAPI/models/geography"
 	. "github.com/smartystreets/goconvey/convey"
 
@@ -17,7 +17,7 @@ func TestGeography(t *testing.T) {
 	var s geography.States
 	var c geography.Countries
 
-	var cu customer_new.CustomerUser
+	var cu customer.CustomerUser
 
 	cu.Name = "test cust user"
 	cu.Email = "pretend@test.com"

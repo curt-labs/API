@@ -1,4 +1,4 @@
-package customer_ctlr_new
+package customer_ctlr
 
 import (
 	"bytes"
@@ -8,7 +8,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
 	"github.com/curt-labs/GoAPI/models/apiKeyType"
 	"github.com/curt-labs/GoAPI/models/cartIntegration"
-	"github.com/curt-labs/GoAPI/models/customer_new"
+	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/curt-labs/GoAPI/models/products"
 	. "github.com/smartystreets/goconvey/convey"
 	"net/url"
@@ -19,12 +19,12 @@ import (
 )
 
 func TestCustomer(t *testing.T) {
-	var c customer_new.Customer
-	var cu customer_new.CustomerUser
+	var c customer.Customer
+	var cu customer.CustomerUser
 	var p products.Part
 	p.ID = 123
 	p.Create()
-	var price customer_new.Price
+	var price customer.Price
 	price.PartID = p.ID
 	price.Price = 1000000
 
@@ -60,7 +60,7 @@ func TestCustomer(t *testing.T) {
 	}
 	t.Log("APIKEY", apiKey)
 
-	Convey("Testing Customer_New/Customer", t, func() {
+	Convey("Testing customer/Customer", t, func() {
 		//test create customer
 		c.Name = "Jason Voorhees"
 		c.Email = "jason@crystal.lake"
@@ -72,7 +72,7 @@ func TestCustomer(t *testing.T) {
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &c)
 		So(err, ShouldBeNil)
-		So(c, ShouldHaveSameTypeAs, customer_new.Customer{})
+		So(c, ShouldHaveSameTypeAs, customer.Customer{})
 		So(c.Id, ShouldBeGreaterThan, 0)
 
 		//test update customer
@@ -86,7 +86,7 @@ func TestCustomer(t *testing.T) {
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &c)
 		So(err, ShouldBeNil)
-		So(c, ShouldHaveSameTypeAs, customer_new.Customer{})
+		So(c, ShouldHaveSameTypeAs, customer.Customer{})
 		So(c.Id, ShouldBeGreaterThan, 0)
 
 		//test get customer
@@ -97,7 +97,7 @@ func TestCustomer(t *testing.T) {
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &c)
 		So(err, ShouldBeNil)
-		So(c, ShouldHaveSameTypeAs, customer_new.Customer{})
+		So(c, ShouldHaveSameTypeAs, customer.Customer{})
 		So(c.Id, ShouldBeGreaterThan, 0)
 		//same get customer as a post request
 		thyme = time.Now()
@@ -106,7 +106,7 @@ func TestCustomer(t *testing.T) {
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &c)
 		So(err, ShouldBeNil)
-		So(c, ShouldHaveSameTypeAs, customer_new.Customer{})
+		So(c, ShouldHaveSameTypeAs, customer.Customer{})
 		So(c.Id, ShouldBeGreaterThan, 0)
 
 		// get customer locations
@@ -116,7 +116,7 @@ func TestCustomer(t *testing.T) {
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &c.Locations)
 		So(err, ShouldBeNil)
-		So(c.Locations, ShouldHaveSameTypeAs, []customer_new.CustomerLocation{})
+		So(c.Locations, ShouldHaveSameTypeAs, []customer.CustomerLocation{})
 
 		// get customer locations via post
 		thyme = time.Now()
@@ -125,7 +125,7 @@ func TestCustomer(t *testing.T) {
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &c.Locations)
 		So(err, ShouldBeNil)
-		So(c.Locations, ShouldHaveSameTypeAs, []customer_new.CustomerLocation{})
+		So(c.Locations, ShouldHaveSameTypeAs, []customer.CustomerLocation{})
 
 		//get user
 		thyme = time.Now()
@@ -134,17 +134,17 @@ func TestCustomer(t *testing.T) {
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &cu)
 		So(err, ShouldBeNil)
-		So(cu, ShouldHaveSameTypeAs, customer_new.CustomerUser{})
+		So(cu, ShouldHaveSameTypeAs, customer.CustomerUser{})
 
 		//get users
 		thyme = time.Now()
 		testThatHttp.Request("get", "/new/customer/users", "", "?key="+apiKey, GetUsers, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
-		var cus []customer_new.CustomerUser
+		var cus []customer.CustomerUser
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &cus)
 		So(err, ShouldBeNil)
-		So(cus, ShouldHaveSameTypeAs, []customer_new.CustomerUser{})
+		So(cus, ShouldHaveSameTypeAs, []customer.CustomerUser{})
 
 		//get customer price
 		price.CustID = c.Id
@@ -177,7 +177,7 @@ func TestCustomer(t *testing.T) {
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &c)
 		So(err, ShouldBeNil)
-		So(c, ShouldHaveSameTypeAs, customer_new.Customer{})
+		So(c, ShouldHaveSameTypeAs, customer.Customer{})
 		So(c.Id, ShouldBeGreaterThan, 0)
 
 	})
@@ -200,7 +200,7 @@ func TestCustomer(t *testing.T) {
 
 func BenchmarkCRUDCustomer(b *testing.B) {
 	//get apiKey by creating customeruser
-	var cu customer_new.CustomerUser
+	var cu customer.CustomerUser
 	var apiKey string
 	cu.Name = "test cust benchmark user"
 	cu.Email = "pretend@test.com"
@@ -217,10 +217,10 @@ func BenchmarkCRUDCustomer(b *testing.B) {
 	qs.Add("key", apiKey)
 
 	Convey("Customer", b, func() {
-		var c customer_new.Customer
+		var c customer.Customer
 		c.Name = "Freddy Krueger"
 		c.Email = "freddy@elm.st"
-		// var locs customer_new.CustomerLocations
+		// var locs customer.CustomerLocations
 
 		//create
 		(&httprunner.BenchmarkOptions{
@@ -281,7 +281,7 @@ func BenchmarkCRUDCustomer(b *testing.B) {
 		var p products.Part
 		p.ID = 123
 		p.Create()
-		var price customer_new.Price
+		var price customer.Price
 		price.CustID = c.Id
 		price.Create()
 

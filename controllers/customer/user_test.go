@@ -1,4 +1,4 @@
-package customer_ctlr_new
+package customer_ctlr
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/httprunner"
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
 	"github.com/curt-labs/GoAPI/models/apiKeyType"
-	"github.com/curt-labs/GoAPI/models/customer_new"
+	"github.com/curt-labs/GoAPI/models/customer"
 	. "github.com/smartystreets/goconvey/convey"
 	"net/url"
 	"strconv"
@@ -17,8 +17,8 @@ import (
 
 func TestCustomerUser(t *testing.T) {
 	var err error
-	var cu customer_new.CustomerUser
-	var c customer_new.Customer
+	var cu customer.CustomerUser
+	var c customer.Customer
 	c.Name = "Dog Bountyhunter"
 	c.Create()
 
@@ -36,7 +36,7 @@ func TestCustomerUser(t *testing.T) {
 
 	var apiKey string
 
-	Convey("Testing Customer_New/User", t, func() {
+	Convey("Testing customer/User", t, func() {
 		//test create customer user
 		form := url.Values{"name": {"Mitt Romney"}, "email": {"magic@underpants.com"}, "pass": {"robthepoor"}, "customerID": {strconv.Itoa(c.Id)}, "isActive": {"true"}, "locationID": {"1"}, "isSudo": {"true"}, "cust_ID": {"1"}}
 		v := form.Encode()
@@ -47,7 +47,7 @@ func TestCustomerUser(t *testing.T) {
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &cu)
 		So(err, ShouldBeNil)
-		So(cu, ShouldHaveSameTypeAs, customer_new.CustomerUser{})
+		So(cu, ShouldHaveSameTypeAs, customer.CustomerUser{})
 		So(cu.Id, ShouldNotBeEmpty)
 		t.Log(cu.Id)
 		//key stuff - get apiKey
@@ -67,7 +67,7 @@ func TestCustomerUser(t *testing.T) {
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &cu)
 		So(err, ShouldBeNil)
-		So(cu, ShouldHaveSameTypeAs, customer_new.CustomerUser{})
+		So(cu, ShouldHaveSameTypeAs, customer.CustomerUser{})
 		So(cu.Name, ShouldNotEqual, "Mitt Romney")
 
 		//test authenticateUser
@@ -81,7 +81,7 @@ func TestCustomerUser(t *testing.T) {
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &c)
 		So(err, ShouldBeNil)
-		So(c, ShouldHaveSameTypeAs, customer_new.Customer{})
+		So(c, ShouldHaveSameTypeAs, customer.Customer{})
 
 		//test keyed user authentication
 		thyme = time.Now()
@@ -90,7 +90,7 @@ func TestCustomerUser(t *testing.T) {
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &c)
 		So(err, ShouldBeNil)
-		So(c, ShouldHaveSameTypeAs, customer_new.Customer{})
+		So(c, ShouldHaveSameTypeAs, customer.Customer{})
 
 		//test get user by id
 		thyme = time.Now()
@@ -99,7 +99,7 @@ func TestCustomerUser(t *testing.T) {
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &cu)
 		So(err, ShouldBeNil)
-		So(cu, ShouldHaveSameTypeAs, customer_new.CustomerUser{})
+		So(cu, ShouldHaveSameTypeAs, customer.CustomerUser{})
 
 		//test change user password
 		form = url.Values{"email": {"magic@underpants.com"}, "oldPass": {"robthepoor"}, "newPass": {"prolife"}}
@@ -131,13 +131,13 @@ func TestCustomerUser(t *testing.T) {
 		testThatHttp.Request("post", "/new/customer/user/", ":id/key/:type", cu.Id+"/key/PRIVATE?key="+apiKey, GenerateApiKey, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
-		var newKey customer_new.ApiCredentials
+		var newKey customer.ApiCredentials
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &newKey)
 		So(err, ShouldBeNil)
 		So(newKey.Key, ShouldHaveSameTypeAs, "string")
 
 		//test delete customer users by customerId
-		var cu2 customer_new.CustomerUser
+		var cu2 customer.CustomerUser
 		cu2.Create()
 		c.JoinUser(cu2)
 		thyme = time.Now()
@@ -156,7 +156,7 @@ func TestCustomerUser(t *testing.T) {
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &cu)
 		So(err, ShouldBeNil)
-		So(cu, ShouldHaveSameTypeAs, customer_new.CustomerUser{})
+		So(cu, ShouldHaveSameTypeAs, customer.CustomerUser{})
 		So(cu.Id, ShouldNotBeEmpty)
 		cu2.Delete()
 	})
@@ -176,8 +176,8 @@ func TestCustomerUser(t *testing.T) {
 }
 
 func BenchmarkCRUDCustomerUser(b *testing.B) {
-	var cu customer_new.CustomerUser
-	var c customer_new.Customer
+	var cu customer.CustomerUser
+	var c customer.Customer
 	c.Name = "Mick Mattleson"
 	c.Create()
 

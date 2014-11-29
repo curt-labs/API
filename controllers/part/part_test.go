@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
 	"github.com/curt-labs/GoAPI/models/apiKeyType"
-	"github.com/curt-labs/GoAPI/models/customer_new"
-	"github.com/curt-labs/GoAPI/models/customer_new/content"
+	"github.com/curt-labs/GoAPI/models/customer"
+	"github.com/curt-labs/GoAPI/models/customer/content"
 	"github.com/curt-labs/GoAPI/models/products"
 	"github.com/curt-labs/GoAPI/models/video"
 	. "github.com/smartystreets/goconvey/convey"
@@ -22,7 +22,7 @@ func TestParts(t *testing.T) {
 	var p products.Part
 	p.ID = 10999 //set part number here for use in creating related objects
 	var price products.Price
-	var cu customer_new.CustomerUser
+	var cu customer.CustomerUser
 	var cat products.Category
 	cat.Create()
 
@@ -52,7 +52,7 @@ func TestParts(t *testing.T) {
 	auth.Create()
 
 	//create customer
-	var c customer_new.Customer
+	var c customer.Customer
 	c.Name = "test man"
 	c.Create()
 
@@ -91,7 +91,7 @@ func TestParts(t *testing.T) {
 		err = p.BindCustomer(apiKey) //setup
 		So(err, ShouldBeNil)
 
-		var custPrice customer_new.Price
+		var custPrice customer.Price
 		custPrice.CustID = c.Id
 		custPrice.PartID = p.ID
 		custPrice.Create()

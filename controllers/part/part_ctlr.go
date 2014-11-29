@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
-	"github.com/curt-labs/GoAPI/models/customer_new"
+	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/curt-labs/GoAPI/models/products"
 	"github.com/curt-labs/GoAPI/models/vehicle"
 	"github.com/go-martini/martini"
@@ -377,7 +377,7 @@ func Prices(w http.ResponseWriter, r *http.Request, params martini.Params, enc e
 	}()
 
 	go func() {
-		price, custErr := customer_new.GetCustomerPrice(key, p.ID)
+		price, custErr := customer.GetCustomerPrice(key, p.ID)
 		if custErr != nil {
 			err = custErr
 		}

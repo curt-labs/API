@@ -1,11 +1,11 @@
-package dealers_ctlr_new
+package dealers_ctlr
 
 import (
 	"encoding/json"
 	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/httprunner"
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
-	"github.com/curt-labs/GoAPI/models/customer_new"
+	"github.com/curt-labs/GoAPI/models/customer"
 	. "github.com/smartystreets/goconvey/convey"
 	"net/url"
 	"strconv"
@@ -16,12 +16,12 @@ import (
 
 func TestDealers_New(t *testing.T) {
 	var err error
-	var c customer_new.Customer
-	var cs customer_new.Customers
-	var cu customer_new.CustomerUser
-	var dt customer_new.DealerType
-	var loc customer_new.CustomerLocation
-	var locs customer_new.CustomerLocations
+	var c customer.Customer
+	var cs customer.Customers
+	var cu customer.CustomerUser
+	var dt customer.DealerType
+	var loc customer.CustomerLocation
+	var locs customer.CustomerLocations
 
 	loc.Address = "123 Test Ave."
 	loc.Create()
@@ -61,7 +61,7 @@ func TestDealers_New(t *testing.T) {
 
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &cs)
 		So(err, ShouldBeNil)
-		So(cs, ShouldHaveSameTypeAs, customer_new.Customers{})
+		So(cs, ShouldHaveSameTypeAs, customer.Customers{})
 		So(len(cs), ShouldBeGreaterThan, 0)
 
 		//test get local dealers
@@ -69,40 +69,40 @@ func TestDealers_New(t *testing.T) {
 		testThatHttp.Request("get", "/new/dealers/local", "", "?key="+apiKey+"&latlng=43.853282,-95.571675,45.800981,-90.468526&center=44.83536,-93.0201", GetLocalDealers, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
-		var dls customer_new.DealerLocations
+		var dls customer.DealerLocations
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &dls)
 		So(err, ShouldBeNil)
-		So(dls, ShouldHaveSameTypeAs, customer_new.DealerLocations{})
+		So(dls, ShouldHaveSameTypeAs, customer.DealerLocations{})
 
 		//test get local dealers
 		thyme = time.Now()
 		testThatHttp.Request("get", "/new/dealers/local/regions", "", "?key="+apiKey, GetLocalRegions, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()*5) //Long test
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
-		var stateRegions []customer_new.StateRegion
+		var stateRegions []customer.StateRegion
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &stateRegions)
 		So(err, ShouldBeNil)
-		So(stateRegions, ShouldHaveSameTypeAs, []customer_new.StateRegion{})
+		So(stateRegions, ShouldHaveSameTypeAs, []customer.StateRegion{})
 
 		//test get dealerTypes
 		thyme = time.Now()
 		testThatHttp.Request("get", "/new/dealers/local/types", "", "?key="+apiKey, GetLocalDealerTypes, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
-		var types []customer_new.DealerType
+		var types []customer.DealerType
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &types)
 		So(err, ShouldBeNil)
-		So(types, ShouldHaveSameTypeAs, []customer_new.DealerType{})
+		So(types, ShouldHaveSameTypeAs, []customer.DealerType{})
 
 		//test get dealerTiers
 		thyme = time.Now()
 		testThatHttp.Request("get", "/new/dealers/local/tiers", "", "?key="+apiKey, GetLocalDealerTiers, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
-		var tiers []customer_new.DealerTier
+		var tiers []customer.DealerTier
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &tiers)
 		So(err, ShouldBeNil)
-		So(tiers, ShouldHaveSameTypeAs, []customer_new.DealerTier{})
+		So(tiers, ShouldHaveSameTypeAs, []customer.DealerTier{})
 
 		//test get dealerTiers
 		thyme = time.Now()
@@ -111,7 +111,7 @@ func TestDealers_New(t *testing.T) {
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &cs)
 		So(err, ShouldBeNil)
-		So(cs, ShouldHaveSameTypeAs, customer_new.Customers{})
+		So(cs, ShouldHaveSameTypeAs, customer.Customers{})
 
 		//test get location by id
 		thyme = time.Now()
@@ -120,17 +120,17 @@ func TestDealers_New(t *testing.T) {
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &loc)
 		So(err, ShouldBeNil)
-		So(loc, ShouldHaveSameTypeAs, customer_new.CustomerLocation{})
+		So(loc, ShouldHaveSameTypeAs, customer.CustomerLocation{})
 
 		//test get all business classes
 		thyme = time.Now()
 		testThatHttp.Request("get", "/new/dealers/business/classes", "", "?key="+apiKey, GetAllBusinessClasses, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
-		var bcs customer_new.BusinessClasses
+		var bcs customer.BusinessClasses
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &bcs)
 		So(err, ShouldBeNil)
-		So(bcs, ShouldHaveSameTypeAs, customer_new.BusinessClasses{})
+		So(bcs, ShouldHaveSameTypeAs, customer.BusinessClasses{})
 
 		//test search Locations
 		thyme = time.Now()
@@ -139,7 +139,7 @@ func TestDealers_New(t *testing.T) {
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &locs)
 		So(err, ShouldBeNil)
-		So(locs, ShouldHaveSameTypeAs, customer_new.CustomerLocations{})
+		So(locs, ShouldHaveSameTypeAs, customer.CustomerLocations{})
 
 		//test search Locations by type
 		thyme = time.Now()
@@ -148,7 +148,7 @@ func TestDealers_New(t *testing.T) {
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &locs)
 		So(err, ShouldBeNil)
-		So(locs, ShouldHaveSameTypeAs, customer_new.CustomerLocations{})
+		So(locs, ShouldHaveSameTypeAs, customer.CustomerLocations{})
 
 		//test search Locations by lat long
 		thyme = time.Now()
@@ -157,7 +157,7 @@ func TestDealers_New(t *testing.T) {
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &dls)
 		So(err, ShouldBeNil)
-		So(dls, ShouldHaveSameTypeAs, customer_new.DealerLocations{})
+		So(dls, ShouldHaveSameTypeAs, customer.DealerLocations{})
 
 	})
 	c.Delete()
@@ -168,7 +168,7 @@ func TestDealers_New(t *testing.T) {
 }
 
 func BenchmarkCRUDDealers(b *testing.B) {
-	var cu customer_new.CustomerUser
+	var cu customer.CustomerUser
 	cu.Name = "test dealer cust user"
 	cu.Email = "dealer@test.com"
 	cu.Password = "test"

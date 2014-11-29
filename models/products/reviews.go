@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
-	customer "github.com/curt-labs/GoAPI/models/customer_new"
+	"github.com/curt-labs/GoAPI/models/customer"
 	_ "github.com/go-sql-driver/mysql"
 	// "log"
 	"strconv"

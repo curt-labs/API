@@ -1,11 +1,11 @@
-package customer_ctlr_new
+package customer_ctlr
 
 import (
 	"bytes"
 	"encoding/json"
 	"github.com/curt-labs/GoAPI/helpers/httprunner"
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
-	"github.com/curt-labs/GoAPI/models/customer_new"
+	"github.com/curt-labs/GoAPI/models/customer"
 	. "github.com/smartystreets/goconvey/convey"
 	"net/url"
 	"strconv"
@@ -16,9 +16,9 @@ import (
 
 func TestCustomerLocation(t *testing.T) {
 	var err error
-	var loc customer_new.CustomerLocation
+	var loc customer.CustomerLocation
 
-	Convey("Testing Customer_New/Location", t, func() {
+	Convey("Testing customer/Location", t, func() {
 		//test create customer location
 		form := url.Values{"name": {"Dave Grohl"}, "address": {"404 S. Barstow St."}, "city": {"Eau Claire"}}
 		v := form.Encode()
@@ -29,7 +29,7 @@ func TestCustomerLocation(t *testing.T) {
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &loc)
 		So(err, ShouldBeNil)
-		So(loc, ShouldHaveSameTypeAs, customer_new.CustomerLocation{})
+		So(loc, ShouldHaveSameTypeAs, customer.CustomerLocation{})
 		So(loc.Id, ShouldBeGreaterThan, 0)
 
 		//test update location with json
@@ -42,7 +42,7 @@ func TestCustomerLocation(t *testing.T) {
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &loc)
 		So(err, ShouldBeNil)
-		So(loc, ShouldHaveSameTypeAs, customer_new.CustomerLocation{})
+		So(loc, ShouldHaveSameTypeAs, customer.CustomerLocation{})
 
 		//test get location
 		thyme = time.Now()
@@ -51,17 +51,17 @@ func TestCustomerLocation(t *testing.T) {
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &loc)
 		So(err, ShouldBeNil)
-		So(loc, ShouldHaveSameTypeAs, customer_new.CustomerLocation{})
+		So(loc, ShouldHaveSameTypeAs, customer.CustomerLocation{})
 
 		//test get all locations
 		thyme = time.Now()
 		testThatHttp.Request("get", "/new/customer/location", "", "", GetAllLocations, bodyJson, "application/json")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
-		var locs customer_new.CustomerLocations
+		var locs customer.CustomerLocations
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &locs)
 		So(err, ShouldBeNil)
-		So(locs, ShouldHaveSameTypeAs, customer_new.CustomerLocations{})
+		So(locs, ShouldHaveSameTypeAs, customer.CustomerLocations{})
 
 		//test delete location
 		thyme = time.Now()
@@ -70,7 +70,7 @@ func TestCustomerLocation(t *testing.T) {
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &loc)
 		So(err, ShouldBeNil)
-		So(loc, ShouldHaveSameTypeAs, customer_new.CustomerLocation{})
+		So(loc, ShouldHaveSameTypeAs, customer.CustomerLocation{})
 
 	})
 }
@@ -78,7 +78,7 @@ func TestCustomerLocation(t *testing.T) {
 func BenchmarkCRUDCustomerLocation(b *testing.B) {
 
 	qs := make(url.Values, 0)
-	var loc customer_new.CustomerLocation
+	var loc customer.CustomerLocation
 
 	Convey("CustomerLocation", b, func() {
 		form := url.Values{"name": {"Dave Grohl"}, "address": {"404 S. Barstow St."}, "city": {"Eau Claire"}}

@@ -1,9 +1,9 @@
-package customer_ctlr_new
+package customer_ctlr
 
 import (
 	"encoding/json"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
-	"github.com/curt-labs/GoAPI/models/customer_new/content"
+	"github.com/curt-labs/GoAPI/models/customer/content"
 	"github.com/go-martini/martini"
 	"io/ioutil"
 	"net/http"

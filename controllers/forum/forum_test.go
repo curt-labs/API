@@ -3,7 +3,7 @@ package forum_ctlr
 import (
 	"encoding/json"
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
-	"github.com/curt-labs/GoAPI/models/customer_new"
+	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/curt-labs/GoAPI/models/forum"
 	. "github.com/smartystreets/goconvey/convey"
 	"net/url"
@@ -25,7 +25,7 @@ func TestForums(t *testing.T) {
 	var ps forum.Posts
 
 	//setup
-	var cu customer_new.CustomerUser
+	var cu customer.CustomerUser
 	cu.Name = "test cust user"
 	cu.Email = "pretend@test.com"
 	cu.Password = "test"

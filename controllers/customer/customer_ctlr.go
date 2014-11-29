@@ -1,9 +1,9 @@
-package customer_ctlr_new
+package customer_ctlr
 
 import (
 	"encoding/json"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
-	"github.com/curt-labs/GoAPI/models/customer_new"
+	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/curt-labs/GoAPI/models/products"
 	"github.com/go-martini/martini"
 	"io/ioutil"
@@ -25,7 +25,7 @@ func GetCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 		return ""
 	}
 
-	var c customer_new.Customer
+	var c customer.Customer
 	//get id from key
 	err = c.GetCustomerIdFromKey(key)
 	if err != nil {
@@ -62,7 +62,7 @@ func GetLocations(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 		return ""
 	}
 
-	cu, err := customer_new.GetCustomerUserFromKey(key)
+	cu, err := customer.GetCustomerUserFromKey(key)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return ""
@@ -88,7 +88,7 @@ func GetUsers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, para
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return ""
 	}
-	user, err := customer_new.GetCustomerUserFromKey(key)
+	user, err := customer.GetCustomerUserFromKey(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -119,7 +119,7 @@ func GetUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) strin
 		return ""
 	}
 
-	user, err := customer_new.GetCustomerUserFromKey(key)
+	user, err := customer.GetCustomerUserFromKey(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -147,7 +147,7 @@ func GetCustomerPrice(w http.ResponseWriter, r *http.Request, enc encoding.Encod
 		p.ID, err = strconv.Atoi(params["id"])
 	}
 
-	price, err := customer_new.GetCustomerPrice(key, p.ID)
+	price, err := customer.GetCustomerPrice(key, p.ID)
 	if err != nil {
 		return err.Error()
 	}
@@ -173,7 +173,7 @@ func GetCustomerCartReference(w http.ResponseWriter, r *http.Request, enc encodi
 		p.ID, err = strconv.Atoi(params["id"])
 	}
 
-	ref, err := customer_new.GetCustomerCartReference(key, p.ID)
+	ref, err := customer.GetCustomerCartReference(key, p.ID)
 	if err != nil {
 		return err.Error()
 	}
@@ -192,7 +192,7 @@ func SaveCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 		return ""
 	}
 
-	var c customer_new.Customer
+	var c customer.Customer
 	var err error
 	idStr := params["id"]
 	if idStr != "" {
@@ -237,7 +237,7 @@ func SaveCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 }
 
 func DeleteCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	var c customer_new.Customer
+	var c customer.Customer
 	var err error
 	idStr := params["id"]
 	if idStr == "" {

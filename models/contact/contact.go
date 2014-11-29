@@ -5,7 +5,7 @@ import (
 	"errors"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/email"
-	"github.com/curt-labs/GoAPI/models/customer_new"
+	"github.com/curt-labs/GoAPI/models/customer"
 	_ "github.com/go-sql-driver/mysql"
 	"strings"
 	"time"
@@ -45,7 +45,7 @@ type Contact struct {
 type DealerContact struct {
 	Contact
 	BusinessName string
-	BusinessType customer_new.DealerType
+	BusinessType customer.DealerType
 }
 
 func GetAllContacts(page, count int) (contacts Contacts, err error) {

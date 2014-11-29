@@ -9,8 +9,8 @@ import (
 	"github.com/curt-labs/GoAPI/controllers/cartIntegration"
 	"github.com/curt-labs/GoAPI/controllers/category"
 	"github.com/curt-labs/GoAPI/controllers/contact"
-	"github.com/curt-labs/GoAPI/controllers/customer_new"
-	"github.com/curt-labs/GoAPI/controllers/dealers_new"
+	"github.com/curt-labs/GoAPI/controllers/customer"
+	"github.com/curt-labs/GoAPI/controllers/dealers"
 	"github.com/curt-labs/GoAPI/controllers/faq"
 	"github.com/curt-labs/GoAPI/controllers/forum"
 	"github.com/curt-labs/GoAPI/controllers/geography"
@@ -92,6 +92,91 @@ func main() {
 		r.Get("/:id/parts", category_ctlr.GetParts)
 		r.Post("/:id/parts", category_ctlr.GetParts)
 		r.Get("/:id/parts/:page/:count", category_ctlr.GetParts)
+	})
+
+	m.Group("/customer", func(r martini.Router) {
+		r.Get("", customer_ctlr.GetCustomer)
+		r.Post("", customer_ctlr.GetCustomer)
+
+		r.Post("/auth", customer_ctlr.AuthenticateUser)
+		r.Get("/auth", customer_ctlr.KeyedUserAuthentication)
+
+		r.Post("/user", customer_ctlr.GetUser)
+		r.Post("/user/register", customer_ctlr.RegisterUser)
+		r.Post("/user/resetPassword", customer_ctlr.ResetPassword)
+		r.Post("/user/changePassword", customer_ctlr.ChangePassword)
+		r.Post("/user/:id/key/:type", customer_ctlr.GenerateApiKey)
+		r.Get("/user/:id", customer_ctlr.GetUserById)
+		r.Post("/user/:id", customer_ctlr.UpdateCustomerUser)
+		r.Delete("/user/:id", internalCors, customer_ctlr.DeleteCustomerUser)
+		r.Any("/users", customer_ctlr.GetUsers)
+
+		r.Delete("/allUsersByCustomerID/:id", internalCors, customer_ctlr.DeleteCustomerUsersByCustomerID) //Takes CustomerID (UUID)---danger!
+
+		r.Put("/location/json", customer_ctlr.SaveLocationJson)
+		r.Put("/location/json/:id", customer_ctlr.SaveLocationJson)
+		r.Post("/location", customer_ctlr.SaveLocation)
+		r.Get("/location/:id", customer_ctlr.GetLocation)
+		r.Put("/location/:id", customer_ctlr.SaveLocation)
+		r.Delete("/location/:id", customer_ctlr.DeleteLocation)
+
+		r.Get("/locations", customer_ctlr.GetLocations)
+		r.Post("/locations", customer_ctlr.GetLocations)
+
+		r.Get("/price/:id", customer_ctlr.GetCustomerPrice)           //{part id}
+		r.Get("/cartRef/:id", customer_ctlr.GetCustomerCartReference) //{part id}
+
+		// Customer CMS endpoints
+		// All Customer Contents
+		r.Get("/cms", customer_ctlr.GetAllContent)
+		// Content Types
+		r.Get("/cms/content_types", customer_ctlr.GetAllContentTypes)
+
+		// Customer Part Content
+		r.Get("/cms/part", customer_ctlr.AllPartContent)
+		r.Get("/cms/part/:id", customer_ctlr.UniquePartContent)
+		r.Put("/cms/part/:id", customer_ctlr.UpdatePartContent) //partId
+		r.Post("/cms/part/:id", customer_ctlr.CreatePartContent)
+		r.Delete("/cms/part/:id", customer_ctlr.DeletePartContent)
+
+		// Customer Category Content
+		r.Get("/cms/category", customer_ctlr.AllCategoryContent)
+		r.Get("/cms/category/:id", customer_ctlr.UniqueCategoryContent)
+		r.Post("/cms/category/:id", customer_ctlr.UpdateCategoryContent) //categoryId
+		r.Delete("/cms/category/:id", customer_ctlr.DeleteCategoryContent)
+
+		// Customer Content By Content Id
+		r.Get("/cms/:id", customer_ctlr.GetContentById)
+		r.Get("/cms/:id/revisions", customer_ctlr.GetContentRevisionsById)
+
+		//Customer prices
+		r.Get("/prices/part/:id", customer_ctlr.GetPricesByPart)         //{id}; id refers to partId
+		r.Post("/prices/sale", customer_ctlr.GetSales)                   //{start}{end}{id} -all required params; id refers to customerId
+		r.Get("/prices/:id", customer_ctlr.GetPrice)                     //{id}; id refers to {id} refers to customerPriceId
+		r.Get("/prices", customer_ctlr.GetAllPrices)                     //returns all {sort=field&direction=dir}
+		r.Put("/prices/:id", customer_ctlr.CreateUpdatePrice)            //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
+		r.Post("/prices", customer_ctlr.CreateUpdatePrice)               //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
+		r.Delete("/prices/:id", customer_ctlr.DeletePrice)               //{id} refers to customerPriceId
+		r.Get("/pricesByCustomer/:id", customer_ctlr.GetPriceByCustomer) //{id} refers to customerId; returns CustomerPrices
+
+		r.Post("/:id", customer_ctlr.SaveCustomer)
+		r.Delete("/:id", customer_ctlr.DeleteCustomer)
+		r.Put("", customer_ctlr.SaveCustomer)
+	})
+
+	m.Get("/dealer/location/:id", internalCors, dealers_ctlr.GetLocationById)
+	m.Group("/dealers", func(r martini.Router) {
+		r.Get("/business/classes", dealers_ctlr.GetAllBusinessClasses)
+		r.Get("/etailer", internalCors, dealers_ctlr.GetEtailers)
+		r.Get("/local", internalCors, dealers_ctlr.GetLocalDealers)
+		r.Get("/local/regions", internalCors, dealers_ctlr.GetLocalRegions)     //move to dealers
+		r.Get("/local/tiers", internalCors, dealers_ctlr.GetLocalDealerTiers)   //move to dealers
+		r.Get("/local/types", internalCors, dealers_ctlr.GetLocalDealerTypes)   //move to dealers
+		r.Get("/etailer/platinum", internalCors, dealers_ctlr.PlatinumEtailers) //move to dealers
+		r.Get("/location/:id", internalCors, dealers_ctlr.GetLocationById)      //move to dealers
+		r.Get("/search/:search", internalCors, dealers_ctlr.SearchLocations)
+		r.Get("/search/type/:search", internalCors, dealers_ctlr.SearchLocationsByType)
+		r.Get("/search/geo/:latitude/:longitude", internalCors, dealers_ctlr.SearchLocationsByLatLng)
 	})
 
 	m.Group("/part", func(r martini.Router) {
@@ -391,94 +476,6 @@ func main() {
 		r.Post("/:id", videos_ctlr.SaveVideo)
 		r.Post("", videos_ctlr.SaveVideo)
 		r.Delete("/:id", videos_ctlr.DeleteVideo)
-	})
-
-	//NEW Customer & Dealer endpoints - Seems to work. Feeling brave?
-	m.Group("/new", func(r martini.Router) {
-		m.Group("/customer", func(r martini.Router) {
-			r.Get("", customer_ctlr_new.GetCustomer)
-			r.Post("", customer_ctlr_new.GetCustomer)
-
-			r.Post("/auth", customer_ctlr_new.AuthenticateUser)
-			r.Get("/auth", customer_ctlr_new.KeyedUserAuthentication)
-
-			r.Post("/user", customer_ctlr_new.GetUser)
-			r.Post("/user/register", customer_ctlr_new.RegisterUser)
-			r.Post("/user/resetPassword", customer_ctlr_new.ResetPassword)
-			r.Post("/user/changePassword", customer_ctlr_new.ChangePassword)
-			r.Post("/user/:id/key/:type", customer_ctlr_new.GenerateApiKey)
-			r.Get("/user/:id", customer_ctlr_new.GetUserById)
-			r.Post("/user/:id", customer_ctlr_new.UpdateCustomerUser)
-			r.Delete("/user/:id", internalCors, customer_ctlr_new.DeleteCustomerUser)
-			r.Any("/users", customer_ctlr_new.GetUsers)
-
-			r.Delete("/allUsersByCustomerID/:id", internalCors, customer_ctlr_new.DeleteCustomerUsersByCustomerID) //Takes CustomerID (UUID)---danger!
-
-			r.Put("/location/json", customer_ctlr_new.SaveLocationJson)
-			r.Put("/location/json/:id", customer_ctlr_new.SaveLocationJson)
-			r.Post("/location", customer_ctlr_new.SaveLocation)
-			r.Get("/location/:id", customer_ctlr_new.GetLocation)
-			r.Put("/location/:id", customer_ctlr_new.SaveLocation)
-			r.Delete("/location/:id", customer_ctlr_new.DeleteLocation)
-
-			r.Get("/locations", customer_ctlr_new.GetLocations)
-			r.Post("/locations", customer_ctlr_new.GetLocations)
-
-			r.Get("/price/:id", customer_ctlr_new.GetCustomerPrice)           //{part id}
-			r.Get("/cartRef/:id", customer_ctlr_new.GetCustomerCartReference) //{part id}
-
-			// Customer CMS endpoints
-			// All Customer Contents
-			r.Get("/cms", customer_ctlr_new.GetAllContent)
-			// Content Types
-			r.Get("/cms/content_types", customer_ctlr_new.GetAllContentTypes)
-
-			// Customer Part Content
-			r.Get("/cms/part", customer_ctlr_new.AllPartContent)
-			r.Get("/cms/part/:id", customer_ctlr_new.UniquePartContent)
-			r.Put("/cms/part/:id", customer_ctlr_new.UpdatePartContent) //partId
-			r.Post("/cms/part/:id", customer_ctlr_new.CreatePartContent)
-			r.Delete("/cms/part/:id", customer_ctlr_new.DeletePartContent)
-
-			// Customer Category Content
-			r.Get("/cms/category", customer_ctlr_new.AllCategoryContent)
-			r.Get("/cms/category/:id", customer_ctlr_new.UniqueCategoryContent)
-			r.Post("/cms/category/:id", customer_ctlr_new.UpdateCategoryContent) //categoryId
-			r.Delete("/cms/category/:id", customer_ctlr_new.DeleteCategoryContent)
-
-			// Customer Content By Content Id
-			r.Get("/cms/:id", customer_ctlr_new.GetContentById)
-			r.Get("/cms/:id/revisions", customer_ctlr_new.GetContentRevisionsById)
-
-			//Customer prices
-			r.Get("/prices/part/:id", customer_ctlr_new.GetPricesByPart)         //{id}; id refers to partId
-			r.Post("/prices/sale", customer_ctlr_new.GetSales)                   //{start}{end}{id} -all required params; id refers to customerId
-			r.Get("/prices/:id", customer_ctlr_new.GetPrice)                     //{id}; id refers to {id} refers to customerPriceId
-			r.Get("/prices", customer_ctlr_new.GetAllPrices)                     //returns all {sort=field&direction=dir}
-			r.Put("/prices/:id", customer_ctlr_new.CreateUpdatePrice)            //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
-			r.Post("/prices", customer_ctlr_new.CreateUpdatePrice)               //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
-			r.Delete("/prices/:id", customer_ctlr_new.DeletePrice)               //{id} refers to customerPriceId
-			r.Get("/pricesByCustomer/:id", customer_ctlr_new.GetPriceByCustomer) //{id} refers to customerId; returns CustomerPrices
-
-			r.Post("/:id", customer_ctlr_new.SaveCustomer)
-			r.Delete("/:id", customer_ctlr_new.DeleteCustomer)
-			r.Put("", customer_ctlr_new.SaveCustomer)
-
-		})
-		m.Group("/dealers", func(r martini.Router) {
-			r.Get("/business/classes", dealers_ctlr_new.GetAllBusinessClasses)
-			r.Get("/etailer", internalCors, dealers_ctlr_new.GetEtailers)
-			r.Get("/local", internalCors, dealers_ctlr_new.GetLocalDealers)
-			r.Get("/local/regions", internalCors, dealers_ctlr_new.GetLocalRegions)     //move to dealers
-			r.Get("/local/tiers", internalCors, dealers_ctlr_new.GetLocalDealerTiers)   //move to dealers
-			r.Get("/local/types", internalCors, dealers_ctlr_new.GetLocalDealerTypes)   //move to dealers
-			r.Get("/etailer/platinum", internalCors, dealers_ctlr_new.PlatinumEtailers) //move to dealers
-			r.Get("/location/:id", internalCors, dealers_ctlr_new.GetLocationById)      //move to dealers
-			r.Get("/search/:search", internalCors, dealers_ctlr_new.SearchLocations)
-			r.Get("/search/type/:search", internalCors, dealers_ctlr_new.SearchLocationsByType)
-			r.Get("/search/geo/:latitude/:longitude", internalCors, dealers_ctlr_new.SearchLocationsByLatLng)
-		})
-		m.Get("/dealer/location/:id", internalCors, dealers_ctlr_new.GetLocationById)
 	})
 
 	//option 1 - two calls - ultimately returns parts

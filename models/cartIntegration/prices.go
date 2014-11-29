@@ -201,7 +201,7 @@ func GetPriceMatrix(partID int, matrices []PriceMatrix) (pm PriceMatrix) {
 	return
 }
 
-//Useful to CRUD customer prices - customer_new/price
+//Useful to CRUD customer prices - customer/price
 func (p *PricePoint) GetCustPriceID() (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {

@@ -5,7 +5,7 @@ import (
 	// "errors"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
-	customer "github.com/curt-labs/GoAPI/models/customer_new"
+	customer "github.com/curt-labs/GoAPI/models/customer"
 	"github.com/curt-labs/GoAPI/models/webProperty"
 	"github.com/go-martini/martini"
 	"io/ioutil"

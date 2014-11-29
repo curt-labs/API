@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/cartIntegration"
-	"github.com/curt-labs/GoAPI/models/customer_new"
+	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/go-martini/martini"
 	"io/ioutil"
 	"net/http"
@@ -98,7 +98,7 @@ func GetCIbyCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 		return ""
 	}
 	//get cust_id from (old) customerID
-	var c customer_new.Customer
+	var c customer.Customer
 	c.CustomerId, err = strconv.Atoi(id)
 	err = c.FindCustIdFromCustomerId()
 	if err != nil {

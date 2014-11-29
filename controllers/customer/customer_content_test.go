@@ -1,4 +1,4 @@
-package customer_ctlr_new
+package customer_ctlr
 
 import (
 	"bytes"
@@ -8,8 +8,8 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/httprunner"
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
 	"github.com/curt-labs/GoAPI/models/apiKeyType"
-	"github.com/curt-labs/GoAPI/models/customer_new"
-	"github.com/curt-labs/GoAPI/models/customer_new/content"
+	"github.com/curt-labs/GoAPI/models/customer"
+	"github.com/curt-labs/GoAPI/models/customer/content"
 	. "github.com/smartystreets/goconvey/convey"
 	"net/url"
 	"strconv"
@@ -20,9 +20,9 @@ import (
 
 func TestCustomerContent(t *testing.T) {
 	flag.Parse()
-	//customer_new - for db setup only
-	var c customer_new.Customer
-	var cu customer_new.CustomerUser
+	//customer - for db setup only
+	var c customer.Customer
+	var cu customer.CustomerUser
 	var content custcontent.CustomerContent
 	var partContent custcontent.PartContent
 	var categoryContent custcontent.CustomerContent
@@ -68,7 +68,7 @@ func TestCustomerContent(t *testing.T) {
 
 	// custCon.Save(11000, 1, apiKey)
 
-	Convey("Testing Customer_New/Customer_content", t, func() {
+	Convey("Testing customer/Customer_content", t, func() {
 		//test create part content
 		content.Text = "new content"
 		content.ContentType.Id = 1
@@ -246,7 +246,7 @@ func TestCustomerContent(t *testing.T) {
 //using httptestrunner
 func TestCreateDeletePartContent(t *testing.T) {
 	//get apiKey by creating customeruser
-	var cu customer_new.CustomerUser
+	var cu customer.CustomerUser
 	var apiKey string
 	cu.Name = "test cust content new httprunner user"
 	cu.Email = "pretend@test.com"
@@ -284,7 +284,7 @@ func TestCreateDeletePartContent(t *testing.T) {
 
 func BenchmarkCRUDContent(b *testing.B) {
 	//get apiKey by creating customeruser
-	var cu customer_new.CustomerUser
+	var cu customer.CustomerUser
 	var apiKey string
 	cu.Name = "test cust content benchmark user"
 	cu.Email = "pretend@test.com"

@@ -2,7 +2,7 @@ package cartIntegration
 
 import (
 	"database/sql"
-	"github.com/curt-labs/GoAPI/models/customer_new"
+	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/curt-labs/GoAPI/models/products"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
@@ -11,8 +11,8 @@ import (
 func TestCI(t *testing.T) {
 	//setup
 	var part products.Part
-	var price customer_new.Price
-	var cust customer_new.Customer
+	var price customer.Price
+	var cust customer.Customer
 	var err error
 	cust.CustomerId = 666
 	cust.Create()

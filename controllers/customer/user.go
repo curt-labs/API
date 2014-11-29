@@ -1,10 +1,10 @@
-package customer_ctlr_new
+package customer_ctlr
 
 import (
 	"encoding/json"
 	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
-	"github.com/curt-labs/GoAPI/models/customer_new"
+	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/go-martini/martini"
 	"io/ioutil"
 	"log"
@@ -18,7 +18,7 @@ func AuthenticateUser(w http.ResponseWriter, r *http.Request, enc encoding.Encod
 	email := r.FormValue("email")
 	pass := r.FormValue("password")
 
-	var user customer_new.CustomerUser
+	var user customer.CustomerUser
 	user.Email = email
 	user.Password = pass
 
@@ -57,7 +57,7 @@ func KeyedUserAuthentication(w http.ResponseWriter, r *http.Request, enc encodin
 	qs := r.URL.Query()
 	key := qs.Get("key")
 	log.Print("key", key)
-	cust, err := customer_new.AuthenticateAndGetCustomer(key)
+	cust, err := customer.AuthenticateAndGetCustomer(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return ""
@@ -71,7 +71,7 @@ func KeyedUserAuthentication(w http.ResponseWriter, r *http.Request, enc encodin
 // 	var err error
 // 	qs := r.URL.Query()
 // 	id := qs.Get("id")
-// 	var u customer_new.CustomerUser
+// 	var u customer.CustomerUser
 // 	u.Id = id
 // 	err = u.ResetAuthentication()
 // 	if err != nil {
@@ -95,7 +95,7 @@ func GetUserById(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 		}
 	}
 
-	var user customer_new.CustomerUser
+	var user customer.CustomerUser
 	user.Id = id
 
 	err = user.Get(key)
@@ -118,7 +118,7 @@ func ResetPassword(w http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 		return ""
 	}
 
-	var user customer_new.CustomerUser
+	var user customer.CustomerUser
 	user.Email = email
 
 	resp, err := user.ResetPass()
@@ -133,7 +133,7 @@ func ChangePassword(w http.ResponseWriter, r *http.Request, enc encoding.Encoder
 	oldPass := r.FormValue("oldPass")
 	newPass := r.FormValue("newPass")
 	log.Print("old pass ", oldPass)
-	var user customer_new.CustomerUser
+	var user customer.CustomerUser
 	user.Email = email
 
 	err := user.ChangePass(oldPass, newPass)
@@ -151,7 +151,7 @@ func GenerateApiKey(w http.ResponseWriter, r *http.Request, params martini.Param
 		key = r.FormValue("key")
 	}
 
-	user, err := customer_new.GetCustomerUserFromKey(key)
+	user, err := customer.GetCustomerUserFromKey(key)
 	if err != nil || user.Id == "" {
 		http.Error(w, "failed to authenticate API key; you must provide a private key.", http.StatusInternalServerError)
 		return ""
@@ -160,7 +160,7 @@ func GenerateApiKey(w http.ResponseWriter, r *http.Request, params martini.Param
 	authed := false
 	if user.Sudo == false {
 		for _, k := range user.Keys {
-			if k.Type == customer_new.PRIVATE_KEY_TYPE && k.Key == key {
+			if k.Type == customer.PRIVATE_KEY_TYPE && k.Key == key {
 				authed = true
 				break
 			}
@@ -217,7 +217,7 @@ func RegisterUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) 
 		return "Email and password are required."
 	}
 
-	var user customer_new.CustomerUser
+	var user customer.CustomerUser
 	user.Email = email
 	user.Password = pass
 	if name != "" {
@@ -248,7 +248,7 @@ func DeleteCustomerUser(w http.ResponseWriter, r *http.Request, enc encoding.Enc
 	id := params["id"]
 	var err error
 
-	var cu customer_new.CustomerUser
+	var cu customer.CustomerUser
 	cu.Id = id
 	err = cu.Delete()
 	if err != nil {
@@ -265,7 +265,7 @@ func DeleteCustomerUsersByCustomerID(w http.ResponseWriter, r *http.Request, enc
 		return ""
 	}
 
-	err = customer_new.DeleteCustomerUsersByCustomerID(customerID)
+	err = customer.DeleteCustomerUsersByCustomerID(customerID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return ""
@@ -288,7 +288,7 @@ func UpdateCustomerUser(w http.ResponseWriter, r *http.Request, enc encoding.Enc
 		}
 	}
 
-	var cu customer_new.CustomerUser
+	var cu customer.CustomerUser
 	cu.Id = id
 	err = cu.Get(key)
 	if err != nil {

@@ -1,10 +1,10 @@
-package customer_ctlr_new
+package customer_ctlr
 
 import (
 	"encoding/json"
 	"github.com/curt-labs/GoAPI/helpers/httprunner"
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
-	"github.com/curt-labs/GoAPI/models/customer_new"
+	"github.com/curt-labs/GoAPI/models/customer"
 	. "github.com/smartystreets/goconvey/convey"
 	"net/url"
 	"strconv"
@@ -15,13 +15,13 @@ import (
 
 func TestCustomerPrice(t *testing.T) {
 	var err error
-	var p customer_new.Price
-	var ps customer_new.Prices
-	var c customer_new.Customer
+	var p customer.Price
+	var ps customer.Prices
+	var c customer.Customer
 	c.Name = "Dog Bountyhunter"
 	c.Create()
 
-	Convey("Testing Customer_New/Price", t, func() {
+	Convey("Testing customer/Price", t, func() {
 		//test create customer price
 		form := url.Values{"custID": {strconv.Itoa(c.Id)}, "partID": {"11000"}, "price": {"123456"}}
 		v := form.Encode()
@@ -32,7 +32,7 @@ func TestCustomerPrice(t *testing.T) {
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &p)
 		So(err, ShouldBeNil)
-		So(p, ShouldHaveSameTypeAs, customer_new.Price{})
+		So(p, ShouldHaveSameTypeAs, customer.Price{})
 		So(p.ID, ShouldBeGreaterThan, 0)
 
 		//test update customer price
@@ -45,7 +45,7 @@ func TestCustomerPrice(t *testing.T) {
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &p)
 		So(err, ShouldBeNil)
-		So(p, ShouldHaveSameTypeAs, customer_new.Price{})
+		So(p, ShouldHaveSameTypeAs, customer.Price{})
 		So(p.IsSale, ShouldEqual, 1)
 		start, _ := time.Parse(inputTimeFormat, "01/01/2001")
 		So(p.SaleStart, ShouldResemble, start)
@@ -57,7 +57,7 @@ func TestCustomerPrice(t *testing.T) {
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &p)
 		So(err, ShouldBeNil)
-		So(p, ShouldHaveSameTypeAs, customer_new.Price{})
+		So(p, ShouldHaveSameTypeAs, customer.Price{})
 
 		//test get all customer price
 		thyme = time.Now()
@@ -66,7 +66,7 @@ func TestCustomerPrice(t *testing.T) {
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &ps)
 		So(err, ShouldBeNil)
-		So(ps, ShouldHaveSameTypeAs, customer_new.Prices{})
+		So(ps, ShouldHaveSameTypeAs, customer.Prices{})
 
 		//test get customer price by part
 		thyme = time.Now()
@@ -75,7 +75,7 @@ func TestCustomerPrice(t *testing.T) {
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &ps)
 		So(err, ShouldBeNil)
-		So(ps, ShouldHaveSameTypeAs, customer_new.Prices{})
+		So(ps, ShouldHaveSameTypeAs, customer.Prices{})
 
 		//test get customer price by customer
 		thyme = time.Now()
@@ -84,7 +84,7 @@ func TestCustomerPrice(t *testing.T) {
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &p)
 		So(err, ShouldBeNil)
-		So(p, ShouldHaveSameTypeAs, customer_new.Price{})
+		So(p, ShouldHaveSameTypeAs, customer.Price{})
 
 		//test get sales
 		form = url.Values{"id": {strconv.Itoa(c.Id)}, "start": {"01/01/2000"}, "end": {"01/01/2016"}}
@@ -96,7 +96,7 @@ func TestCustomerPrice(t *testing.T) {
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &ps)
 		So(err, ShouldBeNil)
-		So(ps, ShouldHaveSameTypeAs, customer_new.Prices{})
+		So(ps, ShouldHaveSameTypeAs, customer.Prices{})
 
 		//test delete customer price
 		thyme = time.Now()
@@ -105,15 +105,15 @@ func TestCustomerPrice(t *testing.T) {
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &p)
 		So(err, ShouldBeNil)
-		So(p, ShouldHaveSameTypeAs, customer_new.Price{})
+		So(p, ShouldHaveSameTypeAs, customer.Price{})
 	})
 	//teardown
 	c.Delete()
 }
 
 func BenchmarkCRUDCustomerPrice(b *testing.B) {
-	var p customer_new.Price
-	var c customer_new.Customer
+	var p customer.Price
+	var c customer.Customer
 	c.Name = "Axl Rose"
 	c.Create()
 	qs := make(url.Values, 0)

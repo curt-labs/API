@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
 	"github.com/curt-labs/GoAPI/models/cartIntegration"
-	"github.com/curt-labs/GoAPI/models/customer_new"
+	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/curt-labs/GoAPI/models/products"
 	. "github.com/smartystreets/goconvey/convey"
 	"strconv"
@@ -18,9 +18,9 @@ func TestCartIntegration(t *testing.T) {
 	var c cartIntegration.CartIntegration
 	var cs []cartIntegration.CartIntegration
 	var p products.Part
-	var price customer_new.Price
+	var price customer.Price
 	var err error
-	var cust customer_new.Customer
+	var cust customer.Customer
 	cust.CustomerId = 666
 	cust.Create()
 	t.Log(cust)
