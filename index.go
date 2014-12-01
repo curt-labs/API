@@ -74,7 +74,26 @@ func main() {
 		AllowCredentials: true,
 	})
 
-	m.Post("/vehicle", vehicle.Query)
+	m.Group("/applicationGuide", func(r martini.Router) {
+		r.Get("/website/:id", applicationGuide.GetApplicationGuidesByWebsite)
+		r.Get("/:id", applicationGuide.GetApplicationGuide)
+		r.Delete("/:id", internalCors, applicationGuide.DeleteApplicationGuide)
+		r.Post("", internalCors, applicationGuide.CreateApplicationGuide)
+	})
+
+	m.Group("/blogs", func(r martini.Router) {
+		r.Get("", blog_controller.GetAll)                      //sort on any field e.g. ?sort=Name&direction=descending
+		r.Get("/categories", blog_controller.GetAllCategories) //all categories; sort on any field e.g. ?sort=Name&direction=descending
+		r.Get("/category/:id", blog_controller.GetBlogCategory)
+		r.Get("/search", blog_controller.Search) //search field = value e.g. /blogs/search?key=8AEE0620-412E-47FC-900A-947820EA1C1D&slug=cyclo
+		r.Post("/categories", internalCors, blog_controller.CreateBlogCategory)
+		r.Delete("/categories/:id", internalCors, blog_controller.DeleteBlogCategory)
+		r.Get("/:id", blog_controller.GetBlog)                     //get blog by {id}
+		r.Put("/:id", internalCors, blog_controller.UpdateBlog)    //create {post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active} returns new id
+		r.Post("", internalCors, blog_controller.CreateBlog)       //update {post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active} required{id}
+		r.Delete("/:id", internalCors, blog_controller.DeleteBlog) //{?id=id}
+		r.Delete("", internalCors, blog_controller.DeleteBlog)     //{id}
+	})
 
 	m.Group("/brands", func(r martini.Router) {
 		r.Get("", brand_ctlr.GetAllBrands)
@@ -92,6 +111,61 @@ func main() {
 		r.Get("/:id/parts", category_ctlr.GetParts)
 		r.Post("/:id/parts", category_ctlr.GetParts)
 		r.Get("/:id/parts/:page/:count", category_ctlr.GetParts)
+	})
+
+	m.Group("/contact", func(r martini.Router) {
+		m.Group("/types", func(r martini.Router) {
+			r.Get("/receivers/:id", contact.GetReceiversByContactType)
+			r.Get("", contact.GetAllContactTypes)
+			r.Get("/:id", contact.GetContactType)
+			r.Post("", contact.AddContactType)
+			r.Put("/:id", contact.UpdateContactType)
+			r.Delete("/:id", contact.DeleteContactType)
+		})
+		m.Group("/receivers", func(r martini.Router) {
+			r.Get("", contact.GetAllContactReceivers)
+			r.Get("/:id", contact.GetContactReceiver)
+			r.Post("", contact.AddContactReceiver)
+			r.Put("/:id", contact.UpdateContactReceiver)
+			r.Delete("/:id", contact.DeleteContactReceiver)
+		})
+		// r.Post("/sendmail/:id", contact.SendEmail)
+		r.Get("", contact.GetAllContacts)
+		r.Get("/:id", contact.GetContact)
+		r.Post("/:contactTypeID", contact.AddDealerContact)
+		r.Put("/:id", contact.UpdateContact)
+		r.Delete("/:id", contact.DeleteContact)
+	})
+
+	m.Group("/shopify", func(r martini.Router) {
+		// Customers
+		r.Get("/customers", cart_ctlr.GetCustomers)
+		r.Get("/customers/search", cart_ctlr.SearchCustomer)
+		r.Get("/customers/:id", cart_ctlr.GetCustomer)
+		r.Get("/customers/:id/orders", cart_ctlr.GetCustomerOrders)
+		r.Post("/customers", cart_ctlr.AddCustomer)
+		r.Put("/customers/:id", cart_ctlr.EditCustomer)
+		r.Delete("/customers/:id", cart_ctlr.DeleteCustomer)
+
+		// Addresses
+		r.Get("/customers/:id/addresses", cart_ctlr.GetAddresses)
+		r.Get("/customers/:id/addresses/:address", cart_ctlr.GetAddress)
+		r.Post("/customers/:id/addresses", cart_ctlr.AddAddress)
+		r.Put("/customers/:id/addresses/:address/default", cart_ctlr.SetDefaultAddress)
+		r.Put("/customers/:id/addresses/:address", cart_ctlr.EditAddress)
+		r.Delete("/customers/:id/addresses/:address", cart_ctlr.DeleteAddress)
+	})
+
+	m.Group("/cart", func(r martini.Router) {
+		r.Get("/customer/pricing/:custID/:page/:count", internalCors, cartIntegration.GetCustomerPricingPaged)
+		r.Get("/customer/pricing/:custID", internalCors, cartIntegration.GetCustomerPricing)
+		r.Get("/customer/count/:custID", internalCors, cartIntegration.GetCustomerPricingCount)
+		r.Get("/part/:id", internalCors, cartIntegration.GetCIbyPart)
+		r.Get("/customer/:id", internalCors, cartIntegration.GetCIbyCustomer) //shallower object than GetCustomerPricing
+		r.Get("/:id", internalCors, cartIntegration.GetCI)
+		r.Put("/:id", internalCors, cartIntegration.SaveCI)
+		r.Post("", internalCors, cartIntegration.SaveCI)
+		r.Delete("/:id", internalCors, cartIntegration.DeleteCI)
 	})
 
 	m.Group("/customer", func(r martini.Router) {
@@ -164,82 +238,18 @@ func main() {
 		r.Put("", customer_ctlr.SaveCustomer)
 	})
 
-	m.Get("/dealer/location/:id", internalCors, dealers_ctlr.GetLocationById)
 	m.Group("/dealers", func(r martini.Router) {
 		r.Get("/business/classes", dealers_ctlr.GetAllBusinessClasses)
 		r.Get("/etailer", internalCors, dealers_ctlr.GetEtailers)
 		r.Get("/local", internalCors, dealers_ctlr.GetLocalDealers)
-		r.Get("/local/regions", internalCors, dealers_ctlr.GetLocalRegions)     //move to dealers
-		r.Get("/local/tiers", internalCors, dealers_ctlr.GetLocalDealerTiers)   //move to dealers
-		r.Get("/local/types", internalCors, dealers_ctlr.GetLocalDealerTypes)   //move to dealers
-		r.Get("/etailer/platinum", internalCors, dealers_ctlr.PlatinumEtailers) //move to dealers
-		r.Get("/location/:id", internalCors, dealers_ctlr.GetLocationById)      //move to dealers
+		r.Get("/local/regions", internalCors, dealers_ctlr.GetLocalRegions)
+		r.Get("/local/tiers", internalCors, dealers_ctlr.GetLocalDealerTiers)
+		r.Get("/local/types", internalCors, dealers_ctlr.GetLocalDealerTypes)
+		r.Get("/etailer/platinum", internalCors, dealers_ctlr.PlatinumEtailers)
+		r.Get("/location/:id", internalCors, dealers_ctlr.GetLocationById)
 		r.Get("/search/:search", internalCors, dealers_ctlr.SearchLocations)
 		r.Get("/search/type/:search", internalCors, dealers_ctlr.SearchLocationsByType)
 		r.Get("/search/geo/:latitude/:longitude", internalCors, dealers_ctlr.SearchLocationsByLatLng)
-	})
-
-	m.Group("/part", func(r martini.Router) {
-		r.Get("/featured", part_ctlr.Featured)
-		r.Get("/latest", part_ctlr.Latest)
-		r.Get("/old/:part", part_ctlr.OldPartNumber)
-		r.Get("/:part/vehicles", part_ctlr.Vehicles)
-		r.Get("/:part/attributes", part_ctlr.Attributes)
-		r.Get("/:part/reviews", part_ctlr.ActiveApprovedReviews)
-		r.Get("/:part/categories", part_ctlr.Categories)
-		r.Get("/:part/content", part_ctlr.GetContent)
-		r.Get("/:part/images", part_ctlr.Images)
-		r.Get("/:part((.*?)\\.(PDF|pdf)$)", part_ctlr.InstallSheet) // Resolves: /part/11000.pdf
-		r.Get("/:part/packages", part_ctlr.Packaging)
-		r.Get("/:part/pricing", part_ctlr.Prices)
-		r.Get("/:part/related", part_ctlr.GetRelated)
-		r.Get("/:part/videos", part_ctlr.Videos)
-		r.Get("/:part/:year/:make/:model", part_ctlr.GetWithVehicle)
-		r.Get("/:part/:year/:make/:model/:submodel", part_ctlr.GetWithVehicle)
-		r.Get("/:part/:year/:make/:model/:submodel/:config(.+)", part_ctlr.GetWithVehicle)
-		r.Get("/:part", part_ctlr.Get)
-		r.Get("", part_ctlr.All)
-		r.Put("/:id", internalCors, part_ctlr.UpdatePart)
-		r.Post("", internalCors, part_ctlr.CreatePart)
-		r.Delete("/:id", internalCors, part_ctlr.DeletePart)
-	})
-
-	m.Group("/price", func(r martini.Router) {
-		r.Get("/:id", internalCors, part_ctlr.GetPrice)
-		r.Post("", internalCors, part_ctlr.SavePrice)
-		r.Put("/:id", internalCors, part_ctlr.SavePrice)
-		r.Delete("/:id", internalCors, part_ctlr.DeletePrice)
-	})
-
-	m.Group("/contact", func(r martini.Router) {
-		m.Group("/types", func(r martini.Router) {
-			r.Get("/receivers/:id", contact.GetReceiversByContactType)
-			r.Get("", contact.GetAllContactTypes)
-			r.Get("/:id", contact.GetContactType)
-			r.Post("", contact.AddContactType)
-			r.Put("/:id", contact.UpdateContactType)
-			r.Delete("/:id", contact.DeleteContactType)
-		})
-		m.Group("/receivers", func(r martini.Router) {
-			r.Get("", contact.GetAllContactReceivers)
-			r.Get("/:id", contact.GetContactReceiver)
-			r.Post("", contact.AddContactReceiver)
-			r.Put("/:id", contact.UpdateContactReceiver)
-			r.Delete("/:id", contact.DeleteContactReceiver)
-		})
-		// r.Post("/sendmail/:id", contact.SendEmail)
-		r.Get("", contact.GetAllContacts)
-		r.Get("/:id", contact.GetContact)
-		r.Post("/:contactTypeID", contact.AddDealerContact)
-		r.Put("/:id", contact.UpdateContact)
-		r.Delete("/:id", contact.DeleteContact)
-	})
-
-	m.Group("/applicationGuide", func(r martini.Router) {
-		r.Get("/website/:id", applicationGuide.GetApplicationGuidesByWebsite)
-		r.Get("/:id", applicationGuide.GetApplicationGuide)
-		r.Delete("/:id", internalCors, applicationGuide.DeleteApplicationGuide)
-		r.Post("", internalCors, applicationGuide.CreateApplicationGuide)
 	})
 
 	m.Group("/faqs", func(r martini.Router) {
@@ -250,51 +260,6 @@ func main() {
 		r.Put("/(:id)", internalCors, faq_controller.Update)    //{id, question and/or answer}
 		r.Delete("/(:id)", internalCors, faq_controller.Delete) //{id}
 		r.Delete("", internalCors, faq_controller.Delete)       //{?id=id}
-	})
-
-	m.Group("/blogs", func(r martini.Router) {
-		r.Get("", blog_controller.GetAll)                      //sort on any field e.g. ?sort=Name&direction=descending
-		r.Get("/categories", blog_controller.GetAllCategories) //all categories; sort on any field e.g. ?sort=Name&direction=descending
-		r.Get("/category/:id", blog_controller.GetBlogCategory)
-		r.Get("/search", blog_controller.Search) //search field = value e.g. /blogs/search?key=8AEE0620-412E-47FC-900A-947820EA1C1D&slug=cyclo
-		r.Post("/categories", internalCors, blog_controller.CreateBlogCategory)
-		r.Delete("/categories/:id", internalCors, blog_controller.DeleteBlogCategory)
-		r.Get("/:id", blog_controller.GetBlog)                     //get blog by {id}
-		r.Put("/:id", internalCors, blog_controller.UpdateBlog)    //create {post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active} returns new id
-		r.Post("", internalCors, blog_controller.CreateBlog)       //update {post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active} required{id}
-		r.Delete("/:id", internalCors, blog_controller.DeleteBlog) //{?id=id}
-		r.Delete("", internalCors, blog_controller.DeleteBlog)     //{id}
-	})
-
-	m.Group("/shopify", func(r martini.Router) {
-		// Customers
-		r.Get("/customers", cart_ctlr.GetCustomers)
-		r.Get("/customers/search", cart_ctlr.SearchCustomer)
-		r.Get("/customers/:id", cart_ctlr.GetCustomer)
-		r.Get("/customers/:id/orders", cart_ctlr.GetCustomerOrders)
-		r.Post("/customers", cart_ctlr.AddCustomer)
-		r.Put("/customers/:id", cart_ctlr.EditCustomer)
-		r.Delete("/customers/:id", cart_ctlr.DeleteCustomer)
-
-		// Addresses
-		r.Get("/customers/:id/addresses", cart_ctlr.GetAddresses)
-		r.Get("/customers/:id/addresses/:address", cart_ctlr.GetAddress)
-		r.Post("/customers/:id/addresses", cart_ctlr.AddAddress)
-		r.Put("/customers/:id/addresses/:address/default", cart_ctlr.SetDefaultAddress)
-		r.Put("/customers/:id/addresses/:address", cart_ctlr.EditAddress)
-		r.Delete("/customers/:id/addresses/:address", cart_ctlr.DeleteAddress)
-	})
-
-	m.Group("/cart", func(r martini.Router) {
-		r.Get("/customer/pricing/:custID/:page/:count", internalCors, cartIntegration.GetCustomerPricingPaged)
-		r.Get("/customer/pricing/:custID", internalCors, cartIntegration.GetCustomerPricing)
-		r.Get("/customer/count/:custID", internalCors, cartIntegration.GetCustomerPricingCount)
-		r.Get("/part/:id", internalCors, cartIntegration.GetCIbyPart)
-		r.Get("/customer/:id", internalCors, cartIntegration.GetCIbyCustomer) //shallower object than GetCustomerPricing
-		r.Get("/:id", internalCors, cartIntegration.GetCI)
-		r.Put("/:id", internalCors, cartIntegration.SaveCI)
-		r.Post("", internalCors, cartIntegration.SaveCI)
-		r.Delete("/:id", internalCors, cartIntegration.DeleteCI)
 	})
 
 	m.Group("/forum", func(r martini.Router) {
@@ -340,47 +305,44 @@ func main() {
 		r.Delete("", internalCors, news_controller.Delete)     //{id}
 	})
 
+	m.Group("/part", func(r martini.Router) {
+		r.Get("/featured", part_ctlr.Featured)
+		r.Get("/latest", part_ctlr.Latest)
+		r.Get("/old/:part", part_ctlr.OldPartNumber)
+		r.Get("/:part/vehicles", part_ctlr.Vehicles)
+		r.Get("/:part/attributes", part_ctlr.Attributes)
+		r.Get("/:part/reviews", part_ctlr.ActiveApprovedReviews)
+		r.Get("/:part/categories", part_ctlr.Categories)
+		r.Get("/:part/content", part_ctlr.GetContent)
+		r.Get("/:part/images", part_ctlr.Images)
+		r.Get("/:part((.*?)\\.(PDF|pdf)$)", part_ctlr.InstallSheet)
+		r.Get("/:part/packages", part_ctlr.Packaging)
+		r.Get("/:part/pricing", part_ctlr.Prices)
+		r.Get("/:part/related", part_ctlr.GetRelated)
+		r.Get("/:part/videos", part_ctlr.Videos)
+		r.Get("/:part/:year/:make/:model", part_ctlr.GetWithVehicle)
+		r.Get("/:part/:year/:make/:model/:submodel", part_ctlr.GetWithVehicle)
+		r.Get("/:part/:year/:make/:model/:submodel/:config(.+)", part_ctlr.GetWithVehicle)
+		r.Get("/:part", part_ctlr.Get)
+		r.Get("", part_ctlr.All)
+		r.Put("/:id", internalCors, part_ctlr.UpdatePart)
+		r.Post("", internalCors, part_ctlr.CreatePart)
+		r.Delete("/:id", internalCors, part_ctlr.DeletePart)
+	})
+
+	m.Group("/price", func(r martini.Router) {
+		r.Get("/:id", internalCors, part_ctlr.GetPrice)
+		r.Post("", internalCors, part_ctlr.SavePrice)
+		r.Put("/:id", internalCors, part_ctlr.SavePrice)
+		r.Delete("/:id", internalCors, part_ctlr.DeletePrice)
+	})
+
 	m.Group("/reviews", func(r martini.Router) {
 		r.Get("", part_ctlr.GetAllReviews)
 		r.Get("/:id", part_ctlr.GetReview)
 		r.Put("", part_ctlr.SaveReview)
 		r.Post("/:id", part_ctlr.SaveReview)
 		r.Delete("/:id", part_ctlr.DeleteReview)
-	})
-
-	m.Group("/webProperties", func(r martini.Router) {
-		//Passing JSON in the request body?
-
-		r.Post("/json/type", internalCors, webProperty_controller.SaveType_Json)
-		r.Post("/json/type/:id", internalCors, webProperty_controller.SaveType_Json)
-		r.Post("/json/requirement", internalCors, webProperty_controller.SaveRequirement_Json)
-		r.Post("/json/requirement/:id", internalCors, webProperty_controller.SaveRequirement_Json)
-		r.Post("/json/note", internalCors, webProperty_controller.SaveNote_Json)
-		r.Post("/json/note/:id", internalCors, webProperty_controller.SaveNote_Json)
-		r.Post("/json/:id", internalCors, webProperty_controller.Save_Json)
-		r.Put("/json", internalCors, webProperty_controller.Save_Json)
-		r.Post("/note/:id", internalCors, webProperty_controller.CreateUpdateWebPropertyNote)               //updates when an id is present; otherwise, creates
-		r.Put("/note", internalCors, webProperty_controller.CreateUpdateWebPropertyNote)                    //updates when an id is present; otherwise, creates
-		r.Delete("/note/:id", internalCors, webProperty_controller.DeleteWebPropertyNote)                   //{id}
-		r.Get("/note/:id", webProperty_controller.GetWebPropertyNote)                                       //{id}
-		r.Post("/type/:id", internalCors, webProperty_controller.CreateUpdateWebPropertyType)               //updates when an id is present; otherwise, creates
-		r.Put("/type", internalCors, webProperty_controller.CreateUpdateWebPropertyType)                    //updates when an id is present; otherwise, creates
-		r.Delete("/type/:id", internalCors, webProperty_controller.DeleteWebPropertyType)                   //{id}
-		r.Get("/type/:id", webProperty_controller.GetWebPropertyType)                                       //{id}
-		r.Post("/requirement/:id", internalCors, webProperty_controller.CreateUpdateWebPropertyRequirement) //updates when an id is present; otherwise, creates
-		r.Put("/requirement", internalCors, webProperty_controller.CreateUpdateWebPropertyRequirement)      //updates when an id is present; otherwise, creates
-		r.Delete("/requirement/:id", internalCors, webProperty_controller.DeleteWebPropertyRequirement)     //{id}
-		r.Get("/requirement/:id", webProperty_controller.GetWebPropertyRequirement)                         //{id}
-		r.Get("/search", internalCors, webProperty_controller.Search)
-		r.Get("/type", webProperty_controller.GetAllTypes)               //all tyeps
-		r.Get("/note", webProperty_controller.GetAllNotes)               //all notes
-		r.Get("/requirement", webProperty_controller.GetAllRequirements) //requirements
-		r.Get("/customer", webProperty_controller.GetByPrivateKey)       //private key
-		r.Get("", internalCors, webProperty_controller.GetAll)
-		r.Get("/:id", internalCors, webProperty_controller.Get)                      //?id=id
-		r.Delete("/:id", internalCors, webProperty_controller.DeleteWebProperty)     //{id}
-		r.Post("/:id", internalCors, webProperty_controller.CreateUpdateWebProperty) //
-		r.Put("", internalCors, webProperty_controller.CreateUpdateWebProperty)      //can create notes(text) and requirements (requirement, by requirement=requirementID) while creating a property
 	})
 
 	m.Group("/salesrep", func(r martini.Router) {
@@ -424,6 +386,14 @@ func main() {
 		r.Delete("/:id", techSupport.DeleteTechSupport)
 	})
 
+	m.Group("/testimonials", func(r martini.Router) {
+		r.Get("", testimonials.GetAllTestimonials)
+		r.Get("/:id", testimonials.GetTestimonial)
+		r.Post("/:id", testimonials.Save)
+		r.Put("", testimonials.Save)
+		r.Delete("/:id", testimonials.Delete)
+	})
+
 	m.Group("/warranty", func(r martini.Router) {
 		r.Get("/all", warranty.GetAllWarranties)
 		r.Get("/contact/:id", warranty.GetWarrantyByContact)
@@ -432,13 +402,40 @@ func main() {
 		r.Delete("/:id", warranty.DeleteWarranty)
 	})
 
-	m.Group("/testimonials", func(r martini.Router) {
-		r.Get("", testimonials.GetAllTestimonials)
-		r.Get("/:id", testimonials.GetTestimonial)
-		r.Post("/:id", testimonials.Save)
-		r.Put("", testimonials.Save)
-		r.Delete("/:id", testimonials.Delete)
+	m.Group("/webProperties", func(r martini.Router) {
+		r.Post("/json/type", internalCors, webProperty_controller.SaveType_Json)
+		r.Post("/json/type/:id", internalCors, webProperty_controller.SaveType_Json)
+		r.Post("/json/requirement", internalCors, webProperty_controller.SaveRequirement_Json)
+		r.Post("/json/requirement/:id", internalCors, webProperty_controller.SaveRequirement_Json)
+		r.Post("/json/note", internalCors, webProperty_controller.SaveNote_Json)
+		r.Post("/json/note/:id", internalCors, webProperty_controller.SaveNote_Json)
+		r.Post("/json/:id", internalCors, webProperty_controller.Save_Json)
+		r.Put("/json", internalCors, webProperty_controller.Save_Json)
+		r.Post("/note/:id", internalCors, webProperty_controller.CreateUpdateWebPropertyNote)               //updates when an id is present; otherwise, creates
+		r.Put("/note", internalCors, webProperty_controller.CreateUpdateWebPropertyNote)                    //updates when an id is present; otherwise, creates
+		r.Delete("/note/:id", internalCors, webProperty_controller.DeleteWebPropertyNote)                   //{id}
+		r.Get("/note/:id", webProperty_controller.GetWebPropertyNote)                                       //{id}
+		r.Post("/type/:id", internalCors, webProperty_controller.CreateUpdateWebPropertyType)               //updates when an id is present; otherwise, creates
+		r.Put("/type", internalCors, webProperty_controller.CreateUpdateWebPropertyType)                    //updates when an id is present; otherwise, creates
+		r.Delete("/type/:id", internalCors, webProperty_controller.DeleteWebPropertyType)                   //{id}
+		r.Get("/type/:id", webProperty_controller.GetWebPropertyType)                                       //{id}
+		r.Post("/requirement/:id", internalCors, webProperty_controller.CreateUpdateWebPropertyRequirement) //updates when an id is present; otherwise, creates
+		r.Put("/requirement", internalCors, webProperty_controller.CreateUpdateWebPropertyRequirement)      //updates when an id is present; otherwise, creates
+		r.Delete("/requirement/:id", internalCors, webProperty_controller.DeleteWebPropertyRequirement)     //{id}
+		r.Get("/requirement/:id", webProperty_controller.GetWebPropertyRequirement)                         //{id}
+		r.Get("/search", internalCors, webProperty_controller.Search)
+		r.Get("/type", webProperty_controller.GetAllTypes)
+		r.Get("/note", webProperty_controller.GetAllNotes)
+		r.Get("/requirement", webProperty_controller.GetAllRequirements)
+		r.Get("/customer", webProperty_controller.GetByPrivateKey)
+		r.Get("", internalCors, webProperty_controller.GetAll)
+		r.Get("/:id", internalCors, webProperty_controller.Get)                      //?id=id
+		r.Delete("/:id", internalCors, webProperty_controller.DeleteWebProperty)     //{id}
+		r.Post("/:id", internalCors, webProperty_controller.CreateUpdateWebProperty) //
+		r.Put("", internalCors, webProperty_controller.CreateUpdateWebProperty)      //can create notes(text) and requirements (requirement, by requirement=requirementID) while creating a property
 	})
+
+	m.Post("/vehicle", vehicle.Query)
 
 	m.Group("/videos", func(r martini.Router) {
 		r.Get("/distinct", videos_ctlr.DistinctVideos) //old "videos" table - curtmfg?
@@ -478,18 +475,17 @@ func main() {
 		r.Delete("/:id", videos_ctlr.DeleteVideo)
 	})
 
-	//option 1 - two calls - ultimately returns parts
-	m.Get("/vin/configs/:vin", vinLookup.GetConfigs)                    //returns vehicles - user must call vin/vehicle with vehicleID to get parts
-	m.Get("/vin/vehicleID/:vehicleID", vinLookup.GetPartsFromVehicleID) //returns array of parts
-	//option 2 - one call - returns vehicles with parts
-	m.Get("/vin/:vin", vinLookup.GetParts) //returns vehicles+configs with associated parts -or- an array of parts if only one vehicle config matches
+	m.Group("/vin", func(r martini.Router) {
+		//option 1 - two calls - ultimately returns parts
+		r.Get("/configs/:vin", vinLookup.GetConfigs)                    //returns vehicles - user must call vin/vehicle with vehicleID to get parts
+		r.Get("/vehicleID/:vehicleID", vinLookup.GetPartsFromVehicleID) //returns an array of parts
+
+		//option 2 - one call - returns vehicles with parts
+		r.Get("/:vin", vinLookup.GetParts) //returns vehicles + configs with associates parts -or- an array of parts if only one vehicle config matches
+	})
 
 	m.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "http://labs.curtmfg.com/", http.StatusFound)
-	})
-
-	m.Any("/*", func(w http.ResponseWriter, r *http.Request) {
-		// log.Println("hit any")
 	})
 
 	srv := &http.Server{
