@@ -1,15 +1,10 @@
 package faq_controller
 
-//reference
-//https://groups.google.com/forum/#!topic/golang-nuts/DARY7HY-pbY
-//http://blog.wercker.com/2014/02/06/RethinkDB-Gingko-Martini-Golang.html
-//http://golang.org/pkg/net/http/httptest/#example_ResponseRecorder
-//https://github.com/mies/martini-rethink
-
 import (
 	"encoding/json"
 	"github.com/curt-labs/GoAPI/helpers/pagination"
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
+	"github.com/curt-labs/GoAPI/helpers/httprunner"
 	"github.com/curt-labs/GoAPI/models/faq"
 	. "github.com/smartystreets/goconvey/convey"
 	"net/url"
@@ -69,8 +64,56 @@ func TestFaqs(t *testing.T) {
 	})
 }
 
-func BenchmarkGetFaqs(b *testing.B) {
+func BenchmarkCRUDFaqs(b *testing.B) {
+	qs := make(url.Values, 0)
 
-	testThatHttp.RequestBenchmark(b.N, "GET", "/faqs/1", nil, Get)
-	testThatHttp.RequestBenchmark(b.N, "GET", "/faqs", nil, GetAll)
+	form := url.Values{"question": {"test"}, "answer": {"testAnswer"}}
+
+	Convey("Faqs", b, func() {
+		//create faqs
+		(&httprunner.BenchmarkOptions{
+			Method:             "POST",
+			Route:              "/faqs",
+			ParameterizedRoute: "/faqs",
+			Handler:            Create,
+			QueryString:        &qs,
+			JsonBody:           nil,
+			FormBody:           form,
+			Runs:               b.N,
+		}).RequestBenchmark()
+		//get all
+		(&httprunner.BenchmarkOptions{
+			Method:             "GET",
+			Route:              "/faqs",
+			ParameterizedRoute: "/faqs",
+			Handler:            Get,
+			QueryString:        &qs,
+			JsonBody:           nil,
+			FormBody:           nil,
+			Runs:               b.N,
+		}).RequestBenchmark()
+		//get 
+		(&httprunner.BenchmarkOptions{
+			Method:             "GET",
+			Route:              "/faqs",
+			ParameterizedRoute: "/faqs/1",
+			Handler:            Get,
+			QueryString:        &qs,
+			JsonBody:           nil,
+			FormBody:           nil,
+			Runs:               b.N,
+		}).RequestBenchmark()
+		//delete
+		(&httprunner.BenchmarkOptions{
+			Method:             "DELETE",
+			Route:              "/faqs",
+			ParameterizedRoute: "/faqs",
+			Handler:            Delete,
+			QueryString:        &qs,
+			JsonBody:           nil,
+			FormBody:           nil,
+			Runs:               b.N,
+		}).RequestBenchmark()
+
+	})
 }
