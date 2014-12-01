@@ -3,6 +3,7 @@ package forum_ctlr
 import (
 	"encoding/json"
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
+	"github.com/curt-labs/GoAPI/helpers/httprunner"
 	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/curt-labs/GoAPI/models/forum"
 	. "github.com/smartystreets/goconvey/convey"
@@ -231,4 +232,85 @@ func TestForums(t *testing.T) {
 
 	})
 	cu.Delete()
+}
+
+
+
+func BenchmarkCRUDForum(b *testing.B) {
+	qs := make(url.Values, 0)
+
+	formGroup := url.Values{"name": {"Posts About Ponies"}, "description": {"The wonderful world of ponies."}}
+	formTopic := url.Values{"name": {"The Prettiest Ponies"}, "description": {"We rank them by mane."}, "closed": {"false"}, "groupID": {"1"}}
+	formPost := url.Values{"title": {"Ponies"}, "post": {"I like pink and yellow ones the best."}, "name": {"Michael Jordan"}, "topicID": {"1"}}
+	Convey("Faqs", b, func() {
+		//create group
+		(&httprunner.BenchmarkOptions{
+			Method:             "POST",
+			Route:              "/forum/groups",
+			ParameterizedRoute: "/forum/groups",
+			Handler:            AddGroup,
+			QueryString:        &qs,
+			JsonBody:           nil,
+			FormBody:           formGroup,
+			Runs:               b.N,
+		}).RequestBenchmark()
+		//create group
+		(&httprunner.BenchmarkOptions{
+			Method:             "POST",
+			Route:              "/forum/topics",
+			ParameterizedRoute: "/forum/topics",
+			Handler:            AddTopic,
+			QueryString:        &qs,
+			JsonBody:           nil,
+			FormBody:           formTopic,
+			Runs:               b.N,
+		}).RequestBenchmark()
+		//create group
+		(&httprunner.BenchmarkOptions{
+			Method:             "POST",
+			Route:              "/forum/posts",
+			ParameterizedRoute: "/forum/posts",
+			Handler:            AddPost,
+			QueryString:        &qs,
+			JsonBody:           nil,
+			FormBody:           formPost,
+			Runs:               b.N,
+		}).RequestBenchmark()
+
+		//delete group
+		(&httprunner.BenchmarkOptions{
+			Method:             "DELETE",
+			Route:              "/forum/groups",
+			ParameterizedRoute: "/forum/groups/1",
+			Handler:            DeleteGroup,
+			QueryString:        &qs,
+			JsonBody:           nil,
+			FormBody:           nil,
+			Runs:               b.N,
+		}).RequestBenchmark()
+
+		//delete group
+		(&httprunner.BenchmarkOptions{
+			Method:             "DELETE",
+			Route:              "/forum/topics",
+			ParameterizedRoute: "/forum/topics/1",
+			Handler:            DeleteTopic,
+			QueryString:        &qs,
+			JsonBody:           nil,
+			FormBody:           nil,
+			Runs:               b.N,
+		}).RequestBenchmark()
+
+		//delete group
+		(&httprunner.BenchmarkOptions{
+			Method:             "DELETE",
+			Route:              "/forum/posts",
+			ParameterizedRoute: "/forum/posts/1",
+			Handler:            DeletePost,
+			QueryString:        &qs,
+			JsonBody:           nil,
+			FormBody:           nil,
+			Runs:               b.N,
+		}).RequestBenchmark()
+	})
 }
