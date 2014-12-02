@@ -479,6 +479,8 @@ func (u CustomerUser) GetCustomer(key string) (c Customer, err error) {
 
 	if u.Sudo {
 		c.GetUsers(key)
+	} else {
+		c.Users = append(c.Users, u)
 	}
 
 	<-locChan
