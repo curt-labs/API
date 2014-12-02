@@ -389,8 +389,8 @@ func main() {
 	m.Group("/testimonials", func(r martini.Router) {
 		r.Get("", testimonials.GetAllTestimonials)
 		r.Get("/:id", testimonials.GetTestimonial)
-		r.Post("/:id", testimonials.Save)
-		r.Put("", testimonials.Save)
+		r.Post("", testimonials.Save)
+		r.Put("/:id", testimonials.Save)
 		r.Delete("/:id", testimonials.Delete)
 	})
 
