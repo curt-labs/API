@@ -28,7 +28,7 @@ type Customer struct {
 	TotalSpent       float64           `json:"total_spent" xml:"total_spent,attr" bson:"total_spent"`
 	UpdatedAt        time.Time         `json:"updated_at" xml:"updated_at,attr" bson:"updated_at"`
 	VerifiedEmail    bool              `json:"verified_email" xml:"verified_email,attr" bson:"verified_email"`
-	Orders           []interface{}     `json:"orders" xml:"orders" bson:"orders"`
+	Orders           []Order           `json:"orders" xml:"orders" bson:"orders"`
 }
 
 type MetaField struct {

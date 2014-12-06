@@ -58,7 +58,7 @@ type Order struct {
 	DiscountCodes         []DiscountCode  `json:"discount_codes" xml:"discount_codes" bson:"discount_codes"`
 	Email                 string          `json:"email" xml:"email,attr" bson:"email"`
 	FinancialStatus       string          `json:"financial_status" xml:"financial_status,attr" bson:"financial_status"`
-	Fulfillments          []interface{}   `json:"fulfillments" xml:"fulfillments" bson:"fulfillments"`
+	Fulfillments          []Fulfillment   `json:"fulfillments" xml:"fulfillments" bson:"fulfillments"`
 	FulfillmentStatus     string          `json:"fulfillment_status" xml:"fulfillment_status,attr" bson:"fulfillment_status"`
 	Tags                  []string        `json:"tags" xml:"tags" bson:"tags"`
 	LandingSite           *url.URL        `json:"landing_site" xml:"landing_site" bson:"landing_site"`
