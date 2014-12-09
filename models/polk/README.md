@@ -41,6 +41,7 @@ Add Base + Submodel + Configs
 3) Loop through [basevehicleID][]CsvDatum
 	For each basevehicleID:
 	a) If all part numbers are the same:
+		**TODO - convert Aries Part Numbers
 		**TODO - check to see if vcdb_VehiclePart exists. If not:
 		Insert part and basevehicle into vcdb_VehiclePart table (vcdb_Vehicle where submodel == 0)
 		if finding this vcdb_Vehicle fails, insert it, then insert vcdb_VehiclePart
@@ -48,6 +49,7 @@ Add Base + Submodel + Configs
 	b) If there are different part numbers within the basevehicle map, loop through [submodelID][]CsvDatum
 		For each submodelID:
 		i) If all part numbers are the same:
+			**TODO - convert Aries Part Numbers
 			**TODO - check to see if vcdb_VehiclePart exists. If not:
 			Insert part and submodel into vcdb_VehiclePart table (vcdb_Vehicle where ConfigID == 0)
 			if finding this vcdb_Vehicle fails, insert it, then insert vcdb_VehiclePart
