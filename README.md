@@ -26,30 +26,9 @@ Endpoints
 
 ---
 
-*Get Years*
+https://github.com/curt-labs/GoAPI/blob/master/docs/Vehicle.md
 
-    GET - http://goapi.curtmfg.com/vehicle?key=[public api key]
-
-*Get Makes*
-
-    GET - http://goapi.curtmfg.com/vehicle/2012?key=[public api key]
-
-*Get Models*
-
-    GET - http://goapi.curtmfg.com/vehicle/2012/Audi?key=[public api key]
-
-*Get SubModels*
-
-    GET - http://goapi.curtmfg.com/vehicle/2012/Audi/A5?key=[public api key]
-
-*Get Dynamic Configuration Option*
-
-    GET - http://goapi.curtmfg.com/vehicle/2012/Audi/A5/Cabriolet?key=[public api key]
-
-*Get Next Dynamic Configuration Option*
-
-    GET - http://goapi.curtmfg.com/vehicle/2012/Audi/A5/Cabriolet/Coupe?key=[public api key]
-
+---
 #### Parts
 
 ---
@@ -68,45 +47,7 @@ Endpoints
 
 ---
 
-*Get Category By Category Title*
-
-    GET - http://goapi.curtmfg.com/category/Hitches?key=[public api key]
-
-*Get Category By Category Id*
-
-    GET - http://goapi.curtmfg.com/category/1?key=[public api key]
-
-*Get Top Level Categories*
-
-    GET - http://goapi.curtmfg.com/category?key=[public api key]
-
-*Get Sub-Categories By Category Id*
-
-    GET - http://goapi.curtmfg.com/category/1/subs?key=[public api key]
-
-*Get Sub-Categories By Category Title*
-
-    GET - http://api.curtmfg.com/v3/category/Hitches/subs?key=[public api key]
-
-*Get Category Parts By Category Id*
-
-    GET - http://goapi.curtmfg.com/category/3/parts?key=[public api key]
-> Keep in mind that the Get Category Parts endpoint implements paging. Below are example endpoints to help demonstrate implementing the pager.
-
-*Get Category Parts By Category Id with Paging*
-
-    GET - http://goapi.curtmfg.com/category/3/parts/2/20?key=[public api key]
-> In the above example 2 references the second "page" and 20 is the total count returned.
-
-*Get Category Parts By Category Title*
-
-    GET - http://goapi.curtmfg.com/category/Class I Trailer Hitches/parts?key=[public api key]
-> Keep in mind that the Get Category Parts endpoint implements paging. Below are example endpoints to help demonstrate implementing the pager.
-
-*Get Category Parts By Category Title with Paging*
-
-    GET - http://goapi.curtmfg.com/category/Class I Trailer Hitches/parts/2/20?key=[public api key]
-> In the above example 2 references the second "page" and 20 in the total count returned.
+https://github.com/curt-labs/GoAPI/blob/master/docs/Categories.md
 
 ----
 
@@ -162,10 +103,12 @@ Contributors
 * Alex Ninneman
     * [Github](http://github.com/ninnemana)
     * [Twitter](https://twitter.com/ninnemana)
-* Matt Mickelson
-    * [Github](https://github.com/mickelsonm)
 * David Vaini
     * [Github](https://github.com/DavidVaini)
+* John Shenk
+    * [Github](https://github.com/stinkyfingers)
+* Matt Mickelson
+    * [Github](https://github.com/mickelsonm)
 
 License
 -
