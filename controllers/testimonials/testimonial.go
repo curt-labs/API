@@ -38,7 +38,7 @@ func GetAllTestimonials(rw http.ResponseWriter, req *http.Request, enc encoding.
 		randomize, err = strconv.ParseBool(qs.Get("randomize"))
 	}
 
-	tests, err := testimonials.GetAllTestimonials(page, count, randomize)
+	tests, err := testimonials.GetAllTestimonials(page, count, randomize, dtx)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return err.Error()

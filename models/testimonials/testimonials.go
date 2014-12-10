@@ -3,6 +3,7 @@ package testimonials
 import (
 	"database/sql"
 	"errors"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	_ "github.com/go-sql-driver/mysql"
 	"time"
@@ -13,7 +14,10 @@ const (
 )
 
 var (
-	getAllTestimonialsStmt    = `select ` + testimonialFields + ` from Testimonial as t where t.active = 1 && t.approved = 1 order by t.dateAdded desc`
+	getAllTestimonialsStmt = `select ` + testimonialFields + ` from Testimonial as t 
+																	Join ApiKeyToBrand as akb on akb.brandID = t.brandID
+																	Join ApiKey as ak on akb.keyID = ak.id
+																	where (ak.api_key = ? && (t.brandID = ? OR 0=?)) && t.active = 1 && t.approved = 1 order by t.dateAdded desc`
 	getTestimonialsByPageStmt = `select ` + testimonialFields + ` from Testimonial as t  where t.active = 1 && t.approved = 1 order by t.dateAdded desc limit ?,?`
 	getRandomTestimonalsStmt  = `select ` + testimonialFields + ` from Testimonial as t  where t.active = 1 && t.approved = 1 order by Rand() limit ?`
 	getTestimonialStmt        = `select ` + testimonialFields + ` from Testimonial as t  where t.testimonialID = ?`
@@ -37,7 +41,7 @@ type Testimonial struct {
 	BrandID   int       `json:"brandId,omitempty" xml:"brandId,omitempty"`
 }
 
-func GetAllTestimonials(page int, count int, randomize bool) (tests Testimonials, err error) {
+func GetAllTestimonials(page int, count int, randomize bool, dtx *apicontext.DataContext) (tests Testimonials, err error) {
 	var stmt *sql.Stmt
 	var rows *sql.Rows
 
@@ -53,7 +57,7 @@ func GetAllTestimonials(page int, count int, randomize bool) (tests Testimonials
 			return
 		}
 		defer stmt.Close()
-		rows, err = stmt.Query()
+		rows, err = stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	} else if randomize {
 		stmt, err = db.Prepare(getRandomTestimonalsStmt)
 		if err != nil {
