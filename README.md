@@ -25,8 +25,10 @@ Endpoints
 #### Vehicle
 
 ---
+
 https://github.com/curt-labs/GoAPI/blob/master/docs/Vehicle.md
 
+---
 #### Parts
 
 ---
@@ -44,7 +46,9 @@ https://github.com/curt-labs/GoAPI/blob/master/docs/Vehicle.md
 #### Categories
 
 ---
+
 https://github.com/curt-labs/GoAPI/blob/master/docs/Categories.md
+
 ----
 
 #### Customer
