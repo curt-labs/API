@@ -3,21 +3,25 @@ package testimonials
 import (
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
 
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/testimonials"
 	"github.com/go-martini/martini"
 )
 
-func GetAllTestimonials(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder) string {
+func GetAllTestimonials(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var err error
 	var page int
 	var count int
 	var randomize bool
 
 	qs := req.URL.Query()
+
+	log.Println(dtx.BrandID) // example of how to use the data context.
 
 	if qs.Get("page") != "" {
 		if pg, err := strconv.Atoi(qs.Get("page")); err == nil {

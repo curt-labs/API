@@ -9,4 +9,5 @@ type DataContext struct {
 	WebsiteID    int
 	APIKey       string
 	CustomerUser *customer.CustomerUser
+	Globals      map[string]interface{}
 }
