@@ -1,8 +1,13 @@
 package testimonials
 
 import (
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
+)
+
+var (
+	MockedDTX = &apicontext.DataContext{BrandID: 1, WebsiteID: 1, APIKey: "BadAPIKey"}
 )
 
 func TestTestimonials(t *testing.T) {
@@ -27,14 +32,14 @@ func TestTestimonials(t *testing.T) {
 		So(err, ShouldBeNil)
 	})
 	Convey("GetAll - No paging", t, func() {
-		ts, err := GetAllTestimonials(0, 1, false)
+		ts, err := GetAllTestimonials(0, 1, false, MockedDTX)
 		So(err, ShouldBeNil)
 		So(len(ts), ShouldBeGreaterThan, 0)
 
 	})
 
 	Convey("GetAll - Paged", t, func() {
-		ts, err := GetAllTestimonials(0, 1, false)
+		ts, err := GetAllTestimonials(0, 1, false, MockedDTX)
 
 		So(err, ShouldBeNil)
 		So(len(ts), ShouldBeGreaterThan, 0)
@@ -42,7 +47,7 @@ func TestTestimonials(t *testing.T) {
 	})
 
 	Convey("GetAll - randomized", t, func() {
-		ts, err := GetAllTestimonials(0, 1, true)
+		ts, err := GetAllTestimonials(0, 1, true, MockedDTX)
 		So(err, ShouldBeNil)
 		So(len(ts), ShouldBeGreaterThan, 0)
 
@@ -57,7 +62,7 @@ func TestTestimonials(t *testing.T) {
 
 func BenchmarkGetAllTestimonials(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		GetAllTestimonials(0, 1, false)
+		GetAllTestimonials(0, 1, false, MockedDTX)
 	}
 }
 
