@@ -2,6 +2,12 @@ package middleware
 
 import (
 	"fmt"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/helpers/slack"
 	"github.com/curt-labs/GoAPI/models/cart"
@@ -9,9 +15,6 @@ import (
 	"github.com/go-martini/martini"
 	"github.com/segmentio/analytics-go"
 	"gopkg.in/mgo.v2/bson"
-	"net/http"
-	"strings"
-	"time"
 )
 
 var (
@@ -44,12 +47,13 @@ func Meddler() martini.Handler {
 		}
 
 		if !excused {
-			user := checkAuth(r)
-			if user == nil {
+			dataContext := processDataContext(r, c)
+			if dataContext == nil {
 				http.Error(res, "Unauthorized", http.StatusUnauthorized)
 				return
 			}
-			c.Map(user)
+
+			c.Map(dataContext)
 		}
 
 		c.Next()
@@ -93,27 +97,61 @@ func mapCart(c martini.Context, res http.ResponseWriter, r *http.Request) error 
 	return nil
 }
 
-func checkAuth(r *http.Request) *customer.CustomerUser {
+func processDataContext(r *http.Request, c martini.Context) *apicontext.DataContext {
 	qs := r.URL.Query()
-	key := qs.Get("key")
-	if key == "" {
-		key = r.FormValue("key")
+	apiKey := qs.Get("key")
+	brand := qs.Get("brandID")
+	website := qs.Get("websiteID")
+
+	//handles api key
+	if apiKey == "" {
+		apiKey = r.FormValue("key")
 	}
-	if key == "" {
-		key = r.Header.Get("key")
+	if apiKey == "" {
+		apiKey = r.Header.Get("key")
 	}
-	if key == "" {
+	if apiKey == "" {
 		return nil
 	}
 
-	user, err := customer.GetCustomerUserFromKey(key)
+	//gets customer user from api key
+	user, err := customer.GetCustomerUserFromKey(apiKey)
 	if err != nil || user.Id == "" {
 		return nil
 	}
-
 	go user.LogApiRequest(r)
 
-	return &user
+	//handles branding
+	var brandID int
+	if brand == "" {
+		brand = r.FormValue("brandID")
+	}
+	if brand == "" {
+		brand = r.Header.Get("brandID")
+	}
+	if id, err := strconv.Atoi(brand); err == nil {
+		brandID = id
+	}
+
+	//handles websiteID
+	var websiteID int
+	if website == "" {
+		website = r.FormValue("websiteID")
+	}
+	if website == "" {
+		website = r.Header.Get("websiteID")
+	}
+	if id, err := strconv.Atoi(website); err == nil {
+		websiteID = id
+	}
+
+	//returns our data context...shared amongst controllers
+	return &apicontext.DataContext{
+		APIKey:       apiKey,
+		BrandID:      brandID,
+		WebsiteID:    websiteID,
+		CustomerUser: &user, //current authenticated user
+	}
 }
 
 func logRequest(r *http.Request, reqTime time.Duration) {
