@@ -36,7 +36,6 @@ Add Base + Submodel + Configs
 
 2) Loop through []CsvDatum and put them in maps of:
 		[basevehicleID][]CsvDatum
-		[submodelID][]CsvDatum
 
 3) Loop through [basevehicleID][]CsvDatum
 	For each basevehicleID:
