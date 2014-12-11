@@ -122,40 +122,40 @@ func RunDiff(filename string, headerLines int, useOldPartNumbers bool, insertMis
 	var cs CsvData
 
 	//csv into memory
-	cs, partsNeeded, missingBaseVehicles, missingSubmodels, err := CaptureCsv(filename, headerLines, useOldPartNumbers, insertMissingData)
+	cs, err = CaptureCsv(filename, headerLines, useOldPartNumbers, insertMissingData)
 	if err != nil {
 		return err
 	}
 
-	//write missing parts to PartsNeeded file
-	partsNeededFile, err := os.Create("PartNumbersNeeded")
-	defer partsNeededFile.Close()
-	if len(*partsNeeded) > 0 {
-		for _, c := range *partsNeeded {
-			partsNeededFile.WriteString("Old Part ID: " + c.Part.OldID + "  AAIAvehicleID: " + strconv.Itoa(c.CsvVehicle.VehicleID) + ", AAIABaseID: " + strconv.Itoa(c.CsvVehicle.BaseVehicleID) + ", AAIASubmodel: " + strconv.Itoa(c.CsvVehicle.SubmodelID) + "\n")
-		}
-	}
-	partsNeededFile.Sync()
+	// //write missing parts to PartsNeeded file
+	// partsNeededFile, err := os.Create("PartNumbersNeeded")
+	// defer partsNeededFile.Close()
+	// if len(*partsNeeded) > 0 {
+	// 	for _, c := range *partsNeeded {
+	// 		partsNeededFile.WriteString("Old Part ID: " + c.Part.OldID + "  AAIAvehicleID: " + strconv.Itoa(c.CsvVehicle.VehicleID) + ", AAIABaseID: " + strconv.Itoa(c.CsvVehicle.BaseVehicleID) + ", AAIASubmodel: " + strconv.Itoa(c.CsvVehicle.SubmodelID) + "\n")
+	// 	}
+	// }
+	// partsNeededFile.Sync()
 
-	//write missing baseVehicles to missingBaseVehicles file
-	baseVehiclesNeededFile, err := os.Create("BaseVehiclesNeeded")
-	defer baseVehiclesNeededFile.Close()
-	if len(*missingBaseVehicles) > 0 {
-		for _, c := range *missingBaseVehicles {
-			baseVehiclesNeededFile.WriteString("Old Part ID: " + c.Part.OldID + "  AAIAvehicleID: " + strconv.Itoa(c.CsvVehicle.VehicleID) + ", AAIABaseID: " + strconv.Itoa(c.CsvVehicle.BaseVehicleID) + ", AAIASubmodel: " + strconv.Itoa(c.CsvVehicle.SubmodelID) + "\n")
-		}
-	}
-	baseVehiclesNeededFile.Sync()
+	// //write missing baseVehicles to missingBaseVehicles file
+	// baseVehiclesNeededFile, err := os.Create("BaseVehiclesNeeded")
+	// defer baseVehiclesNeededFile.Close()
+	// if len(*missingBaseVehicles) > 0 {
+	// 	for _, c := range *missingBaseVehicles {
+	// 		baseVehiclesNeededFile.WriteString("Old Part ID: " + c.Part.OldID + "  AAIAvehicleID: " + strconv.Itoa(c.CsvVehicle.VehicleID) + ", AAIABaseID: " + strconv.Itoa(c.CsvVehicle.BaseVehicleID) + ", AAIASubmodel: " + strconv.Itoa(c.CsvVehicle.SubmodelID) + "\n")
+	// 	}
+	// }
+	// baseVehiclesNeededFile.Sync()
 
-	//write missing submodels to missingSubmodesls file
-	submodelsNeededFile, err := os.Create("SubmodelsNeeded")
-	defer submodelsNeededFile.Close()
-	if len(*missingSubmodels) > 0 {
-		for _, c := range *missingSubmodels {
-			submodelsNeededFile.WriteString("Old Part ID: " + c.Part.OldID + "  AAIAvehicleID: " + strconv.Itoa(c.CsvVehicle.VehicleID) + ", AAIABaseID: " + strconv.Itoa(c.CsvVehicle.BaseVehicleID) + ", AAIASubmodel: " + strconv.Itoa(c.CsvVehicle.SubmodelID) + "\n")
-		}
-	}
-	submodelsNeededFile.Sync()
+	// //write missing submodels to missingSubmodesls file
+	// submodelsNeededFile, err := os.Create("SubmodelsNeeded")
+	// defer submodelsNeededFile.Close()
+	// if len(*missingSubmodels) > 0 {
+	// 	for _, c := range *missingSubmodels {
+	// 		submodelsNeededFile.WriteString("Old Part ID: " + c.Part.OldID + "  AAIAvehicleID: " + strconv.Itoa(c.CsvVehicle.VehicleID) + ", AAIABaseID: " + strconv.Itoa(c.CsvVehicle.BaseVehicleID) + ", AAIASubmodel: " + strconv.Itoa(c.CsvVehicle.SubmodelID) + "\n")
+	// 	}
+	// }
+	// submodelsNeededFile.Sync()
 
 	//create basevehicle  map
 	baseMap := make(map[int][]CsvDatum)
@@ -172,23 +172,20 @@ func RunDiff(filename string, headerLines int, useOldPartNumbers bool, insertMis
 }
 
 //Csv to array of structs
-func CaptureCsv(filename string, headerLines int, useOldPartNumbers bool, insertMissingData bool) ([]CsvDatum, *[]CsvDatum, *[]CsvDatum, *[]CsvDatum, error) {
+func CaptureCsv(filename string, headerLines int, useOldPartNumbers bool, insertMissingData bool) ([]CsvDatum, error) {
 	var err error
 	var cs []CsvDatum
-	var partsNeeded []CsvDatum
-	var missingBaseVehicles []CsvDatum
-	var missingSubmodels []CsvDatum
 
 	//base and submodel maps
 	baseMap, err := GetBaseVehicleMap()
 	subMap, err := GetSubmodelMap()
 	if err != nil {
-		return cs, &partsNeeded, &missingBaseVehicles, &missingSubmodels, err
+		return cs, err
 	}
 
 	csvfile, err := os.Open(filename)
 	if err != nil {
-		return cs, &partsNeeded, &missingBaseVehicles, &missingSubmodels, err
+		return cs, err
 	}
 
 	defer csvfile.Close()
@@ -197,10 +194,26 @@ func CaptureCsv(filename string, headerLines int, useOldPartNumbers bool, insert
 
 	lines, err := reader.ReadAll()
 	if err != nil {
-		return cs, &partsNeeded, &missingBaseVehicles, &missingSubmodels, err
+		return cs, err
 	}
 
 	lines = lines[headerLines:] //axe header
+
+	//setup files
+	//write missing parts to PartsNeeded file
+	partsNeededFile, err := os.Create("PartNumbersNeeded")
+	defer partsNeededFile.Close()
+	partOffset, err := WriteVehicleHeader(partsNeededFile)
+
+	//write missing baseVehicles to missingBaseVehicles file
+	baseVehiclesNeededFile, err := os.Create("BaseVehiclesNeeded")
+	defer baseVehiclesNeededFile.Close()
+	baseOffset, err := WriteVehicleHeader(baseVehiclesNeededFile)
+
+	//write missing submodels to missingSubmodesls file
+	submodelsNeededFile, err := os.Create("SubmodelsNeeded")
+	defer submodelsNeededFile.Close()
+	submodelOffset, err := WriteVehicleHeader(submodelsNeededFile)
 
 	for _, line := range lines {
 		//get values
@@ -245,7 +258,7 @@ func CaptureCsv(filename string, headerLines int, useOldPartNumbers bool, insert
 		DistributedPartOpportunity, err := strconv.Atoi(line[38])
 		MaximumPartOpportunity, err := strconv.Atoi(line[39])
 		if err != nil {
-			return cs, &partsNeeded, &missingBaseVehicles, &missingSubmodels, err
+			return cs, err
 		}
 		//assign to struct
 		c := CsvDatum{
@@ -301,14 +314,15 @@ func CaptureCsv(filename string, headerLines int, useOldPartNumbers bool, insert
 		if useOldPartNumbers == true {
 			partMap, err := GetPartNumberMap()
 			if err != nil {
-				return cs, &partsNeeded, &missingBaseVehicles, &missingSubmodels, err
+				return cs, err
 			}
 			//get new part id, if there is one
 			if newPartNum, ok := partMap[c.Part.OldID]; ok {
 				c.Part.ID = newPartNum
 			} else {
 				//no new part number -> append to partsNeeded for output file write
-				partsNeeded = append(partsNeeded, c)
+				// partsNeeded = append(partsNeeded, c)
+				partOffset, err = WriteVehicle(partsNeededFile, partOffset, c, 0, 0)
 			}
 		} else {
 			//Curt (new) Part number is the only part number
@@ -323,7 +337,8 @@ func CaptureCsv(filename string, headerLines int, useOldPartNumbers bool, insert
 			if insertMissingData == true {
 				//TODO create base vehicle  in BaseVehicle table and link
 			} else {
-				missingBaseVehicles = append(missingBaseVehicles, c)
+				// missingBaseVehicles = append(missingBaseVehicles, c)
+				baseOffset, err = WriteVehicle(baseVehiclesNeededFile, baseOffset, c, 0, 0)
 			}
 		}
 
@@ -335,34 +350,30 @@ func CaptureCsv(filename string, headerLines int, useOldPartNumbers bool, insert
 			if insertMissingData == true {
 				//TODO create submodel in Submodel table and link
 			} else {
-				missingSubmodels = append(missingSubmodels, c)
+				// missingSubmodels = append(missingSubmodels, c)
+				submodelOffset, err = WriteVehicle(submodelsNeededFile, submodelOffset, c, 0, 0)
 			}
 		}
 
 		cs = append(cs, c)
 	}
 	//return array of csv values, partsNeeded doc, err
-	return cs, &partsNeeded, &missingBaseVehicles, &missingSubmodels, err
+	return cs, err
 }
 
 //Audits
 func Audits(baseMap map[int][]CsvDatum) error {
 	var err error
 	subMap := make(map[int][]CsvDatum)
-	// vehicleIDMap := make(map[int][]CsvDatum)
 	var vehicleArray []CsvDatum
 
 	subMap, err = AuditBaseVehicle(baseMap)
 	if len(subMap) > 0 {
-		// vehicleIDMap, err = AuditSubmodel(subMap)
 		vehicleArray, err = AuditSubmodel(subMap)
 		if err != nil {
 			return err
 		}
 	}
-	// if len(vehicleIDMap) > 0 {
-	// 	err = AuditVehicleIDs(vehicleIDMap)
-	// }
 	if len(vehicleArray) > 0 {
 		err = HandleVehicles(vehicleArray)
 		if err != nil {
@@ -376,8 +387,10 @@ func AuditBaseVehicle(baseMap map[int][]CsvDatum) (map[int][]CsvDatum, error) {
 	var err error
 	submodelMap := make(map[int][]CsvDatum)
 
+	//file prep
 	baseNeeded, err := os.Create("NeedBaseVehicleInVcdbVehicleTable")
 	defer baseNeeded.Close()
+	off, err := WriteVehicleHeader(baseNeeded)
 
 	for _, baseVehicle := range baseMap {
 		baseFlag := false
@@ -400,8 +413,8 @@ func AuditBaseVehicle(baseMap map[int][]CsvDatum) (map[int][]CsvDatum, error) {
 				} else {
 					err = nil
 					//log needed base vehicles in vcdbVehicle table
-					baseNeeded.WriteString(strconv.Itoa(baseVehicle[0].CurtVehicle.CurtBaseID))
-					//need to add base vehicle, assign ID to vehicle
+					off, err = WriteVehicle(baseNeeded, off, baseVehicle[0], 0, 0)
+					//TODO - uncomment to insert; need to add base vehicle, assign ID to vehicle
 					// err = baseVehicle[0].InsertBaseVehicleIntoVcdbVehicles()
 					// if err != nil {
 					// 	return submodelMap, err
@@ -415,7 +428,7 @@ func AuditBaseVehicle(baseMap map[int][]CsvDatum) (map[int][]CsvDatum, error) {
 				if err != sql.ErrNoRows {
 					return submodelMap, err
 				} else {
-					//need to add vehiclePart
+					//TODO -uncomment to add vehiclePart; need to add vehiclePart
 					// err = baseVehicle[0].InsertPartIntoVehiclePart()
 					// if err != nil {
 					// 	return submodelMap, err
@@ -440,7 +453,11 @@ func AuditSubmodel(subMap map[int][]CsvDatum) ([]CsvDatum, error) {
 	var vehicleArray []CsvDatum
 
 	subNeeded, err := os.Create("NeedSubmodelInVcdbVehicleTable")
+	if err != nil {
+		return vehicleArray, err
+	}
 	defer subNeeded.Close()
+	off, err := WriteVehicleHeader(subNeeded)
 
 	for _, subVehicle := range subMap {
 		subFlag := false
@@ -464,8 +481,8 @@ func AuditSubmodel(subMap map[int][]CsvDatum) ([]CsvDatum, error) {
 				} else {
 					err = nil
 					//log submodel needed in vcdbVehicle table
-					subNeeded.WriteString(strconv.Itoa(subVehicle[0].CurtVehicle.CurtSubmodelID))
-					//need to add submodel, assign ID to vehicle
+					off, err = WriteVehicle(subNeeded, off, subVehicle[0], 0, 0)
+					//TODO - uncomment to insert; need to add submodel, assign ID to vehicle
 					// err = subVehicle[0].InsertSubmodelIntoVcdbVehicles()
 					// if err != nil {
 					// 	return vIDmap, err
@@ -479,7 +496,7 @@ func AuditSubmodel(subMap map[int][]CsvDatum) ([]CsvDatum, error) {
 				if err != sql.ErrNoRows {
 					return vehicleArray, err
 				} else {
-					// add vehiclePart
+					// TODO -uncomment to add vehiclePart; add vehiclePart
 					// err = subVehicle[0].InsertPartIntoVehiclePart()
 					// if err != nil {
 					// 	return vIDmap, err
@@ -508,13 +525,8 @@ func HandleVehicles(vehicleArray []CsvDatum) error {
 	if err != nil {
 		return err
 	}
-	off := int64(0)
-	b := []byte("ConfigTypeID, ConfigTypeName, AcesConfigValueID\n ")
-	n, err := configsNeededFile.WriteAt(b, off)
-	if err != nil {
-		return err
-	}
-	off += int64(n)
+	defer configsNeededFile.Close()
+	off, err := WriteVehicleHeader(configsNeededFile)
 
 	acesConfigTypeArray := [...]int{6, 20, 8, 3, 2, 4, 16, 25, 40, 12, 7} //There's got to be a better way
 	//assign configs to each vehicles' config array
@@ -528,20 +540,24 @@ func HandleVehicles(vehicleArray []CsvDatum) error {
 			//get curt config type from aces type
 			config.ConfigTypeID, config.ConfigTypeName, err = GetCurtConfigTypeAcesConfig(config.AcesConfigTypeID)
 			if err != nil {
+				log.Print("MISSING configtype, ", err)
 				return err
 			}
 			//get Curt value from aces value and type, if there is one
 			config.ConfigValueID, config.ConfigValueName, err = GetCurtConfigValueAcesConfig(config.AcesConfigTypeID, config.AcesConfigValueID)
 			if err != nil {
-				//log missing config val
-				configNeeded := strconv.Itoa(config.ConfigTypeID) + "," + config.ConfigTypeName + "," + strconv.Itoa(config.AcesConfigValueID) + "\n"
-				n, err := configsNeededFile.WriteAt([]byte(configNeeded), off)
-				if err != nil {
+				if err != sql.ErrNoRows {
 					return err
+				} else {
+					err = nil
+					//log missing config val
+					off, err = WriteVehicle(configsNeededFile, off, v, config.AcesConfigTypeID, config.AcesConfigValueID)
+
+					if err != nil {
+						return err
+					}
+					//TODO add missing configs?
 				}
-				off += int64(n)
-				err = nil
-				//TODO add missing configs?
 			}
 
 			v.CurtVehicle.CurtConfigs = append(v.CurtVehicle.CurtConfigs, config)
@@ -550,68 +566,45 @@ func HandleVehicles(vehicleArray []CsvDatum) error {
 	return err
 }
 
-//TODO - use or not to use...?
-func AuditVehicleIDs(vehicleIDmap map[int][]CsvDatum) error {
+func WriteVehicle(f *os.File, off int64, c CsvDatum, acesConfigTypeID int, acesConfigValueID int) (int64, error) {
 	var err error
-	acesConfigTypeArray := [...]int{6, 20, 8, 3, 2, 4, 16, 25, 40, 12, 7} //There's got to be a better way
-
-	for aaiaVehicleID, cs := range vehicleIDmap {
-		log.Print("AAIA VEHICLE ", aaiaVehicleID)
-		for _, c := range cs {
-			for _, acesConfigTypeID := range acesConfigTypeArray {
-
-				//get Aces value from CsvDatum struct
-				acesConfigValueID := c.getAcesConfigValue(acesConfigTypeID)
-				//get Curt type from aces type
-				curtConfigTypeID, curtConfigTypeName, err := GetCurtConfigTypeAcesConfig(acesConfigTypeID)
-				if err != nil {
-					return err
-				}
-				//get Curt value from aces value and type, if there is one
-				curtConfigValueID, curtConfigValueName, err := GetCurtConfigValueAcesConfig(acesConfigTypeID, acesConfigValueID)
-				if err == nil {
-					err = c.GetCurtVechicleWithConfig(curtConfigValueID, curtConfigTypeID)
-					if err == nil {
-						//add part to this curt vehicle
-						log.Print("We'd add a part to vehicle ", c.CurtVehicle.ID, " config ", curtConfigTypeName, "  -  ", curtConfigValueName)
-						// //TODO UNCOMMENT
-						// err = curt.AddVehicleToVehiclePart()
-						// if err != nil {
-						// 	return err
-						// }
-					}
-					if err == sql.ErrNoRows {
-						//add vehicle with this config before adding part
-						log.Print("We'd add a vehicle before part. Aces Base/Sub: ", c.CurtVehicle.CurtBaseID, " ", c.CurtVehicle.CurtSubmodelID, "| Curt Base/Sub: ", c.CurtVehicle.CurtBaseID, " ", c.CurtVehicle.CurtSubmodelID, " ", curtConfigTypeName, "  -  ", curtConfigValueName)
-						err = nil
-						// //TODO UNCOMMENT
-						// err = curt.InsertConfigurationValue()
-						// if err != nil {
-						// 	return err
-						// }
-						// err = curt.AddVehicleToVehiclePart()
-						// if err != nil {
-						// 	return err
-						// }
-					}
-					if err != nil {
-						log.Print("Another err ", err)
-						return err
-					}
-					// err = curt.Print()
-				} else {
-					//exclude configs without aces data
-					if acesConfigValueID > 0 {
-						//what am I missing - TODO - should we add all these config values that we don't have values for
-						//need to add config value, then vehicle with that config, then vehiclePart
-						log.Print("ACES ", acesConfigTypeID, acesConfigValueID, "   CURT ", curtConfigTypeID, curtConfigValueID)
-					}
-				}
-			}
-		}
+	csvVehicleString := c.CsvVehicle.Make + "," +
+		c.CsvVehicle.Model + "," +
+		c.CsvVehicle.SubModel + "," +
+		c.CsvVehicle.Year + "," +
+		strconv.Itoa(c.CsvVehicle.GVW) + "," +
+		strconv.Itoa(c.CsvVehicle.VehicleID) + "," +
+		strconv.Itoa(c.CsvVehicle.BaseVehicleID) + "," +
+		strconv.Itoa(c.CsvVehicle.YearID) + "," +
+		strconv.Itoa(c.CsvVehicle.MakeID) + "," +
+		strconv.Itoa(c.CsvVehicle.ModelID) + "," +
+		strconv.Itoa(c.CsvVehicle.SubmodelID) + "," +
+		strconv.Itoa(c.Part.ID) + "," +
+		c.Part.PartDesc + "," +
+		strconv.Itoa(c.CurtVehicle.ID) + "," +
+		strconv.Itoa(c.CurtVehicle.CurtBaseID) + "," +
+		strconv.Itoa(c.CurtVehicle.CurtSubmodelID) + "," +
+		strconv.Itoa(acesConfigTypeID) + "," +
+		strconv.Itoa(acesConfigValueID) + "," + "\n"
+	b := []byte(csvVehicleString)
+	n, err := f.WriteAt(b, off)
+	if err != nil {
+		return off, err
 	}
-	return err
+	off += int64(n)
+	return off, err
 }
+
+func WriteVehicleHeader(f *os.File) (int64, error) {
+	off := int64(0)
+	b := []byte(`CsvVehicleMake,CsvVehicleModel,CsvVehicleSubmodel,CsvVehicleYear,CsvVehicleGVW,CsvVehicleVehicleID,
+		CsvVehicleBaseVehicleID,CsvVehicleYearID,CsvVehicleMakeID,CsvVehicleModelID,CsvVehicleSubmodelID,
+		PartID,PartDesc,CurtVehicleID,CurtVehicleBaseID,CurtVehicleSubmodelID,AAIAConfigTypeID,AAIAConfigValueID` + "\n")
+	n, err := f.WriteAt(b, off)
+	off += int64(n)
+	return off, err
+}
+
 func (c *CsvDatum) getAcesConfigValue(n int) int {
 	staticMap := make(map[int]int)
 	staticMap[6] = c.CsvVehicle.FuelTypeID
