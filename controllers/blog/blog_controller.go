@@ -1,6 +1,7 @@
 package blog_controller
 
 import (
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	"github.com/curt-labs/GoAPI/models/blog"
@@ -15,8 +16,8 @@ const (
 	timeFormat = "2006-01-02 15:04:05"
 )
 
-func GetAll(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
-	blogs, err := blog_model.GetAll()
+func GetAll(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+	blogs, err := blog_model.GetAll(dtx)
 	if err != nil {
 		return err.Error()
 	}
@@ -33,8 +34,8 @@ func GetAll(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) strin
 	return encoding.Must(enc.Encode(blogs))
 }
 
-func GetAllCategories(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
-	cats, err := blog_model.GetAllCategories()
+func GetAllCategories(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+	cats, err := blog_model.GetAllCategories(dtx)
 	if err != nil {
 		return err.Error()
 	}
@@ -51,7 +52,7 @@ func GetAllCategories(rw http.ResponseWriter, r *http.Request, enc encoding.Enco
 	return encoding.Must(enc.Encode(cats))
 }
 
-func GetBlog(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func GetBlog(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var b blog_model.Blog
 	var err error
 	idStr := r.FormValue("id")
@@ -66,14 +67,14 @@ func GetBlog(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, para
 			return err.Error()
 		}
 	}
-	err = b.Get()
+	err = b.Get(dtx)
 	if err != nil {
 		return err.Error()
 	}
 	return encoding.Must(enc.Encode(b))
 }
 
-func CreateBlog(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+func CreateBlog(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var b blog_model.Blog
 	var err error
 
@@ -93,13 +94,13 @@ func CreateBlog(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) s
 		b.BlogCategories = append(b.BlogCategories, bc)
 	}
 
-	err = b.Create()
+	err = b.Create(dtx)
 	if err != nil {
 		return err.Error()
 	}
 	return encoding.Must(enc.Encode(b))
 }
-func GetBlogCategory(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func GetBlogCategory(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var c blog_model.Category
 	var err error
 	idStr := r.FormValue("id")
@@ -114,13 +115,13 @@ func GetBlogCategory(rw http.ResponseWriter, r *http.Request, enc encoding.Encod
 			return err.Error()
 		}
 	}
-	err = c.Get()
+	err = c.Get(dtx)
 	if err != nil {
 		return err.Error()
 	}
 	return encoding.Must(enc.Encode(c))
 }
-func CreateBlogCategory(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+func CreateBlogCategory(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var c blog_model.Category
 	var err error
 
@@ -128,7 +129,7 @@ func CreateBlogCategory(rw http.ResponseWriter, r *http.Request, enc encoding.En
 	c.Slug = r.FormValue("slug")
 	c.Active, err = strconv.ParseBool(r.FormValue("active"))
 
-	err = c.Create()
+	err = c.Create(dtx)
 	if err != nil {
 		return err.Error()
 	}
@@ -159,7 +160,7 @@ func DeleteBlogCategory(rw http.ResponseWriter, r *http.Request, enc encoding.En
 	return encoding.Must(enc.Encode(c))
 }
 
-func UpdateBlog(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func UpdateBlog(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var b blog_model.Blog
 	var err error
 
@@ -175,7 +176,7 @@ func UpdateBlog(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 			return err.Error()
 		}
 	}
-	b.Get()
+	b.Get(dtx)
 
 	var tempBC []blog_model.BlogCategory
 
@@ -229,7 +230,7 @@ func UpdateBlog(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 		b.BlogCategories = tempBC
 	}
 
-	err = b.Update()
+	err = b.Update(dtx)
 	if err != nil {
 		return err.Error()
 	}
@@ -258,7 +259,7 @@ func DeleteBlog(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 	return encoding.Must(enc.Encode(b))
 }
 
-func Search(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+func Search(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var err error
 
 	title := r.FormValue("title")
@@ -276,7 +277,7 @@ func Search(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) strin
 	page := r.FormValue("page")
 	results := r.FormValue("results")
 
-	l, err := blog_model.Search(title, slug, text, publishedDate, createdDate, lastModified, userID, metaTitle, metaDescription, keywords, active, page, results)
+	l, err := blog_model.Search(title, slug, text, publishedDate, createdDate, lastModified, userID, metaTitle, metaDescription, keywords, active, page, results, dtx)
 	if err != nil {
 		return err.Error()
 	}

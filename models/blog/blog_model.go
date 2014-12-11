@@ -3,6 +3,7 @@ package blog_model
 import (
 	"database/sql"
 	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/pagination"
 	"github.com/curt-labs/GoAPI/helpers/redis"
@@ -47,29 +48,55 @@ type BlogCategory struct {
 type BlogCategories []BlogCategory
 
 var (
-	getAllBlogs              = "SELECT b.blogPostID, b.post_title ,b.slug ,b.post_text ,b.publishedDate, b.createdDate, b.lastModified, b.userID, b.meta_title, b.meta_description, b.keywords, b.active FROM  BlogPosts AS b "
-	getAllCategories         = "SELECT b.blogCategoryID, b.name, b.slug, b.active FROM BlogCategories AS b"
-	stmtGetAllBlogCategories = "SELECT bc.postCategoryID, bc.blogPostID, bc.blogCategoryID, b.blogCategoryID, b.name, b.slug, b.active FROM BlogPost_BlogCategory AS bc LEFT JOIN blogCategories AS b ON b.blogCategoryID = bc.blogCategoryID"
-	getBlog                  = "SELECT b.blogPostID, b.post_title ,b.slug, COALESCE(b.post_text,'') ,COALESCE(b.publishedDate,''), COALESCE(b.createdDate,''), COALESCE(b.lastModified,''), b.userID, COALESCE(b.meta_title,''), COALESCE(b.meta_description,''), COALESCE(b.keywords,''), b.active FROM  BlogPosts AS b WHERE b.blogPostID = ?"
-	create                   = `INSERT INTO BlogPosts (post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active, thumbnail)
-								VALUES (?,?,?,?,?,?,?,?,?,?,?, ?)`
-	getCategory            = "SELECT blogCategoryID, name, slug,active FROM BlogCategories WHERE blogCategoryID = ?"
-	createCategory         = "INSERT INTO BlogCategories (name,slug,active) VALUES (?,?,?)"
-	deleteCategory         = "DELETE FROM BlogCategories WHERE blogCategoryID = ?"
+	getAllBlogs = `SELECT b.blogPostID, b.post_title ,b.slug ,b.post_text ,b.publishedDate, b.createdDate, b.lastModified, b.userID, b.meta_title, b.meta_description, b.keywords, b.active FROM  BlogPosts AS b 
+									Join BlogPost_BlogCategory as bpbc on bpbc.blogPostID = b.blogPostID
+									Join BlogCategories as bc on bc.blogCategoryID = bpbc.blogCategoryID
+									Join ApiKeyToBrand as akb on akb.brandID = bc.brandID
+									Join ApiKey as ak on akb.keyID = ak.id
+									where (ak.api_key = ? && (bc.brandID = ? OR 0=?))`
+	getAllCategories = `SELECT bc.blogCategoryID, bc.name, bc.slug, bc.active FROM BlogCategories AS bc
+									Join ApiKeyToBrand as akb on akb.brandID = bc.brandID
+									Join ApiKey as ak on akb.keyID = ak.id
+									where (ak.api_key = ? && (bc.brandID = ? OR 0=?))`
+
+	stmtGetAllBlogCategories = `SELECT bpbc.postCategoryID, bpbc.blogPostID, bpbc.blogCategoryID, bc.blogCategoryID, bc.name, bc.slug, bc.active FROM BlogPost_BlogCategory AS bpbc 
+									LEFT JOIN blogCategories AS bc ON bc.blogCategoryID = bpbc.blogCategoryID
+									Join ApiKeyToBrand as akb on akb.brandID = bc.brandID
+									Join ApiKey as ak on akb.keyID = ak.id
+									where (ak.api_key = ? && (bc.brandID = ? OR 0=?))`
+
+	getBlog = `SELECT b.blogPostID, b.post_title ,b.slug, COALESCE(b.post_text,'') ,COALESCE(b.publishedDate,''), COALESCE(b.createdDate,''), COALESCE(b.lastModified,''), b.userID, COALESCE(b.meta_title,''), COALESCE(b.meta_description,''), COALESCE(b.keywords,''), b.active 
+					FROM BlogPosts AS b 
+						Join BlogPost_BlogCategory as bpbc on bpbc.blogPostID = b.blogPostID
+						Join BlogCategories as bc on bc.blogCategoryID = bpbc.blogCategoryID
+						Join ApiKeyToBrand as akb on akb.brandID = bc.brandID
+						Join ApiKey as ak on akb.keyID = ak.id
+						where (ak.api_key = ? && (bc.brandID = ? OR 0=?)) && b.blogPostID = ?`
+	create      = `INSERT INTO BlogPosts (post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active, thumbnail) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`
+	getCategory = `SELECT bc.blogCategoryID, bc.name, bc.slug,bc.active FROM BlogCategories as bc 
+									Join ApiKeyToBrand as akb on akb.brandID = bc.brandID
+									Join ApiKey as ak on akb.keyID = ak.id
+									where (ak.api_key = ? && (bc.brandID = ? OR 0=?)) && bc.blogCategoryID = ?`
+	createCategory         = `INSERT INTO BlogCategories (name,slug,active, brandID) VALUES (?,?,?,?)`
+	deleteCategory         = `DELETE FROM BlogCategories WHERE blogCategoryID = ?`
 	createCatBridge        = `INSERT INTO BlogPost_BlogCategory (blogPostID, blogCategoryID) VALUES (?,?)`
 	deleteCatBridge        = `DELETE FROM BlogPost_BlogCategory WHERE blogPostID = ?`
 	deleteCatBridgeByCatID = `DELETE FROM BlogPost_BlogCategory WHERE blogCategoryID = ?`
 	update                 = `UPDATE BlogPosts SET post_title = ? ,slug = ? ,post_text = ?, publishedDate= ?, lastModified = ?,userID = ?, meta_title = ?, meta_description = ?, keywords = ?, active = ? WHERE blogPostID = ?`
 	deleteBlog             = "DELETE FROM BlogPosts WHERE blogPostID = ?"
-	search                 = `SELECT b.blogPostID, b.post_title ,b.slug ,b.post_text ,b.publishedDate, b.createdDate, b.lastModified, b.userID, b.meta_title, b.meta_description, b.keywords, b.active FROM  BlogPosts AS b
-						WHERE b.post_title LIKE ? AND b.slug LIKE ? AND b.post_text LIKE ? AND b.publishedDate LIKE ? AND b.createdDate LIKE ? AND b.lastModified LIKE ? AND b.userID LIKE ? AND b.meta_title LIKE ? AND b.meta_description LIKE ? AND b.keywords LIKE ? AND b.active LIKE ?`
+	search                 = `SELECT b.blogPostID, b.post_title ,b.slug ,b.post_text ,b.publishedDate, b.createdDate, b.lastModified, b.userID, b.meta_title, b.meta_description, b.keywords, b.active FROM BlogPosts AS b
+									Join BlogPost_BlogCategory as bpbc on bpbc.blogPostID = b.blogPostID
+									Join BlogCategories as bc on bc.blogCategoryID = bpbc.blogCategoryID
+									Join ApiKeyToBrand as akb on akb.brandID = bc.brandID
+									Join ApiKey as ak on akb.keyID = ak.id
+									where (ak.api_key = ? && (bc.brandID = ? OR 0=?)) && b.post_title LIKE ? AND b.slug LIKE ? AND b.post_text LIKE ? AND b.publishedDate LIKE ? AND b.createdDate LIKE ? AND b.lastModified LIKE ? AND b.userID LIKE ? AND b.meta_title LIKE ? AND b.meta_description LIKE ? AND b.keywords LIKE ? AND b.active LIKE ?`
 )
 
 const (
 	timeFormat = "2006-01-02 15:04:05"
 )
 
-func GetAll() (Blogs, error) {
+func GetAll(dtx *apicontext.DataContext) (Blogs, error) {
 	var bs Blogs
 	var err error
 
@@ -92,10 +119,10 @@ func GetAll() (Blogs, error) {
 		return bs, err
 	}
 	defer stmt.Close()
-	bcs, err := getAllBlogCategories()
+	bcs, err := getAllBlogCategories(dtx)
 	bcMap := bcs.ToMap()
 
-	res, err := stmt.Query()
+	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	for res.Next() {
 		var b Blog
 		res.Scan(&b.ID, &b.Title, &b.Slug, &b.Text, &b.PublishedDate, &b.CreatedDate, &b.LastModified, &b.UserID, &b.MetaTitle, &b.MetaDescription, &b.Keywords, &b.Active)
@@ -117,7 +144,7 @@ func GetAll() (Blogs, error) {
 	return bs, err
 }
 
-func getAllBlogCategories() (BlogCategories, error) {
+func getAllBlogCategories(dtx *apicontext.DataContext) (BlogCategories, error) {
 	var bcs BlogCategories
 	var err error
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -132,7 +159,7 @@ func getAllBlogCategories() (BlogCategories, error) {
 		return bcs, err
 	}
 	defer stmt.Close()
-	res, err := stmt.Query()
+	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	for res.Next() {
 		var temp BlogCategory
 		res.Scan(&temp.ID, &temp.BlogPostID, &temp.BlogCategoryID, &temp.Category.ID, &temp.Category.Name, &temp.Category.Slug, &temp.Category.Active)
@@ -142,7 +169,7 @@ func getAllBlogCategories() (BlogCategories, error) {
 	return bcs, err
 }
 
-func GetAllCategories() (Categories, error) {
+func GetAllCategories(dtx *apicontext.DataContext) (Categories, error) {
 	var cs Categories
 	var err error
 	redis_key := "blogs:categories"
@@ -163,7 +190,7 @@ func GetAllCategories() (Categories, error) {
 		return cs, err
 	}
 	defer stmt.Close()
-	res, err := stmt.Query()
+	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	for res.Next() {
 		var c Category
 		res.Scan(&c.ID, &c.Name, &c.Slug, &c.Active)
@@ -175,7 +202,7 @@ func GetAllCategories() (Categories, error) {
 	return cs, err
 }
 
-func (b *Blog) Get() error {
+func (b *Blog) Get(dtx *apicontext.DataContext) error {
 	var err error
 
 	redis_key := "blog:" + strconv.Itoa(b.ID)
@@ -197,11 +224,11 @@ func (b *Blog) Get() error {
 		return err
 	}
 	defer stmt.Close()
-	bcs, err := getAllBlogCategories()
+	bcs, err := getAllBlogCategories(dtx)
 	bcMap := bcs.ToMap()
 	var p, c, l *string
 
-	res, err := stmt.Query(b.ID)
+	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID, b.ID)
 	for res.Next() {
 
 		res.Scan(&b.ID, &b.Title, &b.Slug, &b.Text, &p, &c, &l, &b.UserID, &b.MetaTitle, &b.MetaDescription, &b.Keywords, &b.Active)
@@ -328,7 +355,7 @@ func (b *Blog) createCatBridge() error {
 	return nil
 }
 
-func (b *Blog) Update() error {
+func (b *Blog) Update(dtx *apicontext.DataContext) error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -384,7 +411,7 @@ func (b *Blog) deleteCatBridge() error {
 	return nil
 }
 
-func (c *Category) Get() error {
+func (c *Category) Get(dtx *apicontext.DataContext) error {
 	var err error
 	redis_key := "blogs:category:" + strconv.Itoa(c.ID)
 	data, err := redis.Get(redis_key)
@@ -404,13 +431,13 @@ func (c *Category) Get() error {
 		return err
 	}
 	defer stmt.Close()
-	err = stmt.QueryRow(c.ID).Scan(&c.ID, &c.Name, &c.Slug, &c.Active)
+	err = stmt.QueryRow(dtx.APIKey, dtx.BrandID, dtx.BrandID, c.ID).Scan(&c.ID, &c.Name, &c.Slug, &c.Active)
 
 	go redis.Setex(redis_key, c, 86400)
 	return err
 }
 
-func (c *Category) Create() error {
+func (c *Category) Create(dtx *apicontext.DataContext) error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -423,7 +450,7 @@ func (c *Category) Create() error {
 	}
 	stmt, err := tx.Prepare(createCategory)
 
-	res, err := stmt.Exec(c.Name, c.Slug, c.Active)
+	res, err := stmt.Exec(c.Name, c.Slug, c.Active, dtx.BrandID)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -497,7 +524,7 @@ func (c *Category) deleteCatBridgeByCategory() error {
 	return nil
 }
 
-func Search(title, slug, text, publishedDate, createdDate, lastModified, userID, metaTitle, metaDescription, keywords, active, pageStr, resultsStr string) (pagination.Objects, error) {
+func Search(title, slug, text, publishedDate, createdDate, lastModified, userID, metaTitle, metaDescription, keywords, active, pageStr, resultsStr string, dtx *apicontext.DataContext) (pagination.Objects, error) {
 	var err error
 	var l pagination.Objects
 	var fs []interface{}
@@ -514,7 +541,7 @@ func Search(title, slug, text, publishedDate, createdDate, lastModified, userID,
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Query("%"+title+"%", "%"+slug+"%", "%"+text+"%", "%"+publishedDate+"%", "%"+createdDate+"%", "%"+lastModified+"%", "%"+userID+"%", "%"+metaTitle+"%", "%"+metaDescription+"%", "%"+keywords+"%", "%"+active+"%")
+	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID, "%"+title+"%", "%"+slug+"%", "%"+text+"%", "%"+publishedDate+"%", "%"+createdDate+"%", "%"+lastModified+"%", "%"+userID+"%", "%"+metaTitle+"%", "%"+metaDescription+"%", "%"+keywords+"%", "%"+active+"%")
 	for res.Next() {
 		var n Blog
 		res.Scan(&n.ID, &n.Title, &n.Slug, &n.Text, &n.PublishedDate, &n.CreatedDate, &n.LastModified, &n.UserID, &n.MetaTitle, &n.MetaDescription, &n.Keywords, &n.Active)

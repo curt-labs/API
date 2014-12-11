@@ -1,9 +1,14 @@
 package blog_model
 
 import (
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 	"time"
+)
+
+var (
+	MockedDTX = &apicontext.DataContext{BrandID: 1, WebsiteID: 1, APIKey: "NOT_GENERATED_YET"}
 )
 
 func TestGetBlogs(t *testing.T) {
@@ -12,6 +17,10 @@ func TestGetBlogs(t *testing.T) {
 	var bc BlogCategory
 	var c Category
 	var err error
+	if err := MockedDTX.Mock(); err != nil {
+		return
+	}
+
 	Convey("Testing Create", t, func() {
 		f.Title = "testTitle"
 		f.Slug = "testSlug"
@@ -32,19 +41,19 @@ func TestGetBlogs(t *testing.T) {
 		err = f.Create()
 		So(err, ShouldBeNil)
 
-		err = c.Create()
+		err = c.Create(MockedDTX)
 		So(err, ShouldBeNil)
 
 	})
 	Convey("Testing Gets", t, func() {
-		err = c.Get()
+		err = c.Get(MockedDTX)
 		So(c, ShouldNotBeNil)
 		So(err, ShouldBeNil)
 		So(c.Name, ShouldEqual, "testTitle")
 		So(c.Slug, ShouldEqual, "testSlug")
 		So(c.Active, ShouldBeTrue)
 
-		err = f.Get()
+		err = f.Get(MockedDTX)
 		So(f, ShouldNotBeNil)
 		So(err, ShouldBeNil)
 		So(f.Title, ShouldEqual, "testTitle")
@@ -57,7 +66,7 @@ func TestGetBlogs(t *testing.T) {
 		f.Title = "testTitle222"
 		f.Slug = "testSlug222"
 		f.PublishedDate, err = time.Parse(timeFormat, "2004-03-03 09:15:00")
-		err = f.Update()
+		err = f.Update(MockedDTX)
 		So(err, ShouldBeNil)
 		So(err, ShouldBeNil)
 		So(f, ShouldNotBeNil)
@@ -69,7 +78,7 @@ func TestGetBlogs(t *testing.T) {
 
 		var bs Blogs
 		var err error
-		bs, err = GetAll()
+		bs, err = GetAll(MockedDTX)
 		So(bs, ShouldHaveSameTypeAs, Blogs{})
 		So(err, ShouldBeNil)
 		So(len(bs), ShouldNotBeNil)
@@ -77,12 +86,12 @@ func TestGetBlogs(t *testing.T) {
 	})
 
 	Convey("Testing GetAllCategories()", t, func() {
-		qs, err := GetAllCategories()
+		qs, err := GetAllCategories(MockedDTX)
 		So(qs, ShouldHaveSameTypeAs, Categories{})
 		So(err, ShouldBeNil)
 	})
 	Convey("Testing Search()", t, func() {
-		as, err := Search("test", "", "", "", "", "", "", "", "", "", "", "1", "0")
+		as, err := Search("test", "", "", "", "", "", "", "", "", "", "", "1", "0", MockedDTX)
 		So(as, ShouldNotBeNil)
 		So(err, ShouldBeNil)
 		So(as.Pagination.Page, ShouldEqual, 1)
@@ -99,19 +108,27 @@ func TestGetBlogs(t *testing.T) {
 		So(err, ShouldBeNil)
 
 	})
-
+	MockedDTX.DeMock()
 }
 
 func BenchmarkGetAllBlogs(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		GetAll()
+	if err := MockedDTX.Mock(); err != nil {
+		return
 	}
+	for i := 0; i < b.N; i++ {
+		GetAll(MockedDTX)
+	}
+	MockedDTX.DeMock()
 }
 
 func BenchmarkGetAllBlogCategories(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		GetAllCategories()
+	if err := MockedDTX.Mock(); err != nil {
+		return
 	}
+	for i := 0; i < b.N; i++ {
+		GetAllCategories(MockedDTX)
+	}
+	MockedDTX.DeMock()
 }
 
 /**
@@ -151,19 +168,26 @@ func BenchmarkGetCategory(b *testing.B) {
 **/
 
 func BenchmarkUpdateBlog(b *testing.B) {
+	if err := MockedDTX.Mock(); err != nil {
+		return
+	}
 	blog := setupDummyBlog()
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
 		blog.Create()
 		b.StartTimer()
 		blog.Text = "Blog post magic. Whoop! Whoop!"
-		blog.Update()
+		blog.Update(MockedDTX)
 		b.StopTimer()
 		blog.Delete()
 	}
+	MockedDTX.DeMock()
 }
 
 func BenchmarkDeleteBlog(b *testing.B) {
+	if err := MockedDTX.Mock(); err != nil {
+		return
+	}
 	blog := setupDummyBlog()
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
@@ -171,19 +195,24 @@ func BenchmarkDeleteBlog(b *testing.B) {
 		b.StartTimer()
 		blog.Delete()
 	}
+	MockedDTX.DeMock()
 }
 
 func BenchmarkDeleteCategory(b *testing.B) {
+	if err := MockedDTX.Mock(); err != nil {
+		return
+	}
 	cat := Category{
 		Name: "TESTER",
 		Slug: "TESTER",
 	}
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
-		cat.Create()
+		cat.Create(MockedDTX)
 		b.StartTimer()
 		cat.Delete()
 	}
+	MockedDTX.DeMock()
 }
 
 func setupDummyBlog() *Blog {
