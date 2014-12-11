@@ -2,6 +2,7 @@ package applicationGuide
 
 import (
 	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/models/applicationGuide"
@@ -12,7 +13,7 @@ import (
 	"strings"
 )
 
-func GetApplicationGuide(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+func GetApplicationGuide(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var err error
 	var ag applicationGuide.ApplicationGuide
 	id := params["id"]
@@ -21,27 +22,27 @@ func GetApplicationGuide(rw http.ResponseWriter, req *http.Request, enc encoding
 		apierror.GenerateError("Trouble converting ID parameter", err, rw, req)
 	}
 
-	err = ag.Get()
+	err = ag.Get(dtx)
 	if err != nil {
 		apierror.GenerateError("Error getting Application Guide", err, rw, req)
 	}
 	return encoding.Must(enc.Encode(ag))
 }
 
-func GetApplicationGuidesByWebsite(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+func GetApplicationGuidesByWebsite(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var err error
 	var ag applicationGuide.ApplicationGuide
 	id := params["id"]
 	ag.Website.ID, err = strconv.Atoi(id)
 
-	ags, err := ag.GetBySite()
+	ags, err := ag.GetBySite(dtx)
 	if err != nil {
 		apierror.GenerateError("Error getting Application Guides", err, rw, req)
 	}
 	return encoding.Must(enc.Encode(ags))
 }
 
-func CreateApplicationGuide(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+func CreateApplicationGuide(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	contType := req.Header.Get("Content-Type")
 
 	var ag applicationGuide.ApplicationGuide
@@ -79,7 +80,7 @@ func CreateApplicationGuide(rw http.ResponseWriter, req *http.Request, enc encod
 			apierror.GenerateError("Error parsing category ID or website ID", err, rw, req)
 		}
 	}
-	err = ag.Create()
+	err = ag.Create(dtx)
 	if err != nil {
 		apierror.GenerateError("Error creating Application Guide", err, rw, req)
 	}

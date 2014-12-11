@@ -2,6 +2,7 @@ package applicationGuide
 
 import (
 	"database/sql"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/models/products"
 	"github.com/curt-labs/GoAPI/models/site"
@@ -22,14 +23,27 @@ const (
 )
 
 var (
-	createApplicationGuide     = `insert into ApplicationGuides (url, websiteID, fileType, catID, icon) values (?,?,?,?,?)`
-	deleteApplicationGuide     = `delete from ApplicationGuides where ID = ?`
-	getApplicationGuide        = `select ag.ID, ` + fields + `, c.catTitle from ApplicationGuides as ag left join Categories as c on c.catID = ag.catID where ag.ID = ? `
-	getApplicationGuides       = `select ag.ID, ` + fields + `, c.catTitle from ApplicationGuides as ag left join Categories as c on c.catID = ag.catID`
-	getApplicationGuidesBySite = `select ag.ID, ` + fields + `, c.catTitle from ApplicationGuides as ag left join Categories as c on c.catID = ag.catID where websiteID = ?`
+	createApplicationGuide = `insert into ApplicationGuides (url, websiteID, fileType, catID, icon, brandID) values (?,?,?,?,?,?)`
+	deleteApplicationGuide = `delete from ApplicationGuides where ID = ?`
+	getApplicationGuide    = `select ag.ID, ` + fields + `, c.catTitle from ApplicationGuides as ag 
+										left join Categories as c on c.catID = ag.catID
+										Join ApiKeyToBrand as akb on akb.brandID = ag.brandID
+										Join ApiKey as ak on akb.keyID = ak.id
+										where (ak.api_key = ? && (ag.brandID = ? OR 0=?)) && ag.ID = ? `
+	getApplicationGuides = `select ag.ID, ` + fields + `, c.catTitle from ApplicationGuides as ag 
+										left join Categories as c on c.catID = ag.catID
+										Join ApiKeyToBrand as akb on akb.brandID = ag.brandID
+										Join ApiKey as ak on akb.keyID = ak.id
+										where ak.api_key = ? && (ag.brandID = ? OR 0=?)
+										`
+	getApplicationGuidesBySite = `select ag.ID, ` + fields + `, c.catTitle from ApplicationGuides as ag 
+										left join Categories as c on c.catID = ag.catID 
+										Join ApiKeyToBrand as akb on akb.brandID = ag.brandID
+										Join ApiKey as ak on akb.keyID = ak.id
+										where (ak.api_key = ? && (ag.brandID = ? OR 0=?)) && websiteID = ?`
 )
 
-func (ag *ApplicationGuide) Get() (err error) {
+func (ag *ApplicationGuide) Get(dtx *apicontext.DataContext) (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return
@@ -40,14 +54,14 @@ func (ag *ApplicationGuide) Get() (err error) {
 		return
 	}
 	defer stmt.Close()
-	row := stmt.QueryRow(ag.ID)
+	row := stmt.QueryRow(dtx.APIKey, dtx.BrandID, dtx.BrandID, ag.ID)
 
 	ch := make(chan ApplicationGuide)
 	go populateApplicationGuide(row, ch)
 	*ag = <-ch
 	return
 }
-func (ag *ApplicationGuide) GetBySite() (ags []ApplicationGuide, err error) {
+func (ag *ApplicationGuide) GetBySite(dtx *apicontext.DataContext) (ags []ApplicationGuide, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return
@@ -58,7 +72,7 @@ func (ag *ApplicationGuide) GetBySite() (ags []ApplicationGuide, err error) {
 		return
 	}
 	defer stmt.Close()
-	rows, err := stmt.Query(ag.Website.ID)
+	rows, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID, ag.Website.ID)
 
 	ch := make(chan []ApplicationGuide)
 	go populateApplicationGuides(rows, ch)
@@ -66,7 +80,7 @@ func (ag *ApplicationGuide) GetBySite() (ags []ApplicationGuide, err error) {
 	return
 }
 
-func (ag *ApplicationGuide) Create() (err error) {
+func (ag *ApplicationGuide) Create(dtx *apicontext.DataContext) (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -77,7 +91,7 @@ func (ag *ApplicationGuide) Create() (err error) {
 		return err
 	}
 	defer stmt.Close()
-	res, err := stmt.Exec(ag.Url, ag.Website.ID, ag.FileType, ag.Category.ID, ag.Icon)
+	res, err := stmt.Exec(ag.Url, ag.Website.ID, ag.FileType, ag.Category.ID, ag.Icon, dtx.BrandID)
 	if err != nil {
 		return err
 	}
