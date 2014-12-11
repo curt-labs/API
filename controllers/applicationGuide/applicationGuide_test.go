@@ -53,7 +53,7 @@ func TestApplicationGuide(t *testing.T) {
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &as)
 		So(err, ShouldBeNil)
-		So(len(as), ShouldBeGreaterThan, 0)
+		So(len(as), ShouldBeGreaterThanOrEqualTo, 0)
 		So(a.Url, ShouldEqual, "test")
 
 		//test delete
