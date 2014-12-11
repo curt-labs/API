@@ -117,6 +117,8 @@ var (
 
 	insertAPIKey = `insert into ApiKey(user_id, type_id, api_key, date_added)
 						values(?,?,UUID(),NOW())` //DB schema DOES auto increment table id
+	insertAPIKeyToBrand = `insert into ApiKeyToBrand(keyID, brandID)
+						values(?,?)`
 
 	getCustomerUserKeysWithoutAuth = `select ak.api_key, akt.type from ApiKey as ak
 										join ApiKeyType as akt on ak.type_id = akt.id
@@ -636,7 +638,7 @@ func (u *CustomerUser) ResetAuthentication() error {
 }
 
 func (cu *CustomerUser) GenerateAPIKey(keyType string) (*ApiCredentials, error) {
-
+	var brandID = 1 // this will have to be changed massivly because customers can have more than 1 brand, so each api key needs to be assigned to the brands that it needs. for now everything will be set to 1 (curt brand)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return nil, err
@@ -644,16 +646,30 @@ func (cu *CustomerUser) GenerateAPIKey(keyType string) (*ApiCredentials, error) 
 	defer db.Close()
 	tx, err := db.Begin()
 
-	stmt, err := tx.Prepare(insertAPIKey)
-	if err != nil {
-		return nil, err
-	}
-
 	typeID, err := getAPIKeyTypeReference(keyType)
 	if err != nil {
 		return nil, err
 	}
-	_, err = stmt.Exec(cu.Id, typeID)
+
+	stmt, err := tx.Prepare(insertAPIKey)
+	if err != nil {
+		return nil, err
+	}
+	res, err := stmt.Exec(cu.Id, typeID)
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+	keyID64, err := res.LastInsertId()
+	keyID := int(keyID64)
+	if err != nil {
+		return nil, err
+	}
+	stmt, err = tx.Prepare(insertAPIKeyToBrand)
+	if err != nil {
+		return nil, err
+	}
+	_, err = stmt.Exec(keyID, brandID)
 	if err != nil {
 		tx.Rollback()
 		return nil, err

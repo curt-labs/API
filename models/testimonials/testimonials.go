@@ -18,12 +18,21 @@ var (
 																	Join ApiKeyToBrand as akb on akb.brandID = t.brandID
 																	Join ApiKey as ak on akb.keyID = ak.id
 																	where (ak.api_key = ? && (t.brandID = ? OR 0=?)) && t.active = 1 && t.approved = 1 order by t.dateAdded desc`
-	getTestimonialsByPageStmt = `select ` + testimonialFields + ` from Testimonial as t  where t.active = 1 && t.approved = 1 order by t.dateAdded desc limit ?,?`
-	getRandomTestimonalsStmt  = `select ` + testimonialFields + ` from Testimonial as t  where t.active = 1 && t.approved = 1 order by Rand() limit ?`
-	getTestimonialStmt        = `select ` + testimonialFields + ` from Testimonial as t  where t.testimonialID = ?`
-	createTestimonial         = `insert into Testimonial (rating, title, testimonial, dateAdded, approved, active, first_name, last_name, location, brandID) values (?,?,?,?,?,?,?,?,?,?)`
-	updateTestimonial         = `update Testimonial set rating = ?, title = ?, testimonial = ?, approved = ?, active = ?, first_name = ?, last_name = ?, location = ?, brandID = ? where testimonialID = ?`
-	deleteTestimonial         = `delete from Testimonial where testimonialID = ?`
+	getTestimonialsByPageStmt = `select ` + testimonialFields + ` from Testimonial as t 
+																	Join ApiKeyToBrand as akb on akb.brandID = t.brandID
+																	Join ApiKey as ak on akb.keyID = ak.id
+																	where (ak.api_key = ? && (t.brandID = ? OR 0=?)) && t.active = 1 && t.approved = 1 order by t.dateAdded desc limit ?,?`
+	getRandomTestimonalsStmt = `select ` + testimonialFields + ` from Testimonial as t
+																	Join ApiKeyToBrand as akb on akb.brandID = t.brandID
+																	Join ApiKey as ak on akb.keyID = ak.id
+																	where (ak.api_key = ? && (t.brandID = ? OR 0=?)) && t.active = 1 && t.approved = 1 order by Rand() limit ?`
+	getTestimonialStmt = `select ` + testimonialFields + ` from Testimonial as t 
+																	Join ApiKeyToBrand as akb on akb.brandID = t.brandID
+																	Join ApiKey as ak on akb.keyID = ak.id
+																	where (ak.api_key = ? && (t.brandID = ? OR 0=?)) && t.testimonialID = ?`
+	createTestimonial = `insert into Testimonial (rating, title, testimonial, dateAdded, approved, active, first_name, last_name, location, brandID) values (?,?,?,?,?,?,?,?,?,?)`
+	updateTestimonial = `update Testimonial set rating = ?, title = ?, testimonial = ?, approved = ?, active = ?, first_name = ?, last_name = ?, location = ?, brandID = ? where testimonialID = ?`
+	deleteTestimonial = `delete from Testimonial where testimonialID = ?`
 )
 
 type Testimonials []Testimonial
@@ -64,14 +73,14 @@ func GetAllTestimonials(page int, count int, randomize bool, dtx *apicontext.Dat
 			return
 		}
 		defer stmt.Close()
-		rows, err = stmt.Query(count)
+		rows, err = stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID, count)
 	} else {
 		stmt, err = db.Prepare(getTestimonialsByPageStmt)
 		if err != nil {
 			return
 		}
 		defer stmt.Close()
-		rows, err = stmt.Query(page, count)
+		rows, err = stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID, page, count)
 	}
 
 	if err != nil {
@@ -103,7 +112,7 @@ func GetAllTestimonials(page int, count int, randomize bool, dtx *apicontext.Dat
 	return
 }
 
-func (t *Testimonial) Get() error {
+func (t *Testimonial) Get(dtx *apicontext.DataContext) error {
 	if t.ID == 0 {
 		return errors.New("Invalid testimonial ID")
 	}
@@ -120,7 +129,7 @@ func (t *Testimonial) Get() error {
 	}
 	defer stmt.Close()
 
-	err = stmt.QueryRow(t.ID).Scan(
+	err = stmt.QueryRow(dtx.APIKey, dtx.BrandID, dtx.BrandID, t.ID).Scan(
 		&t.ID,
 		&t.Rating,
 		&t.Title,
@@ -137,7 +146,7 @@ func (t *Testimonial) Get() error {
 	return err
 }
 
-func (t *Testimonial) Create() (err error) {
+func (t *Testimonial) Create(dtx *apicontext.DataContext) (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -149,7 +158,7 @@ func (t *Testimonial) Create() (err error) {
 	}
 	defer stmt.Close()
 	t.DateAdded = time.Now()
-	res, err := stmt.Exec(t.Rating, t.Title, t.Content, t.DateAdded, t.Approved, t.Active, t.FirstName, t.LastName, t.Location, t.BrandID)
+	res, err := stmt.Exec(t.Rating, t.Title, t.Content, t.DateAdded, t.Approved, t.Active, t.FirstName, t.LastName, t.Location, dtx.BrandID)
 	if err != nil {
 		return err
 	}
@@ -158,7 +167,7 @@ func (t *Testimonial) Create() (err error) {
 	return nil
 }
 
-func (t *Testimonial) Update() (err error) {
+func (t *Testimonial) Update(dtx *apicontext.DataContext) (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -170,7 +179,7 @@ func (t *Testimonial) Update() (err error) {
 	}
 	defer stmt.Close()
 	t.DateAdded = time.Now()
-	_, err = stmt.Exec(t.Rating, t.Title, t.Content, t.Approved, t.Active, t.FirstName, t.LastName, t.Location, t.BrandID, t.ID)
+	_, err = stmt.Exec(t.Rating, t.Title, t.Content, t.Approved, t.Active, t.FirstName, t.LastName, t.Location, dtx.BrandID, t.ID)
 	if err != nil {
 		return err
 	}

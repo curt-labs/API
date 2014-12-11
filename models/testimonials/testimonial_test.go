@@ -7,28 +7,31 @@ import (
 )
 
 var (
-	MockedDTX = &apicontext.DataContext{BrandID: 1, WebsiteID: 1, APIKey: "BadAPIKey"}
+	MockedDTX = &apicontext.DataContext{BrandID: 1, WebsiteID: 1, APIKey: "NOT_GENERATED_YET"}
 )
 
 func TestTestimonials(t *testing.T) {
+	err := MockedDTX.Mock()
+	if err != nil {
+		return
+	}
 	var test Testimonial
-	var err error
 	Convey("Testing Create Testimonial", t, func() {
 		test.Content = "Test Content"
-		err = test.Create()
+		err = test.Create(MockedDTX)
 		So(err, ShouldBeNil)
 	})
 	Convey("Update", t, func() {
 		test.Content = "New Content"
 		test.Active = true
 		test.Approved = true
-		err = test.Update()
+		err = test.Update(MockedDTX)
 		So(err, ShouldBeNil)
 
 	})
 
 	Convey("Get testimonial", t, func() {
-		err = test.Get()
+		err = test.Get(MockedDTX)
 		So(err, ShouldBeNil)
 	})
 	Convey("GetAll - No paging", t, func() {
@@ -58,56 +61,100 @@ func TestTestimonials(t *testing.T) {
 
 	})
 
+	err = MockedDTX.DeMock()
+	if err != nil {
+		return
+	}
 }
 
 func BenchmarkGetAllTestimonials(b *testing.B) {
+	err := MockedDTX.Mock()
+	if err != nil {
+		return
+	}
 	for i := 0; i < b.N; i++ {
 		GetAllTestimonials(0, 1, false, MockedDTX)
+	}
+	err = MockedDTX.DeMock()
+	if err != nil {
+		return
 	}
 }
 
 func BenchmarkGetTestimonial(b *testing.B) {
+	err := MockedDTX.Mock()
+	if err != nil {
+		return
+	}
 	test := setupDummyTestimonial()
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
-		test.Create()
+		test.Create(MockedDTX)
 		b.StartTimer()
-		test.Get()
+		test.Get(MockedDTX)
 		b.StopTimer()
 		test.Delete()
+	}
+	err = MockedDTX.DeMock()
+	if err != nil {
+		return
 	}
 }
 
 func BenchmarkCreateTestimonial(b *testing.B) {
+	err := MockedDTX.Mock()
+	if err != nil {
+		return
+	}
 	test := setupDummyTestimonial()
 	for i := 0; i < b.N; i++ {
 		b.StartTimer()
-		test.Create()
+		test.Create(MockedDTX)
 		b.StopTimer()
 		test.Delete()
+	}
+	err = MockedDTX.DeMock()
+	if err != nil {
+		return
 	}
 }
 
 func BenchmarkUpdateTestimonial(b *testing.B) {
+	err := MockedDTX.Mock()
+	if err != nil {
+		return
+	}
 	test := setupDummyTestimonial()
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
-		test.Create()
+		test.Create(MockedDTX)
 		b.StartTimer()
 		test.Content = "This is a good test."
-		test.Update()
+		test.Update(MockedDTX)
 		b.StopTimer()
 		test.Delete()
+	}
+	err = MockedDTX.DeMock()
+	if err != nil {
+		return
 	}
 }
 
 func BenchmarkDeleteTestimonial(b *testing.B) {
+	err := MockedDTX.Mock()
+	if err != nil {
+		return
+	}
 	test := setupDummyTestimonial()
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
-		test.Create()
+		test.Create(MockedDTX)
 		b.StartTimer()
 		test.Delete()
+	}
+	err = MockedDTX.DeMock()
+	if err != nil {
+		return
 	}
 }
 
@@ -121,5 +168,6 @@ func setupDummyTestimonial() *Testimonial {
 		FirstName: "TESTER",
 		LastName:  "TESTER",
 		Location:  "Testville, Oklahoma",
+		BrandID:   1,
 	}
 }

@@ -46,7 +46,7 @@ func GetAllTestimonials(rw http.ResponseWriter, req *http.Request, enc encoding.
 	return encoding.Must(enc.Encode(tests))
 }
 
-func GetTestimonial(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
+func GetTestimonial(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var err error
 	var test testimonials.Testimonial
 
@@ -54,20 +54,20 @@ func GetTestimonial(rw http.ResponseWriter, req *http.Request, params martini.Pa
 		http.Error(rw, "Invalid Testimonial ID", http.StatusInternalServerError)
 		return "Invalid Testimonial ID"
 	}
-	if err := test.Get(); err != nil {
+	if err := test.Get(dtx); err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return err.Error()
 	}
 	return encoding.Must(enc.Encode(test))
 }
 
-func Save(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+func Save(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var a testimonials.Testimonial
 	var err error
 	idStr := params["id"]
 	if idStr != "" {
 		a.ID, err = strconv.Atoi(idStr)
-		err = a.Get()
+		err = a.Get(dtx)
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return ""
@@ -87,9 +87,9 @@ func Save(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, param
 	}
 	//create or update
 	if a.ID > 0 {
-		err = a.Update()
+		err = a.Update(dtx)
 	} else {
-		err = a.Create()
+		err = a.Create(dtx)
 	}
 
 	if err != nil {
