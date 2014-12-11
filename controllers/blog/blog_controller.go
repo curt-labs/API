@@ -94,7 +94,7 @@ func CreateBlog(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, d
 		b.BlogCategories = append(b.BlogCategories, bc)
 	}
 
-	err = b.Create(dtx)
+	err = b.Create()
 	if err != nil {
 		return err.Error()
 	}
