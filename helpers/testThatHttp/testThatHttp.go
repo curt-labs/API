@@ -1,11 +1,11 @@
 package testThatHttp
 
 import (
-	"github.com/codegangsta/martini-contrib/render"
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/httprunner"
 	"github.com/go-martini/martini"
+	"github.com/martini-contrib/render"
 	"io"
 	"log"
 	"net/http"
