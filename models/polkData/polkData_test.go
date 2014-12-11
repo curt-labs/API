@@ -20,17 +20,18 @@ func TestPolk(t *testing.T) {
 	// })
 
 	Convey("Test Polk Diff", t, func() {
-		file := "/Users/macuser/Desktop/Polk/AriesTestData.csv"
-		// file := "/Users/macuser/Desktop/Polk/sampleCurt.csv"
+		// file := "/Users/macuser/Desktop/Polk/AriesTestData.csv"
+		file := "/Users/macuser/Desktop/Polk/CurtTestData.csv"
 		// file := "/Users/macuser/Desktop/Polk/Aries_Offroad_Coverage_US_201410.csv"
-		err := RunDiff(file, 1, false, false)
+		// file := "/Users/macuser/Desktop/Polk/Trailer_Hitches_Coverage_US_201410.csv"
+		err := Run(file, 1, false, false)
 		So(err, ShouldBeNil)
 	})
 
 	// Convey("Test maps", t, func() {
-	// 	configMap := GetConfigMaps()
+	// 	configMap, _ := GetConfigMap()
 	// 	So(configMap, ShouldNotBeNil)
-	// 	// t.Log(configMap["MfrBodyCode"])
+	// 	t.Log((configMap))
 	// })
 
 }

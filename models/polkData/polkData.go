@@ -7,7 +7,10 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"os"
+	"reflect"
+	"runtime"
 	"strconv"
+	"strings"
 )
 
 var (
@@ -117,7 +120,7 @@ type CurtConfig struct {
 }
 type CurtConfigs []CurtConfig
 
-func RunDiff(filename string, headerLines int, useOldPartNumbers bool, insertMissingData bool) error {
+func Run(filename string, headerLines int, useOldPartNumbers bool, insertMissingData bool) error {
 	var err error
 	var cs CsvData
 
@@ -127,41 +130,13 @@ func RunDiff(filename string, headerLines int, useOldPartNumbers bool, insertMis
 		return err
 	}
 
-	// //write missing parts to PartsNeeded file
-	// partsNeededFile, err := os.Create("PartNumbersNeeded")
-	// defer partsNeededFile.Close()
-	// if len(*partsNeeded) > 0 {
-	// 	for _, c := range *partsNeeded {
-	// 		partsNeededFile.WriteString("Old Part ID: " + c.Part.OldID + "  AAIAvehicleID: " + strconv.Itoa(c.CsvVehicle.VehicleID) + ", AAIABaseID: " + strconv.Itoa(c.CsvVehicle.BaseVehicleID) + ", AAIASubmodel: " + strconv.Itoa(c.CsvVehicle.SubmodelID) + "\n")
-	// 	}
-	// }
-	// partsNeededFile.Sync()
-
-	// //write missing baseVehicles to missingBaseVehicles file
-	// baseVehiclesNeededFile, err := os.Create("BaseVehiclesNeeded")
-	// defer baseVehiclesNeededFile.Close()
-	// if len(*missingBaseVehicles) > 0 {
-	// 	for _, c := range *missingBaseVehicles {
-	// 		baseVehiclesNeededFile.WriteString("Old Part ID: " + c.Part.OldID + "  AAIAvehicleID: " + strconv.Itoa(c.CsvVehicle.VehicleID) + ", AAIABaseID: " + strconv.Itoa(c.CsvVehicle.BaseVehicleID) + ", AAIASubmodel: " + strconv.Itoa(c.CsvVehicle.SubmodelID) + "\n")
-	// 	}
-	// }
-	// baseVehiclesNeededFile.Sync()
-
-	// //write missing submodels to missingSubmodesls file
-	// submodelsNeededFile, err := os.Create("SubmodelsNeeded")
-	// defer submodelsNeededFile.Close()
-	// if len(*missingSubmodels) > 0 {
-	// 	for _, c := range *missingSubmodels {
-	// 		submodelsNeededFile.WriteString("Old Part ID: " + c.Part.OldID + "  AAIAvehicleID: " + strconv.Itoa(c.CsvVehicle.VehicleID) + ", AAIABaseID: " + strconv.Itoa(c.CsvVehicle.BaseVehicleID) + ", AAIASubmodel: " + strconv.Itoa(c.CsvVehicle.SubmodelID) + "\n")
-	// 	}
-	// }
-	// submodelsNeededFile.Sync()
-
 	//create basevehicle  map
 	baseMap := make(map[int][]CsvDatum)
 	for _, c := range cs {
 		baseMap[c.CurtVehicle.CurtBaseID] = append(baseMap[c.CurtVehicle.CurtBaseID], c)
 	}
+	cs = nil
+	runtime.GC()
 	//begin audits
 	err = Audits(baseMap)
 	if err == nil {
@@ -368,12 +343,14 @@ func Audits(baseMap map[int][]CsvDatum) error {
 	var vehicleArray []CsvDatum
 
 	subMap, err = AuditBaseVehicle(baseMap)
+	runtime.GC()
 	if len(subMap) > 0 {
 		vehicleArray, err = AuditSubmodel(subMap)
 		if err != nil {
 			return err
 		}
 	}
+	runtime.GC()
 	if len(vehicleArray) > 0 {
 		err = HandleVehicles(vehicleArray)
 		if err != nil {
@@ -444,6 +421,8 @@ func AuditBaseVehicle(baseMap map[int][]CsvDatum) (map[int][]CsvDatum, error) {
 			}
 		}
 	}
+	baseMap = nil
+	runtime.GC()
 	return submodelMap, err
 }
 
@@ -515,54 +494,86 @@ func AuditSubmodel(subMap map[int][]CsvDatum) ([]CsvDatum, error) {
 			}
 		}
 	}
+	subMap = nil
+	runtime.GC()
 	return vehicleArray, err
 }
 
 func HandleVehicles(vehicleArray []CsvDatum) error {
 	var err error
+	vehicleIDmap := make(map[int][]CsvDatum)
+	//get configmap
+	configMap, err := GetConfigMap()
 	//File prep
-	configsNeededFile, err := os.Create("ConfigsNeeded")
-	if err != nil {
-		return err
-	}
-	defer configsNeededFile.Close()
-	off, err := WriteVehicleHeader(configsNeededFile)
+	// configsNeededFile, err := os.Create("ConfigsNeeded")
+	// if err != nil {
+	// 	return err
+	// }
+	// defer configsNeededFile.Close()
+	// off, err := WriteVehicleHeader(configsNeededFile)
 
 	acesConfigTypeArray := [...]int{6, 20, 8, 3, 2, 4, 16, 25, 40, 12, 7} //There's got to be a better way
 	//assign configs to each vehicles' config array
-	log.Print("ARRAY ", vehicleArray)
+	// log.Print("ARRAY ", vehicleArray)
 	for _, v := range vehicleArray {
 		for _, acesConfigTypeID := range acesConfigTypeArray {
 			var config CurtConfig
 			config.AcesConfigTypeID = acesConfigTypeID
 			config.AcesConfigValueID = v.getAcesConfigValue(acesConfigTypeID)
 
-			//get curt config type from aces type
-			config.ConfigTypeID, config.ConfigTypeName, err = GetCurtConfigTypeAcesConfig(config.AcesConfigTypeID)
-			if err != nil {
-				log.Print("MISSING configtype, ", err)
-				return err
-			}
 			//get Curt value from aces value and type, if there is one
-			config.ConfigValueID, config.ConfigValueName, err = GetCurtConfigValueAcesConfig(config.AcesConfigTypeID, config.AcesConfigValueID)
-			if err != nil {
-				if err != sql.ErrNoRows {
-					return err
-				} else {
-					err = nil
-					//log missing config val
-					off, err = WriteVehicle(configsNeededFile, off, v, config.AcesConfigTypeID, config.AcesConfigValueID)
+			acesTypeAndValue := strconv.Itoa(config.AcesConfigTypeID) + "," + strconv.Itoa(config.AcesConfigValueID)
+			//check against map
+			if acesTV, ok := configMap[acesTypeAndValue]; ok {
+				curtTVArray := strings.Split(acesTV, ",")
+				config.ConfigTypeID, err = strconv.Atoi(curtTVArray[0])
+				config.ConfigValueID, err = strconv.Atoi(curtTVArray[1])
+				// log.Print("FIND PARTS ? ", v.CurtVehicle)
+				//find part matches?
 
-					if err != nil {
-						return err
-					}
-					//TODO add missing configs?
-				}
+				// } else {
+				// 	off, err = WriteVehicle(configsNeededFile, off, v, config.AcesConfigTypeID, config.AcesConfigValueID)
 			}
 
 			v.CurtVehicle.CurtConfigs = append(v.CurtVehicle.CurtConfigs, config)
 		}
+		vehicleIDmap[v.CsvVehicle.VehicleID] = append(vehicleIDmap[v.CsvVehicle.VehicleID], v)
 	}
+
+	vehicleArray = nil
+	runtime.GC()
+	err = diffVehicleConfigs(vehicleIDmap)
+	return err
+}
+
+func diffVehicleConfigs(vehicleIDmap map[int][]CsvDatum) error {
+	var err error
+	configsDiff, err := os.Create("ConfigsDiff")
+	if err != nil {
+		return err
+	}
+	defer configsDiff.Close()
+	off, err := WriteVehicleHeader(configsDiff)
+	for _, vehicles := range vehicleIDmap {
+		allConfigsEqualFlag := true
+		for _, vehicle := range vehicles {
+			for i, config := range vehicle.CurtVehicle.CurtConfigs {
+				if i > 0 {
+					allConfigsEqualFlag = reflect.DeepEqual(config, vehicle.CurtVehicle.CurtConfigs[i-1])
+				}
+			}
+		}
+		if allConfigsEqualFlag == false {
+			log.Print("NEED CONFIGS ", vehicles)
+			for _, vehicle := range vehicles {
+				off, err = WriteVehicle(configsDiff, off, vehicle, 0, 0)
+				//check and add part o every config
+			}
+		} else {
+			//Check and add part to submodel
+		}
+	}
+
 	return err
 }
 
@@ -683,54 +694,54 @@ func (c *CsvDatum) GetCurtVechicleWithConfig(curtConfigValueID, curtConfigTypeID
 }
 
 //curt configs
-func GetCurtConfigTypeAcesConfig(acesType int) (int, string, error) {
-	var err error
-	var configType int
-	var configTypeName string
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return 0, "", err
-	}
-	defer db.Close()
+// func GetCurtConfigTypeAcesConfig(acesType int) (int, string, error) {
+// 	var err error
+// 	var configType int
+// 	var configTypeName string
+// 	db, err := sql.Open("mysql", database.ConnectionString())
+// 	if err != nil {
+// 		return 0, "", err
+// 	}
+// 	defer db.Close()
 
-	stmt, err := db.Prepare(getCurtConfigTypeFromAcesConfig)
-	if err != nil {
-		return 0, "", err
-	}
-	defer stmt.Close()
-	var configTypeByte []byte
-	err = stmt.QueryRow(acesType).Scan(&configType, &configTypeByte)
-	if err != nil {
-		return 0, "", err
-	}
-	if configTypeByte != nil {
-		configTypeName = string(configTypeByte[:])
-	}
-	return configType, configTypeName, err
-}
+// 	stmt, err := db.Prepare(getCurtConfigTypeFromAcesConfig)
+// 	if err != nil {
+// 		return 0, "", err
+// 	}
+// 	defer stmt.Close()
+// 	var configTypeByte []byte
+// 	err = stmt.QueryRow(acesType).Scan(&configType, &configTypeByte)
+// 	if err != nil {
+// 		return 0, "", err
+// 	}
+// 	if configTypeByte != nil {
+// 		configTypeName = string(configTypeByte[:])
+// 	}
+// 	return configType, configTypeName, err
+// }
 
-func GetCurtConfigValueAcesConfig(acesType, acesValue int) (int, string, error) {
-	var err error
-	var configValue int
-	var configValueName string
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return 0, "", err
-	}
-	defer db.Close()
+// func GetCurtConfigValueAcesConfig(acesType, acesValue int) (int, string, error) {
+// 	var err error
+// 	var configValue int
+// 	var configValueName string
+// 	db, err := sql.Open("mysql", database.ConnectionString())
+// 	if err != nil {
+// 		return 0, "", err
+// 	}
+// 	defer db.Close()
 
-	stmt, err := db.Prepare(getCurtConfigValueFromAcesConfig)
-	if err != nil {
-		return 0, "", err
-	}
-	defer stmt.Close()
-	var configValByte []byte
-	err = stmt.QueryRow(acesType, acesValue).Scan(&configValue, &configValByte)
-	if err != nil {
-		return 0, "", err
-	}
-	if configValByte != nil {
-		configValueName = string(configValByte[:])
-	}
-	return configValue, configValueName, err
-}
+// 	stmt, err := db.Prepare(getCurtConfigValueFromAcesConfig)
+// 	if err != nil {
+// 		return 0, "", err
+// 	}
+// 	defer stmt.Close()
+// 	var configValByte []byte
+// 	err = stmt.QueryRow(acesType, acesValue).Scan(&configValue, &configValByte)
+// 	if err != nil {
+// 		return 0, "", err
+// 	}
+// 	if configValByte != nil {
+// 		configValueName = string(configValByte[:])
+// 	}
+// 	return configValue, configValueName, err
+// }
