@@ -110,9 +110,9 @@ type CurtVehicle struct {
 type CurtConfig struct {
 	AcesConfigTypeID  int
 	AcesConfigValueID int
-	ConfigType        int
+	ConfigTypeID      int
 	ConfigTypeName    string
-	ConfigValue       int
+	ConfigValueID     int
 	ConfigValueName   string
 }
 type CurtConfigs []CurtConfig
@@ -349,14 +349,25 @@ func CaptureCsv(filename string, headerLines int, useOldPartNumbers bool, insert
 func Audits(baseMap map[int][]CsvDatum) error {
 	var err error
 	subMap := make(map[int][]CsvDatum)
-	vehicleIDMap := make(map[int][]CsvDatum)
+	// vehicleIDMap := make(map[int][]CsvDatum)
+	var vehicleArray []CsvDatum
 
 	subMap, err = AuditBaseVehicle(baseMap)
 	if len(subMap) > 0 {
-		vehicleIDMap, err = AuditSubmodel(subMap)
+		// vehicleIDMap, err = AuditSubmodel(subMap)
+		vehicleArray, err = AuditSubmodel(subMap)
+		if err != nil {
+			return err
+		}
 	}
-	if len(vehicleIDMap) > 0 {
-		err = AuditVehicleIDs(vehicleIDMap)
+	// if len(vehicleIDMap) > 0 {
+	// 	err = AuditVehicleIDs(vehicleIDMap)
+	// }
+	if len(vehicleArray) > 0 {
+		err = HandleVehicles(vehicleArray)
+		if err != nil {
+			return err
+		}
 	}
 	return err
 }
@@ -387,6 +398,7 @@ func AuditBaseVehicle(baseMap map[int][]CsvDatum) (map[int][]CsvDatum, error) {
 				if err != sql.ErrNoRows {
 					return submodelMap, err
 				} else {
+					err = nil
 					//log needed base vehicles in vcdbVehicle table
 					baseNeeded.WriteString(strconv.Itoa(baseVehicle[0].CurtVehicle.CurtBaseID))
 					//need to add base vehicle, assign ID to vehicle
@@ -422,9 +434,10 @@ func AuditBaseVehicle(baseMap map[int][]CsvDatum) (map[int][]CsvDatum, error) {
 	return submodelMap, err
 }
 
-func AuditSubmodel(subMap map[int][]CsvDatum) (map[int][]CsvDatum, error) {
+func AuditSubmodel(subMap map[int][]CsvDatum) ([]CsvDatum, error) {
 	var err error
-	vIDmap := make(map[int][]CsvDatum)
+	// vIDmap := make(map[int][]CsvDatum)
+	var vehicleArray []CsvDatum
 
 	subNeeded, err := os.Create("NeedSubmodelInVcdbVehicleTable")
 	defer subNeeded.Close()
@@ -447,8 +460,9 @@ func AuditSubmodel(subMap map[int][]CsvDatum) (map[int][]CsvDatum, error) {
 			subVehicle[0].CurtVehicle.ID = vehicle.ID
 			if err != nil {
 				if err != sql.ErrNoRows {
-					return vIDmap, err
+					return vehicleArray, err
 				} else {
+					err = nil
 					//log submodel needed in vcdbVehicle table
 					subNeeded.WriteString(strconv.Itoa(subVehicle[0].CurtVehicle.CurtSubmodelID))
 					//need to add submodel, assign ID to vehicle
@@ -463,7 +477,7 @@ func AuditSubmodel(subMap map[int][]CsvDatum) (map[int][]CsvDatum, error) {
 			err = subVehicle[0].FindPartID()
 			if err != nil {
 				if err != sql.ErrNoRows {
-					return vIDmap, err
+					return vehicleArray, err
 				} else {
 					// add vehiclePart
 					// err = subVehicle[0].InsertPartIntoVehiclePart()
@@ -476,14 +490,67 @@ func AuditSubmodel(subMap map[int][]CsvDatum) (map[int][]CsvDatum, error) {
 			log.Print("Diff parts for submodel ", subVehicle[0].CurtVehicle.CurtSubmodelID, ", try configs")
 			//config breakdown
 			//make map of un-added AAIAVehicleID to CsvData
+			// for _, sub := range subVehicle {
+			// vIDmap[sub.CsvVehicle.VehicleID] = append(vIDmap[sub.CsvVehicle.VehicleID], sub)
+			// }
 			for _, sub := range subVehicle {
-				vIDmap[sub.CsvVehicle.VehicleID] = append(vIDmap[sub.CsvVehicle.VehicleID], sub)
+				vehicleArray = append(vehicleArray, sub)
 			}
 		}
 	}
-	return vIDmap, err
+	return vehicleArray, err
 }
 
+func HandleVehicles(vehicleArray []CsvDatum) error {
+	var err error
+	//File prep
+	configsNeededFile, err := os.Create("ConfigsNeeded")
+	if err != nil {
+		return err
+	}
+	off := int64(0)
+	b := []byte("ConfigTypeID, ConfigTypeName, AcesConfigValueID\n ")
+	n, err := configsNeededFile.WriteAt(b, off)
+	if err != nil {
+		return err
+	}
+	off += int64(n)
+
+	acesConfigTypeArray := [...]int{6, 20, 8, 3, 2, 4, 16, 25, 40, 12, 7} //There's got to be a better way
+	//assign configs to each vehicles' config array
+	log.Print("ARRAY ", vehicleArray)
+	for _, v := range vehicleArray {
+		for _, acesConfigTypeID := range acesConfigTypeArray {
+			var config CurtConfig
+			config.AcesConfigTypeID = acesConfigTypeID
+			config.AcesConfigValueID = v.getAcesConfigValue(acesConfigTypeID)
+
+			//get curt config type from aces type
+			config.ConfigTypeID, config.ConfigTypeName, err = GetCurtConfigTypeAcesConfig(config.AcesConfigTypeID)
+			if err != nil {
+				return err
+			}
+			//get Curt value from aces value and type, if there is one
+			config.ConfigValueID, config.ConfigValueName, err = GetCurtConfigValueAcesConfig(config.AcesConfigTypeID, config.AcesConfigValueID)
+			if err != nil {
+				//log missing config val
+				configNeeded := strconv.Itoa(config.ConfigTypeID) + "," + config.ConfigTypeName + "," + strconv.Itoa(config.AcesConfigValueID) + "\n"
+				n, err := configsNeededFile.WriteAt([]byte(configNeeded), off)
+				if err != nil {
+					return err
+				}
+				off += int64(n)
+				err = nil
+				//TODO add missing configs?
+			}
+
+			v.CurtVehicle.CurtConfigs = append(v.CurtVehicle.CurtConfigs, config)
+		}
+	}
+	return err
+}
+
+//TODO - use or not to use...?
 func AuditVehicleIDs(vehicleIDmap map[int][]CsvDatum) error {
 	var err error
 	acesConfigTypeArray := [...]int{6, 20, 8, 3, 2, 4, 16, 25, 40, 12, 7} //There's got to be a better way
@@ -494,7 +561,7 @@ func AuditVehicleIDs(vehicleIDmap map[int][]CsvDatum) error {
 			for _, acesConfigTypeID := range acesConfigTypeArray {
 
 				//get Aces value from CsvDatum struct
-				acesConfigValueID := c.getConfigType(acesConfigTypeID)
+				acesConfigValueID := c.getAcesConfigValue(acesConfigTypeID)
 				//get Curt type from aces type
 				curtConfigTypeID, curtConfigTypeName, err := GetCurtConfigTypeAcesConfig(acesConfigTypeID)
 				if err != nil {
@@ -545,7 +612,7 @@ func AuditVehicleIDs(vehicleIDmap map[int][]CsvDatum) error {
 	}
 	return err
 }
-func (c *CsvDatum) getConfigType(n int) int {
+func (c *CsvDatum) getAcesConfigValue(n int) int {
 	staticMap := make(map[int]int)
 	staticMap[6] = c.CsvVehicle.FuelTypeID
 	staticMap[20] = c.CsvVehicle.FuelDeliveryID
