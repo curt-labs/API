@@ -2,6 +2,7 @@ package testThatHttp
 
 import (
 	"github.com/codegangsta/martini-contrib/render"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/httprunner"
 	"github.com/go-martini/martini"
@@ -24,6 +25,8 @@ func Request(reqType string, route string, paramKey string, paramVal string, han
 	}
 	m := martini.Classic()
 	m.Use(render.Renderer())
+	dc := &apicontext.DataContext{}
+	m.Map(dc)
 	m.Use(encoding.MapEncoder)
 	reqType = strings.ToLower(reqType)
 	switch {
