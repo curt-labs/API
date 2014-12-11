@@ -159,9 +159,11 @@ where Vv.VehicleID = ? `
 		where v.ConfigID = 0
 		and s.AAIASubModelID = ?
 		and bv.AAIABaseVehicleID = ?`
-	addPartToVehicle  = `insert into vcdb_VehiclePart (VehicleID, PartNumber) values (?,?)`
-	createCurtVehicle = `insert into vcdb_Vehicle (BaseVehicleID, SubmodelID, ConfigID, AppID, RegionID) values (?,?,?,0,0)`
-	partNumberMap     = `select partID, oldPartNumber from Part where oldPartNumber is not null`
+	addPartToVehicle           = `insert into vcdb_VehiclePart (VehicleID, PartNumber) values (?,?)`
+	createCurtVehicle          = `insert into vcdb_Vehicle (BaseVehicleID, SubmodelID, ConfigID, AppID, RegionID) values (?,?,?,0,0)`
+	partNumberMap              = `select partID, oldPartNumber from Part where oldPartNumber is not null`
+	insertConfigAttributeValue = `insert into ConfigAttribute (ConfigAttributeTypeID, vcdbID, value) values (?,?,?)`
+	checkVehiclePart           = `select vv.ID from vcdb_VehiclePart as vv where vv.VehicleID = ? and PartNUmber = ?`
 )
 
 func RunDiff(filename string, headerLines int, useOldPartNumbers bool) error {
@@ -187,9 +189,8 @@ func RunDiff(filename string, headerLines int, useOldPartNumbers bool) error {
 	}
 	outputFile.Sync()
 
-	baseMap := make(map[int][]CsvDatum)
-
 	//create basevehicle  map
+	baseMap := make(map[int][]CsvDatum)
 	for _, c := range cs {
 		baseMap[c.BaseVehicleID] = append(baseMap[c.BaseVehicleID], c)
 	}
@@ -324,7 +325,10 @@ func CaptureCsv(filename string, headerLines int, useOldPartNumbers bool) ([]Csv
 				//no new part number -> append to partsNeeded for output file write
 				partsNeeded[c.PartNumber] = append(partsNeeded[c.PartNumber], c)
 			}
+		} else {
+			c.PartID, err = strconv.Atoi(c.PartNumber)
 		}
+
 		cs = append(cs, c)
 	}
 	return cs, partsNeeded, err
@@ -346,12 +350,19 @@ func AuditBaseVehicle(baseMap map[int][]CsvDatum) error {
 		}
 
 		if baseFlag == false {
-			//add part to base vehicle
 			log.Print("All the same part ", baseVehicle[0].PartNumber, " for this CsvBasevehicle: ", baseVehicle[0].BaseVehicleID)
-			err = AddPartToBaseVehicle(baseVehicle[0])
-			if err != nil {
-				//TODO need to add base v  & try again
-				log.Print("Error adding to baseVehicle (no baseVehicle) ", err)
+			//check for vehiclePartExistence
+			vehiclePartID, err := baseVehicle[0].CheckVehiclePartTableByAAIABaseVehicle()
+			if vehiclePartID == 0 {
+				log.Print("need to add vehicle part")
+				//add part to base vehicle
+				err = AddPartToBaseVehicle(baseVehicle[0])
+				if err != nil {
+					//TODO need to add base v  & try again
+					log.Print("Error adding to baseVehicle (no baseVehicle) ", err)
+				}
+			} else {
+				log.Print("Vehicle part EXISTS FOR BASE VEHICLE")
 			}
 		} else {
 			log.Print("Diff parts for base vehicle ", baseVehicle[0].BaseVehicleID, ", try submodel")
@@ -368,6 +379,40 @@ func AuditBaseVehicle(baseMap map[int][]CsvDatum) error {
 		err = AuditSubmodel(submodelMap)
 	}
 	return err
+}
+
+func (c *CsvDatum) CheckVehiclePartTableByAAIABaseVehicle() (int, error) {
+	var curtVehicleID int
+	var vehiclePartID int
+	var err error
+
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return vehiclePartID, err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(getCurtVehicleIdFromAAIABaseVehicle)
+	if err != nil {
+		return vehiclePartID, err
+	}
+	defer stmt.Close()
+
+	err = stmt.QueryRow(c.BaseVehicleID).Scan(&curtVehicleID)
+	if err != nil {
+		return vehiclePartID, err
+	}
+
+	stmt, err = db.Prepare(checkVehiclePart)
+	if err != nil {
+		return vehiclePartID, err
+	}
+	defer stmt.Close()
+
+	err = stmt.QueryRow(curtVehicleID, c.PartID).Scan(&vehiclePartID)
+	if err != nil {
+		return vehiclePartID, err
+	}
+	return vehiclePartID, err
 }
 
 func AuditSubmodel(subMap map[int][]CsvDatum) error {
@@ -387,10 +432,16 @@ func AuditSubmodel(subMap map[int][]CsvDatum) error {
 		if subFlag == false {
 			//add part to sub vehicle
 			log.Print("All the same part ", subVehicle[0].PartNumber, " for this CsvSubmodel: ", subVehicle[0].SubmodelID, ". CsvBaseID: ", subVehicle[0].BaseVehicleID)
-			err = AddPartToSubVehicle(subVehicle[0])
-			if err != nil {
-				//TODO need to add sub vehicle & try again
-				log.Print("Error adding to submodel (no submodel) ", err)
+			//check table for vehiclePart Existence
+			vehiclePartID, err := subVehicle[0].CheckVehiclePartTableByAAIASubmodel()
+			if vehiclePartID == 0 {
+				err = AddPartToSubVehicle(subVehicle[0])
+				if err != nil {
+					//TODO need to add sub vehicle & try again
+					log.Print("Error adding to submodel (no submodel) ", err)
+				}
+			} else {
+				log.Print("VEHICLE PART EXISTS FOR SUBMODEL")
 			}
 		} else {
 			log.Print("Diff parts for submodel ", subVehicle[0].SubmodelID, ", try configs")
@@ -410,13 +461,49 @@ func AuditSubmodel(subMap map[int][]CsvDatum) error {
 	return err
 }
 
+func (c *CsvDatum) CheckVehiclePartTableByAAIASubmodel() (int, error) {
+	var curtVehicleID int
+	var vehiclePartID int
+	var err error
+
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return vehiclePartID, err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(getCurtVehicleIdFromAAIASubVehicle)
+	if err != nil {
+		return vehiclePartID, err
+	}
+	defer stmt.Close()
+
+	err = stmt.QueryRow(c.BaseVehicleID, c.SubmodelID).Scan(&curtVehicleID)
+	if err != nil {
+		return vehiclePartID, err
+	}
+
+	stmt, err = db.Prepare(checkVehiclePart)
+	if err != nil {
+		return vehiclePartID, err
+	}
+	defer stmt.Close()
+
+	err = stmt.QueryRow(curtVehicleID, c.PartID).Scan(&vehiclePartID)
+	if err != nil {
+		return vehiclePartID, err
+	}
+	return vehiclePartID, err
+}
+
 func AuditConfigs(vIDmap map[int][]CsvDatum) error {
 	var err error
+	//get Maps
+	ConfigMaps := GetConfigMaps()
 	for _, vehicle := range vIDmap {
 		log.Print("--NEW VEHICLE --")
 		for _, v := range vehicle {
 			// log.Print("V - ", v)
-			err = v.AddPartToVehicle()
+			err = v.AddPartToVehicle(ConfigMaps)
 			if err != nil {
 				return err
 			}
@@ -456,13 +543,9 @@ func AddPartToBaseVehicle(c CsvDatum) error {
 		// }
 	}
 	log.Print("Adding part ", c.PartID, " to Curt base vehicle ", curt.ID)
+	curt.PartID = c.PartID
 	//TODO - uncomment
-	// stmt, err = db.Prepare(addPartToVehicle)
-	// if err != nil {
-	// 	return err
-	// }
-	// defer stmt.Close()
-	// _, err = stmt.Exec(curt.ID, c.PartID)
+	// err = curt.AddVehicleToVehiclePart()
 	// if err != nil {
 	// 	return err
 	// }
@@ -504,13 +587,9 @@ func AddPartToSubVehicle(c CsvDatum) error {
 		// }
 	}
 	log.Print("Adding part ", c.PartID, " to Curt sub vehicle ", curt.ID)
+	curt.PartID = c.PartID
 	//TODO - uncomment
-	// stmt, err = db.Prepare(addPartToVehicle)
-	// if err != nil {
-	// 	return err
-	// }
-	// defer stmt.Close()
-	// _, err = stmt.Exec(curt.ID, c.PartID)
+	// err = curt.AddVehicleToVehiclePart()
 	// if err != nil {
 	// 	return err
 	// }
@@ -539,7 +618,7 @@ func (curt *CurtVehicleConfig) CreateVcdb_Vehicle() error {
 	return err
 }
 
-func (c *CsvDatum) AddPartToVehicle() error {
+func (c *CsvDatum) AddPartToVehicle(configMaps map[string](map[int]string)) error {
 	var err error
 	var curt CurtVehicleConfig
 
@@ -563,24 +642,40 @@ func (c *CsvDatum) AddPartToVehicle() error {
 	acesConfigTypeArray := [...]int{6, 20, 8, 3, 2, 4, 16, 25, 40, 12, 7} //There's got to be a better way
 
 	for _, acesConfigType := range acesConfigTypeArray {
-
-		curt.AcesConfigValueID = c.getConfigType(curt.AcesConfigTypeID)
-
+		//assign aces type from loop of aces types
 		curt.AcesConfigTypeID = acesConfigType
+		//get Aces value from CsvDatum struct
+		curt.AcesConfigValueID = c.getConfigType(curt.AcesConfigTypeID)
+		//get Curt type from aces type
 		curt.ConfigType, curt.ConfigTypeName, _ = GetCurtConfigTypeAcesConfig(curt.AcesConfigTypeID)
+		//get Curt value from aces value and type, if there is one
 		curt.ConfigValue, curt.ConfigValueName, _ = GetCurtConfigValueAcesConfig(curt.AcesConfigTypeID, curt.AcesConfigValueID)
 
-		//if there is a CURT config value for this config type
+		//see if there is a CURT config value for this config type
 		if curt.ConfigValue > 0 {
 			err = curt.GetCurtVechicleWithConfig()
 			if err == nil {
-				//add part
+				//add part to this curt vehicle
 				log.Print("We'd add a part to vehicle config ", curt.ConfigTypeName, "  -  ", curt.ConfigValueName)
+				// //TODO UNCOMMENT
+				// err = curt.AddVehicleToVehiclePart()
+				// if err != nil {
+				// 	return err
+				// }
 			}
 			if err == sql.ErrNoRows {
-				//add vehicle config
-				log.Print("We'd add a vehicle before part ", curt.CurtBaseID, " ", curt.CurtSubmodelID, " ", curt.ConfigTypeName, "  -  ", curt.ConfigValueName)
+				//add vehicle with this config before adding part
+				log.Print("We'd add a vehicle before part. Aces Base/Sub: ", c.BaseVehicleID, " ", c.SubmodelID, "| Curt Base/Sub: ", curt.CurtBaseID, " ", curt.CurtSubmodelID, " ", curt.ConfigTypeName, "  -  ", curt.ConfigValueName)
 				err = nil
+				// //TODO UNCOMMENT
+				err = curt.InsertConfigurationValue()
+				if err != nil {
+					return err
+				}
+				// err = curt.AddVehicleToVehiclePart()
+				// if err != nil {
+				// 	return err
+				// }
 			}
 			if err != nil {
 				log.Print("Another err ", err)
@@ -588,8 +683,12 @@ func (c *CsvDatum) AddPartToVehicle() error {
 			}
 			// err = curt.Print()
 		} else {
-			//what am I missing - TODO - should we add all these config values that we don't have values for
-			log.Print("ACES ", curt.AcesConfigTypeID, curt.AcesConfigValueID, "   CURT ", curt.ConfigType, curt.ConfigValue)
+			//exclude configs without aces data
+			if curt.AcesConfigValueID > 0 {
+				//what am I missing - TODO - should we add all these config values that we don't have values for
+				//need to add config value, then vehicle with that config, then vehiclePart
+				log.Print("ACES ", curt.AcesConfigTypeID, curt.AcesConfigValueID, "   CURT ", curt.ConfigType, curt.ConfigValue)
+			}
 		}
 	}
 	return err
@@ -609,6 +708,50 @@ func (c *CsvDatum) getConfigType(n int) int {
 	staticMap[12] = c.CylHeadTypeID
 	staticMap[7] = c.EngineBaseID
 	return staticMap[n]
+}
+
+func (curt *CurtVehicleConfig) AddVehicleToVehiclePart() error {
+	var err error
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(addPartToVehicle)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(curt.ID, curt.PartID)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+func (curt *CurtVehicleConfig) InsertConfigurationValue() error {
+	var err error
+	log.Print("INSERT CONFIG VAL")
+
+	// db, err := sql.Open("mysql", database.ConnectionString())
+	// if err != nil {
+	// 	return
+	// }
+	// defer db.Close()
+
+	// stmt, err := db.Prepare(insertConfigAttributeValue)
+	// if err != nil {
+	// 	return
+	// }
+	// defer stmt.Close()
+	// res, err := stmt.Exec(curt.ConfigType, curt.AcesConfigValueID, value)
+	// if err != nil {
+	// 	return err
+	// }
+	// id, err := res.LastInsertId()
+	// curt.ConfigValue = int(id)
+	return err
 }
 
 func GetCurtConfigTypeAcesConfig(acesType int) (int, string, error) {
