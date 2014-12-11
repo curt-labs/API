@@ -2,21 +2,40 @@ package faq_model
 
 import (
 	"database/sql"
-	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/pagination"
-	"github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
-	"strconv"
 )
 
+var (
+	getAllStmt = `select F.faqID, F.question, F.answer, F.brandID 
+                  from FAQ F
+                  join ApiKeyToBrand as AKB on AKB.brandID = F.brandID
+                  join ApiKey AK on AK.id = AKB.keyID
+                  where AK.api_key = ? && (F.brandID = ? || 0 = ?)`
+	getFaqStmt = `select F.faqID, F.question, F.answer, F.brandID
+                  from FAQ F
+                  join ApiKeyToBrand as AKB on AKB.brandID = F.brandID
+                  join ApiKey AK on AK.id = AKB.keyID
+                  where AK.api_key = ? && F.brandID = ? && F.faqID = ?`
+	searchFaqStmt = `select F.faqID, F.question, F.answer, F.brandID 
+                     from FAQ F
+                     join ApiKeyToBrand as AKB on AKB.brandID = F.brandID
+                     join ApiKey AK on AK.id = AKB.keyID
+                     where AK.api_Key = ? && F.brandID = ? && question like ? && answer like ?`
+	createFaqStmt = `insert into FAQ(question,answer,brandID) values(?,?,?)`
+	updateFaqStmt = `update FAQ set question = ?, answer = ?, brandID = ? where faqID = ?`
+	deleteFaqStmt = `delete from FAQ where faqID = ?`
+)
+
+type Faqs []Faq
 type Faq struct {
 	ID       int    `json:"id,omitempty" xml:"id,omitempty"`
+	BrandID  int    `json:"brandId,omitempty" xml:"brandId,omitempty"`
 	Question string `json:"question,omitempty" xml:"question,omitempty"`
 	Answer   string `json:"answer,omitempty" xml:"answer,omitempty"`
 }
-
-type Faqs []Faq
 
 type Pagination struct {
 	TotalItems    int `json:"total_items" xml:"total_items"`
@@ -26,53 +45,37 @@ type Pagination struct {
 	TotalPages    int `json:"total_pages" xml:"total_pages"`
 }
 
-var (
-	getFaq       = "SELECT faqID, question, answer FROM FAQ WHERE faqID = ?"
-	getAll       = "SELECT faqID, question, answer FROM FAQ"
-	create       = "INSERT INTO FAQ (question, answer) VALUES (?,?)"
-	update       = "UPDATE FAQ SET question = ?, answer = ? WHERE faqID = ?"
-	deleteFaq    = "DELETE FROM FAQ WHERE faqID = ?"
-	getQuestions = "SELECT question FROM FAQ"
-	getAnswers   = "SELECT answer FROM FAQ"
-	search       = "SELECT faqID, question, answer FROM FAQ WHERE question LIKE ? AND answer LIKE ? "
-)
-
-func GetAll() (Faqs, error) {
+func GetAll(dtx *apicontext.DataContext) (Faqs, error) {
 	var fs Faqs
 	var err error
-	redis_key := "faq"
-	data, err := redis.Get(redis_key)
-	if err == nil && len(data) > 0 {
-		err = json.Unmarshal(data, &fs)
-		return fs, err
-	}
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return fs, err
 	}
 	defer db.Close()
 
-	stmt, err := db.Prepare(getAll)
+	stmt, err := db.Prepare(getAllStmt)
 	if err != nil {
 		return fs, err
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Query()
+	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	for res.Next() {
 		var f Faq
-		res.Scan(&f.ID, &f.Question, &f.Answer)
+		res.Scan(&f.ID, &f.Question, &f.Answer, &f.BrandID)
 		if err != nil {
 			return fs, err
 		}
 		fs = append(fs, f)
 	}
 	defer res.Close()
-	go redis.Setex(redis_key, fs, 86400)
+
 	return fs, nil
 }
 
-func Search(question, answer, pageStr, resultsStr string) (pagination.Objects, error) {
+func Search(dtx *apicontext.DataContext, question, answer, pageStr, resultsStr string) (pagination.Objects, error) {
 	var err error
 	var fs []interface{}
 	var p pagination.Objects
@@ -83,16 +86,16 @@ func Search(question, answer, pageStr, resultsStr string) (pagination.Objects, e
 	}
 	defer db.Close()
 
-	stmt, err := db.Prepare(search)
+	stmt, err := db.Prepare(searchFaqStmt)
 	if err != nil {
 		return p, err
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Query("%"+question+"%", "%"+answer+"%")
+	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, "%"+question+"%", "%"+answer+"%")
 	for res.Next() {
 		var f Faq
-		res.Scan(&f.ID, &f.Question, &f.Answer)
+		res.Scan(&f.ID, &f.Question, &f.Answer, &f.BrandID)
 		fs = append(fs, f)
 	}
 
@@ -100,41 +103,30 @@ func Search(question, answer, pageStr, resultsStr string) (pagination.Objects, e
 	return p, err
 }
 
-func (f *Faq) Get() error {
-	var err error
-	redis_key := "faq:" + strconv.Itoa(f.ID)
-	data, err := redis.Get(redis_key)
-	if err == nil && len(data) > 0 {
-		err = json.Unmarshal(data, &f)
-		return err
-	}
-
+func (f *Faq) Get(dtx *apicontext.DataContext) error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
 	}
 	defer db.Close()
 
-	stmt, err := db.Prepare(getFaq)
+	stmt, err := db.Prepare(getFaqStmt)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
-	err = stmt.QueryRow(f.ID).Scan(&f.ID, &f.Question, &f.Answer)
+	row := stmt.QueryRow(dtx.APIKey, dtx.BrandID, f.ID)
+	err = row.Scan(&f.ID, &f.Question, &f.Answer, &f.BrandID)
+
 	if err != nil {
-		if err == sql.ErrNoRows {
-			err = nil
-		}
 		return err
 	}
-
-	go redis.Setex(redis_key, f, redis.CacheTimeout)
 
 	return nil
 }
 
-func (f *Faq) Create() error {
+func (f *Faq) Create(dtx *apicontext.DataContext) error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -144,8 +136,8 @@ func (f *Faq) Create() error {
 	if err != nil {
 		return err
 	}
-	stmt, err := tx.Prepare(create)
-	res, err := stmt.Exec(f.Question, f.Answer)
+	stmt, err := tx.Prepare(createFaqStmt)
+	res, err := stmt.Exec(f.Question, f.Answer, dtx.BrandID)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -160,7 +152,7 @@ func (f *Faq) Create() error {
 	return nil
 }
 
-func (f *Faq) Update() error {
+func (f *Faq) Update(dtx *apicontext.DataContext) error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -170,8 +162,8 @@ func (f *Faq) Update() error {
 	if err != nil {
 		return err
 	}
-	stmt, err := tx.Prepare(update)
-	_, err = stmt.Exec(f.Question, f.Answer, f.ID)
+	stmt, err := tx.Prepare(updateFaqStmt)
+	_, err = stmt.Exec(f.Question, f.Answer, dtx.BrandID, f.ID)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -190,7 +182,7 @@ func (f *Faq) Delete() error {
 	if err != nil {
 		return err
 	}
-	stmt, err := tx.Prepare(deleteFaq)
+	stmt, err := tx.Prepare(deleteFaqStmt)
 	_, err = stmt.Exec(f.ID)
 	if err != nil {
 		tx.Rollback()

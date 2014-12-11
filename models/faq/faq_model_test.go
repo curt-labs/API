@@ -1,17 +1,28 @@
 package faq_model
 
 import (
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
 
+var (
+	MockedDTX = &apicontext.DataContext{BrandID: 1, WebsiteID: 1, APIKey: "NOT_GENERATED_YET"}
+)
+
 func TestGetFaqs(t *testing.T) {
 	var f Faq
+	var err error
+
+	if err = MockedDTX.Mock(); err != nil {
+		return
+	}
+
 	f.Question = "testQuestion"
 	f.Answer = "testAnswer"
-	var err error
+
 	Convey("Testing Create", t, func() {
-		err = f.Create()
+		err = f.Create(MockedDTX)
 		So(err, ShouldBeNil)
 		So(f, ShouldNotBeNil)
 		So(f.Question, ShouldEqual, "testQuestion")
@@ -20,26 +31,26 @@ func TestGetFaqs(t *testing.T) {
 	Convey("Testing Update", t, func() {
 		f.Question = "testQuestion222"
 		f.Answer = "testAnswer222"
-		err = f.Update()
+		err = f.Update(MockedDTX)
 		So(err, ShouldBeNil)
 		So(f, ShouldNotBeNil)
 		So(f.Question, ShouldEqual, "testQuestion222")
 		So(f.Answer, ShouldEqual, "testAnswer222")
 	})
 	Convey("Testing Get", t, func() {
-		err = f.Get()
+		err = f.Get(MockedDTX)
 		So(err, ShouldBeNil)
 		So(f, ShouldNotBeNil)
 		So(f.Question, ShouldHaveSameTypeAs, "str")
 		So(f.Answer, ShouldHaveSameTypeAs, "str")
 
 		var fs Faqs
-		fs, err = GetAll()
+		fs, err = GetAll(MockedDTX)
 		So(fs, ShouldNotBeNil)
 		So(err, ShouldBeNil)
 		So(len(fs), ShouldNotBeNil)
 
-		as, err := Search(f.Question, "", "1", "0")
+		as, err := Search(MockedDTX, f.Question, "", "1", "0")
 		So(as, ShouldNotBeNil)
 		So(err, ShouldBeNil)
 		So(as.Pagination.Page, ShouldEqual, 1)
@@ -52,57 +63,81 @@ func TestGetFaqs(t *testing.T) {
 		So(err, ShouldBeNil)
 
 	})
+
+	MockedDTX.DeMock()
 }
 
 func BenchmarkGetAllFaq(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		GetAll()
+	if err := MockedDTX.Mock(); err != nil {
+		return
 	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		GetAll(MockedDTX)
+	}
+	b.StopTimer()
+	MockedDTX.DeMock()
 }
 
 func BenchmarkGetFaq(b *testing.B) {
+	if err := MockedDTX.Mock(); err != nil {
+		return
+	}
 	f := setupDummyFaq()
-	f.Create()
+	f.Create(MockedDTX)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		f.Get()
+		f.Get(MockedDTX)
 	}
 	b.StopTimer()
 	f.Delete()
+	MockedDTX.DeMock()
 }
 
 func BenchmarkCreateFaq(b *testing.B) {
+	if err := MockedDTX.Mock(); err != nil {
+		return
+	}
 	f := setupDummyFaq()
 	for i := 0; i < b.N; i++ {
-		f.Create()
+		f.Create(MockedDTX)
 		b.StopTimer()
 		f.Delete()
 		b.StartTimer()
 	}
+	MockedDTX.DeMock()
 }
 
 func BenchmarkUpdateFaq(b *testing.B) {
+	if err := MockedDTX.Mock(); err != nil {
+		return
+	}
 	f := setupDummyFaq()
-	f.Create()
+	f.Create(MockedDTX)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		f.Question = "Testing for real?"
 		f.Answer = "You betcha."
-		f.Update()
+		f.Update(MockedDTX)
 	}
 	b.StopTimer()
 	f.Delete()
+	MockedDTX.DeMock()
 }
 
 func BenchmarkDeleteFaq(b *testing.B) {
+	if err := MockedDTX.Mock(); err != nil {
+		return
+	}
 	f := setupDummyFaq()
-	f.Create()
+	f.Create(MockedDTX)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		f.Delete()
 	}
 	b.StopTimer()
 	f.Delete()
+	MockedDTX.DeMock()
 }
 
 func setupDummyFaq() *Faq {

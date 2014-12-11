@@ -3,7 +3,6 @@ package testimonials
 import (
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -20,8 +19,6 @@ func GetAllTestimonials(rw http.ResponseWriter, req *http.Request, enc encoding.
 	var randomize bool
 
 	qs := req.URL.Query()
-
-	log.Println(dtx.BrandID) // example of how to use the data context.
 
 	if qs.Get("page") != "" {
 		if pg, err := strconv.Atoi(qs.Get("page")); err == nil {
