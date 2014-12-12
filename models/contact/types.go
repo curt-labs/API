@@ -11,8 +11,8 @@ import (
 
 var (
 	getAllContactTypesStmt = `select contactTypeID, name, showOnWebsite from ContactType
-		join apiKeyToBrand as akb on akb.brandID = ContactType.brandID
-		join apiKey as ak on ak.id = akb.keyID
+		join ApiKeyToBrand as akb on akb.brandID = ContactType.brandID
+		join ApiKey as ak on ak.id = akb.keyID
 		where ak.api_key = ? && (ContactType.BrandID = ? or 0 = ?)`
 	getContactTypeStmt    = `select contactTypeID, name, showOnWebsite from ContactType where contactTypeID = ?`
 	addContactTypeStmt    = `insert into ContactType(name,showOnWebsite, brandID) values (?,?,?)`
