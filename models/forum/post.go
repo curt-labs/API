@@ -6,14 +6,39 @@ import (
 	"strings"
 	"time"
 
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	_ "github.com/go-sql-driver/mysql"
 )
 
 var (
-	getAllForumPosts       = `select postID, parentID, threadID, createdDate, title, post, name, email, company, notify, approved, active, IPAddress, flag, sticky from ForumPost`
-	getForumPost           = `select postID, parentID, threadID, createdDate, title, post, name, email, company, notify, approved, active, IPAddress, flag, sticky from ForumPost where postID = ?`
-	getForumThreadPosts    = `select postID, parentID, threadID, createdDate, title, post, name, email, company, notify, approved, active, IPAddress, flag, sticky from ForumPost where threadID = ?`
+	getAllForumPosts = `select FP.postID, FP.parentID, FP.threadID, FP.createdDate, FP.title, FP.post, FP.name, FP.email, FP.company, FP.notify, FP.approved, FP.active, FP.IPAddress, FP.flag, FP.sticky
+						from ForumPost FP
+						join ForumThread FTH on FTH.threadID = FP.threadID
+						join ForumTopic FT on FT.topicID = FTH.topicID
+						join ForumGroup FG on FG.forumGroupID = FT.TopicGroupID
+						join WebsiteToBrand WTB on WTB.WebsiteID = FG.WebsiteID
+						join ApiKeyToBrand AKB on AKB.brandID = WTB.brandID
+						join ApiKey AK on AK.id = AKB.keyID
+						where AK.api_key = ? && (FG.websiteID = ? || 0 = ?)`
+	getForumPost = `select FP.postID, FP.parentID, FP.threadID, FP.createdDate, FP.title, FP.post, FP.name, FP.email, FP.company, FP.notify, FP.approved, FP.active, FP.IPAddress, FP.flag, FP.sticky
+					from ForumPost FP
+					join ForumThread FTH on FTH.threadID = FP.threadID
+					join ForumTopic FT on FT.topicID = FTH.topicID
+					join ForumGroup FG on FG.forumGroupID = FT.TopicGroupID
+					join WebsiteToBrand WTB on WTB.WebsiteID = FG.WebsiteID
+					join ApiKeyToBrand AKB on AKB.brandID = WTB.brandID
+					join ApiKey AK on AK.id = AKB.keyID
+					where AK.api_key = ? && (FG.websiteID = ? || 0 = ?) && FP.postID = ?`
+	getForumThreadPosts = `select FP.postID, FP.parentID, FP.threadID, FP.createdDate, FP.title, FP.post, FP.name, FP.email, FP.company, FP.notify, FP.approved, FP.active, FP.IPAddress, FP.flag, FP.sticky
+						   from ForumPost FP
+						   join ForumThread FTH on FTH.threadID = FP.threadID
+						   join ForumTopic FT on FT.topicID = FTH.topicID
+						   join ForumGroup FG on FG.forumGroupID = FT.TopicGroupID
+						   join WebsiteToBrand WTB on WTB.WebsiteID = FG.WebsiteID
+						   join ApiKeyToBrand AKB on AKB.brandID = WTB.brandID
+						   join ApiKey AK on AK.id = AKB.keyID
+						   where AK.api_key = ? && (FG.websiteID = ? || 0 = ?) && FP.threadID = ?`
 	addForumPost           = `insert into ForumPost(parentID,threadID,createdDate,title,post,name,email,company,notify,approved,active,IPAddress,flag,sticky) values(?,?,UTC_TIMESTAMP(),?,?,?,?,?,?,?,1,?,?,?)`
 	updateForumPost        = `update ForumPost set parentID = ?, threadID = ?, title = ?, post = ?, name = ?, email = ?, company = ?, notify = ?, approved = ?, IPAddress = ?, flag = ?, sticky = ? where postID = ?`
 	deleteForumPost        = `delete from ForumPost where postID = ?`
@@ -39,7 +64,7 @@ type Post struct {
 	Sticky    bool
 }
 
-func GetAllPosts() (posts Posts, err error) {
+func GetAllPosts(dtx *apicontext.DataContext) (posts Posts, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return
@@ -52,7 +77,7 @@ func GetAllPosts() (posts Posts, err error) {
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query()
+	rows, err := stmt.Query(dtx.APIKey, dtx.WebsiteID, dtx.WebsiteID)
 	if err != nil {
 		return
 	}
@@ -68,7 +93,7 @@ func GetAllPosts() (posts Posts, err error) {
 	return
 }
 
-func (p *Post) Get() error {
+func (p *Post) Get(dtx *apicontext.DataContext) error {
 	if p.ID == 0 {
 		return errors.New("Invalid Post ID")
 	}
@@ -86,7 +111,7 @@ func (p *Post) Get() error {
 	defer stmt.Close()
 
 	var post Post
-	row := stmt.QueryRow(p.ID)
+	row := stmt.QueryRow(dtx.APIKey, dtx.WebsiteID, dtx.WebsiteID, p.ID)
 	if err = row.Scan(&post.ID, &post.ParentID, &post.ThreadID, &post.Created, &post.Title, &post.Post, &post.Name, &post.Email, &post.Company, &post.Notify, &post.Approved, &post.Active, &post.IPAddress, &post.Flag, &post.Sticky); err != nil {
 		return err
 	}
@@ -110,7 +135,7 @@ func (p *Post) Get() error {
 	return nil
 }
 
-func (t *Thread) GetPosts() error {
+func (t *Thread) GetPosts(dtx *apicontext.DataContext) error {
 	if t.ID == 0 {
 		return errors.New("Invalid Thread ID")
 	}
@@ -127,7 +152,7 @@ func (t *Thread) GetPosts() error {
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query(t.ID)
+	rows, err := stmt.Query(dtx.APIKey, dtx.WebsiteID, dtx.WebsiteID, t.ID)
 	for rows.Next() {
 		var post Post
 		if err = rows.Scan(&post.ID, &post.ParentID, &post.ThreadID, &post.Created, &post.Title, &post.Post, &post.Name, &post.Email, &post.Company, &post.Notify, &post.Approved, &post.Active, &post.IPAddress, &post.Flag, &post.Sticky); err == nil {

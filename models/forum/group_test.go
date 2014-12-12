@@ -1,8 +1,13 @@
 package forum
 
 import (
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
+)
+
+var (
+	MockedDTX = &apicontext.DataContext{BrandID: 1, WebsiteID: 1, APIKey: "NOT_GENERATED_YET"}
 )
 
 func TestGroups(t *testing.T) {
@@ -10,23 +15,27 @@ func TestGroups(t *testing.T) {
 	var lastGroupID int
 	var err error
 
+	if err = MockedDTX.Mock(); err != nil {
+		return
+	}
+
 	//setup an existing groupy
 	groupy := Group{}
 	groupy.Name = "Test Group"
 	groupy.Description = "This is a test group."
-	groupy.Add()
+	groupy.Add(MockedDTX)
 
 	//run our tests
 	Convey("Testing Gets", t, func() {
 		Convey("Testing GetAll()", func() {
-			groups, err := GetAllGroups()
+			groups, err := GetAllGroups(MockedDTX)
 
 			So(groups, ShouldNotBeNil)
 			So(err, ShouldBeNil)
 		})
 		Convey("Testing Get()", func() {
 			Convey("Group with ID of 0", func() {
-				err = g.Get()
+				err = g.Get(MockedDTX)
 				So(g.ID, ShouldEqual, 0)
 				So(g.Name, ShouldEqual, "")
 				So(g.Description, ShouldEqual, "")
@@ -36,7 +45,7 @@ func TestGroups(t *testing.T) {
 
 			Convey("Group with non-zero ID", func() {
 				g = Group{ID: groupy.ID}
-				err = g.Get()
+				err = g.Get(MockedDTX)
 
 				So(g.ID, ShouldNotEqual, 0)
 				So(err, ShouldBeNil)
@@ -47,7 +56,7 @@ func TestGroups(t *testing.T) {
 	Convey("Testing Add()", t, func() {
 		Convey("Empty Group", func() {
 			g = Group{}
-			err = g.Add()
+			err = g.Add(MockedDTX)
 
 			So(g.ID, ShouldEqual, 0)
 			So(g.Name, ShouldEqual, "")
@@ -58,7 +67,7 @@ func TestGroups(t *testing.T) {
 			g = Group{}
 			g.Name = "Test Group"
 			g.Description = "This is a test group."
-			err = g.Add()
+			err = g.Add(MockedDTX)
 
 			So(g.ID, ShouldBeGreaterThan, 0)
 			So(g.Name, ShouldNotEqual, "")
@@ -72,7 +81,7 @@ func TestGroups(t *testing.T) {
 	Convey("Testing Update()", t, func() {
 		Convey("Empty Group", func() {
 			g = Group{}
-			err = g.Update()
+			err = g.Update(MockedDTX)
 
 			So(g.ID, ShouldEqual, 0)
 			So(g.Name, ShouldEqual, "")
@@ -83,7 +92,7 @@ func TestGroups(t *testing.T) {
 		Convey("Missing Name", func() {
 			g = Group{ID: lastGroupID}
 			g.Name = ""
-			err = g.Update()
+			err = g.Update(MockedDTX)
 
 			So(g.ID, ShouldNotEqual, 0)
 			So(g.Name, ShouldEqual, "")
@@ -94,7 +103,7 @@ func TestGroups(t *testing.T) {
 			g = Group{ID: lastGroupID}
 			g.Name = "Updated Test Group"
 			g.Description = "This is a updated test group."
-			err = g.Update()
+			err = g.Update(MockedDTX)
 
 			So(g.ID, ShouldNotEqual, 0)
 			So(g.Name, ShouldNotEqual, "")
@@ -106,19 +115,21 @@ func TestGroups(t *testing.T) {
 	Convey("Testing Delete()", t, func() {
 		Convey("Empty Group", func() {
 			g = Group{}
-			err = g.Delete()
+			err = g.Delete(MockedDTX)
 
 			So(err, ShouldNotBeNil)
 		})
 
 		Convey("Last Updated Group", func() {
 			g = Group{ID: lastGroupID}
-			err = g.Delete()
+			err = g.Delete(MockedDTX)
 
 			So(err, ShouldBeNil)
 		})
 	})
 
 	//destroy the test group, we're done with it
-	groupy.Delete()
+	groupy.Delete(MockedDTX)
+
+	MockedDTX.DeMock()
 }

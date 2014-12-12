@@ -4,13 +4,14 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/forum"
 	"github.com/go-martini/martini"
 )
 
-func GetAllPosts(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder) string {
-	posts, err := forum.GetAllPosts()
+func GetAllPosts(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+	posts, err := forum.GetAllPosts(dtx)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return err.Error()
@@ -18,7 +19,7 @@ func GetAllPosts(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder
 	return encoding.Must(enc.Encode(posts))
 }
 
-func GetPost(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
+func GetPost(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var err error
 	var post forum.Post
 
@@ -27,14 +28,14 @@ func GetPost(rw http.ResponseWriter, req *http.Request, params martini.Params, e
 		return "Invalid Post ID"
 	}
 
-	if err := post.Get(); err != nil {
+	if err := post.Get(dtx); err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return err.Error()
 	}
 	return encoding.Must(enc.Encode(post))
 }
 
-func AddPost(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
+func AddPost(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var err error
 	var post forum.Post
 
@@ -52,7 +53,7 @@ func AddPost(rw http.ResponseWriter, req *http.Request, params martini.Params, e
 			return "Invalid topic ID"
 		}
 		//verify that this topic exists
-		if err = topic.Get(); err != nil {
+		if err = topic.Get(dtx); err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return err.Error()
 		}
@@ -74,7 +75,7 @@ func AddPost(rw http.ResponseWriter, req *http.Request, params martini.Params, e
 			http.Error(rw, "Invalid parent post ID", http.StatusInternalServerError)
 			return "Invalid parent post ID"
 		}
-		if err = parentPost.Get(); err != nil {
+		if err = parentPost.Get(dtx); err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return err.Error()
 		}
@@ -113,7 +114,7 @@ func AddPost(rw http.ResponseWriter, req *http.Request, params martini.Params, e
 	return encoding.Must(enc.Encode(post))
 }
 
-func UpdatePost(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
+func UpdatePost(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var err error
 	var post forum.Post
 
@@ -122,7 +123,7 @@ func UpdatePost(rw http.ResponseWriter, req *http.Request, params martini.Params
 		return err.Error()
 	}
 
-	if err = post.Get(); err != nil {
+	if err = post.Get(dtx); err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return err.Error()
 	}
@@ -133,7 +134,7 @@ func UpdatePost(rw http.ResponseWriter, req *http.Request, params martini.Params
 			http.Error(rw, "Invalid parent post ID", http.StatusInternalServerError)
 			return "Invalid parent post ID"
 		}
-		if err = parentPost.Get(); err != nil {
+		if err = parentPost.Get(dtx); err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return err.Error()
 		}
@@ -146,7 +147,7 @@ func UpdatePost(rw http.ResponseWriter, req *http.Request, params martini.Params
 			http.Error(rw, "Invalid thread ID", http.StatusInternalServerError)
 			return "Invalid thread ID"
 		}
-		if err = thread.Get(); err != nil {
+		if err = thread.Get(dtx); err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return err.Error()
 		}

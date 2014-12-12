@@ -4,13 +4,14 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/forum"
 	"github.com/go-martini/martini"
 )
 
-func GetAllTopics(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder) string {
-	topics, err := forum.GetAllTopics()
+func GetAllTopics(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+	topics, err := forum.GetAllTopics(dtx)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return err.Error()
@@ -18,7 +19,7 @@ func GetAllTopics(rw http.ResponseWriter, req *http.Request, enc encoding.Encode
 	return encoding.Must(enc.Encode(topics))
 }
 
-func GetTopic(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
+func GetTopic(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var err error
 	var topic forum.Topic
 
@@ -26,14 +27,14 @@ func GetTopic(rw http.ResponseWriter, req *http.Request, params martini.Params, 
 		http.Error(rw, "Invalid Topic ID", http.StatusInternalServerError)
 		return "Invalid Topic ID"
 	}
-	if err := topic.Get(); err != nil {
+	if err := topic.Get(dtx); err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return err.Error()
 	}
 	return encoding.Must(enc.Encode(topic))
 }
 
-func AddTopic(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
+func AddTopic(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var err error
 	var topic forum.Topic
 
@@ -62,7 +63,7 @@ func AddTopic(rw http.ResponseWriter, req *http.Request, params martini.Params, 
 	return encoding.Must(enc.Encode(topic))
 }
 
-func UpdateTopic(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
+func UpdateTopic(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var err error
 	var topic forum.Topic
 
@@ -71,7 +72,7 @@ func UpdateTopic(rw http.ResponseWriter, req *http.Request, params martini.Param
 		return "Invalid Topic ID"
 	}
 
-	if err = topic.Get(); err != nil {
+	if err = topic.Get(dtx); err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return err.Error()
 	}
@@ -117,7 +118,7 @@ func UpdateTopic(rw http.ResponseWriter, req *http.Request, params martini.Param
 	return encoding.Must(enc.Encode(topic))
 }
 
-func DeleteTopic(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
+func DeleteTopic(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var err error
 	var topic forum.Topic
 
@@ -126,7 +127,7 @@ func DeleteTopic(rw http.ResponseWriter, req *http.Request, params martini.Param
 		return "Invalid Topic ID"
 	}
 
-	if err = topic.Delete(); err != nil {
+	if err = topic.Delete(dtx); err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return err.Error()
 	}

@@ -4,13 +4,14 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/forum"
 	"github.com/go-martini/martini"
 )
 
-func GetAllThreads(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder) string {
-	threads, err := forum.GetAllThreads()
+func GetAllThreads(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+	threads, err := forum.GetAllThreads(dtx)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return err.Error()
@@ -18,7 +19,7 @@ func GetAllThreads(rw http.ResponseWriter, req *http.Request, enc encoding.Encod
 	return encoding.Must(enc.Encode(threads))
 }
 
-func GetThread(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
+func GetThread(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var err error
 	var thread forum.Thread
 
@@ -27,7 +28,7 @@ func GetThread(rw http.ResponseWriter, req *http.Request, params martini.Params,
 		return "Invalid Thread ID"
 	}
 
-	if err := thread.Get(); err != nil {
+	if err := thread.Get(dtx); err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return err.Error()
 	}

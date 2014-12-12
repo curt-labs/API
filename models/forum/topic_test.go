@@ -10,11 +10,15 @@ func TestTopics(t *testing.T) {
 	var lastTopicID int
 	var err error
 
+	if err = MockedDTX.Mock(); err != nil {
+		return
+	}
+
 	//setup a test group
 	g := Group{}
 	g.Name = "Test Group"
 	g.Description = "This is a test group."
-	g.Add()
+	g.Add(MockedDTX)
 
 	toppy := Topic{}
 	toppy.GroupID = g.ID
@@ -24,7 +28,7 @@ func TestTopics(t *testing.T) {
 
 	Convey("Testing Gets", t, func() {
 		Convey("Testing GetAll()", func() {
-			topics, err := GetAllTopics()
+			topics, err := GetAllTopics(MockedDTX)
 
 			So(len(topics), ShouldBeGreaterThanOrEqualTo, 0)
 			So(err, ShouldBeNil)
@@ -33,7 +37,7 @@ func TestTopics(t *testing.T) {
 		Convey("Testing Get()", func() {
 			Convey("Empty Topic", func() {
 				top = Topic{}
-				err = top.Get()
+				err = top.Get(MockedDTX)
 				So(top.ID, ShouldEqual, 0)
 				So(top.GroupID, ShouldEqual, 0)
 				So(top.Name, ShouldEqual, "")
@@ -45,7 +49,7 @@ func TestTopics(t *testing.T) {
 
 			Convey("Topic with non-zero ID", func() {
 				top = Topic{ID: toppy.ID}
-				err = top.Get()
+				err = top.Get(MockedDTX)
 
 				So(top.ID, ShouldNotEqual, 0)
 				So(len(top.Threads), ShouldBeGreaterThanOrEqualTo, 0)
@@ -141,18 +145,20 @@ func TestTopics(t *testing.T) {
 	Convey("Testing Delete()", t, func() {
 		Convey("Empty Topic", func() {
 			top = Topic{}
-			err = top.Delete()
+			err = top.Delete(MockedDTX)
 
 			So(err, ShouldNotBeNil)
 		})
 
 		Convey("Last Updated Topic", func() {
 			top = Topic{ID: lastTopicID}
-			err = top.Delete()
+			err = top.Delete(MockedDTX)
 
 			So(err, ShouldBeNil)
 		})
 	})
 
-	g.Delete()
+	g.Delete(MockedDTX)
+
+	MockedDTX.DeMock()
 }

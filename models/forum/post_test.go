@@ -10,11 +10,15 @@ func TestPosts(t *testing.T) {
 	var lastPostID int
 	var err error
 
+	if err = MockedDTX.Mock(); err != nil {
+		return
+	}
+
 	//setup a group, topic, and thread
 	g := Group{}
 	g.Name = "Test Group"
 	g.Description = "This is a test group."
-	g.Add()
+	g.Add(MockedDTX)
 
 	top := Topic{}
 	top.GroupID = g.ID
@@ -29,7 +33,7 @@ func TestPosts(t *testing.T) {
 	//run our tests
 	Convey("Testing Gets", t, func() {
 		Convey("Testing GetAll()", func() {
-			posts, err := GetAllPosts()
+			posts, err := GetAllPosts(MockedDTX)
 
 			So(len(posts), ShouldBeGreaterThanOrEqualTo, 0)
 			So(err, ShouldBeNil)
@@ -37,7 +41,7 @@ func TestPosts(t *testing.T) {
 
 		Convey("Testing Get()", func() {
 			Convey("Post with ID of 0", func() {
-				err = p.Get()
+				err = p.Get(MockedDTX)
 				So(p.ID, ShouldEqual, 0)
 				So(err, ShouldNotBeNil)
 			})
@@ -145,5 +149,7 @@ func TestPosts(t *testing.T) {
 	})
 
 	//destroy the group and everything tied to it
-	g.Delete()
+	g.Delete(MockedDTX)
+
+	MockedDTX.DeMock()
 }
