@@ -17,8 +17,8 @@ var (
 	getAllContactsStmt = `select contactID, first_name, last_name, email, phone, subject, message,
                           createdDate, type, address1, address2, city, state, postalcode, country, Contact.brandID
                           from Contact 
-                          join apiKeyToBrand as akb on akb.brandID = Contact.brandID
-						  join apiKey as ak on ak.id = akb.keyID
+                          join ApiKeyToBrand as akb on akb.brandID = Contact.brandID
+						  join ApiKey as ak on ak.id = akb.keyID
                           where  ak.api_key = ? && (Contact.BrandID = ? or 0 = ?)
                            limit ?, ?`
 	getContactStmt = `select contactID, first_name, last_name, email, phone, subject, message,
