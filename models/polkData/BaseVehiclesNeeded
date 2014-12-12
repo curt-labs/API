@@ -1,3 +1,0 @@
-CsvVehicleMake,CsvVehicleModel,CsvVehicleSubmodel,CsvVehicleYear,CsvVehicleGVW,CsvVehicleVehicleID,
-		CsvVehicleBaseVehicleID,CsvVehicleYearID,CsvVehicleMakeID,CsvVehicleModelID,CsvVehicleSubmodelID,
-		PartID,PartDesc,CurtVehicleID,CurtVehicleBaseID,CurtVehicleSubmodelID,AAIAConfigTypeID,AAIAConfigValueID

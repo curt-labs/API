@@ -17,7 +17,7 @@ var (
 
 func (c *CsvDatum) InsertPartIntoVehiclePart() error {
 	var err error
-	db, err := sql.Open("mysql", database.ConnectionString())
+	db, err := sql.Open("mysql", database.AriesConnectionString())
 	if err != nil {
 		return err
 	}
@@ -33,7 +33,7 @@ func (c *CsvDatum) InsertPartIntoVehiclePart() error {
 }
 
 func (c *CsvDatum) InsertBaseVehicleIntoVcdbVehicles() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	db, err := sql.Open("mysql", database.AriesConnectionString())
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func (c *CsvDatum) InsertBaseVehicleIntoVcdbVehicles() error {
 }
 
 func (c *CsvDatum) InsertSubmodelIntoVcdbVehicles() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	db, err := sql.Open("mysql", database.AriesConnectionString())
 	if err != nil {
 		return err
 	}
@@ -76,7 +76,7 @@ func (c *CsvDatum) InsertSubmodelIntoVcdbVehicles() error {
 
 func (c *CsvDatum) InsertBaseVehicle() error {
 	var err error
-	db, err := sql.Open("mysql", database.ConnectionString())
+	db, err := sql.Open("mysql", database.AriesConnectionString())
 	if err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ func (c *CsvDatum) InsertBaseVehicle() error {
 
 func (c *CsvDatum) InsertSubmodel() error {
 	var err error
-	db, err := sql.Open("mysql", database.ConnectionString())
+	db, err := sql.Open("mysql", database.AriesConnectionString())
 	if err != nil {
 		return err
 	}

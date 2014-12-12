@@ -639,7 +639,7 @@ func (c *CsvDatum) getAcesConfigValue(n int) int {
 //See if part exists in vehiclePart table
 func (c *CsvDatum) FindPartID() error {
 	var err error
-	db, err := sql.Open("mysql", database.ConnectionString())
+	db, err := sql.Open("mysql", database.AriesConnectionString())
 	if err != nil {
 		return err
 	}
@@ -662,7 +662,7 @@ func (c *CsvDatum) FindPartID() error {
 func FindVehicle(curtBaseID, curtSubmodelID, configID int) (CurtVehicle, error) {
 	var err error
 	var curt CurtVehicle
-	db, err := sql.Open("mysql", database.ConnectionString())
+	db, err := sql.Open("mysql", database.AriesConnectionString())
 	if err != nil {
 		return curt, err
 	}
@@ -682,7 +682,7 @@ func FindVehicle(curtBaseID, curtSubmodelID, configID int) (CurtVehicle, error) 
 
 func (c *CsvDatum) GetCurtVechicleWithConfig(curtConfigValueID, curtConfigTypeID int) error {
 	var err error
-	db, err := sql.Open("mysql", database.ConnectionString())
+	db, err := sql.Open("mysql", database.AriesConnectionString())
 	if err != nil {
 		return err
 	}

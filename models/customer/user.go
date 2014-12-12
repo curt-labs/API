@@ -11,6 +11,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/encryption"
 	"github.com/curt-labs/GoAPI/helpers/redis"
+	"github.com/curt-labs/GoAPI/models/brand"
 	"github.com/curt-labs/GoAPI/models/geography"
 	_ "github.com/go-sql-driver/mysql"
 	"net/http"
@@ -34,6 +35,7 @@ type CustomerUser struct {
 	Current            bool             `json:"current" xml:"current,attr"`
 	PasswordConversion bool             `json:"passwordConversion,omitempty" xml:"passwordConversion,omitempty"`
 	Keys               []ApiCredentials `json:"keys" xml:"keys"`
+	Brands             brand.Brands     `json:"brands,omitempty" xml:"brands,omitempty"`
 }
 
 type ApiCredentials struct {
@@ -141,6 +143,11 @@ var (
 								left join Country as cun on s.countryID = cun.countryID
 								where cu.id = ?
 								limit 1`
+	getCustomerUserBrands = `select b.ID, b.name, b.code 
+							from Brand as b
+							join CustomerToBrand as ctb on ctb.BrandID = b.ID
+							join Customer as c on c.cust_id = ctb.cust_id
+							where c.cust_id = ?`
 
 	updateCustomerUser   = `UPDATE CustomerUser SET name = ?, email = ?, active = ?, locationID = ?, isSudo = ?, NotCustomer = ? WHERE id = ?`
 	getUsersByCustomerID = `SELECT id FROM CustomerUser WHERE cust_id = ?`
@@ -414,8 +421,17 @@ func GetCustomerUserFromKey(key string) (u CustomerUser, err error) {
 	}()
 
 	u.GetKeys()
-	<-locChan
 
+	bChan := make(chan bool)
+	go func() {
+		err = u.GetBrands()
+		if err != nil {
+			return
+		}
+		bChan <- true
+	}()
+	<-locChan
+	<-bChan
 	return
 }
 
@@ -516,6 +532,33 @@ func (u *CustomerUser) GetKeys() error {
 	}
 	u.Keys = keys
 	return nil
+}
+
+func (u *CustomerUser) GetBrands() error {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(getCustomerUserBrands)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	var b brand.Brand
+	res, err := stmt.Query(u.CustomerID)
+	if err != nil {
+		return err
+	}
+	for res.Next() {
+		err = res.Scan(&b.ID, &b.Name, &b.Code)
+		if err != nil {
+			return err
+		}
+		u.Brands = append(u.Brands, b)
+	}
+	return err
 }
 
 func (u *CustomerUser) GetLocation() error {

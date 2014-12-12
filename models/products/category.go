@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
@@ -50,8 +51,11 @@ var (
 		limit 1`
 	TopCategoriesStmt = `
 		select c.catID from Categories as c
+		join apiKeyToBrand as akb on akb.brandID = c.brandID
+		join apiKey as ak on ak.id = akb.keyID
 		where c.ParentID IS NULL or c.ParentID = 0
 		and isLifestyle = 0
+		and (ak.api_key = ? && (c.BrandID = ? or 0 = ?))
 		order by c.sort`
 	SubCategoriesStmt = `
 		select c.catID, c.ParentID, c.sort, c.dateAdded,
@@ -70,7 +74,10 @@ var (
 		c.vehicleRequired,
 		cc.code, cc.font from Categories as c
 		left join ColorCode as cc on c.codeID = cc.codeID
+		join apiKeyToBrand as akb on akb.brandID = c.brandID
+		join apiKey as ak on ak.id = akb.keyID
 		where c.catTitle = ?
+		and (ak.api_key = ? && (c.BrandID = ? or 0=?))
 		order by c.sort`
 	CategoryByIdStmt = `
 		select c.catID, c.ParentID, c.sort, c.dateAdded,
@@ -121,8 +128,8 @@ var (
 		join Content as c on cb.contentID = c.contentID
 		left join ContentType as ct on c.cTypeID = ct.cTypeID
 		where cb.catID = ?`
-	createCategory = `insert into Categories (dateAdded, parentID, catTitle, shortDesc, longDesc, image, isLifestyle, codeId, sort, vehicleSpecific, vehicleRequired, metaTitle, metaDesc, metaKeywords, icon, path)
-						values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+	createCategory = `insert into Categories (dateAdded, parentID, catTitle, shortDesc, longDesc, image, isLifestyle, codeId, sort, vehicleSpecific, vehicleRequired, metaTitle, metaDesc, metaKeywords, icon, path, brandID)
+						values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
 	deleteCategory = `delete from Categories where catID = ? `
 )
 
@@ -152,6 +159,7 @@ type Category struct {
 	MetaTitle       string                   `json:"metaTitle,omitempty" xml:"v,omitempty"`
 	MetaDescription string                   `json:"metaDescription,omitempty" xml:"metaDescription,omitempty"`
 	MetaKeywords    string                   `json:"metaKeywords,omitempty" xml:"metaKeywords,omitempty"`
+	BrandID         int                      `json:"categoryId,omitempty" xml:"categoryId,omitempty"`
 }
 
 func PopulateCategoryMulti(rows *sql.Rows, ch chan []Category) {
@@ -272,7 +280,7 @@ func PopulateCategory(row *sql.Row, ch chan Category) {
 // TopTierCategories
 // Description: Returns the top tier categories
 // Returns: []Category, error
-func TopTierCategories(key string) (cats []Category, err error) {
+func TopTierCategories(key string, dtx *apicontext.DataContext) (cats []Category, err error) {
 
 	cats = make([]Category, 0)
 	redis_key := "category:top"
@@ -299,7 +307,7 @@ func TopTierCategories(key string) (cats []Category, err error) {
 	defer qry.Close()
 
 	// Execute SQL Query against current PartId
-	catRows, err := qry.Query()
+	catRows, err := qry.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	if err != nil || catRows == nil { // Error occurred while executing query
 		return
 	}
@@ -333,7 +341,7 @@ func TopTierCategories(key string) (cats []Category, err error) {
 	return
 }
 
-func GetCategoryByTitle(cat_title string) (cat Category, err error) {
+func GetCategoryByTitle(cat_title string, dtx *apicontext.DataContext) (cat Category, err error) {
 
 	redis_key := "category:title:" + cat_title
 
@@ -359,7 +367,7 @@ func GetCategoryByTitle(cat_title string) (cat Category, err error) {
 	defer qry.Close()
 
 	// Execute SQL Query against title
-	catRow := qry.QueryRow(cat_title)
+	catRow := qry.QueryRow(cat_title, dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	if catRow == nil { // Error occurred while executing query
 		return
 	}
@@ -794,6 +802,7 @@ func (c *Category) Create() (err error) {
 		c.MetaKeywords,
 		c.Icon,
 		c.Image,
+		c.BrandID,
 	)
 	if err != nil {
 		return err
