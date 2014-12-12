@@ -11,23 +11,25 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"os"
 	"strings"
 )
 
 var (
 	Response *httptest.ResponseRecorder
-	apikey   = os.Getenv("TEST_APIKEY")
 )
 
 func Request(reqType string, route string, paramKey string, paramVal string, handler martini.Handler, body io.Reader, contentType string) {
+	var datacontext apicontext.DataContext
+	datacontext.Mock()
+	apikey := datacontext.APIKey
+
 	cType := "application/x-www-form-urlencoded" //default content type = form
 	if contentType != "" {
 		cType = contentType
 	}
 	m := martini.Classic()
 	m.Use(render.Renderer())
-	dc := &apicontext.DataContext{APIKey: apikey, BrandID: 1}
+	dc := &apicontext.DataContext{APIKey: apikey, BrandID: 1, WebsiteID: 1}
 	m.Map(dc)
 	m.Use(encoding.MapEncoder)
 	reqType = strings.ToLower(reqType)

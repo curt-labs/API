@@ -2,8 +2,8 @@ package forum_ctlr
 
 import (
 	"encoding/json"
-	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
 	"github.com/curt-labs/GoAPI/helpers/httprunner"
+	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
 	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/curt-labs/GoAPI/models/forum"
 	. "github.com/smartystreets/goconvey/convey"
@@ -233,8 +233,6 @@ func TestForums(t *testing.T) {
 	})
 	cu.Delete()
 }
-
-
 
 func BenchmarkCRUDForum(b *testing.B) {
 	qs := make(url.Values, 0)
