@@ -17,7 +17,7 @@ import (
 
 var (
 	Response *httptest.ResponseRecorder
-	apikey   = os.Getenv("key")
+	apikey   = os.Getenv("TEST_APIKEY")
 )
 
 func Request(reqType string, route string, paramKey string, paramVal string, handler martini.Handler, body io.Reader, contentType string) {
