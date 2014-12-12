@@ -24,7 +24,7 @@ func TestContact(t *testing.T) {
 	Convey("Testing Contact", t, func() {
 
 		//test create contact type using form
-		form := url.Values{"name": {"test type"}}
+		form := url.Values{"name": {"test type"}, "brandId": {"1"}}
 		v := form.Encode()
 		body := strings.NewReader(v)
 		testThatHttp.Request("post", "/contact/types", "", "", AddContactType, body, "application/x-www-form-urlencoded")

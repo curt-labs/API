@@ -1,6 +1,7 @@
 package contact
 
 import (
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/contact"
 	"github.com/go-martini/martini"
@@ -8,8 +9,8 @@ import (
 	"strconv"
 )
 
-func GetAllContactTypes(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder) string {
-	types, err := contact.GetAllContactTypes()
+func GetAllContactTypes(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+	types, err := contact.GetAllContactTypes(dtx)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return err.Error()
@@ -54,6 +55,17 @@ func AddContactType(rw http.ResponseWriter, req *http.Request, params martini.Pa
 	ct := contact.ContactType{
 		Name: req.FormValue("name"),
 	}
+	if req.FormValue("show") != "" {
+		if show, err := strconv.ParseBool(req.FormValue("show")); err == nil {
+			ct.ShowOnWebsite = show
+		}
+	}
+
+	if req.FormValue("brandId") != "" {
+		if brandId, err := strconv.Atoi(req.FormValue("brandId")); err == nil {
+			ct.BrandID = brandId
+		}
+	}
 
 	if err := ct.Add(); err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
@@ -86,6 +98,11 @@ func UpdateContactType(rw http.ResponseWriter, req *http.Request, params martini
 	if req.FormValue("show") != "" {
 		if show, err := strconv.ParseBool(req.FormValue("show")); err == nil {
 			ct.ShowOnWebsite = show
+		}
+	}
+	if req.FormValue("brandId") != "" {
+		if brandId, err := strconv.Atoi(req.FormValue("brandId")); err == nil {
+			ct.BrandID = brandId
 		}
 	}
 

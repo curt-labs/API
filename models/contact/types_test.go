@@ -86,7 +86,7 @@ func TestTypes(t *testing.T) {
 
 	Convey("Testing Gets", t, func() {
 		Convey("Testing GetAll()", func() {
-			types, err := GetAllContactTypes()
+			types, err := GetAllContactTypes(MockedDTX)
 			So(len(types), ShouldBeGreaterThanOrEqualTo, 0)
 			So(err, ShouldBeNil)
 		})
@@ -116,7 +116,7 @@ func TestTypes(t *testing.T) {
 
 func BenchmarkGetAllContactTypes(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		GetAllContactTypes()
+		GetAllContactTypes(MockedDTX)
 	}
 }
 

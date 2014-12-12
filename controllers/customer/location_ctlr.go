@@ -2,6 +2,7 @@ package customer_ctlr
 
 import (
 	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	"github.com/curt-labs/GoAPI/models/customer"
@@ -33,11 +34,12 @@ func GetLocation(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 	return encoding.Must(enc.Encode(c))
 }
 
-func GetAllLocations(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+func GetAllLocations(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var c customer.CustomerLocations
 	var err error
-
-	c, err = customer.GetAllLocations()
+	apiKey := dtx.APIKey
+	brandID := dtx.BrandID
+	c, err = customer.GetAllLocations(apiKey, brandID)
 	if err != nil {
 		return err.Error()
 	}

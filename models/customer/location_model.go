@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"github.com/curt-labs/GoAPI/helpers/conversions"
 	"github.com/curt-labs/GoAPI/helpers/database"
-
-	// "github.com/curt-labs/goacesapi/helpers/pagination"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -14,8 +12,13 @@ import (
 type CustomerLocations []CustomerLocation
 
 var (
-	getLocation    = "SELECT locationID, name, address, city, stateID, email, phone, fax, latitude, longitude, cust_id, contact_person, isprimary, postalCode, ShippingDefault FROM CustomerLocations WHERE locationID= ? "
-	getLocations   = "SELECT locationID, name, address, city, stateID, email, phone, fax, latitude, longitude, cust_id, contact_person, isprimary, postalCode, ShippingDefault FROM CustomerLocations"
+	getLocation  = "SELECT locationID, name, address, city, stateID, email, phone, fax, latitude, longitude, cust_id, contact_person, isprimary, postalCode, ShippingDefault FROM CustomerLocations WHERE locationID= ? "
+	getLocations = `SELECT cl.locationID, cl.name, cl.address, cl.city, cl.stateID, cl.email,cl.phone, cl.fax, cl.latitude, cl.longitude, cl.cust_id, cl.contact_person, cl.isprimary, cl.postalCode, cl.ShippingDefault 
+			FROM CustomerLocations as cl
+			join CustomerToBrand as ctb on ctb.cust_id = cl.cust_id
+			join apiKeyToBrand as akb on akb.brandID = ctb.brandID
+			join apiKey as ak on ak.id = akb.keyID	
+			where ak.api_key = ? && (ctb.BrandID = ? or 0 = ?)`
 	createLocation = "INSERT INTO CustomerLocations (name, address, city, stateID, email, phone, fax, latitude, longitude, cust_id, contact_person, isprimary, postalCode, ShippingDefault) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
 	updateLocation = "UPDATE CustomerLocations SET name = ?, address = ?,  city = ?,  stateID = ?, email = ?,  phone = ?,  fax = ?,  latitude = ?,  longitude = ?,  cust_id = ?, contact_person = ?,  isprimary = ?, postalCode = ?, ShippingDefault = ? WHERE locationID = ?"
 	deleteLocation = "DELETE FROM CustomerLocations WHERE locationID = ? "
@@ -71,7 +74,7 @@ func (l *CustomerLocation) Get() error {
 	return err
 }
 
-func GetAllLocations() (CustomerLocations, error) {
+func GetAllLocations(apikey string, brandID int) (CustomerLocations, error) {
 	var ls CustomerLocations
 	var err error
 	redis_key := "customers:locations"
@@ -92,7 +95,7 @@ func GetAllLocations() (CustomerLocations, error) {
 		return ls, err
 	}
 	defer stmt.Close()
-	res, err := stmt.Query()
+	res, err := stmt.Query(apikey, brandID, brandID)
 	var name, address, city, email, phone, fax, contactPerson, postal []byte
 	for res.Next() {
 		var l CustomerLocation

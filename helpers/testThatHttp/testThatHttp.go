@@ -11,11 +11,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strings"
 )
 
 var (
 	Response *httptest.ResponseRecorder
+	apikey   = os.Getenv("key")
 )
 
 func Request(reqType string, route string, paramKey string, paramVal string, handler martini.Handler, body io.Reader, contentType string) {
@@ -25,7 +27,7 @@ func Request(reqType string, route string, paramKey string, paramVal string, han
 	}
 	m := martini.Classic()
 	m.Use(render.Renderer())
-	dc := &apicontext.DataContext{}
+	dc := &apicontext.DataContext{APIKey: apikey, BrandID: 1}
 	m.Map(dc)
 	m.Use(encoding.MapEncoder)
 	reqType = strings.ToLower(reqType)

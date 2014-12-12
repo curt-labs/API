@@ -3,19 +3,22 @@ package contact
 import (
 	"database/sql"
 	"errors"
-	"strings"
-
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	_ "github.com/go-sql-driver/mysql"
+	"strings"
 )
 
 var (
-	getAllContactTypesStmt = `select contactTypeID, name, showOnWebsite from ContactType`
-	getContactTypeStmt     = `select contactTypeID, name, showOnWebsite from ContactType where contactTypeID = ?`
-	addContactTypeStmt     = `insert into ContactType(name) values (?)`
-	updateContactTypeStmt  = `update ContactType set name = ?, showOnWebsite = ? where contactTypeID = ?`
-	deleteContactTypeStmt  = `delete from ContactType where contactTypeID = ?`
-	getReceiverByType      = `select cr.contactReceiverID, cr.first_name, cr.last_name, cr.email from ContactReceiver_ContactType as crct 
+	getAllContactTypesStmt = `select contactTypeID, name, showOnWebsite from ContactType
+		join apiKeyToBrand as akb on akb.brandID = ContactType.brandID
+		join apiKey as ak on ak.id = akb.keyID
+		where ak.api_key = ? && (ContactType.BrandID = ? or 0 = ?)`
+	getContactTypeStmt    = `select contactTypeID, name, showOnWebsite from ContactType where contactTypeID = ?`
+	addContactTypeStmt    = `insert into ContactType(name,showOnWebsite, brandID) values (?,?,?)`
+	updateContactTypeStmt = `update ContactType set name = ?, showOnWebsite = ?, brandID = ? where contactTypeID = ?`
+	deleteContactTypeStmt = `delete from ContactType where contactTypeID = ?`
+	getReceiverByType     = `select cr.contactReceiverID, cr.first_name, cr.last_name, cr.email from ContactReceiver_ContactType as crct 
 								left join ContactReceiver as cr on crct.contactReceiverID = cr.contactReceiverID 
 								where crct.contactTypeID = ?`
 )
@@ -25,9 +28,10 @@ type ContactType struct {
 	ID            int    `json:"id" xml:"id"`
 	Name          string `json:"name" xml: "name"`
 	ShowOnWebsite bool   `json:"show" xml:"show"`
+	BrandID       int    `json:"brandId" xml:"brandId"`
 }
 
-func GetAllContactTypes() (types ContactTypes, err error) {
+func GetAllContactTypes(dtx *apicontext.DataContext) (types ContactTypes, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return
@@ -40,11 +44,10 @@ func GetAllContactTypes() (types ContactTypes, err error) {
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query()
+	rows, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	if err != nil {
 		return
 	}
-
 	for rows.Next() {
 		var ct ContactType
 		err = rows.Scan(
@@ -103,7 +106,7 @@ func (ct *ContactType) Add() error {
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Exec(ct.Name)
+	res, err := stmt.Exec(ct.Name, ct.ShowOnWebsite, ct.BrandID)
 	if err != nil {
 		return err
 	}
@@ -169,7 +172,7 @@ func (ct *ContactType) Update() error {
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(ct.Name, ct.ShowOnWebsite, ct.ID)
+	_, err = stmt.Exec(ct.Name, ct.ShowOnWebsite, ct.BrandID, ct.ID)
 
 	return err
 }

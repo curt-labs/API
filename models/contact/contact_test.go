@@ -1,8 +1,13 @@
 package contact
 
 import (
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
+)
+
+var (
+	MockedDTX = &apicontext.DataContext{BrandID: 1, WebsiteID: 1, APIKey: "NOT_GENERATED_YET"}
 )
 
 func TestContacts(t *testing.T) {
@@ -149,7 +154,7 @@ func TestContacts(t *testing.T) {
 
 	Convey("Testing Gets", t, func() {
 		Convey("Testing GetAll()", func() {
-			contacts, err := GetAllContacts(1, 1)
+			contacts, err := GetAllContacts(1, 1, MockedDTX)
 			So(len(contacts), ShouldBeGreaterThanOrEqualTo, 0)
 			So(err, ShouldBeNil)
 		})
@@ -176,7 +181,7 @@ func TestContacts(t *testing.T) {
 
 func BenchmarkGetAllContacts(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		GetAllContacts(1, 1)
+		GetAllContacts(1, 1, MockedDTX)
 	}
 }
 

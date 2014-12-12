@@ -2,8 +2,10 @@ package contact
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/contact"
 	"github.com/curt-labs/GoAPI/models/geography"
@@ -18,7 +20,7 @@ var (
 	noEmail = flag.Bool("noEmail", false, "Do not send email")
 )
 
-func GetAllContacts(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder) string {
+func GetAllContacts(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var err error
 	var page int = 1
 	var count int = 50
@@ -33,11 +35,13 @@ func GetAllContacts(rw http.ResponseWriter, req *http.Request, enc encoding.Enco
 			count = 50
 		}
 	}
-
-	contacts, err := contact.GetAllContacts(page, count)
+	contacts, err := contact.GetAllContacts(page, count, dtx)
+	if len(contacts) < 1 {
+		err = errors.New("No contacts found.")
+	}
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		return ""
 	}
 	return encoding.Must(enc.Encode(contacts))
 }
@@ -469,6 +473,9 @@ func UpdateContact(rw http.ResponseWriter, req *http.Request, params martini.Par
 
 		if req.FormValue("country") != "" {
 			c.Country = req.FormValue("country")
+		}
+		if req.FormValue("brandID") != "" {
+			c.Brand.ID, err = strconv.Atoi(req.FormValue("brandID"))
 		}
 	}
 	if err = c.Update(); err != nil {

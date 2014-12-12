@@ -3,8 +3,10 @@ package contact
 import (
 	"database/sql"
 	"errors"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/email"
+	"github.com/curt-labs/GoAPI/models/brand"
 	"github.com/curt-labs/GoAPI/models/customer"
 	_ "github.com/go-sql-driver/mysql"
 	"strings"
@@ -13,34 +15,39 @@ import (
 
 var (
 	getAllContactsStmt = `select contactID, first_name, last_name, email, phone, subject, message,
-                          createdDate, type, address1, address2, city, state, postalcode, country
-                          from Contact limit ?, ?`
+                          createdDate, type, address1, address2, city, state, postalcode, country, Contact.brandID
+                          from Contact 
+                          join apiKeyToBrand as akb on akb.brandID = Contact.brandID
+						  join apiKey as ak on ak.id = akb.keyID
+                          where  ak.api_key = ? && (Contact.BrandID = ? or 0 = ?)
+                           limit ?, ?`
 	getContactStmt = `select contactID, first_name, last_name, email, phone, subject, message,
                       createdDate, type, address1, address2, city, state, postalcode, country from Contact where contactID = ?`
 	addContactStmt = `insert into Contact(createdDate, first_name, last_name, email, phone, subject,
-                      message, type, address1, address2, city, state, postalcode, country) values (NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+                      message, type, address1, address2, city, state, postalcode, country, brandID) values (NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 	updateContactStmt = `update Contact set first_name = ?, last_name = ?, email = ?, phone = ?, subject = ?,
-                         message = ?, type = ?, address1 = ?, address2 = ?, city = ?, state = ?, postalCode = ?, country = ? where contactID = ?`
+                         message = ?, type = ?, address1 = ?, address2 = ?, city = ?, state = ?, postalCode = ?, country = ?, brandID = ? where contactID = ?`
 	deleteContactStmt = `delete from Contact where contactID = ?`
 )
 
 type Contacts []Contact
 type Contact struct {
-	ID         int       `json:"id,omitempty" xml:"id,omitempty"`
-	FirstName  string    `json:"firstName,omitempty" xml:"firstName,omitempty"`
-	LastName   string    `json:"lastName,omitempty" xml:"lastName,omitempty"`
-	Email      string    `json:"email" xml:"email,omitempty"`
-	Phone      string    `json:"phone,omitempty" xml:"phone,omitempty"`
-	Subject    string    `json:"subject,omitempty" xml:"subject,omitempty"`
-	Message    string    `json:"message,omitempty" xml:"message,omitempty"`
-	Created    time.Time `json:"created,omitempty" xml:"created,omitempty"`
-	Type       string    `json:"type,omitempty" xml:"type,omitempty"`
-	Address1   string    `json:"address1,omitempty" xml:"address1,omitempty"`
-	Address2   string    `json:"address2,omitempty" xml:"address2,omitempty"`
-	City       string    `json:"city,omitempty" xml:"city,omitempty"`
-	State      string    `json:"state,omitempty" xml:"state,omitempty"`
-	PostalCode string    `json:"postalCode,omitempty" xml:"postalCode,omitempty"`
-	Country    string    `json:"country,omitempty" xml:"country,omitempty"`
+	ID         int         `json:"id,omitempty" xml:"id,omitempty"`
+	FirstName  string      `json:"firstName,omitempty" xml:"firstName,omitempty"`
+	LastName   string      `json:"lastName,omitempty" xml:"lastName,omitempty"`
+	Email      string      `json:"email" xml:"email,omitempty"`
+	Phone      string      `json:"phone,omitempty" xml:"phone,omitempty"`
+	Subject    string      `json:"subject,omitempty" xml:"subject,omitempty"`
+	Message    string      `json:"message,omitempty" xml:"message,omitempty"`
+	Created    time.Time   `json:"created,omitempty" xml:"created,omitempty"`
+	Type       string      `json:"type,omitempty" xml:"type,omitempty"`
+	Address1   string      `json:"address1,omitempty" xml:"address1,omitempty"`
+	Address2   string      `json:"address2,omitempty" xml:"address2,omitempty"`
+	City       string      `json:"city,omitempty" xml:"city,omitempty"`
+	State      string      `json:"state,omitempty" xml:"state,omitempty"`
+	PostalCode string      `json:"postalCode,omitempty" xml:"postalCode,omitempty"`
+	Country    string      `json:"country,omitempty" xml:"country,omitempty"`
+	Brand      brand.Brand `json:"brand,omitempty" xml:"brand,omitempty"`
 }
 type DealerContact struct {
 	Contact
@@ -48,7 +55,7 @@ type DealerContact struct {
 	BusinessType customer.DealerType
 }
 
-func GetAllContacts(page, count int) (contacts Contacts, err error) {
+func GetAllContacts(page, count int, dtx *apicontext.DataContext) (contacts Contacts, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return
@@ -61,13 +68,12 @@ func GetAllContacts(page, count int) (contacts Contacts, err error) {
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query(page, count)
+	rows, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID, page, count)
 	if err != nil {
 		return
 	}
 
 	var addr1, addr2, city, state, postalCode, country *string
-
 	for rows.Next() {
 		var c Contact
 		err = rows.Scan(
@@ -86,9 +92,10 @@ func GetAllContacts(page, count int) (contacts Contacts, err error) {
 			&state,
 			&postalCode,
 			&country,
+			&c.Brand.ID,
 		)
 		if err != nil {
-			return
+			return contacts, err
 		}
 		if addr1 != nil {
 			c.Address1 = *addr1
@@ -211,7 +218,7 @@ func (c *Contact) Add() error {
 
 	res, err := stmt.Exec(
 		c.FirstName, c.LastName, c.Email, c.Phone, c.Subject, c.Message,
-		c.Type, c.Address1, c.Address2, c.City, c.State, c.PostalCode, c.Country)
+		c.Type, c.Address1, c.Address2, c.City, c.State, c.PostalCode, c.Country, c.Brand.ID)
 	if err != nil {
 		return err
 	}
@@ -240,7 +247,7 @@ func (c *Contact) AddButLessRestrictiveYouFieldValidatinFool() error {
 
 	res, err := stmt.Exec(
 		c.FirstName, c.LastName, c.Email, c.Phone, c.Subject, c.Message,
-		c.Type, c.Address1, c.Address2, c.City, c.State, c.PostalCode, c.Country)
+		c.Type, c.Address1, c.Address2, c.City, c.State, c.PostalCode, c.Country, c.Brand.ID)
 	if err != nil {
 		return err
 	}
@@ -289,7 +296,7 @@ func (c *Contact) Update() error {
 	defer stmt.Close()
 	_, err = stmt.Exec(
 		c.FirstName, c.LastName, c.Email, c.Phone, c.Subject, c.Message, c.Type,
-		c.Address1, c.Address2, c.City, c.State, c.PostalCode, c.Country, c.ID)
+		c.Address1, c.Address2, c.City, c.State, c.PostalCode, c.Country, c.Brand.ID, c.ID)
 
 	return err
 }
