@@ -447,7 +447,6 @@ func AuditBaseVehicle(baseMap map[int][]CsvDatum, insertMissingData bool) (map[i
 
 func AuditSubmodel(subMap map[int][]CsvDatum, insertMissingData bool) ([]CsvDatum, error) {
 	var err error
-	// vIDmap := make(map[int][]CsvDatum)
 	var vehicleArray []CsvDatum
 
 	subNeeded, err := os.Create("NeedSubmodelInVcdbVehicleTable")
@@ -509,10 +508,6 @@ func AuditSubmodel(subMap map[int][]CsvDatum, insertMissingData bool) ([]CsvDatu
 		} else {
 			log.Print("Diff parts for submodel ", subVehicle[0].CurtVehicle.CurtSubmodelID, ", try configs")
 			//config breakdown
-			//make map of un-added AAIAVehicleID to CsvData
-			// for _, sub := range subVehicle {
-			// vIDmap[sub.CsvVehicle.VehicleID] = append(vIDmap[sub.CsvVehicle.VehicleID], sub)
-			// }
 			for _, sub := range subVehicle {
 				vehicleArray = append(vehicleArray, sub)
 			}
@@ -527,13 +522,6 @@ func HandleVehicles(vehicleArray []CsvDatum, insertMissingData bool) error {
 	vehicleIDmap := make(map[int][]CsvDatum)
 	//get configmap
 	configMap, err := GetConfigMap()
-	//File prep
-	// configsNeededFile, err := os.Create("ConfigsNeeded")
-	// if err != nil {
-	// 	return err
-	// }
-	// defer configsNeededFile.Close()
-	// off, err := WriteVehicleHeader(configsNeededFile)
 
 	acesConfigTypeArray := [...]int{6, 20, 8, 3, 2, 4, 16, 25, 40, 12, 7} //There's got to be a better way
 	//assign configs to each vehicles' config array
@@ -551,11 +539,6 @@ func HandleVehicles(vehicleArray []CsvDatum, insertMissingData bool) error {
 				curtTVArray := strings.Split(acesTV, ",")
 				config.ConfigTypeID, err = strconv.Atoi(curtTVArray[0])
 				config.ConfigValueID, err = strconv.Atoi(curtTVArray[1])
-				// log.Print("FIND PARTS ? ", v.CurtVehicle)
-				//find part matches?
-
-				// } else {
-				// 	off, err = WriteVehicle(configsNeededFile, off, v, config.AcesConfigTypeID, config.AcesConfigValueID)
 			}
 
 			v.CurtVehicle.CurtConfigs = append(v.CurtVehicle.CurtConfigs, config)
