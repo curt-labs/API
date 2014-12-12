@@ -130,17 +130,43 @@ func Run(filename string, headerLines int, useOldPartNumbers bool, insertMissing
 		return err
 	}
 
-	//create basevehicle  map
-	baseMap := make(map[int][]CsvDatum)
-	for _, c := range cs {
-		baseMap[c.CurtVehicle.CurtBaseID] = append(baseMap[c.CurtVehicle.CurtBaseID], c)
-	}
-	cs = nil
+	ch := make(chan map[int][]CsvDatum)
+	arrayChan := make(chan []CsvDatum)
+	go func() {
+		baseMap := make(map[int][]CsvDatum)
+		for _, c := range cs {
+			baseMap[c.CurtVehicle.CurtBaseID] = append(baseMap[c.CurtVehicle.CurtBaseID], c)
+		}
+		ch <- baseMap
+	}()
+	baseMap := <-ch
 	runtime.GC()
-	//begin audits
-	err = Audits(baseMap)
-	if err == nil {
-		return nil
+
+	go func() {
+		subMap, err := AuditBaseVehicle(baseMap)
+		if err != nil {
+			return
+		}
+		ch <- subMap
+	}()
+	subMap := <-ch
+	runtime.GC()
+
+	go func() {
+		vehicleArray, err := AuditSubmodel(subMap)
+		if err != nil {
+			return
+		}
+		arrayChan <- vehicleArray
+	}()
+	vehicleArray := <-arrayChan
+	runtime.GC()
+
+	if len(vehicleArray) > 0 {
+		err = HandleVehicles(vehicleArray)
+		if err != nil {
+			return err
+		}
 	}
 
 	return err
@@ -336,30 +362,6 @@ func CaptureCsv(filename string, headerLines int, useOldPartNumbers bool, insert
 	return cs, err
 }
 
-//Audits
-func Audits(baseMap map[int][]CsvDatum) error {
-	var err error
-	subMap := make(map[int][]CsvDatum)
-	var vehicleArray []CsvDatum
-
-	subMap, err = AuditBaseVehicle(baseMap)
-	runtime.GC()
-	if len(subMap) > 0 {
-		vehicleArray, err = AuditSubmodel(subMap)
-		if err != nil {
-			return err
-		}
-	}
-	runtime.GC()
-	if len(vehicleArray) > 0 {
-		err = HandleVehicles(vehicleArray)
-		if err != nil {
-			return err
-		}
-	}
-	return err
-}
-
 func AuditBaseVehicle(baseMap map[int][]CsvDatum) (map[int][]CsvDatum, error) {
 	var err error
 	submodelMap := make(map[int][]CsvDatum)
@@ -422,7 +424,6 @@ func AuditBaseVehicle(baseMap map[int][]CsvDatum) (map[int][]CsvDatum, error) {
 		}
 	}
 	baseMap = nil
-	runtime.GC()
 	return submodelMap, err
 }
 
@@ -495,7 +496,6 @@ func AuditSubmodel(subMap map[int][]CsvDatum) ([]CsvDatum, error) {
 		}
 	}
 	subMap = nil
-	runtime.GC()
 	return vehicleArray, err
 }
 
@@ -541,7 +541,6 @@ func HandleVehicles(vehicleArray []CsvDatum) error {
 	}
 
 	vehicleArray = nil
-	runtime.GC()
 	err = diffVehicleConfigs(vehicleIDmap)
 	return err
 }
@@ -564,10 +563,9 @@ func diffVehicleConfigs(vehicleIDmap map[int][]CsvDatum) error {
 			}
 		}
 		if allConfigsEqualFlag == false {
-			log.Print("NEED CONFIGS ", vehicles)
 			for _, vehicle := range vehicles {
 				off, err = WriteVehicle(configsDiff, off, vehicle, 0, 0)
-				//check and add part o every config
+				//check and add part to every config
 			}
 		} else {
 			//Check and add part to submodel
@@ -692,56 +690,3 @@ func (c *CsvDatum) GetCurtVechicleWithConfig(curtConfigValueID, curtConfigTypeID
 	err = stmt.QueryRow(c.CurtVehicle.CurtBaseID, c.CurtVehicle.CurtSubmodelID, curtConfigValueID, curtConfigTypeID).Scan(&c.CurtVehicle.ID)
 	return err
 }
-
-//curt configs
-// func GetCurtConfigTypeAcesConfig(acesType int) (int, string, error) {
-// 	var err error
-// 	var configType int
-// 	var configTypeName string
-// 	db, err := sql.Open("mysql", database.ConnectionString())
-// 	if err != nil {
-// 		return 0, "", err
-// 	}
-// 	defer db.Close()
-
-// 	stmt, err := db.Prepare(getCurtConfigTypeFromAcesConfig)
-// 	if err != nil {
-// 		return 0, "", err
-// 	}
-// 	defer stmt.Close()
-// 	var configTypeByte []byte
-// 	err = stmt.QueryRow(acesType).Scan(&configType, &configTypeByte)
-// 	if err != nil {
-// 		return 0, "", err
-// 	}
-// 	if configTypeByte != nil {
-// 		configTypeName = string(configTypeByte[:])
-// 	}
-// 	return configType, configTypeName, err
-// }
-
-// func GetCurtConfigValueAcesConfig(acesType, acesValue int) (int, string, error) {
-// 	var err error
-// 	var configValue int
-// 	var configValueName string
-// 	db, err := sql.Open("mysql", database.ConnectionString())
-// 	if err != nil {
-// 		return 0, "", err
-// 	}
-// 	defer db.Close()
-
-// 	stmt, err := db.Prepare(getCurtConfigValueFromAcesConfig)
-// 	if err != nil {
-// 		return 0, "", err
-// 	}
-// 	defer stmt.Close()
-// 	var configValByte []byte
-// 	err = stmt.QueryRow(acesType, acesValue).Scan(&configValue, &configValByte)
-// 	if err != nil {
-// 		return 0, "", err
-// 	}
-// 	if configValByte != nil {
-// 		configValueName = string(configValByte[:])
-// 	}
-// 	return configValue, configValueName, err
-// }
