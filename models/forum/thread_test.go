@@ -10,11 +10,15 @@ func TestThreads(t *testing.T) {
 	var lastThreadID int
 	var err error
 
+	if err = MockedDTX.Mock(); err != nil {
+		return
+	}
+
 	//setup a testing group, a topic, and an existing thread
 	g := Group{}
 	g.Name = "Test Group"
 	g.Description = "This is a test group."
-	g.Add()
+	g.Add(MockedDTX)
 
 	top := Topic{}
 	top.GroupID = g.ID
@@ -29,7 +33,7 @@ func TestThreads(t *testing.T) {
 	//run our tests
 	Convey("Testing Gets", t, func() {
 		Convey("Testing GetAll()", func() {
-			threads, err := GetAllThreads()
+			threads, err := GetAllThreads(MockedDTX)
 
 			So(len(threads), ShouldBeGreaterThanOrEqualTo, 0)
 			So(err, ShouldBeNil)
@@ -37,14 +41,14 @@ func TestThreads(t *testing.T) {
 
 		Convey("Testing Get()", func() {
 			Convey("Thread with ID of 0", func() {
-				err = th.Get()
+				err = th.Get(MockedDTX)
 				So(th.ID, ShouldEqual, 0)
 				So(err, ShouldNotBeNil)
 			})
 
 			Convey("Thread with non-zero ID", func() {
 				th = Thread{ID: thready.ID}
-				err = th.Get()
+				err = th.Get(MockedDTX)
 
 				So(th.ID, ShouldNotEqual, 0)
 				So(err, ShouldBeNil)
@@ -110,5 +114,7 @@ func TestThreads(t *testing.T) {
 	})
 
 	//destroy the group and everything tied to it
-	g.Delete()
+	g.Delete(MockedDTX)
+
+	MockedDTX.DeMock()
 }

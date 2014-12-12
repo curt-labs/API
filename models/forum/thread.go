@@ -5,17 +5,39 @@ import (
 	"errors"
 	"time"
 
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	_ "github.com/go-sql-driver/mysql"
 )
 
 var (
-	getAllForumThreads   = `select threadID, topicID, createdDate, active, closed from ForumThread`
-	getForumThread       = `select threadID, topicID, createdDate, active, closed from ForumThread where threadID = ?`
-	getForumTopicthreads = `select threadID, topicID, createdDate, active, closed from ForumThread where topicID = ?`
-	addForumThread       = `insert into ForumThread(topicID,createdDate,active,closed) values(?,UTC_TIMESTAMP(), ?, ?)`
-	updateForumThread    = `update ForumThread set topicID = ?, active = ?, closed = ? where threadID = ?`
-	deleteForumThread    = `delete from ForumThread where threadID = ?`
+	getAllForumThreads = `select FTH.threadID, FTH.topicID, FTH.createdDate, FTH.active, FTH.closed
+						  from ForumThread FTH
+						  join ForumTopic FT on FT.topicID = FTH.topicID
+						  join ForumGroup FG on FG.forumGroupID = FT.TopicGroupID
+						  join WebsiteToBrand WTB on WTB.WebsiteID = FG.WebsiteID
+						  join ApiKeyToBrand AKB on AKB.brandID = WTB.brandID
+						  join ApiKey AK on AK.id = AKB.keyID
+						  where AK.api_key = ? && (FG.websiteID = ? || 0 = ?)`
+	getForumThread = `select FTH.threadID, FTH.topicID, FTH.createdDate, FTH.active, FTH.closed
+					  from ForumThread FTH
+					  join ForumTopic FT on FT.topicID = FTH.topicID
+					  join ForumGroup FG on FG.forumGroupID = FT.TopicGroupID
+					  join WebsiteToBrand WTB on WTB.WebsiteID = FG.WebsiteID
+					  join ApiKeyToBrand AKB on AKB.brandID = WTB.brandID
+					  join ApiKey AK on AK.id = AKB.keyID
+					  where AK.api_key = ? && (FG.websiteID = ? || 0 = ?) && FTH.threadID = ?`
+	getForumTopicThreads = `select FTH.threadID, FTH.topicID, FTH.createdDate, FTH.active, FTH.closed
+							from ForumThread FTH
+							join ForumTopic FT on FT.topicID = FTH.topicID
+							join ForumGroup FG on FG.forumGroupID = FT.TopicGroupID
+							join WebsiteToBrand WTB on WTB.WebsiteID = FG.WebsiteID
+							join ApiKeyToBrand AKB on AKB.brandID = WTB.brandID
+							join ApiKey AK on AK.id = AKB.keyID
+							where AK.api_key = ? && (FG.websiteID = ? || 0 = ?) && FTH.topicID = ?`
+	addForumThread    = `insert into ForumThread(topicID,createdDate,active,closed) values(?,UTC_TIMESTAMP(), ?, ?)`
+	updateForumThread = `update ForumThread set topicID = ?, active = ?, closed = ? where threadID = ?`
+	deleteForumThread = `delete from ForumThread where threadID = ?`
 )
 
 type Threads []Thread
@@ -28,7 +50,7 @@ type Thread struct {
 	Posts   Posts
 }
 
-func GetAllThreads() (threads Threads, err error) {
+func GetAllThreads(dtx *apicontext.DataContext) (threads Threads, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return
@@ -41,12 +63,12 @@ func GetAllThreads() (threads Threads, err error) {
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query()
+	rows, err := stmt.Query(dtx.APIKey, dtx.WebsiteID, dtx.WebsiteID)
 	if err != nil {
 		return
 	}
 
-	allPosts, err := GetAllPosts()
+	allPosts, err := GetAllPosts(dtx)
 	allPostsMap := allPosts.ToMap(MapToThreadID)
 	if err != nil {
 		return
@@ -66,7 +88,7 @@ func GetAllThreads() (threads Threads, err error) {
 	return
 }
 
-func (t *Thread) Get() error {
+func (t *Thread) Get(dtx *apicontext.DataContext) error {
 	if t.ID == 0 {
 		return errors.New("Invalid Thread ID")
 	}
@@ -84,7 +106,7 @@ func (t *Thread) Get() error {
 	defer stmt.Close()
 
 	var thread Thread
-	row := stmt.QueryRow(t.ID)
+	row := stmt.QueryRow(dtx.APIKey, dtx.WebsiteID, dtx.WebsiteID, t.ID)
 	if err = row.Scan(&thread.ID, &thread.TopicID, &thread.Created, &thread.Active, &thread.Closed); err != nil {
 		return err
 	}
@@ -95,14 +117,14 @@ func (t *Thread) Get() error {
 	t.Active = thread.Active
 	t.Closed = thread.Closed
 
-	if err = t.GetPosts(); err != nil {
+	if err = t.GetPosts(dtx); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (t *Topic) GetThreads() error {
+func (t *Topic) GetThreads(dtx *apicontext.DataContext) error {
 	if t.ID == 0 {
 		return errors.New("Invalid Topic ID")
 	}
@@ -113,19 +135,19 @@ func (t *Topic) GetThreads() error {
 	}
 	defer db.Close()
 
-	stmt, err := db.Prepare(getForumTopicthreads)
+	stmt, err := db.Prepare(getForumTopicThreads)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
-	allPosts, err := GetAllPosts()
+	allPosts, err := GetAllPosts(dtx)
 	allPostsMap := allPosts.ToMap(MapToThreadID)
 	if err != nil {
 		return err
 	}
 
-	rows, err := stmt.Query(t.ID)
+	rows, err := stmt.Query(dtx.APIKey, dtx.WebsiteID, dtx.WebsiteID, t.ID)
 	if err != nil {
 		return err
 	}
@@ -227,11 +249,11 @@ func (t *Thread) Delete() error {
 	return nil
 }
 
-func (t *Topic) DeleteThreads() error {
+func (t *Topic) DeleteThreads(dtx *apicontext.DataContext) error {
 	var err error
 	if len(t.Threads) == 0 {
 		//try getting
-		if err = t.Get(); err != nil {
+		if err = t.Get(dtx); err != nil {
 			return err
 		}
 	}

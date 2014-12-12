@@ -6,16 +6,30 @@ import (
 	"strings"
 	"time"
 
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	_ "github.com/go-sql-driver/mysql"
 )
 
 var (
-	getAllForumTopics   = `select topicID, TopicGroupID, name, description, image, createdDate, active, closed from ForumTopic`
-	getForumTopic       = `select topicID, TopicGroupID, name, description, image, createdDate, active, closed from ForumTopic where topicID = ?`
-	getForumGroupTopics = `select ft.topicID, ft.TopicGroupID, ft.name, ft.description, ft.image, ft.createdDate, ft.active, ft.closed from ForumTopic ft
-                              inner join ForumGroup fg on ft.TopicGroupID = fg.forumGroupID
-                              where ft.TopicGroupID = ?`
+	getAllForumTopics = `select FT.topicID, FT.TopicGroupID, FT.name, FT.description, FT.image, FT.createdDate, FT.active, FT.closed
+						 from ForumTopic FT
+						 join ForumGroup FG on FG.forumGroupID = FT.TopicGroupID
+						 join WebsiteToBrand WTB on WTB.WebsiteID = FG.WebsiteID
+						 join ApiKeyToBrand AKB on AKB.brandID = WTB.brandID
+						 join ApiKey AK on AK.id = AKB.keyID
+						 where AK.api_key = ? && (FG.websiteID = ? || 0 = ?)`
+	getForumTopic = `select FT.topicID, FT.TopicGroupID, FT.name, FT.description, FT.image, FT.createdDate, FT.active, FT.closed
+					 from ForumTopic FT
+					 join ForumGroup FG on FG.forumGroupID = FT.TopicGroupID
+					 join WebsiteToBrand WTB on WTB.WebsiteID = FG.WebsiteID
+					 join ApiKeyToBrand AKB on AKB.brandID = WTB.brandID
+					 join ApiKey AK on AK.id = AKB.keyID
+					 where AK.api_key = ? && (FG.websiteID = ? || 0 = ?) && FT.topicID = ?`
+	getForumGroupTopics = `select FT.topicID, FT.TopicGroupID, FT.name, FT.description, FT.image, FT.createdDate, FT.active, FT.closed
+						   from ForumTopic FT
+						   join ForumGroup FG on FG.forumGroupID = FT.TopicGroupID
+						   where FT.TopicGroupID = ?`
 	addForumTopic    = `insert into ForumTopic(TopicGroupID, name, description, image, createdDate, active, closed) values (?,?,?,?,UTC_TIMESTAMP(),?,?)`
 	updateForumTopic = `update ForumTopic set TopicGroupID = ?, name = ?, description = ?, image = ?, active = ?, closed = ? where topicID = ?`
 	deleteForumTopic = `delete from ForumTopic where topicID = ?`
@@ -34,7 +48,7 @@ type Topic struct {
 	Threads     Threads
 }
 
-func GetAllTopics() (topics Topics, err error) {
+func GetAllTopics(dtx *apicontext.DataContext) (topics Topics, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return
@@ -47,12 +61,12 @@ func GetAllTopics() (topics Topics, err error) {
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query()
+	rows, err := stmt.Query(dtx.APIKey, dtx.WebsiteID, dtx.WebsiteID)
 	if err != nil {
 		return
 	}
 
-	allThreads, err := GetAllThreads()
+	allThreads, err := GetAllThreads(dtx)
 	allThreadsMap := allThreads.ToMap(MapToTopicID)
 	if err != nil {
 		return
@@ -72,7 +86,7 @@ func GetAllTopics() (topics Topics, err error) {
 	return
 }
 
-func (t *Topic) Get() error {
+func (t *Topic) Get(dtx *apicontext.DataContext) error {
 	if t.ID == 0 {
 		return errors.New("Invalid Topic ID")
 	}
@@ -89,7 +103,7 @@ func (t *Topic) Get() error {
 	defer stmt.Close()
 
 	var topic Topic
-	row := stmt.QueryRow(t.ID)
+	row := stmt.QueryRow(dtx.APIKey, dtx.WebsiteID, dtx.WebsiteID, t.ID)
 	if err = row.Scan(&topic.ID, &topic.GroupID, &topic.Name, &topic.Description, &topic.Image, &topic.Created, &topic.Active, &topic.Closed); err != nil {
 		return err
 	}
@@ -103,14 +117,14 @@ func (t *Topic) Get() error {
 	t.Active = topic.Active
 	t.Closed = topic.Closed
 
-	if err = t.GetThreads(); err != nil {
+	if err = t.GetThreads(dtx); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (g *Group) GetTopics() error {
+func (g *Group) GetTopics(dtx *apicontext.DataContext) error {
 	if g.ID == 0 {
 		return errors.New("Invalid Group ID")
 	}
@@ -127,7 +141,7 @@ func (g *Group) GetTopics() error {
 	}
 	defer stmt.Close()
 
-	allThreads, err := GetAllThreads()
+	allThreads, err := GetAllThreads(dtx)
 	allThreadsMap := allThreads.ToMap(MapToTopicID)
 	if err != nil {
 		return err
@@ -217,12 +231,12 @@ func (t *Topic) Update() error {
 	return nil
 }
 
-func (t *Topic) Delete() error {
+func (t *Topic) Delete(dtx *apicontext.DataContext) error {
 	if t.ID == 0 {
 		return errors.New("Invalid Topic ID")
 	}
 
-	if err := t.DeleteThreads(); err != nil {
+	if err := t.DeleteThreads(dtx); err != nil {
 		return err
 	}
 
@@ -245,16 +259,16 @@ func (t *Topic) Delete() error {
 	return nil
 }
 
-func (g *Group) DeleteTopics() error {
+func (g *Group) DeleteTopics(dtx *apicontext.DataContext) error {
 	var err error
 	if len(g.Topics) == 0 {
 		//try getting
-		if err = g.Get(); err != nil {
+		if err = g.Get(dtx); err != nil {
 			return err
 		}
 	}
 	for _, topic := range g.Topics {
-		if err = topic.Delete(); err != nil {
+		if err = topic.Delete(dtx); err != nil {
 			return err
 		}
 	}
