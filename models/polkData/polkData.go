@@ -55,35 +55,35 @@ type CsvVehicle struct {
 	Model             string
 	SubModel          string
 	Year              string
-	GVW               int
+	GVW               uint8
 	VehicleID         int
 	BaseVehicleID     int
 	YearID            int
 	MakeID            int
 	ModelID           int
 	SubmodelID        int
-	VehicleTypeID     int
-	FuelTypeID        int     // 6 FuelType
-	FuelDeliveryID    int     //20 FuelDeliveryType
+	VehicleTypeID     uint8
+	FuelTypeID        uint8   // 6 FuelType
+	FuelDeliveryID    uint8   //20 FuelDeliveryType
 	AcesLiter         float64 //EngineBase.Liter
 	AcesCC            float64 //EngineBase.CC
-	AcesCID           int     //EngineBase.CID
-	AcesCyl           int     //EngineBase.Cylinders
+	AcesCID           uint16  //EngineBase.CID
+	AcesCyl           uint8   //EngineBase.Cylinders
 	AcesBlockType     string  //EngineBase.BlockType
-	AspirationID      int     // 8 Aspiration
-	DriveTypeID       int     // 3 DriveType
-	BodyTypeID        int     // 2 BodyType
-	BodyNumDoorsID    int     // 4 BodyNumDoors
-	EngineVinID       int     // 16 EngineVIN
-	RegionID          int     //Region
-	PowerOutputID     int     // 25 PowerOutput
-	FuelDelConfigID   int     //FuelDeliveryConfig
-	BodyStyleConfigID int     //BodyStyleConfig
-	ValvesID          int     // 40 Valves
-	CylHeadTypeID     int     // 12 CylinderHeadType
+	AspirationID      uint8   // 8 Aspiration
+	DriveTypeID       uint8   // 3 DriveType
+	BodyTypeID        uint8   // 2 BodyType
+	BodyNumDoorsID    uint8   // 4 BodyNumDoors
+	EngineVinID       uint8   // 16 EngineVIN
+	RegionID          uint8   //Region
+	PowerOutputID     uint16  // 25 PowerOutput
+	FuelDelConfigID   uint8   //FuelDeliveryConfig
+	BodyStyleConfigID uint8   //BodyStyleConfig
+	ValvesID          uint8   // 40 Valves
+	CylHeadTypeID     uint8   // 12 CylinderHeadType
 	BlockType         string  //EngineBase.BlockType
-	EngineBaseID      int     // 7 EngineBase
-	EngineConfigID    int     //EngineConfig
+	EngineBaseID      uint16  // 7 EngineBase
+	EngineConfigID    uint16  //EngineConfig
 }
 
 type Part struct {
@@ -123,12 +123,15 @@ type CurtConfigs []CurtConfig
 func Run(filename string, headerLines int, useOldPartNumbers bool, insertMissingData bool) error {
 	var err error
 	var cs CsvData
+	var m runtime.MemStats
 
 	//csv into memory
 	cs, err = CaptureCsv(filename, headerLines, useOldPartNumbers, insertMissingData)
 	if err != nil {
 		return err
 	}
+	runtime.ReadMemStats(&m)
+	log.Print("Allocated: ", m.Alloc, " NextGC: ", m.NextGC, " LastCG: ", m.LastGC, " Frees: ", m.Frees)
 
 	ch := make(chan map[int][]CsvDatum)
 	arrayChan := make(chan []CsvDatum)
@@ -141,6 +144,7 @@ func Run(filename string, headerLines int, useOldPartNumbers bool, insertMissing
 	}()
 	baseMap := <-ch
 	runtime.GC()
+	log.Print("Allocated: ", m.Alloc, " NextGC: ", m.NextGC, " LastCG: ", m.LastGC, " Frees: ", m.Frees)
 
 	go func() {
 		subMap, err := AuditBaseVehicle(baseMap)
@@ -151,6 +155,7 @@ func Run(filename string, headerLines int, useOldPartNumbers bool, insertMissing
 	}()
 	subMap := <-ch
 	runtime.GC()
+	log.Print("Allocated: ", m.Alloc, " NextGC: ", m.NextGC, " LastCG: ", m.LastGC, " Frees: ", m.Frees)
 
 	go func() {
 		vehicleArray, err := AuditSubmodel(subMap)
@@ -161,6 +166,7 @@ func Run(filename string, headerLines int, useOldPartNumbers bool, insertMissing
 	}()
 	vehicleArray := <-arrayChan
 	runtime.GC()
+	log.Print("Allocated: ", m.Alloc, " NextGC: ", m.NextGC, " LastCG: ", m.LastGC, " Frees: ", m.Frees)
 
 	if len(vehicleArray) > 0 {
 		err = HandleVehicles(vehicleArray)
@@ -268,35 +274,35 @@ func CaptureCsv(filename string, headerLines int, useOldPartNumbers bool, insert
 				Model:             Model,
 				SubModel:          SubModel,
 				Year:              Year,
-				GVW:               GVW,
+				GVW:               uint8(GVW),
 				VehicleID:         VehicleID,
 				BaseVehicleID:     BaseVehicleID,
 				YearID:            YearID,
 				MakeID:            MakeID,
 				ModelID:           ModelID,
 				SubmodelID:        SubmodelID,
-				VehicleTypeID:     VehicleTypeID,
-				FuelTypeID:        FuelTypeID,
-				FuelDeliveryID:    FuelDeliveryID,
+				VehicleTypeID:     uint8(VehicleTypeID),
+				FuelTypeID:        uint8(FuelTypeID),
+				FuelDeliveryID:    uint8(FuelDeliveryID),
 				AcesLiter:         AcesLiter,
 				AcesCC:            AcesCC,
-				AcesCID:           AcesCID,
-				AcesCyl:           AcesCyl,
+				AcesCID:           uint16(AcesCID),
+				AcesCyl:           uint8(AcesCyl),
 				AcesBlockType:     AcesBlockType,
-				AspirationID:      AspirationID,
-				DriveTypeID:       DriveTypeID,
-				BodyTypeID:        BodyTypeID,
-				BodyNumDoorsID:    BodyNumDoorsID,
-				EngineVinID:       EngineVinID,
-				RegionID:          RegionID,
-				PowerOutputID:     PowerOutputID,
-				FuelDelConfigID:   FuelDelConfigID,
-				BodyStyleConfigID: BodyStyleConfigID,
-				ValvesID:          ValvesID,
-				CylHeadTypeID:     CylHeadTypeID,
+				AspirationID:      uint8(AspirationID),
+				DriveTypeID:       uint8(DriveTypeID),
+				BodyTypeID:        uint8(BodyTypeID),
+				BodyNumDoorsID:    uint8(BodyNumDoorsID),
+				EngineVinID:       uint8(EngineVinID),
+				RegionID:          uint8(RegionID),
+				PowerOutputID:     uint16(PowerOutputID),
+				FuelDelConfigID:   uint8(FuelDelConfigID),
+				BodyStyleConfigID: uint8(BodyStyleConfigID),
+				ValvesID:          uint8(ValvesID),
+				CylHeadTypeID:     uint8(CylHeadTypeID),
 				BlockType:         BlockType,
-				EngineBaseID:      EngineBaseID,
-				EngineConfigID:    EngineConfigID,
+				EngineBaseID:      uint16(EngineBaseID),
+				EngineConfigID:    uint16(EngineConfigID),
 			},
 			Part: Part{
 				PCDBPartTerminologyName: PCDBPartTerminologyName,
@@ -581,7 +587,7 @@ func WriteVehicle(f *os.File, off int64, c CsvDatum, acesConfigTypeID int, acesC
 		c.CsvVehicle.Model + "," +
 		c.CsvVehicle.SubModel + "," +
 		c.CsvVehicle.Year + "," +
-		strconv.Itoa(c.CsvVehicle.GVW) + "," +
+		strconv.Itoa(int(c.CsvVehicle.GVW)) + "," +
 		strconv.Itoa(c.CsvVehicle.VehicleID) + "," +
 		strconv.Itoa(c.CsvVehicle.BaseVehicleID) + "," +
 		strconv.Itoa(c.CsvVehicle.YearID) + "," +
@@ -616,17 +622,17 @@ func WriteVehicleHeader(f *os.File) (int64, error) {
 
 func (c *CsvDatum) getAcesConfigValue(n int) int {
 	staticMap := make(map[int]int)
-	staticMap[6] = c.CsvVehicle.FuelTypeID
-	staticMap[20] = c.CsvVehicle.FuelDeliveryID
-	staticMap[8] = c.CsvVehicle.AspirationID
-	staticMap[3] = c.CsvVehicle.DriveTypeID
-	staticMap[2] = c.CsvVehicle.BodyTypeID
-	staticMap[4] = c.CsvVehicle.BodyNumDoorsID
-	staticMap[16] = c.CsvVehicle.EngineVinID
-	staticMap[25] = c.CsvVehicle.PowerOutputID
-	staticMap[40] = c.CsvVehicle.ValvesID
-	staticMap[12] = c.CsvVehicle.CylHeadTypeID
-	staticMap[7] = c.CsvVehicle.EngineBaseID
+	staticMap[6] = int(c.CsvVehicle.FuelTypeID)
+	staticMap[20] = int(c.CsvVehicle.FuelDeliveryID)
+	staticMap[8] = int(c.CsvVehicle.AspirationID)
+	staticMap[3] = int(c.CsvVehicle.DriveTypeID)
+	staticMap[2] = int(c.CsvVehicle.BodyTypeID)
+	staticMap[4] = int(c.CsvVehicle.BodyNumDoorsID)
+	staticMap[16] = int(c.CsvVehicle.EngineVinID)
+	staticMap[25] = int(c.CsvVehicle.PowerOutputID)
+	staticMap[40] = int(c.CsvVehicle.ValvesID)
+	staticMap[12] = int(c.CsvVehicle.CylHeadTypeID)
+	staticMap[7] = int(c.CsvVehicle.EngineBaseID)
 	return staticMap[n]
 }
 
