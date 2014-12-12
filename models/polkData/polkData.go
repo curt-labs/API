@@ -147,7 +147,7 @@ func Run(filename string, headerLines int, useOldPartNumbers bool, insertMissing
 	log.Print("Allocated: ", m.Alloc, " NextGC: ", m.NextGC, " LastCG: ", m.LastGC, " Frees: ", m.Frees)
 
 	go func() {
-		subMap, err := AuditBaseVehicle(baseMap)
+		subMap, err := AuditBaseVehicle(baseMap, insertMissingData)
 		if err != nil {
 			return
 		}
@@ -158,7 +158,7 @@ func Run(filename string, headerLines int, useOldPartNumbers bool, insertMissing
 	log.Print("Allocated: ", m.Alloc, " NextGC: ", m.NextGC, " LastCG: ", m.LastGC, " Frees: ", m.Frees)
 
 	go func() {
-		vehicleArray, err := AuditSubmodel(subMap)
+		vehicleArray, err := AuditSubmodel(subMap, insertMissingData)
 		if err != nil {
 			return
 		}
@@ -169,7 +169,7 @@ func Run(filename string, headerLines int, useOldPartNumbers bool, insertMissing
 	log.Print("Allocated: ", m.Alloc, " NextGC: ", m.NextGC, " LastCG: ", m.LastGC, " Frees: ", m.Frees)
 
 	if len(vehicleArray) > 0 {
-		err = HandleVehicles(vehicleArray)
+		err = HandleVehicles(vehicleArray, insertMissingData)
 		if err != nil {
 			return err
 		}
@@ -328,7 +328,6 @@ func CaptureCsv(filename string, headerLines int, useOldPartNumbers bool, insert
 				c.Part.ID = newPartNum
 			} else {
 				//no new part number -> append to partsNeeded for output file write
-				// partsNeeded = append(partsNeeded, c)
 				partOffset, err = WriteVehicle(partsNeededFile, partOffset, c, 0, 0)
 			}
 		} else {
@@ -342,7 +341,11 @@ func CaptureCsv(filename string, headerLines int, useOldPartNumbers bool, insert
 		} else {
 			//missing base vehicle
 			if insertMissingData == true {
-				//TODO create base vehicle  in BaseVehicle table and link
+				//create base vehicle  in BaseVehicle table and link
+				err = c.InsertBaseVehicle()
+				if err != nil {
+					return cs, err
+				}
 			} else {
 				// missingBaseVehicles = append(missingBaseVehicles, c)
 				baseOffset, err = WriteVehicle(baseVehiclesNeededFile, baseOffset, c, 0, 0)
@@ -355,7 +358,11 @@ func CaptureCsv(filename string, headerLines int, useOldPartNumbers bool, insert
 		} else {
 			//missing submodel
 			if insertMissingData == true {
-				//TODO create submodel in Submodel table and link
+				//create submodel in Submodel table and link
+				err = c.InsertSubmodel()
+				if err != nil {
+					return cs, err
+				}
 			} else {
 				// missingSubmodels = append(missingSubmodels, c)
 				submodelOffset, err = WriteVehicle(submodelsNeededFile, submodelOffset, c, 0, 0)
@@ -368,7 +375,7 @@ func CaptureCsv(filename string, headerLines int, useOldPartNumbers bool, insert
 	return cs, err
 }
 
-func AuditBaseVehicle(baseMap map[int][]CsvDatum) (map[int][]CsvDatum, error) {
+func AuditBaseVehicle(baseMap map[int][]CsvDatum, insertMissingData bool) (map[int][]CsvDatum, error) {
 	var err error
 	submodelMap := make(map[int][]CsvDatum)
 
@@ -397,13 +404,16 @@ func AuditBaseVehicle(baseMap map[int][]CsvDatum) (map[int][]CsvDatum, error) {
 					return submodelMap, err
 				} else {
 					err = nil
-					//log needed base vehicles in vcdbVehicle table
-					off, err = WriteVehicle(baseNeeded, off, baseVehicle[0], 0, 0)
-					//TODO - uncomment to insert; need to add base vehicle, assign ID to vehicle
-					// err = baseVehicle[0].InsertBaseVehicleIntoVcdbVehicles()
-					// if err != nil {
-					// 	return submodelMap, err
-					// }
+					if insertMissingData == false {
+						//log needed base vehicles in vcdbVehicle table
+						off, err = WriteVehicle(baseNeeded, off, baseVehicle[0], 0, 0)
+					} else {
+						// add base vehicle, assign ID to vehicle
+						err = baseVehicle[0].InsertBaseVehicleIntoVcdbVehicles()
+						if err != nil {
+							return submodelMap, err
+						}
+					}
 				}
 			}
 
@@ -413,11 +423,13 @@ func AuditBaseVehicle(baseMap map[int][]CsvDatum) (map[int][]CsvDatum, error) {
 				if err != sql.ErrNoRows {
 					return submodelMap, err
 				} else {
-					//TODO -uncomment to add vehiclePart; need to add vehiclePart
-					// err = baseVehicle[0].InsertPartIntoVehiclePart()
-					// if err != nil {
-					// 	return submodelMap, err
-					// }
+					if insertMissingData == true {
+						//add vehiclePart
+						err = baseVehicle[0].InsertPartIntoVehiclePart()
+						if err != nil {
+							return submodelMap, err
+						}
+					}
 				}
 			}
 		} else {
@@ -433,7 +445,7 @@ func AuditBaseVehicle(baseMap map[int][]CsvDatum) (map[int][]CsvDatum, error) {
 	return submodelMap, err
 }
 
-func AuditSubmodel(subMap map[int][]CsvDatum) ([]CsvDatum, error) {
+func AuditSubmodel(subMap map[int][]CsvDatum, insertMissingData bool) ([]CsvDatum, error) {
 	var err error
 	// vIDmap := make(map[int][]CsvDatum)
 	var vehicleArray []CsvDatum
@@ -466,13 +478,16 @@ func AuditSubmodel(subMap map[int][]CsvDatum) ([]CsvDatum, error) {
 					return vehicleArray, err
 				} else {
 					err = nil
-					//log submodel needed in vcdbVehicle table
-					off, err = WriteVehicle(subNeeded, off, subVehicle[0], 0, 0)
-					//TODO - uncomment to insert; need to add submodel, assign ID to vehicle
-					// err = subVehicle[0].InsertSubmodelIntoVcdbVehicles()
-					// if err != nil {
-					// 	return vIDmap, err
-					// }
+					if insertMissingData == false {
+						//log submodel needed in vcdbVehicle table
+						off, err = WriteVehicle(subNeeded, off, subVehicle[0], 0, 0)
+					} else {
+						// add submodel, assign ID to vehicle
+						err = subVehicle[0].InsertSubmodelIntoVcdbVehicles()
+						if err != nil {
+							return vehicleArray, err
+						}
+					}
 				}
 			}
 
@@ -482,11 +497,13 @@ func AuditSubmodel(subMap map[int][]CsvDatum) ([]CsvDatum, error) {
 				if err != sql.ErrNoRows {
 					return vehicleArray, err
 				} else {
-					// TODO -uncomment to add vehiclePart; add vehiclePart
-					// err = subVehicle[0].InsertPartIntoVehiclePart()
-					// if err != nil {
-					// 	return vIDmap, err
-					// }
+					if insertMissingData == true {
+						//  add vehiclePart
+						err = subVehicle[0].InsertPartIntoVehiclePart()
+						if err != nil {
+							return vehicleArray, err
+						}
+					}
 				}
 			}
 		} else {
@@ -505,7 +522,7 @@ func AuditSubmodel(subMap map[int][]CsvDatum) ([]CsvDatum, error) {
 	return vehicleArray, err
 }
 
-func HandleVehicles(vehicleArray []CsvDatum) error {
+func HandleVehicles(vehicleArray []CsvDatum, insertMissingData bool) error {
 	var err error
 	vehicleIDmap := make(map[int][]CsvDatum)
 	//get configmap
@@ -547,11 +564,11 @@ func HandleVehicles(vehicleArray []CsvDatum) error {
 	}
 
 	vehicleArray = nil
-	err = diffVehicleConfigs(vehicleIDmap)
+	err = diffVehicleConfigs(vehicleIDmap, insertMissingData)
 	return err
 }
 
-func diffVehicleConfigs(vehicleIDmap map[int][]CsvDatum) error {
+func diffVehicleConfigs(vehicleIDmap map[int][]CsvDatum, insertMissingData bool) error {
 	var err error
 	configsDiff, err := os.Create("ConfigsDiff")
 	if err != nil {
