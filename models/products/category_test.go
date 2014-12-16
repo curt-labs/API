@@ -2,9 +2,14 @@ package products
 
 import (
 	"database/sql"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
+)
+
+var (
+	MockedDTX = &apicontext.DataContext{BrandID: 1, WebsiteID: 1, APIKey: "NOT_GENERATED_YET"}
 )
 
 func generateAPIkey() (apiKey string) {
@@ -26,6 +31,10 @@ func generateAPIkey() (apiKey string) {
 }
 
 func TestTopTierCategories(t *testing.T) {
+	if err := MockedDTX.Mock(); err != nil {
+		return
+	}
+
 	var cat Category
 	cat.ParentID = 0
 	cat.IsLifestyle = false
@@ -37,7 +46,7 @@ func TestTopTierCategories(t *testing.T) {
 	})
 
 	Convey("Test TopTierCategories()", t, func() {
-		cats, err := TopTierCategories(generateAPIkey())
+		cats, err := TopTierCategories(generateAPIkey(), MockedDTX)
 		So(cats, ShouldNotBeNil)
 		So(err, ShouldBeNil)
 		So(cats, ShouldHaveSameTypeAs, []Category{})
@@ -45,19 +54,19 @@ func TestTopTierCategories(t *testing.T) {
 
 	Convey("Test GetCategoryByTitle", t, func() {
 		Convey("with ``", func() {
-			cat, err := GetCategoryByTitle("")
+			cat, err := GetCategoryByTitle("", MockedDTX)
 			So(cat, ShouldNotBeNil)
 			So(cat.ID, ShouldEqual, 0)
 			So(err, ShouldBeNil)
 		})
 		Convey("with `test`", func() {
-			cat, err := GetCategoryByTitle("test")
+			cat, err := GetCategoryByTitle("test", MockedDTX)
 			So(cat, ShouldNotBeNil)
 			So(cat.ID, ShouldEqual, 0)
 			So(err, ShouldBeNil)
 		})
 		Convey("with `Trailer Hitches`", func() {
-			cat, err := GetCategoryByTitle("Trailer Hitches")
+			cat, err := GetCategoryByTitle("Trailer Hitches", MockedDTX)
 			So(cat, ShouldNotBeNil)
 			So(cat, ShouldHaveSameTypeAs, Category{})
 			So(err, ShouldBeNil)
@@ -142,4 +151,5 @@ func TestTopTierCategories(t *testing.T) {
 		So(err, ShouldBeNil)
 
 	})
+	MockedDTX.DeMock()
 }
