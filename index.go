@@ -154,6 +154,9 @@ func main() {
 		r.Put("/customers/:id/addresses/:address/default", cart_ctlr.SetDefaultAddress)
 		r.Put("/customers/:id/addresses/:address", cart_ctlr.EditAddress)
 		r.Delete("/customers/:id/addresses/:address", cart_ctlr.DeleteAddress)
+
+		// Orders
+		r.Post("/order", cart_ctlr.CreateOrder)
 	})
 
 	m.Group("/cart", func(r martini.Router) {

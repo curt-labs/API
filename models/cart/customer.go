@@ -176,6 +176,19 @@ func (c *Customer) Get() error {
 	return col.Find(bson.M{"_id": c.Id, "shop_id": c.ShopId}).One(&c)
 }
 
+// Get a customer by email.
+func (c *Customer) GetByEmail() error {
+	sess, err := mgo.DialWithInfo(database.MongoConnectionString())
+	if err != nil {
+		return err
+	}
+	defer sess.Close()
+
+	col := sess.DB("CurtCart").C("customer")
+
+	return col.Find(bson.M{"email": c.Email, "shop_id": c.ShopId}).One(&c)
+}
+
 // Add new customer.
 func (c *Customer) Insert() error {
 	if c.Email == "" {

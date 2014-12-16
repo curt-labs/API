@@ -39,6 +39,7 @@ func GenerateError(msg string, err error, res http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	res.Header().Set("Content-Type", "application/json")
 	res.WriteHeader(http.StatusInternalServerError)
 	res.Write(js)
 	return
