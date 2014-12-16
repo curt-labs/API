@@ -51,8 +51,8 @@ var (
 		limit 1`
 	TopCategoriesStmt = `
 		select c.catID from Categories as c
-		join apiKeyToBrand as akb on akb.brandID = c.brandID
-		join apiKey as ak on ak.id = akb.keyID
+		join ApiKeyToBrand as akb on akb.brandID = c.brandID
+		join ApiKey as ak on ak.id = akb.keyID
 		where c.ParentID IS NULL or c.ParentID = 0
 		and isLifestyle = 0
 		and (ak.api_key = ? && (c.BrandID = ? or 0 = ?))
@@ -74,8 +74,8 @@ var (
 		c.vehicleRequired,
 		cc.code, cc.font from Categories as c
 		left join ColorCode as cc on c.codeID = cc.codeID
-		join apiKeyToBrand as akb on akb.brandID = c.brandID
-		join apiKey as ak on ak.id = akb.keyID
+		join ApiKeyToBrand as akb on akb.brandID = c.brandID
+		join ApiKey as ak on ak.id = akb.keyID
 		where c.catTitle = ?
 		and (ak.api_key = ? && (c.BrandID = ? or 0=?))
 		order by c.sort`
