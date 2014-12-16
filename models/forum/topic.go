@@ -3,7 +3,6 @@ package forum
 import (
 	"database/sql"
 	"errors"
-	"log"
 	"strings"
 	"time"
 
@@ -102,8 +101,6 @@ func (t *Topic) Get(dtx *apicontext.DataContext) error {
 		return err
 	}
 	defer stmt.Close()
-
-	log.Print("WEBSITE ", dtx.APIKey, "---", t.ID)
 
 	var topic Topic
 	row := stmt.QueryRow(dtx.APIKey, dtx.WebsiteID, dtx.WebsiteID, t.ID)

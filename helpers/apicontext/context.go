@@ -5,6 +5,7 @@ import (
 	"github.com/curt-labs/GoAPI/models/apiKeyType"
 	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/curt-labs/GoAPI/models/site"
+
 	"strings"
 )
 
@@ -53,7 +54,7 @@ func (dtx *DataContext) Mock() error {
 		return err
 	}
 
-	dtx.WebsiteID = 1
+	dtx.WebsiteID = w.ID
 	dtx.BrandID = 1
 	dtx.APIKey = apiKey
 	dtx.Customer = &c
@@ -69,12 +70,26 @@ func (dtx *DataContext) DeMock() error {
 	err = w.Delete()
 
 	err = dtx.Customer.Delete()
+
 	err = dtx.CustomerUser.Delete()
+
 	var pub, pri, auth apiKeyType.ApiKeyType
 	if database.EmptyDb != nil {
+		for _, key := range dtx.CustomerUser.Keys {
+			if key.Type == "Public" {
+				pub.ID = key.TypeId
+			}
+			if key.Type == "Private" {
+				pri.ID = key.TypeId
+			}
+			if key.Type == "Authentication" {
+				auth.ID = key.TypeId
+			}
+		}
 		err = pub.Delete()
 		err = pri.Delete()
 		err = auth.Delete()
+
 	}
 
 	return err
