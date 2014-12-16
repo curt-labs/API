@@ -4,6 +4,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/models/apiKeyType"
 	"github.com/curt-labs/GoAPI/models/customer"
+	"github.com/curt-labs/GoAPI/models/site"
 	"strings"
 )
 
@@ -19,6 +20,7 @@ type DataContext struct {
 func (dtx *DataContext) Mock() error {
 	var c customer.Customer
 	var cu customer.CustomerUser
+	var w site.Website
 	c.Name = "test cust"
 	var pub, pri, auth apiKeyType.ApiKeyType
 	if database.EmptyDb != nil {
@@ -44,6 +46,12 @@ func (dtx *DataContext) Mock() error {
 			apiKey = key.Key
 		}
 	}
+	err = w.Create()
+	w.BrandIDs = append(w.BrandIDs, 1)
+	err = w.JoinToBrand()
+	if err != nil {
+		return err
+	}
 
 	dtx.WebsiteID = 1
 	dtx.BrandID = 1
@@ -55,6 +63,11 @@ func (dtx *DataContext) Mock() error {
 
 func (dtx *DataContext) DeMock() error {
 	var err error
+
+	var w site.Website
+	w.ID = dtx.WebsiteID
+	err = w.Delete()
+
 	err = dtx.Customer.Delete()
 	err = dtx.CustomerUser.Delete()
 	var pub, pri, auth apiKeyType.ApiKeyType
@@ -63,5 +76,6 @@ func (dtx *DataContext) DeMock() error {
 		err = pri.Delete()
 		err = auth.Delete()
 	}
+
 	return err
 }

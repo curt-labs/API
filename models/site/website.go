@@ -13,15 +13,18 @@ type Website struct {
 	Description string   `json:"description,omitempty" xml:"description,omitempty"`
 	Menus       Menus    `json:"menus,omitempty" xml:"menus,omitempty"`
 	Contents    Contents `json:"contents,omitempty" xml:contents,omitempty"`
+	BrandIDs    []int    `json:"brandId,omitempty" xml:brandId,omitempty"`
 }
 type Websites []Website
 
 var (
-	getSite     = `SELECT ID, url, description FROM Website WHERE ID = ?`
-	getAllSites = `SELECT ID, url, description FROM Website `
-	createSite  = `INSERT INTO Website (url, description) VALUES (?,?)`
-	updateSite  = `UPDATE Website SET url = ?, description = ? WHERE ID = ?`
-	deleteSite  = `DELETE FROM Website WHERE ID = ?`
+	getSite         = `SELECT ID, url, description FROM Website WHERE ID = ?`
+	getAllSites     = `SELECT ID, url, description FROM Website `
+	createSite      = `INSERT INTO Website (url, description) VALUES (?,?)`
+	updateSite      = `UPDATE Website SET url = ?, description = ? WHERE ID = ?`
+	deleteSite      = `DELETE FROM Website WHERE ID = ?`
+	joinToBrand     = `insert into WebsiteToBrand (WebsiteID, brandID) values (?,?)`
+	deleteBrandJoin = `delete from WebsiteToBrand where WebsiteID = ? and brandID = ?`
 )
 
 func (w *Website) Get() (err error) {
@@ -131,10 +134,25 @@ func (w *Website) Create() (err error) {
 	if err != nil {
 		return err
 	}
+	err = w.JoinToBrand()
+	if err != nil {
+		return err
+	}
 	return err
 }
 
-func (w *Website) Update() (err error) {
+func (w *Website) Update() error {
+	var err error
+	for _, brandId := range w.BrandIDs {
+		err = w.DeleteBrandJoin(brandId)
+		if err != nil {
+			return err
+		}
+	}
+	err = w.JoinToBrand()
+	if err != nil {
+		return err
+	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -156,6 +174,13 @@ func (w *Website) Update() (err error) {
 }
 
 func (w *Website) Delete() (err error) {
+	for _, brandId := range w.BrandIDs {
+		err = w.DeleteBrandJoin(brandId)
+		if err != nil {
+			return err
+		}
+	}
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -172,7 +197,53 @@ func (w *Website) Delete() (err error) {
 		tx.Rollback()
 		return err
 	}
-	tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+func (w *Website) JoinToBrand() error {
+	var err error
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(joinToBrand)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	for _, brandId := range w.BrandIDs {
+		_, err = stmt.Exec(w.ID, brandId)
+		if err != nil {
+			return err
+		}
+	}
+	return err
+}
+
+func (w *Website) DeleteBrandJoin(brandId int) error {
+	var err error
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(deleteBrandJoin)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(w.ID, brandId)
+	if err != nil {
+		return err
+	}
 	return err
 }
 
