@@ -14,6 +14,7 @@ import (
 	"github.com/curt-labs/GoAPI/models/brand"
 	"github.com/curt-labs/GoAPI/models/geography"
 	_ "github.com/go-sql-driver/mysql"
+
 	"net/http"
 	"net/url"
 	"strconv"
@@ -121,6 +122,7 @@ var (
 						values(?,?,UUID(),NOW())` //DB schema DOES auto increment table id
 	insertAPIKeyToBrand = `insert into ApiKeyToBrand(keyID, brandID)
 						values(?,?)`
+	deleteAPIKeyToBrand = `delete from ApiKeyToBrand where keyID = (select id from ApiKey where user_id = ? && type_id = ?)`
 
 	getCustomerUserKeysWithoutAuth = `select ak.api_key, akt.type from ApiKey as ak
 										join ApiKeyType as akt on ak.type_id = akt.id
@@ -998,7 +1000,6 @@ func (cu *CustomerUser) Create() error {
 }
 
 func (cu *CustomerUser) Delete() error {
-
 	//delete api keys
 	pubChan := make(chan int)
 	privChan := make(chan int)
@@ -1059,14 +1060,18 @@ func (cu *CustomerUser) deleteApiKey(keyType string) error {
 		return err
 	}
 	defer db.Close()
-	tx, err := db.Begin()
 
-	stmt, err := tx.Prepare(deleteAPIkey)
+	typeID, err := getAPIKeyTypeReference(keyType)
 	if err != nil {
 		return err
 	}
 
-	typeID, err := getAPIKeyTypeReference(keyType)
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
+	stmt, err := tx.Prepare(deleteAPIKeyToBrand)
 	if err != nil {
 		return err
 	}
@@ -1075,9 +1080,21 @@ func (cu *CustomerUser) deleteApiKey(keyType string) error {
 		tx.Rollback()
 		return err
 	}
-	tx.Commit()
 
-	return nil
+	stmt, err = tx.Prepare(deleteAPIkey)
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec(cu.Id, typeID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err = tx.Commit()
+
+	return err
 }
 
 type ApiRequest struct {

@@ -66,7 +66,10 @@ func (dtx *DataContext) DeMock() error {
 	var err error
 
 	var w site.Website
+
 	w.ID = dtx.WebsiteID
+	w.Get()
+
 	err = w.Delete()
 
 	err = dtx.Customer.Delete()
@@ -76,13 +79,13 @@ func (dtx *DataContext) DeMock() error {
 	var pub, pri, auth apiKeyType.ApiKeyType
 	if database.EmptyDb != nil {
 		for _, key := range dtx.CustomerUser.Keys {
-			if key.Type == "Public" {
+			if strings.ToLower(key.Type) == "public" {
 				pub.ID = key.TypeId
 			}
-			if key.Type == "Private" {
+			if strings.ToLower(key.Type) == "private" {
 				pri.ID = key.TypeId
 			}
-			if key.Type == "Authentication" {
+			if strings.ToLower(key.Type) == "authentication" {
 				auth.ID = key.TypeId
 			}
 		}

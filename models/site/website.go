@@ -25,6 +25,7 @@ var (
 	deleteSite      = `DELETE FROM Website WHERE ID = ?`
 	joinToBrand     = `insert into WebsiteToBrand (WebsiteID, brandID) values (?,?)`
 	deleteBrandJoin = `delete from WebsiteToBrand where WebsiteID = ? and brandID = ?`
+	getBrands       = `select brandID from WebsiteToBrand where WebsiteID = ?`
 )
 
 func (w *Website) Get() (err error) {
@@ -52,6 +53,24 @@ func (w *Website) Get() (err error) {
 	}
 	if desc != nil {
 		w.Description = *desc
+	}
+	//get brands
+	stmt, err = db.Prepare(getBrands)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	res, err := stmt.Query(w.ID)
+	if err != nil {
+		return err
+	}
+	var brandId int
+	for res.Next() {
+		err = res.Scan(&brandId)
+		if err != nil {
+			return err
+		}
+		w.BrandIDs = append(w.BrandIDs, brandId)
 	}
 	return err
 }
