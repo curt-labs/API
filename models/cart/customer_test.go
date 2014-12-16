@@ -79,6 +79,9 @@ func TestCustomer(t *testing.T) {
 		cust := Customer{}
 		err := cust.Get()
 		So(err, ShouldNotBeNil)
+
+		err = cust.GetByEmail()
+		So(err, ShouldNotBeNil)
 	})
 
 	Convey("Generating a Test Shop and testing Customer functions", t, func() {
@@ -173,6 +176,8 @@ func TestCustomer(t *testing.T) {
 
 			os.Setenv("MONGO_URL", "0.0.0.1")
 			err = customer.Get()
+			So(err, ShouldNotBeNil)
+			err = customer.GetByEmail()
 			So(err, ShouldNotBeNil)
 			os.Setenv("MONGO_URL", "")
 
