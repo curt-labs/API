@@ -27,7 +27,7 @@ func RedisPool(master bool) *redix.Pool {
 		if ad := os.Getenv("REDIS_CLIENT_ADDRESS"); ad != "" {
 			addr = ad
 		}
-		if ad := os.Getenv("REDIS_SLAVE_SERVICE_HOST"); ad != nil {
+		if ad := os.Getenv("REDIS_SLAVE_SERVICE_HOST"); ad != "" {
 			addr = fmt.Sprintf("%s:%s", ad, os.Getenv("REDIS_SLAVE_SERVICE_PORT"))
 		}
 	}
