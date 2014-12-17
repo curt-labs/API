@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	redix "github.com/garyburd/redigo/redis"
+	"log"
 	"os"
 	"time"
 )
@@ -29,6 +30,7 @@ func RedisPool(master bool) *redix.Pool {
 		}
 		if ad := os.Getenv("REDIS_SLAVE_SERVICE_HOST"); ad != "" {
 			addr = fmt.Sprintf("%s:%s", ad, os.Getenv("REDIS_SLAVE_SERVICE_PORT"))
+			log.Println(addr)
 		}
 	}
 
@@ -38,6 +40,7 @@ func RedisPool(master bool) *redix.Pool {
 		Dial: func() (redix.Conn, error) {
 			c, err := redix.Dial("tcp", addr)
 			if err != nil {
+				log.Println(err)
 				return nil, err
 			}
 			if password != "" {
