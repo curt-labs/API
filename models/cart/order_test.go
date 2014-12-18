@@ -76,3 +76,55 @@ func TestOrderCount(t *testing.T) {
 		})
 	})
 }
+
+func TestBindCustomer(t *testing.T) {
+	Convey("Testing bindCustomer()", t, func() {
+		var o Order
+		o.Customer = &Customer{}
+		o.Email = "test@example.com"
+		err := o.bindCustomer()
+		So(err, ShouldNotBeNil)
+
+		o.Email = "test@example.com"
+		o.ShopId = bson.NewObjectId()
+		err = o.bindCustomer()
+		So(err, ShouldNotBeNil)
+
+		if id := InsertTestData(); id != nil {
+			o.ShopId = *id
+			o.Customer.ShopId = o.ShopId
+			o.Customer.Email = "ninnemana@gmail.com"
+			o.Customer.FirstName = "Alex"
+			o.Customer.LastName = "Ninneman"
+			err = o.Customer.Insert()
+			So(err, ShouldBeNil)
+
+			So(o.bindCustomer(), ShouldBeNil)
+
+			o.Email = o.Customer.Email
+			o.Customer = nil
+			So(o.bindCustomer(), ShouldBeNil)
+		}
+
+		o.Customer.Email = ""
+		So(err, ShouldBeNil)
+	})
+}
+
+func TestCreate(t *testing.T) {
+	Convey("Testing Order.Create()", t, func() {
+		var o Order
+		So(o.Create(), ShouldNotBeNil)
+
+		o.LineItems = append(o.LineItems, LineItem{
+			Quantity:  1,
+			VariantId: 1000,
+		})
+		So(o.Create(), ShouldNotBeNil)
+
+		if id := InsertTestData(); id != nil {
+			o.ShopId = *id
+			So(o.Create(), ShouldBeNil)
+		}
+	})
+}

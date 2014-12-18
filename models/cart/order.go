@@ -128,7 +128,7 @@ func (o *Order) Create() error {
 	return err
 }
 
-func (o *Order) bindCustomer() {
+func (o *Order) bindCustomer() error {
 
 	if (o.Customer == nil || !o.Customer.Id.Valid()) && o.Email != "" {
 		c := Customer{
@@ -137,21 +137,21 @@ func (o *Order) bindCustomer() {
 		}
 
 		if err := c.GetByEmail(); err != nil {
-			return
+			return err
 		}
 
 		if c.Id.Valid() {
 			o.Customer = &c
 		}
 
-		return
+		return nil
 	}
 
 	if o.Customer != nil && o.Customer.Id.Valid() {
 		o.Customer.Get()
 	}
 
-	return
+	return nil
 }
 
 func getOrderCount(shopId bson.ObjectId) (int, error) {
