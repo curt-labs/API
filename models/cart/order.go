@@ -128,6 +128,81 @@ func (o *Order) Create() error {
 	return err
 }
 
+func (o *Order) Get() error {
+	return fmt.Errorf("error: %s", "not implemented")
+}
+
+func (o *Order) Update() error {
+	if o.Id.Hex() == "" {
+		return fmt.Errorf("error: %s", "invalid order identifier")
+	}
+
+	o.UpdatedAt = time.Now()
+
+	if err := o.validate(); err != nil {
+		return err
+	}
+
+	o.bindCustomer()
+
+	sess, err := mgo.DialWithInfo(database.MongoConnectionString())
+	if err != nil {
+		return err
+	}
+	defer sess.Close()
+
+	updateDoc, err := o.mapUpdate()
+	if err != nil {
+		return err
+	}
+
+	var change = mgo.Change{
+		ReturnNew: true,
+		Update: bson.M{
+			"$set": updateDoc,
+		},
+	}
+
+	_, err = sess.DB("CurtCart").C("order").Find(bson.M{"_id": o.Id, "shop_id": o.ShopId}).Apply(change, o)
+
+	return err
+}
+
+func (o *Order) mapUpdate() (*map[string]interface{}, error) {
+	tmp := Order{
+		Id: o.Id,
+	}
+
+	if err := tmp.Get(); err != nil {
+		return nil, err
+	}
+
+	doc := make(map[string]interface{})
+
+	if !o.BillingAddress.deepEqual(tmp.BillingAddress) {
+		doc["billing_address"] = o.BillingAddress
+	}
+	if !o.ShippingAddress.deepEqual(tmp.ShippingAddress) {
+		doc["shipping_address"] = o.ShippingAddress
+	}
+	if o.BrowserIP != tmp.BrowserIP {
+		doc["browser_ip"] = o.BrowserIP
+	}
+	if o.BuyerAcceptsMarketing != tmp.BuyerAcceptsMarketing {
+		doc["buyer_accepts_marketing"] = o.BuyerAcceptsMarketing
+	}
+	if !o.ClientDetails.equal(&tmp.ClientDetails) {
+		doc["client_details"] = o.ClientDetails
+	}
+	if o.Currency != tmp.Currency {
+		doc["currency"] = o.Currency
+	}
+
+	// TODO - finish writing deep equal validation
+
+	return &doc, nil
+}
+
 func (o *Order) bindCustomer() error {
 
 	if (o.Customer == nil || !o.Customer.Id.Valid()) && o.Email != "" {
@@ -183,4 +258,30 @@ func (o *Order) validate() error {
 	}
 
 	return nil
+}
+
+func (a *ClientDetails) equal(b *ClientDetails) bool {
+	if a == nil && b == nil {
+		return true
+	}
+
+	if (a == nil && b != nil) || (a != nil && b == nil) {
+		return false
+	}
+	if a.AcceptLanguage != b.AcceptLanguage {
+		return false
+	}
+	if a.BrowserHeight != b.BrowserHeight {
+		return false
+	}
+	if a.BrowserWidth != b.BrowserWidth {
+		return false
+	}
+	if a.BrowserIP != b.BrowserIP {
+		return false
+	}
+	if a.SessionHash != b.SessionHash {
+		return false
+	}
+	return a.UserAgent == b.UserAgent
 }

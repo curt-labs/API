@@ -41,3 +41,56 @@ func (c *CustomerAddress) Validate() error {
 	}
 	return nil
 }
+
+func (a1 *CustomerAddress) deepEqual(a2 *CustomerAddress) bool {
+	if a1 == nil && a2 == nil {
+		return true
+	}
+
+	if (a1 == nil && a2 != nil) || (a1 != nil && a2 == nil) {
+		return false
+	}
+	if a1.Address1 != a2.Address2 {
+		return false
+	}
+	if a1.Address2 != a2.Address2 {
+		return false
+	}
+	if a1.City != a2.City {
+		return false
+	}
+	if a1.Company != a2.Company {
+		return false
+	}
+	if a1.Name != a2.Name {
+		return false
+	}
+	if a1.FirstName != a2.FirstName {
+		return false
+	}
+	if a1.LastName != a2.LastName {
+		return false
+	}
+	if a1.Phone != a2.Phone {
+		return false
+	}
+	if a1.Province != a2.Province {
+		return false
+	}
+	if a1.ProvinceCode != a2.ProvinceCode {
+		return false
+	}
+	if a1.Country != a2.Country {
+		return false
+	}
+	if a1.CountryCode != a2.CountryCode {
+		return false
+	}
+	if a1.CountryName != a2.CountryName {
+		return false
+	}
+	if a1.Zip != a2.Zip {
+		return false
+	}
+	return true
+}
