@@ -29,7 +29,7 @@ type Image struct {
 }
 
 func (p *Part) GetImages() error {
-	redis_key := fmt.Sprintf("part:%d:images", p.ID)
+	redis_key := fmt.Sprintf("part:%d:%d:images", p.BrandID, p.ID)
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {

@@ -20,7 +20,7 @@ var (
 )
 
 func (p *Part) GetAttributes() (err error) {
-	redis_key := fmt.Sprintf("part:%d:attributes", p.ID)
+	redis_key := fmt.Sprintf("part:%d:%d:attributes", p.BrandID, p.ID)
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {

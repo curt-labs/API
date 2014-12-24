@@ -7,8 +7,6 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
-	"log"
-	"strconv"
 	"time"
 )
 
@@ -38,7 +36,7 @@ const (
 )
 
 func (p *Part) GetPricing() error {
-	redis_key := fmt.Sprintf("part:%d:pricing", p.ID)
+	redis_key := fmt.Sprintf("part:%d:%d:pricing", p.BrandID, p.ID)
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -80,8 +78,7 @@ func (p *Part) GetPricing() error {
 
 //by priceId
 func (p *Price) Get() error {
-	redis_key := fmt.Sprintf("pricing:" + strconv.Itoa(p.Id))
-	log.Print(p.Id)
+	redis_key := fmt.Sprintf("pricing:%d", p.Id)
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		if err = json.Unmarshal(data, &p); err != nil {

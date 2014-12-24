@@ -11,7 +11,6 @@ import (
 	"github.com/curt-labs/GoAPI/models/customer/content"
 	_ "github.com/go-sql-driver/mysql"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -67,7 +66,7 @@ var (
 		where c.ParentID = ?
 		and isLifestyle = 0
 		order by c.sort`
-	CategoryByNameStmt = `
+	CategoryByTitleStmt = `
 		select c.catID, c.ParentID, c.sort, c.dateAdded,
 		c.catTitle, c.shortDesc, c.longDesc,
 		c.image, c.icon, c.isLifestyle, c.vehicleSpecific,
@@ -281,9 +280,8 @@ func PopulateCategory(row *sql.Row, ch chan Category) {
 // Description: Returns the top tier categories
 // Returns: []Category, error
 func TopTierCategories(key string, dtx *apicontext.DataContext) (cats []Category, err error) {
-
 	cats = make([]Category, 0)
-	redis_key := "category:top"
+	redis_key := fmt.Sprintf("category:%d:top", dtx.BrandID)
 
 	// First lets try to access the category:top endpoint in Redis
 	data, err := redis.Get(redis_key)
@@ -342,8 +340,7 @@ func TopTierCategories(key string, dtx *apicontext.DataContext) (cats []Category
 }
 
 func GetCategoryByTitle(cat_title string, dtx *apicontext.DataContext) (cat Category, err error) {
-
-	redis_key := "category:title:" + cat_title
+	redis_key := fmt.Sprintf("category:%d:title:%s", dtx.BrandID, cat_title)
 
 	// Attempt to get the category from Redis
 	data, err := redis.Get(redis_key)
@@ -360,7 +357,7 @@ func GetCategoryByTitle(cat_title string, dtx *apicontext.DataContext) (cat Cate
 	}
 	defer db.Close()
 
-	qry, err := db.Prepare(CategoryByNameStmt)
+	qry, err := db.Prepare(CategoryByTitleStmt)
 	if err != nil {
 		return
 	}
@@ -381,9 +378,8 @@ func GetCategoryByTitle(cat_title string, dtx *apicontext.DataContext) (cat Cate
 	return
 }
 
-func GetCategoryById(cat_id int) (cat Category, err error) {
-
-	redis_key := "category:id:" + strconv.Itoa(cat_id)
+func GetCategoryById(brandID, cat_id int) (cat Category, err error) {
+	redis_key := fmt.Sprintf("category:%d:id:%d", brandID, cat_id)
 
 	// Attempt to get the category from Redis
 	data, err := redis.Get(redis_key)
@@ -422,14 +418,13 @@ func GetCategoryById(cat_id int) (cat Category, err error) {
 }
 
 func (c *Category) GetSubCategories() (cats []Category, err error) {
-
 	cats = make([]Category, 0)
 
 	if c.ID == 0 {
 		return
 	}
 
-	redis_key := "category:" + strconv.Itoa(c.ID) + ":subs"
+	redis_key := fmt.Sprintf("category:%d:%d:subs", c.BrandID, c.ID)
 
 	// First lets try to access the category:top endpoint in Redis
 	data, err := redis.Get(redis_key)
@@ -468,7 +463,6 @@ func (c *Category) GetSubCategories() (cats []Category, err error) {
 }
 
 func (c *Category) GetCategory(key string, page int, count int, ignoreParts bool, v *Vehicle, specs *map[string][]string) error {
-
 	if c.ID == 0 {
 		return fmt.Errorf("error: %s", "invalid category reference")
 	}
@@ -477,7 +471,7 @@ func (c *Category) GetCategory(key string, page int, count int, ignoreParts bool
 		v = nil
 	}
 
-	redis_key := "category:" + strconv.Itoa(c.ID)
+	redis_key := fmt.Sprintf("category:%d:%d", c.BrandID, c.ID)
 
 	// First lets try to access the category:top endpoint in Redis
 	cat_bytes, err := redis.Get(redis_key)
@@ -486,12 +480,13 @@ func (c *Category) GetCategory(key string, page int, count int, ignoreParts bool
 	}
 
 	if err != nil || c.ShortDesc == "" {
-		cat, catErr := GetCategoryById(c.ID)
+		cat, catErr := GetCategoryById(c.BrandID, c.ID)
 		if catErr != nil {
 			return catErr
 		}
 
 		c.ID = cat.ID
+		c.BrandID = cat.BrandID
 		c.ColorCode = cat.ColorCode
 		c.DateAdded = cat.DateAdded
 		c.FontCode = cat.FontCode
@@ -545,7 +540,6 @@ func (c *Category) GetCategory(key string, page int, count int, ignoreParts bool
 }
 
 func (c *Category) GetContent() (content []Content, err error) {
-
 	if c.ID == 0 {
 		return
 	}
@@ -580,7 +574,6 @@ func (c *Category) GetContent() (content []Content, err error) {
 }
 
 func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *map[string][]string) error {
-
 	c.ProductListing = &PaginatedProductListing{}
 	if c.ID == 0 {
 		return fmt.Errorf("error: %s %d", "invalid category reference", c.ID)
@@ -626,7 +619,7 @@ func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *
 
 	parts := make([]Part, 0)
 
-	redis_key := fmt.Sprintf("category:%d:parts:%d:%d", c.ID, queryPage, count)
+	redis_key := fmt.Sprintf("category:%d:%d:parts:%d:%d", c.BrandID, c.ID, queryPage, count)
 
 	// First lets try to access the category:top endpoint in Redis
 	part_bytes, err := redis.Get(redis_key)
@@ -812,7 +805,8 @@ func (c *Category) Create() (err error) {
 		return err
 	}
 	c.ID = int(id)
-	redis.Setex("category:"+strconv.Itoa(c.ID), c, redis.CacheTimeout)
+
+	redis.Setex(fmt.Sprintf("category:%d:%d", c.BrandID, c.ID), c, redis.CacheTimeout)
 
 	return err
 }
@@ -832,7 +826,7 @@ func (c *Category) Delete() (err error) {
 
 	_, err = stmt.Exec(c.ID)
 	if err == nil {
-		redis.Delete("category:" + strconv.Itoa(c.ID))
+		redis.Delete(fmt.Sprintf("category:%d:%d", c.BrandID, c.ID))
 	}
 
 	return err

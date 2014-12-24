@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	"github.com/curt-labs/GoAPI/models/customer"
@@ -44,7 +45,7 @@ type Reviews []Review
 
 //gets kosher reviews by part
 func (p *Part) GetActiveApprovedReviews() error {
-	redis_key := fmt.Sprintf("part:%d:reviews", p.ID)
+	redis_key := fmt.Sprintf("part:%d:%d:reviews", p.BrandID, p.ID)
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -102,8 +103,8 @@ func (p *Part) GetActiveApprovedReviews() error {
 }
 
 //get all reveiws, ever
-func GetAll() (revs Reviews, err error) {
-	redis_key := "goadmin:reviews"
+func GetAllReviews(dtx *apicontext.DataContext) (revs Reviews, err error) {
+	redis_key := fmt.Sprintf("reviews:%d", dtx.BrandID)
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &revs)
@@ -152,8 +153,8 @@ func GetAll() (revs Reviews, err error) {
 	return revs, err
 }
 
-func (r *Review) Get() (err error) {
-	redis_key := "goadmin:review:" + strconv.Itoa(r.Id)
+func (r *Review) Get(dtx *apicontext.DataContext) (err error) {
+	redis_key := fmt.Sprintf("reviews:%d:%d", dtx.BrandID, r.Id)
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &r)

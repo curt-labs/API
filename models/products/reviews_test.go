@@ -8,8 +8,7 @@ import (
 func TestGetReviews(t *testing.T) {
 	var p Part
 	var l Review
-	Convey("Testing REviews", t, func() {
-
+	Convey("Testing Reviews", t, func() {
 		Convey("Testing C_UD", func() {
 			//create part to review
 			p.ID = 999999
@@ -23,13 +22,12 @@ func TestGetReviews(t *testing.T) {
 			p.Create()
 		})
 		Convey("Testing Create()", func() {
-
 			l.PartID = 999999
 			l.Name = "testName"
 			l.ReviewText = "Long description"
 			err := l.Create()
 			So(err, ShouldBeNil)
-			err = l.Get()
+			err = l.Get(MockedDTX)
 			So(err, ShouldBeNil)
 			So(l, ShouldNotBeNil)
 			So(l.Name, ShouldEqual, "testName")
@@ -42,7 +40,7 @@ func TestGetReviews(t *testing.T) {
 			l.Subject = "Desc"
 			err := l.Update()
 			So(err, ShouldBeNil)
-			err = l.Get()
+			err = l.Get(MockedDTX)
 
 			So(err, ShouldBeNil)
 			So(l, ShouldNotBeNil)
@@ -52,11 +50,11 @@ func TestGetReviews(t *testing.T) {
 		})
 
 		Convey("Gets reviews and a random review", func() {
-			ls, err := GetAll()
+			ls, err := GetAllReviews(MockedDTX)
 			So(err, ShouldBeNil)
 			So(len(ls), ShouldBeGreaterThanOrEqualTo, 0)
 
-			err = l.Get()
+			err = l.Get(MockedDTX)
 			So(err, ShouldBeNil)
 			So(l, ShouldNotBeNil)
 			So(l.Name, ShouldHaveSameTypeAs, "str")
@@ -65,7 +63,7 @@ func TestGetReviews(t *testing.T) {
 		})
 
 		Convey("Testing Delete()", func() {
-			l.Get()
+			l.Get(MockedDTX)
 			err := l.Delete()
 			So(err, ShouldBeNil)
 			//delete part
@@ -76,7 +74,7 @@ func TestGetReviews(t *testing.T) {
 	Convey("Testing Bad Get()", t, func() {
 		var l Review
 		getReview = "Bad Query Stmt"
-		err := l.Get()
+		err := l.Get(MockedDTX)
 		So(err, ShouldNotBeNil)
 	})
 	Convey("Testing ActiveApprovedReviews", t, func() {
@@ -84,5 +82,4 @@ func TestGetReviews(t *testing.T) {
 		err := l.GetActiveApprovedReviews()
 		So(err, ShouldBeNil)
 	})
-
 }

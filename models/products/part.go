@@ -14,7 +14,6 @@ import (
 	"github.com/curt-labs/GoAPI/models/customer/content"
 	"github.com/curt-labs/GoAPI/models/vehicle"
 	_ "github.com/go-sql-driver/mysql"
-	// "log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -44,7 +43,7 @@ var (
                          where cp.catID IN(%s) and (p.status = 800 || p.status = 900)
                          order by cp.partID
                          limit %d, %d`
-	basicsStmt = `select p.status, p.dateAdded, p.dateModified, p.shortDesc, p.partID, p.priceCode, pc.class
+	basicsStmt = `select p.status, p.dateAdded, p.dateModified, p.shortDesc, p.partID, p.priceCode, pc.class, p.brandID
                 from Part as p
                 left join Class as pc on p.classID = pc.classID
                 where p.partID = ? && p.status in (800,900) limit 1`
@@ -63,10 +62,10 @@ var (
                     where partID = ? && ct.type = 'InstallationSheet'
                     limit 1`
 
-	getPartByOldpartNumber = `select partID, status, dateModified, dateAdded, shortDesc, priceCode, classID, featured, ACESPartTypeID from Part where oldPartNumber = ?`
+	getPartByOldpartNumber = `select partID, status, dateModified, dateAdded, shortDesc, priceCode, classID, featured, ACESPartTypeID, brandID from Part where oldPartNumber = ?`
 	//create
-	createPart = `INSERT INTO Part (partID, status, dateAdded, shortDesc, oldPartNumber, priceCode, classID, featured, ACESPartTypeID)
-                    VALUES(?,?,?,?,?,?,?,?,?)`
+	createPart = `INSERT INTO Part (partID, status, dateAdded, shortDesc, oldPartNumber, priceCode, classID, featured, ACESPartTypeID,brandID)
+                    VALUES(?,?,?,?,?,?,?,?,?,?)`
 	createPartAttributeJoin = `INSERT INTO PartAttribute (partID, value, field, sort) VALUES (?,?,?,?)`
 	createVehiclePartJoin   = `INSERT INTO VehiclePart (vehicleID, partID, drilling, exposed, installTime) VALUES (?,?,?,?,?)`
 	createContentBridge     = `INSERT INTO ContentBridge (catID, partID, contentID) VALUES (?,?,?)`
@@ -87,6 +86,7 @@ var (
 
 type Part struct {
 	ID                int               `json:"id" xml:"id,attr"`
+	BrandID           int               `json:"brandId" xml:"brandId,attr"`
 	Status            int               `json:"status" xml:"status,attr"`
 	PriceCode         int               `json:"price_code" xml:"price_code,attr"`
 	RelatedCount      int               `json:"related_count" xml:"related_count,attr"`
@@ -148,7 +148,6 @@ type Installation struct { //aka VehiclePart Table
 type Installations []Installation
 
 func (p *Part) FromDatabase() error {
-
 	var errs []string
 
 	attrChan := make(chan int)
@@ -248,14 +247,13 @@ func (p *Part) FromDatabase() error {
 	<-contentChan
 
 	go func(tmp Part) {
-		redis.Setex("part:"+strconv.Itoa(tmp.ID), tmp, redis.CacheTimeout)
+		redis.Setex(fmt.Sprintf("part:%d:%d", tmp.BrandID, tmp.ID), tmp, redis.CacheTimeout)
 	}(*p)
 
 	return nil
 }
 
 func (p *Part) Get(key string) error {
-
 	customerChan := make(chan int)
 
 	var err error
@@ -267,7 +265,7 @@ func (p *Part) Get(key string) error {
 		customerChan <- 1
 	}(key)
 
-	redis_key := fmt.Sprintf("part:%d", p.ID)
+	redis_key := fmt.Sprintf("part:%d:%d", p.BrandID, p.ID)
 
 	part_bytes, _ := redis.Get(redis_key)
 	if len(part_bytes) > 0 {
@@ -289,7 +287,6 @@ func (p *Part) Get(key string) error {
 }
 
 func All(key string, page, count int) ([]Part, error) {
-
 	parts := make([]Part, 0)
 
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -431,7 +428,6 @@ func Latest(key string, count int) ([]Part, error) {
 }
 
 func (p *Part) GetWithVehicle(vehicle *vehicle.Vehicle, api_key string) error {
-
 	var errs []string
 
 	superChan := make(chan int)
@@ -467,7 +463,7 @@ func (p *Part) GetById(id int, key string) {
 }
 
 func (p *Part) Basics() error {
-	redis_key := fmt.Sprintf("part:%d:basics", p.ID)
+	redis_key := fmt.Sprintf("part:%d:%d:basics", p.BrandID, p.ID)
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -500,10 +496,15 @@ func (p *Part) Basics() error {
 		&p.ShortDesc,
 		&p.ID,
 		&p.PriceCode,
-		&p.PartClass)
+		&p.PartClass,
+		&p.BrandID)
 
-	if !strings.Contains(p.ShortDesc, "CURT") {
-		p.ShortDesc = fmt.Sprintf("CURT %s %d", p.ShortDesc, p.ID)
+	switch p.BrandID {
+	case 1: //CURT
+		//TODO: this seems application-specific now that branding exists
+		if !strings.Contains(p.ShortDesc, "CURT") {
+			p.ShortDesc = fmt.Sprintf("CURT %s %d", p.ShortDesc, p.ID)
+		}
 	}
 
 	go func(tmp Part) {
@@ -514,7 +515,7 @@ func (p *Part) Basics() error {
 }
 
 func (p *Part) GetRelated() error {
-	redis_key := fmt.Sprintf("part:%d:related", p.ID)
+	redis_key := fmt.Sprintf("part:%d:%d:related", p.BrandID, p.ID)
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -562,7 +563,7 @@ func (p *Part) GetRelated() error {
 }
 
 func (p *Part) GetContent() error {
-	redis_key := fmt.Sprintf("part:%d:content", p.ID)
+	redis_key := fmt.Sprintf("part:%d:%d:content", p.BrandID, p.ID)
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -663,7 +664,7 @@ func (p *Part) BindCustomer(key string) error {
 }
 
 func (p *Part) GetInstallSheet(r *http.Request) (data []byte, err error) {
-	redis_key := fmt.Sprintf("part:%d:installsheet", p.ID)
+	redis_key := fmt.Sprintf("part:%d:%d:installsheet", p.BrandID, p.ID)
 
 	data, err = redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -706,8 +707,7 @@ func (p *Part) GetInstallSheet(r *http.Request) (data []byte, err error) {
 // Inherited: part Part
 // Returns: error
 func (p *Part) PartBreadcrumbs() error {
-
-	redis_key := fmt.Sprintf("part:%d:breadcrumbs", p.ID)
+	redis_key := fmt.Sprintf("part:%d:%d:breadcrumbs", p.BrandID, p.ID)
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -789,8 +789,7 @@ func (p *Part) PartBreadcrumbs() error {
 }
 
 func (p *Part) GetPartCategories(key string) (cats []Category, err error) {
-
-	redis_key := fmt.Sprintf("part:%d:categories", p.ID)
+	redis_key := fmt.Sprintf("part:%d:%d:categories", p.BrandID, p.ID)
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -963,6 +962,7 @@ func (p *Part) GetPartByOldPartNumber() (err error) {
 		&p.Class.ID,
 		&p.Featured,
 		&p.AcesPartTypeID,
+		&p.BrandID,
 	)
 	if err != sql.ErrNoRows {
 		if err != nil {
@@ -995,6 +995,7 @@ func (p *Part) Create() (err error) {
 		p.Class.ID,
 		p.Featured,
 		p.AcesPartTypeID,
+		p.BrandID,
 	)
 	if err != nil {
 		tx.Rollback()

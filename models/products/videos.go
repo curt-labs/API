@@ -35,7 +35,7 @@ var (
 )
 
 func (p *Part) GetVideos() error {
-	redis_key := fmt.Sprintf("part:%d:videos", p.ID)
+	redis_key := fmt.Sprintf("part:%d:%d:videos", p.BrandID, p.ID)
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {

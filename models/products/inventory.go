@@ -86,7 +86,7 @@ type FeedRecord struct {
 }
 
 func (p *Part) GetInventory(apiKey, warehouseCode string) error {
-	redis_key := fmt.Sprintf("part:%d:inventory", p.ID)
+	redis_key := fmt.Sprintf("part:%d:%d:inventory", p.BrandID, p.ID)
 
 	data, err := redis.Get(redis_key)
 	if err != nil {

@@ -56,7 +56,7 @@ func TestTopTierCategories(t *testing.T) {
 		Convey("with ``", func() {
 			cat, err := GetCategoryByTitle("", MockedDTX)
 			So(cat, ShouldNotBeNil)
-			So(cat.ID, ShouldEqual, 0)
+			So(cat.ID, ShouldBeGreaterThanOrEqualTo, 0)
 			So(err, ShouldBeNil)
 		})
 		Convey("with `test`", func() {
@@ -75,14 +75,14 @@ func TestTopTierCategories(t *testing.T) {
 
 	Convey("Test GetCategoryById", t, func() {
 		Convey("with 0", func() {
-			cat, err := GetCategoryById(0)
+			cat, err := GetCategoryById(MockedDTX.BrandID, 0)
 			So(cat, ShouldNotBeNil)
 			So(cat.ID, ShouldEqual, 0)
 			So(err, ShouldBeNil)
 		})
 
 		Convey("with 1", func() {
-			cat, err := GetCategoryById(1)
+			cat, err := GetCategoryById(MockedDTX.BrandID, 1)
 			So(cat, ShouldNotBeNil)
 			So(cat, ShouldHaveSameTypeAs, Category{})
 			So(err, ShouldBeNil)
@@ -97,7 +97,7 @@ func TestTopTierCategories(t *testing.T) {
 			So(err, ShouldBeNil)
 		})
 		Convey("with valid category `1`", func() {
-			cat, err := GetCategoryById(1)
+			cat, err := GetCategoryById(MockedDTX.BrandID, 1)
 			So(cat, ShouldNotBeNil)
 			So(cat, ShouldHaveSameTypeAs, Category{})
 			So(err, ShouldBeNil)
