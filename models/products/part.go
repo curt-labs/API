@@ -489,21 +489,41 @@ func (p *Part) Basics() error {
 		return errors.New("No Part Found for:" + string(p.ID))
 	}
 
-	row.Scan(
+	var short, price, class []byte
+	err = row.Scan(
 		&p.Status,
 		&p.DateAdded,
 		&p.DateModified,
-		&p.ShortDesc,
+		&short,
 		&p.ID,
-		&p.PriceCode,
-		&p.PartClass,
+		&price,
+		&class,
 		&p.BrandID)
+	if err != nil {
+		return err
+	}
+	if short != nil {
+		p.ShortDesc = string(short[:])
+	}
+	if price != nil {
+		p.PriceCode, err = strconv.Atoi(string(price[:]))
+		if err != nil {
+			return err
+		}
+	}
+	if class != nil {
+		p.PartClass = string(class[:])
+	}
 
 	switch p.BrandID {
 	case 1: //CURT
 		//TODO: this seems application-specific now that branding exists
 		if !strings.Contains(p.ShortDesc, "CURT") {
 			p.ShortDesc = fmt.Sprintf("CURT %s %d", p.ShortDesc, p.ID)
+		}
+	case 3:
+		if !strings.Contains(p.ShortDesc, "ARIES") {
+			p.ShortDesc = fmt.Sprintf("ARIES %s %d", p.ShortDesc, p.ID)
 		}
 	}
 
