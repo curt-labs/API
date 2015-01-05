@@ -43,7 +43,7 @@ var (
                          where cp.catID IN(%s) and (p.status = 800 || p.status = 900)
                          order by cp.partID
                          limit %d, %d`
-	basicsStmt = `select p.status, p.dateAdded, p.dateModified, p.shortDesc, p.partID, p.priceCode, pc.class, p.brandID
+	basicsStmt = `select p.status, p.dateAdded, p.dateModified, p.shortDesc, p.oldPartNumber, p.partID, p.priceCode, pc.class, p.brandID
                 from Part as p
                 left join Class as pc on p.classID = pc.classID
                 where p.partID = ? && p.status in (800,900) limit 1`
@@ -489,12 +489,13 @@ func (p *Part) Basics() error {
 		return errors.New("No Part Found for:" + string(p.ID))
 	}
 
-	var short, price, class []byte
+	var short, price, class, oldNum []byte
 	err = row.Scan(
 		&p.Status,
 		&p.DateAdded,
 		&p.DateModified,
 		&short,
+		&oldNum,
 		&p.ID,
 		&price,
 		&class,
@@ -513,6 +514,9 @@ func (p *Part) Basics() error {
 	}
 	if class != nil {
 		p.PartClass = string(class[:])
+	}
+	if oldNum != nil {
+		p.OldPartNumber = string(oldNum[:])
 	}
 
 	switch p.BrandID {
