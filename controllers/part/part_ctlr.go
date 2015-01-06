@@ -470,19 +470,43 @@ func GetPrice(rw http.ResponseWriter, req *http.Request, params martini.Params, 
 }
 
 func OldPartNumber(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
-	var p products.Part
+	var pa products.Part
 	var err error
-	p.OldPartNumber = params["part"]
 
+	qs := req.URL.Query()
+	key := qs.Get("key")
+	pa.OldPartNumber = params["part"]
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
-	err = p.GetPartByOldPartNumber()
+	err = pa.GetPartByOldPartNumber(key)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
+	p := products.Part{ // have to create a new object otherwise the properties of the old object(status) will intefere with getting the full part.
+		ID: pa.ID,
+	}
+	vehicleChan := make(chan error)
+	go func() {
+		vs, err := vehicle.ReverseLookup(p.ID)
+		if err != nil {
+			vehicleChan <- err
+		} else {
+			p.Vehicles = vs
+			vehicleChan <- nil
+		}
+	}()
+
+	err = p.Get(key)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+
+	<-vehicleChan
+
 	return encoding.Must(enc.Encode(p))
 }
 

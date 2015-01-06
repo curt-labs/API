@@ -953,7 +953,7 @@ func (p *Part) GetPartCategories(key string) (cats []Category, err error) {
 //  return
 // }
 
-func (p *Part) GetPartByOldPartNumber() (err error) {
+func (p *Part) GetPartByOldPartNumber(key string) (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
