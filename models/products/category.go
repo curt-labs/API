@@ -279,9 +279,9 @@ func PopulateCategory(row *sql.Row, ch chan Category) {
 // TopTierCategories
 // Description: Returns the top tier categories
 // Returns: []Category, error
-func TopTierCategories(key string, dtx *apicontext.DataContext) (cats []Category, err error) {
+func TopTierCategories(key string, brandId int) (cats []Category, err error) {
 	cats = make([]Category, 0)
-	redis_key := fmt.Sprintf("category:%d:top", dtx.BrandID)
+	redis_key := fmt.Sprintf("category:%d:top", brandId)
 
 	// First lets try to access the category:top endpoint in Redis
 	data, err := redis.Get(redis_key)
@@ -305,7 +305,7 @@ func TopTierCategories(key string, dtx *apicontext.DataContext) (cats []Category
 	defer qry.Close()
 
 	// Execute SQL Query against current PartId
-	catRows, err := qry.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
+	catRows, err := qry.Query(key, brandId, brandId)
 	if err != nil || catRows == nil { // Error occurred while executing query
 		return
 	}

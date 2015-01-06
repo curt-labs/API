@@ -6,6 +6,7 @@ import (
 	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/curt-labs/GoAPI/models/site"
 
+	"database/sql"
 	"strings"
 )
 
@@ -17,6 +18,12 @@ type DataContext struct {
 	CustomerUser *customer.CustomerUser
 	Globals      map[string]interface{}
 }
+
+var (
+	apiToBrandStmt = `select brandID from ApiKeyToBrand as aktb 
+		join ApiKey as ak on ak.id = aktb.keyID
+		where ak.api_key = ?`
+)
 
 func (dtx *DataContext) Mock() error {
 	var c customer.Customer
@@ -96,4 +103,33 @@ func (dtx *DataContext) DeMock() error {
 	}
 
 	return err
+}
+
+func (dtx *DataContext) GetBrandsFromKey() ([]int, error) {
+	var err error
+	var b int
+	var brands []int
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return brands, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(apiToBrandStmt)
+	if err != nil {
+		return brands, err
+	}
+	defer stmt.Close()
+	res, err := stmt.Query(dtx.APIKey)
+	if err != nil {
+		return brands, err
+	}
+	for res.Next() {
+		err = res.Scan(&b)
+		if err != nil {
+			return brands, err
+		}
+		brands = append(brands, b)
+	}
+	return brands, err
 }

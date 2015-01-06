@@ -9,7 +9,6 @@ import (
 	"github.com/curt-labs/GoAPI/models/products"
 	"github.com/go-martini/martini"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -33,7 +32,6 @@ func GetCategory(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		log.Print(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
@@ -95,14 +93,29 @@ func GetCategory(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 func Parents(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	qs := r.URL.Query()
 	key := qs.Get("key")
-
-	cats, err := products.TopTierCategories(key, dtx)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return ""
+	var err error
+	var c []products.Category
+	var brands []int
+	if dtx.BrandID == 0 {
+		brands, err = dtx.GetBrandsFromKey()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return ""
+		}
+	} else {
+		brands = append(brands, dtx.BrandID)
 	}
 
-	return encoding.Must(enc.Encode(cats))
+	for _, brand := range brands {
+		cats, err := products.TopTierCategories(key, brand)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return ""
+		}
+		c = append(c, cats...)
+	}
+
+	return encoding.Must(enc.Encode(c))
 }
 
 func SubCategories(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
