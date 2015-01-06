@@ -10,10 +10,10 @@ import (
 )
 
 var (
-	getAllContactTypesStmt = `select contactTypeID, name, showOnWebsite from ContactType
-		join ApiKeyToBrand as akb on akb.brandID = ContactType.brandID
+	getAllContactTypesStmt = `select ct.contactTypeID, ct.name, ct.showOnWebsite, ct.brandID from ContactType as ct
+		join ApiKeyToBrand as akb on akb.brandID = ct.brandID
 		join ApiKey as ak on ak.id = akb.keyID
-		where ak.api_key = ? && (ContactType.BrandID = ? or 0 = ?)`
+		where ak.api_key = ? && (ct.brandID = ? or 0 = ?)`
 	getContactTypeStmt    = `select contactTypeID, name, showOnWebsite from ContactType where contactTypeID = ?`
 	addContactTypeStmt    = `insert into ContactType(name,showOnWebsite, brandID) values (?,?,?)`
 	updateContactTypeStmt = `update ContactType set name = ?, showOnWebsite = ?, brandID = ? where contactTypeID = ?`
@@ -48,20 +48,23 @@ func GetAllContactTypes(dtx *apicontext.DataContext) (types ContactTypes, err er
 	if err != nil {
 		return
 	}
+	defer rows.Close()
 	for rows.Next() {
 		var ct ContactType
 		err = rows.Scan(
 			&ct.ID,
 			&ct.Name,
 			&ct.ShowOnWebsite,
+			&ct.BrandID,
 		)
 		if err != nil {
 			return
 		}
 		types = append(types, ct)
 	}
-	defer rows.Close()
-
+	if len(types) == 0 {
+		err = sql.ErrNoRows
+	}
 	return
 }
 

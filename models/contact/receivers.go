@@ -18,7 +18,7 @@ var (
 	createReceiverContactTypeJoin           = `insert into ContactReceiver_ContactType (ContactReceiverID, ContactTypeID) values (?,?)`
 	deleteReceiverContactTypeJoin           = `delete from ContactReceiver_ContactType where ContactReceiverID = ? and  ContactTypeID = ?`
 	deleteReceiverContactTypeJoinByReceiver = `delete from ContactReceiver_ContactType where ContactReceiverID = ?`
-	getContactTypesByReceiver               = `select crct.contactTypeID, ct.name from ContactReceiver_ContactType as crct 
+	getContactTypesByReceiver               = `select crct.contactTypeID, ct.name, ct.showOnWebsite, ct.brandID from ContactReceiver_ContactType as crct 
 												left join ContactType as ct on crct.ContactTypeID = ct.contactTypeID where crct.contactReceiverID = ?`
 )
 
@@ -215,7 +215,7 @@ func (cr *ContactReceiver) GetContactTypes() (err error) {
 	var ct ContactType
 	res, err := stmt.Query(cr.ID)
 	for res.Next() {
-		err = res.Scan(&ct.ID, &ct.Name)
+		err = res.Scan(&ct.ID, &ct.Name, &ct.ShowOnWebsite, &ct.BrandID)
 		if err != nil {
 			return err
 		}
