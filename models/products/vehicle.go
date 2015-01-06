@@ -95,7 +95,7 @@ func (l *Lookup) LoadParts(ch chan []Part) {
 	go l.loadBaseVehicleParts(baseVehicleChan)
 
 	if len(l.Vehicle.Configurations) > 0 {
-		configs, err := l.Vehicle.getDefinedConfigurations()
+		configs, err := l.Vehicle.getDefinedConfigurations(l.CustomerKey)
 		if err != nil || configs == nil {
 			ch <- parts
 			return

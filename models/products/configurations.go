@@ -42,7 +42,10 @@ var (
 		join vcdb_Make as ma on bv.MakeID = ma.ID
 		join vcdb_VehiclePart as vp on v.ID = vp.VehicleID
 		join Part as p on vp.PartNumber = p.partID
+		join ApiKeyToBrand as atb on atb.brandID = p.brandID
+		join ApiKey as ak on ak.id = atb.keyID
 		where (p.status = 800 || p.status = 900) &&
+		ak.api_key = ? &&
 		bv.YearID = ? && ma.MakeName = ? &&
 		mo.ModelName = ? && s.SubmodelName = ?
 		order by vca.VehicleConfigID`
@@ -355,7 +358,7 @@ func (l *Lookup) GetConfigurations() error {
 	return nil
 }
 
-func (v Vehicle) getDefinedConfigurations() (*map[int][]DefinedConfiguration, error) {
+func (v Vehicle) getDefinedConfigurations(apiKey string) (*map[int][]DefinedConfiguration, error) {
 	configs := make(map[int][]DefinedConfiguration, 0)
 
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -370,7 +373,7 @@ func (v Vehicle) getDefinedConfigurations() (*map[int][]DefinedConfiguration, er
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query(v.Base.Year, v.Base.Make, v.Base.Model, v.Submodel)
+	rows, err := stmt.Query(apiKey, v.Base.Year, v.Base.Make, v.Base.Model, v.Submodel)
 	if err != nil || rows == nil {
 		return nil, err
 	}
