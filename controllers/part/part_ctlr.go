@@ -116,7 +116,11 @@ func Latest(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string
 
 func Get(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
 	qs := r.URL.Query()
-	id, _ := strconv.Atoi(params["part"])
+	id, err := strconv.Atoi(params["part"])
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
 	key := qs.Get("key")
 	p := products.Part{
 		ID: id,
@@ -133,7 +137,7 @@ func Get(w http.ResponseWriter, r *http.Request, params martini.Params, enc enco
 		}
 	}()
 
-	err := p.Get(key)
+	err = p.Get(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
