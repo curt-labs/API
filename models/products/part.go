@@ -519,18 +519,6 @@ func (p *Part) Basics() error {
 		p.OldPartNumber = string(oldNum[:])
 	}
 
-	switch p.BrandID {
-	case 1: //CURT
-		//TODO: this seems application-specific now that branding exists
-		if !strings.Contains(p.ShortDesc, "CURT") {
-			p.ShortDesc = fmt.Sprintf("CURT %s %d", p.ShortDesc, p.ID)
-		}
-	case 3:
-		if !strings.Contains(p.ShortDesc, "ARIES") {
-			p.ShortDesc = fmt.Sprintf("ARIES %s %d", p.ShortDesc, p.ID)
-		}
-	}
-
 	go func(tmp Part) {
 		redis.Setex(redis_key, tmp, redis.CacheTimeout)
 	}(*p)
