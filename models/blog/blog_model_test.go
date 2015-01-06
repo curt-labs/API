@@ -2,14 +2,15 @@ package blog_model
 
 import (
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 	"time"
 )
 
-var (
-	MockedDTX = &apicontext.DataContext{BrandID: 1, WebsiteID: 1, APIKey: "NOT_GENERATED_YET"}
-)
+// var (
+// 	MockedDTX = &apicontext.DataContext{BrandID: 1, WebsiteID: 1, APIKey: "NOT_GENERATED_YET"}
+// )
 
 func TestGetBlogs(t *testing.T) {
 	var f Blog
@@ -17,7 +18,8 @@ func TestGetBlogs(t *testing.T) {
 	var bc BlogCategory
 	var c Category
 	var err error
-	if err := MockedDTX.Mock(); err != nil {
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
 		return
 	}
 
@@ -108,27 +110,31 @@ func TestGetBlogs(t *testing.T) {
 		So(err, ShouldBeNil)
 
 	})
-	MockedDTX.DeMock()
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkGetAllBlogs(b *testing.B) {
-	if err := MockedDTX.Mock(); err != nil {
+	MockedDTX := &apicontext.DataContext{}
+	var err error
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
 		return
 	}
 	for i := 0; i < b.N; i++ {
 		GetAll(MockedDTX)
 	}
-	MockedDTX.DeMock()
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkGetAllBlogCategories(b *testing.B) {
-	if err := MockedDTX.Mock(); err != nil {
+	MockedDTX := &apicontext.DataContext{}
+	var err error
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
 		return
 	}
 	for i := 0; i < b.N; i++ {
 		GetAllCategories(MockedDTX)
 	}
-	MockedDTX.DeMock()
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 /**
@@ -168,7 +174,9 @@ func BenchmarkGetCategory(b *testing.B) {
 **/
 
 func BenchmarkUpdateBlog(b *testing.B) {
-	if err := MockedDTX.Mock(); err != nil {
+	MockedDTX := &apicontext.DataContext{}
+	var err error
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
 		return
 	}
 	blog := setupDummyBlog()
@@ -181,11 +189,13 @@ func BenchmarkUpdateBlog(b *testing.B) {
 		b.StopTimer()
 		blog.Delete()
 	}
-	MockedDTX.DeMock()
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkDeleteBlog(b *testing.B) {
-	if err := MockedDTX.Mock(); err != nil {
+	MockedDTX := &apicontext.DataContext{}
+	var err error
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
 		return
 	}
 	blog := setupDummyBlog()
@@ -195,11 +205,13 @@ func BenchmarkDeleteBlog(b *testing.B) {
 		b.StartTimer()
 		blog.Delete()
 	}
-	MockedDTX.DeMock()
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkDeleteCategory(b *testing.B) {
-	if err := MockedDTX.Mock(); err != nil {
+	MockedDTX := &apicontext.DataContext{}
+	var err error
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
 		return
 	}
 	cat := Category{
@@ -212,7 +224,7 @@ func BenchmarkDeleteCategory(b *testing.B) {
 		b.StartTimer()
 		cat.Delete()
 	}
-	MockedDTX.DeMock()
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func setupDummyBlog() *Blog {

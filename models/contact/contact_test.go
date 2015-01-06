@@ -2,17 +2,18 @@ package contact
 
 import (
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
-)
-
-var (
-	MockedDTX = &apicontext.DataContext{BrandID: 1, WebsiteID: 1, APIKey: "NOT_GENERATED_YET"}
 )
 
 func TestContacts(t *testing.T) {
 	var err error
 	var c Contact
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
 
 	Convey("Testing Add/Update/Delete", t, func() {
 		c = Contact{
@@ -177,12 +178,19 @@ func TestContacts(t *testing.T) {
 			})
 		})
 	})
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkGetAllContacts(b *testing.B) {
+	MockedDTX := &apicontext.DataContext{}
+	var err error
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
 	for i := 0; i < b.N; i++ {
 		GetAllContacts(1, 1, MockedDTX)
 	}
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkGetContact(b *testing.B) {

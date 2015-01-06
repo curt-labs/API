@@ -2,6 +2,8 @@ package contact
 
 import (
 	"database/sql"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
@@ -9,6 +11,10 @@ import (
 func TestTypes(t *testing.T) {
 	var err error
 	var ct ContactType
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
 
 	Convey("Testing Add/Update/Delete", t, func() {
 		ct = ContactType{
@@ -88,7 +94,9 @@ func TestTypes(t *testing.T) {
 		Convey("Testing GetAll()", func() {
 			types, err := GetAllContactTypes(MockedDTX)
 			So(len(types), ShouldBeGreaterThanOrEqualTo, 0)
-			So(err, ShouldBeNil)
+			if err != sql.ErrNoRows {
+				So(err, ShouldBeNil)
+			}
 		})
 
 		Convey("Testing Get()", func() {
@@ -112,12 +120,20 @@ func TestTypes(t *testing.T) {
 			})
 		})
 	})
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkGetAllContactTypes(b *testing.B) {
+	MockedDTX := &apicontext.DataContext{}
+	var err error
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
+
 	for i := 0; i < b.N; i++ {
 		GetAllContactTypes(MockedDTX)
 	}
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkGetContactType(b *testing.B) {

@@ -2,6 +2,7 @@ package faq_model
 
 import (
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
@@ -14,7 +15,8 @@ func TestGetFaqs(t *testing.T) {
 	var f Faq
 	var err error
 
-	if err = MockedDTX.Mock(); err != nil {
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
 		return
 	}
 
@@ -64,11 +66,13 @@ func TestGetFaqs(t *testing.T) {
 
 	})
 
-	MockedDTX.DeMock()
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkGetAllFaq(b *testing.B) {
-	if err := MockedDTX.Mock(); err != nil {
+	MockedDTX := &apicontext.DataContext{}
+	var err error
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
 		return
 	}
 	b.ResetTimer()
@@ -76,11 +80,13 @@ func BenchmarkGetAllFaq(b *testing.B) {
 		GetAll(MockedDTX)
 	}
 	b.StopTimer()
-	MockedDTX.DeMock()
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkGetFaq(b *testing.B) {
-	if err := MockedDTX.Mock(); err != nil {
+	MockedDTX := &apicontext.DataContext{}
+	var err error
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
 		return
 	}
 	f := setupDummyFaq()
@@ -91,11 +97,13 @@ func BenchmarkGetFaq(b *testing.B) {
 	}
 	b.StopTimer()
 	f.Delete()
-	MockedDTX.DeMock()
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkCreateFaq(b *testing.B) {
-	if err := MockedDTX.Mock(); err != nil {
+	MockedDTX := &apicontext.DataContext{}
+	var err error
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
 		return
 	}
 	f := setupDummyFaq()
@@ -105,11 +113,13 @@ func BenchmarkCreateFaq(b *testing.B) {
 		f.Delete()
 		b.StartTimer()
 	}
-	MockedDTX.DeMock()
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkUpdateFaq(b *testing.B) {
-	if err := MockedDTX.Mock(); err != nil {
+	MockedDTX := &apicontext.DataContext{}
+	var err error
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
 		return
 	}
 	f := setupDummyFaq()
@@ -122,11 +132,13 @@ func BenchmarkUpdateFaq(b *testing.B) {
 	}
 	b.StopTimer()
 	f.Delete()
-	MockedDTX.DeMock()
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkDeleteFaq(b *testing.B) {
-	if err := MockedDTX.Mock(); err != nil {
+	MockedDTX := &apicontext.DataContext{}
+	var err error
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
 		return
 	}
 	f := setupDummyFaq()
@@ -137,7 +149,7 @@ func BenchmarkDeleteFaq(b *testing.B) {
 	}
 	b.StopTimer()
 	f.Delete()
-	MockedDTX.DeMock()
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func setupDummyFaq() *Faq {

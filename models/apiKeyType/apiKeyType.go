@@ -26,6 +26,10 @@ type Scanner interface {
 	Scan(...interface{}) error
 }
 
+const (
+	timeFormat = "2006-01-02 03:04:05"
+)
+
 func (a *ApiKeyType) Get() (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -84,8 +88,8 @@ func (a *ApiKeyType) Create() (err error) {
 		return
 	}
 	defer stmt.Close()
-	a.DateAdded = time.Now()
-	_, err = stmt.Exec(a.Type, a.DateAdded)
+	added := time.Now().Format(timeFormat)
+	_, err = stmt.Exec(a.Type, added)
 	if err != nil {
 		return
 	}
@@ -96,7 +100,8 @@ func (a *ApiKeyType) Create() (err error) {
 	}
 
 	defer stmt.Close()
-	err = stmt.QueryRow(a.Type, a.DateAdded).Scan(&a.ID)
+
+	err = stmt.QueryRow(a.Type, added).Scan(&a.ID)
 	if err != nil {
 		return err
 	}

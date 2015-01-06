@@ -2,17 +2,15 @@ package testimonials
 
 import (
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
 
-var (
-	MockedDTX = &apicontext.DataContext{BrandID: 1, WebsiteID: 1, APIKey: "NOT_GENERATED_YET"}
-)
-
 func TestTestimonials(t *testing.T) {
-	err := MockedDTX.Mock()
-	if err != nil {
+	var err error
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
 		return
 	}
 	var test Testimonial
@@ -61,29 +59,25 @@ func TestTestimonials(t *testing.T) {
 
 	})
 
-	err = MockedDTX.DeMock()
-	if err != nil {
-		return
-	}
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkGetAllTestimonials(b *testing.B) {
-	err := MockedDTX.Mock()
-	if err != nil {
+	var err error
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
 		return
 	}
 	for i := 0; i < b.N; i++ {
 		GetAllTestimonials(0, 1, false, MockedDTX)
 	}
-	err = MockedDTX.DeMock()
-	if err != nil {
-		return
-	}
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkGetTestimonial(b *testing.B) {
-	err := MockedDTX.Mock()
-	if err != nil {
+	var err error
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
 		return
 	}
 	test := setupDummyTestimonial()
@@ -95,15 +89,13 @@ func BenchmarkGetTestimonial(b *testing.B) {
 		b.StopTimer()
 		test.Delete()
 	}
-	err = MockedDTX.DeMock()
-	if err != nil {
-		return
-	}
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkCreateTestimonial(b *testing.B) {
-	err := MockedDTX.Mock()
-	if err != nil {
+	var err error
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
 		return
 	}
 	test := setupDummyTestimonial()
@@ -113,15 +105,13 @@ func BenchmarkCreateTestimonial(b *testing.B) {
 		b.StopTimer()
 		test.Delete()
 	}
-	err = MockedDTX.DeMock()
-	if err != nil {
-		return
-	}
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkUpdateTestimonial(b *testing.B) {
-	err := MockedDTX.Mock()
-	if err != nil {
+	var err error
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
 		return
 	}
 	test := setupDummyTestimonial()
@@ -134,15 +124,13 @@ func BenchmarkUpdateTestimonial(b *testing.B) {
 		b.StopTimer()
 		test.Delete()
 	}
-	err = MockedDTX.DeMock()
-	if err != nil {
-		return
-	}
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkDeleteTestimonial(b *testing.B) {
-	err := MockedDTX.Mock()
-	if err != nil {
+	var err error
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
 		return
 	}
 	test := setupDummyTestimonial()
@@ -152,10 +140,7 @@ func BenchmarkDeleteTestimonial(b *testing.B) {
 		b.StartTimer()
 		test.Delete()
 	}
-	err = MockedDTX.DeMock()
-	if err != nil {
-		return
-	}
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func setupDummyTestimonial() *Testimonial {

@@ -2,6 +2,7 @@ package testThatHttp
 
 import (
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/httprunner"
 	"github.com/go-martini/martini"
@@ -19,9 +20,12 @@ var (
 )
 
 func Request(reqType string, route string, paramKey string, paramVal string, handler martini.Handler, body io.Reader, contentType string) {
-	var datacontext apicontext.DataContext
-	datacontext.Mock()
-	apikey := datacontext.APIKey
+	MockedDTX := &apicontext.DataContext{}
+	var err error
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
+	apikey := MockedDTX.APIKey
 
 	cType := "application/x-www-form-urlencoded" //default content type = form
 	if contentType != "" {
@@ -51,6 +55,7 @@ func Request(reqType string, route string, paramKey string, paramVal string, han
 	if Response.Code != 200 {
 		log.Print("Response Error: ", Response)
 	}
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func RequestBenchmark(runs int, method, route string, body *url.Values, handler martini.Handler) {

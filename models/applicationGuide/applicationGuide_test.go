@@ -2,17 +2,15 @@ package applicationGuide
 
 import (
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
 
-var (
-	MockedDTX = &apicontext.DataContext{BrandID: 1, WebsiteID: 1, APIKey: "NOT_GENERATED_YET"}
-)
-
 func TestAppGuides(t *testing.T) {
-
-	if err := MockedDTX.Mock(); err != nil {
+	MockedDTX := &apicontext.DataContext{}
+	var err error
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
 		return
 	}
 	Convey("Test Create AppGuide", t, func() {
@@ -41,11 +39,13 @@ func TestAppGuides(t *testing.T) {
 		So(err, ShouldBeNil)
 
 	})
-	MockedDTX.DeMock()
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkGetAppGuide(b *testing.B) {
-	if err := MockedDTX.Mock(); err != nil {
+	MockedDTX := &apicontext.DataContext{}
+	var err error
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
 		return
 	}
 	var ag ApplicationGuide
@@ -61,11 +61,13 @@ func BenchmarkGetAppGuide(b *testing.B) {
 		b.StopTimer()
 		ag.Delete()
 	}
-	MockedDTX.DeMock()
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkGetBySite(b *testing.B) {
-	if err := MockedDTX.Mock(); err != nil {
+	MockedDTX := &apicontext.DataContext{}
+	var err error
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
 		return
 	}
 	var ag ApplicationGuide
@@ -81,11 +83,13 @@ func BenchmarkGetBySite(b *testing.B) {
 		b.StopTimer()
 		ag.Delete()
 	}
-	MockedDTX.DeMock()
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkDeleteAppGuide(b *testing.B) {
-	if err := MockedDTX.Mock(); err != nil {
+	MockedDTX := &apicontext.DataContext{}
+	var err error
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
 		return
 	}
 	var ag ApplicationGuide
@@ -99,5 +103,5 @@ func BenchmarkDeleteAppGuide(b *testing.B) {
 		b.StartTimer()
 		ag.Delete()
 	}
-	MockedDTX.DeMock()
+	_ = apicontextmock.DeMock(MockedDTX)
 }

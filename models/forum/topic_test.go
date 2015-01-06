@@ -1,6 +1,9 @@
 package forum
 
 import (
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
+
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
@@ -10,7 +13,8 @@ func TestTopics(t *testing.T) {
 	var lastTopicID int
 	var err error
 
-	if err = MockedDTX.Mock(); err != nil {
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
 		return
 	}
 
@@ -160,5 +164,5 @@ func TestTopics(t *testing.T) {
 
 	g.Delete(MockedDTX)
 
-	MockedDTX.DeMock()
+	_ = apicontextmock.DeMock(MockedDTX)
 }

@@ -1,13 +1,22 @@
 package products
 
 import (
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	. "github.com/smartystreets/goconvey/convey"
+
 	"testing"
 )
 
 func TestGetReviews(t *testing.T) {
 	var p Part
 	var l Review
+	var err error
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
+
 	Convey("Testing Reviews", t, func() {
 		Convey("Testing C_UD", func() {
 			//create part to review
@@ -82,4 +91,5 @@ func TestGetReviews(t *testing.T) {
 		err := l.GetActiveApprovedReviews()
 		So(err, ShouldBeNil)
 	})
+	_ = apicontextmock.DeMock(MockedDTX)
 }

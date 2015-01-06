@@ -2,6 +2,8 @@ package products
 
 import (
 	"github.com/curt-labs/GoAPI/helpers/api"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	. "github.com/smartystreets/goconvey/convey"
 	"math/rand"
 	"testing"
@@ -158,7 +160,13 @@ func TestGetConfigurations(t *testing.T) {
 	})
 
 	Convey("Test getDefinedConfigurations()", t, func() {
-		configs, err := l.Vehicle.getDefinedConfigurations()
+		MockedDTX := &apicontext.DataContext{}
+		var err error
+		if MockedDTX, err = apicontextmock.Mock(); err != nil {
+			return
+		}
+
+		configs, err := l.Vehicle.getDefinedConfigurations(MockedDTX.APIKey)
 		So(err, ShouldEqual, nil)
 		So(configs, ShouldNotEqual, nil)
 
@@ -193,7 +201,7 @@ func TestGetConfigurations(t *testing.T) {
 			}
 			l.Vehicle.Submodel = l.Submodels[api_helpers.RandGenerator(len(l.Submodels)-1)]
 
-			configs, err := l.Vehicle.getDefinedConfigurations()
+			configs, err := l.Vehicle.getDefinedConfigurations(MockedDTX.APIKey)
 			So(err, ShouldEqual, nil)
 			So(configs, ShouldNotEqual, nil)
 		})

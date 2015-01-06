@@ -2,12 +2,9 @@ package forum
 
 import (
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
-)
-
-var (
-	MockedDTX = &apicontext.DataContext{BrandID: 1, WebsiteID: 1, APIKey: "NOT_GENERATED_YET"}
 )
 
 func TestGroups(t *testing.T) {
@@ -15,7 +12,8 @@ func TestGroups(t *testing.T) {
 	var lastGroupID int
 	var err error
 
-	if err = MockedDTX.Mock(); err != nil {
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
 		return
 	}
 
@@ -131,5 +129,5 @@ func TestGroups(t *testing.T) {
 	//destroy the test group, we're done with it
 	groupy.Delete(MockedDTX)
 
-	MockedDTX.DeMock()
+	_ = apicontextmock.DeMock(MockedDTX)
 }

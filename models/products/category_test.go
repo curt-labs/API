@@ -3,13 +3,10 @@ package products
 import (
 	"database/sql"
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
-)
-
-var (
-	MockedDTX = &apicontext.DataContext{BrandID: 1, WebsiteID: 1, APIKey: "NOT_GENERATED_YET"}
 )
 
 func generateAPIkey() (apiKey string) {
@@ -31,7 +28,9 @@ func generateAPIkey() (apiKey string) {
 }
 
 func TestTopTierCategories(t *testing.T) {
-	if err := MockedDTX.Mock(); err != nil {
+	var err error
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
 		return
 	}
 
@@ -46,7 +45,7 @@ func TestTopTierCategories(t *testing.T) {
 	})
 
 	Convey("Test TopTierCategories()", t, func() {
-		cats, err := TopTierCategories(generateAPIkey(), MockedDTX)
+		cats, err := TopTierCategories(generateAPIkey(), MockedDTX.BrandID)
 		So(cats, ShouldNotBeNil)
 		So(err, ShouldBeNil)
 		So(cats, ShouldHaveSameTypeAs, []Category{})
@@ -151,5 +150,5 @@ func TestTopTierCategories(t *testing.T) {
 		So(err, ShouldBeNil)
 
 	})
-	MockedDTX.DeMock()
+	_ = apicontextmock.DeMock(MockedDTX)
 }

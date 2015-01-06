@@ -147,10 +147,11 @@ func processDataContext(r *http.Request, c martini.Context) *apicontext.DataCont
 
 	//returns our data context...shared amongst controllers
 	return &apicontext.DataContext{
-		APIKey:       apiKey,
-		BrandID:      brandID,
-		WebsiteID:    websiteID,
-		CustomerUser: &user, //current authenticated user
+		APIKey:     apiKey,
+		BrandID:    brandID,
+		WebsiteID:  websiteID,
+		UserID:     user.Id, //current authenticated user
+		CustomerID: user.CustomerID,
 	}
 }
 
