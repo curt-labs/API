@@ -72,7 +72,7 @@ func All(w http.ResponseWriter, r *http.Request, params martini.Params, enc enco
 func Featured(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	count := 10
 	qs := r.URL.Query()
-	key := qs.Get("key")
+	//key := qs.Get("key")
 	if qs.Get("count") != "" {
 		if ct, err := strconv.Atoi(qs.Get("count")); err == nil {
 			if ct > 50 {
@@ -95,7 +95,7 @@ func Featured(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx 
 func Latest(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	count := 10
 	qs := r.URL.Query()
-	key := qs.Get("key")
+	//key := qs.Get("key")
 	if qs.Get("count") != "" {
 		if ct, err := strconv.Atoi(qs.Get("count")); err == nil {
 			if ct > 50 {
