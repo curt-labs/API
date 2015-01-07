@@ -340,46 +340,62 @@ func TopTierCategories(key string, brandId int) (cats []Category, err error) {
 }
 
 func GetCategoryByTitle(cat_title string, dtx *apicontext.DataContext) (cat Category, err error) {
-	redis_key := fmt.Sprintf("category:%d:title:%s", dtx.BrandID, cat_title)
+	var brandID int
+	var bs []int
+	if dtx.BrandID == 0 {
+		bs, err = dtx.GetBrandsFromKey()
+		if err != nil {
+			return cat, err
+		}
+		if len(bs) == 1 {
+			brandID = bs[0]
+		}
+	} else {
+		brandID = dtx.BrandID
+	}
 
-	// Attempt to get the category from Redis
-	data, err := redis.Get(redis_key)
-	if len(data) > 0 && err == nil {
-		err = json.Unmarshal(data, &cat)
-		if err == nil {
-			return
+	redis_key := fmt.Sprintf("category:%d:title:%s", brandID, cat_title)
+	if brandID != 0 {
+		// Attempt to get the category from Redis
+		data, err := redis.Get(redis_key)
+		if len(data) > 0 && err == nil {
+			err = json.Unmarshal(data, &cat)
+			if err == nil {
+				return cat, err
+			}
 		}
 	}
 
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		return
+		return cat, err
 	}
 	defer db.Close()
 
 	qry, err := db.Prepare(CategoryByTitleStmt)
 	if err != nil {
-		return
+		return cat, err
 	}
 	defer qry.Close()
 
 	// Execute SQL Query against title
 	catRow := qry.QueryRow(cat_title, dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	if catRow == nil { // Error occurred while executing query
-		return
+		return cat, err
 	}
 
 	ch := make(chan Category)
 	go PopulateCategory(catRow, ch)
 	cat = <-ch
 
-	go redis.Setex(redis_key, cat, 86400)
-
-	return
+	if brandID != 0 {
+		go redis.Setex(redis_key, cat, 86400)
+	}
+	return cat, err
 }
 
 func GetCategoryById(brandID, cat_id int) (cat Category, err error) {
-	redis_key := fmt.Sprintf("category:%d:id:%d", brandID, cat_id)
+	redis_key := fmt.Sprintf("category:id:%d", cat_id)
 
 	// Attempt to get the category from Redis
 	data, err := redis.Get(redis_key)
