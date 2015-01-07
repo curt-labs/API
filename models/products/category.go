@@ -442,16 +442,18 @@ func (c *Category) GetSubCategories(dtx ...*apicontext.DataContext) (cats []Cate
 
 	var brandID int
 	var bs []int
-	if dtx[0].BrandID == 0 {
-		bs, err = dtx[0].GetBrandsFromKey()
-		if err != nil {
-			return cats, err
+	if len(dtx) > 0 {
+		if dtx[0].BrandID == 0 {
+			bs, err = dtx[0].GetBrandsFromKey()
+			if err != nil {
+				return cats, err
+			}
+			if len(bs) == 1 {
+				brandID = bs[0]
+			}
+		} else {
+			brandID = dtx[0].BrandID
 		}
-		if len(bs) == 1 {
-			brandID = bs[0]
-		}
-	} else {
-		brandID = dtx[0].BrandID
 	}
 
 	redis_key := fmt.Sprintf("category:%d:%d:subs", brandID, c.ID)
@@ -487,8 +489,11 @@ func (c *Category) GetSubCategories(dtx ...*apicontext.DataContext) (cats []Cate
 	ch := make(chan []Category, 0)
 	go PopulateCategoryMulti(catRows, ch)
 	cats = <-ch
-	if dtx[0].BrandID == 0 {
-		go redis.Setex(redis_key, cats, 86400)
+
+	if len(dtx) > 0 {
+		if dtx[0].BrandID == 0 {
+			go redis.Setex(redis_key, cats, 86400)
+		}
 	}
 	return
 }
