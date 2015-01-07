@@ -433,21 +433,36 @@ func GetCategoryById(brandID, cat_id int) (cat Category, err error) {
 	return
 }
 
-func (c *Category) GetSubCategories() (cats []Category, err error) {
+func (c *Category) GetSubCategories(dtx ...*apicontext.DataContext) (cats []Category, err error) {
 	cats = make([]Category, 0)
 
 	if c.ID == 0 {
 		return
 	}
 
-	redis_key := fmt.Sprintf("category:%d:%d:subs", c.BrandID, c.ID)
+	var brandID int
+	var bs []int
+	if dtx[0].BrandID == 0 {
+		bs, err = dtx[0].GetBrandsFromKey()
+		if err != nil {
+			return cats, err
+		}
+		if len(bs) == 1 {
+			brandID = bs[0]
+		}
+	} else {
+		brandID = dtx[0].BrandID
+	}
 
-	// First lets try to access the category:top endpoint in Redis
-	data, err := redis.Get(redis_key)
-	if len(data) > 0 && err == nil {
-		err = json.Unmarshal(data, &cats)
-		if err == nil {
-			return
+	redis_key := fmt.Sprintf("category:%d:%d:subs", brandID, c.ID)
+	if brandID != 0 {
+		// First lets try to access the category:top endpoint in Redis
+		data, err := redis.Get(redis_key)
+		if len(data) > 0 && err == nil {
+			err = json.Unmarshal(data, &cats)
+			if err == nil {
+				return cats, err
+			}
 		}
 	}
 
@@ -472,9 +487,9 @@ func (c *Category) GetSubCategories() (cats []Category, err error) {
 	ch := make(chan []Category, 0)
 	go PopulateCategoryMulti(catRows, ch)
 	cats = <-ch
-
-	go redis.Setex(redis_key, cats, 86400)
-
+	if dtx[0].BrandID == 0 {
+		go redis.Setex(redis_key, cats, 86400)
+	}
 	return
 }
 
