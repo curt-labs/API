@@ -7,9 +7,9 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/httprunner"
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
 	"github.com/curt-labs/GoAPI/models/apiKeyType"
-	"github.com/curt-labs/GoAPI/models/cartIntegration"
+	//"github.com/curt-labs/GoAPI/models/cartIntegration"
 	"github.com/curt-labs/GoAPI/models/customer"
-	"github.com/curt-labs/GoAPI/models/products"
+	//"github.com/curt-labs/GoAPI/models/products"
 	. "github.com/smartystreets/goconvey/convey"
 	"net/url"
 	"strconv"
@@ -21,16 +21,16 @@ import (
 func TestCustomer(t *testing.T) {
 	var c customer.Customer
 	var cu customer.CustomerUser
-	var p products.Part
-	p.ID = 123
-	p.Create()
-	var price customer.Price
-	price.PartID = p.ID
-	price.Price = 1000000
+	//var p products.Part
+	//p.ID = 123
+	//p.Create()
+	//var price customer.Price
+	//price.PartID = p.ID
+	//price.Price = 1000000
 
-	var ci cartIntegration.CartIntegration
-	ci.PartID = p.ID
-	ci.CustPartID = 987654321
+	//var ci cartIntegration.CartIntegration
+	//ci.PartID = p.ID
+	//ci.CustPartID = 987654321
 
 	var pub, pri, auth apiKeyType.ApiKeyType
 	if database.EmptyDb != nil {
@@ -147,28 +147,28 @@ func TestCustomer(t *testing.T) {
 		So(cus, ShouldHaveSameTypeAs, []customer.CustomerUser{})
 
 		//get customer price
-		price.CustID = c.Id
-		price.Create()
-		thyme = time.Now()
-		testThatHttp.Request("get", "/new/customer/price/", ":id", strconv.Itoa(p.ID)+"?key="+apiKey, GetCustomerPrice, nil, "")
-		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
-		So(testThatHttp.Response.Code, ShouldEqual, 200)
-		var price float64
-		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &price)
-		So(err, ShouldBeNil)
-		So(price, ShouldHaveSameTypeAs, 7.1)
+		// price.CustID = c.Id
+		// price.Create()
+		// thyme = time.Now()
+		// testThatHttp.Request("get", "/new/customer/price/", ":id", strconv.Itoa(p.ID)+"?key="+apiKey, GetCustomerPrice, nil, "")
+		// So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
+		// So(testThatHttp.Response.Code, ShouldEqual, 200)
+		// var price float64
+		// err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &price)
+		// So(err, ShouldBeNil)
+		// So(price, ShouldHaveSameTypeAs, 7.1)
 
-		//get customer cart reference
-		ci.CustID = c.Id
-		ci.Create()
-		thyme = time.Now()
-		testThatHttp.Request("get", "/new/customer/cartRef/", ":id", strconv.Itoa(p.ID)+"?key="+apiKey, GetCustomerCartReference, nil, "")
-		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
-		So(testThatHttp.Response.Code, ShouldEqual, 200)
-		var reference int
-		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &reference)
-		So(err, ShouldBeNil)
-		So(reference, ShouldHaveSameTypeAs, 7)
+		// //get customer cart reference
+		// ci.CustID = c.Id
+		// ci.Create()
+		// thyme = time.Now()
+		// testThatHttp.Request("get", "/new/customer/cartRef/", ":id", strconv.Itoa(p.ID)+"?key="+apiKey, GetCustomerCartReference, nil, "")
+		// So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
+		// So(testThatHttp.Response.Code, ShouldEqual, 200)
+		// var reference int
+		// err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &reference)
+		// So(err, ShouldBeNil)
+		// So(reference, ShouldHaveSameTypeAs, 7)
 
 		//test delete customer
 		thyme = time.Now()
@@ -184,9 +184,9 @@ func TestCustomer(t *testing.T) {
 	//cleanup
 	err = cu.Delete()
 	t.Log("CU", err)
-	p.Delete()
-	price.Delete()
-	ci.Delete()
+	// p.Delete()
+	// price.Delete()
+	// ci.Delete()
 
 	if database.EmptyDb != nil {
 		err = pub.Delete()
@@ -278,34 +278,34 @@ func BenchmarkCRUDCustomer(b *testing.B) {
 		}).RequestBenchmark()
 
 		//set up price & part
-		var p products.Part
-		p.ID = 123
-		p.Create()
-		var price customer.Price
-		price.CustID = c.Id
-		price.Create()
+		//var p products.Part
+		//p.ID = 123
+		//p.Create()
+		//var price customer.Price
+		//price.CustID = c.Id
+		//price.Create()
 
 		//get price
-		(&httprunner.BenchmarkOptions{
-			Method:             "GET",
-			Route:              "/new/customer/price",
-			ParameterizedRoute: "/new/customer/price/" + strconv.Itoa(p.ID),
-			Handler:            GetUser,
-			QueryString:        &qs,
-			JsonBody:           nil,
-			Runs:               b.N,
-		}).RequestBenchmark()
+		// (&httprunner.BenchmarkOptions{
+		// 	Method:             "GET",
+		// 	Route:              "/new/customer/price",
+		// 	ParameterizedRoute: "/new/customer/price/" + strconv.Itoa(p.ID),
+		// 	Handler:            GetUser,
+		// 	QueryString:        &qs,
+		// 	JsonBody:           nil,
+		// 	Runs:               b.N,
+		// }).RequestBenchmark()
 
-		//get cart ref
-		(&httprunner.BenchmarkOptions{
-			Method:             "GET",
-			Route:              "/new/customer/cartRef",
-			ParameterizedRoute: "/new/customer/cartRef/" + strconv.Itoa(p.ID),
-			Handler:            GetUser,
-			QueryString:        &qs,
-			JsonBody:           nil,
-			Runs:               b.N,
-		}).RequestBenchmark()
+		// //get cart ref
+		// (&httprunner.BenchmarkOptions{
+		// 	Method:             "GET",
+		// 	Route:              "/new/customer/cartRef",
+		// 	ParameterizedRoute: "/new/customer/cartRef/" + strconv.Itoa(p.ID),
+		// 	Handler:            GetUser,
+		// 	QueryString:        &qs,
+		// 	JsonBody:           nil,
+		// 	Runs:               b.N,
+		// }).RequestBenchmark()
 
 		//delete
 		(&httprunner.BenchmarkOptions{
@@ -319,8 +319,8 @@ func BenchmarkCRUDCustomer(b *testing.B) {
 		}).RequestBenchmark()
 
 		//tear down price and part
-		price.Delete()
-		p.Delete()
+		// price.Delete()
+		// p.Delete()
 	})
 	//teardown customer user
 	cu.Delete()

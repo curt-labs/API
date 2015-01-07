@@ -1123,9 +1123,10 @@ func GetLocalDealerTiers() (tiers []DealerTier, err error) {
 		return tiers, err
 	}
 	res, err := stmt.Query()
+	var brandID *int
 	for res.Next() {
 		var t DealerTier
-		err = res.Scan(&t.Id, &t.Tier, &t.Sort)
+		err = res.Scan(&t.Id, &t.Tier, &t.Sort, &brandID)
 		if err != nil {
 			return tiers, err
 		}
