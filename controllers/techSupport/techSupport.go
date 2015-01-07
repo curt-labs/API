@@ -2,6 +2,8 @@ package techSupport
 
 import (
 	"encoding/json"
+	"errors"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/contact"
 	"github.com/curt-labs/GoAPI/models/techSupport"
@@ -17,10 +19,13 @@ const (
 	timeFormat = "2006-01-02"
 )
 
-func GetAllTechSupport(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder) string {
+func GetAllTechSupport(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var err error
 
-	ts, err := techSupport.GetAllTechSupport()
+	ts, err := techSupport.GetAllTechSupport(dtx)
+	if len(ts) == 0 {
+		err = errors.New("No results.")
+	}
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return err.Error()
@@ -41,17 +46,21 @@ func GetTechSupport(rw http.ResponseWriter, req *http.Request, enc encoding.Enco
 	}
 	return encoding.Must(enc.Encode(t))
 }
-func GetTechSupportByContact(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+func GetTechSupportByContact(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var err error
 	var t techSupport.TechSupport
 	id := params["id"]
 	t.Contact.ID, err = strconv.Atoi(id)
 
-	ts, err := t.GetByContact()
+	ts, err := t.GetByContact(dtx)
+	if len(ts) == 0 {
+		err = errors.New("No results.")
+	}
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return err.Error()
 	}
+
 	return encoding.Must(enc.Encode(ts))
 }
 

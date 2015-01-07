@@ -3,6 +3,7 @@ package techSupport
 import (
 	"database/sql"
 	"errors"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/models/contact"
 	_ "github.com/go-sql-driver/mysql"
@@ -21,18 +22,26 @@ type TechSupport struct {
 	DateCode      string          `json:"dateCode,omitempty" xml:"dateCode,omitempty"`
 	Issue         string          `json:"issue,omitempty" xml:"issue,omitempty"`
 	Contact       contact.Contact `json:"contact,omitempty" xml:"contact,omitempty"`
+	BrandID       int             `json:"brandId,omitempty" xml:"brandId,omitempty"`
 }
 
 const (
-	fields = ` ts.vehicleMake, ts.vehicleModel, ts.vehicleYear, ts.purchaseDate, ts.purchasedFrom, ts.dealerName, ts.productCode, ts.dateCode, ts.issue, ts.contactID `
+	fields = ` ts.vehicleMake, ts.vehicleModel, ts.vehicleYear, ts.purchaseDate, ts.purchasedFrom, ts.dealerName, ts.productCode, ts.dateCode, ts.issue, ts.contactID, ts.brandID `
 )
 
 var (
-	createTechSupport          = `insert into TechSupport (vehicleMake, vehicleModel, vehicleYear, purchaseDate, purchasedFrom, dealerName, productCode, dateCode, issue, contactID ) values (?,?,?,?,?,?,?,?,?,?)`
-	deleteTechSupport          = `delete from TechSupport where id = ?`
-	getTechSupport             = `select ts.id, ` + fields + ` from TechSupport as ts where ts.id = ? `
-	getAllTechSupport          = `select ts.id, ` + fields + ` from TechSupport as ts `
-	getAllTechSupportByContact = `select ts.id, ` + fields + ` from TechSupport as ts  where contactID = ?`
+	createTechSupport = `insert into TechSupport (vehicleMake, vehicleModel, vehicleYear, purchaseDate, purchasedFrom, dealerName, productCode, dateCode, issue, contactID, brandID ) values (?,?,?,?,?,?,?,?,?,?,?)`
+	deleteTechSupport = `delete from TechSupport where id = ?`
+	getTechSupport    = `select ts.id, ` + fields + ` from TechSupport as ts where ts.id = ? `
+	getAllTechSupport = `select ts.id, ` + fields + ` from TechSupport as ts 
+		join ApiKeyToBrand as akb on akb.brandID = ts.brandID
+		join ApiKey as ak on ak.id = akb.keyID
+        && ak.api_key = ? && (ts.brandID = ? or 0 = ?)`
+	getAllTechSupportByContact = `select ts.id, ` + fields + ` from TechSupport as ts 
+		join ApiKeyToBrand as akb on akb.brandID = ts.brandID
+		join ApiKey as ak on ak.id = akb.keyID
+        && ak.api_key = ? && (ts.brandID = ? or 0 = ?)
+        where ts.contactID = ?`
 )
 
 func (t *TechSupport) Get() (err error) {
@@ -54,7 +63,7 @@ func (t *TechSupport) Get() (err error) {
 	return
 }
 
-func (t *TechSupport) GetByContact() (ts []TechSupport, err error) {
+func (t *TechSupport) GetByContact(dtx *apicontext.DataContext) (ts []TechSupport, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return
@@ -65,7 +74,7 @@ func (t *TechSupport) GetByContact() (ts []TechSupport, err error) {
 		return
 	}
 	defer stmt.Close()
-	rows, err := stmt.Query(t.Contact.ID)
+	rows, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID, t.Contact.ID)
 
 	ch := make(chan []TechSupport)
 	go populateTechSupports(rows, ch)
@@ -73,7 +82,7 @@ func (t *TechSupport) GetByContact() (ts []TechSupport, err error) {
 	return
 }
 
-func GetAllTechSupport() (ts []TechSupport, err error) {
+func GetAllTechSupport(dtx *apicontext.DataContext) (ts []TechSupport, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return
@@ -84,7 +93,10 @@ func GetAllTechSupport() (ts []TechSupport, err error) {
 		return
 	}
 	defer stmt.Close()
-	rows, err := stmt.Query()
+	rows, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
+	if err != nil {
+		return ts, err
+	}
 
 	ch := make(chan []TechSupport)
 	go populateTechSupports(rows, ch)
@@ -133,6 +145,7 @@ func (t *TechSupport) Create() (err error) {
 		t.DateCode,
 		t.Issue,
 		t.Contact.ID,
+		t.BrandID,
 	)
 
 	if err != nil {
@@ -179,6 +192,7 @@ func populateTechSupport(row *sql.Row, ch chan TechSupport) {
 		&t.DateCode,
 		&t.Issue,
 		&t.Contact.ID,
+		&t.BrandID,
 	)
 	if err != nil {
 		ch <- t
@@ -203,6 +217,7 @@ func populateTechSupports(rows *sql.Rows, ch chan []TechSupport) {
 			&t.DateCode,
 			&t.Issue,
 			&t.Contact.ID,
+			&t.BrandID,
 		)
 		if err != nil {
 			ch <- ts

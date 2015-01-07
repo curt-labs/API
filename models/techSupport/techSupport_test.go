@@ -1,6 +1,8 @@
 package techSupport
 
 import (
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	"github.com/curt-labs/GoAPI/models/contact"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
@@ -17,6 +19,11 @@ func TestTechSupport(t *testing.T) {
 	tc.Contact.Subject = "s"
 	tc.Contact.Message = "m"
 
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
+
 	Convey("Test Create TechSupport", t, func() {
 
 		err = tc.Create()
@@ -29,13 +36,13 @@ func TestTechSupport(t *testing.T) {
 	})
 	Convey("Test Get TechSupport By Contact", t, func() {
 
-		ts, err := tc.GetByContact()
+		ts, err := tc.GetByContact(MockedDTX)
 		So(err, ShouldBeNil)
 		So(len(ts), ShouldBeGreaterThanOrEqualTo, 0)
 	})
 	Convey("Test Get All TechSupport", t, func() {
 
-		allTs, err := GetAllTechSupport()
+		allTs, err := GetAllTechSupport(MockedDTX)
 		So(err, ShouldBeNil)
 		So(len(allTs), ShouldBeGreaterThanOrEqualTo, 0)
 	})
@@ -47,13 +54,20 @@ func TestTechSupport(t *testing.T) {
 		err = tc.Contact.Delete()
 		So(err, ShouldBeNil)
 	})
+	_ = apicontextmock.DeMock(MockedDTX)
 
 }
 
 func BenchmarkGetAllTechSupport(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		GetAllTechSupport()
+	MockedDTX := &apicontext.DataContext{}
+	var err error
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
 	}
+	for i := 0; i < b.N; i++ {
+		GetAllTechSupport(MockedDTX)
+	}
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkGetTechSupport(b *testing.B) {
@@ -68,14 +82,20 @@ func BenchmarkGetTechSupport(b *testing.B) {
 }
 
 func BenchmarkGetTechSupportByContact(b *testing.B) {
+	MockedDTX := &apicontext.DataContext{}
+	var err error
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
 	ts := setupDummyTechSupport()
 	ts.Create()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		ts.GetByContact()
+		ts.GetByContact(MockedDTX)
 	}
 	b.StopTimer()
 	ts.Delete()
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkCreateTechSupport(b *testing.B) {
