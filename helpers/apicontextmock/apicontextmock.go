@@ -10,6 +10,7 @@ import (
 	"database/sql"
 	"log"
 	"strings"
+	"time"
 )
 
 const (
@@ -30,6 +31,8 @@ const (
 
 	//redis
 	custPrefix = "customer:"
+	// time format
+	timeFormat = "2006-01-02 03:04:05"
 )
 
 var (
@@ -135,6 +138,13 @@ var (
 
 	updateCustomerUser   = `UPDATE CustomerUser SET name = ?, email = ?, active = ?, locationID = ?, isSudo = ?, NotCustomer = ? WHERE id = ?`
 	getUsersByCustomerID = `SELECT id FROM CustomerUser WHERE cust_id = ?`
+
+	// API Key Type Queries
+	getApiKeyType     = "SELECT id, type, date_added FROM ApiKeyType WHERE id = ? "
+	getAllApiKeyTypes = "SELECT id, type, date_added FROM ApiKeyType "
+	getKeyByDateType  = "SELECT id FROM ApiKeyType WHERE type = ?  AND date_added = ?"
+	createApiKeyType  = "INSERT INTO ApiKeyType (id, type, date_added) VALUES (UUID(),?,?)"
+	deleteApiKeyType  = "DELETE FROM ApiKeyType WHERE id = ? "
 )
 
 func Mock() (*apicontext.DataContext, error) {
@@ -238,6 +248,12 @@ func Mock2() (*apicontext.DataContext, error) {
 	dtx.CustomerID = 1
 
 	// ApiKeyType
+	keyType := "" // needed for when you create an API Key
+	if keyType, err = CreateApiKeyType("silly"); err != nil {
+		return &dtx, err
+	}
+	log.Println(keyType)
+
 	// ApiKey
 	// ApiKeyToBrand
 	// Brand
@@ -283,4 +299,38 @@ func CreateCustomerUser() (CustomerUserID string, err error) {
 	CustomerUserID = *userID
 
 	return CustomerUserID, nil
+}
+
+func CreateApiKeyType(keyType string) (keyTypeID string, err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return keyTypeID, err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(createApiKeyType)
+	if err != nil {
+		return keyTypeID, err
+	}
+	defer stmt.Close()
+	added := time.Now().Format(timeFormat)
+	_, err = stmt.Exec(keyType, added)
+	if err != nil {
+		return keyTypeID, err
+	}
+
+	stmt, err = db.Prepare(getKeyByDateType)
+	if err != nil {
+		return keyTypeID, err
+	}
+
+	defer stmt.Close()
+
+	var typeID *string
+	err = stmt.QueryRow(keyType, added).Scan(&typeID)
+	if err != nil {
+		return keyTypeID, err
+	}
+	keyTypeID = *typeID
+
+	return keyTypeID, nil
 }
