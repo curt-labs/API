@@ -13,6 +13,12 @@ func TestPart(t *testing.T) {
 	if MockedDTX, err = apicontextmock.Mock(); err != nil {
 		return
 	}
+
+	Convey("Testing All", t, func() {
+		parts, err := All(0, 1, MockedDTX)
+		So(err, ShouldBeNil)
+		So(parts, ShouldHaveSameTypeAs, []Part{})
+	})
 	Convey("Testing GetLatest", t, func() {
 		parts, err := Latest(10, MockedDTX)
 		So(err, ShouldBeNil)

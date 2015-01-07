@@ -25,7 +25,10 @@ import (
 var (
 	GetPaginatedPartNumbers = `select distinct p.partID
                                from Part as p
-                               where p.status = 800 || p.status = 900
+                               join ApiKeyToBrand as akb on akb.brandID = p.brandID
+							   join ApiKey as ak on ak.id = akb.keyID
+                               where (p.status = 800 || p.status = 900)
+                               && ak.api_key = ? && (p.brandID = ? or 0 = ?)
                                order by p.partID
                                limit ?,?`
 	GetFeaturedParts = `select distinct p.partID
@@ -88,7 +91,7 @@ var (
 	deletePartCategoryJoins  = `DELETE FROM CatPart WHERE partID = ?`
 
 	//update
-	updatePart = `UPDATE Part SET status = ?, shortDesc = ?, priceCode = ?, classID = ?, featured = ?, ACESPartTypeID = ? WHERE partID = ?`
+	updatePart = `UPDATE Part SET status = ?, shortDesc = ?, priceCode = ?, classID = ?, featured = ?, ACESPartTypeID = ?, brandID = ? WHERE partID = ?`
 )
 
 type Part struct {
@@ -293,7 +296,7 @@ func (p *Part) Get(key string) error {
 	return err
 }
 
-func All(key string, page, count int) ([]Part, error) {
+func All(page, count int, dtx *apicontext.DataContext) ([]Part, error) {
 	parts := make([]Part, 0)
 
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -308,7 +311,7 @@ func All(key string, page, count int) ([]Part, error) {
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query(page, count)
+	rows, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID, page, count)
 	if err != nil {
 		return parts, err
 	}
@@ -320,10 +323,9 @@ func All(key string, page, count int) ([]Part, error) {
 		if err = rows.Scan(&partID); err != nil {
 			return parts, err
 		}
-
 		go func(id int) {
 			p := Part{ID: id}
-			p.Get(key)
+			p.Get(dtx.APIKey)
 			parts = append(parts, p)
 			partChan <- 1
 		}(partID)
@@ -1312,7 +1314,7 @@ func (p *Part) Update() (err error) {
 		return err
 	}
 	defer stmt.Close()
-	_, err = stmt.Exec(p.Status, p.ShortDesc, p.PriceCode, p.Class.ID, p.Featured, p.AcesPartTypeID, p.ID)
+	_, err = stmt.Exec(p.Status, p.ShortDesc, p.PriceCode, p.Class.ID, p.Featured, p.AcesPartTypeID, p.BrandID, p.ID)
 	if err != nil {
 		return err
 	}
