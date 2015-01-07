@@ -39,6 +39,7 @@ func TestAppGuides(t *testing.T) {
 		So(err, ShouldBeNil)
 
 	})
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkGetAppGuide(b *testing.B) {
@@ -60,6 +61,7 @@ func BenchmarkGetAppGuide(b *testing.B) {
 		b.StopTimer()
 		ag.Delete()
 	}
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkGetBySite(b *testing.B) {
@@ -81,6 +83,7 @@ func BenchmarkGetBySite(b *testing.B) {
 		b.StopTimer()
 		ag.Delete()
 	}
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkDeleteAppGuide(b *testing.B) {
@@ -100,4 +103,5 @@ func BenchmarkDeleteAppGuide(b *testing.B) {
 		b.StartTimer()
 		ag.Delete()
 	}
+	_ = apicontextmock.DeMock(MockedDTX)
 }
