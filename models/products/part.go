@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/api"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	"github.com/curt-labs/GoAPI/helpers/rest"
@@ -29,12 +30,18 @@ var (
                                limit ?,?`
 	GetFeaturedParts = `select distinct p.partID
                         from Part as p
+                        join ApiKeyToBrand as akb on akb.brandID = p.brandID
+						join ApiKey as ak on ak.id = akb.keyID
                         where (p.status = 800 || p.status = 900) && p.featured = 1
+                        && ak.api_key = ? && (p.brandID = ? or 0 = ?)
                         order by p.dateAdded desc
                         limit 0, ?`
 	GetLatestParts = `select distinct p.partID
                       from Part as p
-                      where p.status = 800 || p.status = 900
+                      join ApiKeyToBrand as akb on akb.brandID = p.brandID
+					  join ApiKey as ak on ak.id = akb.keyID
+                      where (p.status = 800 || p.status = 900)
+                      && ak.api_key = ? && (p.brandID = ? or 0 = ?)
                       order by p.dateAdded desc
                       limit 0,?`
 	SubCategoryIDStmt = `select distinct cp.partID
@@ -333,7 +340,7 @@ func All(key string, page, count int) ([]Part, error) {
 	return parts, nil
 }
 
-func Featured(key string, count int) ([]Part, error) {
+func Featured(count int, dtx *apicontext.DataContext) ([]Part, error) {
 	parts := make([]Part, 0)
 
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -348,7 +355,7 @@ func Featured(key string, count int) ([]Part, error) {
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query(count)
+	rows, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID, count)
 	if err != nil {
 		return parts, err
 	}
@@ -363,7 +370,7 @@ func Featured(key string, count int) ([]Part, error) {
 
 		go func(id int) {
 			p := Part{ID: id}
-			p.Get(key)
+			p.Get(dtx.APIKey)
 			parts = append(parts, p)
 			partChan <- 1
 		}(partID)
@@ -380,7 +387,7 @@ func Featured(key string, count int) ([]Part, error) {
 	return parts, nil
 }
 
-func Latest(key string, count int) ([]Part, error) {
+func Latest(count int, dtx *apicontext.DataContext) ([]Part, error) {
 	parts := make([]Part, 0)
 
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -395,7 +402,7 @@ func Latest(key string, count int) ([]Part, error) {
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query(count)
+	rows, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID, count)
 	if err != nil {
 		return parts, err
 	}
@@ -410,7 +417,7 @@ func Latest(key string, count int) ([]Part, error) {
 
 		go func(id int) {
 			p := Part{ID: id}
-			p.Get(key)
+			p.Get(dtx.APIKey)
 			parts = append(parts, p)
 			partChan <- 1
 		}(partID)

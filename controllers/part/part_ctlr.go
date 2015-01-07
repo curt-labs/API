@@ -3,6 +3,7 @@ package part_ctlr
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/curt-labs/GoAPI/models/products"
@@ -68,7 +69,7 @@ func All(w http.ResponseWriter, r *http.Request, params martini.Params, enc enco
 	return encoding.Must(enc.Encode(parts))
 }
 
-func Featured(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+func Featured(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	count := 10
 	qs := r.URL.Query()
 	key := qs.Get("key")
@@ -82,7 +83,7 @@ func Featured(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) stri
 		}
 	}
 
-	parts, err := products.Featured(key, count)
+	parts, err := products.Featured(count, dtx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -91,7 +92,7 @@ func Featured(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) stri
 	return encoding.Must(enc.Encode(parts))
 }
 
-func Latest(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+func Latest(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	count := 10
 	qs := r.URL.Query()
 	key := qs.Get("key")
@@ -105,7 +106,7 @@ func Latest(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string
 		}
 	}
 
-	parts, err := products.Latest(key, count)
+	parts, err := products.Latest(count, dtx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
