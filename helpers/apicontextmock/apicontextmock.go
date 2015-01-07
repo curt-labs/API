@@ -237,6 +237,7 @@ func Mock2() (*apicontext.DataContext, error) {
 	var dtx apicontext.DataContext
 	// Needs to create records in the db for the following because of foreign key constraints:
 	// Bare Min:
+
 	// CustomerUser
 	var err error
 	CustomerUserID := ""
@@ -248,15 +249,30 @@ func Mock2() (*apicontext.DataContext, error) {
 	dtx.CustomerID = 1
 
 	// ApiKeyType
-	keyType := "" // needed for when you create an API Key
-	if keyType, err = CreateApiKeyType("silly"); err != nil {
+	keyType := "SUPER"
+	keyTypeID := "" // needed for when you create an API Key
+	if keyTypeID, err = CreateApiKeyType(keyType); err != nil {
 		return &dtx, err
 	}
-	log.Println(keyType)
+	log.Println(keyTypeID)
 
-	// ApiKey
-	// ApiKeyToBrand
+	// ApiKey and ApiKeyToBrand
+	keyID := 0 // needed for when you create an API Key
+	apiKey := ""
+	if keyID, apiKey, err = CreateApiKey(CustomerUserID, keyTypeID, keyType); err != nil {
+		return &dtx, err
+	}
+	log.Println("api key ID")
+	log.Println(keyID)
+	log.Println("api key")
+	log.Println(apiKey)
+
 	// Brand
+
+	// Website
+
+	// WebsiteToBrand
+
 	return &dtx, nil
 }
 
@@ -333,4 +349,62 @@ func CreateApiKeyType(keyType string) (keyTypeID string, err error) {
 	keyTypeID = *typeID
 
 	return keyTypeID, nil
+}
+
+func CreateApiKey(UserID string, keyTypeID string, keyType string) (keyID int, key string, err error) {
+	var brandID = 1 // this will have to be changed massivly because customers can have more than 1 brand, so each api key needs to be assigned to the brands that it needs. for now everything will be set to 1 (curt brand)
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return keyID, key, err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+
+	stmt, err := tx.Prepare(insertAPIKey)
+	if err != nil {
+		return keyID, key, err
+	}
+	res, err := stmt.Exec(UserID, keyTypeID)
+	if err != nil {
+		tx.Rollback()
+		return keyID, key, err
+	}
+	keyID64, err := res.LastInsertId()
+	keyID = int(keyID64)
+	if err != nil {
+		return keyID, key, err
+	}
+	stmt, err = tx.Prepare(insertAPIKeyToBrand)
+	if err != nil {
+		return keyID, key, err
+	}
+	_, err = stmt.Exec(keyID, brandID)
+	if err != nil {
+		tx.Rollback()
+		return keyID, key, err
+	}
+	tx.Commit()
+
+	var apiKey *string
+	stmt, err = db.Prepare(getCustomerUserKeysWithoutAuth)
+	if err != nil {
+		return keyID, key, err
+	}
+	rows, err := stmt.Query(UserID, keyType)
+	if err != nil {
+		return keyID, key, err
+	}
+
+	for rows.Next() {
+		var kt string
+		err = rows.Scan(&apiKey, &kt)
+		if err != nil {
+			return keyID, key, err
+		}
+
+	}
+	defer rows.Close()
+	key = *apiKey
+
+	return keyID, key, nil
 }

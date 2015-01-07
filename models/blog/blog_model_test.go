@@ -19,7 +19,7 @@ func TestGetBlogs(t *testing.T) {
 	var c Category
 	var err error
 	MockedDTX := &apicontext.DataContext{}
-	if MockedDTX, err = apicontextmock.Mock2(); err != nil {
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
 		return
 	}
 
