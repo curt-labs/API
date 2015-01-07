@@ -145,6 +145,16 @@ var (
 	getKeyByDateType  = "SELECT id FROM ApiKeyType WHERE type = ?  AND date_added = ?"
 	createApiKeyType  = "INSERT INTO ApiKeyType (id, type, date_added) VALUES (UUID(),?,?)"
 	deleteApiKeyType  = "DELETE FROM ApiKeyType WHERE id = ? "
+
+	// Website Queries
+	getSite         = `SELECT ID, url, description FROM Website WHERE ID = ?`
+	getAllSites     = `SELECT ID, url, description FROM Website `
+	createSite      = `INSERT INTO Website (url, description) VALUES (?,?)`
+	updateSite      = `UPDATE Website SET url = ?, description = ? WHERE ID = ?`
+	deleteSite      = `DELETE FROM Website WHERE ID = ?`
+	joinToBrand     = `insert into WebsiteToBrand (WebsiteID, brandID) values (?,?)`
+	deleteBrandJoin = `delete from WebsiteToBrand where WebsiteID = ? and brandID = ?`
+	getBrands       = `select brandID from WebsiteToBrand where WebsiteID = ?`
 )
 
 func Mock() (*apicontext.DataContext, error) {
@@ -244,6 +254,7 @@ func Mock2() (*apicontext.DataContext, error) {
 	if CustomerUserID, err = CreateCustomerUser(); err != nil {
 		return &dtx, err
 	}
+	log.Println("Customer User ID")
 	log.Println(CustomerUserID)
 	dtx.UserID = CustomerUserID
 	dtx.CustomerID = 1
@@ -254,23 +265,31 @@ func Mock2() (*apicontext.DataContext, error) {
 	if keyTypeID, err = CreateApiKeyType(keyType); err != nil {
 		return &dtx, err
 	}
+	log.Println("keyTypeID")
 	log.Println(keyTypeID)
 
 	// ApiKey and ApiKeyToBrand
 	keyID := 0 // needed for when you create an API Key
 	apiKey := ""
-	if keyID, apiKey, err = CreateApiKey(CustomerUserID, keyTypeID, keyType); err != nil {
+	BrandID := 1
+	if keyID, apiKey, err = CreateApiKey(CustomerUserID, keyTypeID, keyType, BrandID); err != nil {
 		return &dtx, err
 	}
 	log.Println("api key ID")
 	log.Println(keyID)
 	log.Println("api key")
 	log.Println(apiKey)
+	dtx.APIKey = apiKey
 
 	// Brand
-
+	dtx.BrandID = BrandID
 	// Website
-
+	websiteID := 0
+	if websiteID, err = CreateWebsite("http://www.testWebsite23sdf.com", "bogus website"); err != nil {
+		return &dtx, err
+	}
+	log.Println("websiteID is:")
+	log.Println(websiteID)
 	// WebsiteToBrand
 
 	return &dtx, nil
@@ -351,8 +370,7 @@ func CreateApiKeyType(keyType string) (keyTypeID string, err error) {
 	return keyTypeID, nil
 }
 
-func CreateApiKey(UserID string, keyTypeID string, keyType string) (keyID int, key string, err error) {
-	var brandID = 1 // this will have to be changed massivly because customers can have more than 1 brand, so each api key needs to be assigned to the brands that it needs. for now everything will be set to 1 (curt brand)
+func CreateApiKey(UserID string, keyTypeID string, keyType string, brandID int) (keyID int, key string, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return keyID, key, err
@@ -407,4 +425,31 @@ func CreateApiKey(UserID string, keyTypeID string, keyType string) (keyID int, k
 	key = *apiKey
 
 	return keyID, key, nil
+}
+
+func CreateWebsite(url, desc string) (webID int, err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return webID, err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	stmt, err := tx.Prepare(createSite)
+	if err != nil {
+		return webID, err
+	}
+	defer stmt.Close()
+	res, err := stmt.Exec(url, desc)
+	if err != nil {
+		tx.Rollback()
+		return webID, err
+	}
+	tx.Commit()
+	id, err := res.LastInsertId()
+	webID = int(id)
+	if err != nil {
+		return webID, err
+	}
+
+	return webID, nil
 }
