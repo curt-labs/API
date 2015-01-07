@@ -1,6 +1,8 @@
 package customer
 
 import (
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	_ "github.com/go-sql-driver/mysql"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
@@ -9,6 +11,10 @@ import (
 func TestCustomerLocations(t *testing.T) {
 	var l CustomerLocation
 	var err error
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
 	Convey("Testing Locations", t, func() {
 
 		Convey("Testing Create", func() {
@@ -38,8 +44,9 @@ func TestCustomerLocations(t *testing.T) {
 			So(l.Name, ShouldNotEqual, "test")
 
 		})
+
 		Convey("Testing GetAll()", func() {
-			locations, err := GetAllLocations()
+			locations, err := GetAllLocations(MockedDTX.APIKey, MockedDTX.BrandID)
 			So(locations, ShouldNotBeNil)
 			So(err, ShouldBeNil)
 		})
