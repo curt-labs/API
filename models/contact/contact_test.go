@@ -178,7 +178,6 @@ func TestContacts(t *testing.T) {
 			})
 		})
 	})
-	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkGetAllContacts(b *testing.B) {
@@ -190,7 +189,6 @@ func BenchmarkGetAllContacts(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		GetAllContacts(1, 1, MockedDTX)
 	}
-	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkGetContact(b *testing.B) {

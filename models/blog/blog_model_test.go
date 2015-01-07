@@ -19,7 +19,7 @@ func TestGetBlogs(t *testing.T) {
 	var c Category
 	var err error
 	MockedDTX := &apicontext.DataContext{}
-	if MockedDTX, err = apicontextmock.Mock2(); err != nil {
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
 		return
 	}
 
@@ -122,7 +122,6 @@ func BenchmarkGetAllBlogs(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		GetAll(MockedDTX)
 	}
-	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkGetAllBlogCategories(b *testing.B) {
@@ -134,7 +133,6 @@ func BenchmarkGetAllBlogCategories(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		GetAllCategories(MockedDTX)
 	}
-	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 /**
@@ -189,7 +187,6 @@ func BenchmarkUpdateBlog(b *testing.B) {
 		b.StopTimer()
 		blog.Delete()
 	}
-	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkDeleteBlog(b *testing.B) {

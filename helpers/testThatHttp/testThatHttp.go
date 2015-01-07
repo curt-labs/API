@@ -55,7 +55,6 @@ func Request(reqType string, route string, paramKey string, paramVal string, han
 	if Response.Code != 200 {
 		log.Print("Response Error: ", Response)
 	}
-	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func RequestBenchmark(runs int, method, route string, body *url.Values, handler martini.Handler) {
