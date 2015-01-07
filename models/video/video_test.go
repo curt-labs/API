@@ -1,6 +1,9 @@
 package video
 
 import (
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
+	"github.com/curt-labs/GoAPI/models/brand"
 	"github.com/curt-labs/GoAPI/models/products"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
@@ -16,6 +19,11 @@ func TestVideo_New(t *testing.T) {
 	var p products.Part
 	var cat products.Category
 	var err error
+
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
 
 	//Creates
 	Convey("Testing Video Stuff", t, func() {
@@ -47,7 +55,8 @@ func TestVideo_New(t *testing.T) {
 		So(err, ShouldBeNil)
 		//create video
 		v.Title = "test vid"
-		p.ID = 11000 //force part
+		v.Brands = append(v.Brands, brand.Brand{ID: 1}) //matches mocked brand
+		p.ID = 11000                                    //force part
 
 		v.VideoType = vt
 		v.Categories = append(v.Categories, cat)
@@ -90,7 +99,7 @@ func TestVideo_New(t *testing.T) {
 		err = v.GetVideoDetails()
 		So(err, ShouldBeNil)
 		//get all
-		vs, err := GetAllVideos()
+		vs, err := GetAllVideos(MockedDTX)
 		So(err, ShouldBeNil)
 		So(len(vs), ShouldBeGreaterThan, 0)
 		//getall part videos
@@ -162,13 +171,20 @@ func TestVideo_New(t *testing.T) {
 		err = v.Delete()
 		So(err, ShouldBeNil)
 	})
+	_ = apicontextmock.DeMock(MockedDTX)
 
 }
 
 func BenchmarkGetAllVideos(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		GetAllVideos()
+	MockedDTX := &apicontext.DataContext{}
+	var err error
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
 	}
+	for i := 0; i < b.N; i++ {
+		GetAllVideos(MockedDTX)
+	}
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkGetPartVideos(b *testing.B) {

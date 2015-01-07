@@ -2,6 +2,7 @@ package video
 
 import (
 	"database/sql"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	_ "github.com/go-sql-driver/mysql"
 	"net/url"
@@ -17,15 +18,19 @@ type Video_Old struct {
 	Description string
 	Watchpage   *url.URL
 	Screenshot  *url.URL
+	BrandID     int
 }
 
 var (
-	uniqueVideoStmt = `select distinct embed_link, dateAdded, sort, title, description, watchpage, screenshot
-				from Video
-				order by sort`
+	uniqueVideoStmt = `select distinct v.embed_link, v.dateAdded, v.sort, v.title, v.description, v.watchpage, v.screenshot, v.brandID
+		from Video as v
+		join ApiKeyToBrand as akb on akb.brandID = v.brandID
+		join ApiKey as ak on ak.id = akb.keyID
+        && ak.api_key = ? && (v.brandID = ? or 0 = ?)
+        order by sort`
 )
 
-func UniqueVideos() (videos []Video_Old, err error) {
+func UniqueVideos(dtx *apicontext.DataContext) (videos []Video_Old, err error) {
 
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -39,7 +44,7 @@ func UniqueVideos() (videos []Video_Old, err error) {
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query()
+	rows, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	if err != nil {
 		return
 	}
@@ -55,6 +60,7 @@ func UniqueVideos() (videos []Video_Old, err error) {
 			&v.Description,
 			&watch,
 			&screen,
+			&v.BrandID,
 		)
 		if err != nil {
 			return

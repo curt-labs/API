@@ -2,6 +2,7 @@ package videos_ctlr
 
 import (
 	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/products"
 	"github.com/curt-labs/GoAPI/models/video"
@@ -12,11 +13,15 @@ import (
 )
 
 //gets old videos
-func DistinctVideos(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+func DistinctVideos(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 
-	videos, err := video.UniqueVideos()
+	videos, err := video.UniqueVideos(dtx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return ""
+	}
+	if len(videos) == 0 {
+		http.Error(w, "No videos.", http.StatusInternalServerError)
 		return ""
 	}
 
@@ -53,10 +58,10 @@ func GetVideoDetails(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 	}
 	return encoding.Must(enc.Encode(v))
 }
-func GetAllVideos(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func GetAllVideos(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var err error
 
-	vs, err := video.GetAllVideos()
+	vs, err := video.GetAllVideos(dtx)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

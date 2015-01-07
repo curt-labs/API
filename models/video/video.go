@@ -3,8 +3,10 @@ package video
 import (
 	"database/sql"
 	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
+	"github.com/curt-labs/GoAPI/models/brand"
 	"github.com/curt-labs/GoAPI/models/products"
 	_ "github.com/go-sql-driver/mysql"
 	"strconv"
@@ -25,6 +27,7 @@ type Video struct {
 	Categories   []products.Category `json:"categories,omitempty" xml:"categories,omitempty"`
 	Parts        []products.Part     `json:"parts,omitempty" xml:"parts,omitempty"`
 	WebsiteId    int                 `json:"websiteId,omitempty" xml:"websiteId,omitempty"` //TODO
+	Brands       brand.Brands        `json:"brands,omitempty" xml:"brands,omitempty"`
 }
 type Videos []Video
 
@@ -91,8 +94,13 @@ const (
 )
 
 var (
-	getVideo         = `SELECT ` + videoFields + `, ` + videoTypeFields + ` FROM VideoNew AS v LEFT JOIN videoType AS vt ON vt.vTypeID = v.subjectTypeID WHERE v.ID = ?`
-	getAllVideos     = `SELECT ` + videoFields + `, ` + videoTypeFields + ` FROM VideoNew AS v LEFT JOIN videoType AS vt ON vt.vTypeID = v.subjectTypeID`
+	getVideo     = `SELECT ` + videoFields + `, ` + videoTypeFields + ` FROM VideoNew AS v LEFT JOIN videoType AS vt ON vt.vTypeID = v.subjectTypeID WHERE v.ID = ?`
+	getAllVideos = `SELECT ` + videoFields + `, ` + videoTypeFields + ` FROM VideoNew AS v LEFT JOIN videoType AS vt ON vt.vTypeID = v.subjectTypeID
+			join VideoNewToBrand as vtb on vtb.videoID = v.ID
+			join ApiKeyToBrand as akb on akb.brandID = vtb.brandID
+			join ApiKey as ak on ak.id = akb.keyID
+            && ak.api_key = ? && (vtb.brandID = ? or 0 = ?)`
+	getBrands        = `select brandID from VideoNewToBrand where videoID = ?`
 	getAllCdnFiles   = `SELECT ` + cdnFileFields + `,` + cdnFileTypeFields + ` FROM CdnFile AS cf LEFT JOIN CdnFileType AS cft ON cft.ID = cf.typeID `
 	getAllChannels   = `SELECT ` + channelFields + `, ` + channelTypeFields + ` FROM Channel AS c LEFT JOIN ChannelType AS ct ON ct.ID = c.typeID `
 	getAllVideoTypes = `SELECT vt.vTypeID, ` + videoTypeFields + ` FROM videoType AS vt`
@@ -110,10 +118,12 @@ var (
 	createVideo             = `INSERT INTO VideoNew (subjectTypeID, title, description, dateAdded, dateModified, isPrimary, thumbnail) VALUES(?, ?, ?, ?, ?, ?, ?)`
 	updateVideo             = `UPDATE VideoNew SET subjectTypeID = ?, title = ?, description = ?, isPrimary = ?, thumbnail = ? WHERE ID = ?`
 	deleteVideo             = `DELETE FROM VideoNew WHERE ID = ?`
+	joinVideoBrand          = `insert into VideoNewToBrand (videoID, brandID) values(?,?)`
 	joinVideoCdn            = `INSERT INTO VideoCdnFiles(cdnID, videoID) VALUES(?,?)`
 	joinVideoChannel        = `INSERT INTO VideoChannels( channelID, videoID) VALUES(?,?)`
 	joinVideoPart           = `INSERT INTO VideoJoin(videoID, partID, catID, websiteID, isPrimary) VALUES(?,?,0,?,?)`
 	joinVideoCategory       = `INSERT INTO VideoJoin(videoID, partID, catID, websiteID, isPrimary) VALUES(?,0,?,?,?)`
+	deleteVideoBrandJoin    = `delete from VideoNewToBrand where videoID = ?`
 	deleteVideoCdnJoin      = `DELETE FROM VideoCdnFiles WHERE videoID = ?`
 	deleteVideoChannelJoin  = `DELETE FROM VideoChannels WHERE videoID = ?`
 	deleteVideoPartJoin     = `DELETE FROM VideoJoin WHERE videoID = ? AND partID = ?`
@@ -180,6 +190,7 @@ func (v *Video) GetVideoDetails() (err error) {
 		return err
 	}
 	baseChan := make(chan bool)
+	brandChan := make(chan bool)
 	chanChan := make(chan bool)
 	cdnChan := make(chan bool)
 	go func() (err error) {
@@ -188,6 +199,14 @@ func (v *Video) GetVideoDetails() (err error) {
 			return err
 		}
 		baseChan <- true
+		return err
+	}()
+	go func() (err error) {
+		err = v.GetBrands()
+		if err != nil {
+			return err
+		}
+		brandChan <- true
 		return err
 	}()
 	go func() (err error) {
@@ -210,13 +229,14 @@ func (v *Video) GetVideoDetails() (err error) {
 	}()
 
 	<-baseChan
+	<-brandChan
 	<-chanChan
 	<-cdnChan
 	go redis.Setex(redis_key, v, 86400)
 	return nil
 }
 
-func GetAllVideos() (vs Videos, err error) {
+func GetAllVideos(dtx *apicontext.DataContext) (vs Videos, err error) {
 	redis_key := "video"
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -233,7 +253,7 @@ func GetAllVideos() (vs Videos, err error) {
 		return vs, err
 	}
 	defer stmt.Close()
-	rows, err := stmt.Query()
+	rows, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	if err != nil {
 		return vs, err
 	}
@@ -278,6 +298,32 @@ func GetPartVideos(p products.Part) (vs Videos, err error) {
 	}
 	go redis.Setex(redis_key, vs, 86400)
 	return vs, err
+}
+func (v *Video) GetBrands() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(getBrands)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	res, err := stmt.Query(v.ID)
+	if err != nil {
+		return err
+	}
+	var b brand.Brand
+	for res.Next() {
+		err = res.Scan(&b.ID)
+		if err != nil {
+			return err
+		}
+		v.Brands = append(v.Brands, b)
+	}
+	return err
 }
 
 func (v *Video) GetChannels() (chs Channels, err error) {
@@ -364,10 +410,21 @@ func (v *Video) Create() (err error) {
 	v.ID = int(id)
 
 	// create joins
+	bChan := make(chan int)
 	fChan := make(chan int)
 	chChan := make(chan int)
 	catChan := make(chan int)
 	pChan := make(chan int)
+
+	go func() (err error) {
+		if len(v.Brands) > 0 {
+			for _, brand := range v.Brands {
+				err = v.CreateJoinBrand(brand.ID)
+			}
+		}
+		bChan <- 1
+		return err
+	}()
 
 	go func() (err error) {
 		if len(v.Files) > 0 {
@@ -405,7 +462,7 @@ func (v *Video) Create() (err error) {
 		pChan <- 1
 		return err
 	}()
-
+	<-bChan
 	<-fChan
 	<-chChan
 	<-catChan
@@ -434,10 +491,28 @@ func (v *Video) Update() (err error) {
 	tx.Commit()
 
 	// delete and create joins
+	bChan := make(chan int)
 	fChan := make(chan int)
 	chChan := make(chan int)
 	catChan := make(chan int)
 	pChan := make(chan int)
+
+	go func() (err error) {
+		err = v.DeleteJoinBrand()
+		if err != nil {
+			return err
+		}
+		if len(v.Brands) > 0 {
+			for _, brand := range v.Brands {
+				err = v.CreateJoinBrand(brand.ID)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		bChan <- 1
+		return nil
+	}()
 
 	go func() (err error) {
 		err = v.DeleteJoinFiles()
@@ -504,6 +579,7 @@ func (v *Video) Update() (err error) {
 		pChan <- 1
 		return nil
 	}()
+	<-bChan
 	<-fChan
 	<-chChan
 	<-catChan
@@ -532,10 +608,22 @@ func (v *Video) Delete() (err error) {
 	tx.Commit()
 
 	//delete and create joins
+	bChan := make(chan int)
 	fChan := make(chan int)
 	chChan := make(chan int)
 	catChan := make(chan int)
 	pChan := make(chan int)
+
+	go func() (err error) {
+		if len(v.Brands) > 0 {
+			err = v.DeleteJoinBrand()
+			if err != nil {
+				return err
+			}
+		}
+		bChan <- 1
+		return nil
+	}()
 
 	go func() (err error) {
 		if len(v.Files) > 0 {
@@ -581,11 +669,31 @@ func (v *Video) Delete() (err error) {
 		pChan <- 1
 		return nil
 	}()
+	<-bChan
 	<-fChan
 	<-chChan
 	<-catChan
 	<-pChan
 
+	return err
+}
+
+func (v *Video) CreateJoinBrand(brandID int) (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(joinVideoBrand)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(v.ID, brandID)
+	if err != nil {
+		return err
+	}
 	return err
 }
 
@@ -672,6 +780,24 @@ func (v *Video) CreateJoinCategory(c products.Category) (err error) {
 		return err
 	}
 	tx.Commit()
+	return err
+}
+func (v *Video) DeleteJoinBrand() (err error) {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(deleteVideoBrandJoin)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(v.ID)
+	if err != nil {
+		return err
+	}
 	return err
 }
 
