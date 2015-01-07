@@ -9,7 +9,7 @@ import (
 	"github.com/curt-labs/GoAPI/models/apiKeyType"
 	"github.com/curt-labs/GoAPI/models/cartIntegration"
 	"github.com/curt-labs/GoAPI/models/customer"
-	"github.com/curt-labs/GoAPI/models/products"
+	//"github.com/curt-labs/GoAPI/models/products"
 	. "github.com/smartystreets/goconvey/convey"
 	"net/url"
 	"strconv"
@@ -21,16 +21,16 @@ import (
 func TestCustomer(t *testing.T) {
 	var c customer.Customer
 	var cu customer.CustomerUser
-	var p products.Part
-	p.ID = 123
-	p.Create()
-	var price customer.Price
-	price.PartID = p.ID
-	price.Price = 1000000
+	//var p products.Part
+	//p.ID = 123
+	//p.Create()
+	//var price customer.Price
+	//price.PartID = p.ID
+	//price.Price = 1000000
 
-	var ci cartIntegration.CartIntegration
-	ci.PartID = p.ID
-	ci.CustPartID = 987654321
+	//var ci cartIntegration.CartIntegration
+	//ci.PartID = p.ID
+	//ci.CustPartID = 987654321
 
 	var pub, pri, auth apiKeyType.ApiKeyType
 	if database.EmptyDb != nil {
