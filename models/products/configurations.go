@@ -23,6 +23,7 @@ var (
 		where (p.status = 800 || p.status = 900) &&
 		bv.YearID = ? && ma.MakeName = ? &&
 		mo.ModelName = ? && s.SubmodelName = ?
+		&& p.brandID in(?)
 		order by cat.sort`
 	getDefinedConfigurationsForVehicleStmt = `
 		select distinct cat.name, ca.value,
@@ -311,7 +312,7 @@ type DefinedConfiguration struct {
 	ConfigID int
 }
 
-func (l *Lookup) GetConfigurations() error {
+func (l *Lookup) GetConfigurations(brandIds string) error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -324,7 +325,7 @@ func (l *Lookup) GetConfigurations() error {
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Query(l.Vehicle.Base.Year, l.Vehicle.Base.Make, l.Vehicle.Base.Model, l.Vehicle.Submodel)
+	res, err := stmt.Query(l.Vehicle.Base.Year, l.Vehicle.Base.Make, l.Vehicle.Base.Model, l.Vehicle.Submodel, brandIds)
 	if err != nil {
 		return err
 	}

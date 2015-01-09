@@ -33,13 +33,11 @@ var (
 		join vcdb_Make as ma on bv.MakeID = ma.ID
 		join vcdb_VehiclePart as vp on v.ID = vp.VehicleID
 		join Part as p on vp.PartNumber = p.partID
-		join ApiKeyToBrand as atb on atb.brandID = p.brandID
-		join ApiKey as ak on ak.id = atb.keyID
 		where (p.status = 800 || p.status = 900) && 
-		ak.api_key = ? &&
 		bv.YearID = ? && ma.MakeName = ? &&
 		mo.ModelName = ? && s.SubmodelName = ? &&
 		(v.ConfigID = 0 || v.ConfigID is null)
+		&& p.brandID in(?)
 		order by vp.PartNumber`
 	getBaseVehicleParts = `
 		select distinct vp.PartNumber
@@ -49,13 +47,11 @@ var (
 		join vcdb_Make as ma on bv.MakeID = ma.ID
 		join vcdb_VehiclePart as vp on v.ID = vp.VehicleID
 		join Part as p on vp.PartNumber = p.partID
-		join ApiKeyToBrand as atb on atb.brandID = p.brandID
-		join ApiKey as ak on ak.id = atb.keyID
 		where (p.status = 800 || p.status = 900) &&
-		ak.api_key = ? &&
 		bv.YearID = ? && ma.MakeName = ? &&
 		mo.ModelName = ? && (v.SubmodelID = 0 || v.SubmodelID is null) &&
 		(v.ConfigID = 0 || v.ConfigID is null)
+		&& p.brandID in (?)
 		order by vp.PartNumber`
 )
 
@@ -76,6 +72,7 @@ type Lookup struct {
 	Filter         interface{}           `json:"filter" xml:"filter"`
 	Pagination     Pagination            `json:"pagination" xml:"pagination"`
 	CustomerKey    string                `json:"-" xml:"-"`
+	Brands         string                `json:"-" xml:"-"`
 }
 
 type Pagination struct {
@@ -167,7 +164,7 @@ func (l *Lookup) loadVehicleParts(ch chan error) {
 		return
 	}
 
-	rows, err := stmt.Query(l.CustomerKey, l.Vehicle.Base.Year, l.Vehicle.Base.Make, l.Vehicle.Base.Model, l.Vehicle.Submodel)
+	rows, err := stmt.Query(l.Vehicle.Base.Year, l.Vehicle.Base.Make, l.Vehicle.Base.Model, l.Vehicle.Submodel, l.Brands)
 	if err != nil || rows == nil {
 		ch <- err
 		return
@@ -180,7 +177,6 @@ func (l *Lookup) loadVehicleParts(ch chan error) {
 		}
 	}
 	defer rows.Close()
-
 	ch <- nil
 	return
 }
@@ -199,7 +195,7 @@ func (l *Lookup) loadBaseVehicleParts(ch chan error) {
 		return
 	}
 
-	rows, err := stmt.Query(l.CustomerKey, l.Vehicle.Base.Year, l.Vehicle.Base.Make, l.Vehicle.Base.Model)
+	rows, err := stmt.Query(l.Vehicle.Base.Year, l.Vehicle.Base.Make, l.Vehicle.Base.Model, l.Brands)
 	if err != nil || rows == nil {
 		ch <- err
 		return

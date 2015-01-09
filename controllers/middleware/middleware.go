@@ -145,6 +145,11 @@ func processDataContext(r *http.Request, c martini.Context) *apicontext.DataCont
 		websiteID = id
 	}
 
+	globalMap := make(map[string]interface{})
+	globalMap["brandsString"], err = apicontext.GetBrandsString(apiKey, brandID)
+	if err != nil {
+		return nil
+	}
 	//returns our data context...shared amongst controllers
 	return &apicontext.DataContext{
 		APIKey:     apiKey,
@@ -152,6 +157,7 @@ func processDataContext(r *http.Request, c martini.Context) *apicontext.DataCont
 		WebsiteID:  websiteID,
 		UserID:     user.Id, //current authenticated user
 		CustomerID: user.CustomerID,
+		Globals:    globalMap,
 	}
 }
 

@@ -2,10 +2,12 @@ package vehicle
 
 import (
 	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/apifilter"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/products"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -19,9 +21,13 @@ var (
 // Finds further configuration options and parts that match
 // the given configuration. Doesn't start looking for parts
 // until the model is provided.
-func Query(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+func Query(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+	brands := dtx.Globals["brandsString"].(string)
+
 	var l products.Lookup
 	l.Vehicle = LoadVehicle(r)
+	l.Brands = brands
+	log.Print(l.Brands)
 
 	qs := r.URL.Query()
 	if qs.Get("key") != "" {
@@ -34,17 +40,17 @@ func Query(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string 
 	}
 
 	if l.Vehicle.Base.Year == 0 { // Get Years
-		if err := l.GetYears(); err != nil {
+		if err := l.GetYears(brands); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return err.Error()
 		}
 	} else if l.Vehicle.Base.Make == "" { // Get Makes
-		if err := l.GetMakes(); err != nil {
+		if err := l.GetMakes(brands); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return err.Error()
 		}
 	} else if l.Vehicle.Base.Model == "" { // Get Models
-		if err := l.GetModels(); err != nil {
+		if err := l.GetModels(brands); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return err.Error()
 		}
@@ -55,12 +61,12 @@ func Query(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string 
 		go l.LoadParts(partChan)
 
 		if l.Vehicle.Submodel == "" { // Get Submodels
-			if err := l.GetSubmodels(); err != nil {
+			if err := l.GetSubmodels(brands); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return err.Error()
 			}
 		} else { // Get configurations
-			if err := l.GetConfigurations(); err != nil {
+			if err := l.GetConfigurations(brands); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return err.Error()
 			}

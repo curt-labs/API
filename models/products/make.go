@@ -14,10 +14,11 @@ var (
 		join vcdb_VehiclePart as vp on v.ID = vp.VehicleID
 		join Part as p on vp.PartNumber = p.partID
 		where (p.status = 800 || p.status = 900) && bv.YearID = ?
+		&& p.brandID in (?)
 		order by m.MakeName`
 )
 
-func (l *Lookup) GetMakes() error {
+func (l *Lookup) GetMakes(brandIds string) error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -30,7 +31,7 @@ func (l *Lookup) GetMakes() error {
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Query(l.Vehicle.Base.Year)
+	res, err := stmt.Query(l.Vehicle.Base.Year, brandIds)
 	if err != nil {
 		return err
 	}

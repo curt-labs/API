@@ -16,10 +16,11 @@ var (
 		join vcdb_VehiclePart as vp on v.ID = vp.VehicleID
 		join Part as p on vp.PartNumber = p.partID
 		where (p.status = 800 || p.status = 900) && bv.YearID = ? && ma.MakeName = ? && mo.ModelName = ?
+		&& p.brandID in (?)
 		order by s.SubmodelName`
 )
 
-func (l *Lookup) GetSubmodels() error {
+func (l *Lookup) GetSubmodels(brandIds string) error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -32,7 +33,7 @@ func (l *Lookup) GetSubmodels() error {
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Query(l.Vehicle.Base.Year, l.Vehicle.Base.Make, l.Vehicle.Base.Model)
+	res, err := stmt.Query(l.Vehicle.Base.Year, l.Vehicle.Base.Make, l.Vehicle.Base.Model, brandIds)
 	if err != nil {
 		return err
 	}
