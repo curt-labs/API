@@ -41,10 +41,10 @@ func (p *Part) GetPricing() error {
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		if err = json.Unmarshal(data, &p.Pricing); err != nil {
-			return nil
+			return err
 		}
+		return nil
 	}
-
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -61,18 +61,21 @@ func (p *Part) GetPricing() error {
 	if err != nil || rows == nil {
 		return err
 	}
-
 	for rows.Next() {
 		var pr Price
+		var skip = false
 		err = rows.Scan(&pr.Type, &pr.Price, &pr.Enforced)
-		if err == nil {
+		for _, price := range p.Pricing {
+			if price.Type == pr.Type {
+				skip = true
+			}
+		}
+		if err == nil && skip == false {
 			p.Pricing = append(p.Pricing, pr)
 		}
 	}
 	defer rows.Close()
-
 	go redis.Setex(redis_key, p.Pricing, 86400)
-
 	return nil
 }
 

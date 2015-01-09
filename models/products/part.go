@@ -15,6 +15,7 @@ import (
 	"github.com/curt-labs/GoAPI/models/customer/content"
 	"github.com/curt-labs/GoAPI/models/vehicle"
 	_ "github.com/go-sql-driver/mysql"
+
 	"net/http"
 	"net/url"
 	"strconv"
@@ -477,8 +478,9 @@ func (p *Part) Basics() error {
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		if err = json.Unmarshal(data, &p); err != nil {
-			return nil
+			return err
 		}
+		return nil
 	}
 
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -541,8 +543,9 @@ func (p *Part) GetRelated() error {
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		if err = json.Unmarshal(data, &p.Related); err != nil {
-			return nil
+			return err
 		}
+		return nil
 	}
 
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -589,8 +592,9 @@ func (p *Part) GetContent() error {
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		if err = json.Unmarshal(data, &p.Content); err != nil {
-			return nil
+			return err
 		}
+		return nil
 	}
 
 	db, err := sql.Open("mysql", database.ConnectionString())

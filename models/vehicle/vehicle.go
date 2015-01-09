@@ -20,7 +20,12 @@ type Vehicle struct {
 	ID                    int
 	Year                  int
 	Make, Model, Submodel string
-	Configuration         []string
+	Configuration         []Config
+}
+
+type Config struct {
+	Type  string
+	Value string
 }
 
 var (
@@ -127,7 +132,8 @@ var (
 	reverseLookupStmt = `select
 												v.ID,bv.YearID, ma.MakeName, mo.ModelName,
 												IFNULL(sm.SubmodelName, "") as SubmodelName,
-												IFNULL(ca.value, "") as value
+												IFNULL(ca.value, "") as value,
+												IFNULL(cat.name,"") as type
 												from BaseVehicle bv
 												join vcdb_Vehicle v on bv.ID = v.BaseVehicleID
 												join vcdb_VehiclePart vp on v.ID = vp.VehicleID
@@ -136,6 +142,7 @@ var (
 												left join vcdb_Model mo on bv.ModelID = mo.ID
 												left join VehicleConfigAttribute vca on v.ConfigID = vca.VehicleConfigID
 												left join ConfigAttribute ca on vca.AttributeID = ca.ID
+												left join ConfigAttributeType cat on cat.ID =ca.ConfigAttributeTypeID
 												where vp.PartNumber = ?
 												group by bv.YearID, ma.MakeName, mo.ModelName, sm.SubmodelName, ca.value
 												order by bv.YearID desc, ma.MakeName, mo.ModelName, sm.SubmodelName`
@@ -186,7 +193,7 @@ func (v *Vehicle) GetNotes(partId int) (notes []string, err error) {
 	qrystmt := vehicleNotesStmt
 	if len(v.Configuration) > 0 {
 		for i, c := range v.Configuration {
-			qrystmt = qrystmt + "'" + api_helpers.Escape(c) + "'"
+			qrystmt = qrystmt + "'" + api_helpers.Escape(c.Value) + "'"
 			if i < len(v.Configuration)-1 {
 				qrystmt = qrystmt + ","
 			}
@@ -259,8 +266,9 @@ func ReverseLookup(partId int) (vehicles []Vehicle, err error) {
 		var mo string
 		var sm string
 		var configVal string
+		var configType string
 
-		if err = rows.Scan(&id, &year, &ma, &mo, &sm, &configVal); err != nil {
+		if err = rows.Scan(&id, &year, &ma, &mo, &sm, &configVal, &configType); err != nil {
 			break
 		}
 
@@ -268,15 +276,20 @@ func ReverseLookup(partId int) (vehicles []Vehicle, err error) {
 		if ok {
 			// Vehicle Record exists for this ID
 			// so we'll simply append this configuration variable
-			v.Configuration = append(v.Configuration, configVal)
+			config := Config{Type: configType, Value: configVal}
+			v.Configuration = append(v.Configuration, config)
 		} else {
+			config := Config{
+				Type:  configType,
+				Value: configVal,
+			}
 			v = Vehicle{
 				ID:            id,
 				Year:          year,
 				Make:          ma,
 				Model:         mo,
 				Submodel:      sm,
-				Configuration: []string{configVal},
+				Configuration: []Config{config},
 			}
 		}
 		vehicleArray[v.ID] = v
