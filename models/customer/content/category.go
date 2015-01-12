@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"time"
-	// "log"
 )
 
 type CategoryContent struct {
@@ -25,7 +24,7 @@ var (
 									group by ccb.catID, cc.id
 									order by ccb.catID`
 	customerCategoryContent = `select cc.id, cc.text,cc.added,cc.modified,cc.deleted,
-									ct.type,ct.allowHTML,ccb.catID
+									ct.cTypeID, ct.type,ct.allowHTML,ccb.catID
 									from CustomerContent as cc
 									join CustomerContentBridge as ccb on cc.id = ccb.contentID
 									join ContentType as ct on cc.typeID = ct.cTypeID
@@ -97,7 +96,6 @@ func GetAllCategoryContent(key string) (content []CategoryContent, err error) {
 // Retrieves specific category content for this customer
 func GetCategoryContent(catID int, key string) (content []CustomerContent, err error) {
 	content = make([]CustomerContent, 0) // initializer
-
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return content, err
@@ -120,6 +118,7 @@ func GetCategoryContent(catID int, key string) (content []CustomerContent, err e
 			&added,
 			&modified,
 			&deleted,
+			&c.ContentType.Id,
 			&c.ContentType.Type,
 			&c.ContentType.AllowHtml,
 			&catID,

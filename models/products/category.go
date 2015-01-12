@@ -10,6 +10,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	"github.com/curt-labs/GoAPI/models/customer/content"
 	_ "github.com/go-sql-driver/mysql"
+
 	"net/url"
 	"strings"
 	"time"
@@ -123,7 +124,7 @@ var (
 		left join Part as p on cp.partID = p.partID
 		where c.ParentID = ? && (p.status = null || (p.status = 800 || p.status = 900))`
 	CategoryContentStmt = `
-		select ct.type, c.text from ContentBridge cb
+		select ct.cTypeID, ct.type, c.text from ContentBridge cb
 		join Content as c on cb.contentID = c.contentID
 		left join ContentType as ct on c.cTypeID = ct.cTypeID
 		where cb.catID = ?`
@@ -263,7 +264,6 @@ func PopulateCategory(row *sql.Row, ch chan Category) {
 		initCat.ColorCode = fmt.Sprintf("rgb(%s,%s,%s)", cc[0:3], cc[3:6], cc[6:9])
 		initCat.FontCode = fmt.Sprintf("#%s", *fontCode)
 	}
-
 	con, err := initCat.GetContent()
 	if err == nil {
 		initCat.Content = con
@@ -499,6 +499,7 @@ func (c *Category) GetSubCategories(dtx ...*apicontext.DataContext) (cats []Cate
 }
 
 func (c *Category) GetCategory(key string, page int, count int, ignoreParts bool, v *Vehicle, specs *map[string][]string) error {
+	var err error
 	if c.ID == 0 {
 		return fmt.Errorf("error: %s", "invalid category reference")
 	}
@@ -600,7 +601,7 @@ func (c *Category) GetContent() (content []Content, err error) {
 
 	for conRows.Next() {
 		var con Content
-		if err := conRows.Scan(&con.ContentType.Type, &con.Text); err == nil {
+		if err := conRows.Scan(&con.ContentType.Id, &con.ContentType.Type, &con.Text); err == nil {
 			content = append(content, con)
 		}
 	}
@@ -610,6 +611,7 @@ func (c *Category) GetContent() (content []Content, err error) {
 }
 
 func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *map[string][]string) error {
+	var err error
 	c.ProductListing = &PaginatedProductListing{}
 	if c.ID == 0 {
 		return fmt.Errorf("error: %s %d", "invalid category reference", c.ID)
