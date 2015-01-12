@@ -7,6 +7,7 @@ import (
 
 func TestGetModels(t *testing.T) {
 	var l Lookup
+	l.Brands = append(l.Brands, 1)
 	Convey("Testing GetModels() without year/make", t, func() {
 		err := l.GetModels()
 		So(err, ShouldEqual, nil)

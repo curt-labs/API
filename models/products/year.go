@@ -4,34 +4,40 @@ import (
 	"database/sql"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	_ "github.com/go-sql-driver/mysql"
+	"strconv"
+	"strings"
 )
 
-var (
-	getYearsStmt = `
+func (l *Lookup) GetYears() error {
+	stmtBeginning := `
 		select distinct y.YearID from vcdb_Year as y
 		join BaseVehicle as bv on y.YearID = bv.YearID
 		join vcdb_Vehicle as v on bv.ID = v.BaseVehicleID
 		join vcdb_VehiclePart as vp on v.ID = vp.VehicleID
 		join Part as p on vp.PartNumber = p.partID
-		where (p.status = 800 || p.status = 900)
-		&& p.brandID in (?)
-		order by y.YearID desc`
-)
+		where (p.status = 800 || p.status = 900) `
+	stmtEnd := ` order by y.YearID desc`
+	brandStmt := " && p.brandID in ("
 
-func (l *Lookup) GetYears(brandIds string) error {
+	for _, b := range l.Brands {
+		brandStmt += strconv.Itoa(b) + ","
+	}
+	brandStmt = strings.TrimRight(brandStmt, ",") + ")"
+	wholeStmt := stmtBeginning + brandStmt + stmtEnd
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
 	}
 	defer db.Close()
 
-	stmt, err := db.Prepare(getYearsStmt)
+	stmt, err := db.Prepare(wholeStmt)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Query(brandIds)
+	res, err := stmt.Query()
 	if err != nil {
 		return err
 	}

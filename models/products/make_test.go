@@ -7,6 +7,7 @@ import (
 
 func TestGetMakes(t *testing.T) {
 	var l Lookup
+	l.Brands = append(l.Brands, 1)
 	Convey("Testing GetMakes() without year", t, func() {
 		err := l.GetMakes()
 		So(err, ShouldEqual, nil)

@@ -146,7 +146,7 @@ func processDataContext(r *http.Request, c martini.Context) *apicontext.DataCont
 	}
 
 	globalMap := make(map[string]interface{})
-	globalMap["brandsString"], err = apicontext.GetBrandsString(apiKey, brandID)
+	globalMap["brandsArray"], err = apicontext.GetBrandsArray(apiKey, brandID)
 	if err != nil {
 		return nil
 	}

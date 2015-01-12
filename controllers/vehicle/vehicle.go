@@ -22,11 +22,11 @@ var (
 // the given configuration. Doesn't start looking for parts
 // until the model is provided.
 func Query(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
-	brands := dtx.Globals["brandsString"].(string)
+	brandArray := dtx.Globals["brandsArray"].([]int)
 
 	var l products.Lookup
 	l.Vehicle = LoadVehicle(r)
-	l.Brands = brands
+	l.Brands = brandArray
 	log.Print(l.Brands)
 
 	qs := r.URL.Query()
@@ -40,17 +40,17 @@ func Query(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *ap
 	}
 
 	if l.Vehicle.Base.Year == 0 { // Get Years
-		if err := l.GetYears(brands); err != nil {
+		if err := l.GetYears(); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return err.Error()
 		}
 	} else if l.Vehicle.Base.Make == "" { // Get Makes
-		if err := l.GetMakes(brands); err != nil {
+		if err := l.GetMakes(); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return err.Error()
 		}
 	} else if l.Vehicle.Base.Model == "" { // Get Models
-		if err := l.GetModels(brands); err != nil {
+		if err := l.GetModels(); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return err.Error()
 		}
@@ -61,12 +61,12 @@ func Query(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *ap
 		go l.LoadParts(partChan)
 
 		if l.Vehicle.Submodel == "" { // Get Submodels
-			if err := l.GetSubmodels(brands); err != nil {
+			if err := l.GetSubmodels(); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return err.Error()
 			}
 		} else { // Get configurations
-			if err := l.GetConfigurations(brands); err != nil {
+			if err := l.GetConfigurations(); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return err.Error()
 			}

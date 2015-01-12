@@ -11,6 +11,7 @@ import (
 
 func TestGetConfigurations(t *testing.T) {
 	var l Lookup
+	l.Brands = append(l.Brands, 1)
 	Convey("Testing GetConfigurations()", t, func() {
 
 		Convey("without year/make/model", func() {

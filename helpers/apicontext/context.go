@@ -99,3 +99,49 @@ func GetBrandsString(apiKey string, brandId int) (string, error) {
 
 	return brands, err
 }
+
+func GetBrandsArray(apiKey string, brandId int) ([]int, error) {
+	var err error
+	var brandInts []int
+	var brandIdApproved bool = false
+
+	//get brandIds from apiKey
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return brandInts, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(apiToBrandStmt)
+	if err != nil {
+		return brandInts, err
+	}
+	defer stmt.Close()
+	res, err := stmt.Query(apiKey)
+	if err != nil {
+		return brandInts, err
+	}
+	var b int
+	for res.Next() {
+		err = res.Scan(&b)
+		if err != nil {
+			return brandInts, err
+		}
+		brandInts = append(brandInts, b)
+	}
+	if brandId > 0 {
+		for _, bId := range brandInts {
+			if bId == brandId {
+				brandIdApproved = true
+				brandInts = []int{brandId}
+				return brandInts, err
+			}
+		}
+	}
+	if brandId > 0 && brandIdApproved == false {
+		brandInts = []int{0}
+		return brandInts, err
+	}
+
+	return brandInts, err
+}

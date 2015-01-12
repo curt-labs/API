@@ -8,6 +8,7 @@ import (
 
 func TestLoadParts(t *testing.T) {
 	var l Lookup
+	l.Brands = append(l.Brands, 1)
 	Convey("Testing LoadParts()", t, func() {
 
 		Convey("without year/make/model", func() {
@@ -136,6 +137,7 @@ func TestLoadParts(t *testing.T) {
 
 func TestGetVcdbID(t *testing.T) {
 	var l Lookup
+	l.Brands = append(l.Brands, 1)
 	Convey("Testing GetVcdbID()", t, func() {
 
 		Convey("without year/make/model", func() {

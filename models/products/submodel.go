@@ -4,10 +4,12 @@ import (
 	"database/sql"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	_ "github.com/go-sql-driver/mysql"
+	"strconv"
+	"strings"
 )
 
-var (
-	getSubmodelStmt = `
+func (l *Lookup) GetSubmodels() error {
+	stmtBeginning := `
 		select distinct s.SubmodelName from vcdb_Vehicle as v
 		join Submodel as s on v.SubModelID = s.ID
 		join BaseVehicle as bv on v.BaseVehicleID = bv.ID
@@ -15,25 +17,29 @@ var (
 		join vcdb_Make as ma on bv.MakeID = ma.ID
 		join vcdb_VehiclePart as vp on v.ID = vp.VehicleID
 		join Part as p on vp.PartNumber = p.partID
-		where (p.status = 800 || p.status = 900) && bv.YearID = ? && ma.MakeName = ? && mo.ModelName = ?
-		&& p.brandID in (?)
-		order by s.SubmodelName`
-)
+		where (p.status = 800 || p.status = 900) && bv.YearID = ? && ma.MakeName = ? && mo.ModelName = ? `
+	stmtEnd := ` order by s.SubmodelName`
+	brandStmt := " && p.brandID in ("
 
-func (l *Lookup) GetSubmodels(brandIds string) error {
+	for _, b := range l.Brands {
+		brandStmt += strconv.Itoa(b) + ","
+	}
+	brandStmt = strings.TrimRight(brandStmt, ",") + ")"
+	wholeStmt := stmtBeginning + brandStmt + stmtEnd
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
 	}
 	defer db.Close()
 
-	stmt, err := db.Prepare(getSubmodelStmt)
+	stmt, err := db.Prepare(wholeStmt)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Query(l.Vehicle.Base.Year, l.Vehicle.Base.Make, l.Vehicle.Base.Model, brandIds)
+	res, err := stmt.Query(l.Vehicle.Base.Year, l.Vehicle.Base.Make, l.Vehicle.Base.Model)
 	if err != nil {
 		return err
 	}

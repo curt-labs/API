@@ -5,6 +5,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	_ "github.com/go-sql-driver/mysql"
+	"strconv"
 	"strings"
 )
 
@@ -72,7 +73,7 @@ type Lookup struct {
 	Filter         interface{}           `json:"filter" xml:"filter"`
 	Pagination     Pagination            `json:"pagination" xml:"pagination"`
 	CustomerKey    string                `json:"-" xml:"-"`
-	Brands         string                `json:"-" xml:"-"`
+	Brands         []int                 `json:"-" xml:"-"`
 }
 
 type Pagination struct {
@@ -100,15 +101,15 @@ func (l *Lookup) LoadParts(ch chan []Part) {
 
 		chosenValArr := make(map[string]string, 0)
 		for _, config := range l.Vehicle.Configurations {
-			chosenValArr[strings.ToLower(config.Value)] = strings.ToLower(config.Value)
+			chosenValArr[strings.ToLower(config.Value)] = strings.TrimSpace(strings.ToLower(config.Value))
 		}
 
 		for _, config := range *configs {
-			configValArr := make(map[string]string, 0)
+			// configValArr := make(map[string]string, 0)
 			matches := true
 			for _, val := range config {
-				v := strings.ToLower(val.Value)
-				configValArr[v] = v
+
+				v := strings.TrimSpace(strings.ToLower(val.Value))
 
 				if _, ok := chosenValArr[v]; !ok {
 					matches = false
@@ -151,6 +152,26 @@ func (l *Lookup) LoadParts(ch chan []Part) {
 }
 
 func (l *Lookup) loadVehicleParts(ch chan error) {
+	stmtBeginning := `select distinct vp.PartNumber
+		from vcdb_Vehicle as v
+		join Submodel as s on v.SubModelID = s.ID
+		join BaseVehicle as bv on v.BaseVehicleID = bv.ID
+		join vcdb_Model as mo on bv.ModelID = mo.ID
+		join vcdb_Make as ma on bv.MakeID = ma.ID
+		join vcdb_VehiclePart as vp on v.ID = vp.VehicleID
+		join Part as p on vp.PartNumber = p.partID
+		where (p.status = 800 || p.status = 900) && 
+		bv.YearID = ? && ma.MakeName = ? &&
+		mo.ModelName = ? && s.SubmodelName = ? &&
+		(v.ConfigID = 0 || v.ConfigID is null)`
+	stmtEnd := `order by vp.PartNumber`
+	brandStmt := " && p.brandID in ("
+	for _, b := range l.Brands {
+		brandStmt += strconv.Itoa(b) + ","
+	}
+	brandStmt = strings.TrimRight(brandStmt, ",") + ")"
+	wholeStmt := stmtBeginning + brandStmt + stmtEnd
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		ch <- err
@@ -158,13 +179,13 @@ func (l *Lookup) loadVehicleParts(ch chan error) {
 	}
 	defer db.Close()
 
-	stmt, err := db.Prepare(getVehicleParts)
+	stmt, err := db.Prepare(wholeStmt)
 	if err != nil {
 		ch <- err
 		return
 	}
 
-	rows, err := stmt.Query(l.Vehicle.Base.Year, l.Vehicle.Base.Make, l.Vehicle.Base.Model, l.Vehicle.Submodel, l.Brands)
+	rows, err := stmt.Query(l.Vehicle.Base.Year, l.Vehicle.Base.Make, l.Vehicle.Base.Model, l.Vehicle.Submodel)
 	if err != nil || rows == nil {
 		ch <- err
 		return
@@ -182,6 +203,25 @@ func (l *Lookup) loadVehicleParts(ch chan error) {
 }
 
 func (l *Lookup) loadBaseVehicleParts(ch chan error) {
+	stmtBeginning := `select distinct vp.PartNumber
+		from vcdb_Vehicle as v
+		join BaseVehicle as bv on v.BaseVehicleID = bv.ID
+		join vcdb_Model as mo on bv.ModelID = mo.ID
+		join vcdb_Make as ma on bv.MakeID = ma.ID
+		join vcdb_VehiclePart as vp on v.ID = vp.VehicleID
+		join Part as p on vp.PartNumber = p.partID
+		where (p.status = 800 || p.status = 900) &&
+		bv.YearID = ? && ma.MakeName = ? &&
+		mo.ModelName = ? && (v.SubmodelID = 0 || v.SubmodelID is null) &&
+		(v.ConfigID = 0 || v.ConfigID is null)`
+	stmtEnd := `order by vp.PartNumber`
+	brandStmt := " && p.brandID in ("
+	for _, b := range l.Brands {
+		brandStmt += strconv.Itoa(b) + ","
+	}
+	brandStmt = strings.TrimRight(brandStmt, ",") + ")"
+	wholeStmt := stmtBeginning + brandStmt + stmtEnd
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		ch <- err
@@ -189,13 +229,13 @@ func (l *Lookup) loadBaseVehicleParts(ch chan error) {
 	}
 	defer db.Close()
 
-	stmt, err := db.Prepare(getBaseVehicleParts)
+	stmt, err := db.Prepare(wholeStmt)
 	if err != nil {
 		ch <- err
 		return
 	}
 
-	rows, err := stmt.Query(l.Vehicle.Base.Year, l.Vehicle.Base.Make, l.Vehicle.Base.Model, l.Brands)
+	rows, err := stmt.Query(l.Vehicle.Base.Year, l.Vehicle.Base.Make, l.Vehicle.Base.Model)
 	if err != nil || rows == nil {
 		ch <- err
 		return

@@ -4,34 +4,39 @@ import (
 	"database/sql"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	_ "github.com/go-sql-driver/mysql"
+	"strconv"
+	"strings"
 )
 
-var (
-	getMakeStmt = `
+func (l *Lookup) GetMakes() error {
+	stmtBeginning := `
 		select distinct m.MakeName from vcdb_Make as m
 		join BaseVehicle as bv on m.ID = bv.MakeID
 		join vcdb_Vehicle as v on bv.ID = v.BaseVehicleID
 		join vcdb_VehiclePart as vp on v.ID = vp.VehicleID
 		join Part as p on vp.PartNumber = p.partID
-		where (p.status = 800 || p.status = 900) && bv.YearID = ?
-		&& p.brandID in (?)
-		order by m.MakeName`
-)
+		where (p.status = 800 || p.status = 900) && bv.YearID = ? `
+	stmtEnd := `	order by m.MakeName`
+	brandStmt := " && p.brandID in ("
+	for _, b := range l.Brands {
+		brandStmt += strconv.Itoa(b) + ","
+	}
+	brandStmt = strings.TrimRight(brandStmt, ",") + ")"
+	wholeStmt := stmtBeginning + brandStmt + stmtEnd
 
-func (l *Lookup) GetMakes(brandIds string) error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
 	}
 	defer db.Close()
 
-	stmt, err := db.Prepare(getMakeStmt)
+	stmt, err := db.Prepare(wholeStmt)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Query(l.Vehicle.Base.Year, brandIds)
+	res, err := stmt.Query(l.Vehicle.Base.Year)
 	if err != nil {
 		return err
 	}
