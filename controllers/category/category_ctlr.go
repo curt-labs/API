@@ -9,6 +9,7 @@ import (
 	"github.com/curt-labs/GoAPI/models/products"
 	"github.com/go-martini/martini"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -93,9 +94,11 @@ func GetCategory(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 func Parents(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	qs := r.URL.Query()
 	key := qs.Get("key")
+
 	var err error
 	var c []products.Category
 	var brands []int
+	log.Print(dtx.BrandID)
 	if dtx.BrandID == 0 {
 		brands, err = dtx.GetBrandsFromKey()
 		if err != nil {
@@ -114,7 +117,11 @@ func Parents(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *
 		}
 		c = append(c, cats...)
 	}
-
+	log.Print(c)
+	if len(c) < 1 {
+		http.Error(w, "No results", http.StatusInternalServerError)
+		return ""
+	}
 	return encoding.Must(enc.Encode(c))
 }
 
