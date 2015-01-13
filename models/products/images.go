@@ -80,9 +80,9 @@ func (p *Part) GetImages(dtx *apicontext.DataContext) error {
 	defer rows.Close()
 
 	p.Images = images
-
-	go redis.Setex(redis_key, p.Images, redis.CacheTimeout)
-
+	if brands != "" {
+		go redis.Setex(redis_key, p.Images, redis.CacheTimeout)
+	}
 	return nil
 }
 

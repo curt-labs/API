@@ -62,8 +62,8 @@ func (p *Part) GetAttributes(dtx *apicontext.DataContext) (err error) {
 	defer rows.Close()
 
 	p.Attributes = attrs
-
-	go redis.Setex(redis_key, p.Attributes, redis.CacheTimeout)
-
+	if brands != "" {
+		go redis.Setex(redis_key, p.Attributes, redis.CacheTimeout)
+	}
 	return
 }

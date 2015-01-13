@@ -73,6 +73,8 @@ func (l *Lookup) GetMakes(dtx *apicontext.DataContext) error {
 		PerPage:       len(l.Makes),
 		TotalPages:    1,
 	}
-	redis.Setex(redis_key, l.Makes, 86400)
+	if brands != "" {
+		redis.Setex(redis_key, l.Makes, 86400)
+	}
 	return nil
 }

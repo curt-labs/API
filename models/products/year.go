@@ -75,8 +75,8 @@ func (l *Lookup) GetYears(dtx *apicontext.DataContext) error {
 		PerPage:       len(l.Years),
 		TotalPages:    1,
 	}
-
-	go redis.Setex(redis_key, l.Years, 86400)
-
+	if brands != "" {
+		go redis.Setex(redis_key, l.Years, 86400)
+	}
 	return nil
 }

@@ -284,8 +284,6 @@ func TopTierCategories(dtx *apicontext.DataContext) (cats []Category, err error)
 	var brands string
 	if dtx.Globals["brandsString"] != nil {
 		brands = dtx.Globals["brandsString"].(string)
-	} else {
-		brands = "0"
 	}
 
 	redis_key := fmt.Sprintf("category:top:%s", brands)
@@ -339,9 +337,9 @@ func TopTierCategories(dtx *apicontext.DataContext) (cats []Category, err error)
 	}
 
 	sortutil.AscByField(cats, "Sort")
-
-	go redis.Setex(redis_key, cats, 86400)
-
+	if brands != "" {
+		go redis.Setex(redis_key, cats, 86400)
+	}
 	return
 }
 
@@ -349,8 +347,6 @@ func GetCategoryByTitle(cat_title string, dtx *apicontext.DataContext) (cat Cate
 	var brands string
 	if dtx.Globals["brandsString"] != nil {
 		brands = dtx.Globals["brandsString"].(string)
-	} else {
-		brands = "0"
 	}
 	redis_key := fmt.Sprintf("category:title:%s:%s", cat_title, brands)
 	// Attempt to get the category from Redis
@@ -383,8 +379,9 @@ func GetCategoryByTitle(cat_title string, dtx *apicontext.DataContext) (cat Cate
 	ch := make(chan Category)
 	go PopulateCategory(catRow, ch, dtx)
 	cat = <-ch
-
-	go redis.Setex(redis_key, cat, 86400)
+	if brands != "" {
+		go redis.Setex(redis_key, cat, 86400)
+	}
 	return cat, err
 }
 
@@ -436,8 +433,6 @@ func (c *Category) GetSubCategories(dtx *apicontext.DataContext) (cats []Categor
 	var brands string
 	if dtx.Globals["brandsString"] != nil {
 		brands = dtx.Globals["brandsString"].(string)
-	} else {
-		brands = "0"
 	}
 
 	redis_key := fmt.Sprintf("category:%d:subs:%s", c.ID, brands)
@@ -471,8 +466,9 @@ func (c *Category) GetSubCategories(dtx *apicontext.DataContext) (cats []Categor
 	ch := make(chan []Category, 0)
 	go PopulateCategoryMulti(catRows, ch)
 	cats = <-ch
-
-	go redis.Setex(redis_key, cats, 86400)
+	if brands != "" {
+		go redis.Setex(redis_key, cats, 86400)
+	}
 	return
 }
 

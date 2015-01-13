@@ -40,7 +40,7 @@ func TestLoadParts(t *testing.T) {
 		})
 
 		Convey("with year", func() {
-			err := l.GetYears()
+			err := l.GetYears(MockedDTX)
 			So(err, ShouldEqual, nil)
 			if len(l.Years) == 0 {
 				return
@@ -55,13 +55,13 @@ func TestLoadParts(t *testing.T) {
 		})
 
 		Convey("with year/make", func() {
-			err := l.GetYears()
+			err := l.GetYears(MockedDTX)
 			So(err, ShouldEqual, nil)
 			if len(l.Years) == 0 {
 				return
 			}
 			l.Vehicle.Base.Year = l.Years[api_helpers.RandGenerator(len(l.Years)-1)]
-			err = l.GetMakes()
+			err = l.GetMakes(MockedDTX)
 			So(err, ShouldEqual, nil)
 			if len(l.Makes) == 0 {
 				return
@@ -77,14 +77,14 @@ func TestLoadParts(t *testing.T) {
 
 		Convey("with year/make/model", func() {
 
-			err := l.GetYears()
+			err := l.GetYears(MockedDTX)
 			So(err, ShouldEqual, nil)
 			if len(l.Years) == 0 {
 				return
 			}
 			l.Vehicle.Base.Year = l.Years[api_helpers.RandGenerator(len(l.Years)-1)]
 
-			err = l.GetMakes()
+			err = l.GetMakes(MockedDTX)
 			So(err, ShouldEqual, nil)
 			if len(l.Makes) == 0 {
 				return
@@ -106,14 +106,14 @@ func TestLoadParts(t *testing.T) {
 
 		Convey("with year/make/model/submodel", func() {
 
-			err := l.GetYears()
+			err := l.GetYears(MockedDTX)
 			So(err, ShouldEqual, nil)
 			if len(l.Years) == 0 {
 				return
 			}
 			l.Vehicle.Base.Year = l.Years[api_helpers.RandGenerator(len(l.Years)-1)]
 
-			err = l.GetMakes()
+			err = l.GetMakes(MockedDTX)
 			So(err, ShouldEqual, nil)
 			if len(l.Makes) == 0 {
 				return
@@ -146,7 +146,12 @@ func TestLoadParts(t *testing.T) {
 
 func TestGetVcdbID(t *testing.T) {
 	var l Lookup
+	var err error
 	l.Brands = append(l.Brands, 1)
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
 	Convey("Testing GetVcdbID()", t, func() {
 
 		Convey("without year/make/model", func() {
@@ -156,7 +161,7 @@ func TestGetVcdbID(t *testing.T) {
 		})
 
 		Convey("with year", func() {
-			err := l.GetYears()
+			err := l.GetYears(MockedDTX)
 			So(err, ShouldEqual, nil)
 			if len(l.Years) == 0 {
 				return
@@ -169,13 +174,13 @@ func TestGetVcdbID(t *testing.T) {
 		})
 
 		Convey("with year/make", func() {
-			err := l.GetYears()
+			err := l.GetYears(MockedDTX)
 			So(err, ShouldEqual, nil)
 			if len(l.Years) == 0 {
 				return
 			}
 			l.Vehicle.Base.Year = l.Years[api_helpers.RandGenerator(len(l.Years)-1)]
-			err = l.GetMakes()
+			err = l.GetMakes(MockedDTX)
 			So(err, ShouldEqual, nil)
 			if len(l.Makes) == 0 {
 				return
@@ -189,14 +194,14 @@ func TestGetVcdbID(t *testing.T) {
 
 		Convey("with year/make/model", func() {
 
-			err := l.GetYears()
+			err := l.GetYears(MockedDTX)
 			So(err, ShouldEqual, nil)
 			if len(l.Years) == 0 {
 				return
 			}
 			l.Vehicle.Base.Year = l.Years[api_helpers.RandGenerator(len(l.Years)-1)]
 
-			err = l.GetMakes()
+			err = l.GetMakes(MockedDTX)
 			So(err, ShouldEqual, nil)
 			if len(l.Makes) == 0 {
 				return
@@ -220,14 +225,14 @@ func TestGetVcdbID(t *testing.T) {
 
 		Convey("with year/make/model/submodel", func() {
 
-			err := l.GetYears()
+			err := l.GetYears(MockedDTX)
 			So(err, ShouldEqual, nil)
 			if len(l.Years) == 0 {
 				return
 			}
 			l.Vehicle.Base.Year = l.Years[api_helpers.RandGenerator(len(l.Years)-1)]
 
-			err = l.GetMakes()
+			err = l.GetMakes(MockedDTX)
 			So(err, ShouldEqual, nil)
 			if len(l.Makes) == 0 {
 				return
@@ -264,4 +269,5 @@ func TestGetVcdbID(t *testing.T) {
 			So(id, ShouldEqual, 0)
 		})
 	})
+	_ = apicontextmock.DeMock(MockedDTX)
 }
