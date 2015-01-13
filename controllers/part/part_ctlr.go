@@ -153,7 +153,7 @@ func GetRelated(w http.ResponseWriter, r *http.Request, params martini.Params, e
 		ID: id,
 	}
 
-	err := p.GetRelated()
+	err := p.GetRelated(dtx)
 	var parts []products.Part
 	c := make(chan int, len(p.Related))
 	for _, rel := range p.Related {
@@ -260,13 +260,13 @@ func Attributes(w http.ResponseWriter, r *http.Request, params martini.Params, e
 	return encoding.Must(enc.Encode(p.Attributes))
 }
 
-func GetContent(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+func GetContent(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	id, _ := strconv.Atoi(params["part"])
 	p := products.Part{
 		ID: id,
 	}
 
-	err := p.GetContent()
+	err := p.GetContent(dtx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -320,13 +320,13 @@ func Videos(w http.ResponseWriter, r *http.Request, params martini.Params, enc e
 	return encoding.Must(enc.Encode(p.Videos))
 }
 
-func InstallSheet(w http.ResponseWriter, r *http.Request, params martini.Params) {
+func InstallSheet(w http.ResponseWriter, r *http.Request, params martini.Params, dtx *apicontext.DataContext) {
 	id, _ := strconv.Atoi(strings.Split(params["part"], ".")[0])
 	p := products.Part{
 		ID: id,
 	}
 
-	data, err := p.GetInstallSheet(r)
+	data, err := p.GetInstallSheet(r, dtx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
