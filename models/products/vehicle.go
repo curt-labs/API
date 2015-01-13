@@ -2,6 +2,7 @@ package products
 
 import (
 	"database/sql"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	_ "github.com/go-sql-driver/mysql"
@@ -84,7 +85,7 @@ type Pagination struct {
 	TotalPages    int `json:"total_pages" xml:"total_pages"`
 }
 
-func (l *Lookup) LoadParts(ch chan []Part) {
+func (l *Lookup) LoadParts(ch chan []Part, dtx *apicontext.DataContext) {
 	parts := make([]Part, 0)
 
 	vehicleChan := make(chan error)
@@ -130,7 +131,7 @@ func (l *Lookup) LoadParts(ch chan []Part) {
 
 	parts = make([]Part, 0)
 	for i, p := range l.Parts {
-		if err := p.Get(l.CustomerKey); err == nil && p.ShortDesc != "" {
+		if err := p.Get(dtx); err == nil && p.ShortDesc != "" {
 			parts = append(parts, p)
 		} else if len(parts) > 0 {
 			parts = append(parts[:i], parts[i+1:]...)

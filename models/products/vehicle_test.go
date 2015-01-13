@@ -2,18 +2,26 @@ package products
 
 import (
 	"github.com/curt-labs/GoAPI/helpers/api"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
 
 func TestLoadParts(t *testing.T) {
 	var l Lookup
+	var err error
 	l.Brands = append(l.Brands, 1)
+
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
 	Convey("Testing LoadParts()", t, func() {
 
 		Convey("without year/make/model", func() {
 			ch := make(chan []Part)
-			go l.LoadParts(ch)
+			go l.LoadParts(ch, MockedDTX)
 			parts := <-ch
 			So(parts, ShouldNotEqual, nil)
 			So(len(parts), ShouldEqual, 0)
@@ -25,7 +33,7 @@ func TestLoadParts(t *testing.T) {
 			l.Vehicle.Base.Model = "123"
 			l.Vehicle.Submodel = "LKJ"
 			ch := make(chan []Part)
-			go l.LoadParts(ch)
+			go l.LoadParts(ch, MockedDTX)
 			parts := <-ch
 			So(parts, ShouldNotEqual, nil)
 			So(len(parts), ShouldEqual, 0)
@@ -40,7 +48,7 @@ func TestLoadParts(t *testing.T) {
 			l.Vehicle.Base.Year = l.Years[api_helpers.RandGenerator(len(l.Years)-1)]
 
 			ch := make(chan []Part)
-			go l.LoadParts(ch)
+			go l.LoadParts(ch, MockedDTX)
 			parts := <-ch
 			So(parts, ShouldNotEqual, nil)
 			So(len(parts), ShouldEqual, 0)
@@ -61,7 +69,7 @@ func TestLoadParts(t *testing.T) {
 			l.Vehicle.Base.Make = l.Makes[api_helpers.RandGenerator(len(l.Makes)-1)]
 
 			ch := make(chan []Part)
-			go l.LoadParts(ch)
+			go l.LoadParts(ch, MockedDTX)
 			parts := <-ch
 			So(parts, ShouldNotEqual, nil)
 			So(len(parts), ShouldEqual, 0)
@@ -91,7 +99,7 @@ func TestLoadParts(t *testing.T) {
 			l.Vehicle.Base.Model = l.Models[api_helpers.RandGenerator(len(l.Models)-1)]
 
 			ch := make(chan []Part)
-			go l.LoadParts(ch)
+			go l.LoadParts(ch, MockedDTX)
 			parts := <-ch
 			So(parts, ShouldNotEqual, nil)
 		})
@@ -128,11 +136,12 @@ func TestLoadParts(t *testing.T) {
 			l.Vehicle.Submodel = l.Submodels[api_helpers.RandGenerator(len(l.Submodels)-1)]
 
 			ch := make(chan []Part)
-			go l.LoadParts(ch)
+			go l.LoadParts(ch, MockedDTX)
 			parts := <-ch
 			So(parts, ShouldNotEqual, nil)
 		})
 	})
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func TestGetVcdbID(t *testing.T) {

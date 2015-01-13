@@ -1,6 +1,7 @@
 package vinLookup
 
 import (
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/vinLookup"
 	"github.com/go-martini/martini"
@@ -8,10 +9,10 @@ import (
 	"strconv"
 )
 
-func GetParts(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func GetParts(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	vin := params["vin"]
 
-	parts, err := vinLookup.VinPartLookup(vin)
+	parts, err := vinLookup.VinPartLookup(vin, dtx)
 	if err != nil {
 		return err.Error()
 	}
@@ -31,7 +32,7 @@ func GetConfigs(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, pa
 	return encoding.Must(enc.Encode(configs))
 }
 
-func GetPartsFromVehicleID(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func GetPartsFromVehicleID(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	vehicleID := params["vehicleID"]
 	id, err := strconv.Atoi(vehicleID)
 	if err != nil {
@@ -39,7 +40,7 @@ func GetPartsFromVehicleID(w http.ResponseWriter, r *http.Request, enc encoding.
 	}
 	var v vinLookup.CurtVehicle
 	v.ID = id
-	parts, err := v.GetPartsFromVehicleConfig()
+	parts, err := v.GetPartsFromVehicleConfig(dtx)
 	if err != nil {
 		return err.Error()
 

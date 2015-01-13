@@ -219,7 +219,7 @@ func PopulateCategoryMulti(rows *sql.Rows, ch chan []Category) {
 	ch <- cats
 }
 
-func PopulateCategory(row *sql.Row, ch chan Category) {
+func PopulateCategory(row *sql.Row, ch chan Category, dtx *apicontext.DataContext) {
 	if row == nil {
 		ch <- Category{}
 		return
@@ -269,7 +269,7 @@ func PopulateCategory(row *sql.Row, ch chan Category) {
 		initCat.Content = con
 	}
 
-	if subCats, err := initCat.GetSubCategories(); err == nil {
+	if subCats, err := initCat.GetSubCategories(dtx); err == nil {
 		initCat.SubCategories = subCats
 	}
 
@@ -279,10 +279,16 @@ func PopulateCategory(row *sql.Row, ch chan Category) {
 // TopTierCategories
 // Description: Returns the top tier categories
 // Returns: []Category, error
-func TopTierCategories(key string, brandId int) (cats []Category, err error) {
+func TopTierCategories(dtx *apicontext.DataContext) (cats []Category, err error) {
 	cats = make([]Category, 0)
-	redis_key := fmt.Sprintf("category:%d:top", brandId)
+	var brands string
+	if dtx.Globals["brandsString"] != nil {
+		brands = dtx.Globals["brandsString"].(string)
+	} else {
+		brands = "0"
+	}
 
+	redis_key := fmt.Sprintf("category:top:%s", brands)
 	// First lets try to access the category:top endpoint in Redis
 	data, err := redis.Get(redis_key)
 	if len(data) > 0 && err == nil {
@@ -305,7 +311,7 @@ func TopTierCategories(key string, brandId int) (cats []Category, err error) {
 	defer qry.Close()
 
 	// Execute SQL Query against current PartId
-	catRows, err := qry.Query(key, brandId, brandId)
+	catRows, err := qry.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	if err != nil || catRows == nil { // Error occurred while executing query
 		return
 	}
@@ -317,7 +323,7 @@ func TopTierCategories(key string, brandId int) (cats []Category, err error) {
 		err := catRows.Scan(&cat.ID)
 		if err == nil {
 			go func(c Category) {
-				err := c.GetCategory(key, 0, 0, true, nil, nil)
+				err := c.GetCategory(dtx.APIKey, 0, 0, true, nil, nil, dtx)
 				if err == nil {
 					cats = append(cats, c)
 				}
@@ -340,29 +346,19 @@ func TopTierCategories(key string, brandId int) (cats []Category, err error) {
 }
 
 func GetCategoryByTitle(cat_title string, dtx *apicontext.DataContext) (cat Category, err error) {
-	var brandID int
-	var bs []int
-	if dtx.BrandID == 0 {
-		bs, err = dtx.GetBrandsFromKey()
-		if err != nil {
-			return cat, err
-		}
-		if len(bs) == 1 {
-			brandID = bs[0]
-		}
+	var brands string
+	if dtx.Globals["brandsString"] != nil {
+		brands = dtx.Globals["brandsString"].(string)
 	} else {
-		brandID = dtx.BrandID
+		brands = "0"
 	}
-
-	redis_key := fmt.Sprintf("category:%d:title:%s", brandID, cat_title)
-	if brandID != 0 {
-		// Attempt to get the category from Redis
-		data, err := redis.Get(redis_key)
-		if len(data) > 0 && err == nil {
-			err = json.Unmarshal(data, &cat)
-			if err == nil {
-				return cat, err
-			}
+	redis_key := fmt.Sprintf("category:title:%s:%s", cat_title, brands)
+	// Attempt to get the category from Redis
+	data, err := redis.Get(redis_key)
+	if len(data) > 0 && err == nil {
+		err = json.Unmarshal(data, &cat)
+		if err == nil {
+			return cat, err
 		}
 	}
 
@@ -385,16 +381,14 @@ func GetCategoryByTitle(cat_title string, dtx *apicontext.DataContext) (cat Cate
 	}
 
 	ch := make(chan Category)
-	go PopulateCategory(catRow, ch)
+	go PopulateCategory(catRow, ch, dtx)
 	cat = <-ch
 
-	if brandID != 0 {
-		go redis.Setex(redis_key, cat, 86400)
-	}
+	go redis.Setex(redis_key, cat, 86400)
 	return cat, err
 }
 
-func GetCategoryById(brandID, cat_id int) (cat Category, err error) {
+func GetCategoryById(cat_id int, dtx *apicontext.DataContext) (cat Category, err error) {
 	redis_key := fmt.Sprintf("category:id:%d", cat_id)
 
 	// Attempt to get the category from Redis
@@ -425,7 +419,7 @@ func GetCategoryById(brandID, cat_id int) (cat Category, err error) {
 	}
 
 	ch := make(chan Category)
-	go PopulateCategory(catRow, ch)
+	go PopulateCategory(catRow, ch, dtx)
 	cat = <-ch
 
 	go redis.Setex(redis_key, cat, 86400)
@@ -433,38 +427,26 @@ func GetCategoryById(brandID, cat_id int) (cat Category, err error) {
 	return
 }
 
-func (c *Category) GetSubCategories(dtx ...*apicontext.DataContext) (cats []Category, err error) {
+func (c *Category) GetSubCategories(dtx *apicontext.DataContext) (cats []Category, err error) {
 	cats = make([]Category, 0)
 
 	if c.ID == 0 {
 		return
 	}
-
-	var brandID int
-	var bs []int
-	if len(dtx) > 0 {
-		if dtx[0].BrandID == 0 {
-			bs, err = dtx[0].GetBrandsFromKey()
-			if err != nil {
-				return cats, err
-			}
-			if len(bs) == 1 {
-				brandID = bs[0]
-			}
-		} else {
-			brandID = dtx[0].BrandID
-		}
+	var brands string
+	if dtx.Globals["brandsString"] != nil {
+		brands = dtx.Globals["brandsString"].(string)
+	} else {
+		brands = "0"
 	}
 
-	redis_key := fmt.Sprintf("category:%d:%d:subs", brandID, c.ID)
-	if brandID != 0 {
-		// First lets try to access the category:top endpoint in Redis
-		data, err := redis.Get(redis_key)
-		if len(data) > 0 && err == nil {
-			err = json.Unmarshal(data, &cats)
-			if err == nil {
-				return cats, err
-			}
+	redis_key := fmt.Sprintf("category:%d:subs:%s", c.ID, brands)
+	// First lets try to access the category:top endpoint in Redis
+	data, err := redis.Get(redis_key)
+	if len(data) > 0 && err == nil {
+		err = json.Unmarshal(data, &cats)
+		if err == nil {
+			return cats, err
 		}
 	}
 
@@ -490,15 +472,11 @@ func (c *Category) GetSubCategories(dtx ...*apicontext.DataContext) (cats []Cate
 	go PopulateCategoryMulti(catRows, ch)
 	cats = <-ch
 
-	if len(dtx) > 0 {
-		if dtx[0].BrandID == 0 {
-			go redis.Setex(redis_key, cats, 86400)
-		}
-	}
+	go redis.Setex(redis_key, cats, 86400)
 	return
 }
 
-func (c *Category) GetCategory(key string, page int, count int, ignoreParts bool, v *Vehicle, specs *map[string][]string) error {
+func (c *Category) GetCategory(key string, page int, count int, ignoreParts bool, v *Vehicle, specs *map[string][]string, dtx *apicontext.DataContext) error {
 	var err error
 	if c.ID == 0 {
 		return fmt.Errorf("error: %s", "invalid category reference")
@@ -517,7 +495,7 @@ func (c *Category) GetCategory(key string, page int, count int, ignoreParts bool
 	}
 
 	if err != nil || c.ShortDesc == "" {
-		cat, catErr := GetCategoryById(c.BrandID, c.ID)
+		cat, catErr := GetCategoryById(c.ID, dtx)
 		if catErr != nil {
 			return catErr
 		}
@@ -548,7 +526,7 @@ func (c *Category) GetCategory(key string, page int, count int, ignoreParts bool
 	partChan := make(chan *PaginatedProductListing)
 	if !ignoreParts {
 		go func() {
-			c.GetParts(key, page, count, v, specs)
+			c.GetParts(key, page, count, v, specs, dtx)
 			partChan <- c.ProductListing
 		}()
 	} else {
@@ -610,7 +588,7 @@ func (c *Category) GetContent() (content []Content, err error) {
 	return
 }
 
-func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *map[string][]string) error {
+func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *map[string][]string, dtx *apicontext.DataContext) error {
 	var err error
 	c.ProductListing = &PaginatedProductListing{}
 	if c.ID == 0 {
@@ -623,7 +601,7 @@ func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *
 			Vehicle:     *v,
 			CustomerKey: key,
 		}
-		go l.LoadParts(vehicleChan)
+		go l.LoadParts(vehicleChan, dtx)
 
 		parts := <-vehicleChan
 
@@ -721,7 +699,7 @@ func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *
 				p := Part{
 					ID: i,
 				}
-				err := p.Get(key)
+				err := p.Get(dtx)
 				if err == nil {
 					c.ProductListing.Parts = append(c.ProductListing.Parts, p)
 				}

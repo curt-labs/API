@@ -58,7 +58,7 @@ func Query(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *ap
 
 		// Kick off part getter
 		partChan := make(chan []products.Part)
-		go l.LoadParts(partChan)
+		go l.LoadParts(partChan, dtx)
 
 		if l.Vehicle.Submodel == "" { // Get Submodels
 			if err := l.GetSubmodels(); err != nil {

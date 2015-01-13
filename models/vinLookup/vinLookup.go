@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/xml"
 	"errors"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/models/products"
 	"io/ioutil"
@@ -161,7 +162,7 @@ const (
 		ACES_CYLINDERS,ACES_RESERVED,DOOR_CNT,BODY_STYLE_DESC,WHL_BAS_SHRST_INCHS,TRK_BED_LEN_DESC,TRANS_CD,TRK_BED_LEN_CD,ENG_FUEL_DESC`
 )
 
-func VinPartLookup(vin string) (l products.Lookup, err error) {
+func VinPartLookup(vin string, dtx *apicontext.DataContext) (l products.Lookup, err error) {
 	//get ACES vehicles
 	av, configMap, err := getAcesVehicle(vin)
 	if err != nil {
@@ -179,7 +180,7 @@ func VinPartLookup(vin string) (l products.Lookup, err error) {
 	//get parts
 	var ps []products.Part
 	ch := make(chan []products.Part)
-	go l.LoadParts(ch)
+	go l.LoadParts(ch, dtx)
 	ps = <-ch
 
 	l.Parts = ps
@@ -207,7 +208,7 @@ func GetVehicleConfigs(vin string) (l products.Lookup, err error) {
 }
 
 //already have vehicleID (vcdb_vehicle.ID)? get parts
-func (v *CurtVehicle) GetPartsFromVehicleConfig() (ps []products.Part, err error) {
+func (v *CurtVehicle) GetPartsFromVehicleConfig(dtx *apicontext.DataContext) (ps []products.Part, err error) {
 	//get parts
 	var p products.Part
 	//get part id
@@ -228,7 +229,7 @@ func (v *CurtVehicle) GetPartsFromVehicleConfig() (ps []products.Part, err error
 			return ps, err
 		}
 		//get part -- adds some weight
-		err = p.FromDatabase()
+		err = p.FromDatabase(dtx)
 		if err != nil {
 			return ps, err
 		}

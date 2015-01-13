@@ -150,6 +150,10 @@ func processDataContext(r *http.Request, c martini.Context) *apicontext.DataCont
 	if err != nil {
 		return nil
 	}
+	globalMap["brandsString"], err = apicontext.GetBrandsString(apiKey, brandID)
+	if err != nil {
+		return nil
+	}
 	//returns our data context...shared amongst controllers
 	return &apicontext.DataContext{
 		APIKey:     apiKey,

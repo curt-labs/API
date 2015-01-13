@@ -115,14 +115,12 @@ func Latest(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *a
 	return encoding.Must(enc.Encode(parts))
 }
 
-func Get(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
-	qs := r.URL.Query()
+func Get(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	id, err := strconv.Atoi(params["part"])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
-	key := qs.Get("key")
 	p := products.Part{
 		ID: id,
 	}
@@ -138,7 +136,7 @@ func Get(w http.ResponseWriter, r *http.Request, params martini.Params, enc enco
 		}
 	}()
 
-	err = p.Get(key)
+	err = p.Get(dtx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -149,10 +147,8 @@ func Get(w http.ResponseWriter, r *http.Request, params martini.Params, enc enco
 	return encoding.Must(enc.Encode(p))
 }
 
-func GetRelated(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
-	qs := r.URL.Query()
+func GetRelated(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	id, _ := strconv.Atoi(params["part"])
-	key := qs.Get("key")
 	p := products.Part{
 		ID: id,
 	}
@@ -163,7 +159,7 @@ func GetRelated(w http.ResponseWriter, r *http.Request, params martini.Params, e
 	for _, rel := range p.Related {
 		go func(partId int) {
 			relPart := products.Part{ID: partId}
-			if err = relPart.Get(key); err == nil {
+			if err = relPart.Get(dtx); err == nil {
 				parts = append(parts, relPart)
 			}
 			c <- 1
@@ -347,15 +343,14 @@ func InstallSheet(w http.ResponseWriter, r *http.Request, params martini.Params)
 	w.Write(data)
 }
 
-func Categories(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
-	qs := r.URL.Query()
+func Categories(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	id, _ := strconv.Atoi(params["part"])
-	key := qs.Get("key")
+
 	p := products.Part{
 		ID: id,
 	}
 
-	cats, err := p.GetPartCategories(key)
+	cats, err := p.GetPartCategories(dtx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -474,7 +469,7 @@ func GetPrice(rw http.ResponseWriter, req *http.Request, params martini.Params, 
 	return encoding.Must(enc.Encode(p))
 }
 
-func OldPartNumber(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
+func OldPartNumber(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var pa products.Part
 	var err error
 
@@ -504,7 +499,7 @@ func OldPartNumber(rw http.ResponseWriter, req *http.Request, params martini.Par
 		}
 	}()
 
-	err = p.Get(key)
+	err = p.Get(dtx)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -545,7 +540,7 @@ func CreatePart(rw http.ResponseWriter, req *http.Request, params martini.Params
 	return encoding.Must(enc.Encode(p))
 }
 
-func UpdatePart(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
+func UpdatePart(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var p products.Part
 	var err error
 	api := req.FormValue("key")
@@ -560,7 +555,7 @@ func UpdatePart(rw http.ResponseWriter, req *http.Request, params martini.Params
 		return ""
 	}
 	p.ID, err = strconv.Atoi(idStr)
-	p.Get(api)
+	p.Get(dtx)
 
 	//json
 	requestBody, err := ioutil.ReadAll(req.Body)

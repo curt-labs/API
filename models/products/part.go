@@ -158,7 +158,7 @@ type Installation struct { //aka VehiclePart Table
 
 type Installations []Installation
 
-func (p *Part) FromDatabase() error {
+func (p *Part) FromDatabase(dtx *apicontext.DataContext) error {
 	var errs []string
 
 	attrChan := make(chan int)
@@ -228,7 +228,7 @@ func (p *Part) FromDatabase() error {
 	}()
 
 	go func() {
-		catErr := p.PartBreadcrumbs()
+		catErr := p.PartBreadcrumbs(dtx)
 		if catErr != nil {
 			errs = append(errs, catErr.Error())
 		}
@@ -264,7 +264,7 @@ func (p *Part) FromDatabase() error {
 	return nil
 }
 
-func (p *Part) Get(key string) error {
+func (p *Part) Get(dtx *apicontext.DataContext) error {
 	customerChan := make(chan int)
 
 	var err error
@@ -274,7 +274,7 @@ func (p *Part) Get(key string) error {
 
 		p.GetInventory(api_key, "")
 		customerChan <- 1
-	}(key)
+	}(dtx.APIKey)
 
 	redis_key := fmt.Sprintf("part:%d:%d", p.BrandID, p.ID)
 
@@ -284,7 +284,7 @@ func (p *Part) Get(key string) error {
 	}
 
 	if p.Status == 0 {
-		if err := p.FromDatabase(); err != nil {
+		if err := p.FromDatabase(dtx); err != nil {
 			customerChan <- 1
 			close(customerChan)
 			return err
@@ -326,7 +326,7 @@ func All(page, count int, dtx *apicontext.DataContext) ([]Part, error) {
 		}
 		go func(id int) {
 			p := Part{ID: id}
-			p.Get(dtx.APIKey)
+			p.Get(dtx)
 			parts = append(parts, p)
 			partChan <- 1
 		}(partID)
@@ -373,7 +373,7 @@ func Featured(count int, dtx *apicontext.DataContext) ([]Part, error) {
 
 		go func(id int) {
 			p := Part{ID: id}
-			p.Get(dtx.APIKey)
+			p.Get(dtx)
 			parts = append(parts, p)
 			partChan <- 1
 		}(partID)
@@ -420,7 +420,7 @@ func Latest(count int, dtx *apicontext.DataContext) ([]Part, error) {
 
 		go func(id int) {
 			p := Part{ID: id}
-			p.Get(dtx.APIKey)
+			p.Get(dtx)
 			parts = append(parts, p)
 			partChan <- 1
 		}(partID)
@@ -437,13 +437,13 @@ func Latest(count int, dtx *apicontext.DataContext) ([]Part, error) {
 	return parts, nil
 }
 
-func (p *Part) GetWithVehicle(vehicle *vehicle.Vehicle, api_key string) error {
+func (p *Part) GetWithVehicle(vehicle *vehicle.Vehicle, api_key string, dtx *apicontext.DataContext) error {
 	var errs []string
 
 	superChan := make(chan int)
 	noteChan := make(chan int)
 	go func(key string) {
-		p.Get(key)
+		p.Get(dtx)
 		superChan <- 1
 	}(api_key)
 	go func() {
@@ -466,10 +466,10 @@ func (p *Part) GetWithVehicle(vehicle *vehicle.Vehicle, api_key string) error {
 	return nil
 }
 
-func (p *Part) GetById(id int, key string) {
+func (p *Part) GetById(id int, key string, dtx *apicontext.DataContext) {
 	p.ID = id
 
-	p.Get(key)
+	p.Get(dtx)
 }
 
 func (p *Part) Basics() error {
@@ -729,7 +729,7 @@ func (p *Part) GetInstallSheet(r *http.Request) (data []byte, err error) {
 //
 // Inherited: part Part
 // Returns: error
-func (p *Part) PartBreadcrumbs() error {
+func (p *Part) PartBreadcrumbs(dtx *apicontext.DataContext) error {
 	redis_key := fmt.Sprintf("part:%d:%d:breadcrumbs", p.BrandID, p.ID)
 
 	data, err := redis.Get(redis_key)
@@ -768,7 +768,7 @@ func (p *Part) PartBreadcrumbs() error {
 	}
 
 	ch := make(chan Category)
-	go PopulateCategory(catRow, ch)
+	go PopulateCategory(catRow, ch, dtx)
 	initCat := <-ch
 
 	// Instantiate our array with the initial category
@@ -792,7 +792,7 @@ func (p *Part) PartBreadcrumbs() error {
 			}
 
 			ch := make(chan Category)
-			go PopulateCategory(catRow, ch)
+			go PopulateCategory(catRow, ch, dtx)
 
 			// Append new Category onto array
 			subCat := <-ch
@@ -811,7 +811,7 @@ func (p *Part) PartBreadcrumbs() error {
 	return nil
 }
 
-func (p *Part) GetPartCategories(key string) (cats []Category, err error) {
+func (p *Part) GetPartCategories(dtx *apicontext.DataContext) (cats []Category, err error) {
 	redis_key := fmt.Sprintf("part:%d:%d:categories", p.BrandID, p.ID)
 
 	data, err := redis.Get(redis_key)
@@ -866,7 +866,7 @@ func (p *Part) GetPartCategories(key string) (cats []Category, err error) {
 		}()
 
 		go func() {
-			subs, subErr := c.GetSubCategories()
+			subs, subErr := c.GetSubCategories(dtx)
 			if subErr == nil {
 				cat.SubCategories = subs
 			}
@@ -874,7 +874,7 @@ func (p *Part) GetPartCategories(key string) (cats []Category, err error) {
 		}()
 
 		go func() {
-			content, _ := custcontent.GetCategoryContent(cat.ID, key)
+			content, _ := custcontent.GetCategoryContent(cat.ID, dtx.APIKey)
 			for _, con := range content {
 				strArr := strings.Split(con.ContentType.Type, ":")
 				cType := con.ContentType.Type
