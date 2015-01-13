@@ -3,6 +3,7 @@ package warranty
 import (
 	"database/sql"
 	"errors"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/models/contact"
 	_ "github.com/go-sql-driver/mysql"
@@ -28,7 +29,11 @@ var (
 	deleteWarranty       = `delete from Warranty where id = ?`
 	getWarranty          = `select w.id, ` + fields + ` from Warranty as w where w.id = ?`
 	getWarrantyByContact = `select w.id, ` + fields + ` from Warranty as w where w.contactID = ?`
-	getAllWarranties     = `select w.id, ` + fields + ` from Warranty as w `
+	getAllWarranties     = `select w.id, ` + fields + ` from Warranty as w 
+							join Part as p on p.partID = w.partNumber
+							join ApiKeyToBrand as aktb on aktb.brandID = p.brandID
+							join ApiKey as a on a.id = aktb.keyID
+							where (a.api_key = ? && (aktb.brandID = ? || 0 = ?))`
 )
 
 func (w *Warranty) Create() (err error) {
@@ -136,7 +141,7 @@ func (w *Warranty) GetByContact() (ws []Warranty, err error) {
 	return
 }
 
-func GetAllWarranties() (ws []Warranty, err error) {
+func GetAllWarranties(dtx *apicontext.DataContext) (ws []Warranty, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return ws, err
@@ -147,7 +152,11 @@ func GetAllWarranties() (ws []Warranty, err error) {
 		return ws, err
 	}
 	defer stmt.Close()
-	rows, err := stmt.Query()
+	rows, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
+	if rows.Next() == false {
+		err = sql.ErrNoRows
+		return ws, err
+	}
 	if err != nil {
 		return ws, err
 	}
