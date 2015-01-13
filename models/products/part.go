@@ -220,7 +220,7 @@ func (p *Part) FromDatabase(dtx *apicontext.DataContext) error {
 	}()
 
 	go func() {
-		pkgErr := p.GetPartPackaging()
+		pkgErr := p.GetPartPackaging(dtx)
 		if pkgErr != nil {
 			errs = append(errs, pkgErr.Error())
 		}

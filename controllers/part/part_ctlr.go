@@ -275,13 +275,13 @@ func GetContent(w http.ResponseWriter, r *http.Request, params martini.Params, e
 	return encoding.Must(enc.Encode(p.Content))
 }
 
-func Packaging(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+func Packaging(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	id, _ := strconv.Atoi(params["part"])
 	p := products.Part{
 		ID: id,
 	}
 
-	err := p.GetPartPackaging()
+	err := p.GetPartPackaging(dtx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
