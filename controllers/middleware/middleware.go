@@ -146,14 +146,14 @@ func processDataContext(r *http.Request, c martini.Context) *apicontext.DataCont
 	}
 
 	globalMap := make(map[string]interface{})
-	globalMap["brandsArray"], err = apicontext.GetBrandsArray(apiKey, brandID)
+	globalMap["brandsArray"], globalMap["brandsString"], err = apicontext.GetBrandsArrayAndString(apiKey, brandID)
 	if err != nil {
 		return nil
 	}
-	globalMap["brandsString"], err = apicontext.GetBrandsString(apiKey, brandID)
-	if err != nil {
-		return nil
-	}
+	// globalMap["brandsString"], err = apicontext.GetBrandsString(apiKey, brandID)
+	// if err != nil {
+	// 	return nil
+	// }
 	//returns our data context...shared amongst controllers
 	return &apicontext.DataContext{
 		APIKey:     apiKey,
