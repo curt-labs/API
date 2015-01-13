@@ -43,7 +43,7 @@ func Query(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *ap
 			return err.Error()
 		}
 	} else if l.Vehicle.Base.Make == "" { // Get Makes
-		if err := l.GetMakes(); err != nil {
+		if err := l.GetMakes(dtx); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return err.Error()
 		}
