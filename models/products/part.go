@@ -196,7 +196,7 @@ func (p *Part) FromDatabase(dtx *apicontext.DataContext) error {
 	}()
 
 	go func() {
-		imgErr := p.GetImages()
+		imgErr := p.GetImages(dtx)
 		if imgErr != nil {
 			errs = append(errs, imgErr.Error())
 		}

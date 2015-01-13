@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
@@ -28,8 +29,12 @@ type Image struct {
 	PartID int      `json:"partId,omitempty" xml:"partId,omitempty"`
 }
 
-func (p *Part) GetImages() error {
-	redis_key := fmt.Sprintf("part:%d:%d:images", p.BrandID, p.ID)
+func (p *Part) GetImages(dtx *apicontext.DataContext) error {
+	var brands string
+	if dtx.Globals["brandsString"] != nil {
+		brands = dtx.Globals["brandsString"].(string)
+	}
+	redis_key := fmt.Sprintf("part:%d:images:%s", p.ID, brands)
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {

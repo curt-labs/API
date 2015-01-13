@@ -229,13 +229,13 @@ func Vehicles(w http.ResponseWriter, r *http.Request, params martini.Params, enc
 	return encoding.Must(enc.Encode(vehicles))
 }
 
-func Images(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+func Images(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	id, _ := strconv.Atoi(params["part"])
 	p := products.Part{
 		ID: id,
 	}
 
-	err := p.GetImages()
+	err := p.GetImages(dtx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
