@@ -172,7 +172,7 @@ func (p *Part) FromDatabase(dtx *apicontext.DataContext) error {
 	contentChan := make(chan int)
 
 	go func() {
-		attrErr := p.GetAttributes()
+		attrErr := p.GetAttributes(dtx)
 		if attrErr != nil {
 			errs = append(errs, attrErr.Error())
 		}

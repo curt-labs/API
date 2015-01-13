@@ -244,14 +244,14 @@ func Images(w http.ResponseWriter, r *http.Request, params martini.Params, enc e
 	return encoding.Must(enc.Encode(p.Images))
 }
 
-func Attributes(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+func Attributes(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 
 	id, _ := strconv.Atoi(params["part"])
 	p := products.Part{
 		ID: id,
 	}
 
-	err := p.GetAttributes()
+	err := p.GetAttributes(dtx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""

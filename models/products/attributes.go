@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
@@ -19,12 +20,16 @@ var (
 	partAttrStmt = `select field, value from PartAttribute where partID = ?`
 )
 
-func (p *Part) GetAttributes() (err error) {
-	redis_key := fmt.Sprintf("part:%d:%d:attributes", p.BrandID, p.ID)
+func (p *Part) GetAttributes(dtx *apicontext.DataContext) (err error) {
+	var brands string
+	if dtx.Globals["brandsString"] != nil {
+		brands = dtx.Globals["brandsString"].(string)
+	}
+	redis_key := fmt.Sprintf("part:%d:attributes:%s", p.ID, brands)
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
-		if err = json.Unmarshal(data, &p.Attributes); err != nil && len(p.Attributes) > 0 {
+		if err = json.Unmarshal(data, &p.Attributes); err == nil {
 			return nil
 		}
 	}
