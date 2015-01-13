@@ -477,10 +477,9 @@ func (p *Part) Basics() error {
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
-		if err = json.Unmarshal(data, &p); err != nil {
-			return err
+		if err = json.Unmarshal(data, &p); err == nil {
+			return nil
 		}
-		return nil
 	}
 
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -542,10 +541,9 @@ func (p *Part) GetRelated() error {
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
-		if err = json.Unmarshal(data, &p.Related); err != nil {
-			return err
+		if err = json.Unmarshal(data, &p.Related); err == nil {
+			return nil
 		}
-		return nil
 	}
 
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -591,10 +589,9 @@ func (p *Part) GetContent() error {
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
-		if err = json.Unmarshal(data, &p.Content); err != nil {
-			return err
+		if err = json.Unmarshal(data, &p.Content); err == nil {
+			return nil
 		}
-		return nil
 	}
 
 	db, err := sql.Open("mysql", database.ConnectionString())

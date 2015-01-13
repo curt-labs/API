@@ -40,10 +40,9 @@ func (p *Part) GetPricing() error {
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
-		if err = json.Unmarshal(data, &p.Pricing); err != nil {
-			return err
+		if err = json.Unmarshal(data, &p.Pricing); err == nil {
+			return nil
 		}
-		return nil
 	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -84,7 +83,7 @@ func (p *Price) Get() error {
 	redis_key := fmt.Sprintf("pricing:%d", p.Id)
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
-		if err = json.Unmarshal(data, &p); err != nil {
+		if err = json.Unmarshal(data, &p); err == nil {
 			return nil
 		}
 	}
