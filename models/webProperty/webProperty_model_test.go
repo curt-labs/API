@@ -2,8 +2,8 @@ package webProperty_model
 
 import (
 	"database/sql"
-	// "github.com/curt-labs/GoAPI/helpers/api"
-	// "github.com/curt-labs/GoAPI/helpers/database"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	. "github.com/smartystreets/goconvey/convey"
 	"math/rand"
 	"strconv"
@@ -17,6 +17,10 @@ func TestWebPropertiesBetter(t *testing.T) {
 	var wn WebPropertyNote
 	var wt WebPropertyType
 	var err error
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
 	Convey("Testing Create", t, func() {
 		//New WebProperty
 		w.Name = "test prop"
@@ -84,27 +88,27 @@ func TestWebPropertiesBetter(t *testing.T) {
 		So(len(obj.Objects), ShouldEqual, 0)
 
 		//Get Property
-		err = w.Get()
+		err = w.Get(MockedDTX)
 		So(err, ShouldBeNil)
 	})
 	Convey("Testing GetAll", t, func() {
-		ws, err := GetAll()
+		ws, err := GetAll(MockedDTX)
 		if err != sql.ErrNoRows {
 			So(err, ShouldBeNil)
 			So(len(ws), ShouldBeGreaterThan, 0)
 		}
-		ns, err := GetAllWebPropertyNotes()
+		ns, err := GetAllWebPropertyNotes(MockedDTX)
 		if err != sql.ErrNoRows {
 			So(err, ShouldBeNil)
 			So(len(ns), ShouldBeGreaterThan, 0)
 		}
 
-		rs, err := GetAllWebPropertyRequirements()
+		rs, err := GetAllWebPropertyRequirements(MockedDTX)
 		if err != sql.ErrNoRows {
 			So(err, ShouldBeNil)
 			So(len(rs), ShouldBeGreaterThan, 0)
 		}
-		ts, err := GetAllWebPropertyTypes()
+		ts, err := GetAllWebPropertyTypes(MockedDTX)
 		if err != sql.ErrNoRows {
 			So(err, ShouldBeNil)
 			So(len(ts), ShouldBeGreaterThan, 0)
@@ -124,6 +128,7 @@ func TestWebPropertiesBetter(t *testing.T) {
 		So(err, ShouldBeNil)
 
 	})
+	_ = apicontextmock.DeMock(MockedDTX)
 
 }
 func BenchmarkCreateDeleteWebProperty(b *testing.B) {
@@ -188,6 +193,11 @@ func BenchmarkCreateDeleteWebPropertyType(b *testing.B) {
 }
 
 func BenchmarkGetWebProperty(b *testing.B) {
+	var err error
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
 	Convey("Testing WebProperties", b, func() {
 		b.ResetTimer()
 		var w WebProperty
@@ -198,13 +208,15 @@ func BenchmarkGetWebProperty(b *testing.B) {
 		w.Create()
 		b.StartTimer()
 		for i := 0; i < b.N; i++ {
-			w.Get()
+			w.Get(MockedDTX)
 		}
 		b.StopTimer()
 		w.Delete()
 	})
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 func BenchmarkGetWebPropertyRequirement(b *testing.B) {
+
 	Convey("Testing Requirements", b, func() {
 		b.ResetTimer()
 		var w WebPropertyRequirement
@@ -217,6 +229,7 @@ func BenchmarkGetWebPropertyRequirement(b *testing.B) {
 		b.StopTimer()
 		w.Delete()
 	})
+
 }
 func BenchmarkGetWebPropertyNote(b *testing.B) {
 	Convey("Testing Note", b, func() {
@@ -248,6 +261,11 @@ func BenchmarkGetWebPropertyType(b *testing.B) {
 }
 
 func BenchmarkGetAllWebProperty(b *testing.B) {
+	var err error
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
 	Convey("Testing WebProperties", b, func() {
 		b.ResetTimer()
 		var w WebProperty
@@ -258,13 +276,20 @@ func BenchmarkGetAllWebProperty(b *testing.B) {
 		w.Create()
 		b.StartTimer()
 		for i := 0; i < b.N; i++ {
-			_, _ = GetAll()
+			_, _ = GetAll(MockedDTX)
 		}
 		b.StopTimer()
 		w.Delete()
 	})
+	_ = apicontextmock.DeMock(MockedDTX)
 }
+
 func BenchmarkGetAllWebPropertyRequirement(b *testing.B) {
+	var err error
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
 	Convey("Testing Requirements", b, func() {
 		b.ResetTimer()
 		var w WebPropertyRequirement
@@ -272,13 +297,20 @@ func BenchmarkGetAllWebPropertyRequirement(b *testing.B) {
 		w.Create()
 		b.StartTimer()
 		for i := 0; i < b.N; i++ {
-			_, _ = GetAllWebPropertyRequirements()
+			_, _ = GetAllWebPropertyRequirements(MockedDTX)
 		}
 		b.StopTimer()
 		w.Delete()
 	})
+	_ = apicontextmock.DeMock(MockedDTX)
+
 }
 func BenchmarkGetAllWebPropertyNote(b *testing.B) {
+	var err error
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
 	Convey("Testing Note", b, func() {
 		b.ResetTimer()
 		var w WebPropertyNote
@@ -286,13 +318,20 @@ func BenchmarkGetAllWebPropertyNote(b *testing.B) {
 		w.Create()
 		b.StartTimer()
 		for i := 0; i < b.N; i++ {
-			_, _ = GetAllWebPropertyNotes()
+			_, _ = GetAllWebPropertyNotes(MockedDTX)
 		}
 		b.StopTimer()
 		w.Delete()
 	})
+	_ = apicontextmock.DeMock(MockedDTX)
+
 }
 func BenchmarkGetAllWebPropertyType(b *testing.B) {
+	var err error
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
 	Convey("Testing Type", b, func() {
 		b.ResetTimer()
 		var w WebPropertyType
@@ -300,11 +339,12 @@ func BenchmarkGetAllWebPropertyType(b *testing.B) {
 		w.Create()
 		b.StartTimer()
 		for i := 0; i < b.N; i++ {
-			_, _ = GetAllWebPropertyTypes()
+			_, _ = GetAllWebPropertyTypes(MockedDTX)
 		}
 		b.StopTimer()
 		w.Delete()
 	})
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkUpdateWebProperty(b *testing.B) {

@@ -3,10 +3,12 @@ package webProperty_model
 import (
 	"database/sql"
 	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/pagination"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
+
 	"strconv"
 	"time"
 )
@@ -59,12 +61,37 @@ type WebPropertyRequirement struct {
 type WebPropertyRequirements []WebPropertyRequirement
 
 var (
-	getAllWebProperties               = "SELECT id, name, cust_ID, badgeID, url, isEnabled,sellerID, typeID , isFinalApproved, isEnabledDate, isDenied, requestedDate, addedDate FROM WebProperties"
-	getWebProperty                    = "SELECT id, name, cust_ID, badgeID, url, isEnabled,sellerID, typeID , isFinalApproved, isEnabledDate, isDenied, requestedDate, addedDate FROM WebProperties WHERE id = ?"
-	getWebPropertiesByCustomer        = "SELECT id, name, cust_ID, badgeID, url, isEnabled,sellerID, typeID , isFinalApproved, isEnabledDate, isDenied, requestedDate, addedDate FROM WebProperties WHERE cust_ID = ?"
-	getAllWebPropertyTypes            = "SELECT id, typeID, type FROM WebPropertyTypes"
-	getAllWebPropertyNotes            = "SELECT id, webPropID, text, dateAdded FROM WebPropNotes"
-	getAllWebPropertyRequirements     = "SELECT wprc.ID, wpr.ID, wpr.ReqType, wpr.Requirement, wprc.Compliance, wprc.WebPropertiesID FROM WebPropRequirementCheck AS wprc LEFT JOIN WebPropRequirements AS wpr ON wpr.ID = wprc.WebPropRequirementsID"
+	getAllWebProperties = `SELECT w.id, w.name, w.cust_ID, w.badgeID, w.url, w.isEnabled,w.sellerID, w.typeID , w.isFinalApproved, w.isEnabledDate, w.isDenied, w.requestedDate, w.addedDate
+				FROM WebProperties as w
+				join CustomerToBrand as ctb on ctb.cust_id = w.cust_id
+				join ApiKeyToBrand as atb on atb.brandID = ctb.brandID
+				join ApiKey as a on a.id = atb.keyID
+				where a.api_key = ? && (ctb.brandID = ? or 0 = ?)`
+	getWebProperty             = "SELECT id, name, cust_ID, badgeID, url, isEnabled,sellerID, typeID , isFinalApproved, isEnabledDate, isDenied, requestedDate, addedDate FROM WebProperties WHERE id = ?"
+	getWebPropertiesByCustomer = "SELECT id, name, cust_ID, badgeID, url, isEnabled,sellerID, typeID , isFinalApproved, isEnabledDate, isDenied, requestedDate, addedDate FROM WebProperties WHERE cust_ID = ?"
+	getAllWebPropertyTypes     = `SELECT DISTINCT wt.id, wt.typeID, wt.type 
+		FROM WebPropertyTypes as wt
+		join WebProperties as w on w.typeID = wt.id
+		join CustomerToBrand as ctb on ctb.cust_id = w.cust_id
+		join ApiKeyToBrand as atb on atb.brandID = ctb.brandID
+		join ApiKey as a on a.id = atb.keyID
+		where a.api_key = ? && (ctb.brandID = ? or 0 = ?)`
+	getAllWebPropertyNotes = `SELECT wn.id, wn.webPropID, wn.text, wn.dateAdded 
+		FROM WebPropNotes as wn
+		join WebProperties as w on w.typeID = wn.id
+		join CustomerToBrand as ctb on ctb.cust_id = w.cust_id
+		join ApiKeyToBrand as atb on atb.brandID = ctb.brandID
+		join ApiKey as a on a.id = atb.keyID
+		where a.api_key =? && (ctb.brandID = ? or 0 = ?)
+		group by wn.id`
+	getAllWebPropertyRequirements = `SELECT DISTINCT wprc.ID, wpr.ID, wpr.ReqType, wpr.Requirement, wprc.Compliance, wprc.WebPropertiesID 
+		FROM WebPropRequirementCheck AS wprc 
+		LEFT JOIN WebPropRequirements AS wpr ON wpr.ID = wprc.WebPropRequirementsID
+		join WebProperties as w on w.typeID = wpr.id
+		join CustomerToBrand as ctb on ctb.cust_id = w.cust_id
+		join ApiKeyToBrand as atb on atb.brandID = ctb.brandID
+		join ApiKey as a on a.id = atb.keyID
+		where a.api_key = ? && (ctb.brandID = ? or 0 = ?)`
 	create                            = "INSERT INTO WebProperties (name, cust_ID, badgeID, url, isEnabled,sellerID, typeID , isFinalApproved, isEnabledDate, isDenied, requestedDate, addedDate) VALUES (?,?,UUID(),?,?,?,?,?,?,?,?,?)"
 	deleteWebProp                     = "DELETE FROM WebProperties WHERE id = ?"
 	createNote                        = "INSERT INTO WebPropNotes (webPropID, text, dateAdded) VALUES (?,?,?)"
@@ -93,7 +120,7 @@ const (
 	timeFormat = "2006-01-02 15:04:05"
 )
 
-func (w *WebProperty) Get() error {
+func (w *WebProperty) Get(dtx *apicontext.DataContext) error {
 	var err error
 
 	redis_key := "webproperty:" + strconv.Itoa(w.ID)
@@ -115,9 +142,9 @@ func (w *WebProperty) Get() error {
 	}
 	defer stmt.Close()
 
-	webPropTypes, err := GetAllWebPropertyTypes()
-	webPropNotes, err := GetAllWebPropertyNotes()
-	WebPropertyRequirements, err := GetAllWebPropertyRequirements()
+	webPropTypes, err := GetAllWebPropertyTypes(dtx)
+	webPropNotes, err := GetAllWebPropertyNotes(dtx)
+	WebPropertyRequirements, err := GetAllWebPropertyRequirements(dtx)
 	if err != nil {
 		return err
 	}
@@ -189,7 +216,7 @@ func (w *WebProperty) Get() error {
 	return err
 }
 
-func GetByCustomer(CustID int) (ws WebProperties, err error) {
+func GetByCustomer(CustID int, dtx *apicontext.DataContext) (ws WebProperties, err error) {
 	redis_key := "webpropertyByCustomer:" + strconv.Itoa(CustID)
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -208,9 +235,9 @@ func GetByCustomer(CustID int) (ws WebProperties, err error) {
 	}
 	defer stmt.Close()
 
-	webPropTypes, err := GetAllWebPropertyTypes()
-	webPropNotes, err := GetAllWebPropertyNotes()
-	WebPropertyRequirements, err := GetAllWebPropertyRequirements()
+	webPropTypes, err := GetAllWebPropertyTypes(dtx)
+	webPropNotes, err := GetAllWebPropertyNotes(dtx)
+	WebPropertyRequirements, err := GetAllWebPropertyRequirements(dtx)
 	if err != nil {
 		return
 	}
@@ -286,11 +313,11 @@ func GetByCustomer(CustID int) (ws WebProperties, err error) {
 	return
 }
 
-func GetAll() (WebProperties, error) {
+func GetAll(dtx *apicontext.DataContext) (WebProperties, error) {
 	var ws WebProperties
 	var err error
 
-	redis_key := "webproperties"
+	redis_key := "webproperties:" + dtx.BrandString
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &ws)
@@ -310,9 +337,9 @@ func GetAll() (WebProperties, error) {
 	}
 	defer stmt.Close()
 
-	webPropTypes, err := GetAllWebPropertyTypes()
-	webPropNotes, err := GetAllWebPropertyNotes()
-	WebPropertyRequirements, err := GetAllWebPropertyRequirements()
+	webPropTypes, err := GetAllWebPropertyTypes(dtx)
+	webPropNotes, err := GetAllWebPropertyNotes(dtx)
+	WebPropertyRequirements, err := GetAllWebPropertyRequirements(dtx)
 	if err != nil {
 		return ws, err
 	}
@@ -324,7 +351,7 @@ func GetAll() (WebProperties, error) {
 	var url, sid *string
 	var tid *int
 
-	res, err := stmt.Query()
+	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	for res.Next() {
 		var w WebProperty
 		res.Scan(
@@ -536,11 +563,11 @@ func (w *WebProperty) Delete() error {
 	return nil
 }
 
-func GetAllWebPropertyTypes() (WebPropertyTypes, error) {
+func GetAllWebPropertyTypes(dtx *apicontext.DataContext) (WebPropertyTypes, error) {
 	var ws WebPropertyTypes
 	var err error
 
-	redis_key := "webpropertytypes"
+	redis_key := "webpropertytypes" + dtx.BrandString
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &ws)
@@ -558,7 +585,7 @@ func GetAllWebPropertyTypes() (WebPropertyTypes, error) {
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Query()
+	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	for res.Next() {
 		var w WebPropertyType
 		res.Scan(&w.ID, &w.TypeID, &w.Type)
@@ -568,11 +595,11 @@ func GetAllWebPropertyTypes() (WebPropertyTypes, error) {
 	return ws, err
 }
 
-func GetAllWebPropertyNotes() (WebPropertyNotes, error) {
+func GetAllWebPropertyNotes(dtx *apicontext.DataContext) (WebPropertyNotes, error) {
 	var ws WebPropertyNotes
 	var err error
 
-	redis_key := "webpropertynotes"
+	redis_key := "webpropertynotes" + dtx.BrandString
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &ws)
@@ -590,7 +617,7 @@ func GetAllWebPropertyNotes() (WebPropertyNotes, error) {
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Query()
+	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	for res.Next() {
 		var w WebPropertyNote
 		res.Scan(&w.ID, &w.WebPropID, &w.Text, &w.DateAdded)
@@ -599,11 +626,11 @@ func GetAllWebPropertyNotes() (WebPropertyNotes, error) {
 	go redis.Setex(redis_key, ws, 86400)
 	return ws, err
 }
-func GetAllWebPropertyRequirements() (WebPropertyRequirements, error) {
+func GetAllWebPropertyRequirements(dtx *apicontext.DataContext) (WebPropertyRequirements, error) {
 	var ws WebPropertyRequirements
 	var err error
 
-	redis_key := "webpropertyrequirements"
+	redis_key := "webpropertyrequirements" + dtx.BrandString
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &ws)
@@ -621,7 +648,7 @@ func GetAllWebPropertyRequirements() (WebPropertyRequirements, error) {
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Query()
+	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	for res.Next() {
 		var w WebPropertyRequirement
 		var reqType, req *string
