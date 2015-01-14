@@ -3,6 +3,7 @@ package news_controller
 import (
 	// "errors"
 	// "fmt"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/pagination"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
@@ -18,11 +19,11 @@ import (
 
 const timeFormat = "Mon Jan 2 15:04:05 -0700 MST 2006"
 
-func GetAll(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+func GetAll(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var fs news_model.Newses
 	var err error
 
-	fs, err = news_model.GetAll()
+	fs, err = news_model.GetAll(dtx)
 	if err != nil {
 		return err.Error()
 	}
@@ -39,7 +40,7 @@ func GetAll(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) strin
 	return encoding.Must(enc.Encode(fs))
 }
 
-func Get(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func Get(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var f news_model.News
 	var err error
 
@@ -55,14 +56,14 @@ func Get(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params m
 			return err.Error()
 		}
 	}
-	err = f.Get()
+	err = f.Get(dtx)
 	if err != nil {
 		return err.Error()
 	}
 	return encoding.Must(enc.Encode(f))
 }
 
-func Create(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+func Create(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var n news_model.News
 	var err error
 
@@ -82,14 +83,14 @@ func Create(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) strin
 	if active != "" {
 		n.Active, err = strconv.ParseBool(active)
 	}
-	err = n.Create()
+	err = n.Create(dtx)
 	if err != nil {
 		return err.Error()
 	}
 	return encoding.Must(enc.Encode(n))
 }
 
-func Update(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func Update(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var n news_model.News
 	var err error
 
@@ -105,7 +106,7 @@ func Update(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, param
 			return err.Error()
 		}
 	}
-	n.Get()
+	n.Get(dtx)
 	title := r.FormValue("title")
 	lead := r.FormValue("lead")
 	content := r.FormValue("content")
@@ -136,14 +137,14 @@ func Update(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, param
 		n.Slug = slug
 	}
 
-	err = n.Update()
+	err = n.Update(dtx)
 	if err != nil {
 		return err.Error()
 	}
 	return encoding.Must(enc.Encode(n))
 }
 
-func Delete(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func Delete(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var n news_model.News
 	var err error
 
@@ -159,40 +160,40 @@ func Delete(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, param
 			return err.Error()
 		}
 	}
-	err = n.Delete()
+	err = n.Delete(dtx)
 	if err != nil {
 		return err.Error()
 	}
 	return encoding.Must(enc.Encode(n))
 }
 
-func GetTitles(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+func GetTitles(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var l pagination.Objects
 	var err error
 	page := r.FormValue("page")
 	results := r.FormValue("results")
 
-	l, err = news_model.GetTitles(page, results)
+	l, err = news_model.GetTitles(page, results, dtx)
 	if err != nil {
 		return err.Error()
 	}
 	return encoding.Must(enc.Encode(l))
 }
 
-func GetLeads(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+func GetLeads(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var l pagination.Objects
 	var err error
 	page := r.FormValue("page")
 	results := r.FormValue("results")
 
-	l, err = news_model.GetLeads(page, results)
+	l, err = news_model.GetLeads(page, results, dtx)
 	if err != nil {
 		return err.Error()
 	}
 	return encoding.Must(enc.Encode(l))
 }
 
-func Search(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+func Search(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var err error
 
 	title := r.FormValue("title")
@@ -206,7 +207,7 @@ func Search(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) strin
 	page := r.FormValue("page")
 	results := r.FormValue("results")
 
-	l, err := news_model.Search(title, lead, content, publishStart, publishEnd, active, slug, page, results)
+	l, err := news_model.Search(title, lead, content, publishStart, publishEnd, active, slug, page, results, dtx)
 	if err != nil {
 		return err.Error()
 	}
