@@ -2,6 +2,7 @@ package warranty
 
 import (
 	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/contact"
 	"github.com/curt-labs/GoAPI/models/warranty"
@@ -17,10 +18,10 @@ const (
 	timeFormat = "2006-01-02"
 )
 
-func GetAllWarranties(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder) string {
+func GetAllWarranties(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var err error
 
-	ws, err := warranty.GetAllWarranties()
+	ws, err := warranty.GetAllWarranties(dtx)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return err.Error()

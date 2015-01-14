@@ -153,7 +153,7 @@ func GetRelated(w http.ResponseWriter, r *http.Request, params martini.Params, e
 		ID: id,
 	}
 
-	err := p.GetRelated()
+	err := p.GetRelated(dtx)
 	var parts []products.Part
 	c := make(chan int, len(p.Related))
 	for _, rel := range p.Related {
@@ -229,13 +229,13 @@ func Vehicles(w http.ResponseWriter, r *http.Request, params martini.Params, enc
 	return encoding.Must(enc.Encode(vehicles))
 }
 
-func Images(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+func Images(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	id, _ := strconv.Atoi(params["part"])
 	p := products.Part{
 		ID: id,
 	}
 
-	err := p.GetImages()
+	err := p.GetImages(dtx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -244,14 +244,14 @@ func Images(w http.ResponseWriter, r *http.Request, params martini.Params, enc e
 	return encoding.Must(enc.Encode(p.Images))
 }
 
-func Attributes(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+func Attributes(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 
 	id, _ := strconv.Atoi(params["part"])
 	p := products.Part{
 		ID: id,
 	}
 
-	err := p.GetAttributes()
+	err := p.GetAttributes(dtx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -260,13 +260,13 @@ func Attributes(w http.ResponseWriter, r *http.Request, params martini.Params, e
 	return encoding.Must(enc.Encode(p.Attributes))
 }
 
-func GetContent(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+func GetContent(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	id, _ := strconv.Atoi(params["part"])
 	p := products.Part{
 		ID: id,
 	}
 
-	err := p.GetContent()
+	err := p.GetContent(dtx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -275,13 +275,13 @@ func GetContent(w http.ResponseWriter, r *http.Request, params martini.Params, e
 	return encoding.Must(enc.Encode(p.Content))
 }
 
-func Packaging(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+func Packaging(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	id, _ := strconv.Atoi(params["part"])
 	p := products.Part{
 		ID: id,
 	}
 
-	err := p.GetPartPackaging()
+	err := p.GetPartPackaging(dtx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -320,13 +320,13 @@ func Videos(w http.ResponseWriter, r *http.Request, params martini.Params, enc e
 	return encoding.Must(enc.Encode(p.Videos))
 }
 
-func InstallSheet(w http.ResponseWriter, r *http.Request, params martini.Params) {
+func InstallSheet(w http.ResponseWriter, r *http.Request, params martini.Params, dtx *apicontext.DataContext) {
 	id, _ := strconv.Atoi(strings.Split(params["part"], ".")[0])
 	p := products.Part{
 		ID: id,
 	}
 
-	data, err := p.GetInstallSheet(r)
+	data, err := p.GetInstallSheet(r, dtx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

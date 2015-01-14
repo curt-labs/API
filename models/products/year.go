@@ -2,13 +2,29 @@ package products
 
 import (
 	"database/sql"
+	"encoding/json"
+	"fmt"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
+	"github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
 	"strconv"
 	"strings"
 )
 
-func (l *Lookup) GetYears() error {
+func (l *Lookup) GetYears(dtx *apicontext.DataContext) error {
+	//hit redis first
+	var brands string
+	if dtx.Globals["brandsString"] != nil {
+		brands = dtx.Globals["brandsString"].(string)
+	}
+	redis_key := fmt.Sprintf("lookup:years:%s", brands)
+	data, err := redis.Get(redis_key)
+	if err == nil {
+		err = json.Unmarshal(data, &l.Years)
+		return nil
+	}
+
 	stmtBeginning := `
 		select distinct y.YearID from vcdb_Year as y
 		join BaseVehicle as bv on y.YearID = bv.YearID
@@ -59,6 +75,8 @@ func (l *Lookup) GetYears() error {
 		PerPage:       len(l.Years),
 		TotalPages:    1,
 	}
-
+	if brands != "" {
+		go redis.Setex(redis_key, l.Years, 86400)
+	}
 	return nil
 }

@@ -172,7 +172,7 @@ func (p *Part) FromDatabase(dtx *apicontext.DataContext) error {
 	contentChan := make(chan int)
 
 	go func() {
-		attrErr := p.GetAttributes()
+		attrErr := p.GetAttributes(dtx)
 		if attrErr != nil {
 			errs = append(errs, attrErr.Error())
 		}
@@ -196,7 +196,7 @@ func (p *Part) FromDatabase(dtx *apicontext.DataContext) error {
 	}()
 
 	go func() {
-		imgErr := p.GetImages()
+		imgErr := p.GetImages(dtx)
 		if imgErr != nil {
 			errs = append(errs, imgErr.Error())
 		}
@@ -212,7 +212,7 @@ func (p *Part) FromDatabase(dtx *apicontext.DataContext) error {
 	}()
 
 	go func() {
-		relErr := p.GetRelated()
+		relErr := p.GetRelated(dtx)
 		if relErr != nil {
 			errs = append(errs, relErr.Error())
 		}
@@ -220,7 +220,7 @@ func (p *Part) FromDatabase(dtx *apicontext.DataContext) error {
 	}()
 
 	go func() {
-		pkgErr := p.GetPartPackaging()
+		pkgErr := p.GetPartPackaging(dtx)
 		if pkgErr != nil {
 			errs = append(errs, pkgErr.Error())
 		}
@@ -236,14 +236,14 @@ func (p *Part) FromDatabase(dtx *apicontext.DataContext) error {
 	}()
 
 	go func() {
-		conErr := p.GetContent()
+		conErr := p.GetContent(dtx)
 		if conErr != nil {
 			errs = append(errs, conErr.Error())
 		}
 		contentChan <- 1
 	}()
 
-	if basicErr := p.Basics(); basicErr != nil {
+	if basicErr := p.Basics(dtx); basicErr != nil {
 		errs = append(errs, basicErr.Error())
 	}
 
@@ -472,8 +472,13 @@ func (p *Part) GetById(id int, key string, dtx *apicontext.DataContext) {
 	p.Get(dtx)
 }
 
-func (p *Part) Basics() error {
-	redis_key := fmt.Sprintf("part:%d:%d:basics", p.BrandID, p.ID)
+func (p *Part) Basics(dtx *apicontext.DataContext) error {
+	var brands string
+	if dtx.Globals["brandsString"] != nil {
+		brands = dtx.Globals["brandsString"].(string)
+	}
+
+	redis_key := fmt.Sprintf("part:%d:basics:%s", p.ID, brands)
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -528,16 +533,21 @@ func (p *Part) Basics() error {
 	if oldNum != nil {
 		p.OldPartNumber = string(oldNum[:])
 	}
-
-	go func(tmp Part) {
-		redis.Setex(redis_key, tmp, redis.CacheTimeout)
-	}(*p)
+	if brands != "" {
+		go func(tmp Part) {
+			redis.Setex(redis_key, tmp, redis.CacheTimeout)
+		}(*p)
+	}
 
 	return nil
 }
 
-func (p *Part) GetRelated() error {
-	redis_key := fmt.Sprintf("part:%d:%d:related", p.BrandID, p.ID)
+func (p *Part) GetRelated(dtx *apicontext.DataContext) error {
+	var brands string
+	if dtx.Globals["brandsString"] != nil {
+		brands = dtx.Globals["brandsString"].(string)
+	}
+	redis_key := fmt.Sprintf("part:%d:related:%s", p.ID, brands)
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -577,15 +587,21 @@ func (p *Part) GetRelated() error {
 	p.Related = related
 	p.RelatedCount = len(related)
 
-	go func(rel []int) {
-		redis.Setex(redis_key, rel, redis.CacheTimeout)
-	}(p.Related)
+	if brands != "" {
+		go func(rel []int) {
+			redis.Setex(redis_key, rel, redis.CacheTimeout)
+		}(p.Related)
+	}
 
 	return nil
 }
 
-func (p *Part) GetContent() error {
-	redis_key := fmt.Sprintf("part:%d:%d:content", p.BrandID, p.ID)
+func (p *Part) GetContent(dtx *apicontext.DataContext) error {
+	var brands string
+	if dtx.Globals["brandsString"] != nil {
+		brands = dtx.Globals["brandsString"].(string)
+	}
+	redis_key := fmt.Sprintf("part:%d:content:%s", p.ID, brands)
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -633,9 +649,9 @@ func (p *Part) GetContent() error {
 	defer rows.Close()
 
 	p.Content = content
-
-	go redis.Setex(redis_key, p.Content, redis.CacheTimeout)
-
+	if brands != "" {
+		go redis.Setex(redis_key, p.Content, redis.CacheTimeout)
+	}
 	return nil
 }
 
@@ -686,8 +702,12 @@ func (p *Part) BindCustomer(key string) error {
 	return nil
 }
 
-func (p *Part) GetInstallSheet(r *http.Request) (data []byte, err error) {
-	redis_key := fmt.Sprintf("part:%d:%d:installsheet", p.BrandID, p.ID)
+func (p *Part) GetInstallSheet(r *http.Request, dtx *apicontext.DataContext) (data []byte, err error) {
+	var brands string
+	if dtx.Globals["brandsString"] != nil {
+		brands = dtx.Globals["brandsString"].(string)
+	}
+	redis_key := fmt.Sprintf("part:%d:installsheet:%s", p.ID, brands)
 
 	data, err = redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -716,10 +736,11 @@ func (p *Part) GetInstallSheet(r *http.Request) (data []byte, err error) {
 
 	data, err = rest.GetPDF(text, r)
 
-	go func(dt []byte) {
-		redis.Setex(redis_key, dt, redis.CacheTimeout)
-	}(data)
-
+	if brands != "" {
+		go func(dt []byte) {
+			redis.Setex(redis_key, dt, redis.CacheTimeout)
+		}(data)
+	}
 	return
 }
 
@@ -730,7 +751,11 @@ func (p *Part) GetInstallSheet(r *http.Request) (data []byte, err error) {
 // Inherited: part Part
 // Returns: error
 func (p *Part) PartBreadcrumbs(dtx *apicontext.DataContext) error {
-	redis_key := fmt.Sprintf("part:%d:%d:breadcrumbs", p.BrandID, p.ID)
+	var brands string
+	if dtx.Globals["brandsString"] != nil {
+		brands = dtx.Globals["brandsString"].(string)
+	}
+	redis_key := fmt.Sprintf("part:%d:breadcrumbs:%s", p.ID, brands)
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -803,16 +828,20 @@ func (p *Part) PartBreadcrumbs(dtx *apicontext.DataContext) error {
 
 	// Apply breadcrumbs to our part object and return
 	p.Categories = cats
-
-	go func(cats []Category) {
-		redis.Setex(redis_key, cats, redis.CacheTimeout)
-	}(p.Categories)
-
+	if brands != "" {
+		go func(cats []Category) {
+			redis.Setex(redis_key, cats, redis.CacheTimeout)
+		}(p.Categories)
+	}
 	return nil
 }
 
 func (p *Part) GetPartCategories(dtx *apicontext.DataContext) (cats []Category, err error) {
-	redis_key := fmt.Sprintf("part:%d:%d:categories", p.BrandID, p.ID)
+	var brands string
+	if dtx.Globals["brandsString"] != nil {
+		brands = dtx.Globals["brandsString"].(string)
+	}
+	redis_key := fmt.Sprintf("part:%d:categories", p.ID, brands)
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -895,11 +924,11 @@ func (p *Part) GetPartCategories(dtx *apicontext.DataContext) (cats []Category, 
 
 		cats = append(cats, cat)
 	}
-
-	go func(cts []Category) {
-		redis.Setex(redis_key, cts, redis.CacheTimeout)
-	}(cats)
-
+	if brands != "" {
+		go func(cts []Category) {
+			redis.Setex(redis_key, cts, redis.CacheTimeout)
+		}(cats)
+	}
 	return
 }
 

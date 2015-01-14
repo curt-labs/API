@@ -2,13 +2,28 @@ package products
 
 import (
 	"database/sql"
+	"encoding/json"
+	"fmt"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
+	"github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
 	"strconv"
 	"strings"
 )
 
-func (l *Lookup) GetMakes() error {
+func (l *Lookup) GetMakes(dtx *apicontext.DataContext) error {
+	var brands string
+	if dtx.Globals["brandsString"] != nil {
+		brands = dtx.Globals["brandsString"].(string)
+	}
+	redis_key := fmt.Sprintf("lookup:year:%d:makes:%s", l.Vehicle.Base.Year, brands)
+	data, err := redis.Get(redis_key)
+	if err == nil {
+		err = json.Unmarshal(data, &l.Makes)
+		return nil
+	}
+
 	stmtBeginning := `
 		select distinct m.MakeName from vcdb_Make as m
 		join BaseVehicle as bv on m.ID = bv.MakeID
@@ -58,6 +73,8 @@ func (l *Lookup) GetMakes() error {
 		PerPage:       len(l.Makes),
 		TotalPages:    1,
 	}
-
+	if brands != "" {
+		redis.Setex(redis_key, l.Makes, 86400)
+	}
 	return nil
 }

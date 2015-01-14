@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
@@ -44,8 +45,12 @@ type PackageType struct {
 	Name string `json:"name,omitempty" xml:"name,omitempty"`
 }
 
-func (p *Part) GetPartPackaging() error {
-	redis_key := fmt.Sprintf("part:%d:%d:packages", p.BrandID, p.ID)
+func (p *Part) GetPartPackaging(dtx *apicontext.DataContext) error {
+	var brands string
+	if dtx.Globals["brandsString"] != nil {
+		brands = dtx.Globals["brandsString"].(string)
+	}
+	redis_key := fmt.Sprintf("part:%d:packages:%s", p.ID, brands)
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {

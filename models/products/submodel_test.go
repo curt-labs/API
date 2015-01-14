@@ -2,6 +2,8 @@ package products
 
 import (
 	"github.com/curt-labs/GoAPI/helpers/api"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	. "github.com/smartystreets/goconvey/convey"
 	"math/rand"
 	"testing"
@@ -10,6 +12,12 @@ import (
 func TestGetSubmodels(t *testing.T) {
 	var l Lookup
 	l.Brands = append(l.Brands, 1)
+
+	MockedDTX := &apicontext.DataContext{}
+	var err error
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
 	Convey("Testing GetSubmodels()", t, func() {
 
 		Convey("without year/make/model", func() {
@@ -30,7 +38,7 @@ func TestGetSubmodels(t *testing.T) {
 		})
 
 		Convey("with year", func() {
-			err := l.GetYears()
+			err := l.GetYears(MockedDTX)
 			So(err, ShouldEqual, nil)
 			if len(l.Years) == 0 {
 				return
@@ -44,13 +52,13 @@ func TestGetSubmodels(t *testing.T) {
 		})
 
 		Convey("with year/make", func() {
-			err := l.GetYears()
+			err := l.GetYears(MockedDTX)
 			So(err, ShouldEqual, nil)
 			if len(l.Years) == 0 {
 				return
 			}
 			l.Vehicle.Base.Year = l.Years[api_helpers.RandGenerator(len(l.Years))]
-			err = l.GetMakes()
+			err = l.GetMakes(MockedDTX)
 			So(err, ShouldEqual, nil)
 			if len(l.Makes) == 0 {
 				return
@@ -65,14 +73,14 @@ func TestGetSubmodels(t *testing.T) {
 
 		Convey("with year/make/model", func() {
 
-			err := l.GetYears()
+			err := l.GetYears(MockedDTX)
 			So(err, ShouldEqual, nil)
 			if len(l.Years) == 0 {
 				return
 			}
 			l.Vehicle.Base.Year = l.Years[api_helpers.RandGenerator(len(l.Years)-1)]
 
-			err = l.GetMakes()
+			err = l.GetMakes(MockedDTX)
 			So(err, ShouldEqual, nil)
 			if len(l.Makes) == 0 {
 				return
@@ -100,5 +108,5 @@ func TestGetSubmodels(t *testing.T) {
 			}
 		})
 	})
-
+	_ = apicontextmock.DeMock(MockedDTX)
 }

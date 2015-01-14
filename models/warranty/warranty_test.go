@@ -1,6 +1,9 @@
 package warranty
 
 import (
+	"database/sql"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	"github.com/curt-labs/GoAPI/models/contact"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
@@ -8,6 +11,11 @@ import (
 )
 
 func TestWarranties(t *testing.T) {
+	var err error
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
 	Convey("Testing CRUD", t, func() {
 		var w Warranty
 		var err error
@@ -32,9 +40,11 @@ func TestWarranties(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(len(wts), ShouldBeGreaterThan, 0)
 
-		ws, err := GetAllWarranties()
-		So(err, ShouldBeNil)
-		So(len(ws), ShouldBeGreaterThan, 0)
+		ws, err := GetAllWarranties(MockedDTX)
+		if err != sql.ErrNoRows {
+			So(err, ShouldBeNil)
+			So(len(ws), ShouldBeGreaterThan, 0)
+		}
 
 		Convey("DELETE", func() {
 			err = w.Delete()
@@ -50,12 +60,19 @@ func TestWarranties(t *testing.T) {
 		})
 
 	})
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkGetAllWarranties(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		GetAllWarranties()
+	var err error
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
 	}
+	for i := 0; i < b.N; i++ {
+		GetAllWarranties(MockedDTX)
+	}
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkGetWarranty(b *testing.B) {
