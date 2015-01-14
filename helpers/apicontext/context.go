@@ -8,12 +8,14 @@ import (
 )
 
 type DataContext struct {
-	BrandID    int
-	WebsiteID  int
-	APIKey     string
-	CustomerID int
-	UserID     string
-	Globals    map[string]interface{}
+	BrandID     int
+	WebsiteID   int
+	APIKey      string
+	CustomerID  int
+	UserID      string
+	Globals     map[string]interface{}
+	BrandArray  []int
+	BrandString string
 }
 
 var (
@@ -51,9 +53,8 @@ func (dtx *DataContext) GetBrandsFromKey() ([]int, error) {
 	return brands, err
 }
 
-func GetBrandsArrayAndString(apiKey string, brandId int) ([]int, string, error) {
+func (dtx *DataContext) GetBrandsArrayAndString(apiKey string, brandId int) error {
 	var err error
-	var brands string
 	var brandInts []int
 	var brandStringArray []string
 	var brandIdApproved bool = false
@@ -61,24 +62,24 @@ func GetBrandsArrayAndString(apiKey string, brandId int) ([]int, string, error) 
 	//get brandIds from apiKey
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		return brandInts, brands, err
+		return err
 	}
 	defer db.Close()
 
 	stmt, err := db.Prepare(apiToBrandStmt)
 	if err != nil {
-		return brandInts, brands, err
+		return err
 	}
 	defer stmt.Close()
 	res, err := stmt.Query(apiKey)
 	if err != nil {
-		return brandInts, brands, err
+		return err
 	}
 	var b int
 	for res.Next() {
 		err = res.Scan(&b)
 		if err != nil {
-			return brandInts, brands, err
+			return err
 		}
 		brandInts = append(brandInts, b)
 		brandStringArray = append(brandStringArray, strconv.Itoa(b))
@@ -87,17 +88,18 @@ func GetBrandsArrayAndString(apiKey string, brandId int) ([]int, string, error) 
 		for _, bId := range brandInts {
 			if bId == brandId {
 				brandIdApproved = true
-				brandInts = []int{brandId}
-				brands = strconv.Itoa(brandId)
-				return brandInts, brands, err
+				dtx.BrandArray = []int{brandId}
+				dtx.BrandString = strconv.Itoa(brandId)
+				return err
 			}
 		}
 	}
 	if brandId > 0 && brandIdApproved == false {
-		brandInts = []int{0}
-		brands = ""
-		return brandInts, brands, err
+		dtx.BrandArray = []int{}
+		dtx.BrandString = ""
+		return err
 	}
-	brands = strings.Join(brandStringArray, ",")
-	return brandInts, brands, err
+	dtx.BrandString = strings.Join(brandStringArray, ",")
+	dtx.BrandArray = brandInts
+	return err
 }

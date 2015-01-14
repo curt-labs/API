@@ -104,7 +104,7 @@ func (p *Part) GetActiveApprovedReviews() error {
 
 //get all reveiws, ever
 func GetAllReviews(dtx *apicontext.DataContext) (revs Reviews, err error) {
-	redis_key := fmt.Sprintf("reviews:%d", dtx.BrandID)
+	redis_key := fmt.Sprintf("reviews:%s", dtx.BrandString)
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &revs)
@@ -149,12 +149,14 @@ func GetAllReviews(dtx *apicontext.DataContext) (revs Reviews, err error) {
 		revs = append(revs, r)
 	}
 	defer res.Close()
-	go redis.Setex(redis_key, revs, 86400)
+	if dtx.BrandString != "" {
+		go redis.Setex(redis_key, revs, 86400)
+	}
 	return revs, err
 }
 
 func (r *Review) Get(dtx *apicontext.DataContext) (err error) {
-	redis_key := fmt.Sprintf("reviews:%d:%d", dtx.BrandID, r.Id)
+	redis_key := fmt.Sprintf("reviews:%d:%s", r.Id, dtx.BrandString)
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &r)
@@ -196,7 +198,9 @@ func (r *Review) Get(dtx *apicontext.DataContext) (err error) {
 	if err != nil {
 		return err
 	}
-	go redis.Setex(redis_key, r, 86400)
+	if dtx.BrandString != "" {
+		go redis.Setex(redis_key, r, 86400)
+	}
 	return nil
 }
 

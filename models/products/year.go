@@ -14,11 +14,7 @@ import (
 
 func (l *Lookup) GetYears(dtx *apicontext.DataContext) error {
 	//hit redis first
-	var brands string
-	if dtx.Globals["brandsString"] != nil {
-		brands = dtx.Globals["brandsString"].(string)
-	}
-	redis_key := fmt.Sprintf("lookup:years:%s", brands)
+	redis_key := fmt.Sprintf("lookup:years:%s", dtx.BrandString)
 	data, err := redis.Get(redis_key)
 	if err == nil {
 		err = json.Unmarshal(data, &l.Years)
@@ -75,7 +71,7 @@ func (l *Lookup) GetYears(dtx *apicontext.DataContext) error {
 		PerPage:       len(l.Years),
 		TotalPages:    1,
 	}
-	if brands != "" {
+	if dtx.BrandString != "" {
 		go redis.Setex(redis_key, l.Years, 86400)
 	}
 	return nil
