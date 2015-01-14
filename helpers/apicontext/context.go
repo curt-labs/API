@@ -98,7 +98,7 @@ func (dtx *DataContext) GetBrandsArrayAndString(apiKey string, brandId int) erro
 	if brandId > 0 && brandIdApproved == false {
 		dtx.BrandArray = []int{}
 		dtx.BrandString = ""
-		err = errors.New("No brands associated with this API Key.")
+		err = errors.New("That brand is not associated with this API Key.")
 		return err
 	}
 	dtx.BrandString = "brands:" + strings.Join(brandStringArray, ",")
