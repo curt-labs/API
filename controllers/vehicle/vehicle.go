@@ -21,11 +21,9 @@ var (
 // the given configuration. Doesn't start looking for parts
 // until the model is provided.
 func Query(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
-	brandArray := dtx.Globals["brandsArray"].([]int)
-
 	var l products.Lookup
 	l.Vehicle = LoadVehicle(r)
-	l.Brands = brandArray
+	l.Brands = dtx.BrandArray
 
 	qs := r.URL.Query()
 	if qs.Get("key") != "" {
