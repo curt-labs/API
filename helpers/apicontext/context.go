@@ -2,6 +2,7 @@ package apicontext
 
 import (
 	"database/sql"
+	"errors"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"strconv"
 	"strings"
@@ -97,6 +98,7 @@ func (dtx *DataContext) GetBrandsArrayAndString(apiKey string, brandId int) erro
 	if brandId > 0 && brandIdApproved == false {
 		dtx.BrandArray = []int{}
 		dtx.BrandString = ""
+		err = errors.New("No brands associated with this API Key.")
 		return err
 	}
 	dtx.BrandString = strings.Join(brandStringArray, ",")

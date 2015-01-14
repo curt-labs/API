@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -47,9 +48,9 @@ func Meddler() martini.Handler {
 		}
 
 		if !excused {
-			dataContext := processDataContext(r, c)
-			if dataContext == nil {
-				http.Error(res, "Unauthorized", http.StatusUnauthorized)
+			dataContext, err := processDataContext(r, c)
+			if err != nil {
+				http.Error(res, err.Error(), http.StatusUnauthorized)
 				return
 			}
 
@@ -97,7 +98,7 @@ func mapCart(c martini.Context, res http.ResponseWriter, r *http.Request) error 
 	return nil
 }
 
-func processDataContext(r *http.Request, c martini.Context) *apicontext.DataContext {
+func processDataContext(r *http.Request, c martini.Context) (*apicontext.DataContext, error) {
 	qs := r.URL.Query()
 	apiKey := qs.Get("key")
 	brand := qs.Get("brandID")
@@ -111,13 +112,13 @@ func processDataContext(r *http.Request, c martini.Context) *apicontext.DataCont
 		apiKey = r.Header.Get("key")
 	}
 	if apiKey == "" {
-		return nil
+		return nil, errors.New("No API Key Supplied.")
 	}
 
 	//gets customer user from api key
 	user, err := customer.GetCustomerUserFromKey(apiKey)
 	if err != nil || user.Id == "" {
-		return nil
+		return nil, errors.New("No User for this API Key.")
 	}
 	go user.LogApiRequest(r)
 
@@ -158,9 +159,9 @@ func processDataContext(r *http.Request, c martini.Context) *apicontext.DataCont
 	}
 	err = dtx.GetBrandsArrayAndString(apiKey, brandID)
 	if err != nil {
-		return nil
+		return nil, err
 	}
-	return dtx
+	return dtx, nil
 }
 
 func logRequest(r *http.Request, reqTime time.Duration) {
