@@ -145,24 +145,22 @@ func processDataContext(r *http.Request, c martini.Context) *apicontext.DataCont
 		websiteID = id
 	}
 
-	globalMap := make(map[string]interface{})
-	globalMap["brandsArray"], globalMap["brandsString"], err = apicontext.GetBrandsArrayAndString(apiKey, brandID)
-	if err != nil {
-		return nil
-	}
-	// globalMap["brandsString"], err = apicontext.GetBrandsString(apiKey, brandID)
-	// if err != nil {
-	// 	return nil
-	// }
+	//load brands in dtx
 	//returns our data context...shared amongst controllers
-	return &apicontext.DataContext{
+	// var dtx apicontext.DataContext
+	dtx := &apicontext.DataContext{
 		APIKey:     apiKey,
 		BrandID:    brandID,
 		WebsiteID:  websiteID,
 		UserID:     user.Id, //current authenticated user
 		CustomerID: user.CustomerID,
-		Globals:    globalMap,
+		Globals:    nil,
 	}
+	err = dtx.GetBrandsArrayAndString(apiKey, brandID)
+	if err != nil {
+		return nil
+	}
+	return dtx
 }
 
 func logRequest(r *http.Request, reqTime time.Duration) {
