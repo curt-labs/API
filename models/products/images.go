@@ -30,11 +30,8 @@ type Image struct {
 }
 
 func (p *Part) GetImages(dtx *apicontext.DataContext) error {
-	var brands string
-	if dtx.Globals["brandsString"] != nil {
-		brands = dtx.Globals["brandsString"].(string)
-	}
-	redis_key := fmt.Sprintf("part:%d:images:%s", p.ID, brands)
+
+	redis_key := fmt.Sprintf("part:%d:images:%s", p.ID, dtx.BrandArray)
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -80,9 +77,8 @@ func (p *Part) GetImages(dtx *apicontext.DataContext) error {
 	defer rows.Close()
 
 	p.Images = images
-	if brands != "" {
-		go redis.Setex(redis_key, p.Images, redis.CacheTimeout)
-	}
+	go redis.Setex(redis_key, p.Images, redis.CacheTimeout)
+
 	return nil
 }
 
