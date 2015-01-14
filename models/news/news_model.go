@@ -67,7 +67,7 @@ const (
 
 func (n *News) Get(dtx *apicontext.DataContext) error {
 	var err error
-
+	// 1000th commit - Because I can.
 	redis_key := "news:" + strconv.Itoa(n.ID) + ":" + dtx.BrandString
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {

@@ -136,7 +136,7 @@ func CreateBlogCategory(rw http.ResponseWriter, r *http.Request, enc encoding.En
 	return encoding.Must(enc.Encode(c))
 }
 
-func DeleteBlogCategory(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func DeleteBlogCategory(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var c blog_model.Category
 	var err error
 
@@ -153,7 +153,7 @@ func DeleteBlogCategory(rw http.ResponseWriter, r *http.Request, enc encoding.En
 		}
 	}
 
-	err = c.Delete()
+	err = c.Delete(dtx)
 	if err != nil {
 		return err.Error()
 	}
