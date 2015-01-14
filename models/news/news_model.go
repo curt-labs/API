@@ -68,7 +68,7 @@ const (
 func (n *News) Get(dtx *apicontext.DataContext) error {
 	var err error
 
-	redis_key := "news:" + strconv.Itoa(n.ID)
+	redis_key := "news:" + strconv.Itoa(n.ID) + ":" + dtx.BrandString
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &n)
@@ -100,7 +100,7 @@ func (n *News) Get(dtx *apicontext.DataContext) error {
 func GetAll(dtx *apicontext.DataContext) (Newses, error) {
 	var fs Newses
 	var err error
-	redis_key := "news"
+	redis_key := "news" + ":" + dtx.BrandString
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &fs)
@@ -138,7 +138,7 @@ func GetTitles(pageStr, resultsStr string, dtx *apicontext.DataContext) (paginat
 	var fs []interface{}
 	var l pagination.Objects
 
-	redis_key := "news:titles"
+	redis_key := "news:titles" + ":" + dtx.BrandString
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &l)
@@ -174,7 +174,7 @@ func GetLeads(pageStr, resultsStr string, dtx *apicontext.DataContext) (paginati
 	var err error
 	var fs []interface{}
 	var l pagination.Objects
-	redis_key := "news:leads"
+	redis_key := "news:leads" + ":" + dtx.BrandString
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &l)

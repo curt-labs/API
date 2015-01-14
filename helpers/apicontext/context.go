@@ -89,7 +89,7 @@ func (dtx *DataContext) GetBrandsArrayAndString(apiKey string, brandId int) erro
 			if bId == brandId {
 				brandIdApproved = true
 				dtx.BrandArray = []int{brandId}
-				dtx.BrandString = strconv.Itoa(brandId)
+				dtx.BrandString = "brands:" + strconv.Itoa(brandId)
 				return err
 			}
 		}
@@ -99,7 +99,7 @@ func (dtx *DataContext) GetBrandsArrayAndString(apiKey string, brandId int) erro
 		dtx.BrandString = ""
 		return err
 	}
-	dtx.BrandString = strings.Join(brandStringArray, ",")
+	dtx.BrandString = "brands:" + strings.Join(brandStringArray, ",")
 	dtx.BrandArray = brandInts
 	return err
 }
