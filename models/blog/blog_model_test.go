@@ -106,7 +106,7 @@ func TestGetBlogs(t *testing.T) {
 		err = f.Delete()
 		So(err, ShouldBeNil)
 
-		err = c.Delete()
+		err = c.Delete(MockedDTX)
 		So(err, ShouldBeNil)
 
 	})
@@ -219,7 +219,7 @@ func BenchmarkDeleteCategory(b *testing.B) {
 		b.StopTimer()
 		cat.Create(MockedDTX)
 		b.StartTimer()
-		cat.Delete()
+		cat.Delete(MockedDTX)
 	}
 	_ = apicontextmock.DeMock(MockedDTX)
 }

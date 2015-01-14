@@ -100,7 +100,7 @@ func GetAll(dtx *apicontext.DataContext) (Blogs, error) {
 	var bs Blogs
 	var err error
 
-	redis_key := "blogs"
+	redis_key := "blogs:" + dtx.BrandString
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &bs)
@@ -172,7 +172,7 @@ func getAllBlogCategories(dtx *apicontext.DataContext) (BlogCategories, error) {
 func GetAllCategories(dtx *apicontext.DataContext) (Categories, error) {
 	var cs Categories
 	var err error
-	redis_key := "blogs:categories"
+	redis_key := "blogs:categories:" + dtx.BrandString
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &cs)
@@ -205,7 +205,7 @@ func GetAllCategories(dtx *apicontext.DataContext) (Categories, error) {
 func (b *Blog) Get(dtx *apicontext.DataContext) error {
 	var err error
 
-	redis_key := "blog:" + strconv.Itoa(b.ID)
+	redis_key := "blog:" + strconv.Itoa(b.ID) + ":" + dtx.BrandString
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &b)
@@ -386,7 +386,7 @@ func (b *Blog) Update(dtx *apicontext.DataContext) error {
 		createCatChan <- 1
 	}()
 	<-createCatChan
-	err = redis.Setex("blog:"+strconv.Itoa(b.ID), b, 86400)
+	err = redis.Setex("blog:"+strconv.Itoa(b.ID)+":"+dtx.BrandString, b, 86400)
 	return nil
 }
 
@@ -413,7 +413,7 @@ func (b *Blog) deleteCatBridge() error {
 
 func (c *Category) Get(dtx *apicontext.DataContext) error {
 	var err error
-	redis_key := "blogs:category:" + strconv.Itoa(c.ID)
+	redis_key := "blogs:category:" + strconv.Itoa(c.ID) + ":" + dtx.BrandString
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &c)
@@ -465,12 +465,12 @@ func (c *Category) Create(dtx *apicontext.DataContext) error {
 	if err != nil {
 		return err
 	}
-	redis.Setex("blogs:category:"+strconv.Itoa(c.ID), c, redis.CacheTimeout)
+	redis.Setex("blogs:category:"+strconv.Itoa(c.ID)+":"+dtx.BrandString, c, redis.CacheTimeout)
 
 	return nil
 }
 
-func (c *Category) Delete() error {
+func (c *Category) Delete(dtx *apicontext.DataContext) error {
 	var err error
 	err = c.deleteCatBridgeByCategory()
 	if err != nil {
@@ -497,7 +497,7 @@ func (c *Category) Delete() error {
 	tx.Commit()
 
 	if err == nil {
-		redis.Delete("blogs:category:" + strconv.Itoa(c.ID))
+		redis.Delete("blogs:category:" + strconv.Itoa(c.ID) + ":" + dtx.BrandString)
 	}
 
 	return err
