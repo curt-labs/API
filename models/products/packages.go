@@ -46,11 +46,7 @@ type PackageType struct {
 }
 
 func (p *Part) GetPartPackaging(dtx *apicontext.DataContext) error {
-	var brands string
-	if dtx.Globals["brandsString"] != nil {
-		brands = dtx.Globals["brandsString"].(string)
-	}
-	redis_key := fmt.Sprintf("part:%d:packages:%s", p.ID, brands)
+	redis_key := fmt.Sprintf("part:%d:packages:%s", p.ID, dtx.BrandString)
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -98,9 +94,9 @@ func (p *Part) GetPartPackaging(dtx *apicontext.DataContext) error {
 	defer rows.Close()
 
 	p.Packages = pkgs
-
-	go redis.Setex(redis_key, p.Packages, redis.CacheTimeout)
-
+	if dtx.BrandString != "" {
+		go redis.Setex(redis_key, p.Packages, redis.CacheTimeout)
+	}
 	return nil
 }
 

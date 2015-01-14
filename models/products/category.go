@@ -281,12 +281,8 @@ func PopulateCategory(row *sql.Row, ch chan Category, dtx *apicontext.DataContex
 // Returns: []Category, error
 func TopTierCategories(dtx *apicontext.DataContext) (cats []Category, err error) {
 	cats = make([]Category, 0)
-	var brands string
-	if dtx.Globals["brandsString"] != nil {
-		brands = dtx.Globals["brandsString"].(string)
-	}
 
-	redis_key := fmt.Sprintf("category:top:%s", brands)
+	redis_key := fmt.Sprintf("category:top:%s", dtx.BrandString)
 	// First lets try to access the category:top endpoint in Redis
 	data, err := redis.Get(redis_key)
 	if len(data) > 0 && err == nil {
@@ -337,18 +333,14 @@ func TopTierCategories(dtx *apicontext.DataContext) (cats []Category, err error)
 	}
 
 	sortutil.AscByField(cats, "Sort")
-	if brands != "" {
+	if dtx.BrandString != "" {
 		go redis.Setex(redis_key, cats, 86400)
 	}
 	return
 }
 
 func GetCategoryByTitle(cat_title string, dtx *apicontext.DataContext) (cat Category, err error) {
-	var brands string
-	if dtx.Globals["brandsString"] != nil {
-		brands = dtx.Globals["brandsString"].(string)
-	}
-	redis_key := fmt.Sprintf("category:title:%s:%s", cat_title, brands)
+	redis_key := fmt.Sprintf("category:title:%s:%s", cat_title, dtx.BrandString)
 	// Attempt to get the category from Redis
 	data, err := redis.Get(redis_key)
 	if len(data) > 0 && err == nil {
@@ -379,7 +371,7 @@ func GetCategoryByTitle(cat_title string, dtx *apicontext.DataContext) (cat Cate
 	ch := make(chan Category)
 	go PopulateCategory(catRow, ch, dtx)
 	cat = <-ch
-	if brands != "" {
+	if dtx.BrandString != "" {
 		go redis.Setex(redis_key, cat, 86400)
 	}
 	return cat, err
@@ -430,12 +422,8 @@ func (c *Category) GetSubCategories(dtx *apicontext.DataContext) (cats []Categor
 	if c.ID == 0 {
 		return
 	}
-	var brands string
-	if dtx.Globals["brandsString"] != nil {
-		brands = dtx.Globals["brandsString"].(string)
-	}
 
-	redis_key := fmt.Sprintf("category:%d:subs:%s", c.ID, brands)
+	redis_key := fmt.Sprintf("category:%d:subs:%s", c.ID, dtx.BrandString)
 	// First lets try to access the category:top endpoint in Redis
 	data, err := redis.Get(redis_key)
 	if len(data) > 0 && err == nil {
@@ -466,7 +454,7 @@ func (c *Category) GetSubCategories(dtx *apicontext.DataContext) (cats []Categor
 	ch := make(chan []Category, 0)
 	go PopulateCategoryMulti(catRows, ch)
 	cats = <-ch
-	if brands != "" {
+	if dtx.BrandString != "" {
 		go redis.Setex(redis_key, cats, 86400)
 	}
 	return

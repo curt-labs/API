@@ -13,11 +13,7 @@ import (
 )
 
 func (l *Lookup) GetMakes(dtx *apicontext.DataContext) error {
-	var brands string
-	if dtx.Globals["brandsString"] != nil {
-		brands = dtx.Globals["brandsString"].(string)
-	}
-	redis_key := fmt.Sprintf("lookup:year:%d:makes:%s", l.Vehicle.Base.Year, brands)
+	redis_key := fmt.Sprintf("lookup:year:%d:makes:%s", l.Vehicle.Base.Year, dtx.BrandString)
 	data, err := redis.Get(redis_key)
 	if err == nil {
 		err = json.Unmarshal(data, &l.Makes)
@@ -73,7 +69,7 @@ func (l *Lookup) GetMakes(dtx *apicontext.DataContext) error {
 		PerPage:       len(l.Makes),
 		TotalPages:    1,
 	}
-	if brands != "" {
+	if dtx.BrandString != "" {
 		redis.Setex(redis_key, l.Makes, 86400)
 	}
 	return nil

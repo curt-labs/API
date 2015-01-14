@@ -21,11 +21,8 @@ var (
 )
 
 func (p *Part) GetAttributes(dtx *apicontext.DataContext) (err error) {
-	var brands string
-	if dtx.Globals["brandsString"] != nil {
-		brands = dtx.Globals["brandsString"].(string)
-	}
-	redis_key := fmt.Sprintf("part:%d:attributes:%s", p.ID, brands)
+
+	redis_key := fmt.Sprintf("part:%d:attributes:%s", p.ID, dtx.BrandString)
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -62,7 +59,7 @@ func (p *Part) GetAttributes(dtx *apicontext.DataContext) (err error) {
 	defer rows.Close()
 
 	p.Attributes = attrs
-	if brands != "" {
+	if dtx.BrandString != "" {
 		go redis.Setex(redis_key, p.Attributes, redis.CacheTimeout)
 	}
 	return

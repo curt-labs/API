@@ -8,14 +8,14 @@ import (
 )
 
 type DataContext struct {
-	BrandID      int
-	WebsiteID    int
-	APIKey       string
-	CustomerID   int
-	UserID       string
-	Globals      map[string]interface{}
-	BrandArray   []int
-	BrandsString string
+	BrandID     int
+	WebsiteID   int
+	APIKey      string
+	CustomerID  int
+	UserID      string
+	Globals     map[string]interface{}
+	BrandArray  []int
+	BrandString string
 }
 
 var (
@@ -89,17 +89,17 @@ func (dtx *DataContext) GetBrandsArrayAndString(apiKey string, brandId int) erro
 			if bId == brandId {
 				brandIdApproved = true
 				dtx.BrandArray = []int{brandId}
-				dtx.BrandsString = strconv.Itoa(brandId)
+				dtx.BrandString = strconv.Itoa(brandId)
 				return err
 			}
 		}
 	}
 	if brandId > 0 && brandIdApproved == false {
 		dtx.BrandArray = []int{}
-		dtx.BrandsString = ""
+		dtx.BrandString = ""
 		return err
 	}
-	dtx.BrandsString = strings.Join(brandStringArray, ",")
+	dtx.BrandString = strings.Join(brandStringArray, ",")
 	dtx.BrandArray = brandInts
 	return err
 }
