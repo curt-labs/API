@@ -1,7 +1,9 @@
 package dealers_ctlr
 
 import (
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
+	apierr "github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/go-martini/martini"
 	"net/http"
@@ -137,8 +139,11 @@ func GetLocationById(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 	return encoding.Must(enc.Encode(l))
 }
 
-func GetAllBusinessClasses(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
-	classes, err := customer.GetAllBusinessClasses()
+func GetAllBusinessClasses(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+	classes, err := customer.GetAllBusinessClasses(dtx)
+	if len(classes) == 0 {
+		apierr.GenerateError("No results", err, w, r)
+	}
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return err.Error()
