@@ -1,19 +1,20 @@
 package contact
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/encoding"
-	"github.com/curt-labs/GoAPI/models/contact"
-	"github.com/go-martini/martini"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/curt-labs/GoAPI/helpers/encoding"
+	"github.com/curt-labs/GoAPI/helpers/error"
+	"github.com/curt-labs/GoAPI/models/contact"
+	"github.com/go-martini/martini"
 )
 
 func GetAllContactReceivers(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder) string {
 	receivers, err := contact.GetAllContactReceivers()
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble getting all contact receivers", err, rw, req)
 	}
 	return encoding.Must(enc.Encode(receivers))
 }
@@ -23,12 +24,10 @@ func GetContactReceiver(rw http.ResponseWriter, req *http.Request, params martin
 	var rec contact.ContactReceiver
 
 	if rec.ID, err = strconv.Atoi(params["id"]); err != nil {
-		http.Error(rw, "Invalid ContactReceiver ID", http.StatusInternalServerError)
-		return "Invalid ContactReceiver ID"
+		apierror.GenerateError("Trouble getting contact receiver ID", err, rw, req)
 	}
 	if err = rec.Get(); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble getting contact receiver", err, rw, req)
 	}
 	return encoding.Must(enc.Encode(rec))
 }
@@ -46,15 +45,13 @@ func AddContactReceiver(rw http.ResponseWriter, req *http.Request, params martin
 		var ct contact.ContactType
 		ct.ID, err = strconv.Atoi(t)
 		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return err.Error()
+			apierror.GenerateError("Trouble getting contact type ID", err, rw, req)
 		}
 		cr.ContactTypes = append(cr.ContactTypes, ct)
 	}
 
 	if err := cr.Add(); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble adding contact receiver", err, rw, req)
 	}
 
 	return encoding.Must(enc.Encode(cr))
@@ -65,13 +62,11 @@ func UpdateContactReceiver(rw http.ResponseWriter, req *http.Request, params mar
 	var cr contact.ContactReceiver
 
 	if cr.ID, err = strconv.Atoi(params["id"]); err != nil {
-		http.Error(rw, "Invalid ContactReceiver ID", http.StatusInternalServerError)
-		return "Invalid ContactReceiver ID"
+		apierror.GenerateError("Trouble getting contact receiver ID", err, rw, req)
 	}
 
 	if err = cr.Get(); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble getting contact receiver", err, rw, req)
 	}
 
 	if req.FormValue("first_name") != "" {
@@ -92,15 +87,13 @@ func UpdateContactReceiver(rw http.ResponseWriter, req *http.Request, params mar
 		var ct contact.ContactType
 		ct.ID, err = strconv.Atoi(t)
 		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return err.Error()
+			apierror.GenerateError("Trouble getting contact type ID", err, rw, req)
 		}
 		cr.ContactTypes = append(cr.ContactTypes, ct)
 	}
 
 	if err = cr.Update(); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble updating contact receiver", err, rw, req)
 	}
 
 	return encoding.Must(enc.Encode(cr))
@@ -111,13 +104,11 @@ func DeleteContactReceiver(rw http.ResponseWriter, req *http.Request, params mar
 	var cr contact.ContactReceiver
 
 	if cr.ID, err = strconv.Atoi(params["id"]); err != nil {
-		http.Error(rw, "Invalid ContactReceiver ID", http.StatusInternalServerError)
-		return "Invalid ContactReceiver ID"
+		apierror.GenerateError("Trouble getting contact receiver ID", err, rw, req)
 	}
 
 	if err = cr.Delete(); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble deleting contact receiver", err, rw, req)
 	}
 
 	return encoding.Must(enc.Encode(cr))

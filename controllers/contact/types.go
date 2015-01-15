@@ -1,19 +1,20 @@
 package contact
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
-	"github.com/curt-labs/GoAPI/helpers/encoding"
-	"github.com/curt-labs/GoAPI/models/contact"
-	"github.com/go-martini/martini"
 	"net/http"
 	"strconv"
+
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
+	"github.com/curt-labs/GoAPI/helpers/encoding"
+	"github.com/curt-labs/GoAPI/helpers/error"
+	"github.com/curt-labs/GoAPI/models/contact"
+	"github.com/go-martini/martini"
 )
 
 func GetAllContactTypes(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	types, err := contact.GetAllContactTypes(dtx)
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble getting all contact types", err, rw, req)
 	}
 	return encoding.Must(enc.Encode(types))
 }
@@ -23,12 +24,10 @@ func GetContactType(rw http.ResponseWriter, req *http.Request, params martini.Pa
 	var ctype contact.ContactType
 
 	if ctype.ID, err = strconv.Atoi(params["id"]); err != nil {
-		http.Error(rw, "Invalid ContactType ID", http.StatusInternalServerError)
-		return "Invalid ContactType ID"
+		apierror.GenerateError("Trouble getting contact type ID", err, rw, req)
 	}
 	if err = ctype.Get(); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble getting contact type", err, rw, req)
 	}
 	return encoding.Must(enc.Encode(ctype))
 }
@@ -40,13 +39,11 @@ func GetReceiversByContactType(rw http.ResponseWriter, req *http.Request, params
 	var crs contact.ContactReceivers
 
 	if ctype.ID, err = strconv.Atoi(params["id"]); err != nil {
-		http.Error(rw, "Invalid ContactType ID", http.StatusInternalServerError)
-		return "Invalid ContactType ID"
+		apierror.GenerateError("Trouble getting contact type ID", err, rw, req)
 	}
 	crs, err = ctype.GetReceivers()
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble getting receivers for contact type", err, rw, req)
 	}
 	return encoding.Must(enc.Encode(crs))
 }
@@ -68,8 +65,7 @@ func AddContactType(rw http.ResponseWriter, req *http.Request, params martini.Pa
 	}
 
 	if err := ct.Add(); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble adding contact type", err, rw, req)
 	}
 
 	return encoding.Must(enc.Encode(ct))
@@ -80,15 +76,13 @@ func UpdateContactType(rw http.ResponseWriter, req *http.Request, params martini
 	var ct contact.ContactType
 
 	if ct.ID, err = strconv.Atoi(params["id"]); err != nil {
-		http.Error(rw, "Invalid ContactType ID", http.StatusInternalServerError)
-		return "Invalid ContactType ID"
+		apierror.GenerateError("Trouble getting contact type ID", err, rw, req)
 	}
 
 	//json?
 
 	if err = ct.Get(); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble getting contact type", err, rw, req)
 	}
 
 	if req.FormValue("name") != "" {
@@ -107,8 +101,7 @@ func UpdateContactType(rw http.ResponseWriter, req *http.Request, params martini
 	}
 
 	if err = ct.Update(); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble updating contact type", err, rw, req)
 	}
 
 	return encoding.Must(enc.Encode(ct))
@@ -119,13 +112,11 @@ func DeleteContactType(rw http.ResponseWriter, req *http.Request, params martini
 	var ct contact.ContactType
 
 	if ct.ID, err = strconv.Atoi(params["id"]); err != nil {
-		http.Error(rw, "Invalid ContactType ID", http.StatusInternalServerError)
-		return "Invalid ContactType ID"
+		apierror.GenerateError("Trouble getting contact type ID", err, rw, req)
 	}
 
 	if err = ct.Delete(); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble deleting contact type ID", err, rw, req)
 	}
 
 	return encoding.Must(enc.Encode(ct))

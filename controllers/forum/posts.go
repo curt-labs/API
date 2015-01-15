@@ -6,6 +6,7 @@ import (
 
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
+	"github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/models/forum"
 	"github.com/go-martini/martini"
 )
@@ -13,8 +14,7 @@ import (
 func GetAllPosts(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	posts, err := forum.GetAllPosts(dtx)
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble getting all forum posts", err, rw, req)
 	}
 	return encoding.Must(enc.Encode(posts))
 }
@@ -24,13 +24,11 @@ func GetPost(rw http.ResponseWriter, req *http.Request, params martini.Params, e
 	var post forum.Post
 
 	if post.ID, err = strconv.Atoi(params["id"]); err != nil {
-		http.Error(rw, "Invalid Post ID", http.StatusInternalServerError)
-		return "Invalid Post ID"
+		apierror.GenerateError("Trouble getting forum post ID", err, rw, req)
 	}
 
 	if err := post.Get(dtx); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble getting forum post", err, rw, req)
 	}
 	return encoding.Must(enc.Encode(post))
 }
@@ -41,21 +39,18 @@ func AddPost(rw http.ResponseWriter, req *http.Request, params martini.Params, e
 
 	//we add a post either by topic (new post) or by identifying the parentID (replying to an existing post)
 	if req.FormValue("topicID") == "" && req.FormValue("parentID") == "" {
-		http.Error(rw, "Missing topic ID or parent post ID", http.StatusInternalServerError)
-		return "Missing topic ID or parent post ID"
+		apierror.GenerateError("Trouble adding forum post -- Missing topic ID or parent post ID", err, rw, req)
 	}
 
 	//we're adding a new post, so we use the topicID in order to create a new thread
 	if req.FormValue("topicID") != "" {
 		var topic forum.Topic
 		if topic.ID, err = strconv.Atoi(req.FormValue("topicID")); err != nil {
-			http.Error(rw, "Invalid topic ID", http.StatusInternalServerError)
-			return "Invalid topic ID"
+			apierror.GenerateError("Trouble adding forum post -- invalid topic ID", err, rw, req)
 		}
 		//verify that this topic exists
 		if err = topic.Get(dtx); err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return err.Error()
+			apierror.GenerateError("Trouble getting forum post -- topic doesn't exist", err, rw, req)
 		}
 
 		//create a new thread and save it
@@ -64,20 +59,17 @@ func AddPost(rw http.ResponseWriter, req *http.Request, params martini.Params, e
 			Active:  true,
 		}
 		if err = thread.Add(); err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return err.Error()
+			apierror.GenerateError("Trouble adding forum post -- failed to add thread", err, rw, req)
 		}
 		post.ThreadID = thread.ID
 	} else {
 		//we're replying to an existing post
 		var parentPost forum.Post
 		if parentPost.ID, err = strconv.Atoi(req.FormValue("parentID")); err != nil {
-			http.Error(rw, "Invalid parent post ID", http.StatusInternalServerError)
-			return "Invalid parent post ID"
+			apierror.GenerateError("Trouble adding forum post reply -- parentID is invalid", err, rw, req)
 		}
 		if err = parentPost.Get(dtx); err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return err.Error()
+			apierror.GenerateError("Trouble getting parent forum post", err, rw, req)
 		}
 		post.ParentID = parentPost.ID
 		post.ThreadID = parentPost.ThreadID
@@ -85,15 +77,13 @@ func AddPost(rw http.ResponseWriter, req *http.Request, params martini.Params, e
 
 	if req.FormValue("notify") != "" {
 		if post.Notify, err = strconv.ParseBool(req.FormValue("notify")); err != nil {
-			http.Error(rw, "Invalid boolean for post.Notify", http.StatusInternalServerError)
-			return "Invalid boolean for post.Notify"
+			apierror.GenerateError("Trouble adding post -- boolean notify parameter is invalid", err, rw, req)
 		}
 	}
 
 	if req.FormValue("sticky") != "" {
 		if post.Sticky, err = strconv.ParseBool(req.FormValue("sticky")); err != nil {
-			http.Error(rw, "Invalid boolean for post.Sticky", http.StatusInternalServerError)
-			return "Invalid boolean for post.Sticky"
+			apierror.GenerateError("Trouble adding post -- boolean sticky parameter is invalid", err, rw, req)
 		}
 	}
 
@@ -107,8 +97,7 @@ func AddPost(rw http.ResponseWriter, req *http.Request, params martini.Params, e
 	//post.IPAddress = ""
 
 	if err = post.Add(); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble adding post", err, rw, req)
 	}
 
 	return encoding.Must(enc.Encode(post))
@@ -119,24 +108,20 @@ func UpdatePost(rw http.ResponseWriter, req *http.Request, params martini.Params
 	var post forum.Post
 
 	if post.ID, err = strconv.Atoi(params["id"]); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble getting post ID", err, rw, req)
 	}
 
 	if err = post.Get(dtx); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble getting post", err, rw, req)
 	}
 
 	if req.FormValue("parentID") != "" {
 		var parentPost forum.Post
 		if parentPost.ID, err = strconv.Atoi(req.FormValue("parentID")); err != nil {
-			http.Error(rw, "Invalid parent post ID", http.StatusInternalServerError)
-			return "Invalid parent post ID"
+			apierror.GenerateError("Trouble updating post -- parent post ID is invalid", err, rw, req)
 		}
 		if err = parentPost.Get(dtx); err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return err.Error()
+			apierror.GenerateError("Trouble updating post -- failed to get parent post", err, rw, req)
 		}
 		post.ParentID = parentPost.ID
 	}
@@ -144,48 +129,41 @@ func UpdatePost(rw http.ResponseWriter, req *http.Request, params martini.Params
 	if req.FormValue("threadID") != "" {
 		var thread forum.Thread
 		if thread.ID, err = strconv.Atoi(req.FormValue("threadID")); err != nil {
-			http.Error(rw, "Invalid thread ID", http.StatusInternalServerError)
-			return "Invalid thread ID"
+			apierror.GenerateError("Trouble updating post -- thread ID is invalid", err, rw, req)
 		}
 		if err = thread.Get(dtx); err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return err.Error()
+			apierror.GenerateError("Trouble updating post -- thread was not found", err, rw, req)
 		}
 		post.ThreadID = thread.ID
 	}
 
 	if req.FormValue("approved") != "" {
 		if post.Approved, err = strconv.ParseBool(req.FormValue("approved")); err != nil {
-			http.Error(rw, "Invalid boolean for post.Approved", http.StatusInternalServerError)
-			return "Invalid boolean for post.Approved"
+			apierror.GenerateError("Trouble updating post -- boolean approved parameter is invalid", err, rw, req)
 		}
 	}
 
 	if req.FormValue("active") != "" {
 		if post.Approved, err = strconv.ParseBool(req.FormValue("active")); err != nil {
-			http.Error(rw, "Invalid boolean for post.Active", http.StatusInternalServerError)
-			return "Invalid boolean for post.Active"
+			apierror.GenerateError("Trouble updating post -- boolean active parameter is invalid", err, rw, req)
 		}
 	}
 
 	if req.FormValue("notify") != "" {
 		if post.Notify, err = strconv.ParseBool(req.FormValue("notify")); err != nil {
-			http.Error(rw, "Invalid boolean for post.Notify", http.StatusInternalServerError)
-			return "Invalid boolean for post.Notify"
+			apierror.GenerateError("Trouble updating post -- boolean notify parameter is invalid", err, rw, req)
 		}
 	}
 
 	if req.FormValue("sticky") != "" {
 		if post.Sticky, err = strconv.ParseBool(req.FormValue("sticky")); err != nil {
-			http.Error(rw, "Invalid boolean for post.Sticky", http.StatusInternalServerError)
-			return "Invalid boolean for post.Sticky"
+			apierror.GenerateError("Trouble updating post -- boolean sticky parameter is invalid", err, rw, req)
 		}
 	}
 
 	if req.FormValue("flag") != "" {
 		if post.Flag, err = strconv.ParseBool(req.FormValue("flag")); err != nil {
-			http.Error(rw, "Invalid boolean for post.Flag", http.StatusInternalServerError)
-			return "Invalid boolean for post.Flag"
+			apierror.GenerateError("Trouble updating post -- boolean flag parameter is invalid", err, rw, req)
 		}
 	}
 
@@ -211,8 +189,7 @@ func UpdatePost(rw http.ResponseWriter, req *http.Request, params martini.Params
 	//post.IPAddress = ""
 
 	if err = post.Update(); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble updating post", err, rw, req)
 	}
 
 	return encoding.Must(enc.Encode(post))
@@ -223,13 +200,11 @@ func DeletePost(rw http.ResponseWriter, req *http.Request, params martini.Params
 	var post forum.Post
 
 	if post.ID, err = strconv.Atoi(params["id"]); err != nil {
-		http.Error(rw, "Invalid Post ID", http.StatusInternalServerError)
-		return "Invalid Post ID"
+		apierror.GenerateError("Trouble getting forum post ID post", err, rw, req)
 	}
 
 	if err = post.Delete(); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble deleting forum post", err, rw, req)
 	}
 
 	return encoding.Must(enc.Encode(post))

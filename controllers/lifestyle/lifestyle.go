@@ -2,36 +2,35 @@ package lifestyle
 
 import (
 	"encoding/json"
-	"github.com/curt-labs/GoAPI/helpers/encoding"
-	"github.com/curt-labs/GoAPI/models/lifestyle"
-	"github.com/go-martini/martini"
 	"io/ioutil"
 	"net/http"
 	"strconv"
+
+	"github.com/curt-labs/GoAPI/helpers/encoding"
+	"github.com/curt-labs/GoAPI/helpers/error"
+	"github.com/curt-labs/GoAPI/models/lifestyle"
+	"github.com/go-martini/martini"
 )
 
-func GetAll(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func GetAll(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	lifestyles, err := lifestyle.GetAll()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble getting all lifestyles", err, rw, r)
 	}
 
 	return encoding.Must(enc.Encode(lifestyles))
 }
-func Get(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func Get(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var l lifestyle.Lifestyle
 	var err error
 	l.ID, err = strconv.Atoi(params["id"])
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble getting lifestyle ID", err, rw, r)
 	}
 
 	err = l.Get()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble getting lifestyle", err, rw, r)
 	}
 
 	return encoding.Must(enc.Encode(l))
@@ -45,22 +44,18 @@ func Save(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, param
 		l.ID, err = strconv.Atoi(idStr)
 		err = l.Get()
 		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return ""
+			apierror.GenerateError("Trouble getting lifestyle", err, rw, r)
 		}
 	}
 
 	//json
 	requestBody, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble reading request body for saving lifestyle", err, rw, r)
 	}
 	err = json.Unmarshal(requestBody, &l)
 	if err != nil {
-
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble unmarshalling request body response for saving lifestyle", err, rw, r)
 	}
 
 	//create or update
@@ -71,8 +66,7 @@ func Save(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, param
 	}
 
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble saving lifestyle", err, rw, r)
 	}
 	return encoding.Must(enc.Encode(l))
 }
@@ -85,15 +79,12 @@ func Delete(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, par
 		l.ID, err = strconv.Atoi(idStr)
 		err = l.Get()
 		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return ""
+			apierror.GenerateError("Trouble getting lifestyle", err, rw, r)
 		}
 	}
 	err = l.Delete()
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble deleting lifestyle", err, rw, r)
 	}
 	return encoding.Must(enc.Encode(l))
-
 }

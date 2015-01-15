@@ -8,6 +8,7 @@ import (
 
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
+	"github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/models/testimonials"
 	"github.com/go-martini/martini"
 )
@@ -37,8 +38,7 @@ func GetAllTestimonials(rw http.ResponseWriter, req *http.Request, enc encoding.
 
 	tests, err := testimonials.GetAllTestimonials(page, count, randomize, dtx)
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble getting all testimonials", err, rw, req)
 	}
 	return encoding.Must(enc.Encode(tests))
 }
@@ -48,12 +48,10 @@ func GetTestimonial(rw http.ResponseWriter, req *http.Request, params martini.Pa
 	var test testimonials.Testimonial
 
 	if test.ID, err = strconv.Atoi(params["id"]); err != nil {
-		http.Error(rw, "Invalid Testimonial ID", http.StatusInternalServerError)
-		return "Invalid Testimonial ID"
+		apierror.GenerateError("Trouble getting testimonial ID", err, rw, req)
 	}
 	if err := test.Get(dtx); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble getting testimonial", err, rw, req)
 	}
 	return encoding.Must(enc.Encode(test))
 }
@@ -66,21 +64,18 @@ func Save(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, param
 		a.ID, err = strconv.Atoi(idStr)
 		err = a.Get(dtx)
 		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return ""
+			apierror.GenerateError("Trouble getting testimonial", err, rw, req)
 		}
 	}
 
 	//json
 	requestBody, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return encoding.Must(enc.Encode(false))
+		apierror.GenerateError("Trouble reading request body for saving testimonial", err, rw, req)
 	}
 	err = json.Unmarshal(requestBody, &a)
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return encoding.Must(enc.Encode(false))
+		apierror.GenerateError("Trouble unmarshalling request body for saving testimonial", err, rw, req)
 	}
 	//create or update
 	if a.ID > 0 {
@@ -90,8 +85,7 @@ func Save(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, param
 	}
 
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble saving testimonial", err, rw, req)
 	}
 	return encoding.Must(enc.Encode(a))
 }
@@ -104,14 +98,12 @@ func Delete(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, par
 
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble getting testimonial ID", err, rw, req)
 	}
 	a.ID = id
 	err = a.Delete()
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble deleting testimonial", err, rw, req)
 	}
 
 	return encoding.Must(enc.Encode(a))
