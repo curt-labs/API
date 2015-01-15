@@ -1,16 +1,18 @@
 package customer
 
 import (
-	"database/sql"
-	"encoding/json"
-	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/api"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/conversions"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	"github.com/curt-labs/GoAPI/models/geography"
 	_ "github.com/go-sql-driver/mysql"
+
+	"database/sql"
+	"encoding/json"
+	"fmt"
 	"math"
 	"net/url"
 	"strconv"
@@ -168,6 +170,7 @@ const (
 )
 
 var (
+	getCustomer              = `select ` + customerFields + ` from Customer as c where c.cust_id = ? `
 	getCustomerIdFromKeyStmt = `select c.customerID from Customer as c
                                 join CustomerUser as cu on c.cust_id = cu.cust_ID
                                 join ApiKey as ak on cu.id = ak.user_id
@@ -215,7 +218,7 @@ var (
 						join CartIntegration ci on c.cust_ID = ci.custID
 						where ak.api_key = ?
 						and ci.partID = ?`
-	etailers = `select ` + customerFields + `, ` + stateFields + `, ` + countryFields + `, ` + dealerTypeFields + `, ` + dealerTierFields + `, ` + mapIconFields + `, ` + mapixCodeFields + `, ` + salesRepFields + `
+	etailers = `select distinct ` + customerFields + `, ` + stateFields + `, ` + countryFields + `, ` + dealerTypeFields + `, ` + dealerTierFields + `, ` + mapIconFields + `, ` + mapixCodeFields + `, ` + salesRepFields + `
 				from Customer as c
 				left join States as s on c.stateID = s.stateID
 				left join Country as cty on s.countryID = cty.countryID
@@ -224,7 +227,12 @@ var (
 				left join DealerTiers as dtr on c.tier = dtr.ID
 				left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
 				left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
-				where dt.online = 1 && c.isDummy = 0 order by c.name`
+				join CustomerToBrand as ctb on ctb.cust_id = c.cust_id
+				join ApiKeyToBrand as atb on atb.brandID = ctb.brandID
+				join ApiKey as a on a.id = atb.keyID
+				where dt.online = 1 && c.isDummy = 0 
+				&& a.api_key = ? && (ctb.brandID = ? or 0 = ?)
+				order by c.name`
 
 	localDealers = `select ` + customerLocationFields + `, ` + stateFields + `, ` + countryFields + `, ` + dealerTypeFields + `, ` + dealerTierFields + `, ` + mapIconFields + `, ` + mapixCodeFields + `, ` + salesRepFields + ` ,` + showSiteFields + `
 						from CustomerLocations as cl
@@ -275,18 +283,27 @@ var (
 	localDealerTiers = `select distinct dtr.* from DealerTiers as dtr
 							join Customer as c on dtr.ID = c.tier
 							join DealerTypes as dt on c.dealer_type = dt.dealer_type
+							join CustomerToBrand as ctb on ctb.cust_id = c.cust_id
+							join ApiKeyToBrand as atb on atb.brandID = ctb.brandID
+							join ApiKey as a on a.id = atb.keyID
 							where dt.online = false and dt.show = true
+							&& a.api_key = ? && (ctb.brandID = ? or 0 = ?)
 							order by dtr.sort`
-	localDealerTypes = `select m.ID as iconId, m.mapicon, m.mapiconshadow,
+	localDealerTypes = `select distinct m.ID as iconId, m.mapicon, m.mapiconshadow,
 							dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
 							dt.dealer_type as dealerTypeId, dt.type as dealerType, dt.online, dt.show, dt.label
 							from MapIcons as m
 							join DealerTypes as dt on m.dealer_type = dt.dealer_type
 							join DealerTiers as dtr on m.tier = dtr.ID
+							join Customer as c on dtr.ID = c.tier
+							join CustomerToBrand as ctb on ctb.cust_id = c.cust_id
+							join ApiKeyToBrand as atb on atb.brandID = ctb.brandID
+							join ApiKey as a on a.id = atb.keyID
 							where dt.show = true
+							&& a.api_key = ? && (atb.brandID = ? or 0 = ?)
 							order by dtr.sort desc`
 
-	whereToBuyDealers = `select ` + customerFields + `, ` + stateFields + `, ` + countryFields + `, ` + dealerTypeFields + `, ` + dealerTierFields + `, ` + mapIconFields + `, ` + mapixCodeFields + `, ` + salesRepFields + `
+	whereToBuyDealers = `select distinct ` + customerFields + `, ` + stateFields + `, ` + countryFields + `, ` + dealerTypeFields + `, ` + dealerTierFields + `, ` + mapIconFields + `, ` + mapixCodeFields + `, ` + salesRepFields + `
 			from Customer as c
 				left join States as s on c.stateID = s.stateID
 				left join Country as cty on s.countryID = cty.countryID
@@ -295,7 +312,10 @@ var (
 				left join DealerTiers as dtr on c.tier = dtr.ID
 				left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
 				left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
-				where dt.dealer_type = 1 and dtr.ID = 4 and c.isDummy = false and length(c.searchURL) > 1`
+				join ApiKeyToBrand as atb on atb.brandID = dtr.brandID
+				join ApiKey as a on a.id = atb.keyID
+				where dt.dealer_type = 1 and dtr.ID = 4 and c.isDummy = false and length(c.searchURL) > 1
+				&&(a.api_key = ? && (atb.brandID = ? or 0 = ?))`
 
 	customerByLocation = `select ` + customerLocationFields + `, ` + stateFields + `, ` + countryFields + `, ` + dealerTypeFields + `, ` + dealerTierFields + `, ` + mapIconFields + `, ` + mapixCodeFields + `, ` + salesRepFields + `  ,` + showSiteFields + `
 								from CustomerLocations as cl
@@ -366,153 +386,6 @@ var (
 	createDealerType = `insert into DealerTypes (type, online, label) values(?,?,?)`
 	deleteDealerType = `delete from DealerTypes where dealer_type= ?`
 )
-
-func (c *Customer) Get() error {
-	var err error
-	redis_key := custPrefix + strconv.Itoa(c.Id)
-	data, err := redis.Get(redis_key)
-	if err == nil && len(data) > 0 {
-		err = json.Unmarshal(data, &c)
-		if err == nil {
-			return nil
-		}
-	}
-
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	stmt, err := db.Prepare(getCustomer)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-
-	res := stmt.QueryRow(c.Id)
-	c, err = ScanCustomerTableFields(res)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil
-		}
-		return err
-	}
-
-	typeChan := make(chan int)
-	go func() {
-		//check redis
-		redis_key := "dealerType:" + strconv.Itoa(c.DealerType.Id)
-		data, err := redis.Get(redis_key)
-		if err == nil && len(data) > 0 {
-			json.Unmarshal(data, &c.DealerType)
-			typeChan <- 1
-			return
-		}
-
-		typeMap, err := DealerTypeMap()
-		if err != nil {
-			typeChan <- 1
-			return
-		}
-		if dType, ok := typeMap[c.DealerType.Id]; ok {
-			c.DealerType = dType
-		}
-		typeChan <- 1
-	}()
-	tierChan := make(chan int)
-	go func() {
-		//check redis
-		redis_key := "dealerTier:" + strconv.Itoa(c.DealerTier.Id)
-		data, err := redis.Get(redis_key)
-		if err == nil && len(data) > 0 {
-			json.Unmarshal(data, &c.DealerTier)
-			tierChan <- 1
-			return
-		}
-		tierMap, err := DealerTierMap()
-		if err == nil {
-			if dTier, ok := tierMap[c.DealerTier.Id]; ok {
-				c.DealerTier = dTier
-			}
-		}
-
-		tierChan <- 1
-	}()
-	mapixChan := make(chan int)
-	go func() {
-		//check redis
-		redis_key := "mapixCode:" + strconv.Itoa(c.MapixCode.ID)
-		data, err := redis.Get(redis_key)
-		if err == nil && len(data) > 0 {
-			json.Unmarshal(data, &c.MapixCode)
-			mapixChan <- 1
-			return
-		}
-		mapixMap, err := MapixMap()
-		if err == nil {
-			if mapix, ok := mapixMap[c.MapixCode.ID]; ok {
-				c.MapixCode = mapix
-			}
-		}
-
-		mapixChan <- 1
-	}()
-	repChan := make(chan int)
-	go func() {
-		//check redis
-		redis_key := "salesRep:" + strconv.Itoa(c.SalesRepresentative.ID)
-		data, err := redis.Get(redis_key)
-		if err == nil && len(data) > 0 {
-			json.Unmarshal(data, &c.SalesRepresentative)
-			repChan <- 1
-			return
-		}
-		repMap, err := SalesRepMap()
-		if err == nil {
-			if rep, ok := repMap[c.SalesRepresentative.ID]; ok {
-				c.SalesRepresentative = rep
-			}
-		}
-
-		repChan <- 1
-	}()
-
-	//get geography
-	redis_key_state := "state:" + strconv.Itoa(c.State.Id)
-	data, err = redis.Get(redis_key_state)
-	if err == nil && len(data) > 0 {
-		err = json.Unmarshal(data, &c.State)
-		if err == nil {
-			redis_key_country := "country:" + strconv.Itoa(c.State.Country.Id)
-			data, err = redis.Get(redis_key_country)
-			if err == nil && len(data) > 0 {
-				json.Unmarshal(data, &c.State.Country)
-			}
-		}
-	} else {
-		stateMap, stateErr := geography.GetStateMap()
-		countryMap, countryErr := geography.GetCountryMap()
-		if stateErr == nil && countryErr == nil {
-			if state, ok := stateMap[c.State.Id]; ok {
-				c.State = state
-				if country, ok := countryMap[c.State.Country.Id]; ok {
-					*c.State.Country = country
-				}
-			}
-		}
-	}
-
-	//TODO mapicons
-	<-repChan
-	<-mapixChan
-	<-tierChan
-	<-typeChan
-
-	redis.Setex(redis_key, c, redis.CacheTimeout)
-
-	return nil
-}
 
 func (c *Customer) GetCustomer(key string) (err error) {
 	basicsChan := make(chan error)
@@ -876,7 +749,17 @@ func GetCustomerCartReference(api_key string, part_id int) (ref int, err error) 
 	return ref, err
 }
 
-func GetEtailers(key string) (dealers []Customer, err error) {
+func GetEtailers(dtx *apicontext.DataContext) (dealers []Customer, err error) {
+	redis_key := "dealers:etailer:" + dtx.BrandString
+	data, err := redis.Get(redis_key)
+	if err == nil && len(data) > 0 {
+		err = json.Unmarshal(data, &dealers)
+		if err != nil {
+			return dealers, err
+		}
+		return
+	}
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return dealers, err
@@ -887,7 +770,7 @@ func GetEtailers(key string) (dealers []Customer, err error) {
 	if err != nil {
 		return dealers, err
 	}
-	rows, err := stmt.Query()
+	rows, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	if err != nil {
 		return dealers, err
 	}
@@ -895,11 +778,11 @@ func GetEtailers(key string) (dealers []Customer, err error) {
 
 	for rows.Next() {
 		var cust Customer
-		if err := cust.ScanCustomer(rows, key); err == nil {
+		if err := cust.ScanCustomer(rows, dtx.APIKey); err == nil {
 			dealers = append(dealers, cust)
 		}
 	}
-
+	redis.Setex(redis_key, dealers, 86400)
 	return dealers, err
 }
 
@@ -1102,8 +985,8 @@ func GetLocalRegions() (regions []StateRegion, err error) {
 	return
 }
 
-func GetLocalDealerTiers() (tiers []DealerTier, err error) {
-	redis_key := "local:tiers"
+func GetLocalDealerTiers(dtx *apicontext.DataContext) (tiers []DealerTier, err error) {
+	redis_key := "local:tiers:" + dtx.BrandString
 	data, err := redis.Get(redis_key)
 	if len(data) > 0 && err != nil {
 		err = json.Unmarshal(data, &tiers)
@@ -1122,7 +1005,7 @@ func GetLocalDealerTiers() (tiers []DealerTier, err error) {
 	if err != nil {
 		return tiers, err
 	}
-	res, err := stmt.Query()
+	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	var brandID *int
 	for res.Next() {
 		var t DealerTier
@@ -1137,8 +1020,8 @@ func GetLocalDealerTiers() (tiers []DealerTier, err error) {
 	return
 }
 
-func GetLocalDealerTypes() (graphics []MapGraphics, err error) {
-	redis_key := "local:types"
+func GetLocalDealerTypes(dtx *apicontext.DataContext) (graphics []MapGraphics, err error) {
+	redis_key := "local:types:" + dtx.BrandString
 	data, err := redis.Get(redis_key)
 	if len(data) > 0 && err != nil {
 		err = json.Unmarshal(data, &graphics)
@@ -1156,7 +1039,7 @@ func GetLocalDealerTypes() (graphics []MapGraphics, err error) {
 	if err != nil {
 		return graphics, err
 	}
-	res, err := stmt.Query()
+	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	var icon, shadow []byte
 	for res.Next() {
 		var g MapGraphics
@@ -1185,8 +1068,8 @@ func GetLocalDealerTypes() (graphics []MapGraphics, err error) {
 	return
 }
 
-func GetWhereToBuyDealers(key string) (customers []Customer, err error) {
-	redis_key := "dealers:wheretobuy"
+func GetWhereToBuyDealers(dtx *apicontext.DataContext) (customers []Customer, err error) {
+	redis_key := "dealers:wheretobuy:" + dtx.BrandString
 	data, err := redis.Get(redis_key)
 	if len(data) > 0 && err != nil {
 		err = json.Unmarshal(data, &customers)
@@ -1205,7 +1088,7 @@ func GetWhereToBuyDealers(key string) (customers []Customer, err error) {
 	if err != nil {
 		return customers, err
 	}
-	res, err := stmt.Query()
+	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	if err != nil {
 		return customers, err
 	}
@@ -1213,7 +1096,7 @@ func GetWhereToBuyDealers(key string) (customers []Customer, err error) {
 
 	for res.Next() {
 		var cust Customer
-		if err := cust.ScanCustomer(res, key); err != nil {
+		if err := cust.ScanCustomer(res, dtx.APIKey); err != nil {
 			return customers, err
 		}
 		customers = append(customers, cust)

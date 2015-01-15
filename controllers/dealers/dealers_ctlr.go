@@ -1,31 +1,24 @@
 package dealers_ctlr
 
 import (
+	"errors"
+	"net/http"
+	"strconv"
+
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	apierr "github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/go-martini/martini"
-	"net/http"
-	"strconv"
 )
 
-func GetEtailers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	var err error
-	qs := r.URL.Query()
-	key := qs.Get("key")
-	if key == "" {
-		key = r.FormValue("key")
-	}
-
-	if key == "" {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return ""
-	}
-
-	dealers, err := customer.GetEtailers(key)
+func GetEtailers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
+	dealers, err := customer.GetEtailers(dtx)
 	if err != nil {
 		return err.Error()
+	}
+	if len(dealers) == 0 {
+		apierr.GenerateError("There are no etailers with the brand specified.", errors.New("No Results"), w, r)
 	}
 	return encoding.Must(enc.Encode(dealers))
 }
@@ -78,8 +71,8 @@ func GetLocalRegions(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 	return encoding.Must(enc.Encode(regions))
 }
 
-func GetLocalDealerTiers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	tiers, err := customer.GetLocalDealerTiers()
+func GetLocalDealerTiers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
+	tiers, err := customer.GetLocalDealerTiers(dtx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -87,8 +80,8 @@ func GetLocalDealerTiers(w http.ResponseWriter, r *http.Request, enc encoding.En
 	return encoding.Must(enc.Encode(tiers))
 }
 
-func GetLocalDealerTypes(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	types, err := customer.GetLocalDealerTypes()
+func GetLocalDealerTypes(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
+	types, err := customer.GetLocalDealerTypes(dtx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -96,22 +89,14 @@ func GetLocalDealerTypes(w http.ResponseWriter, r *http.Request, enc encoding.En
 	return encoding.Must(enc.Encode(types))
 }
 
-func PlatinumEtailers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	qs := r.URL.Query()
-	key := qs.Get("key")
-	if key == "" {
-		key = r.FormValue("key")
-	}
-
-	if key == "" {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return ""
-	}
-
-	cust, err := customer.GetWhereToBuyDealers(key)
+func PlatinumEtailers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
+	cust, err := customer.GetWhereToBuyDealers(dtx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
+	}
+	if len(cust) == 0 {
+		apierr.GenerateError("There are no platinum etailers with the specified brand.", errors.New("No results."), w, r)
 	}
 	return encoding.Must(enc.Encode(cust))
 }

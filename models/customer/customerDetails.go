@@ -10,8 +10,6 @@ import (
 )
 
 var (
-	//New
-	getCustomer    = `select ` + customerFields + ` from Customer as c where c.cust_id = ? `
 	getDealerTypes = `select dt.dealer_type, ` + dealerTypeFields + ` from DealerTypes as dt`
 	getDealerTiers = `select dtr.ID, ` + dealerTierFields + ` from DealerTiers as dtr`
 	getMapIcons    = `select mi.ID, mi.tier, mi.dealer_type, ` + mapIconFields + ` from MapIcons as mi`
