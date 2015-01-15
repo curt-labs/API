@@ -2,6 +2,7 @@ package dealers_ctlr
 
 import (
 	"errors"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -88,6 +89,7 @@ func GetLocalDealerTypes(w http.ResponseWriter, r *http.Request, enc encoding.En
 func PlatinumEtailers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	cust, err := customer.GetWhereToBuyDealers(dtx)
 	if err != nil {
+		log.Print(err)
 		apierr.GenerateError("Error retrieving platinum etailers.", err, w, r)
 	}
 	if len(cust) == 0 {
@@ -99,7 +101,7 @@ func PlatinumEtailers(w http.ResponseWriter, r *http.Request, enc encoding.Encod
 func GetLocationById(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	str_id := params["id"]
 	if str_id == "" {
-		apierr.GenerateError("You must supply a location identification number.", err, w, r)
+		apierr.GenerateError("You must supply a location identification number.", errors.New("No id."), w, r)
 	}
 	id, err := strconv.Atoi(str_id)
 	if err != nil {

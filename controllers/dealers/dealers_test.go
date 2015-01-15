@@ -3,6 +3,7 @@ package dealers_ctlr
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	"github.com/curt-labs/GoAPI/helpers/httprunner"
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
 	"github.com/curt-labs/GoAPI/models/customer"
@@ -18,10 +19,11 @@ func TestDealers_New(t *testing.T) {
 	var err error
 	var c customer.Customer
 	var cs customer.Customers
-	var cu customer.CustomerUser
 	var dt customer.DealerType
 	var loc customer.CustomerLocation
 	var locs customer.CustomerLocations
+	var bc customer.BusinessClass
+	dtx, err := apicontextmock.Mock()
 
 	loc.Address = "123 Test Ave."
 	loc.Create()
@@ -32,30 +34,27 @@ func TestDealers_New(t *testing.T) {
 	err = dt.Create()
 
 	c.Name = "Dog Bountyhunter"
-	c.DealerType.Id = dt.Id //is etailer
+	// c.DealerType.Id = dt.Id //is etailer
+	c.DealerType.Id = 1
+	c.DealerTier.Id = 4
+	c.DealerTier.BrandID = dtx.BrandID
 	c.IsDummy = false
+
+	u, err := url.Parse("www.url.com")
+	c.SearchUrl = *u
 	c.Latitude = 44.83536
 	c.Longitude = -93.0201
 	err = c.Create()
 
-	cu.CustomerID = c.Id
-	cu.Name = "test cust user"
-	cu.Email = "pretend@test.com"
-	cu.Password = "test"
-	cu.Sudo = true
-	cu.Create()
-	var apiKey string
-	for _, key := range cu.Keys {
-		if strings.ToLower(key.Type) == "public" {
-			apiKey = key.Key
-		}
-	}
-	t.Log("APIKEY", apiKey)
+	bc.BrandID = dtx.BrandID
+
+	err = bc.Create()
+	err = c.CreateCustomerBrand(dtx.BrandID)
 
 	Convey("Testing Dealers_New", t, func() {
 		//test get etailers
 		thyme := time.Now()
-		testThatHttp.Request("get", "/new/dealers/etailer", "", "?key="+apiKey, GetEtailers, nil, "")
+		testThatHttp.Request("get", "/dealers/etailer", "", "?key="+dtx.APIKey, GetEtailers, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 
@@ -66,7 +65,7 @@ func TestDealers_New(t *testing.T) {
 
 		//test get local dealers
 		thyme = time.Now()
-		testThatHttp.Request("get", "/new/dealers/local", "", "?key="+apiKey+"&latlng=43.853282,-95.571675,45.800981,-90.468526&center=44.83536,-93.0201", GetLocalDealers, nil, "")
+		testThatHttp.Request("get", "/dealers/local", "", "?key="+dtx.APIKey+"&latlng=43.853282,-95.571675,45.800981,-90.468526&center=44.83536,-93.0201", GetLocalDealers, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		var dls customer.DealerLocations
@@ -76,7 +75,7 @@ func TestDealers_New(t *testing.T) {
 
 		//test get local dealers
 		thyme = time.Now()
-		testThatHttp.Request("get", "/new/dealers/local/regions", "", "?key="+apiKey, GetLocalRegions, nil, "")
+		testThatHttp.Request("get", "/dealers/local/regions", "", "?key="+dtx.APIKey, GetLocalRegions, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()*5) //Long test
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		var stateRegions []customer.StateRegion
@@ -86,7 +85,7 @@ func TestDealers_New(t *testing.T) {
 
 		//test get dealerTypes
 		thyme = time.Now()
-		testThatHttp.Request("get", "/new/dealers/local/types", "", "?key="+apiKey, GetLocalDealerTypes, nil, "")
+		testThatHttp.Request("get", "/dealers/local/types", "", "?key="+dtx.APIKey, GetLocalDealerTypes, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		var types []customer.DealerType
@@ -96,7 +95,7 @@ func TestDealers_New(t *testing.T) {
 
 		//test get dealerTiers
 		thyme = time.Now()
-		testThatHttp.Request("get", "/new/dealers/local/tiers", "", "?key="+apiKey, GetLocalDealerTiers, nil, "")
+		testThatHttp.Request("get", "/dealers/local/tiers", "", "?key="+dtx.APIKey, GetLocalDealerTiers, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		var tiers []customer.DealerTier
@@ -106,7 +105,7 @@ func TestDealers_New(t *testing.T) {
 
 		//test get dealerTiers
 		thyme = time.Now()
-		testThatHttp.Request("get", "/new/dealers/etailer/platinum", "", "?key="+apiKey, PlatinumEtailers, nil, "")
+		testThatHttp.Request("get", "/dealers/etailer/platinum", "", "?key="+dtx.APIKey, PlatinumEtailers, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &cs)
@@ -115,7 +114,7 @@ func TestDealers_New(t *testing.T) {
 
 		//test get location by id
 		thyme = time.Now()
-		testThatHttp.Request("get", "/new/dealers/location/", ":id", strconv.Itoa(loc.Id)+"?key="+apiKey, GetLocationById, nil, "")
+		testThatHttp.Request("get", "/dealers/location/", ":id", strconv.Itoa(loc.Id)+"?key="+dtx.APIKey, GetLocationById, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &loc)
@@ -124,7 +123,7 @@ func TestDealers_New(t *testing.T) {
 
 		//test get all business classes
 		thyme = time.Now()
-		testThatHttp.Request("get", "/new/dealers/business/classes", "", "?key="+apiKey, GetAllBusinessClasses, nil, "")
+		testThatHttp.Request("get", "/dealers/business/classes", "", "?key="+dtx.APIKey, GetAllBusinessClasses, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		var bcs customer.BusinessClasses
@@ -134,7 +133,7 @@ func TestDealers_New(t *testing.T) {
 
 		//test search Locations
 		thyme = time.Now()
-		testThatHttp.Request("get", "/new/dealers/search/", ":search", "test?key="+apiKey, SearchLocations, nil, "")
+		testThatHttp.Request("get", "/dealers/search/", ":search", "test?key="+dtx.APIKey, SearchLocations, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &locs)
@@ -143,7 +142,7 @@ func TestDealers_New(t *testing.T) {
 
 		//test search Locations by type
 		thyme = time.Now()
-		testThatHttp.Request("get", "/new/dealers/search/type/", ":search", "test?key="+apiKey, SearchLocationsByType, nil, "")
+		testThatHttp.Request("get", "/dealers/search/type/", ":search", "test?key="+dtx.APIKey, SearchLocationsByType, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &locs)
@@ -152,7 +151,7 @@ func TestDealers_New(t *testing.T) {
 
 		//test search Locations by lat long
 		thyme = time.Now()
-		testThatHttp.Request("get", "/new/dealers/search/geo/", ":latitude/:longitude", fmt.Sprint(c.Latitude)+"/"+fmt.Sprint(c.Longitude)+"?key="+apiKey, SearchLocationsByType, nil, "")
+		testThatHttp.Request("get", "/dealers/search/geo/", ":latitude/:longitude", fmt.Sprint(c.Latitude)+"/"+fmt.Sprint(c.Longitude)+"?key="+dtx.APIKey, SearchLocationsByType, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &dls)
@@ -161,10 +160,11 @@ func TestDealers_New(t *testing.T) {
 
 	})
 	c.Delete()
-	cu.Delete()
 	err = dt.Delete()
 	loc.Delete()
-
+	err = c.DeleteCustomerBrand(dtx.BrandID)
+	err = bc.Delete()
+	_ = apicontextmock.DeMock(dtx)
 }
 
 func BenchmarkCRUDDealers(b *testing.B) {
@@ -192,8 +192,8 @@ func BenchmarkCRUDDealers(b *testing.B) {
 		//get etailers
 		(&httprunner.BenchmarkOptions{
 			Method:             "GET",
-			Route:              "/new/dealers/etailer",
-			ParameterizedRoute: "/new/dealers/etailer",
+			Route:              "/dealers/etailer",
+			ParameterizedRoute: "/dealers/etailer",
 			Handler:            GetEtailers,
 			QueryString:        &qs,
 			JsonBody:           nil,
@@ -204,8 +204,8 @@ func BenchmarkCRUDDealers(b *testing.B) {
 		//get local dealers
 		(&httprunner.BenchmarkOptions{
 			Method:             "GET",
-			Route:              "/new/dealers/local",
-			ParameterizedRoute: "/new/dealers/local",
+			Route:              "/dealers/local",
+			ParameterizedRoute: "/dealers/local",
 			Handler:            GetLocalDealers,
 			QueryString:        &qs2,
 			JsonBody:           nil,
@@ -215,8 +215,8 @@ func BenchmarkCRUDDealers(b *testing.B) {
 		//get local dealers
 		(&httprunner.BenchmarkOptions{
 			Method:             "GET",
-			Route:              "/new/dealers/local/regions",
-			ParameterizedRoute: "/new/dealers/local/regions",
+			Route:              "/dealers/local/regions",
+			ParameterizedRoute: "/dealers/local/regions",
 			Handler:            GetLocalRegions,
 			QueryString:        &qs,
 			JsonBody:           nil,
@@ -226,8 +226,8 @@ func BenchmarkCRUDDealers(b *testing.B) {
 		//get local dealers
 		(&httprunner.BenchmarkOptions{
 			Method:             "GET",
-			Route:              "/new/dealers/local/types",
-			ParameterizedRoute: "/new/dealers/local/types",
+			Route:              "/dealers/local/types",
+			ParameterizedRoute: "/dealers/local/types",
 			Handler:            GetLocalDealerTypes,
 			QueryString:        &qs,
 			JsonBody:           nil,
@@ -237,8 +237,8 @@ func BenchmarkCRUDDealers(b *testing.B) {
 		//get local dealers
 		(&httprunner.BenchmarkOptions{
 			Method:             "GET",
-			Route:              "/new/dealers/local/tiers",
-			ParameterizedRoute: "/new/dealers/local/tiers",
+			Route:              "/dealers/local/tiers",
+			ParameterizedRoute: "/dealers/local/tiers",
 			Handler:            GetLocalDealerTiers,
 			QueryString:        &qs,
 			JsonBody:           nil,
@@ -248,8 +248,8 @@ func BenchmarkCRUDDealers(b *testing.B) {
 		//get local dealers
 		(&httprunner.BenchmarkOptions{
 			Method:             "GET",
-			Route:              "/new/dealers/etailer/platinum",
-			ParameterizedRoute: "/new/dealers/etailer/platinum",
+			Route:              "/dealers/etailer/platinum",
+			ParameterizedRoute: "/dealers/etailer/platinum",
 			Handler:            PlatinumEtailers,
 			QueryString:        &qs,
 			JsonBody:           nil,
@@ -259,8 +259,8 @@ func BenchmarkCRUDDealers(b *testing.B) {
 		//get local dealers
 		(&httprunner.BenchmarkOptions{
 			Method:             "GET",
-			Route:              "/new/dealers/location/",
-			ParameterizedRoute: "/new/dealers/location/1",
+			Route:              "/dealers/location/",
+			ParameterizedRoute: "/dealers/location/1",
 			Handler:            GetLocationById,
 			QueryString:        &qs,
 			JsonBody:           nil,
@@ -270,8 +270,8 @@ func BenchmarkCRUDDealers(b *testing.B) {
 		//get local dealers
 		(&httprunner.BenchmarkOptions{
 			Method:             "GET",
-			Route:              "/new/dealers/business/classes",
-			ParameterizedRoute: "/new/dealers/business/classes",
+			Route:              "/dealers/business/classes",
+			ParameterizedRoute: "/dealers/business/classes",
 			Handler:            GetAllBusinessClasses,
 			QueryString:        &qs,
 			JsonBody:           nil,
@@ -281,8 +281,8 @@ func BenchmarkCRUDDealers(b *testing.B) {
 		//get local dealers
 		(&httprunner.BenchmarkOptions{
 			Method:             "GET",
-			Route:              "/new/dealers/search/",
-			ParameterizedRoute: "/new/dealers/search/hitch",
+			Route:              "/dealers/search/",
+			ParameterizedRoute: "/dealers/search/hitch",
 			Handler:            SearchLocations,
 			QueryString:        &qs,
 			JsonBody:           nil,
@@ -292,8 +292,8 @@ func BenchmarkCRUDDealers(b *testing.B) {
 		//get local dealers
 		(&httprunner.BenchmarkOptions{
 			Method:             "GET",
-			Route:              "/new/dealers/search/type/",
-			ParameterizedRoute: "/new/dealers/search/type/installer",
+			Route:              "/dealers/search/type/",
+			ParameterizedRoute: "/dealers/search/type/installer",
 			Handler:            SearchLocationsByType,
 			QueryString:        &qs,
 			JsonBody:           nil,
@@ -303,8 +303,8 @@ func BenchmarkCRUDDealers(b *testing.B) {
 		//get local dealers
 		(&httprunner.BenchmarkOptions{
 			Method:             "GET",
-			Route:              "/new/dealers/search/geo/",
-			ParameterizedRoute: "/new/dealers/search/geo/44.83536/-93.0201",
+			Route:              "/dealers/search/geo/",
+			ParameterizedRoute: "/dealers/search/geo/44.83536/-93.0201",
 			Handler:            SearchLocationsByLatLng,
 			QueryString:        &qs,
 			JsonBody:           nil,

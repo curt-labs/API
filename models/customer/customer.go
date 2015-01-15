@@ -93,9 +93,10 @@ type DealerType struct {
 }
 
 type DealerTier struct {
-	Id   int    `json:"id,omitempty" xml:"id,omitempty"`
-	Tier string `json:"tier,omitempty" xml:"tier,omitempty"`
-	Sort int    `json:"sort,omitempty" xml:"sort,omitempty"`
+	Id      int    `json:"id,omitempty" xml:"id,omitempty"`
+	Tier    string `json:"tier,omitempty" xml:"tier,omitempty"`
+	Sort    int    `json:"sort,omitempty" xml:"sort,omitempty"`
+	BrandID int    `json:"brandId,omitempty" xml:"brandId,omitempty"`
 }
 
 type MapIcon struct {
@@ -312,9 +313,10 @@ var (
 				left join DealerTiers as dtr on c.tier = dtr.ID
 				left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
 				left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
-				join ApiKeyToBrand as atb on atb.brandID = dtr.brandID
+				join CustomerToBrand as ctb on ctb.cust_id = c.cust_id
+				join ApiKeyToBrand as atb on atb.brandID = ctb.brandID
 				join ApiKey as a on a.id = atb.keyID
-				where dt.dealer_type = 1 and dtr.ID = 4 and c.isDummy = false and length(c.searchURL) > 1
+				where c.dealer_type = 1 and c.tier = 4 and c.isDummy = false and length(c.searchURL) > 1
 				&&(a.api_key = ? && (atb.brandID = ? or 0 = ?))`
 
 	customerByLocation = `select ` + customerLocationFields + `, ` + stateFields + `, ` + countryFields + `, ` + dealerTypeFields + `, ` + dealerTierFields + `, ` + mapIconFields + `, ` + mapixCodeFields + `, ` + salesRepFields + `  ,` + showSiteFields + `
