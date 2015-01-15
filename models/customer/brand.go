@@ -8,8 +8,9 @@ import (
 )
 
 var (
-	createCustomerBrand = `insert into CustomerToBrand (cust_id,brandID) values(?,?)`
-	deleteCustomerBrand = `delete from CustomerToBrand where cust_id = ? and brandID = ?`
+	createCustomerBrand     = `insert into CustomerToBrand (cust_id,brandID) values(?,?)`
+	deleteCustomerBrand     = `delete from CustomerToBrand where cust_id = ? and brandID = ?`
+	deleteAllCustomerBrands = `delete from CustomerToBrand where cust_id = ?`
 )
 
 func (c *Customer) CreateCustomerBrand(brandID int) error {
@@ -46,6 +47,26 @@ func (c *Customer) DeleteCustomerBrand(brandID int) error {
 	}
 	defer stmt.Close()
 	_, err = stmt.Exec(c.Id, brandID)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+func (c *Customer) DeleteAllCustomerBrands() error {
+	var err error
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(deleteAllCustomerBrands)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(c.Id)
 	if err != nil {
 		return err
 	}

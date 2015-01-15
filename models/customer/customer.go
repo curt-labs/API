@@ -48,6 +48,7 @@ type Customer struct {
 	ApiKey              string              `json:"apiKey,omitempty" xml:"apiKey,omitempty"`
 	ShowWebsite         bool                `json:"showWebsite,omitempty" xml:"showWebsite,omitempty"`
 	SalesRepresentative SalesRepresentative `json:"salesRepresentative,omitempty" xml:"salesRepresentative,omitempty"`
+	BrandIDs            []int               `json:"brandIds,omitempty" xml:"brandIds,omitempty"`
 }
 
 type Customers []Customer
@@ -563,8 +564,17 @@ func (c *Customer) Create() (err error) {
 		return err
 	}
 	id, err := res.LastInsertId()
+	if err != nil {
+		return err
+	}
 	c.Id = int(id)
 
+	for _, brandID := range c.BrandIDs {
+		err = c.CreateCustomerBrand(brandID)
+		if err != nil {
+			return err
+		}
+	}
 	return err
 }
 
@@ -614,6 +624,13 @@ func (c *Customer) Update() (err error) {
 	if err != nil {
 		return err
 	}
+	err = c.DeleteAllCustomerBrands()
+	if err != nil {
+		return err
+	}
+	for _, brandID := range c.BrandIDs {
+		err = c.CreateCustomerBrand(brandID)
+	}
 	err = redis.Set(custPrefix+strconv.Itoa(c.Id), c)
 	return nil
 }
@@ -630,6 +647,10 @@ func (c *Customer) Delete() (err error) {
 	}
 	defer stmt.Close()
 	_, err = stmt.Exec(c.Id)
+	if err != nil {
+		return err
+	}
+	err = c.DeleteAllCustomerBrands()
 	if err != nil {
 		return err
 	}

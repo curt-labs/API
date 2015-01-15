@@ -2,7 +2,7 @@ package customer
 
 import (
 	//"database/sql"
-	//"github.com/curt-labs/GoAPI/models/products"
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	_ "github.com/go-sql-driver/mysql"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
@@ -12,30 +12,8 @@ const (
 	inputTimeFormat = "01/02/2006"
 )
 
-// func BenchmarkCustomerGet(b *testing.B) {
-// 	Convey("testing get", b, func() {
-// 		var c Customer
-// 		c.Id = 1
-// 		b.ResetTimer()
-// 		for i := 0; i < b.N; i++ {
-// 			_ = c.Get()
-// 		}
-
-// 	})
-// }
-// func BenchmarkCustomerBasics(b *testing.B) {
-// 	Convey("testing basics ", b, func() {
-// 		var c Customer
-// 		c.Id = 1
-
-// 		b.ResetTimer()
-// 		for i := 0; i < b.N; i++ {
-// 			_ = c.Basics()
-// 		}
-
-// 	})
-// }
 func TestCustomerModel(t *testing.T) {
+	dtx, _ := apicontextmock.Mock()
 	Convey("Testing Customer Model", t, func() {
 		var c Customer
 		var err error
@@ -95,9 +73,6 @@ func TestCustomerModel(t *testing.T) {
 		err = c.Basics("")
 		So(err, ShouldBeNil)
 
-		err = c.Get() //New
-		So(err, ShouldBeNil)
-
 		err = c.GetLocations()
 		So(err, ShouldBeNil)
 		So(len(c.Locations), ShouldBeGreaterThan, 0)
@@ -145,7 +120,7 @@ func TestCustomerModel(t *testing.T) {
 	Convey("testing general gets", t, func() {
 		Convey("Testing GetEtailers()", func() {
 			var err error
-			dealers, err := GetEtailers("")
+			dealers, err := GetEtailers(dtx)
 			So(err, ShouldBeNil)
 			So(dealers, ShouldHaveSameTypeAs, []Customer{})
 		})
@@ -165,19 +140,19 @@ func TestCustomerModel(t *testing.T) {
 		})
 		Convey("Testing GetLocalDealerTiers()", func() {
 			var err error
-			tiers, err := GetLocalDealerTiers()
+			tiers, err := GetLocalDealerTiers(dtx)
 			So(err, ShouldBeNil)
 			So(tiers, ShouldHaveSameTypeAs, []DealerTier{})
 		})
 		Convey("Testing GetLocalDealerTypes()", func() {
 			var err error
-			graphics, err := GetLocalDealerTypes()
+			graphics, err := GetLocalDealerTypes(dtx)
 			So(err, ShouldBeNil)
 			So(graphics, ShouldHaveSameTypeAs, []MapGraphics{})
 		})
 		Convey("Testing GetWhereToBuyDealers()", func() {
 			var err error
-			customers, err := GetWhereToBuyDealers("")
+			customers, err := GetWhereToBuyDealers(dtx)
 			So(err, ShouldBeNil)
 			So(customers, ShouldHaveSameTypeAs, []Customer{})
 		})
@@ -206,5 +181,5 @@ func TestCustomerModel(t *testing.T) {
 			So(locations, ShouldHaveSameTypeAs, []DealerLocation{})
 		})
 	})
-
+	_ = apicontextmock.DeMock(dtx)
 }

@@ -16,8 +16,6 @@ func TestUser(t *testing.T) {
 		//make customer to use
 		err = cust.Create()
 		So(err, ShouldBeNil)
-		err = cust.Get()
-		So(err, ShouldBeNil)
 
 		cu.Name = "testname"
 		cu.Email = "test@test.com"
