@@ -42,6 +42,7 @@ func Test_GetCustomerAddresses(t *testing.T) {
 				FirstName: "Alex",
 				LastName:  "Ninneman",
 				Email:     "ninnemana@gmail.com",
+				Password:  "password",
 			}
 			response = httprunner.JsonRequest("POST", "/shopify/customers", &qs, cust, AddCustomer)
 			So(response.Code, ShouldEqual, 200)
@@ -92,6 +93,7 @@ func Test_AddAddress(t *testing.T) {
 			FirstName: "Alex",
 			LastName:  "Ninneman",
 			Email:     "ninnemana@gmail.com",
+			Password:  "password",
 		}
 		response = httprunner.JsonRequest("POST", "/shopify/customers", &qs, cust, AddCustomer)
 		So(response.Code, ShouldEqual, 200)
@@ -143,6 +145,7 @@ func Test_GetAddress(t *testing.T) {
 			FirstName: "Alex",
 			LastName:  "Ninneman",
 			Email:     "ninnemana@gmail.com",
+			Password:  "password",
 		}
 		response = httprunner.JsonRequest("POST", "/shopify/customers", &qs, cust, AddCustomer)
 		So(response.Code, ShouldEqual, 200)
@@ -202,6 +205,7 @@ func Test_EditAddress(t *testing.T) {
 			FirstName: "Alex",
 			LastName:  "Ninneman",
 			Email:     "ninnemana@gmail.com",
+			Password:  "password",
 		}
 		response = httprunner.JsonRequest("POST", "/shopify/customers", &qs, cust, AddCustomer)
 		So(response.Code, ShouldEqual, 200)
@@ -270,6 +274,7 @@ func Test_SetDefaultAddress(t *testing.T) {
 			FirstName: "Alex",
 			LastName:  "Ninneman",
 			Email:     "ninnemana@gmail.com",
+			Password:  "password",
 		}
 		response = httprunner.JsonRequest("POST", "/shopify/customers", &qs, cust, AddCustomer)
 		So(response.Code, ShouldEqual, 200)
@@ -329,6 +334,7 @@ func Test_DeleteAddress(t *testing.T) {
 			FirstName: "Alex",
 			LastName:  "Ninneman",
 			Email:     "ninnemana@gmail.com",
+			Password:  "password",
 		}
 		response = httprunner.JsonRequest("POST", "/shopify/customers", &qs, cust, AddCustomer)
 		So(response.Code, ShouldEqual, 200)
@@ -403,6 +409,7 @@ func BenchmarkGetCustomerAddresses(b *testing.B) {
 		FirstName: "Alex",
 		LastName:  "Ninneman",
 		Email:     "ninnemana@gmail.com",
+		Password:  "password",
 	}
 	if err := cust.Insert(); err != nil {
 		b.Error(err.Error())

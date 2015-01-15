@@ -16,6 +16,7 @@ func GetAll(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, param
 	lifestyles, err := lifestyle.GetAll()
 	if err != nil {
 		apierror.GenerateError("Trouble getting all lifestyles", err, rw, r)
+		return ""
 	}
 
 	return encoding.Must(enc.Encode(lifestyles))
@@ -26,11 +27,13 @@ func Get(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params m
 	l.ID, err = strconv.Atoi(params["id"])
 	if err != nil {
 		apierror.GenerateError("Trouble getting lifestyle ID", err, rw, r)
+		return ""
 	}
 
 	err = l.Get()
 	if err != nil {
 		apierror.GenerateError("Trouble getting lifestyle", err, rw, r)
+		return ""
 	}
 
 	return encoding.Must(enc.Encode(l))
@@ -44,18 +47,21 @@ func Save(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, param
 		l.ID, err = strconv.Atoi(idStr)
 		err = l.Get()
 		if err != nil {
-			apierror.GenerateError("Trouble getting lifestyle", err, rw, r)
+			apierror.GenerateError("Trouble getting lifestyle", err, rw, req)
+			return ""
 		}
 	}
 
 	//json
 	requestBody, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		apierror.GenerateError("Trouble reading request body for saving lifestyle", err, rw, r)
+		apierror.GenerateError("Trouble reading request body for saving lifestyle", err, rw, req)
+		return ""
 	}
 	err = json.Unmarshal(requestBody, &l)
 	if err != nil {
-		apierror.GenerateError("Trouble unmarshalling request body response for saving lifestyle", err, rw, r)
+		apierror.GenerateError("Trouble unmarshalling request body response for saving lifestyle", err, rw, req)
+		return ""
 	}
 
 	//create or update
@@ -66,7 +72,8 @@ func Save(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, param
 	}
 
 	if err != nil {
-		apierror.GenerateError("Trouble saving lifestyle", err, rw, r)
+		apierror.GenerateError("Trouble saving lifestyle", err, rw, req)
+		return ""
 	}
 	return encoding.Must(enc.Encode(l))
 }
@@ -79,12 +86,14 @@ func Delete(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, par
 		l.ID, err = strconv.Atoi(idStr)
 		err = l.Get()
 		if err != nil {
-			apierror.GenerateError("Trouble getting lifestyle", err, rw, r)
+			apierror.GenerateError("Trouble getting lifestyle", err, rw, req)
+			return ""
 		}
 	}
 	err = l.Delete()
 	if err != nil {
-		apierror.GenerateError("Trouble deleting lifestyle", err, rw, r)
+		apierror.GenerateError("Trouble deleting lifestyle", err, rw, req)
+		return ""
 	}
 	return encoding.Must(enc.Encode(l))
 }
