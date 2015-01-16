@@ -68,7 +68,9 @@ var (
 						c.shortDesc, c.longDesc, c.image, c.isLifestyle,
 						c.sort
 						from Categories as c
-						where c.catID = ?
+						Join ApiKeyToBrand as akb on akb.brandID = c.brandID
+						Join ApiKey as ak on akb.keyID = ak.id
+						where c.catID = ? && (ak.api_key = ? && (c.brandID = ? OR 0=?))
 						limit 1`
 	getLifestyleContent = `select ct.allowHTML, ct.type, c.text from Content as c
 							join ContentBridge as cb on c.contentID = cb.contentID
@@ -105,7 +107,7 @@ var (
 )
 
 func GetAll(dtx *apicontext.DataContext) (ls Lifestyles, err error) {
-	redis_key := "lifestyles:" + dtx.BrandString
+	redis_key := "lifestyle:all:" + dtx.BrandString
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &ls)
@@ -167,8 +169,8 @@ func GetAll(dtx *apicontext.DataContext) (ls Lifestyles, err error) {
 	return ls, err
 }
 
-func (l *Lifestyle) Get() (err error) {
-	redis_key := "goadmin:lifestyle:" + strconv.Itoa(l.ID)
+func (l *Lifestyle) Get(dtx *apicontext.DataContext) (err error) {
+	redis_key := "lifestyle:get:" + strconv.Itoa(l.ID) + ":" + dtx.BrandString
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &l)
@@ -187,7 +189,7 @@ func (l *Lifestyle) Get() (err error) {
 	}
 	defer stmt.Close()
 
-	err = stmt.QueryRow(l.ID).Scan(&l.ID, &l.Name, &l.DateAdded, &l.ParentID, &l.ShortDesc, &l.LongDesc, &l.Image, &l.IsLifestyle, &l.Sort)
+	err = stmt.QueryRow(l.ID, dtx.APIKey, dtx.BrandID, dtx.BrandID).Scan(&l.ID, &l.Name, &l.DateAdded, &l.ParentID, &l.ShortDesc, &l.LongDesc, &l.Image, &l.IsLifestyle, &l.Sort)
 	if err != nil {
 		return err
 	}

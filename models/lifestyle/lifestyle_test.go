@@ -21,7 +21,7 @@ func TestGetLifestyles(t *testing.T) {
 		l.LongDesc = "Long description"
 		err := l.Create()
 		So(err, ShouldBeNil)
-		err = l.Get()
+		err = l.Get(MockedDTX)
 		So(err, ShouldBeNil)
 		So(l, ShouldNotBeNil)
 		So(l.Name, ShouldEqual, "testName")
@@ -33,7 +33,7 @@ func TestGetLifestyles(t *testing.T) {
 		l.ShortDesc = "Desc"
 		err = l.Update()
 		So(err, ShouldBeNil)
-		err = l.Get()
+		err = l.Get(MockedDTX)
 
 		So(err, ShouldBeNil)
 		So(l, ShouldNotBeNil)
@@ -46,7 +46,7 @@ func TestGetLifestyles(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(ls, ShouldHaveSameTypeAs, Lifestyles{})
 
-		err = l.Get()
+		err = l.Get(MockedDTX)
 		So(err, ShouldBeNil)
 		So(l, ShouldNotBeNil)
 		So(l.Name, ShouldHaveSameTypeAs, "str")
@@ -71,11 +71,16 @@ func BenchmarkGetAllLifestyles(b *testing.B) {
 }
 
 func BenchmarkGetLifestyle(b *testing.B) {
+	var err error
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
 	ls := setupDummyLifestyle()
 	ls.Create()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		ls.Get()
+		ls.Get(MockedDTX)
 	}
 	b.StopTimer()
 	ls.Delete()

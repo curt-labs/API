@@ -29,7 +29,7 @@ func Get(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params ma
 		return ""
 	}
 
-	err = l.Get()
+	err = l.Get(dtx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -44,7 +44,7 @@ func Save(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, param
 	idStr := params["id"]
 	if idStr != "" {
 		l.ID, err = strconv.Atoi(idStr)
-		err = l.Get()
+		err = l.Get(dtx)
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return ""
@@ -84,7 +84,7 @@ func Delete(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, par
 	idStr := params["id"]
 	if idStr != "" {
 		l.ID, err = strconv.Atoi(idStr)
-		err = l.Get()
+		err = l.Get(dtx)
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return ""
