@@ -6,7 +6,15 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
+	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/curt-labs/GoAPI/helpers/api"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/conversions"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/encryption"
@@ -14,12 +22,6 @@ import (
 	"github.com/curt-labs/GoAPI/models/brand"
 	"github.com/curt-labs/GoAPI/models/geography"
 	_ "github.com/go-sql-driver/mysql"
-
-	"net/http"
-	"net/url"
-	"strconv"
-	"strings"
-	"time"
 )
 
 type CustomerUser struct {
@@ -131,6 +133,7 @@ var (
 	setCustomerUserPassword     = `update CustomerUser set password = ?, passwordConverted = 1 WHERE email = ?`
 	deleteCustomerUser          = `DELETE FROM CustomerUser WHERE id = ?`
 	deleteAPIkey                = `DELETE FROM ApiKey WHERE user_id = ? AND type_id = ?`
+	deleteUserAPIkeys           = `DELETE FROM ApiKey WHERE user_id = ?`
 	getCustomerUserKeysWithAuth = `select ak.api_key, akt.type from ApiKey as ak
 										join ApiKeyType as akt on ak.type_id = akt.id
 										where ak.user_id = ? && (UPPER(akt.type) = ? || UPPER(akt.type) = ? || UPPER(akt.type) = ?)`
@@ -208,7 +211,7 @@ func ScanUser(res Scanner) (*CustomerUser, error) {
 	return &cu, err
 }
 
-func AuthenticateUserByKey(key string) (u CustomerUser, err error) {
+func AuthenticateUserByKey(key string, dtx *apicontext.DataContext) (u CustomerUser, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return u, err
@@ -242,7 +245,7 @@ func AuthenticateUserByKey(key string) (u CustomerUser, err error) {
 
 	resetChan := make(chan int)
 	go func() {
-		if resetErr := u.ResetAuthentication(); resetErr != nil {
+		if resetErr := u.ResetAuthentication(dtx.BrandArray); resetErr != nil {
 			err = resetErr
 		}
 		resetChan <- 1
@@ -252,8 +255,8 @@ func AuthenticateUserByKey(key string) (u CustomerUser, err error) {
 	return
 }
 
-func AuthenticateAndGetCustomer(key string) (cust Customer, err error) {
-	u, err := AuthenticateUserByKey(key)
+func AuthenticateAndGetCustomer(key string, dtx *apicontext.DataContext) (cust Customer, err error) {
+	u, err := AuthenticateUserByKey(key, dtx)
 	if err != nil {
 		return cust, AuthError
 	}
@@ -287,7 +290,7 @@ func AuthenticateAndGetCustomer(key string) (cust Customer, err error) {
 	return cust, nil
 }
 
-func (u *CustomerUser) AuthenticateUser() error {
+func (u *CustomerUser) AuthenticateUser(brandIds []int) error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return AuthError
@@ -383,7 +386,7 @@ func (u *CustomerUser) AuthenticateUser() error {
 
 	resetChan := make(chan int)
 	go func() {
-		if resetErr := u.ResetAuthentication(); resetErr != nil {
+		if resetErr := u.ResetAuthentication(brandIds); resetErr != nil {
 			err = resetErr
 		}
 		resetChan <- 1
@@ -453,14 +456,22 @@ func DeleteCustomerUsersByCustomerID(customerID int) error {
 	if err != nil {
 		return err
 	}
+
 	for res.Next() {
 		var tempCustUser CustomerUser
 		err = res.Scan(&tempCustUser.Id)
 		if err != nil {
 			return err
 		}
+		err = tempCustUser.GetKeys()
+		if err != nil {
+			return err
+		}
 		for _, key := range tempCustUser.Keys {
 			err = tempCustUser.deleteApiKey(key.Type)
+			if err != nil {
+				return err
+			}
 		}
 
 		err = tempCustUser.Delete()
@@ -485,7 +496,9 @@ func (u CustomerUser) GetCustomer(key string) (c Customer, err error) {
 	defer stmt.Close()
 
 	res := stmt.QueryRow(u.Id)
+	log.Print("K")
 	if err := c.ScanCustomer(res, key); err != nil {
+		log.Print("L", err)
 		if err == sql.ErrNoRows {
 			err = fmt.Errorf("error: %s", "user not bound to customer")
 		}
@@ -632,7 +645,7 @@ func (u *CustomerUser) GetLocation() error {
 }
 
 //updates auth key dateAdded to Now()
-func (u *CustomerUser) ResetAuthentication() error {
+func (u *CustomerUser) ResetAuthentication(brandIds []int) error {
 	var err error
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -660,7 +673,7 @@ func (u *CustomerUser) ResetAuthentication() error {
 	var dateAdded string
 	err = stmt.QueryRow(params...).Scan(&a.Key, &a.Type, &a.TypeId, &dateAdded)
 	if err != nil {
-		apiCredentials, err := u.GenerateAPIKey(api_helpers.AUTH_KEY_TYPE)
+		apiCredentials, err := u.GenerateAPIKey(api_helpers.AUTH_KEY_TYPE, brandIds)
 		if err != nil {
 			return err
 		}
@@ -682,8 +695,8 @@ func (u *CustomerUser) ResetAuthentication() error {
 	return nil
 }
 
-func (cu *CustomerUser) GenerateAPIKey(keyType string) (*ApiCredentials, error) {
-	var brandID = 1 // this will have to be changed massivly because customers can have more than 1 brand, so each api key needs to be assigned to the brands that it needs. for now everything will be set to 1 (curt brand)
+func (cu *CustomerUser) GenerateAPIKey(keyType string, brandIds []int) (*ApiCredentials, error) {
+	// var brandID = 1 // this will have to be changed massivly because customers can have more than 1 brand, so each api key needs to be assigned to the brands that it needs. for now everything will be set to 1 (curt brand)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return nil, err
@@ -714,10 +727,12 @@ func (cu *CustomerUser) GenerateAPIKey(keyType string) (*ApiCredentials, error) 
 	if err != nil {
 		return nil, err
 	}
-	_, err = stmt.Exec(keyID, brandID)
-	if err != nil {
-		tx.Rollback()
-		return nil, err
+	for _, brandID := range brandIds {
+		_, err = stmt.Exec(keyID, brandID)
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
 	}
 	tx.Commit()
 
@@ -802,7 +817,7 @@ func (cu *CustomerUser) ResetPass() (string, error) {
 	return randPass, nil
 }
 
-func (cu *CustomerUser) ChangePass(oldPass, newPass string) error {
+func (cu *CustomerUser) ChangePass(oldPass, newPass string, dtx *apicontext.DataContext) error {
 	cu.Password = oldPass
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -813,7 +828,7 @@ func (cu *CustomerUser) ChangePass(oldPass, newPass string) error {
 	stmt, err := tx.Prepare(setCustomerUserPassword)
 	encryptNewPass, err := bcrypt.GenerateFromPassword([]byte(newPass), bcrypt.DefaultCost)
 
-	err = cu.AuthenticateUser()
+	err = cu.AuthenticateUser(dtx.BrandArray)
 	if err != nil {
 		return errors.New("Old password is incorrect.")
 	}
@@ -914,7 +929,7 @@ func (cu *CustomerUser) UpdateCustomerUser() error {
 }
 
 //Create CustomerUser
-func (cu *CustomerUser) Create() error {
+func (cu *CustomerUser) Create(brandIds []int) error {
 	var err error
 	encryptPass, err := bcrypt.GenerateFromPassword([]byte(cu.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -960,7 +975,7 @@ func (cu *CustomerUser) Create() error {
 
 	// Public key:
 	go func() {
-		pub, err := cu.GenerateAPIKey(PUBLIC_KEY_TYPE)
+		pub, err := cu.GenerateAPIKey(PUBLIC_KEY_TYPE, brandIds)
 		if pub != nil {
 			cu.Keys = append(cu.Keys, *pub)
 		}
@@ -969,7 +984,7 @@ func (cu *CustomerUser) Create() error {
 
 	// Private key:
 	go func() {
-		pri, err := cu.GenerateAPIKey(PRIVATE_KEY_TYPE)
+		pri, err := cu.GenerateAPIKey(PRIVATE_KEY_TYPE, brandIds)
 		if pri != nil {
 			cu.Keys = append(cu.Keys, *pri)
 		}
@@ -978,7 +993,7 @@ func (cu *CustomerUser) Create() error {
 
 	// Auth Key:
 	go func() {
-		auth, err := cu.GenerateAPIKey(AUTH_KEY_TYPE)
+		auth, err := cu.GenerateAPIKey(AUTH_KEY_TYPE, brandIds)
 		if auth != nil {
 			cu.Keys = append(cu.Keys, *auth)
 		}
@@ -1000,42 +1015,6 @@ func (cu *CustomerUser) Create() error {
 }
 
 func (cu *CustomerUser) Delete() error {
-	//delete api keys
-	pubChan := make(chan int)
-	privChan := make(chan int)
-	authChan := make(chan int)
-	var errStr string
-
-	// Public key:
-	go func() {
-		err := cu.deleteApiKey(PUBLIC_KEY_TYPE)
-		if err != nil {
-			errStr += err.Error()
-		}
-		pubChan <- 1
-	}()
-
-	// Private key:
-	go func() {
-		err := cu.deleteApiKey(PRIVATE_KEY_TYPE)
-		if err != nil {
-			errStr += err.Error()
-		}
-		privChan <- 1
-	}()
-
-	// Auth Key:
-	go func() {
-		err := cu.deleteApiKey(AUTH_KEY_TYPE)
-		if err != nil {
-			errStr += err.Error()
-		}
-		authChan <- 1
-	}()
-	<-pubChan
-	<-privChan
-	<-authChan
-
 	//delete CustomerUser
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1043,9 +1022,19 @@ func (cu *CustomerUser) Delete() error {
 	}
 	defer db.Close()
 	tx, err := db.Begin()
-	stmt, err := tx.Prepare(deleteCustomerUser)
+	stmt, err := tx.Prepare(deleteUserAPIkeys)
+	if err != nil {
+		return err
+	}
 	_, err = stmt.Exec(cu.Id)
-
+	if err != nil {
+		return err
+	}
+	stmt, err = tx.Prepare(deleteCustomerUser)
+	if err != nil {
+		return err
+	}
+	_, err = stmt.Exec(cu.Id)
 	if err != nil {
 		tx.Rollback()
 		return err

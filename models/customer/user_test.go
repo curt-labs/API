@@ -1,6 +1,7 @@
 package customer
 
 import (
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	_ "github.com/go-sql-driver/mysql"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
@@ -11,6 +12,10 @@ func TestUser(t *testing.T) {
 	var err error
 	var cust Customer
 	cust.Name = "IMA TESTER"
+	dtx, err := apicontextmock.Mock()
+	if err != nil {
+		t.Log(err)
+	}
 
 	Convey("Testing Create", t, func() {
 		//make customer to use
@@ -25,7 +30,7 @@ func TestUser(t *testing.T) {
 		cu.Sudo = true
 		cu.CustomerID = cust.Id
 		cu.Location.Id = 1
-		err = cu.Create()
+		err = cu.Create(dtx.BrandArray)
 		if err != nil {
 			errorString := "failed to retrieve auth type"
 			So(err.Error(), ShouldEqual, errorString)
@@ -33,7 +38,7 @@ func TestUser(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(len(cu.Keys), ShouldEqual, 3)
 		}
-		err = cu.AuthenticateUser()
+		err = cu.AuthenticateUser(dtx.BrandArray)
 		So(err, ShouldBeNil)
 	})
 	Convey("Testing Update", t, func() {
@@ -63,7 +68,6 @@ func TestUser(t *testing.T) {
 				pubKey = key.Key
 			}
 		}
-		t.Log(pubKey)
 
 		err := cu.Get(authKey)
 		if authKey == "" {
@@ -72,7 +76,7 @@ func TestUser(t *testing.T) {
 			So(err, ShouldBeNil)
 		}
 
-		user, err := AuthenticateUserByKey(authKey)
+		user, err := AuthenticateUserByKey(authKey, dtx)
 		if authKey == "" {
 			So(err, ShouldNotBeNil)
 			So(err.Error(), ShouldEqual, "error: user does not exist")
@@ -81,7 +85,7 @@ func TestUser(t *testing.T) {
 			So(user, ShouldNotBeNil)
 		}
 
-		customer, err := AuthenticateAndGetCustomer(authKey)
+		customer, err := AuthenticateAndGetCustomer(authKey, dtx)
 		if authKey == "" {
 			So(err, ShouldNotBeNil)
 			So(err.Error(), ShouldEqual, "failed to authenticate")
@@ -115,7 +119,7 @@ func TestUser(t *testing.T) {
 		err = user.GetLocation()
 		So(err, ShouldBeNil)
 
-		err = user.ResetAuthentication()
+		err = user.ResetAuthentication(dtx.BrandArray)
 		if user.Id == "" {
 			So(err, ShouldNotBeNil)
 			//So(err.Error(), ShouldEqual, "error: failed to retrieve key type reference")
@@ -123,7 +127,7 @@ func TestUser(t *testing.T) {
 			So(err, ShouldBeNil)
 		}
 
-		err = cu.ChangePass(cu.Password, cu.Password)
+		err = cu.ChangePass(cu.Password, cu.Password, dtx)
 		So(err, ShouldBeNil)
 
 		randPassword, err := cu.ResetPass()
@@ -146,4 +150,5 @@ func TestUser(t *testing.T) {
 
 	//cleanup
 	cust.Delete()
+	_ = apicontextmock.DeMock(dtx)
 }

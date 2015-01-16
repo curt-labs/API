@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	ExcusedRoutes = []string{"/customer/auth", "/customer/user", "/customer", "/new/customer/auth", "/new/customer/user/register"}
+	ExcusedRoutes = []string{"/customer/auth", "/customer/user", "/new/customer/auth", "/customer/user/register", "/customer/user/resetPassword"}
 )
 
 func Meddler() martini.Handler {

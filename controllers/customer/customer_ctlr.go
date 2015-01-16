@@ -1,44 +1,39 @@
 package customer_ctlr
 
 import (
-	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
+	apierr "github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/curt-labs/GoAPI/models/products"
 	"github.com/go-martini/martini"
+
+	"encoding/json"
+	"errors"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
 )
 
-func GetCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func GetCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var err error
-	qs := r.URL.Query()
-	key := qs.Get("key")
-	if key == "" {
-		key = r.FormValue("key")
-	}
-
-	if key == "" {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return ""
-	}
-
 	var c customer.Customer
-	//get id from key
-	err = c.GetCustomerIdFromKey(key)
-	if err != nil {
-		http.Error(w, "Error getting customer.", http.StatusServiceUnavailable)
-		return ""
+	idStr := params["id"]
+	if idStr != "" {
+		c.Id, err = strconv.Atoi(idStr)
+	} else {
+		apierr.GenerateError("No Id Supplied.", errors.New("No results."), w, r)
 	}
-	err = c.GetCustomer(key)
+
+	err = c.GetCustomer(dtx.APIKey)
 	if err != nil {
 		http.Error(w, "Error getting customer.", http.StatusServiceUnavailable)
 		return ""
 	}
 
-	lowerKey := strings.ToLower(key)
+	lowerKey := strings.ToLower(dtx.APIKey)
 	for i, u := range c.Users {
 		for _, k := range u.Keys {
 			if strings.ToLower(k.Key) == lowerKey {
@@ -50,25 +45,14 @@ func GetCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 	return encoding.Must(enc.Encode(c))
 }
 
-func GetLocations(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	qs := r.URL.Query()
-	key := qs.Get("key")
-	if key == "" {
-		key = r.FormValue("key")
-	}
-
-	if key == "" {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return ""
-	}
-
-	cu, err := customer.GetCustomerUserFromKey(key)
+func GetLocations(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
+	cu, err := customer.GetCustomerUserFromKey(dtx.APIKey)
 	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		http.Error(w, "Unauthorized!", http.StatusUnauthorized)
 		return ""
 	}
-
-	c, err := cu.GetCustomer(key)
+	log.Print("CU", cu.CustomerID)
+	c, err := cu.GetCustomer(dtx.APIKey)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return ""
@@ -77,18 +61,8 @@ func GetLocations(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 }
 
 //TODO - redundant
-func GetUsers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	qs := r.URL.Query()
-	key := qs.Get("key")
-	if key == "" {
-		key = r.FormValue("key")
-	}
-
-	if key == "" {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return ""
-	}
-	user, err := customer.GetCustomerUserFromKey(key)
+func GetUsers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
+	user, err := customer.GetCustomerUserFromKey(dtx.APIKey)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -98,12 +72,12 @@ func GetUsers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, para
 		return ""
 	}
 
-	cust, err := user.GetCustomer(key)
+	cust, err := user.GetCustomer(dtx.APIKey)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
-	err = cust.GetUsers(key)
+	err = cust.GetUsers(dtx.APIKey)
 	if err != nil {
 		return err.Error()
 	}
@@ -111,87 +85,46 @@ func GetUsers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, para
 }
 
 //Todo redundant
-func GetUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
-	key := r.FormValue("key")
-
-	if key == "" {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return ""
-	}
-
-	user, err := customer.GetCustomerUserFromKey(key)
+func GetUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+	user, err := customer.GetCustomerUserFromKey(dtx.APIKey)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
-
 	return encoding.Must(enc.Encode(user))
 }
 
-func GetCustomerPrice(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func GetCustomerPrice(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var err error
-	qs := r.URL.Query()
-	key := qs.Get("key")
-	if key == "" {
-		key = r.FormValue("key")
-	}
-
-	if key == "" {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return ""
-	}
-
 	id := params["id"]
 	var p products.Part
 	if id != "" {
 		p.ID, err = strconv.Atoi(params["id"])
 	}
 
-	price, err := customer.GetCustomerPrice(key, p.ID)
+	price, err := customer.GetCustomerPrice(dtx.APIKey, p.ID)
 	if err != nil {
 		return err.Error()
 	}
 	return encoding.Must(enc.Encode(price))
 }
 
-func GetCustomerCartReference(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func GetCustomerCartReference(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var err error
-	qs := r.URL.Query()
-	key := qs.Get("key")
-	if key == "" {
-		key = r.FormValue("key")
-	}
-
-	if key == "" {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return ""
-	}
-
 	id := params["id"]
 	var p products.Part
 	if id != "" {
 		p.ID, err = strconv.Atoi(params["id"])
 	}
 
-	ref, err := customer.GetCustomerCartReference(key, p.ID)
+	ref, err := customer.GetCustomerCartReference(dtx.APIKey, p.ID)
 	if err != nil {
 		return err.Error()
 	}
 	return encoding.Must(enc.Encode(ref))
 }
 
-func SaveCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	qs := r.URL.Query()
-	key := qs.Get("key")
-	if key == "" {
-		key = r.FormValue("key")
-	}
-
-	if key == "" {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return ""
-	}
-
+func SaveCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var c customer.Customer
 	var err error
 	idStr := params["id"]
@@ -203,7 +136,7 @@ func SaveCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 			return ""
 		}
 
-		err = c.Basics(key)
+		err = c.Basics(dtx.APIKey)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return ""

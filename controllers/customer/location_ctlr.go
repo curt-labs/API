@@ -37,9 +37,7 @@ func GetLocation(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 func GetAllLocations(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var c customer.CustomerLocations
 	var err error
-	apiKey := dtx.APIKey
-	brandID := dtx.BrandID
-	c, err = customer.GetAllLocations(apiKey, brandID)
+	c, err = customer.GetAllLocations(dtx)
 	if err != nil {
 		return err.Error()
 	}

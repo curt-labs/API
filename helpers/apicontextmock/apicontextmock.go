@@ -5,6 +5,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/database"
 
 	"database/sql"
+	"log"
 	"time"
 )
 
@@ -25,16 +26,29 @@ var (
 						values(?,?,UUID(),NOW())` //DB schema DOES auto increment table id
 	insertAPIKeyToBrand = `insert into ApiKeyToBrand(keyID, brandID)
 						values(?,?)`
+	insertCustomer = `insert into Customer(name,email, address, city, stateID, phone,fax, contact_person, dealer_type, latitude, longitude, password, website, customerID, isDummy, parentID, searchURL, eLocalURL, logo, address2, postal_code, mCodeID, salesRepID, APIKey, tier,showWebsite)
+			values('test','w','w','w',1,'w','w','w',1,'w','w','w','w',1,1,1,'w','w','w','w','w',1,1,'w',1,1)`
+	deleteCustomer = `delete from Customer where cust_id = ?`
 
 	getCustomerUserKeysWithoutAuth = `select ak.api_key, akt.type from ApiKey as ak
 										join ApiKeyType as akt on ak.type_id = akt.id
 										where ak.user_id = ? && UPPER(akt.type) = ?`
+	getUserApiKeys = `select api_key from ApiKey where user_id = ?`
 
 	getKeyByDateType = "SELECT id FROM ApiKeyType WHERE type = ?  AND date_added = ?"
 	createApiKeyType = "INSERT INTO ApiKeyType (id, type, date_added) VALUES (UUID(),?,?)"
 
-	createSite  = `INSERT INTO Website (url, description) VALUES (?,?)`
-	joinToBrand = `insert into WebsiteToBrand (WebsiteID, brandID) values (?,?)`
+	createSite                 = `INSERT INTO Website (url, description) VALUES (?,?)`
+	joinToBrand                = `insert into WebsiteToBrand (WebsiteID, brandID) values (?,?)`
+	deleteApiKeyType           = `delete from ApiKeyType where type = (select type_id from ApiKey where id =?)`
+	deleteType                 = `delete from ApiKeyType where type = ?`
+	deleteCustomerUser         = `delete from CustomerUser where id = ?`
+	deleteApiKey               = `delete from ApiKey where id =  ?`
+	deleteApiKeyToBrand        = `delete from ApiKeyToBrand where keyID = (select id from ApiKey where api_key = ?)`
+	deleteSite                 = `delete from Website where id = ?`
+	deleteSiteToBrand          = `delete from WebsiteToBrand where WebsiteID = ?`
+	deleteUsersApiKeys         = `delete from ApiKey where user_id = ?`
+	deleteUsersApiKeysToBrands = `delete from ApiKeyToBrand where keyID in (select id from ApiKey where user_id = ?)`
 )
 
 func Mock() (*apicontext.DataContext, error) {
@@ -42,18 +56,25 @@ func Mock() (*apicontext.DataContext, error) {
 	// Needs to create records in the db for the following because of foreign key constraints:
 	// Bare Min:
 
+	custID, err := InsertCustomer()
+	if err != nil {
+		return &dtx, err
+	}
+
+	dtx.CustomerID = custID
 	// CustomerUser
-	var err error
 	CustomerUserID := ""
-	if CustomerUserID, err = CreateCustomerUser(); err != nil {
+	if CustomerUserID, err = CreateCustomerUser(custID); err != nil {
 		return &dtx, err
 	}
 	dtx.UserID = CustomerUserID
-	dtx.CustomerID = 1
 
 	// ApiKeyType
 	keyType := "SUPER"
+	dtx.Globals = make(map[string]interface{})
+	dtx.Globals["keyType"] = keyType
 	keyTypeID := "" // needed for when you create an API Key
+
 	if keyTypeID, err = CreateApiKeyType(keyType); err != nil {
 		return &dtx, err
 	}
@@ -73,6 +94,7 @@ func Mock() (*apicontext.DataContext, error) {
 	if websiteID, err = CreateWebsite("http://www.testWebsite23sdf.com", "bogus website"); err != nil {
 		return &dtx, err
 	}
+
 	dtx.WebsiteID = websiteID
 	// WebsiteToBrand
 	var BrandIDs []int
@@ -80,18 +102,147 @@ func Mock() (*apicontext.DataContext, error) {
 	if err = CreateWebsiteToBrands(BrandIDs, websiteID); err != nil {
 		return &dtx, err
 	}
+
+	log.Print("DTX In Mock", dtx)
 	return &dtx, nil
 }
 
-func DeMock(dtx *apicontext.DataContext) error { // in place for future democking if we decide to.
+func DeMock(dtx *apicontext.DataContext) error {
+	var err error
+	var ty string
+	t := dtx.Globals["keyType"]
+	if t != nil {
+		ty = t.(string)
+	}
+
+	err = DeleteApiKey(dtx.APIKey)
+	if err != nil {
+		return err
+	}
+
+	err = JustGoddamDeleteAUsersApiKeys(dtx.UserID)
+	if err != nil {
+		return err
+	}
+
+	err = DeleteType(ty)
+	if err != nil {
+		return err
+	}
+
+	err = DeleteCustomerUser(dtx.UserID)
+	if err != nil {
+		return err
+	}
+
+	err = DeleteWebsite(dtx.WebsiteID)
+	if err != nil {
+		return err
+	}
+
+	err = DeleteCustomer(dtx.CustomerID)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func CreateCustomerUser() (CustomerUserID string, err error) {
+func InsertCustomer() (int, error) {
+	var err error
+	var i int
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return i, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(insertCustomer)
+	if err != nil {
+		return i, err
+	}
+	defer stmt.Close()
+	res, err := stmt.Exec()
+	if err != nil {
+		return i, err
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return i, err
+	}
+	i = int(id)
+	return i, err
+}
+func DeleteCustomer(custId int) error {
+	var err error
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(deleteCustomer)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(custId)
+	return err
+}
+
+func DeleteType(t string) error {
+	var err error
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(deleteType)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(t)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+func GetUserApiKeys(userID string) ([]string, error) {
+	var err error
+	var keys []string
+	var k string
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return keys, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(getUserApiKeys)
+	if err != nil {
+		return keys, err
+	}
+	defer stmt.Close()
+	res, err := stmt.Query(userID)
+	if err != nil {
+		return keys, err
+	}
+	for res.Next() {
+		err = res.Scan(&k)
+		if err != nil {
+			return keys, err
+		}
+		keys = append(keys, k)
+	}
+	return keys, err
+}
+
+func CreateCustomerUser(custID int) (CustomerUserID string, err error) {
 	encryptPass := "bogus" // Not encrypted
 	email := "TestBogus@curtmfg.com"
 	customerID := 1
-	custID := 1
 
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -126,6 +277,25 @@ func CreateCustomerUser() (CustomerUserID string, err error) {
 	CustomerUserID = *userID
 
 	return CustomerUserID, nil
+}
+func DeleteCustomerUser(id string) error {
+	var err error
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(deleteCustomerUser)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(id)
+	if err != nil {
+		return err
+	}
+	return err
 }
 
 func CreateApiKeyType(keyType string) (keyTypeID string, err error) {
@@ -219,6 +389,76 @@ func CreateApiKey(UserID string, keyTypeID string, keyType string, brandID int) 
 	return keyID, key, nil
 }
 
+func DeleteApiKey(key string) error {
+	var err error
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(deleteApiKey)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(key)
+	if err != nil {
+		return err
+	}
+
+	stmt, err = db.Prepare(deleteApiKeyToBrand)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(key)
+	if err != nil {
+		return err
+	}
+
+	stmt, err = db.Prepare(deleteApiKeyType)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(key)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+func JustGoddamDeleteAUsersApiKeys(userID string) error {
+	var err error
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(deleteUsersApiKeys)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(userID)
+	if err != nil {
+		return err
+	}
+
+	stmt, err = db.Prepare(deleteUsersApiKeysToBrands)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(userID)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
 func CreateWebsite(url, desc string) (webID int, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -262,6 +502,35 @@ func CreateWebsiteToBrands(brandIDs []int, websiteID int) (err error) {
 		if err != nil {
 			return err
 		}
+	}
+	return err
+}
+
+func DeleteWebsite(siteId int) error {
+	var err error
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(deleteSiteToBrand)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(siteId)
+	if err != nil {
+		return err
+	}
+	stmt, err = db.Prepare(deleteSite)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(siteId)
+	if err != nil {
+		return err
 	}
 	return err
 }

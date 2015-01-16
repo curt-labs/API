@@ -178,8 +178,7 @@ var (
                                 join ApiKey as ak on cu.id = ak.user_id
                                 where ak.api_key = ? limit 1`
 
-	getCustIdFromKeyStmt = `select c.cust_ID from Customer as c
-                                join CustomerUser as cu on c.cust_id = cu.cust_ID
+	getCustIdFromKeyStmt = `select cu.cust_ID from CustomerUser as cu
                                 join ApiKey as ak on cu.id = ak.user_id
                                 where ak.api_key = ? limit 1`
 	//Old
@@ -400,14 +399,13 @@ func (c *Customer) GetCustomer(key string) (err error) {
 		}
 		basicsChan <- err
 	}()
-
 	c.GetLocations()
 	err = <-basicsChan
 
 	if err == sql.ErrNoRows {
+
 		err = fmt.Errorf("error: %s", "failed to retrieve")
 	}
-
 	return err
 }
 
@@ -1297,36 +1295,39 @@ func (c *Customer) ScanCustomer(res Scanner, key string) error {
 	var logo, web, searchU, icon, shadow, parentId, eLocalUrl *[]byte
 	var lat, lon *string
 	var mapIconId, countryId *int
+	var email, address, city, phone, fax, contact, address2, postal, api, state, stateAb *string
+	var stateId, dType, mapixId, salesRepId, dTier, customerid *int
+	var show, isdummy *bool
 
 	err = res.Scan(
 		&c.Id,
 		&c.Name,
-		&c.Email,
-		&c.Address,
-		&c.City,
-		&c.State.Id,
-		&c.Phone,
-		&c.Fax,
-		&c.ContactPerson,
-		&c.DealerType.Id,
+		&email,
+		&address,
+		&city,
+		&stateId,
+		&phone,
+		&fax,
+		&contact,
+		&dType,
 		&lat,
 		&lon,
 		&web,
-		&c.CustomerId,
-		&c.IsDummy,
+		&customerid,
+		&isdummy,
 		&parentId,
 		&searchU,
 		&eLocalUrl,
 		&logo,
-		&c.Address2,
-		&c.PostalCode,
-		&c.MapixCode.ID,
-		&c.SalesRepresentative.ID,
-		&c.ApiKey,
-		&c.DealerTier.Id,
-		&c.ShowWebsite,
-		&c.State.State,
-		&c.State.Abbreviation,
+		&address2,
+		&postal,
+		&mapixId,
+		&salesRepId,
+		&api,
+		&dTier,
+		&show,
+		&state,
+		&stateAb,
 		&countryId,
 		&country,
 		&countryAbbr,
@@ -1369,6 +1370,60 @@ func (c *Customer) ScanCustomer(res Scanner, key string) error {
 		}
 		parentChan <- 1
 	}()
+	if city != nil {
+		c.City = *city
+	}
+	if address != nil {
+		c.Address = *address
+	}
+	if stateId != nil {
+		c.State.Id = *stateId
+	}
+	if phone != nil {
+		c.Phone = *phone
+	}
+	if fax != nil {
+		c.Fax = *fax
+	}
+	if email != nil {
+		c.Email = *email
+	}
+	if contact != nil {
+		c.ContactPerson = *contact
+	}
+	if dType != nil {
+		c.DealerType.Id = *dType
+	}
+	if customerid != nil {
+		c.CustomerId = *customerid
+	}
+	if isdummy != nil {
+		c.IsDummy = *isdummy
+	}
+	if address2 != nil {
+		c.Address2 = *address2
+	}
+	if postal != nil {
+		c.PostalCode = *postal
+	}
+	if api != nil {
+		c.ApiKey = *api
+	}
+	if mapixId != nil {
+		c.MapixCode.ID = *mapixId
+	}
+	if salesRepId != nil {
+		c.SalesRepresentative.ID = *salesRepId
+	}
+	if dTier != nil {
+		c.DealerTier.Id = *dTier
+	}
+	if state != nil {
+		c.State.State = *state
+	}
+	if stateAb != nil {
+		c.State.Abbreviation = *stateAb
+	}
 
 	var coun geography.Country
 	if lat != nil && *lat != "" && lon != nil && *lon != "" {

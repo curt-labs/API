@@ -46,7 +46,7 @@ func TestCustomerLocations(t *testing.T) {
 		})
 
 		Convey("Testing GetAll()", func() {
-			locations, err := GetAllLocations(MockedDTX.APIKey, MockedDTX.BrandID)
+			locations, err := GetAllLocations(MockedDTX)
 			So(locations, ShouldNotBeNil)
 			So(err, ShouldBeNil)
 		})

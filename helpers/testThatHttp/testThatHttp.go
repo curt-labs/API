@@ -21,11 +21,12 @@ var (
 
 func Request(reqType string, route string, paramKey string, paramVal string, handler martini.Handler, body io.Reader, contentType string) {
 	MockedDTX := &apicontext.DataContext{}
-	var err error
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
-		return
+
+	var apiKey string
+	api := strings.SplitAfter(paramVal, "?key=")
+	if len(api) > 1 {
+		apiKey = api[1]
 	}
-	apikey := MockedDTX.APIKey
 
 	cType := "application/x-www-form-urlencoded" //default content type = form
 	if contentType != "" {
@@ -33,7 +34,7 @@ func Request(reqType string, route string, paramKey string, paramVal string, han
 	}
 	m := martini.Classic()
 	m.Use(render.Renderer())
-	dc := &apicontext.DataContext{APIKey: apikey, BrandID: 1, WebsiteID: 1}
+	dc := &apicontext.DataContext{APIKey: apiKey, BrandID: 1, WebsiteID: 1}
 	m.Map(dc)
 	m.Use(encoding.MapEncoder)
 	reqType = strings.ToLower(reqType)
@@ -56,6 +57,39 @@ func Request(reqType string, route string, paramKey string, paramVal string, han
 		log.Print("Response Error: ", Response)
 	}
 	_ = apicontextmock.DeMock(MockedDTX)
+}
+
+func RequestWithDtx(reqType string, route string, paramKey string, paramVal string, handler martini.Handler, body io.Reader, contentType string, dtx *apicontext.DataContext) {
+
+	cType := "application/x-www-form-urlencoded" //default content type = form
+	if contentType != "" {
+		cType = contentType
+	}
+	m := martini.Classic()
+	m.Use(render.Renderer())
+
+	m.Map(dtx)
+	m.Use(encoding.MapEncoder)
+	reqType = strings.ToLower(reqType)
+	switch {
+	case reqType == "get":
+		m.Get(route+paramKey, handler)
+	case reqType == "post":
+		m.Post(route+paramKey, handler)
+	case reqType == "put":
+		m.Put(route+paramKey, handler)
+	case reqType == "delete":
+		m.Delete(route+paramKey, handler)
+	}
+
+	request, _ := http.NewRequest(strings.ToUpper(reqType), route+paramVal, body)
+	request.Header.Set("Content-Type", cType) //content-type=form,json,etc
+	Response = httptest.NewRecorder()
+	m.ServeHTTP(Response, request)
+	if Response.Code != 200 {
+		log.Print("Response Error: ", Response)
+	}
+	// _ = apicontextmock.DeMock(dtx)
 }
 
 func RequestBenchmark(runs int, method, route string, body *url.Values, handler martini.Handler) {

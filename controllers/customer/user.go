@@ -1,11 +1,14 @@
 package customer_ctlr
 
 import (
-	"encoding/json"
-	"fmt"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
+	apierr "github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/go-martini/martini"
+
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -17,13 +20,16 @@ import (
 func AuthenticateUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 	email := r.FormValue("email")
 	pass := r.FormValue("password")
-
 	var user customer.CustomerUser
 	user.Email = email
 	user.Password = pass
 
-	err := user.AuthenticateUser()
+	//default brand for setting key
+	defaultBrandArray := []int{1}
+	log.Print("1")
+	err := user.AuthenticateUser(defaultBrandArray)
 	if err != nil {
+
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return ""
 	}
@@ -32,23 +38,24 @@ func AuthenticateUser(w http.ResponseWriter, r *http.Request, enc encoding.Encod
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return ""
 	}
-
+	log.Print("1")
 	err = user.GetKeys()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return ""
 	}
-
+	log.Print("1")
 	var key string
 	if len(user.Keys) != 0 {
 		key = user.Keys[0].Key
 	}
+	log.Print("1")
 	cust, err := user.GetCustomer(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return ""
 	}
-
+	log.Print("%")
 	return encoding.Must(enc.Encode(cust))
 }
 
@@ -56,8 +63,11 @@ func AuthenticateUser(w http.ResponseWriter, r *http.Request, enc encoding.Encod
 func KeyedUserAuthentication(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 	qs := r.URL.Query()
 	key := qs.Get("key")
-	log.Print("key", key)
-	cust, err := customer.AuthenticateAndGetCustomer(key)
+	var err error
+
+	dtx := &apicontext.DataContext{APIKey: key}
+	dtx.BrandArray, err = dtx.GetBrandsFromKey()
+	cust, err := customer.AuthenticateAndGetCustomer(key, dtx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return ""
@@ -128,23 +138,21 @@ func ResetPassword(w http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 	return encoding.Must(enc.Encode(resp))
 }
 
-func ChangePassword(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+func ChangePassword(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	email := r.FormValue("email")
 	oldPass := r.FormValue("oldPass")
 	newPass := r.FormValue("newPass")
-	log.Print("old pass ", oldPass)
 	var user customer.CustomerUser
 	user.Email = email
 
-	err := user.ChangePass(oldPass, newPass)
+	err := user.ChangePass(oldPass, newPass, dtx)
 	if err != nil {
-		log.Print(err)
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 	}
 	return encoding.Must(enc.Encode("Success"))
 }
 
-func GenerateApiKey(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+func GenerateApiKey(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	qs := r.URL.Query()
 	key := qs.Get("key")
 	if key == "" {
@@ -191,7 +199,7 @@ func GenerateApiKey(w http.ResponseWriter, r *http.Request, params martini.Param
 		return ""
 	}
 
-	generated, err := user.GenerateAPIKey(generateType)
+	generated, err := user.GenerateAPIKey(generateType, dtx.BrandArray)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to generate an API key: %s", err.Error()), http.StatusInternalServerError)
 		return ""
@@ -211,10 +219,28 @@ func RegisterUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) 
 	isSudo, err := strconv.ParseBool(r.FormValue("isSudo"))
 	cust_ID, err := strconv.Atoi(r.FormValue("cust_ID"))
 	notCustomer, err := strconv.ParseBool(r.FormValue("notCustomer"))
-	log.Print("pass creation ", pass)
+
 	if email == "" || pass == "" {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return "Email and password are required."
+	}
+	brands := strings.TrimSpace(r.FormValue("brands"))
+	brandStrArr := strings.Split(brands, ",")
+	//default to CURT (1)
+	if len(brandStrArr) <= 1 {
+		brandStrArr = []string{"1"}
+	}
+	var brandArr []int
+	for _, brand := range brandStrArr {
+		brint, err := strconv.Atoi(brand)
+		if err != nil {
+			apierr.GenerateError("Error parsing brand IDs", err, w, r)
+		}
+		brandArr = append(brandArr, brint)
+	}
+	//default to CURT (1)
+	if len(brandArr) == 0 {
+		brandArr = append(brandArr, 1)
 	}
 
 	var user customer.CustomerUser
@@ -235,7 +261,7 @@ func RegisterUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) 
 	user.Active = isActive
 	user.Sudo = isSudo
 	user.Current = notCustomer
-	err = user.Create()
+	err = user.Create(brandArr)
 	// cu, err := user.Register(pass, customerID, isActive, locationID, isSudo, cust_ID, notCustomer)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)

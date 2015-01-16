@@ -3,6 +3,7 @@ package customer
 import (
 	"database/sql"
 	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/conversions"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
@@ -74,10 +75,10 @@ func (l *CustomerLocation) Get() error {
 	return err
 }
 
-func GetAllLocations(apikey string, brandID int) (CustomerLocations, error) {
+func GetAllLocations(dtx *apicontext.DataContext) (CustomerLocations, error) {
 	var ls CustomerLocations
 	var err error
-	redis_key := "customers:locations"
+	redis_key := "customers:locations:" + dtx.BrandString
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &ls)
@@ -95,7 +96,7 @@ func GetAllLocations(apikey string, brandID int) (CustomerLocations, error) {
 		return ls, err
 	}
 	defer stmt.Close()
-	res, err := stmt.Query(apikey, brandID, brandID)
+	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	var name, address, city, email, phone, fax, contactPerson, postal []byte
 	for res.Next() {
 		var l CustomerLocation

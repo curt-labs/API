@@ -1,21 +1,20 @@
 package customer_ctlr
 
 import (
-	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/customer/content"
 	"github.com/go-martini/martini"
+
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 )
 
 // Get it all
-func GetAllContent(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
-	params := r.URL.Query()
-	key := params.Get("key")
-
-	content, err := custcontent.AllCustomerContent(key)
+func GetAllContent(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+	content, err := custcontent.AllCustomerContent(dtx.APIKey)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -26,16 +25,15 @@ func GetAllContent(w http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 
 // Get Content by Content Id
 // Returns: CustomerContent
-func GetContentById(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	qs := r.URL.Query()
-	key := qs.Get("key")
+func GetContentById(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
+
 	id, err := strconv.Atoi(params["id"])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
 
-	content, err := custcontent.GetCustomerContent(id, key)
+	content, err := custcontent.GetCustomerContent(id, dtx.APIKey)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -46,16 +44,14 @@ func GetContentById(w http.ResponseWriter, r *http.Request, enc encoding.Encoder
 
 // Get Content by Content Id
 // Returns: CustomerContent
-func GetContentRevisionsById(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	qs := r.URL.Query()
-	key := qs.Get("key")
+func GetContentRevisionsById(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	id, err := strconv.Atoi(params["id"])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
 
-	revs, err := custcontent.GetCustomerContentRevisions(id, key)
+	revs, err := custcontent.GetCustomerContentRevisions(id, dtx.APIKey)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -65,11 +61,8 @@ func GetContentRevisionsById(w http.ResponseWriter, r *http.Request, enc encodin
 }
 
 // Part Content Endpoints
-func AllPartContent(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
-	params := r.URL.Query()
-	key := params.Get("key")
-
-	content, err := custcontent.GetAllPartContent(key)
+func AllPartContent(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+	content, err := custcontent.GetAllPartContent(dtx.APIKey)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -78,16 +71,14 @@ func AllPartContent(w http.ResponseWriter, r *http.Request, enc encoding.Encoder
 	return encoding.Must(enc.Encode(content))
 }
 
-func UniquePartContent(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	p := r.URL.Query()
-	key := p.Get("key")
+func UniquePartContent(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	partID, err := strconv.Atoi(params["id"])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
 
-	content, err := custcontent.GetPartContent(partID, key)
+	content, err := custcontent.GetPartContent(partID, dtx.APIKey)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -96,10 +87,8 @@ func UniquePartContent(w http.ResponseWriter, r *http.Request, enc encoding.Enco
 	return encoding.Must(enc.Encode(content))
 }
 
-func CreatePartContent(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
-	// Get the key from the query string
-	qs := r.URL.Query()
-	key := qs.Get("key")
+func CreatePartContent(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+
 	id, err := strconv.Atoi(params["id"])
 	// Defer the body closing until we're finished
 	defer r.Body.Close()
@@ -117,17 +106,15 @@ func CreatePartContent(w http.ResponseWriter, r *http.Request, params martini.Pa
 		return ""
 	}
 
-	if err = content.Save(id, 0, key); err != nil {
+	if err = content.Save(id, 0, dtx.APIKey); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
 
 	return encoding.Must(enc.Encode(content))
 }
-func UpdatePartContent(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
-	// Get the key from the query string
-	qs := r.URL.Query()
-	key := qs.Get("key")
+func UpdatePartContent(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+
 	id, err := strconv.Atoi(params["id"])
 
 	// Defer the body closing until we're finished
@@ -146,7 +133,7 @@ func UpdatePartContent(w http.ResponseWriter, r *http.Request, params martini.Pa
 		return ""
 	}
 
-	if err = content.Save(id, 0, key); err != nil {
+	if err = content.Save(id, 0, dtx.APIKey); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
@@ -154,10 +141,8 @@ func UpdatePartContent(w http.ResponseWriter, r *http.Request, params martini.Pa
 	return encoding.Must(enc.Encode(content))
 }
 
-func DeletePartContent(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
-	// Get the key from the query string
-	qs := r.URL.Query()
-	key := qs.Get("key")
+func DeletePartContent(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+
 	id, err := strconv.Atoi(params["id"])
 
 	// Defer the body closing until we're finished
@@ -176,7 +161,7 @@ func DeletePartContent(w http.ResponseWriter, r *http.Request, params martini.Pa
 		return ""
 	}
 
-	if err = content.Delete(id, 0, key); err != nil {
+	if err = content.Delete(id, 0, dtx.APIKey); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
@@ -185,11 +170,8 @@ func DeletePartContent(w http.ResponseWriter, r *http.Request, params martini.Pa
 }
 
 // Category Content Endpoints
-func AllCategoryContent(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
-	params := r.URL.Query()
-	key := params.Get("key")
-
-	content, err := custcontent.GetAllCategoryContent(key)
+func AllCategoryContent(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+	content, err := custcontent.GetAllCategoryContent(dtx.APIKey)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -198,16 +180,14 @@ func AllCategoryContent(w http.ResponseWriter, r *http.Request, enc encoding.Enc
 	return encoding.Must(enc.Encode(content))
 }
 
-func UniqueCategoryContent(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
-	qs := r.URL.Query()
-	key := qs.Get("key")
+func UniqueCategoryContent(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	catID, err := strconv.Atoi(params["id"])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
 
-	content, err := custcontent.GetCategoryContent(catID, key)
+	content, err := custcontent.GetCategoryContent(catID, dtx.APIKey)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -216,10 +196,7 @@ func UniqueCategoryContent(w http.ResponseWriter, r *http.Request, params martin
 	return encoding.Must(enc.Encode(content))
 }
 
-func CreateCategoryContent(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
-	// Get the key from the query string
-	qs := r.URL.Query()
-	key := qs.Get("key")
+func CreateCategoryContent(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	id, err := strconv.Atoi(params["id"])
 	// Defer the body closing until we're finished
 	defer r.Body.Close()
@@ -237,7 +214,7 @@ func CreateCategoryContent(w http.ResponseWriter, r *http.Request, params martin
 		return ""
 	}
 
-	if err = content.Save(0, id, key); err != nil {
+	if err = content.Save(0, id, dtx.APIKey); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
@@ -245,10 +222,7 @@ func CreateCategoryContent(w http.ResponseWriter, r *http.Request, params martin
 	return encoding.Must(enc.Encode(content))
 }
 
-func UpdateCategoryContent(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
-	// Get the key from the query string
-	qs := r.URL.Query()
-	key := qs.Get("key")
+func UpdateCategoryContent(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	id, err := strconv.Atoi(params["id"])
 
 	// Defer the body closing until we're finished
@@ -267,7 +241,7 @@ func UpdateCategoryContent(w http.ResponseWriter, r *http.Request, params martin
 		return ""
 	}
 
-	if err = content.Save(0, id, key); err != nil {
+	if err = content.Save(0, id, dtx.APIKey); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}
@@ -275,10 +249,8 @@ func UpdateCategoryContent(w http.ResponseWriter, r *http.Request, params martin
 	return encoding.Must(enc.Encode(content))
 }
 
-func DeleteCategoryContent(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
-	// Get the key from the query string
-	qs := r.URL.Query()
-	key := qs.Get("key")
+func DeleteCategoryContent(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+
 	id, err := strconv.Atoi(params["id"])
 
 	// Defer the body closing until we're finished
@@ -297,7 +269,7 @@ func DeleteCategoryContent(w http.ResponseWriter, r *http.Request, params martin
 		return ""
 	}
 
-	if err = content.Delete(0, id, key); err != nil {
+	if err = content.Delete(0, id, dtx.APIKey); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
 	}

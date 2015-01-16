@@ -1,13 +1,15 @@
 package customer_ctlr
 
 import (
-	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/httprunner"
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
 	"github.com/curt-labs/GoAPI/models/apiKeyType"
 	"github.com/curt-labs/GoAPI/models/customer"
 	. "github.com/smartystreets/goconvey/convey"
+
+	"encoding/json"
 	"net/url"
 	"strconv"
 	"strings"
@@ -16,6 +18,7 @@ import (
 )
 
 func TestCustomerUser(t *testing.T) {
+
 	var err error
 	var cu customer.CustomerUser
 	var c customer.Customer
@@ -33,9 +36,6 @@ func TestCustomerUser(t *testing.T) {
 		pri.Create()
 		auth.Create()
 	}
-
-	var apiKey string
-
 	Convey("Testing customer/User", t, func() {
 		//test create customer user
 		form := url.Values{"name": {"Mitt Romney"}, "email": {"magic@underpants.com"}, "pass": {"robthepoor"}, "customerID": {strconv.Itoa(c.Id)}, "isActive": {"true"}, "locationID": {"1"}, "isSudo": {"true"}, "cust_ID": {"1"}}
@@ -49,8 +49,8 @@ func TestCustomerUser(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(cu, ShouldHaveSameTypeAs, customer.CustomerUser{})
 		So(cu.Id, ShouldNotBeEmpty)
-		t.Log(cu.Id)
 		//key stuff - get apiKey
+		var apiKey string
 		for _, k := range cu.Keys {
 			if strings.ToLower(k.Type) == "public" {
 				apiKey = k.Key
@@ -71,7 +71,8 @@ func TestCustomerUser(t *testing.T) {
 		So(cu.Name, ShouldNotEqual, "Mitt Romney")
 
 		//test authenticateUser
-		c.JoinUser(cu)
+		err = c.JoinUser(cu)
+		So(err, ShouldBeNil)
 		form = url.Values{"email": {"magic@underpants.com"}, "password": {"robthepoor"}}
 		v = form.Encode()
 		body = strings.NewReader(v)
@@ -138,7 +139,7 @@ func TestCustomerUser(t *testing.T) {
 
 		//test delete customer users by customerId
 		var cu2 customer.CustomerUser
-		cu2.Create()
+		cu2.Create([]int{1})
 		c.JoinUser(cu2)
 		thyme = time.Now()
 		testThatHttp.Request("post", "/new/customer/allUsersByCustomerID/", ":id", strconv.Itoa(c.Id), DeleteCustomerUsersByCustomerID, nil, "")
@@ -161,43 +162,47 @@ func TestCustomerUser(t *testing.T) {
 		cu2.Delete()
 	})
 	//teardown
-	c.Delete()
-	//incase
-	cu.Delete()
+	err = c.Delete()
+	if err != nil {
+		t.Log(err)
+	}
 
 	if database.EmptyDb != nil {
 		err = pub.Delete()
-
+		if err != nil {
+			t.Log(err)
+		}
 		err = pri.Delete()
-
+		if err != nil {
+			t.Log(err)
+		}
 		err = auth.Delete()
+		if err != nil {
+			t.Log(err)
+		}
+	}
+
+	err = cu.Delete()
+	if err != nil {
+		t.Log(err)
 	}
 
 }
 
 func BenchmarkCRUDCustomerUser(b *testing.B) {
-	var cu customer.CustomerUser
-	var c customer.Customer
-	c.Name = "Mick Mattleson"
-	c.Create()
-
-	cu.Name = "user auth test"
-	cu.Email = "auth@test.com"
-	cu.Password = "test"
-	cu.Sudo = true
-	cu.Create()
-	var apiKey string
-	for _, key := range cu.Keys {
-		if strings.ToLower(key.Type) == "public" {
-			apiKey = key.Key
-		}
+	dtx, err := apicontextmock.Mock()
+	if err != nil {
+		b.Log(err)
 	}
+	var cu customer.CustomerUser
+
+	cu.Id = dtx.UserID
 
 	qs := make(url.Values, 0)
-	qs.Add("key", apiKey)
+	qs.Add("key", dtx.APIKey)
 
 	Convey("CustomerUser", b, func() {
-		form := url.Values{"name": {"Mitt Romney"}, "email": {"magic@underpants.com"}, "pass": {"robthepoor"}, "customerID": {strconv.Itoa(c.Id)}, "isActive": {"true"}, "locationID": {"1"}, "isSudo": {"true"}, "cust_ID": {"1"}}
+		form := url.Values{"name": {"Mitt Romney"}, "email": {"magic@underpants.com"}, "pass": {"robthepoor"}, "customerID": {strconv.Itoa(dtx.CustomerID)}, "isActive": {"true"}, "locationID": {"1"}, "isSudo": {"true"}, "cust_ID": {"1"}}
 		//create
 		(&httprunner.BenchmarkOptions{
 			Method:             "POST",
@@ -251,5 +256,9 @@ func BenchmarkCRUDCustomerUser(b *testing.B) {
 
 	})
 	cu.Delete()
-	c.Delete()
+
+	err = apicontextmock.DeMock(dtx)
+	if err != nil {
+		b.Log(err)
+	}
 }
