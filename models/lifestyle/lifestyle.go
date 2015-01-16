@@ -100,7 +100,7 @@ var (
 								where (ak.api_key = ? && (cat.brandID = ? OR 0=?))
 								order by t.TW`
 
-	createLifestyle = `INSERT INTO Categories (dateAdded, parentID, catTitle, shortDesc, longDesc, image, isLifestyle, sort) VALUES (?,?,?,?,?,?,?,?)`
+	createLifestyle = `INSERT INTO Categories (dateAdded, parentID, catTitle, shortDesc, longDesc, image, isLifestyle, sort, brandID) VALUES (?,?,?,?,?,?,?,?,?)`
 	updateLifestyle = `UPDATE Categories SET dateAdded = ?, parentID = ?, catTitle = ?, shortDesc = ?, longDesc = ?, image = ?, isLifestyle = ?, sort = ? WHERE catID = ?`
 	deleteLifestyle = `DELETE FROM Categories WHERE catID = ?`
 	deleteContents  = `DELETE FROM ContentBridge WHERE catID = ?`
@@ -314,7 +314,7 @@ func (l *Lifestyle) GetTowables() (err error) {
 	return err
 }
 
-func (l *Lifestyle) Create() (err error) {
+func (l *Lifestyle) Create(dtx *apicontext.DataContext) (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -328,7 +328,7 @@ func (l *Lifestyle) Create() (err error) {
 	}
 	defer stmt.Close()
 	l.DateAdded = time.Now()
-	res, err := stmt.Exec(l.DateAdded, l.ParentID, l.Name, l.ShortDesc, l.LongDesc, l.Image, l.IsLifestyle, l.Sort)
+	res, err := stmt.Exec(l.DateAdded, l.ParentID, l.Name, l.ShortDesc, l.LongDesc, l.Image, l.IsLifestyle, l.Sort, dtx.BrandID)
 	if err != nil {
 		tx.Rollback()
 		return err
