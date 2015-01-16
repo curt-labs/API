@@ -2,6 +2,7 @@ package lifestyle
 
 import (
 	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/lifestyle"
 	"github.com/go-martini/martini"
@@ -10,8 +11,8 @@ import (
 	"strconv"
 )
 
-func GetAll(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	lifestyles, err := lifestyle.GetAll()
+func GetAll(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
+	lifestyles, err := lifestyle.GetAll(dtx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
@@ -19,7 +20,7 @@ func GetAll(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params
 
 	return encoding.Must(enc.Encode(lifestyles))
 }
-func Get(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func Get(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var l lifestyle.Lifestyle
 	var err error
 	l.ID, err = strconv.Atoi(params["id"])
@@ -37,7 +38,7 @@ func Get(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params ma
 	return encoding.Must(enc.Encode(l))
 }
 
-func Save(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+func Save(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var l lifestyle.Lifestyle
 	var err error
 	idStr := params["id"]
@@ -77,7 +78,7 @@ func Save(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, param
 	return encoding.Must(enc.Encode(l))
 }
 
-func Delete(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+func Delete(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var l lifestyle.Lifestyle
 	var err error
 	idStr := params["id"]

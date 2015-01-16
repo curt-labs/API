@@ -1,12 +1,19 @@
 package lifestyle
 
 import (
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
 
 func TestGetLifestyles(t *testing.T) {
 	var l Lifestyle
+	var err error
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
 
 	Convey("Testing CRUD", t, func() {
 
@@ -35,7 +42,7 @@ func TestGetLifestyles(t *testing.T) {
 		So(l.ShortDesc, ShouldEqual, "Desc")
 
 		//Gets
-		ls, err := GetAll()
+		ls, err := GetAll(MockedDTX)
 		So(err, ShouldBeNil)
 		So(ls, ShouldHaveSameTypeAs, Lifestyles{})
 
@@ -53,8 +60,13 @@ func TestGetLifestyles(t *testing.T) {
 }
 
 func BenchmarkGetAllLifestyles(b *testing.B) {
+	var err error
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
 	for i := 0; i < b.N; i++ {
-		GetAll()
+		GetAll(MockedDTX)
 	}
 }
 

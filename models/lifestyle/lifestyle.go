@@ -3,6 +3,7 @@ package lifestyle
 import (
 	"database/sql"
 	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
@@ -55,12 +56,12 @@ type Towable struct {
 type Towables []Towable
 
 var (
-	getAllLifestyles = `select
-							c.catID, c.catTitle, c.dateAdded, c.parentID,
+	getAllLifestyles = `select c.catID, c.catTitle, c.dateAdded, c.parentID,
 							c.shortDesc, c.longDesc, c.image, c.isLifestyle,
-							c.sort
-							from Categories as c
-							where c.isLifestyle = 1
+							c.sort from Categories as c
+							Join ApiKeyToBrand as akb on akb.brandID = c.brandID
+							Join ApiKey as ak on akb.keyID = ak.id
+							where c.isLifestyle = 1 && (ak.api_key = ? && (c.brandID = ? OR 0=?))
 							order by c.sort`
 	getLifestyle = `select
 						c.catID, c.catTitle, c.dateAdded, c.parentID,
@@ -103,8 +104,8 @@ var (
 	getTowable      = `SELECT trailerID, image, name, TW, GTW, hitchClass, shortDesc, message FROM Trailer WHERE trailerID = ?`
 )
 
-func GetAll() (ls Lifestyles, err error) {
-	redis_key := "goadmin:lifestyles"
+func GetAll(dtx *apicontext.DataContext) (ls Lifestyles, err error) {
+	redis_key := "lifestyles:" + dtx.BrandString
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &ls)
@@ -128,7 +129,7 @@ func GetAll() (ls Lifestyles, err error) {
 	ts, err := getAllTowables()
 	towMap := ts.ToMap()
 
-	res, err := stmt.Query()
+	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	for res.Next() {
 		var l Lifestyle
 		err = res.Scan(&l.ID, &l.Name, &l.DateAdded, &l.ParentID, &l.ShortDesc, &l.LongDesc, &l.Image, &l.IsLifestyle, &l.Sort)
