@@ -6,6 +6,7 @@ import (
 
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
+	"github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/models/forum"
 	"github.com/go-martini/martini"
 )
@@ -13,8 +14,7 @@ import (
 func GetAllThreads(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	threads, err := forum.GetAllThreads(dtx)
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble getting all forum threads", err, rw, req)
 	}
 	return encoding.Must(enc.Encode(threads))
 }
@@ -24,13 +24,10 @@ func GetThread(rw http.ResponseWriter, req *http.Request, params martini.Params,
 	var thread forum.Thread
 
 	if thread.ID, err = strconv.Atoi(params["id"]); err != nil {
-		http.Error(rw, "Invalid Thread ID", http.StatusInternalServerError)
-		return "Invalid Thread ID"
+		apierror.GenerateError("Trouble getting forum thread ID", err, rw, req)
 	}
-
 	if err := thread.Get(dtx); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble getting forum thread", err, rw, req)
 	}
 	return encoding.Must(enc.Encode(thread))
 }
@@ -40,13 +37,11 @@ func DeleteThread(rw http.ResponseWriter, req *http.Request, params martini.Para
 	var thread forum.Thread
 
 	if thread.ID, err = strconv.Atoi(params["id"]); err != nil {
-		http.Error(rw, "Invalid Thread ID", http.StatusInternalServerError)
-		return "Invalid Thread ID"
+		apierror.GenerateError("Trouble getting forum thread ID", err, rw, req)
 	}
 
 	if err = thread.Delete(); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble deleting forum thread", err, rw, req)
 	}
 
 	return encoding.Must(enc.Encode(thread))

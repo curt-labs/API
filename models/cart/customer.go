@@ -1,6 +1,7 @@
 package cart
 
 import (
+	"code.google.com/p/go.crypto/bcrypt"
 	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"gopkg.in/mgo.v2"
@@ -16,6 +17,7 @@ type Customer struct {
 	DefaultAddress   *CustomerAddress  `json:"default_address" xml:"default_address" bson:"default_address"`
 	CreatedAt        time.Time         `json:"created_at" xml:"created_at,attr" bson:"created_at"`
 	Email            string            `json:"email" xml:"email,attr" bson:"email"`
+	Password         string            `json:"password" xml:"password,attr" bson:"password"`
 	FirstName        string            `json:"first_name" xml:"first_name,attr" bson:"first_name"`
 	LastName         string            `json:"last_name" xml:"last_name,attr" bson:"last_name"`
 	MetaFields       []MetaField       `json:"meta_fields" xml:"meta_fields>meta_field" bson:"meta_fields"`
@@ -78,7 +80,14 @@ func CustomersSinceId(shopId bson.ObjectId, since_id bson.ObjectId, page, limit 
 	if page == 1 {
 		page = 0
 	}
-	c.Find(qs).Skip(page * limit).Limit(limit)
+	err = c.Find(qs).Skip(page * limit).Limit(limit).All(&custs)
+	if err != nil {
+		return []Customer{}, err
+	}
+
+	for i, _ := range custs {
+		custs[i].Password = ""
+	}
 
 	return custs, err
 }
@@ -120,7 +129,15 @@ func GetCustomers(id bson.ObjectId, page, limit int, created_at_min, created_at_
 	if page == 1 {
 		page = 0
 	}
-	c.Find(qs).Skip(page * limit).Limit(limit).All(&custs)
+
+	err = c.Find(qs).Skip(page * limit).Limit(limit).All(&custs)
+	if err != nil {
+		return []Customer{}, nil
+	}
+
+	for i, _ := range custs {
+		custs[i].Password = ""
+	}
 
 	return custs, err
 }
@@ -155,12 +172,72 @@ func SearchCustomers(query string, shopId bson.ObjectId) ([]Customer, error) {
 		"$text": bson.M{
 			"$search": query,
 		},
-		"shop_id": shopId,
+		"shop_id":  shopId,
+		"password": 0,
 	}
 
 	err = sess.DB("CurtCart").C("customer").Find(qs).All(&custs)
+	if err != nil {
+		return []Customer{}, err
+	}
+
+	for i, _ := range custs {
+		custs[i].Password = ""
+	}
 
 	return custs, err
+}
+
+// Login a customer.
+func (c *Customer) Login() error {
+	pass := c.Password
+	c.Password = ""
+
+	sess, err := mgo.DialWithInfo(database.MongoConnectionString())
+	if err != nil {
+		return err
+	}
+	defer sess.Close()
+
+	col := sess.DB("CurtCart").C("customer")
+
+	var custs []Customer
+	err = col.Find(bson.M{"email": c.Email, "shop_id": c.ShopId}).All(&custs)
+	if err != nil {
+		return err
+	}
+
+	if custs == nil || len(custs) == 0 {
+		return fmt.Errorf("error: %s", "no account for this email address")
+	}
+
+	for _, cust := range custs {
+		if err := bcrypt.CompareHashAndPassword([]byte(cust.Password), []byte(pass)); err == nil {
+			c.Id = cust.Id
+			c.ShopId = cust.ShopId
+			c.AcceptsMarketing = cust.AcceptsMarketing
+			c.Addresses = cust.Addresses
+			c.DefaultAddress = cust.DefaultAddress
+			c.CreatedAt = cust.CreatedAt
+			c.Email = cust.Email
+			c.FirstName = cust.FirstName
+			c.LastName = cust.LastName
+			c.MetaFields = cust.MetaFields
+			c.LastOrderId = cust.LastOrderId
+			c.LastOrderName = cust.LastOrderName
+			c.OrdersCount = cust.OrdersCount
+			c.Note = cust.Note
+			c.State = cust.State
+			c.Tags = cust.Tags
+			c.UpdatedAt = cust.UpdatedAt
+			c.VerifiedEmail = cust.VerifiedEmail
+			c.Orders = cust.Orders
+			c.Password = ""
+			return nil
+		}
+	}
+
+	return fmt.Errorf("error: %s", "credentials do not match")
 }
 
 // Get a customer.
@@ -173,7 +250,13 @@ func (c *Customer) Get() error {
 
 	col := sess.DB("CurtCart").C("customer")
 
-	return col.Find(bson.M{"_id": c.Id, "shop_id": c.ShopId}).One(&c)
+	err = col.Find(bson.M{"_id": c.Id, "shop_id": c.ShopId}).One(&c)
+	if err != nil {
+		return err
+	}
+	c.Password = ""
+
+	return nil
 }
 
 // Get a customer by email.
@@ -186,18 +269,30 @@ func (c *Customer) GetByEmail() error {
 
 	col := sess.DB("CurtCart").C("customer")
 
-	return col.Find(bson.M{"email": c.Email, "shop_id": c.ShopId}).One(&c)
+	err = col.Find(bson.M{"email": c.Email, "shop_id": c.ShopId}).One(&c)
+	if err != nil {
+		return err
+	}
+	c.Password = ""
+
+	return nil
 }
 
 // Add new customer.
 func (c *Customer) Insert() error {
 	if c.Email == "" {
+		c.Password = ""
 		return fmt.Errorf("error: %s", "invalid email address")
 	}
+	if c.Password == "" {
+		return fmt.Errorf("error: %s", "invalid password")
+	}
 	if c.FirstName == "" {
-		return fmt.Errorf("error: %s", "invalid first anem")
+		c.Password = ""
+		return fmt.Errorf("error: %s", "invalid first name")
 	}
 	if c.LastName == "" {
+		c.Password = ""
 		return fmt.Errorf("error: %s", "invalid last name")
 	}
 	if c.Id.Hex() == "" {
@@ -208,8 +303,16 @@ func (c *Customer) Insert() error {
 	}
 	c.UpdatedAt = time.Now()
 
+	cryptic, err := bcrypt.GenerateFromPassword([]byte(c.Password), bcrypt.DefaultCost)
+	if err != nil {
+		c.Password = ""
+		return fmt.Errorf("error: %s", err.Error())
+	}
+	c.Password = string(cryptic)
+
 	sess, err := mgo.DialWithInfo(database.MongoConnectionString())
 	if err != nil {
+		c.Password = ""
 		return err
 	}
 	defer sess.Close()
@@ -218,6 +321,7 @@ func (c *Customer) Insert() error {
 
 	_, err = col.UpsertId(c.Id, c)
 	if err != nil {
+		c.Password = ""
 		return err
 	}
 
@@ -229,6 +333,7 @@ func (c *Customer) Insert() error {
 		DropDups:   true,
 	}
 	col.EnsureIndex(idx)
+	c.Password = ""
 
 	return nil
 }
@@ -238,15 +343,19 @@ func (c *Customer) Insert() error {
 // email, first_name, last_name, meta_fields, note, state, tags.
 func (c *Customer) Update() error {
 	if c.Id.Hex() == "" {
+		c.Password = ""
 		return fmt.Errorf("error: %s", "cannot update a customer that doesn't exist")
 	}
 	if c.Email == "" {
+		c.Password = ""
 		return fmt.Errorf("error: %s", "invalid email address")
 	}
 	if c.FirstName == "" {
+		c.Password = ""
 		return fmt.Errorf("error: %s", "invalid first anem")
 	}
 	if c.LastName == "" {
+		c.Password = ""
 		return fmt.Errorf("error: %s", "invalid last name")
 	}
 
@@ -278,6 +387,7 @@ func (c *Customer) Update() error {
 
 	_, err = sess.DB("CurtCart").C("customer").Find(bson.M{"_id": c.Id, "shop_id": c.ShopId}).Apply(change, c)
 
+	c.Password = ""
 	return err
 }
 

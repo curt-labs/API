@@ -96,11 +96,13 @@ func TestBindCustomer(t *testing.T) {
 			o.Customer.Email = "ninnemana@gmail.com"
 			o.Customer.FirstName = "Alex"
 			o.Customer.LastName = "Ninneman"
+			o.Customer.Password = "password"
 			err = o.Customer.Insert()
 			So(err, ShouldBeNil)
 
 			So(o.bindCustomer(), ShouldBeNil)
 
+			t.Log(o.Customer.Email)
 			o.Email = o.Customer.Email
 			o.Customer = nil
 			So(o.bindCustomer(), ShouldBeNil)

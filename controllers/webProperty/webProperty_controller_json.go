@@ -2,6 +2,7 @@ package webProperty_controller
 
 import (
 	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/webProperty"
 	"github.com/go-martini/martini"
@@ -11,13 +12,13 @@ import (
 )
 
 //Parses JSON input from the body, a la Angular http
-func Save_Json(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+func Save_Json(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var w webProperty_model.WebProperty
 	var err error
 	idStr := params["id"]
 	if idStr != "" {
 		w.ID, err = strconv.Atoi(idStr)
-		err = w.Get()
+		err = w.Get(dtx)
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return ""

@@ -5,15 +5,17 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
-	"github.com/curt-labs/GoAPI/helpers/encoding"
-	"github.com/curt-labs/GoAPI/models/contact"
-	"github.com/curt-labs/GoAPI/models/geography"
-	"github.com/go-martini/martini"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
+	"github.com/curt-labs/GoAPI/helpers/encoding"
+	"github.com/curt-labs/GoAPI/helpers/error"
+	"github.com/curt-labs/GoAPI/models/contact"
+	"github.com/curt-labs/GoAPI/models/geography"
+	"github.com/go-martini/martini"
 )
 
 var (
@@ -40,8 +42,7 @@ func GetAllContacts(rw http.ResponseWriter, req *http.Request, enc encoding.Enco
 		err = errors.New("No contacts found.")
 	}
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble getting all contacts", err, rw, req)
 	}
 	return encoding.Must(enc.Encode(contacts))
 }
@@ -51,12 +52,10 @@ func GetContact(rw http.ResponseWriter, req *http.Request, params martini.Params
 	var c contact.Contact
 
 	if c.ID, err = strconv.Atoi(params["id"]); err != nil {
-		http.Error(rw, "Invalid Contact ID", http.StatusInternalServerError)
-		return "Invalid Contact ID"
+		apierror.GenerateError("Trouble getting contact ID", err, rw, req)
 	}
 	if err = c.Get(); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble getting contact", err, rw, req)
 	}
 	return encoding.Must(enc.Encode(c))
 }
@@ -70,8 +69,7 @@ func AddDealerContact(rw http.ResponseWriter, req *http.Request, enc encoding.En
 	var err error
 	ct.ID, err = strconv.Atoi(params["contactTypeID"]) //determines to whom emails go
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble getting contact type ID", err, rw, req)
 	}
 
 	contType := req.Header.Get("Content-Type")
@@ -80,13 +78,11 @@ func AddDealerContact(rw http.ResponseWriter, req *http.Request, enc encoding.En
 		//this is our json payload
 		requestBody, err := ioutil.ReadAll(req.Body)
 		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return err.Error()
+			apierror.GenerateError("Trouble reading JSON request body for adding contact", err, rw, req)
 		}
 
 		if err = json.Unmarshal(requestBody, &d); err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return err.Error()
+			apierror.GenerateError("Trouble unmarshalling JSON request body into contact", err, rw, req)
 		}
 	} //else, form
 
@@ -117,8 +113,7 @@ func AddDealerContact(rw http.ResponseWriter, req *http.Request, enc encoding.En
 	}
 
 	if err := d.Add(); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble adding contact", err, rw, req)
 	}
 
 	emailBody := fmt.Sprintf(
@@ -155,257 +150,22 @@ func AddDealerContact(rw http.ResponseWriter, req *http.Request, enc encoding.En
 
 	if emailBody != "" && *noEmail == false {
 		if err := contact.SendEmail(ct, subject, emailBody); err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return err.Error()
+			apierror.GenerateError("Trouble sending email to receivers", err, rw, req)
 		}
 
 	}
 	return encoding.Must(enc.Encode(d))
 }
 
-// func AddContact(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder) string {
-// 	var c contact.Contact
-// 	var ct contact.ContactType
-// 	var sendEmail bool
-
-// 	contType := req.Header.Get("Content-Type")
-
-// 	if strings.Contains(contType, "application/json") {
-// 		//this is our json payload
-// 		var formData map[string]interface{}
-
-// 		requestBody, err := ioutil.ReadAll(req.Body)
-// 		if err != nil {
-
-// 			http.Error(rw, err.Error(), http.StatusInternalServerError)
-// 			return err.Error()
-// 		}
-
-// 		if err = json.Unmarshal(requestBody, &formData); err != nil {
-
-// 			http.Error(rw, err.Error(), http.StatusInternalServerError)
-// 			return err.Error()
-// 		}
-
-// 		//require contact type
-// 		if str_id, found := formData["contactType"]; !found {
-// 			http.Error(rw, "Invalid Contact Type ID", http.StatusInternalServerError)
-// 			return "Invalid Contact Type ID"
-// 		} else {
-// 			// if ct.ID, err = strconv.Atoi(str_id.(string)); err != nil {
-// 			if ct.ID, err = strconv.Atoi(str_id.(string)); err != nil {
-// 				return "Invalid Contact Type ID"
-// 			}
-// 			if err = ct.Get(); err != nil {
-// 				return err.Error()
-// 			}
-// 			c.Type = ct.Name
-// 		}
-
-// 		//require email
-// 		if email, found := formData["email"]; !found {
-// 			http.Error(rw, "Email is required", http.StatusInternalServerError)
-// 			return "Email is required"
-// 		} else {
-// 			c.Email = email.(string)
-// 		}
-
-// 		//require first name
-// 		if first, found := formData["firstName"]; !found {
-// 			http.Error(rw, "First name is required", http.StatusInternalServerError)
-// 			return "First name is required"
-// 		} else {
-// 			c.FirstName = first.(string)
-// 		}
-
-// 		//require last name
-// 		if last, found := formData["lastName"]; !found {
-// 			http.Error(rw, "Last name is required", http.StatusInternalServerError)
-// 			return "Last name is required"
-// 		} else {
-// 			c.LastName = last.(string)
-// 		}
-
-// 		if phone, found := formData["phoneNumber"]; found {
-// 			c.Phone = phone.(string)
-// 		}
-// 		if address1, found := formData["address1"]; found {
-// 			c.Address1 = address1.(string)
-// 		}
-// 		if address1, found := formData["address2"]; found {
-// 			c.Address1 = address1.(string)
-// 		}
-// 		if city, found := formData["city"]; found {
-// 			c.City = city.(string)
-// 		}
-// 		if st, found := formData["state"]; found {
-// 			id, err := strconv.Atoi(st.(string))
-// 			if id > 0 && err == nil {
-// 				countries, err := geography.GetAllCountriesAndStates()
-// 				if err == nil {
-// 					for _, ctry := range countries {
-// 						for _, state := range *ctry.States {
-// 							if state.Id == id {
-// 								c.State = state.State
-// 								c.Country = ctry.Country
-// 								break
-// 							}
-// 						}
-// 					}
-// 				}
-// 			}
-// 		}
-
-// 		if postal, found := formData["postalCode"]; found {
-// 			c.PostalCode = postal.(string)
-// 		}
-
-// 		switch ct.ID {
-// 		case 15: //become a dealer
-
-// 			//require business name
-// 			businessName, found := formData["businessName"]
-// 			if !found {
-// 				http.Error(rw, "Business name is required", http.StatusInternalServerError)
-// 				return "Business name is required"
-// 			}
-// 			//require business type
-// 			businessType, found := formData["businessType"]
-// 			if !found {
-// 				http.Error(rw, "Business type is required", http.StatusInternalServerError)
-// 				return "Business type is required"
-// 			}
-
-// 			formMessage, found := formData["message"]
-// 			if found {
-// 				c.Message = formMessage.(string)
-// 			}
-
-// 			c.Subject = "Become a Dealer"
-// 			c.Message = fmt.Sprintf(
-// 				`This contact is interested in becoming a Dealer.\n
-// 				Name: %s\n
-// 				Business: %s\n
-// 				Business Type: %s\n
-// 				Email: %s\n
-// 				Phone: %s\n
-// 				Address 1: %s\n
-// 				Address 2: %s\n
-// 				City, State, Zip: %s, %s %s\n
-// 				Country: %s\n
-// 				Message: %s\n`,
-// 				c.FirstName+" "+c.LastName,
-// 				businessName,
-// 				businessType,
-// 				c.Email,
-// 				c.Phone,
-// 				c.Address1,
-// 				c.Address2,
-// 				c.City, c.State, c.PostalCode,
-// 				c.Country,
-// 				c.Message,
-// 			)
-
-// 		default: //everything else
-// 			if subject, found := formData["subject"]; found {
-// 				c.Subject = subject.(string)
-// 			}
-// 			if message, found := formData["message"]; found {
-// 				c.Message = message.(string)
-// 			}
-// 		}
-
-// 		if send_email, found := formData["sendEmail"]; found {
-// 			sendEmail = send_email.(bool)
-// 		}
-// 	} else { //form post parameters
-// 		c = contact.Contact{
-// 			FirstName:  req.FormValue("first_name"),
-// 			LastName:   req.FormValue("last_name"),
-// 			Email:      req.FormValue("email"),
-// 			Phone:      req.FormValue("phoneNumber"),
-// 			Subject:    req.FormValue("subject"),
-// 			Message:    req.FormValue("message"),
-// 			Type:       req.FormValue("type"),
-// 			Address1:   req.FormValue("address1"),
-// 			Address2:   req.FormValue("address2"),
-// 			City:       req.FormValue("city"),
-// 			State:      req.FormValue("state"),
-// 			PostalCode: req.FormValue("postal_code"),
-// 			Country:    req.FormValue("country"),
-// 		}
-// 		c.Created = time.Now()
-
-// 		//TODO: this needs work
-
-// 		if req.FormValue("send_email") != "" {
-// 			sendEmail, _ = strconv.ParseBool(req.FormValue("send_email"))
-// 		}
-// 	}
-// 	if err := c.Add(); err != nil {
-// 		http.Error(rw, err.Error(), http.StatusInternalServerError)
-// 		return err.Error()
-// 	}
-// 	if sendEmail {
-// 		var emailBody string
-
-// 		switch ct.ID {
-// 		case 15: //Become a dealer
-// 			emailBody = c.Message
-// 		default: //everything else
-// 			emailBody = fmt.Sprintf(
-// 				`From: %s
-// 				 Email: %s
-// 				 Phone: %s
-// 				 Subject: %s
-// 				 Time: %s
-// 				 Type: %s
-// 				 Address1: %s
-// 				 Address2: %s
-// 				 City: %s
-// 				 State: %s
-// 				 PostalCode: %s
-// 				 Country: %s
-// 				 Message: %s`,
-// 				c.FirstName+" "+c.LastName,
-// 				c.Email,
-// 				c.Phone,
-// 				c.Subject,
-// 				c.Created.String(),
-// 				c.Type,
-// 				c.Address1,
-// 				c.Address2,
-// 				c.City,
-// 				c.State,
-// 				c.PostalCode,
-// 				c.Country,
-// 				c.Message,
-// 			)
-// 		}
-// 		if emailBody != "" {
-// 			subject := "Email from Contact Form"
-// 			if err := contact.SendEmail(ct, subject, emailBody); err != nil {
-// 				http.Error(rw, err.Error(), http.StatusInternalServerError)
-// 				return err.Error()
-// 			}
-
-// 		}
-// 	}
-
-// 	return encoding.Must(enc.Encode(c))
-// }
-
 func UpdateContact(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
 	var err error
 	var c contact.Contact
 	if c.ID, err = strconv.Atoi(params["id"]); err != nil {
-		http.Error(rw, "Invalid Contact ID", http.StatusInternalServerError)
-		return "Invalid Contact ID"
+		apierror.GenerateError("Trouble getting contact ID", err, rw, req)
 	}
 
 	if err = c.Get(); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble getting contact", err, rw, req)
 	}
 
 	contType := req.Header.Get("Content-Type")
@@ -413,14 +173,12 @@ func UpdateContact(rw http.ResponseWriter, req *http.Request, params martini.Par
 		//json
 		requestBody, err := ioutil.ReadAll(req.Body)
 		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return encoding.Must(enc.Encode(false))
+			apierror.GenerateError("Trouble getting JSON request body for updating contact", err, rw, req)
 		}
 
 		err = json.Unmarshal(requestBody, &c)
 		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return encoding.Must(enc.Encode(false))
+			apierror.GenerateError("Trouble unmarshalling JSON request body for updating contact", err, rw, req)
 		}
 	} else {
 		if req.FormValue("first_name") != "" {
@@ -479,8 +237,7 @@ func UpdateContact(rw http.ResponseWriter, req *http.Request, params martini.Par
 		}
 	}
 	if err = c.Update(); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble updating contact", err, rw, req)
 	}
 	return encoding.Must(enc.Encode(c))
 }
@@ -490,13 +247,11 @@ func DeleteContact(rw http.ResponseWriter, req *http.Request, params martini.Par
 	var c contact.Contact
 
 	if c.ID, err = strconv.Atoi(params["id"]); err != nil {
-		http.Error(rw, "Invalid Contact ID", http.StatusInternalServerError)
-		return "Invalid Contact ID"
+		apierror.GenerateError("Trouble getting contact ID", err, rw, req)
 	}
 
 	if err = c.Delete(); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble deleting contact", err, rw, req)
 	}
 
 	return encoding.Must(enc.Encode(c))

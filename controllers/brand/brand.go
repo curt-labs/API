@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/curt-labs/GoAPI/helpers/encoding"
+	"github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/models/brand"
 	"github.com/go-martini/martini"
 )
@@ -12,8 +13,7 @@ import (
 func GetAllBrands(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder) string {
 	brands, err := brand.GetAllBrands()
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble getting all brands", err, rw, req)
 	}
 	return encoding.Must(enc.Encode(brands))
 }
@@ -23,12 +23,10 @@ func GetBrand(rw http.ResponseWriter, req *http.Request, params martini.Params, 
 	var br brand.Brand
 
 	if br.ID, err = strconv.Atoi(params["id"]); err != nil {
-		http.Error(rw, "Invalid Brand ID", http.StatusInternalServerError)
-		return "Invalid Brand ID"
+		apierror.GenerateError("Trouble getting brand ID", err, rw, req)
 	}
 	if err := br.Get(); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble getting brand", err, rw, req)
 	}
 	return encoding.Must(enc.Encode(br))
 }
@@ -40,8 +38,7 @@ func CreateBrand(rw http.ResponseWriter, req *http.Request, params martini.Param
 	}
 
 	if err := br.Create(); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble creating brand", err, rw, req)
 	}
 
 	return encoding.Must(enc.Encode(br))
@@ -52,13 +49,11 @@ func UpdateBrand(rw http.ResponseWriter, req *http.Request, params martini.Param
 	var br brand.Brand
 
 	if br.ID, err = strconv.Atoi(params["id"]); err != nil {
-		http.Error(rw, "Invalid Brand ID", http.StatusInternalServerError)
-		return "Invalid Brand ID"
+		apierror.GenerateError("Trouble getting brand ID", err, rw, req)
 	}
 
 	if err = br.Get(); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble getting brand", err, rw, req)
 	}
 
 	if req.FormValue("name") != "" {
@@ -70,8 +65,7 @@ func UpdateBrand(rw http.ResponseWriter, req *http.Request, params martini.Param
 	}
 
 	if err := br.Update(); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble updating brand", err, rw, req)
 	}
 
 	return encoding.Must(enc.Encode(br))
@@ -82,13 +76,11 @@ func DeleteBrand(rw http.ResponseWriter, req *http.Request, params martini.Param
 	var br brand.Brand
 
 	if br.ID, err = strconv.Atoi(params["id"]); err != nil {
-		http.Error(rw, "Invalid Brand ID", http.StatusInternalServerError)
-		return "Invalid Brand ID"
+		apierror.GenerateError("Trouble getting brand ID", err, rw, req)
 	}
 
 	if err = br.Delete(); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble deleting brand", err, rw, req)
 	}
 
 	return encoding.Must(enc.Encode(br))

@@ -1,15 +1,17 @@
 package blog_controller
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
-	"github.com/curt-labs/GoAPI/helpers/encoding"
-	"github.com/curt-labs/GoAPI/helpers/sortutil"
-	"github.com/curt-labs/GoAPI/models/blog"
-	"github.com/go-martini/martini"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
+	"github.com/curt-labs/GoAPI/helpers/encoding"
+	"github.com/curt-labs/GoAPI/helpers/error"
+	"github.com/curt-labs/GoAPI/helpers/sortutil"
+	"github.com/curt-labs/GoAPI/models/blog"
+	"github.com/go-martini/martini"
 )
 
 const (
@@ -19,7 +21,7 @@ const (
 func GetAll(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	blogs, err := blog_model.GetAll(dtx)
 	if err != nil {
-		return err.Error()
+		apierror.GenerateError("Trouble getting all blogs", err, rw, r)
 	}
 	sort := r.FormValue("sort")
 	direction := r.FormValue("direction")
@@ -37,7 +39,7 @@ func GetAll(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *
 func GetAllCategories(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	cats, err := blog_model.GetAllCategories(dtx)
 	if err != nil {
-		return err.Error()
+		apierror.GenerateError("Trouble getting blog categories", err, rw, r)
 	}
 	sort := r.FormValue("sort")
 	direction := r.FormValue("direction")
@@ -59,17 +61,17 @@ func GetBlog(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, para
 	if idStr != "" {
 		b.ID, err = strconv.Atoi(idStr)
 		if err != nil {
-			return err.Error()
+			apierror.GenerateError("Trouble getting blog ID", err, rw, r)
 		}
 	} else {
 		b.ID, err = strconv.Atoi(params["id"])
 		if err != nil {
-			return err.Error()
+			apierror.GenerateError("Trouble getting blog ID", err, rw, r)
 		}
 	}
 	err = b.Get(dtx)
 	if err != nil {
-		return err.Error()
+		apierror.GenerateError("Trouble getting blog", err, rw, r)
 	}
 	return encoding.Must(enc.Encode(b))
 }
@@ -96,7 +98,7 @@ func CreateBlog(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, d
 
 	err = b.Create()
 	if err != nil {
-		return err.Error()
+		apierror.GenerateError("Trouble creating blog", err, rw, r)
 	}
 	return encoding.Must(enc.Encode(b))
 }
@@ -107,17 +109,17 @@ func GetBlogCategory(rw http.ResponseWriter, r *http.Request, enc encoding.Encod
 	if idStr != "" {
 		c.ID, err = strconv.Atoi(idStr)
 		if err != nil {
-			return err.Error()
+			apierror.GenerateError("Trouble getting blog category ID", err, rw, r)
 		}
 	} else {
 		c.ID, err = strconv.Atoi(params["id"])
 		if err != nil {
-			return err.Error()
+			apierror.GenerateError("Trouble getting blog category ID", err, rw, r)
 		}
 	}
 	err = c.Get(dtx)
 	if err != nil {
-		return err.Error()
+		apierror.GenerateError("Trouble getting blog category", err, rw, r)
 	}
 	return encoding.Must(enc.Encode(c))
 }
@@ -131,7 +133,7 @@ func CreateBlogCategory(rw http.ResponseWriter, r *http.Request, enc encoding.En
 
 	err = c.Create(dtx)
 	if err != nil {
-		return err.Error()
+		apierror.GenerateError("Trouble creating blog category", err, rw, r)
 	}
 	return encoding.Must(enc.Encode(c))
 }
@@ -144,18 +146,18 @@ func DeleteBlogCategory(rw http.ResponseWriter, r *http.Request, enc encoding.En
 	if idStr != "" {
 		c.ID, err = strconv.Atoi(idStr)
 		if err != nil {
-			return err.Error()
+			apierror.GenerateError("Trouble getting blog category ID", err, rw, r)
 		}
 	} else {
 		c.ID, err = strconv.Atoi(params["id"])
 		if err != nil {
-			return err.Error()
+			apierror.GenerateError("Trouble getting blog category ID", err, rw, r)
 		}
 	}
 
 	err = c.Delete(dtx)
 	if err != nil {
-		return err.Error()
+		apierror.GenerateError("Trouble deleting blog category", err, rw, r)
 	}
 	return encoding.Must(enc.Encode(c))
 }
@@ -168,12 +170,12 @@ func UpdateBlog(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 	if idStr != "" {
 		b.ID, err = strconv.Atoi(idStr)
 		if err != nil {
-			return err.Error()
+			apierror.GenerateError("Trouble getting blog ID", err, rw, r)
 		}
 	} else {
 		b.ID, err = strconv.Atoi(params["id"])
 		if err != nil {
-			return err.Error()
+			apierror.GenerateError("Trouble getting blog ID", err, rw, r)
 		}
 	}
 	b.Get(dtx)
@@ -197,6 +199,7 @@ func UpdateBlog(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 	}
 
 	if err != nil {
+		apierror.GenerateError("Trouble getting blog", err, rw, r)
 		return err.Error()
 	}
 	if title != "" {
@@ -232,7 +235,7 @@ func UpdateBlog(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 
 	err = b.Update(dtx)
 	if err != nil {
-		return err.Error()
+		apierror.GenerateError("Trouble updating blog", err, rw, r)
 	}
 	return encoding.Must(enc.Encode(b))
 }
@@ -244,17 +247,17 @@ func DeleteBlog(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 	if idStr != "" {
 		b.ID, err = strconv.Atoi(idStr)
 		if err != nil {
-			return err.Error()
+			apierror.GenerateError("Trouble getting blog ID", err, rw, r)
 		}
 	} else {
 		b.ID, err = strconv.Atoi(params["id"])
 		if err != nil {
-			return err.Error()
+			apierror.GenerateError("Trouble getting blog ID", err, rw, r)
 		}
 	}
 	err = b.Delete()
 	if err != nil {
-		return err.Error()
+		apierror.GenerateError("Trouble deleting blog", err, rw, r)
 	}
 	return encoding.Must(enc.Encode(b))
 }
@@ -279,7 +282,7 @@ func Search(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *
 
 	l, err := blog_model.Search(title, slug, text, publishedDate, createdDate, lastModified, userID, metaTitle, metaDescription, keywords, active, page, results, dtx)
 	if err != nil {
-		return err.Error()
+		apierror.GenerateError("Trouble searching for blog", err, rw, r)
 	}
 
 	return encoding.Must(enc.Encode(l))

@@ -2,17 +2,18 @@ package category_ctlr
 
 import (
 	"encoding/json"
+	"io/ioutil"
+	"net/http"
+	"strconv"
+	"strings"
+
 	"github.com/curt-labs/GoAPI/controllers/vehicle"
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/apifilter"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
+	"github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/models/products"
 	"github.com/go-martini/martini"
-	"io/ioutil"
-
-	"net/http"
-	"strconv"
-	"strings"
 )
 
 var (
@@ -25,7 +26,7 @@ type FilterSpecifications struct {
 	Values []string `json:"values" xml:"values"`
 }
 
-func GetCategory(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
+func GetCategory(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var page int
 	var count int
 	var cat products.Category
@@ -33,8 +34,7 @@ func GetCategory(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble reading request body while getting category", err, rw, r)
 	}
 
 	qs := r.URL.Query()
@@ -71,14 +71,12 @@ func GetCategory(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 	if err != nil { // get by title
 		cat, err = products.GetCategoryByTitle(params["id"], dtx)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return ""
+			apierror.GenerateError("Trouble getting category by title", err, rw, r)
 		}
 	} else { // get by id
 		cat.ID = id
 		if err = cat.GetCategory(key, page, count, false, &l.Vehicle, &specs, dtx); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return ""
+			apierror.GenerateError("Trouble getting category", err, rw, r)
 		}
 	}
 
@@ -91,33 +89,28 @@ func GetCategory(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 	return encoding.Must(enc.Encode(cat))
 }
 
-func Parents(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+func Parents(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	// var err error
 	var c []products.Category
 
 	c, err := products.TopTierCategories(dtx)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble getting parent categories", err, rw, r)
 	}
-
 	if len(c) < 1 {
-		http.Error(w, "No results", http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("No results for parent categories", err, rw, r)
 	}
 	return encoding.Must(enc.Encode(c))
 }
 
-func SubCategories(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
+func SubCategories(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	id, err := strconv.Atoi(params["id"])
 
 	var cat products.Category
 	if err != nil {
 		cat, err = products.GetCategoryByTitle(params["id"], dtx)
 		if err != nil {
-
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return ""
+			apierror.GenerateError("Trouble getting category for sub categories", err, rw, r)
 		}
 	} else {
 		cat.ID = id
@@ -125,18 +118,16 @@ func SubCategories(w http.ResponseWriter, r *http.Request, enc encoding.Encoder,
 
 	subs, err := cat.GetSubCategories(dtx)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble getting sub categories", err, rw, r)
 	}
 
 	return encoding.Must(enc.Encode(subs))
 }
 
-func GetParts(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
+func GetParts(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble reading request body for get category parts", err, rw, r)
 	}
 	key := params["key"]
 	catID, err := strconv.Atoi(params["id"])
@@ -146,13 +137,11 @@ func GetParts(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, para
 	if err != nil {
 		title := params["id"]
 		if title == "" {
-			http.Error(w, "Invalid Category", http.StatusInternalServerError)
-			return ""
+			apierror.GenerateError("Trouble getting category title for get category parts", err, rw, r)
 		}
 		cat, err = products.GetCategoryByTitle(title, dtx)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return ""
+			apierror.GenerateError("Trouble getting category by title for get category parts", err, rw, r)
 		}
 	} else {
 		cat.ID = catID
@@ -185,8 +174,7 @@ func GetParts(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, para
 	}
 
 	if err = cat.GetParts(key, page, count, nil, &specs, dtx); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble getting category parts", err, rw, r)
 	}
 	return encoding.Must(enc.Encode(cat.ProductListing))
 }

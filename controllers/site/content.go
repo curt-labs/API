@@ -1,14 +1,15 @@
 package site
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/encoding"
-	"github.com/curt-labs/GoAPI/models/site"
-	"github.com/go-martini/martini"
-	// "log"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"strconv"
+
+	"github.com/curt-labs/GoAPI/helpers/encoding"
+	"github.com/curt-labs/GoAPI/helpers/error"
+	"github.com/curt-labs/GoAPI/models/site"
+	"github.com/go-martini/martini"
 )
 
 func GetContent(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
@@ -22,16 +23,14 @@ func GetContent(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder,
 		c.Id = id
 		err = c.Get()
 		if err != nil {
-			http.Error(rw, err.Error(), http.StatusNoContent)
-			return ""
+			apierror.GenerateError("Trouble getting site content", err, rw, req)
 		}
 	} else {
 		//Thar be a slug
 		c.Slug = idStr
 		err = c.GetBySlug()
 		if err != nil {
-			http.Error(rw, err.Error(), http.StatusNoContent)
-			return ""
+			apierror.GenerateError("Trouble getting site content", err, rw, req)
 		}
 	}
 	return encoding.Must(enc.Encode(c))
@@ -40,8 +39,7 @@ func GetContent(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder,
 func GetAllContents(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
 	m, err := site.GetAllContents()
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusNoContent)
-		return ""
+		apierror.GenerateError("Trouble getting all site contents", err, rw, req)
 	}
 	return encoding.Must(enc.Encode(m))
 }
@@ -54,8 +52,7 @@ func GetContentRevisions(rw http.ResponseWriter, req *http.Request, enc encoding
 
 	err = c.GetContentRevisions()
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusNoContent)
-		return ""
+		apierror.GenerateError("Trouble getting site content revisions", err, rw, req)
 	}
 
 	return encoding.Must(enc.Encode(c))
@@ -69,21 +66,18 @@ func SaveContent(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder
 		c.Id, err = strconv.Atoi(idStr)
 		err = c.Get()
 		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return ""
+			apierror.GenerateError("Trouble getting site content", err, rw, req)
 		}
 	}
 
 	//json
 	requestBody, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return encoding.Must(enc.Encode(false))
+		apierror.GenerateError("Trouble reading request body for saving site content", err, rw, req)
 	}
 	err = json.Unmarshal(requestBody, &c)
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return encoding.Must(enc.Encode(false))
+		apierror.GenerateError("Trouble unmarshalling request body for saving site content", err, rw, req)
 	}
 	//create or update
 	if c.Id > 0 {
@@ -93,8 +87,7 @@ func SaveContent(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder
 	}
 
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble saving site content", err, rw, req)
 	}
 	return encoding.Must(enc.Encode(c))
 }
@@ -107,14 +100,12 @@ func DeleteContent(rw http.ResponseWriter, req *http.Request, enc encoding.Encod
 
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble getting site content ID", err, rw, req)
 	}
 	c.Id = id
 	err = c.Delete()
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble deleting site content", err, rw, req)
 	}
 
 	return encoding.Must(enc.Encode(c))

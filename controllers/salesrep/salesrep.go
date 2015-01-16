@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/curt-labs/GoAPI/helpers/encoding"
+	"github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/models/salesrep"
 	"github.com/go-martini/martini"
 )
@@ -12,8 +13,7 @@ import (
 func GetAllSalesReps(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder) string {
 	reps, err := salesrep.GetAllSalesReps()
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble getting all sales reps", err, rw, req)
 	}
 	return encoding.Must(enc.Encode(reps))
 }
@@ -23,12 +23,10 @@ func GetSalesRep(rw http.ResponseWriter, req *http.Request, params martini.Param
 	var rep salesrep.SalesRep
 
 	if rep.ID, err = strconv.Atoi(params["id"]); err != nil {
-		http.Error(rw, "Invalid SalesRep ID", http.StatusInternalServerError)
-		return "Invalid SalesRep ID"
+		apierror.GenerateError("Trouble getting sales rep ID", err, rw, req)
 	}
 	if err := rep.Get(); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble getting sales rep", err, rw, req)
 	}
 	return encoding.Must(enc.Encode(rep))
 }
@@ -40,8 +38,7 @@ func AddSalesRep(rw http.ResponseWriter, req *http.Request, params martini.Param
 	}
 
 	if err := rep.Add(); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble adding sales rep", err, rw, req)
 	}
 
 	return encoding.Must(enc.Encode(rep))
@@ -52,13 +49,11 @@ func UpdateSalesRep(rw http.ResponseWriter, req *http.Request, params martini.Pa
 	var rep salesrep.SalesRep
 
 	if rep.ID, err = strconv.Atoi(params["id"]); err != nil {
-		http.Error(rw, "Invalid SalesRep ID", http.StatusInternalServerError)
-		return "Invalid SalesRep ID"
+		apierror.GenerateError("Trouble getting sales rep ID", err, rw, req)
 	}
 
 	if err = rep.Get(); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble getting sales rep", err, rw, req)
 	}
 
 	if req.FormValue("name") != "" {
@@ -70,8 +65,7 @@ func UpdateSalesRep(rw http.ResponseWriter, req *http.Request, params martini.Pa
 	}
 
 	if err := rep.Update(); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble updating sales rep", err, rw, req)
 	}
 
 	return encoding.Must(enc.Encode(rep))
@@ -82,13 +76,11 @@ func DeleteSalesRep(rw http.ResponseWriter, req *http.Request, params martini.Pa
 	var rep salesrep.SalesRep
 
 	if rep.ID, err = strconv.Atoi(params["id"]); err != nil {
-		http.Error(rw, "Invalid SalesRep ID", http.StatusInternalServerError)
-		return "Invalid SalesRep ID"
+		apierror.GenerateError("Trouble getting sales rep ID", err, rw, req)
 	}
 
 	if err = rep.Delete(); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble deleting sales rep", err, rw, req)
 	}
 
 	return encoding.Must(enc.Encode(rep))

@@ -3,13 +3,17 @@ package customer
 import (
 	"database/sql"
 
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	_ "github.com/go-sql-driver/mysql"
 )
 
 var (
-	getBusinessClassesStmt = `select BusinessClassID, name, sort, showOnWebsite from BusinessClass`
+	getBusinessClassesStmt = `select b.BusinessClassID, b.name, b.sort, b.showOnWebsite from BusinessClass as b 
+		join ApiKeyToBrand as atb on atb.brandID = b.brandID
+		join ApiKey as a on a.id = atb.keyID
+		where a.api_key = ? && (atb.brandID = ? or 0 =?)`
 )
 
 type BusinessClasses []BusinessClass
@@ -20,7 +24,7 @@ type BusinessClass struct {
 	ShowOnWebsite bool   `json:"show" xml:"show"`
 }
 
-func GetAllBusinessClasses() (classes BusinessClasses, err error) {
+func GetAllBusinessClasses(dtx *apicontext.DataContext) (classes BusinessClasses, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return
@@ -33,7 +37,7 @@ func GetAllBusinessClasses() (classes BusinessClasses, err error) {
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query()
+	rows, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	if err != nil {
 		return
 	}

@@ -86,6 +86,37 @@ func GetCustomers(w http.ResponseWriter, req *http.Request, params martini.Param
 	return encoding.Must(enc.Encode(custs))
 }
 
+// Login a specific customer for a
+// given shop.
+func LoginCustomer(w http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder, shop *cart.Shop) string {
+
+	var c cart.Customer
+	defer req.Body.Close()
+
+	data, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		c.Password = ""
+		apierror.GenerateError(err.Error(), err, w, req)
+		return ""
+	}
+
+	if err = json.Unmarshal(data, &c); err != nil {
+		c.Password = ""
+		apierror.GenerateError(err.Error(), err, w, req)
+		return ""
+	}
+
+	c.ShopId = shop.Id
+
+	if err = c.Login(); err != nil {
+		apierror.GenerateError(err.Error(), err, w, req)
+		return ""
+	}
+	c.Password = ""
+
+	return encoding.Must(enc.Encode(c))
+}
+
 // Get a specific customer for a
 // given shop.
 func GetCustomer(w http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder, shop *cart.Shop) string {

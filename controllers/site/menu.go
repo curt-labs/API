@@ -1,14 +1,15 @@
 package site
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/encoding"
-	"github.com/curt-labs/GoAPI/models/site"
-	"github.com/go-martini/martini"
-	// "log"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"strconv"
+
+	"github.com/curt-labs/GoAPI/helpers/encoding"
+	"github.com/curt-labs/GoAPI/helpers/error"
+	"github.com/curt-labs/GoAPI/models/site"
+	"github.com/go-martini/martini"
 )
 
 func GetMenu(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
@@ -22,16 +23,14 @@ func GetMenu(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, pa
 		m.Id = id
 		err = m.Get()
 		if err != nil {
-			http.Error(rw, err.Error(), http.StatusNoContent)
-			return ""
+			apierror.GenerateError("Trouble getting site menu", err, rw, req)
 		}
 	} else {
 		//Thar be a name
 		m.Name = idStr
 		err = m.GetByName()
 		if err != nil {
-			http.Error(rw, err.Error(), http.StatusNoContent)
-			return ""
+			apierror.GenerateError("Trouble getting site menu", err, rw, req)
 		}
 	}
 	return encoding.Must(enc.Encode(m))
@@ -40,8 +39,7 @@ func GetMenu(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, pa
 func GetAllMenus(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
 	m, err := site.GetAllMenus()
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusNoContent)
-		return ""
+		apierror.GenerateError("Trouble getting all site menus", err, rw, req)
 	}
 	return encoding.Must(enc.Encode(m))
 }
@@ -57,22 +55,19 @@ func GetMenuWithContents(rw http.ResponseWriter, req *http.Request, enc encoding
 		m.Id = id
 		err = m.Get()
 		if err != nil {
-			http.Error(rw, err.Error(), http.StatusNoContent)
-			return ""
+			apierror.GenerateError("Trouble getting site menu", err, rw, req)
 		}
 	} else {
 		//Thar be a name
 		m.Name = idStr
 		err = m.GetByName()
 		if err != nil {
-			http.Error(rw, err.Error(), http.StatusNoContent)
-			return ""
+			apierror.GenerateError("Trouble getting site menu", err, rw, req)
 		}
 	}
 	err = m.GetContents()
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusNoContent)
-		return ""
+		apierror.GenerateError("Trouble getting site menu with contents", err, rw, req)
 	}
 
 	return encoding.Must(enc.Encode(m))
@@ -86,21 +81,18 @@ func SaveMenu(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, p
 		m.Id, err = strconv.Atoi(idStr)
 		err = m.Get()
 		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return ""
+			apierror.GenerateError("Trouble getting site menu ID", err, rw, req)
 		}
 	}
 
 	//json
 	requestBody, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return encoding.Must(enc.Encode(false))
+		apierror.GenerateError("Trouble reading request body for saving site menu", err, rw, req)
 	}
 	err = json.Unmarshal(requestBody, &m)
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return encoding.Must(enc.Encode(false))
+		apierror.GenerateError("Trouble unmarshalling request body for saving site menu", err, rw, req)
 	}
 	//create or update
 	if m.Id > 0 {
@@ -110,8 +102,7 @@ func SaveMenu(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, p
 	}
 
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble saving site menu", err, rw, req)
 	}
 	return encoding.Must(enc.Encode(m))
 }
@@ -124,14 +115,12 @@ func DeleteMenu(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder,
 
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble getting site menu ID", err, rw, req)
 	}
 	m.Id = id
 	err = m.Delete()
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble deleting site menu", err, rw, req)
 	}
 
 	return encoding.Must(enc.Encode(m))

@@ -2,16 +2,18 @@ package warranty
 
 import (
 	"encoding/json"
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
-	"github.com/curt-labs/GoAPI/helpers/encoding"
-	"github.com/curt-labs/GoAPI/models/contact"
-	"github.com/curt-labs/GoAPI/models/warranty"
-	"github.com/go-martini/martini"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
+	"github.com/curt-labs/GoAPI/helpers/encoding"
+	"github.com/curt-labs/GoAPI/helpers/error"
+	"github.com/curt-labs/GoAPI/models/contact"
+	"github.com/curt-labs/GoAPI/models/warranty"
+	"github.com/go-martini/martini"
 )
 
 const (
@@ -23,8 +25,7 @@ func GetAllWarranties(rw http.ResponseWriter, req *http.Request, enc encoding.En
 
 	ws, err := warranty.GetAllWarranties(dtx)
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble getting all warranties", err, rw, req)
 	}
 	return encoding.Must(enc.Encode(ws))
 }
@@ -37,8 +38,7 @@ func GetWarranty(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder
 
 	err = w.Get()
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble getting warranty", err, rw, req)
 	}
 	return encoding.Must(enc.Encode(w))
 }
@@ -51,8 +51,7 @@ func GetWarrantyByContact(rw http.ResponseWriter, req *http.Request, enc encodin
 
 	ws, err := w.GetByContact()
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble getting warranty by contact", err, rw, req)
 	}
 	return encoding.Must(enc.Encode(ws))
 }
@@ -69,14 +68,12 @@ func CreateWarranty(rw http.ResponseWriter, req *http.Request, enc encoding.Enco
 		//json
 		requestBody, err := ioutil.ReadAll(req.Body)
 		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return encoding.Must(enc.Encode(false))
+			apierror.GenerateError("Trouble reading request body for creating warranty", err, rw, req)
 		}
 
 		err = json.Unmarshal(requestBody, &w)
 		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return encoding.Must(enc.Encode(false))
+			apierror.GenerateError("Trouble unmarshalling request body for creating warranty", err, rw, req)
 		}
 
 	} else {
@@ -85,8 +82,7 @@ func CreateWarranty(rw http.ResponseWriter, req *http.Request, enc encoding.Enco
 		w.OldPartNumber = req.FormValue("old_part_number")
 		date, err := time.Parse(timeFormat, req.FormValue("date"))
 		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return encoding.Must(enc.Encode(false))
+			apierror.GenerateError("Trouble creating warranty", err, rw, req)
 		}
 		w.Date = &date
 		w.SerialNumber = req.FormValue("serial_number")
@@ -105,8 +101,7 @@ func CreateWarranty(rw http.ResponseWriter, req *http.Request, enc encoding.Enco
 	}
 	err = w.Create()
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble creating warranty", err, rw, req)
 	}
 	if sendEmail == true {
 		//Send Email
@@ -123,8 +118,7 @@ func CreateWarranty(rw http.ResponseWriter, req *http.Request, enc encoding.Enco
 		subject := "Email from Warranty Applications Form"
 		err = contact.SendEmail(ct, subject, body) //contact type id, subject, techSupport
 		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return err.Error()
+			apierror.GenerateError("Trouble sending email to receivers while creating warranty", err, rw, req)
 		}
 	}
 	//Return JSON
@@ -135,13 +129,13 @@ func DeleteWarranty(rw http.ResponseWriter, req *http.Request, enc encoding.Enco
 	var err error
 	var w warranty.Warranty
 	id := params["id"]
-	w.ID, err = strconv.Atoi(id)
 
-	err = w.Delete()
+	if w.ID, err = strconv.Atoi(id); err != nil {
+		apierror.GenerateError("Trouble getting warranty ID", err, rw, req)
+	}
 
-	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+	if err = w.Delete(); err != nil {
+		apierror.GenerateError("Trouble deleting warranty", err, rw, req)
 	}
 
 	//Return JSON

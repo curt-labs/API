@@ -2,14 +2,16 @@ package cartIntegration
 
 import (
 	"encoding/json"
-	"github.com/curt-labs/GoAPI/helpers/encoding"
-	"github.com/curt-labs/GoAPI/models/cartIntegration"
-	"github.com/curt-labs/GoAPI/models/customer"
-	"github.com/go-martini/martini"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/curt-labs/GoAPI/helpers/encoding"
+	"github.com/curt-labs/GoAPI/helpers/error"
+	"github.com/curt-labs/GoAPI/models/cartIntegration"
+	"github.com/curt-labs/GoAPI/models/customer"
+	"github.com/go-martini/martini"
 )
 
 const dateFormat = "Jan 2, 2006"
@@ -53,70 +55,63 @@ func ParsePricePointFields(w http.ResponseWriter, r *http.Request, enc encoding.
 	return encoding.Must(enc.Encode(p))
 }
 
-func GetCI(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func GetCI(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var ci cartIntegration.CartIntegration
 	var err error
 	id := params["id"]
 	if id == "" {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble getting cart integration ID", err, rw, r)
 	}
 	ci.ID, err = strconv.Atoi(id)
 
 	err = ci.Get()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNoContent)
-		return ""
+		apierror.GenerateError("Trouble getting cart integration", err, rw, r)
 	}
 	return encoding.Must(enc.Encode(ci))
 }
 
-func GetCIbyPart(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func GetCIbyPart(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var ci cartIntegration.CartIntegration
 	var err error
 	id := params["id"]
 	if id == "" {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble getting part number for cart integration", err, rw, r)
 	}
 	ci.PartID, err = strconv.Atoi(id)
 
 	cis, err := cartIntegration.GetCartIntegrationsByPart(ci)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNoContent)
-		return ""
+		apierror.GenerateError("Trouble getting cart integrations by part number", err, rw, r)
 	}
 	return encoding.Must(enc.Encode(cis))
 }
 
-func GetCIbyCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func GetCIbyCustomer(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var ci cartIntegration.CartIntegration
 	var err error
 	id := params["id"]
 	if id == "" {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble getting customer ID for cart integration", err, rw, r)
 	}
 	//get cust_id from (old) customerID
 	var c customer.Customer
 	c.CustomerId, err = strconv.Atoi(id)
 	err = c.FindCustIdFromCustomerId()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble finding cust ID from CustomerID", err, rw, r)
 	}
 	//set cartIntegration customer ID to cust_id
 	ci.CustID = c.Id
 
 	cis, err := cartIntegration.GetCartIntegrationsByCustomer(ci)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNoContent)
-		return ""
+		apierror.GenerateError("Trouble getting cart integrations by customer", err, rw, r)
 	}
 	return encoding.Must(enc.Encode(cis))
 }
 
-func SaveCI(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func SaveCI(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var ci cartIntegration.CartIntegration
 	var err error
 	id := params["id"]
@@ -124,21 +119,18 @@ func SaveCI(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params
 		ci.ID, err = strconv.Atoi(id)
 		err = ci.Get()
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return ""
+			apierror.GenerateError("Trouble getting cart integration", err, rw, r)
 		}
 	}
 
 	defer r.Body.Close()
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble reading request body for saving cart integration", err, rw, r)
 	}
 	err = json.Unmarshal(body, &ci)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble unmarshaling request body for cart integration", err, rw, r)
 	}
 	if ci.ID != 0 {
 		err = ci.Update()
@@ -146,88 +138,77 @@ func SaveCI(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params
 		err = ci.Create()
 	}
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble creating/updating cart integration", err, rw, r)
 	}
 	return encoding.Must(enc.Encode(ci))
 }
 
-func DeleteCI(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func DeleteCI(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var ci cartIntegration.CartIntegration
 	var err error
 	id := params["id"]
 
 	ci.ID, err = strconv.Atoi(id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble getting cart integration ID", err, rw, r)
 	}
 
 	err = ci.Delete()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble deleting cart integration", err, rw, r)
 	}
-	return encoding.Must(enc.Encode(ci))
 
+	return encoding.Must(enc.Encode(ci))
 }
 
-func GetCustomerPricing(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func GetCustomerPricing(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var err error
 	custID, err := strconv.Atoi(params["custID"])
 	if custID == 0 {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble getting custID for customer pricing", err, rw, r)
 	}
 	prices, err := cartIntegration.GetPricesByCustomerID(custID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble getting prices by customer ID", err, rw, r)
 	}
 	return encoding.Must(enc.Encode(prices))
 }
-func GetCustomerPricingPaged(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func GetCustomerPricingPaged(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var err error
 
 	custID, err := strconv.Atoi(params["custID"])
 	if custID == 0 {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble getting custID for paged customer pricing ", err, rw, r)
 	}
 
 	page, err := strconv.Atoi(params["page"])
-	if page == 0 {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return ""
+	if page < 1 {
+		apierror.GenerateError("Trouble getting page number for paged customer pricing", err, rw, r)
 	}
 
 	count, err := strconv.Atoi(params["count"])
-	if count == 0 {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return ""
+	if count < 1 {
+		apierror.GenerateError("Trouble getting count for paged customer pricing", err, rw, r)
 	}
 
 	prices, err := cartIntegration.GetPricesByCustomerIDPaged(custID, page, count)
 	if custID == 0 {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble getting prices for paged customer pricing", err, rw, r)
 	}
-	return encoding.Must(enc.Encode(prices))
 
+	return encoding.Must(enc.Encode(prices))
 }
 
 //kind of dumb, like the tedious version of len(prices); it existed in the cartIntegration project, so maybe it's needed for something
-func GetCustomerPricingCount(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func GetCustomerPricingCount(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var err error
 	custID, err := strconv.Atoi(params["custID"])
 	if custID == 0 {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble getting custID for pricing count", err, rw, r)
 	}
 	count, err := cartIntegration.GetPricingCount(custID)
 	if custID == 0 {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return ""
+		apierror.GenerateError("Trouble getting pricing count", err, rw, r)
 	}
 	return encoding.Must(enc.Encode(count))
 }

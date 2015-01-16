@@ -6,6 +6,7 @@ import (
 
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
+	"github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/models/forum"
 	"github.com/go-martini/martini"
 )
@@ -13,8 +14,7 @@ import (
 func GetAllGroups(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	groups, err := forum.GetAllGroups(dtx)
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble getting all forum groups", err, rw, req)
 	}
 	return encoding.Must(enc.Encode(groups))
 }
@@ -24,12 +24,10 @@ func GetGroup(rw http.ResponseWriter, req *http.Request, params martini.Params, 
 	var group forum.Group
 
 	if group.ID, err = strconv.Atoi(params["id"]); err != nil {
-		http.Error(rw, "Invalid Group ID", http.StatusInternalServerError)
-		return "Invalid Group ID"
+		apierror.GenerateError("Trouble getting forum group ID", err, rw, req)
 	}
 	if err := group.Get(dtx); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble getting forum group", err, rw, req)
 	}
 	return encoding.Must(enc.Encode(group))
 }
@@ -41,8 +39,7 @@ func AddGroup(rw http.ResponseWriter, req *http.Request, params martini.Params, 
 	}
 
 	if err := group.Add(dtx); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble adding forum group", err, rw, req)
 	}
 
 	return encoding.Must(enc.Encode(group))
@@ -53,13 +50,11 @@ func UpdateGroup(rw http.ResponseWriter, req *http.Request, params martini.Param
 	var group forum.Group
 
 	if group.ID, err = strconv.Atoi(params["id"]); err != nil {
-		http.Error(rw, "Invalid Group ID", http.StatusInternalServerError)
-		return "Invalid Group ID"
+		apierror.GenerateError("Trouble getting forum group ID", err, rw, req)
 	}
 
 	if err = group.Get(dtx); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble getting forum group", err, rw, req)
 	}
 
 	if req.FormValue("name") != "" {
@@ -71,8 +66,7 @@ func UpdateGroup(rw http.ResponseWriter, req *http.Request, params martini.Param
 	}
 
 	if err := group.Update(dtx); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble updating forum group", err, rw, req)
 	}
 
 	return encoding.Must(enc.Encode(group))
@@ -83,13 +77,11 @@ func DeleteGroup(rw http.ResponseWriter, req *http.Request, params martini.Param
 	var group forum.Group
 
 	if group.ID, err = strconv.Atoi(params["id"]); err != nil {
-		http.Error(rw, "Invalid Group ID", http.StatusInternalServerError)
-		return "Invalid Group ID"
+		apierror.GenerateError("Trouble getting forum group ID", err, rw, req)
 	}
 
 	if err = group.Delete(dtx); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Trouble deleting forum group", err, rw, req)
 	}
 
 	return encoding.Must(enc.Encode(group))
