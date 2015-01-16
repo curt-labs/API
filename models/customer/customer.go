@@ -1370,6 +1370,7 @@ func (c *Customer) ScanCustomer(res Scanner, key string) error {
 		}
 		parentChan <- 1
 	}()
+	<-parentChan
 	if city != nil {
 		c.City = *city
 	}
@@ -1481,8 +1482,6 @@ func (c *Customer) ScanCustomer(res Scanner, key string) error {
 	if shadow != nil {
 		c.DealerType.MapIcon.MapIconShadow, err = conversions.ByteToUrl(*shadow)
 	}
-
-	<-parentChan
 
 	return nil
 }

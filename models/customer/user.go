@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -496,9 +495,9 @@ func (u CustomerUser) GetCustomer(key string) (c Customer, err error) {
 	defer stmt.Close()
 
 	res := stmt.QueryRow(u.Id)
-	log.Print("K")
+
 	if err := c.ScanCustomer(res, key); err != nil {
-		log.Print("L", err)
+
 		if err == sql.ErrNoRows {
 			err = fmt.Errorf("error: %s", "user not bound to customer")
 		}

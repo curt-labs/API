@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -26,7 +25,7 @@ func AuthenticateUser(w http.ResponseWriter, r *http.Request, enc encoding.Encod
 
 	//default brand for setting key
 	defaultBrandArray := []int{1}
-	log.Print("1")
+
 	err := user.AuthenticateUser(defaultBrandArray)
 	if err != nil {
 
@@ -38,24 +37,24 @@ func AuthenticateUser(w http.ResponseWriter, r *http.Request, enc encoding.Encod
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return ""
 	}
-	log.Print("1")
+
 	err = user.GetKeys()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return ""
 	}
-	log.Print("1")
+
 	var key string
 	if len(user.Keys) != 0 {
 		key = user.Keys[0].Key
 	}
-	log.Print("1")
+
 	cust, err := user.GetCustomer(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return ""
 	}
-	log.Print("%")
+
 	return encoding.Must(enc.Encode(cust))
 }
 
@@ -64,9 +63,9 @@ func KeyedUserAuthentication(w http.ResponseWriter, r *http.Request, enc encodin
 	qs := r.URL.Query()
 	key := qs.Get("key")
 	var err error
-
 	dtx := &apicontext.DataContext{APIKey: key}
 	dtx.BrandArray, err = dtx.GetBrandsFromKey()
+
 	cust, err := customer.AuthenticateAndGetCustomer(key, dtx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
