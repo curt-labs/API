@@ -3,6 +3,7 @@ package lifestyle
 import (
 	"database/sql"
 	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
@@ -55,19 +56,21 @@ type Towable struct {
 type Towables []Towable
 
 var (
-	getAllLifestyles = `select
-							c.catID, c.catTitle, c.dateAdded, c.parentID,
+	getAllLifestyles = `select c.catID, c.catTitle, c.dateAdded, c.parentID,
 							c.shortDesc, c.longDesc, c.image, c.isLifestyle,
-							c.sort
-							from Categories as c
-							where c.isLifestyle = 1
+							c.sort from Categories as c
+							Join ApiKeyToBrand as akb on akb.brandID = c.brandID
+							Join ApiKey as ak on akb.keyID = ak.id
+							where c.isLifestyle = 1 && (ak.api_key = ? && (c.brandID = ? OR 0=?))
 							order by c.sort`
 	getLifestyle = `select
 						c.catID, c.catTitle, c.dateAdded, c.parentID,
 						c.shortDesc, c.longDesc, c.image, c.isLifestyle,
 						c.sort
 						from Categories as c
-						where c.catID = ?
+						Join ApiKeyToBrand as akb on akb.brandID = c.brandID
+						Join ApiKey as ak on akb.keyID = ak.id
+						where c.catID = ? && (ak.api_key = ? && (c.brandID = ? OR 0=?))
 						limit 1`
 	getLifestyleContent = `select ct.allowHTML, ct.type, c.text from Content as c
 							join ContentBridge as cb on c.contentID = cb.contentID
@@ -76,7 +79,10 @@ var (
 	getAllLifestyleContent = `select cb.catID, ct.allowHTML, ct.type, c.text from Content as c
 							join ContentBridge as cb on c.contentID = cb.contentID
 							join ContentType as ct on c.cTypeID = ct.cTypeID
-							where cb.catID > 0`
+							join Category as cat on cat.catID = cb.catID
+							Join ApiKeyToBrand as akb on akb.brandID = cat.brandID
+							Join ApiKey as ak on akb.keyID = ak.id
+							where cb.catID > 0 && (ak.api_key = ? && (cat.brandID = ? OR 0=?))`
 	getLifestyleTowables = `select
 								t.trailerID, t.name, t.shortDesc, t.hitchClass, t.image, t.TW, t.GTW, t.message
 								from Trailer as t
@@ -88,10 +94,14 @@ var (
 								t.trailerID, lt.catId, t.name, t.shortDesc, t.hitchClass, t.image, t.TW, t.GTW, t.message
 								from Trailer as t
 								join Lifestyle_Trailer as lt on t.trailerID = lt.trailerID
+								join Category as cat on cat.catID = lt.catID
+								Join ApiKeyToBrand as akb on akb.brandID = cat.brandID
+								Join ApiKey as ak on akb.keyID = ak.id
+								where (ak.api_key = ? && (cat.brandID = ? OR 0=?))
 								order by t.TW`
 
-	createLifestyle = `INSERT INTO Categories (dateAdded, parentID, catTitle, shortDesc, longDesc, image, isLifestyle, sort) VALUES (?,?,?,?,?,?,?,?)`
-	updateLifestyle = `UPDATE Categories SET dateAdded = ?, parentID = ?, catTitle = ?, shortDesc = ?, longDesc = ?, image = ?, isLifestyle = ?, sort = ? WHERE catID = ?`
+	createLifestyle = `INSERT INTO Categories (dateAdded, parentID, catTitle, shortDesc, longDesc, image, isLifestyle, sort, brandID) VALUES (?,?,?,?,?,?,?,?,?)`
+	updateLifestyle = `UPDATE Categories SET dateAdded = ?, parentID = ?, catTitle = ?, shortDesc = ?, longDesc = ?, image = ?, isLifestyle = ?, sort = ?, brandID = ? WHERE catID = ?`
 	deleteLifestyle = `DELETE FROM Categories WHERE catID = ?`
 	deleteContents  = `DELETE FROM ContentBridge WHERE catID = ?`
 	deleteTowables  = `DELETE FROM Lifestyle_Trailer WHERE catID = ?`
@@ -103,8 +113,8 @@ var (
 	getTowable      = `SELECT trailerID, image, name, TW, GTW, hitchClass, shortDesc, message FROM Trailer WHERE trailerID = ?`
 )
 
-func GetAll() (ls Lifestyles, err error) {
-	redis_key := "goadmin:lifestyles"
+func GetAll(dtx *apicontext.DataContext) (ls Lifestyles, err error) {
+	redis_key := "lifestyle:all:" + dtx.BrandString
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &ls)
@@ -123,12 +133,12 @@ func GetAll() (ls Lifestyles, err error) {
 	}
 	defer stmt.Close()
 	//get content and towables
-	cs, err := getAllContent()
+	cs, err := getAllContent(dtx)
 	contentMap := cs.ToMap()
-	ts, err := getAllTowables()
+	ts, err := getAllTowables(dtx)
 	towMap := ts.ToMap()
 
-	res, err := stmt.Query()
+	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	for res.Next() {
 		var l Lifestyle
 		err = res.Scan(&l.ID, &l.Name, &l.DateAdded, &l.ParentID, &l.ShortDesc, &l.LongDesc, &l.Image, &l.IsLifestyle, &l.Sort)
@@ -166,8 +176,8 @@ func GetAll() (ls Lifestyles, err error) {
 	return ls, err
 }
 
-func (l *Lifestyle) Get() (err error) {
-	redis_key := "goadmin:lifestyle:" + strconv.Itoa(l.ID)
+func (l *Lifestyle) Get(dtx *apicontext.DataContext) (err error) {
+	redis_key := "lifestyle:get:" + strconv.Itoa(l.ID) + ":" + dtx.BrandString
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &l)
@@ -186,7 +196,7 @@ func (l *Lifestyle) Get() (err error) {
 	}
 	defer stmt.Close()
 
-	err = stmt.QueryRow(l.ID).Scan(&l.ID, &l.Name, &l.DateAdded, &l.ParentID, &l.ShortDesc, &l.LongDesc, &l.Image, &l.IsLifestyle, &l.Sort)
+	err = stmt.QueryRow(l.ID, dtx.APIKey, dtx.BrandID, dtx.BrandID).Scan(&l.ID, &l.Name, &l.DateAdded, &l.ParentID, &l.ShortDesc, &l.LongDesc, &l.Image, &l.IsLifestyle, &l.Sort)
 	if err != nil {
 		return err
 	}
@@ -202,7 +212,7 @@ func (l *Lifestyle) Get() (err error) {
 	return nil
 }
 
-func getAllContent() (cs Contents, err error) {
+func getAllContent(dtx *apicontext.DataContext) (cs Contents, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return cs, err
@@ -215,7 +225,7 @@ func getAllContent() (cs Contents, err error) {
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Query()
+	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	for res.Next() {
 		var c Content
 		err = res.Scan(&c.ID, &c.ContentType.HTML, &c.ContentType.Name, &c.Text)
@@ -228,7 +238,7 @@ func getAllContent() (cs Contents, err error) {
 	return cs, err
 }
 
-func getAllTowables() (ts Towables, err error) {
+func getAllTowables(dtx *apicontext.DataContext) (ts Towables, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return ts, err
@@ -240,7 +250,7 @@ func getAllTowables() (ts Towables, err error) {
 		return ts, err
 	}
 	defer stmt.Close()
-	res, err := stmt.Query()
+	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	for res.Next() {
 		var t Towable
 		err = res.Scan(&t.ID, &t.CatId, &t.Name, &t.ShortDesc, &t.HitchClass, &t.Image, &t.TW, &t.GTW, &t.Message)
@@ -304,7 +314,7 @@ func (l *Lifestyle) GetTowables() (err error) {
 	return err
 }
 
-func (l *Lifestyle) Create() (err error) {
+func (l *Lifestyle) Create(dtx *apicontext.DataContext) (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -318,7 +328,7 @@ func (l *Lifestyle) Create() (err error) {
 	}
 	defer stmt.Close()
 	l.DateAdded = time.Now()
-	res, err := stmt.Exec(l.DateAdded, l.ParentID, l.Name, l.ShortDesc, l.LongDesc, l.Image, l.IsLifestyle, l.Sort)
+	res, err := stmt.Exec(l.DateAdded, l.ParentID, l.Name, l.ShortDesc, l.LongDesc, l.Image, l.IsLifestyle, l.Sort, dtx.BrandID)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -372,7 +382,7 @@ func (l *Lifestyle) Create() (err error) {
 	return err
 }
 
-func (l *Lifestyle) Update() (err error) {
+func (l *Lifestyle) Update(dtx *apicontext.DataContext) (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -385,7 +395,7 @@ func (l *Lifestyle) Update() (err error) {
 		return err
 	}
 	defer stmt.Close()
-	_, err = stmt.Exec(l.DateAdded, l.ParentID, l.Name, l.ShortDesc, l.LongDesc, l.Image, l.IsLifestyle, l.Sort, l.ID)
+	_, err = stmt.Exec(l.DateAdded, l.ParentID, l.Name, l.ShortDesc, l.LongDesc, l.Image, l.IsLifestyle, l.Sort, dtx.BrandID, l.ID)
 	if err != nil {
 		tx.Rollback()
 		return err

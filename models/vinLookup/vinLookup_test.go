@@ -2,6 +2,7 @@ package vinLookup
 
 import (
 	"database/sql"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/models/products"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
@@ -16,14 +17,14 @@ var (
 
 func TestVinLookup(t *testing.T) {
 	Convey("Testing VinPartLookup", t, func() {
-		vs, err := VinPartLookup(buickVin)
+		vs, err := VinPartLookup(buickVin, &apicontext.DataContext{})
 		if err != sql.ErrNoRows {
 			So(err, ShouldBeNil)
 			So(len(vs.Parts), ShouldBeGreaterThanOrEqualTo, 1)
 
 		}
 		if err != sql.ErrNoRows {
-			vs, err = VinPartLookup(taurusVin)
+			vs, err = VinPartLookup(taurusVin, &apicontext.DataContext{})
 			So(err, ShouldBeNil)
 			So(len(vs.Parts), ShouldBeGreaterThanOrEqualTo, 1)
 
@@ -54,7 +55,7 @@ func TestVinLookup(t *testing.T) {
 
 	})
 	Convey("Testing Bad Vin", t, func() {
-		vs, err := VinPartLookup(bogusVin)
+		vs, err := VinPartLookup(bogusVin, &apicontext.DataContext{})
 		So(err, ShouldNotBeNil)
 		So(vs, ShouldHaveSameTypeAs, products.Lookup{})
 
@@ -66,7 +67,7 @@ func TestVinLookup(t *testing.T) {
 
 func BenchmarkVinPartLookup(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		VinPartLookup(buickVin)
+		VinPartLookup(buickVin, &apicontext.DataContext{})
 	}
 }
 

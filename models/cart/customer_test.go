@@ -37,6 +37,9 @@ func TestSinceId(t *testing.T) {
 			custs, err := CustomersSinceId(bson.NewObjectId(), bson.NewObjectId(), 1, 0, &created_min, &created_max, &created_min, &created_max)
 			So(err, ShouldBeNil)
 			So(custs, ShouldHaveSameTypeAs, []Customer{})
+			for _, cust := range custs {
+				So(cust.Password, ShouldEqual, "")
+			}
 		})
 	})
 }
@@ -70,6 +73,9 @@ func TestGetCustomer(t *testing.T) {
 			custs, err := GetCustomers(bson.NewObjectId(), 1, 0, &created_min, &created_max, &created_min, &created_max)
 			So(err, ShouldBeNil)
 			So(custs, ShouldHaveSameTypeAs, []Customer{})
+			for _, cust := range custs {
+				So(cust.Password, ShouldEqual, "")
+			}
 		})
 	})
 }
@@ -95,6 +101,7 @@ func TestCustomer(t *testing.T) {
 			So(err, ShouldNotBeNil)
 
 			customer.Email = "ninnemana@gmail.com"
+			customer.Password = "password"
 			err = customer.Insert()
 			So(err, ShouldNotBeNil)
 
@@ -108,8 +115,36 @@ func TestCustomer(t *testing.T) {
 			So(err, ShouldNotBeNil)
 			os.Setenv("MONGO_URL", "")
 
+			customer.Password = ""
+			err = customer.Insert()
+			So(err, ShouldNotBeNil)
+
+			customer.Password = "password"
 			err = customer.Insert()
 			So(err, ShouldBeNil)
+			So(customer.Password, ShouldEqual, "")
+
+			customer.Password = "bad_password"
+			err = customer.Login()
+			t.Log(customer.Password)
+			So(err, ShouldNotBeNil)
+
+			customer.Password = "password"
+			customer.Email = "alex@ninneman.org"
+			err = customer.Login()
+			So(err, ShouldNotBeNil)
+
+			customer.Email = "ninnemana@gmail.com"
+			os.Setenv("MONGO_URL", "0.0.0.1")
+			err = customer.Login()
+			So(err, ShouldNotBeNil)
+			os.Setenv("MONGO_URL", "")
+
+			customer.Password = "password"
+			err = customer.Login()
+			So(err, ShouldBeNil)
+			t.Log(customer.Password)
+			So(customer.Password, ShouldEqual, "")
 
 			tmpID := customer.Id
 			var blankId bson.ObjectId
@@ -173,6 +208,7 @@ func TestCustomer(t *testing.T) {
 
 			err = customer.Update()
 			So(err, ShouldBeNil)
+			So(customer.Password, ShouldEqual, "")
 
 			os.Setenv("MONGO_URL", "0.0.0.1")
 			err = customer.Get()

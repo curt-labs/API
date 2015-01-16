@@ -1,20 +1,27 @@
 package lifestyle
 
 import (
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
 
 func TestGetLifestyles(t *testing.T) {
 	var l Lifestyle
+	var err error
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
 
 	Convey("Testing CRUD", t, func() {
 
 		l.Name = "testName"
 		l.LongDesc = "Long description"
-		err := l.Create()
+		err := l.Create(MockedDTX)
 		So(err, ShouldBeNil)
-		err = l.Get()
+		err = l.Get(MockedDTX)
 		So(err, ShouldBeNil)
 		So(l, ShouldNotBeNil)
 		So(l.Name, ShouldEqual, "testName")
@@ -24,9 +31,9 @@ func TestGetLifestyles(t *testing.T) {
 		l.Name = "newName"
 		l.Image = "image"
 		l.ShortDesc = "Desc"
-		err = l.Update()
+		err = l.Update(MockedDTX)
 		So(err, ShouldBeNil)
-		err = l.Get()
+		err = l.Get(MockedDTX)
 
 		So(err, ShouldBeNil)
 		So(l, ShouldNotBeNil)
@@ -35,11 +42,11 @@ func TestGetLifestyles(t *testing.T) {
 		So(l.ShortDesc, ShouldEqual, "Desc")
 
 		//Gets
-		ls, err := GetAll()
+		ls, err := GetAll(MockedDTX)
 		So(err, ShouldBeNil)
 		So(ls, ShouldHaveSameTypeAs, Lifestyles{})
 
-		err = l.Get()
+		err = l.Get(MockedDTX)
 		So(err, ShouldBeNil)
 		So(l, ShouldNotBeNil)
 		So(l.Name, ShouldHaveSameTypeAs, "str")
@@ -53,17 +60,27 @@ func TestGetLifestyles(t *testing.T) {
 }
 
 func BenchmarkGetAllLifestyles(b *testing.B) {
+	var err error
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
 	for i := 0; i < b.N; i++ {
-		GetAll()
+		GetAll(MockedDTX)
 	}
 }
 
 func BenchmarkGetLifestyle(b *testing.B) {
+	var err error
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
 	ls := setupDummyLifestyle()
-	ls.Create()
+	ls.Create(MockedDTX)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		ls.Get()
+		ls.Get(MockedDTX)
 	}
 	b.StopTimer()
 	ls.Delete()
@@ -71,8 +88,13 @@ func BenchmarkGetLifestyle(b *testing.B) {
 
 func BenchmarkCreateLifestyle(b *testing.B) {
 	ls := setupDummyLifestyle()
+	var err error
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
 	for i := 0; i < b.N; i++ {
-		ls.Create()
+		ls.Create(MockedDTX)
 		b.StopTimer()
 		ls.Delete()
 		b.StartTimer()
@@ -80,21 +102,31 @@ func BenchmarkCreateLifestyle(b *testing.B) {
 }
 
 func BenchmarkUpdateLifestyle(b *testing.B) {
+	var err error
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
 	ls := setupDummyLifestyle()
-	ls.Create()
+	ls.Create(MockedDTX)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		ls.ShortDesc = "TEST"
 		ls.LongDesc = "THIS IS A TEST"
-		ls.Update()
+		ls.Update(MockedDTX)
 	}
 	b.StopTimer()
 	ls.Delete()
 }
 
 func BenchmarkDeleteLifestyle(b *testing.B) {
+	var err error
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
 	ls := setupDummyLifestyle()
-	ls.Create()
+	ls.Create(MockedDTX)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		ls.Delete()

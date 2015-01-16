@@ -125,6 +125,11 @@ func Test_AddCustomer(t *testing.T) {
 
 		cust.Email = "ninnemana@gmail.com"
 		response = httprunner.JsonRequest("POST", "/shopify/customers", &qs, cust, AddCustomer)
+		So(response.Code, ShouldEqual, 500)
+		So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
+
+		cust.Password = "password"
+		response = httprunner.JsonRequest("POST", "/shopify/customers", &qs, cust, AddCustomer)
 		So(response.Code, ShouldEqual, 200)
 		So(json.Unmarshal(response.Body.Bytes(), &cust), ShouldBeNil)
 	})
@@ -132,13 +137,13 @@ func Test_AddCustomer(t *testing.T) {
 
 func Test_GetCustomer(t *testing.T) {
 	Convey("no shop identifier", t, func() {
-		response = httprunner.Request("GET", "/shopify/customers/1234", nil, GetCustomers)
+		response = httprunner.Request("GET", "/shopify/customers/1234", nil, GetCustomer)
 		So(response.Code, ShouldEqual, 500)
 		So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
 
 		vals := make(url.Values, 0)
 		vals.Add("shop", "testing")
-		response = httprunner.Request("GET", "/shopify/customers/1234", &vals, GetCustomers)
+		response = httprunner.Request("GET", "/shopify/customers/1234", &vals, GetCustomer)
 		So(response.Code, ShouldEqual, 500)
 		So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
 	})
@@ -162,6 +167,7 @@ func Test_GetCustomer(t *testing.T) {
 				FirstName: "Alex",
 				LastName:  "Ninneman",
 				Email:     "ninnemana@gmail.com",
+				Password:  "password",
 			}
 			response = httprunner.JsonRequest("POST", "/shopify/customers", &qs, cust, AddCustomer)
 			So(response.Code, ShouldEqual, 200)
@@ -174,6 +180,77 @@ func Test_GetCustomer(t *testing.T) {
 			response = httprunner.ParameterizedRequest("GET", "/shopify/customers/:id", "/shopify/customers/"+cust.Id.Hex(), &qs, nil, GetCustomer)
 			So(response.Code, ShouldEqual, 200)
 			So(json.Unmarshal(response.Body.Bytes(), &cust), ShouldBeNil)
+		})
+	})
+}
+
+func Test_LoginCustomer(t *testing.T) {
+	Convey("no shop identifier", t, func() {
+		response = httprunner.Request("GET", "/shopify/customers/1234", nil, GetCustomer)
+		So(response.Code, ShouldEqual, 500)
+		So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
+
+		vals := make(url.Values, 0)
+		vals.Add("shop", "testing")
+		response = httprunner.Request("GET", "/shopify/customers/1234", &vals, GetCustomer)
+		So(response.Code, ShouldEqual, 500)
+		So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
+	})
+	Convey("with shop identifier", t, func() {
+		shopID := cart.InsertTestData()
+		So(shopID, ShouldNotBeNil)
+
+		val := shopID.Hex()
+		qs := make(url.Values, 0)
+		qs.Add("shop", val)
+
+		Convey("with bad customer reference", func() {
+			response = httprunner.ParameterizedRequest("GET", "/shopify/customers/:id", "/shopify/customers/1234", &qs, nil, GetCustomer)
+			So(response.Code, ShouldEqual, 500)
+			So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
+		})
+
+		Convey("with good customer reference", func() {
+			cust := cart.Customer{
+				ShopId:    *shopID,
+				FirstName: "Alex",
+				LastName:  "Ninneman",
+				Email:     "ninnemana@gmail.com",
+				Password:  "password",
+			}
+			response = httprunner.JsonRequest("POST", "/shopify/customers", &qs, cust, AddCustomer)
+			So(response.Code, ShouldEqual, 200)
+			So(json.Unmarshal(response.Body.Bytes(), &cust), ShouldBeNil)
+
+			response = httprunner.JsonRequest("POST", "/shopify/customers/login", &qs, cart.CustomerAddress{}, LoginCustomer)
+			So(response.Code, ShouldEqual, 500)
+			So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
+
+			cust.Email = ""
+			cust.Password = ""
+			response = httprunner.JsonRequest("POST", "/shopify/customers/login", &qs, cust, LoginCustomer)
+			So(response.Code, ShouldEqual, 500)
+			So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
+
+			cust.Email = "ninnemana@gmail.com"
+			response = httprunner.JsonRequest("POST", "/shopify/customers/login", &qs, cust, LoginCustomer)
+			So(response.Code, ShouldEqual, 500)
+			So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
+
+			cust.Email = "ninnemana@gmail.com"
+			cust.Password = "bad_password"
+			response = httprunner.JsonRequest("POST", "/shopify/customers/login", &qs, cust, LoginCustomer)
+			So(response.Code, ShouldEqual, 500)
+			So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
+
+			cust.Email = "ninnemana@gmail.com"
+			cust.Password = "password"
+			response = httprunner.JsonRequest("POST", "/shopify/customers/login", &qs, cust, LoginCustomer)
+			So(response.Code, ShouldEqual, 200)
+			t.Log(response.Body.String())
+			So(json.Unmarshal(response.Body.Bytes(), &cust), ShouldBeNil)
+			t.Log(cust.Password)
+			So(cust.Password, ShouldEqual, "")
 		})
 	})
 }
@@ -210,6 +287,7 @@ func Test_EditCustomer(t *testing.T) {
 				FirstName: "Alex",
 				LastName:  "Ninneman",
 				Email:     "ninnemana@gmail.com",
+				Password:  "password",
 			}
 			response = httprunner.JsonRequest("POST", "/shopify/customers", &qs, cust, AddCustomer)
 			So(response.Code, ShouldEqual, 200)
@@ -264,6 +342,7 @@ func Test_DeleteCustomer(t *testing.T) {
 				FirstName: "Alex",
 				LastName:  "Ninneman",
 				Email:     "ninnemana@gmail.com",
+				Password:  "password",
 			}
 			response = httprunner.JsonRequest("POST", "/shopify/customers", &qs, cust, AddCustomer)
 			So(response.Code, ShouldEqual, 200)
@@ -351,6 +430,7 @@ func Test_GetCustomerOrders(t *testing.T) {
 				FirstName: "Alex",
 				LastName:  "Ninneman",
 				Email:     "ninnemana@gmail.com",
+				Password:  "password",
 			}
 			response = httprunner.JsonRequest("POST", "/shopify/customers", &qs, cust, AddCustomer)
 			So(response.Code, ShouldEqual, 200)
@@ -406,6 +486,7 @@ func BenchmarkAddCustomer(b *testing.B) {
 		FirstName: "Alex",
 		LastName:  "Ninneman",
 		Email:     "ninnemana@gmail.com",
+		Password:  "password",
 	}
 
 	cust.Email = "ninnemana@gmail.com"
@@ -436,6 +517,7 @@ func BenchmarkGetCustomer(b *testing.B) {
 		FirstName: "Alex",
 		LastName:  "Ninneman",
 		Email:     "ninnemana@gmail.com",
+		Password:  "password",
 	}
 	if err := cust.Insert(); err != nil {
 		b.Error(err.Error())
@@ -469,6 +551,7 @@ func BenchmarkEditCustomer(b *testing.B) {
 		FirstName: "Alex",
 		LastName:  "Ninneman",
 		Email:     "ninnemana@gmail.com",
+		Password:  "password",
 	}
 
 	if err := cust.Insert(); err != nil {
@@ -572,6 +655,7 @@ func BenchmarkGetCustomerOrders(b *testing.B) {
 		FirstName: "Alex",
 		LastName:  "Ninneman",
 		Email:     "ninnemana@gmail.com",
+		Password:  "password",
 	}
 	if err := cust.Insert(); err != nil {
 		b.Error(err.Error())
