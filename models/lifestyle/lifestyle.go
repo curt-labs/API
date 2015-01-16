@@ -79,7 +79,10 @@ var (
 	getAllLifestyleContent = `select cb.catID, ct.allowHTML, ct.type, c.text from Content as c
 							join ContentBridge as cb on c.contentID = cb.contentID
 							join ContentType as ct on c.cTypeID = ct.cTypeID
-							where cb.catID > 0`
+							join Category as cat on cat.catID = cb.catID
+							Join ApiKeyToBrand as akb on akb.brandID = cat.brandID
+							Join ApiKey as ak on akb.keyID = ak.id
+							where cb.catID > 0 && (ak.api_key = ? && (cat.brandID = ? OR 0=?))`
 	getLifestyleTowables = `select
 								t.trailerID, t.name, t.shortDesc, t.hitchClass, t.image, t.TW, t.GTW, t.message
 								from Trailer as t
@@ -91,6 +94,10 @@ var (
 								t.trailerID, lt.catId, t.name, t.shortDesc, t.hitchClass, t.image, t.TW, t.GTW, t.message
 								from Trailer as t
 								join Lifestyle_Trailer as lt on t.trailerID = lt.trailerID
+								join Category as cat on cat.catID = lt.catID
+								Join ApiKeyToBrand as akb on akb.brandID = cat.brandID
+								Join ApiKey as ak on akb.keyID = ak.id
+								where (ak.api_key = ? && (cat.brandID = ? OR 0=?))
 								order by t.TW`
 
 	createLifestyle = `INSERT INTO Categories (dateAdded, parentID, catTitle, shortDesc, longDesc, image, isLifestyle, sort) VALUES (?,?,?,?,?,?,?,?)`
@@ -126,9 +133,9 @@ func GetAll(dtx *apicontext.DataContext) (ls Lifestyles, err error) {
 	}
 	defer stmt.Close()
 	//get content and towables
-	cs, err := getAllContent()
+	cs, err := getAllContent(dtx)
 	contentMap := cs.ToMap()
-	ts, err := getAllTowables()
+	ts, err := getAllTowables(dtx)
 	towMap := ts.ToMap()
 
 	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
@@ -205,7 +212,7 @@ func (l *Lifestyle) Get(dtx *apicontext.DataContext) (err error) {
 	return nil
 }
 
-func getAllContent() (cs Contents, err error) {
+func getAllContent(dtx *apicontext.DataContext) (cs Contents, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return cs, err
@@ -218,7 +225,7 @@ func getAllContent() (cs Contents, err error) {
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Query()
+	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	for res.Next() {
 		var c Content
 		err = res.Scan(&c.ID, &c.ContentType.HTML, &c.ContentType.Name, &c.Text)
@@ -231,7 +238,7 @@ func getAllContent() (cs Contents, err error) {
 	return cs, err
 }
 
-func getAllTowables() (ts Towables, err error) {
+func getAllTowables(dtx *apicontext.DataContext) (ts Towables, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return ts, err
@@ -243,7 +250,7 @@ func getAllTowables() (ts Towables, err error) {
 		return ts, err
 	}
 	defer stmt.Close()
-	res, err := stmt.Query()
+	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	for res.Next() {
 		var t Towable
 		err = res.Scan(&t.ID, &t.CatId, &t.Name, &t.ShortDesc, &t.HitchClass, &t.Image, &t.TW, &t.GTW, &t.Message)
