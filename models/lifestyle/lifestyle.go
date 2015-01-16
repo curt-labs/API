@@ -101,7 +101,7 @@ var (
 								order by t.TW`
 
 	createLifestyle = `INSERT INTO Categories (dateAdded, parentID, catTitle, shortDesc, longDesc, image, isLifestyle, sort, brandID) VALUES (?,?,?,?,?,?,?,?,?)`
-	updateLifestyle = `UPDATE Categories SET dateAdded = ?, parentID = ?, catTitle = ?, shortDesc = ?, longDesc = ?, image = ?, isLifestyle = ?, sort = ? WHERE catID = ?`
+	updateLifestyle = `UPDATE Categories SET dateAdded = ?, parentID = ?, catTitle = ?, shortDesc = ?, longDesc = ?, image = ?, isLifestyle = ?, sort = ?, brandID = ? WHERE catID = ?`
 	deleteLifestyle = `DELETE FROM Categories WHERE catID = ?`
 	deleteContents  = `DELETE FROM ContentBridge WHERE catID = ?`
 	deleteTowables  = `DELETE FROM Lifestyle_Trailer WHERE catID = ?`
@@ -382,7 +382,7 @@ func (l *Lifestyle) Create(dtx *apicontext.DataContext) (err error) {
 	return err
 }
 
-func (l *Lifestyle) Update() (err error) {
+func (l *Lifestyle) Update(dtx *apicontext.DataContext) (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -395,7 +395,7 @@ func (l *Lifestyle) Update() (err error) {
 		return err
 	}
 	defer stmt.Close()
-	_, err = stmt.Exec(l.DateAdded, l.ParentID, l.Name, l.ShortDesc, l.LongDesc, l.Image, l.IsLifestyle, l.Sort, l.ID)
+	_, err = stmt.Exec(l.DateAdded, l.ParentID, l.Name, l.ShortDesc, l.LongDesc, l.Image, l.IsLifestyle, l.Sort, dtx.BrandID, l.ID)
 	if err != nil {
 		tx.Rollback()
 		return err

@@ -31,7 +31,7 @@ func TestGetLifestyles(t *testing.T) {
 		l.Name = "newName"
 		l.Image = "image"
 		l.ShortDesc = "Desc"
-		err = l.Update()
+		err = l.Update(MockedDTX)
 		So(err, ShouldBeNil)
 		err = l.Get(MockedDTX)
 
@@ -113,7 +113,7 @@ func BenchmarkUpdateLifestyle(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		ls.ShortDesc = "TEST"
 		ls.LongDesc = "THIS IS A TEST"
-		ls.Update()
+		ls.Update(MockedDTX)
 	}
 	b.StopTimer()
 	ls.Delete()

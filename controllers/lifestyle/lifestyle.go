@@ -66,9 +66,9 @@ func Save(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, param
 
 	//create or update
 	if l.ID > 0 {
-		err = l.Update()
+		err = l.Update(dtx)
 	} else {
-		err = l.Create()
+		err = l.Create(dtx)
 	}
 
 	if err != nil {
@@ -78,7 +78,7 @@ func Save(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, param
 	return encoding.Must(enc.Encode(l))
 }
 
-func Delete(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
+func Delete(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var l lifestyle.Lifestyle
 	var err error
 	idStr := params["id"]
