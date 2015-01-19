@@ -2,6 +2,7 @@ package apierror
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -33,14 +34,26 @@ func GenerateError(msg string, err error, res http.ResponseWriter, r *http.Reque
 		e.QueryString = r.URL.Query()
 	}
 
-	js, jsErr := json.Marshal(e)
-	if jsErr != nil {
+	var errorResp []byte
+	var marshalErr error
+
+	switch r.Header.Get("Content-Type") {
+	case "application/xml":
+		res.Header().Set("Content-Type", "application/xml")
+		errorResp, marshalErr = xml.Marshal(e)
+	case "application/json":
+	default:
+		//JSON is our defaulted content type encoding
+		res.Header().Set("Content-Type", "application/json")
+		errorResp, marshalErr = json.Marshal(e)
+	}
+
+	if marshalErr != nil {
 		http.Error(res, e.Message, http.StatusInternalServerError)
 		return
 	}
 
-	res.Header().Set("Content-Type", "application/json")
 	res.WriteHeader(http.StatusInternalServerError)
-	res.Write(js)
+	res.Write(errorResp)
 	return
 }
