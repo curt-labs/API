@@ -4,10 +4,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/curt-labs/GoAPI/helpers/redis"
 
 	"github.com/curt-labs/GoAPI/helpers/api"
 	"github.com/curt-labs/GoAPI/helpers/database"
+	"github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -157,9 +157,9 @@ var (
 					join vcdb_Make ma on bv.MakeID = ma.ID
 					join vcdb_Model mo on bv.ModelID = mo.ID
 					where bv.YearID = ? and ma.MakeName = ?
-					and mo.ModelName = ? and (sm.SubmodelName = ? or sm.SubmodelName is null)
-					and (ca.value in (`
-	vehicleNotesStmtEnd = `) or ca.value is null) and vp.PartNumber = ?;`
+					and mo.ModelName = ? and (sm.SubmodelName = ? or sm.SubmodelName is null) and (
+					`
+	vehicleNotesStmtEnd = `  ca.value is null) and vp.PartNumber = ?;`
 
 	vehicleNotesStmt_Grouped = `select distinct n.note, vp.PartNumber from vcdb_VehiclePart vp
 					left join Note n on vp.ID = n.vehiclePartID
@@ -192,14 +192,16 @@ func (vehicle *Vehicle) GetGroupsByConfig() (groups []int) {
 func (v *Vehicle) GetNotes(partId int) (notes []string, err error) {
 	qrystmt := vehicleNotesStmt
 	if len(v.Configuration) > 0 {
+		qrystmt += "  ca.value in (`"
 		for i, c := range v.Configuration {
 			qrystmt = qrystmt + "'" + api_helpers.Escape(c.Value) + "'"
 			if i < len(v.Configuration)-1 {
 				qrystmt = qrystmt + ","
 			}
 		}
-		qrystmt = qrystmt + vehicleNotesStmtEnd
+		qrystmt += ") or"
 	}
+	qrystmt = qrystmt + vehicleNotesStmtEnd
 
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {

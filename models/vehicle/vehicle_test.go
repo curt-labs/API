@@ -11,12 +11,12 @@ func TestVehicle(t *testing.T) {
 		Convey("Testing Get Notes", func() {
 			notes, err := v.GetNotes(13301)
 			So(len(notes), ShouldBeGreaterThanOrEqualTo, 0)
-			So(err, ShouldNotBeNil)
+			So(err, ShouldBeNil)
 		})
 		Convey("Testing Reverse Lookup", func() {
 			vehicles, err := ReverseLookup(13301)
 			So(len(vehicles), ShouldBeGreaterThanOrEqualTo, 0)
-			So(err, ShouldNotBeNil)
+			So(err, ShouldBeNil)
 		})
 	})
 }
