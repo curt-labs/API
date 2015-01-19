@@ -1,12 +1,13 @@
 package forum_ctlr
 
 import (
-	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	"github.com/curt-labs/GoAPI/helpers/httprunner"
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
-	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/curt-labs/GoAPI/models/forum"
 	. "github.com/smartystreets/goconvey/convey"
+
+	"encoding/json"
 	"net/url"
 	"strconv"
 	"strings"
@@ -25,19 +26,10 @@ func TestForums(t *testing.T) {
 	var ths forum.Threads
 	var ps forum.Posts
 
-	//setup
-	var cu customer.CustomerUser
-	cu.Name = "test cust user"
-	cu.Email = "pretend@test.com"
-	cu.Password = "test"
-	cu.Sudo = true
-	var apiKey string
-	for _, key := range cu.Keys {
-		if strings.ToLower(key.Type) == "public" {
-			apiKey = key.Key
-		}
+	dtx, err := apicontextmock.Mock()
+	if err != nil {
+		t.Log(err)
 	}
-	t.Log("APIKEY", apiKey)
 
 	Convey("Testing Forums", t, func() {
 		//test add group
@@ -45,7 +37,7 @@ func TestForums(t *testing.T) {
 		v := form.Encode()
 		body := strings.NewReader(v)
 		thyme := time.Now()
-		testThatHttp.Request("post", "/forum/groups", "", "?key="+apiKey, AddGroup, body, "application/x-www-form-urlencoded")
+		testThatHttp.RequestWithDtx("post", "/forum/groups", "", "?key="+dtx.APIKey, AddGroup, body, "application/x-www-form-urlencoded", dtx)
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &g)
@@ -58,7 +50,7 @@ func TestForums(t *testing.T) {
 		v = form.Encode()
 		body = strings.NewReader(v)
 		thyme = time.Now()
-		testThatHttp.Request("post", "/forum/topics", "", "?key="+apiKey, AddTopic, body, "application/x-www-form-urlencoded")
+		testThatHttp.RequestWithDtx("post", "/forum/topics", "", "?key="+dtx.APIKey, AddTopic, body, "application/x-www-form-urlencoded", dtx)
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &to)
@@ -71,7 +63,7 @@ func TestForums(t *testing.T) {
 		v = form.Encode()
 		body = strings.NewReader(v)
 		thyme = time.Now()
-		testThatHttp.Request("post", "/forum/posts", "", "?key="+apiKey, AddPost, body, "application/x-www-form-urlencoded")
+		testThatHttp.RequestWithDtx("post", "/forum/posts", "", "?key="+dtx.APIKey, AddPost, body, "application/x-www-form-urlencoded", dtx)
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &p)
@@ -84,7 +76,7 @@ func TestForums(t *testing.T) {
 		v = form.Encode()
 		body = strings.NewReader(v)
 		thyme = time.Now()
-		testThatHttp.Request("put", "/forum/groups/", ":id", strconv.Itoa(g.ID)+"?key="+apiKey, UpdateGroup, body, "application/x-www-form-urlencoded")
+		testThatHttp.RequestWithDtx("put", "/forum/groups/", ":id", strconv.Itoa(g.ID)+"?key="+dtx.APIKey, UpdateGroup, body, "application/x-www-form-urlencoded", dtx)
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &g)
@@ -97,7 +89,7 @@ func TestForums(t *testing.T) {
 		v = form.Encode()
 		body = strings.NewReader(v)
 		thyme = time.Now()
-		testThatHttp.Request("put", "/forum/topics/", ":id", strconv.Itoa(to.ID)+"?key="+apiKey, UpdateTopic, body, "application/x-www-form-urlencoded")
+		testThatHttp.RequestWithDtx("put", "/forum/topics/", ":id", strconv.Itoa(to.ID)+"?key="+dtx.APIKey, UpdateTopic, body, "application/x-www-form-urlencoded", dtx)
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &to)
@@ -110,7 +102,7 @@ func TestForums(t *testing.T) {
 		v = form.Encode()
 		body = strings.NewReader(v)
 		thyme = time.Now()
-		testThatHttp.Request("put", "/forum/posts/", ":id", strconv.Itoa(p.ID)+"?key="+apiKey, UpdatePost, body, "application/x-www-form-urlencoded")
+		testThatHttp.RequestWithDtx("put", "/forum/posts/", ":id", strconv.Itoa(p.ID)+"?key="+dtx.APIKey, UpdatePost, body, "application/x-www-form-urlencoded", dtx)
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &p)
@@ -120,7 +112,7 @@ func TestForums(t *testing.T) {
 
 		//test get group
 		thyme = time.Now()
-		testThatHttp.Request("get", "/forum/groups/", ":id", strconv.Itoa(g.ID)+"?key="+apiKey, GetGroup, nil, "")
+		testThatHttp.RequestWithDtx("get", "/forum/groups/", ":id", strconv.Itoa(g.ID)+"?key="+dtx.APIKey, GetGroup, nil, "", dtx)
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &g)
@@ -129,7 +121,7 @@ func TestForums(t *testing.T) {
 
 		//test get all groups
 		thyme = time.Now()
-		testThatHttp.Request("get", "/forum/groups", "", "?key="+apiKey, GetAllGroups, nil, "")
+		testThatHttp.RequestWithDtx("get", "/forum/groups", "", "?key="+dtx.APIKey, GetAllGroups, nil, "", dtx)
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &gs)
@@ -139,7 +131,7 @@ func TestForums(t *testing.T) {
 
 		//test get topic
 		thyme = time.Now()
-		testThatHttp.Request("get", "/forum/topics/", ":id", strconv.Itoa(to.ID)+"?key="+apiKey, GetTopic, nil, "")
+		testThatHttp.RequestWithDtx("get", "/forum/topics/", ":id", strconv.Itoa(to.ID)+"?key="+dtx.APIKey, GetTopic, nil, "", dtx)
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &to)
@@ -148,7 +140,7 @@ func TestForums(t *testing.T) {
 
 		//test get all topics
 		thyme = time.Now()
-		testThatHttp.Request("get", "/forum/topics", "", "?key="+apiKey, GetAllTopics, nil, "")
+		testThatHttp.RequestWithDtx("get", "/forum/topics", "", "?key="+dtx.APIKey, GetAllTopics, nil, "", dtx)
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &tos)
@@ -158,7 +150,7 @@ func TestForums(t *testing.T) {
 
 		//test get thread
 		thyme = time.Now()
-		testThatHttp.Request("get", "/forum/threads/", ":id", strconv.Itoa(p.ThreadID)+"?key="+apiKey, GetThread, nil, "")
+		testThatHttp.RequestWithDtx("get", "/forum/threads/", ":id", strconv.Itoa(p.ThreadID)+"?key="+dtx.APIKey, GetThread, nil, "", dtx)
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &th)
@@ -167,7 +159,7 @@ func TestForums(t *testing.T) {
 
 		//test get all threads
 		thyme = time.Now()
-		testThatHttp.Request("get", "/forum/threads", "", "?key="+apiKey, GetAllThreads, nil, "")
+		testThatHttp.RequestWithDtx("get", "/forum/threads", "", "?key="+dtx.APIKey, GetAllThreads, nil, "", dtx)
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &ths)
@@ -177,7 +169,7 @@ func TestForums(t *testing.T) {
 
 		//test get post
 		thyme = time.Now()
-		testThatHttp.Request("get", "/forum/posts/", ":id", strconv.Itoa(p.ID)+"?key="+apiKey, GetPost, nil, "")
+		testThatHttp.RequestWithDtx("get", "/forum/posts/", ":id", strconv.Itoa(p.ID)+"?key="+dtx.APIKey, GetPost, nil, "", dtx)
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &p)
@@ -186,7 +178,7 @@ func TestForums(t *testing.T) {
 
 		//test get all posts
 		thyme = time.Now()
-		testThatHttp.Request("get", "/forum/posts", "", "?key="+apiKey, GetAllPosts, nil, "")
+		testThatHttp.RequestWithDtx("get", "/forum/posts", "", "?key="+dtx.APIKey, GetAllPosts, nil, "", dtx)
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &ps)
@@ -196,7 +188,7 @@ func TestForums(t *testing.T) {
 
 		//test delete post
 		thyme = time.Now()
-		testThatHttp.Request("delete", "/forum/posts/", ":id", strconv.Itoa(p.ID)+"?key="+apiKey, DeletePost, nil, "")
+		testThatHttp.RequestWithDtx("delete", "/forum/posts/", ":id", strconv.Itoa(p.ID)+"?key="+dtx.APIKey, DeletePost, nil, "", dtx)
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &p)
@@ -205,7 +197,7 @@ func TestForums(t *testing.T) {
 
 		//test delete thread
 		thyme = time.Now()
-		testThatHttp.Request("delete", "/forum/threads/", ":id", strconv.Itoa(th.ID)+"?key="+apiKey, DeleteThread, nil, "")
+		testThatHttp.RequestWithDtx("delete", "/forum/threads/", ":id", strconv.Itoa(th.ID)+"?key="+dtx.APIKey, DeleteThread, nil, "", dtx)
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &th)
@@ -214,7 +206,7 @@ func TestForums(t *testing.T) {
 
 		//test delete topic
 		thyme = time.Now()
-		testThatHttp.Request("delete", "/forum/topics/", ":id", strconv.Itoa(to.ID)+"?key="+apiKey, DeleteTopic, body, "application/x-www-form-urlencoded")
+		testThatHttp.RequestWithDtx("delete", "/forum/topics/", ":id", strconv.Itoa(to.ID)+"?key="+dtx.APIKey, DeleteTopic, body, "application/x-www-form-urlencoded", dtx)
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &to)
@@ -223,7 +215,7 @@ func TestForums(t *testing.T) {
 
 		//test delete group
 		thyme = time.Now()
-		testThatHttp.Request("delete", "/forum/groups/", ":id", strconv.Itoa(g.ID)+"?key="+apiKey, DeleteGroup, nil, "")
+		testThatHttp.RequestWithDtx("delete", "/forum/groups/", ":id", strconv.Itoa(g.ID)+"?key="+dtx.APIKey, DeleteGroup, nil, "", dtx)
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &g)
@@ -231,7 +223,7 @@ func TestForums(t *testing.T) {
 		So(g, ShouldHaveSameTypeAs, forum.Group{})
 
 	})
-	cu.Delete()
+	_ = apicontextmock.DeMock(dtx)
 }
 
 func BenchmarkCRUDForum(b *testing.B) {
