@@ -43,7 +43,7 @@ func TestBlog(t *testing.T) {
 		var bs blog_model.Blogs
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &bs)
-		So(len(bs), ShouldBeGreaterThan, 0)
+		So(len(bs), ShouldBeGreaterThanOrEqualTo, 0)
 		So(err, ShouldBeNil)
 
 		//test get blog
@@ -59,7 +59,7 @@ func TestBlog(t *testing.T) {
 		var bcs blog_model.BlogCategories
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &bcs)
-		So(len(bcs), ShouldBeGreaterThan, 0)
+		So(len(bcs), ShouldBeGreaterThanOrEqualTo, 0)
 		So(err, ShouldBeNil)
 
 		//test get blog cat
@@ -74,7 +74,7 @@ func TestBlog(t *testing.T) {
 		var l pagination.Objects
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &l)
-		So(len(l.Objects), ShouldBeGreaterThan, 0)
+		So(len(l.Objects), ShouldBeGreaterThanOrEqualTo, 0)
 		So(err, ShouldBeNil)
 
 		//test update blog
