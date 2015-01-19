@@ -2,6 +2,7 @@ package news_controller
 
 import (
 	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	"github.com/curt-labs/GoAPI/helpers/pagination"
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
 	"github.com/curt-labs/GoAPI/models/news"
@@ -15,13 +16,14 @@ import (
 func TestNews(t *testing.T) {
 	var n news_model.News
 	var err error
+	dtx, err := apicontextmock.Mock()
 	Convey("Test News", t, func() {
 		//test create
 		//Form values
 		form := url.Values{"title": {"test"}, "lead": {"testLead"}}
 		v := form.Encode()
 		body := strings.NewReader(v)
-		testThatHttp.Request("post", "/news", "", "", Create, body, "application/x-www-form-urlencoded")
+		testThatHttp.RequestWithDtx("post", "/news", "", "", Create, body, "application/x-www-form-urlencoded", dtx)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &n)
 		So(n, ShouldHaveSameTypeAs, news_model.News{})
@@ -31,7 +33,7 @@ func TestNews(t *testing.T) {
 		form = url.Values{"title": {"test new"}, "lead": {"testLead new"}}
 		v = form.Encode()
 		body = strings.NewReader(v)
-		testThatHttp.Request("put", "/news/", ":id", strconv.Itoa(n.ID), Update, body, "application/x-www-form-urlencoded")
+		testThatHttp.RequestWithDtx("put", "/news/", ":id", strconv.Itoa(n.ID), Update, body, "application/x-www-form-urlencoded", dtx)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &n)
 		So(n, ShouldHaveSameTypeAs, news_model.News{})
@@ -45,7 +47,7 @@ func TestNews(t *testing.T) {
 		So(n.Title, ShouldEqual, "test new")
 
 		//test getall
-		testThatHttp.Request("get", "/news", "", "", GetAll, nil, "application/x-www-form-urlencoded")
+		testThatHttp.RequestWithDtx("get", "/news", "", "", GetAll, nil, "application/x-www-form-urlencoded", dtx)
 		var ns news_model.Newses
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &ns)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
@@ -53,7 +55,7 @@ func TestNews(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		//test getleads
-		testThatHttp.Request("get", "/news/leads", "", "", GetLeads, nil, "application/x-www-form-urlencoded")
+		testThatHttp.RequestWithDtx("get", "/news/leads", "", "", GetLeads, nil, "application/x-www-form-urlencoded", dtx)
 		var l pagination.Objects
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &l)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
@@ -61,14 +63,14 @@ func TestNews(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		//test gettitles
-		testThatHttp.Request("get", "/news/titles", "", "", GetTitles, nil, "application/x-www-form-urlencoded")
+		testThatHttp.RequestWithDtx("get", "/news/titles", "", "", GetTitles, nil, "application/x-www-form-urlencoded", dtx)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &l)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		So(len(l.Objects), ShouldBeGreaterThan, 0)
 		So(err, ShouldBeNil)
 
 		//test search
-		testThatHttp.Request("get", "/news/search", "", "?title=test", Search, nil, "application/x-www-form-urlencoded")
+		testThatHttp.RequestWithDtx("get", "/news/search", "", "?title=test", Search, nil, "application/x-www-form-urlencoded", dtx)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &l)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		So(len(l.Objects), ShouldBeGreaterThan, 0)
@@ -82,4 +84,5 @@ func TestNews(t *testing.T) {
 		So(err, ShouldBeNil)
 
 	})
+	_ = apicontextmock.DeMock(dtx)
 }
