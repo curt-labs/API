@@ -1,25 +1,22 @@
 package lifestyle
 
 import (
-	"encoding/json"
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
-	"github.com/curt-labs/GoAPI/helpers/encoding"
-	"github.com/curt-labs/GoAPI/models/lifestyle"
-	"github.com/go-martini/martini"
-	"io/ioutil"
-	"net/http"
-	"strconv"
-
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/models/lifestyle"
 	"github.com/go-martini/martini"
+
+	"encoding/json"
+	"io/ioutil"
+	"net/http"
+	"strconv"
 )
 
 func GetAll(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	lifestyles, err := lifestyle.GetAll(dtx)
 	if err != nil {
-		apierror.GenerateError("Trouble getting all lifestyles", err, rw, r)
+		apierror.GenerateError("Trouble getting all lifestyles", err, w, r)
 		return ""
 	}
 
@@ -31,13 +28,13 @@ func Get(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params ma
 	var err error
 	l.ID, err = strconv.Atoi(params["id"])
 	if err != nil {
-		apierror.GenerateError("Trouble getting lifestyle ID", err, rw, r)
+		apierror.GenerateError("Trouble getting lifestyle ID", err, w, r)
 		return ""
 	}
 
 	err = l.Get(dtx)
 	if err != nil {
-		apierror.GenerateError("Trouble getting lifestyle", err, rw, r)
+		apierror.GenerateError("Trouble getting lifestyle", err, w, r)
 		return ""
 	}
 
@@ -83,7 +80,7 @@ func Save(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, param
 	return encoding.Must(enc.Encode(l))
 }
 
-func Delete(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+func Delete(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var l lifestyle.Lifestyle
 	var err error
 	idStr := params["id"]
