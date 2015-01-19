@@ -1,12 +1,13 @@
 package blog_controller
 
 import (
-	// "bytes"
-	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	"github.com/curt-labs/GoAPI/helpers/pagination"
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
 	"github.com/curt-labs/GoAPI/models/blog"
 	. "github.com/smartystreets/goconvey/convey"
+
+	"encoding/json"
 	"net/url"
 	"strconv"
 	"strings"
@@ -17,6 +18,10 @@ func TestBlog(t *testing.T) {
 	var b blog_model.Blog
 	var bc blog_model.BlogCategory
 	var err error
+	dtx, err := apicontextmock.Mock()
+	if err != nil {
+		t.Log(err)
+	}
 	Convey("Testing Blog", t, func() {
 		//test create blog cats
 		form := url.Values{"name": {"test cat"}, "slug": {"a slug here"}}
@@ -55,7 +60,7 @@ func TestBlog(t *testing.T) {
 		So(b.Title, ShouldEqual, "test")
 
 		//test get blog cats
-		testThatHttp.Request("get", "/blog/categories", "", "", GetAllCategories, nil, "application/x-www-form-urlencoded")
+		testThatHttp.RequestWithDtx("get", "/blog/categories", "", "", GetAllCategories, nil, "application/x-www-form-urlencoded", dtx)
 		var bcs blog_model.BlogCategories
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &bcs)
@@ -63,14 +68,14 @@ func TestBlog(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		//test get blog cat
-		testThatHttp.Request("get", "/blog/category/", ":id", strconv.Itoa(bc.ID), GetBlogCategory, nil, "application/x-www-form-urlencoded")
+		testThatHttp.RequestWithDtx("get", "/blog/category/", ":id", strconv.Itoa(bc.ID), GetBlogCategory, nil, "application/x-www-form-urlencoded", dtx)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &bc)
 		So(bc, ShouldHaveSameTypeAs, blog_model.BlogCategory{})
 		So(err, ShouldBeNil)
 
 		//test search
-		testThatHttp.Request("get", "/blog/search/", "", "?title="+b.Title, Search, nil, "application/x-www-form-urlencoded")
+		testThatHttp.RequestWithDtx("get", "/blog/search/", "", "?title="+b.Title, Search, nil, "application/x-www-form-urlencoded", dtx)
 		var l pagination.Objects
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &l)
@@ -100,6 +105,7 @@ func TestBlog(t *testing.T) {
 		So(err, ShouldBeNil)
 
 	})
+	_ = apicontextmock.DeMock(dtx)
 }
 
 func BenchmarkBlog(b *testing.B) {
