@@ -1,10 +1,6 @@
 package products
 
 import (
-	"database/sql"
-	"encoding/json"
-	"errors"
-	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/api"
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
@@ -16,6 +12,10 @@ import (
 	"github.com/curt-labs/GoAPI/models/vehicle"
 	_ "github.com/go-sql-driver/mysql"
 
+	"database/sql"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -719,6 +719,9 @@ func (p *Part) GetInstallSheet(r *http.Request, dtx *apicontext.DataContext) (da
 	}
 
 	data, err = rest.GetPDF(text, r)
+	if err != nil {
+		return
+	}
 
 	if dtx.BrandString != "" {
 		go func(dt []byte) {

@@ -63,11 +63,10 @@ func Mock() (*apicontext.DataContext, error) {
 
 	dtx.CustomerID = custID
 	// CustomerUser
-	CustomerUserID := ""
-	if CustomerUserID, err = CreateCustomerUser(custID); err != nil {
+
+	if dtx.UserID, err = CreateCustomerUser(custID); err != nil {
 		return &dtx, err
 	}
-	dtx.UserID = CustomerUserID
 
 	// ApiKeyType
 	keyType := "SUPER"
@@ -80,12 +79,11 @@ func Mock() (*apicontext.DataContext, error) {
 	}
 
 	// ApiKey and ApiKeyToBrand
-	apiKey := ""
+
 	BrandID := 1
-	if _, apiKey, err = CreateApiKey(CustomerUserID, keyTypeID, keyType, BrandID); err != nil {
+	if _, dtx.APIKey, err = CreateApiKey(dtx.UserID, keyTypeID, keyType, BrandID); err != nil {
 		return &dtx, err
 	}
-	dtx.APIKey = apiKey
 
 	// Brand
 	dtx.BrandID = BrandID

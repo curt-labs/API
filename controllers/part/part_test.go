@@ -3,6 +3,8 @@ package part_ctlr
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
+	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
 	"github.com/curt-labs/GoAPI/models/apiKeyType"
 	"github.com/curt-labs/GoAPI/models/customer"
@@ -12,7 +14,6 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 	"net/url"
 	"strconv"
-	"strings"
 	"testing"
 	"time"
 )
@@ -22,54 +23,43 @@ func TestParts(t *testing.T) {
 	var p products.Part
 	p.ID = 10999 //set part number here for use in creating related objects
 	var price products.Price
-	var cu customer.CustomerUser
+	// var cu customer.CustomerUser
 	var cat products.Category
 	cat.Create()
 
 	//create install sheet content type
 	var contentType custcontent.ContentType
-	contentType.Type = "installationSheet"
-	contentType.Create()
+	contentType.Type = "InstallationSheet"
+	err = contentType.Create()
 
 	//create install sheet content
 	var installSheetContent products.Content
-	installSheetContent.Text = "https://www.curtmfg.com/masterlibrary/16047/installsheet/CM_16021_INS.PDF"
-	installSheetContent.ContentType = contentType
-	installSheetContent.Create()
+	installSheetContent.Text = "https://www.curtmfg.com/masterlibrary/13201/installsheet/CM_13201_INS.PDF"
+	installSheetContent.ContentType.Id = contentType.Id
+	err = installSheetContent.Create()
 
 	//create video type -- used in creating video during video test
 	var vt video.VideoType
 	vt.Name = "test type"
 	vt.Create()
 
-	//setup apiKeyTypes
+	//key types
 	var pub, pri, auth apiKeyType.ApiKeyType
-	pub.Type = "public"
-	pri.Type = "private"
-	auth.Type = "authentication"
-	pub.Create()
-	pri.Create()
-	auth.Create()
+	if database.GetCleanDBFlag() != "" {
+		//setup apiKeyTypes
 
-	//create customer
-	var c customer.Customer
-	c.Name = "test man"
-	c.Create()
-
-	//creat customer User
-	cu.CustomerID = c.Id
-	cu.Name = "test cust user"
-	cu.Email = "pretend@test.com"
-	cu.Password = "test"
-	cu.Sudo = true
-	err = cu.Create()
-	var apiKey string
-	for _, key := range cu.Keys {
-		if strings.ToLower(key.Type) == "public" {
-			apiKey = key.Key
-		}
+		pub.Type = "public"
+		pri.Type = "private"
+		auth.Type = "authentication"
+		pub.Create()
+		pri.Create()
+		auth.Create()
 	}
-	t.Log("APIKEY", apiKey)
+
+	dtx, err := apicontextmock.Mock()
+	if err != nil {
+		t.Log(err)
+	}
 
 	Convey("TestingParts", t, func() {
 		//test create part
@@ -80,7 +70,7 @@ func TestParts(t *testing.T) {
 		bodyBytes, _ := json.Marshal(p)
 		bodyJson := bytes.NewReader(bodyBytes)
 		thyme := time.Now()
-		testThatHttp.Request("post", "/part", "", "?key="+apiKey, CreatePart, bodyJson, "application/json")
+		testThatHttp.RequestWithDtx("post", "/part", "", "?key="+dtx.APIKey, CreatePart, bodyJson, "application/json", dtx)
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &p)
@@ -88,13 +78,13 @@ func TestParts(t *testing.T) {
 		So(p, ShouldHaveSameTypeAs, products.Part{})
 		So(p.ID, ShouldEqual, 10999)
 
-		err = p.BindCustomer(apiKey) //setup
+		err = p.BindCustomer(dtx.APIKey) //setup
 		So(err, ShouldBeNil)
 
 		var custPrice customer.Price
-		custPrice.CustID = c.Id
+		custPrice.CustID = dtx.CustomerID
 		custPrice.PartID = p.ID
-		custPrice.Create()
+		err = custPrice.Create()
 
 		//test create price
 		price.Price = 987
@@ -103,7 +93,7 @@ func TestParts(t *testing.T) {
 		bodyBytes, _ = json.Marshal(price)
 		bodyJson = bytes.NewReader(bodyBytes)
 		thyme = time.Now()
-		testThatHttp.Request("post", "/price", "", "?key="+apiKey, SavePrice, bodyJson, "application/json")
+		testThatHttp.RequestWithDtx("post", "/price", "", "?key="+dtx.APIKey, SavePrice, bodyJson, "application/json", dtx)
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &price)
@@ -116,7 +106,7 @@ func TestParts(t *testing.T) {
 		bodyBytes, _ = json.Marshal(price)
 		bodyJson = bytes.NewReader(bodyBytes)
 		thyme = time.Now()
-		testThatHttp.Request("post", "/price/", ":id", strconv.Itoa(price.Id)+"?key="+apiKey, SavePrice, bodyJson, "application/json")
+		testThatHttp.Request("post", "/price/", ":id", strconv.Itoa(price.Id)+"?key="+dtx.APIKey, SavePrice, bodyJson, "application/json")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &price)
@@ -124,9 +114,9 @@ func TestParts(t *testing.T) {
 		So(price, ShouldHaveSameTypeAs, products.Price{})
 		So(price.Type, ShouldNotEqual, "test")
 
-		//test get part prices
+		// //test get part prices
 		thyme = time.Now()
-		testThatHttp.Request("get", "/part/", ":part/prices", strconv.Itoa(p.ID)+"/prices?key="+apiKey, Prices, nil, "")
+		testThatHttp.RequestWithDtx("get", "/part/", ":part/prices", strconv.Itoa(p.ID)+"/prices?key="+dtx.APIKey, Prices, nil, "", dtx)
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		var prices []products.Price
@@ -134,9 +124,9 @@ func TestParts(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(prices, ShouldHaveSameTypeAs, []products.Price{})
 
-		//test get part categories
+		// //test get part categories
 		thyme = time.Now()
-		testThatHttp.Request("get", "/part/", ":part/categories", strconv.Itoa(p.ID)+"/categories?key="+apiKey, Categories, nil, "")
+		testThatHttp.Request("get", "/part/", ":part/categories", strconv.Itoa(p.ID)+"/categories?key="+dtx.APIKey, Categories, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		var cats []products.Category
@@ -146,8 +136,8 @@ func TestParts(t *testing.T) {
 
 		//test get part install sheet
 		thyme = time.Now()
-		testThatHttp.Request("get", "/part/", ":part", strconv.Itoa(p.ID)+".pdf?key="+apiKey, InstallSheet, nil, "")
-		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()*3) //three seconds
+		testThatHttp.Request("get", "/part/", ":part", strconv.Itoa(p.ID)+".pdf?key="+dtx.APIKey, InstallSheet, nil, "")
+		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()*6) //three seconds
 		t.Log("Get install sheet benchmark: ", time.Since(thyme))
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 
@@ -160,7 +150,7 @@ func TestParts(t *testing.T) {
 		err = partVid.CreatePartVideo()
 
 		thyme = time.Now()
-		testThatHttp.Request("get", "/part/videos/", ":part", strconv.Itoa(p.ID)+"?key="+apiKey, Videos, nil, "")
+		testThatHttp.Request("get", "/part/videos/", ":part", strconv.Itoa(p.ID)+"?key="+dtx.APIKey, Videos, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		var ps []products.PartVideo
@@ -177,7 +167,7 @@ func TestParts(t *testing.T) {
 		review.Approved = true
 		err = review.Create()
 		thyme = time.Now()
-		testThatHttp.Request("get", "/part/reviews/", ":part", strconv.Itoa(p.ID)+"?key="+apiKey, ActiveApprovedReviews, nil, "")
+		testThatHttp.Request("get", "/part/reviews/", ":part", strconv.Itoa(p.ID)+"?key="+dtx.APIKey, ActiveApprovedReviews, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		var reviews products.Reviews
@@ -188,7 +178,7 @@ func TestParts(t *testing.T) {
 
 		//get packaging - no package created in test
 		thyme = time.Now()
-		testThatHttp.Request("get", "/part/packages/", ":part", strconv.Itoa(p.ID)+"?key="+apiKey, Packaging, nil, "")
+		testThatHttp.Request("get", "/part/packages/", ":part", strconv.Itoa(p.ID)+"?key="+dtx.APIKey, Packaging, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		var pack []products.Package
@@ -198,7 +188,7 @@ func TestParts(t *testing.T) {
 
 		//get content
 		thyme = time.Now()
-		testThatHttp.Request("get", "/part/content/", ":part", strconv.Itoa(p.ID)+"?key="+apiKey, GetContent, nil, "")
+		testThatHttp.Request("get", "/part/content/", ":part", strconv.Itoa(p.ID)+"?key="+dtx.APIKey, GetContent, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		var content products.Content
@@ -208,7 +198,7 @@ func TestParts(t *testing.T) {
 
 		//get attributes
 		thyme = time.Now()
-		testThatHttp.Request("get", "/part/attributes/", ":part", strconv.Itoa(p.ID)+"?key="+apiKey, Attributes, nil, "")
+		testThatHttp.Request("get", "/part/attributes/", ":part", strconv.Itoa(p.ID)+"?key="+dtx.APIKey, Attributes, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		var attributes []products.Attribute
@@ -218,7 +208,7 @@ func TestParts(t *testing.T) {
 
 		//test get images
 		thyme = time.Now()
-		testThatHttp.Request("get", "/part/images/", ":part", strconv.Itoa(p.ID)+"?key="+apiKey, Images, nil, "")
+		testThatHttp.Request("get", "/part/images/", ":part", strconv.Itoa(p.ID)+"?key="+dtx.APIKey, Images, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		var images []products.Image
@@ -228,7 +218,7 @@ func TestParts(t *testing.T) {
 
 		//test get vehicles
 		thyme = time.Now()
-		testThatHttp.Request("get", "/part/vehicles/", ":part", strconv.Itoa(p.ID)+"?key="+apiKey, Vehicles, nil, "")
+		testThatHttp.Request("get", "/part/vehicles/", ":part", strconv.Itoa(p.ID)+"?key="+dtx.APIKey, Vehicles, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		var vs []products.Vehicle
@@ -238,7 +228,7 @@ func TestParts(t *testing.T) {
 
 		//test get related
 		thyme = time.Now()
-		testThatHttp.Request("get", "/part/related/", ":part", strconv.Itoa(p.ID)+"?key="+apiKey, GetRelated, nil, "")
+		testThatHttp.Request("get", "/part/related/", ":part", strconv.Itoa(p.ID)+"?key="+dtx.APIKey, GetRelated, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		var parts []products.Part
@@ -248,7 +238,7 @@ func TestParts(t *testing.T) {
 
 		//test get
 		thyme = time.Now()
-		testThatHttp.Request("get", "/part/", ":part", strconv.Itoa(p.ID)+"?key="+apiKey, Get, nil, "")
+		testThatHttp.Request("get", "/part/", ":part", strconv.Itoa(p.ID)+"?key="+dtx.APIKey, Get, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		var part products.Part
@@ -258,7 +248,7 @@ func TestParts(t *testing.T) {
 
 		//test latest
 		thyme = time.Now()
-		testThatHttp.Request("get", "/part/latest", "", "?key="+apiKey, Latest, nil, "")
+		testThatHttp.Request("get", "/part/latest", "", "?key="+dtx.APIKey, Latest, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()*3) //3 seconds
 		t.Log("Get latest parts benchmark: ", time.Since(thyme))
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
@@ -268,7 +258,7 @@ func TestParts(t *testing.T) {
 
 		//test featured
 		thyme = time.Now()
-		testThatHttp.Request("get", "/part/featured", "", "?key="+apiKey, Featured, nil, "")
+		testThatHttp.Request("get", "/part/featured", "", "?key="+dtx.APIKey, Featured, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()*3) //3 seconds!
 		t.Log("Get featured parts benchmark: ", time.Since(thyme))
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
@@ -278,7 +268,7 @@ func TestParts(t *testing.T) {
 
 		//test get all parts
 		thyme = time.Now()
-		testThatHttp.Request("get", "/part", "", "?key="+apiKey, All, nil, "")
+		testThatHttp.Request("get", "/part", "", "?key="+dtx.APIKey, All, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()*6) //6 seconds
 		t.Log("Get all parts benchmark: ", time.Since(thyme))
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
@@ -288,7 +278,7 @@ func TestParts(t *testing.T) {
 
 		//test get price
 		thyme = time.Now()
-		testThatHttp.Request("get", "/price/", ":id", strconv.Itoa(price.Id)+"?key="+apiKey, GetPrice, nil, "")
+		testThatHttp.Request("get", "/price/", ":id", strconv.Itoa(price.Id)+"?key="+dtx.APIKey, GetPrice, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &price)
@@ -297,7 +287,7 @@ func TestParts(t *testing.T) {
 
 		//test get old part Number
 		thyme = time.Now()
-		testThatHttp.Request("get", "/part/old/", ":part", p.OldPartNumber+"?key="+apiKey, OldPartNumber, nil, "")
+		testThatHttp.Request("get", "/part/old/", ":part", p.OldPartNumber+"?key="+dtx.APIKey, OldPartNumber, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &p)
@@ -308,7 +298,7 @@ func TestParts(t *testing.T) {
 
 		//test delete price
 		thyme = time.Now()
-		testThatHttp.Request("delete", "/price/", ":id", strconv.Itoa(price.Id)+"?key="+apiKey, DeletePrice, nil, "")
+		testThatHttp.Request("delete", "/price/", ":id", strconv.Itoa(price.Id)+"?key="+dtx.APIKey, DeletePrice, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &price)
@@ -321,7 +311,7 @@ func TestParts(t *testing.T) {
 		bodyBytes, _ = json.Marshal(p)
 		bodyJson = bytes.NewReader(bodyBytes)
 		thyme = time.Now()
-		testThatHttp.Request("put", "/part/", ":id", strconv.Itoa(p.ID)+"?key="+apiKey, UpdatePart, bodyJson, "application/json")
+		testThatHttp.Request("put", "/part/", ":id", strconv.Itoa(p.ID)+"?key="+dtx.APIKey, UpdatePart, bodyJson, "application/json")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &p)
@@ -332,27 +322,30 @@ func TestParts(t *testing.T) {
 
 		//test delete part
 		thyme = time.Now()
-		testThatHttp.Request("delete", "/part/", ":id", strconv.Itoa(p.ID)+"?key="+apiKey, DeletePart, nil, "")
+		testThatHttp.Request("delete", "/part/", ":id", strconv.Itoa(p.ID)+"?key="+dtx.APIKey, DeletePart, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &p)
 		So(err, ShouldBeNil)
 		So(p, ShouldHaveSameTypeAs, products.Part{})
 
-		//teardown
+		// //teardown
 		custPrice.Delete()
 		partVid.DeleteByPart()
 
 	})
 	//teardown
-	cu.Delete()
 	p.Delete()
 	cat.Delete()
-	pub.Delete()
-	pri.Delete()
-	auth.Delete()
+	if database.GetCleanDBFlag() != "" {
+		pub.Delete()
+		pri.Delete()
+		auth.Delete()
+	}
 	contentType.Delete()
 	installSheetContent.Delete()
 	vt.Delete()
+
+	_ = apicontextmock.DeMock(dtx)
 
 }

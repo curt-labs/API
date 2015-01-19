@@ -1,8 +1,6 @@
 package part_ctlr
 
 import (
-	"encoding/json"
-	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/models/customer"
@@ -10,6 +8,9 @@ import (
 	"github.com/curt-labs/GoAPI/models/vehicle"
 	"github.com/go-martini/martini"
 	"github.com/ninnemana/analytics-go"
+
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -359,10 +360,10 @@ func Categories(w http.ResponseWriter, r *http.Request, params martini.Params, e
 	return encoding.Must(enc.Encode(cats))
 }
 
-func Prices(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
-	qs := r.URL.Query()
+func Prices(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+	// qs := r.URL.Query()
 	id, _ := strconv.Atoi(params["part"])
-	key := qs.Get("key")
+	// key := qs.Get("key")
 	p := products.Part{
 		ID: id,
 	}
@@ -377,7 +378,7 @@ func Prices(w http.ResponseWriter, r *http.Request, params martini.Params, enc e
 	}()
 
 	go func() {
-		price, custErr := customer.GetCustomerPrice(key, p.ID)
+		price, custErr := customer.GetCustomerPrice(dtx.APIKey, p.ID)
 		if custErr != nil {
 			err = custErr
 		}
@@ -510,14 +511,9 @@ func OldPartNumber(rw http.ResponseWriter, req *http.Request, params martini.Par
 	return encoding.Must(enc.Encode(p))
 }
 
-func CreatePart(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder) string {
+func CreatePart(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var p products.Part
 	var err error
-	api := req.FormValue("key")
-	if api == "" {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return ""
-	}
 
 	//json
 	requestBody, err := ioutil.ReadAll(req.Body)
