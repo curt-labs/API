@@ -37,7 +37,6 @@ func TestCategory(t *testing.T) {
 		thyme := time.Now()
 		testThatHttp.Request("get", "/category", "", "", Parents, nil, "")
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &cs)
-
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		So(err, ShouldBeNil)
@@ -45,7 +44,6 @@ func TestCategory(t *testing.T) {
 		So(len(cs), ShouldBeGreaterThanOrEqualTo, 0)
 
 		//test get category
-		//TODO - test hangs at line 670 in parts/category model; same with curl request
 		var filterSpecs FilterSpecifications
 		var filterSpecsArray []FilterSpecifications
 		filterSpecs.Key = "Weight"

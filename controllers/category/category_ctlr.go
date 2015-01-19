@@ -97,9 +97,6 @@ func Parents(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx 
 	if err != nil {
 		apierror.GenerateError("Trouble getting parent categories", err, rw, r)
 	}
-	if len(c) < 1 {
-		apierror.GenerateError("No results for parent categories", err, rw, r)
-	}
 	return encoding.Must(enc.Encode(c))
 }
 
