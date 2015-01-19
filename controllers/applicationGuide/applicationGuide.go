@@ -3,7 +3,6 @@ package applicationGuide
 import (
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -84,7 +83,6 @@ func CreateApplicationGuide(rw http.ResponseWriter, req *http.Request, enc encod
 	}
 	err = ag.Create(dtx)
 	if err != nil {
-		log.Print("HERe", err)
 		apierror.GenerateError("Error creating Application Guide", err, rw, req)
 	}
 
