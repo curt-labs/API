@@ -107,6 +107,7 @@ func TestSite_New(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(len(cs), ShouldBeGreaterThanOrEqualTo, 0)
 		//get contents by slug
+		t.Log(c.Slug)
 		err = c.GetBySlug()
 		So(err, ShouldBeNil)
 

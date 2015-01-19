@@ -230,10 +230,8 @@ func (m *Menu) GetContents() (err error) {
 				c.ParentId = *parent
 			}
 			err = c.GetLatestRevision()
-			if err != sql.ErrNoRows {
-				if err != nil {
-					return err
-				}
+			if err == sql.ErrNoRows {
+				err = nil
 			}
 		}
 		m.Contents = append(m.Contents, c)

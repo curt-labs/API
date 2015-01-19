@@ -1,11 +1,10 @@
 package site
 
 import (
-	"database/sql"
 	"github.com/curt-labs/GoAPI/helpers/database"
-	// "github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
-	// "log"
+
+	"database/sql"
 	"time"
 )
 
@@ -143,7 +142,6 @@ func (c *Content) GetBySlug() (err error) {
 		return err
 	}
 	defer stmt.Close()
-
 	var cType, title, mTitle, mDesc, slug, canon *string
 	err = stmt.QueryRow(c.Slug).Scan(
 		&c.Id,
@@ -163,9 +161,9 @@ func (c *Content) GetBySlug() (err error) {
 		&c.WebsiteId,
 	)
 	if err != nil {
+
 		return err
 	}
-
 	if cType != nil {
 		c.Type = *cType
 	}
@@ -186,6 +184,9 @@ func (c *Content) GetBySlug() (err error) {
 	}
 	//get latest revision
 	err = c.GetLatestRevision()
+	if err == sql.ErrNoRows {
+		err = nil
+	}
 	return err
 }
 
