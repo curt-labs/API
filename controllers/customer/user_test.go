@@ -26,8 +26,8 @@ func TestCustomerUser(t *testing.T) {
 	c.Create()
 
 	var pub, pri, auth apiKeyType.ApiKeyType
-	if database.EmptyDb != nil {
-		t.Log("clean db")
+	if database.GetCleanDBFlag() != "" {
+		t.Log(database.GetCleanDBFlag())
 		//setup apiKeyTypes
 		pub.Type = "Public"
 		pri.Type = "Private"
@@ -42,7 +42,7 @@ func TestCustomerUser(t *testing.T) {
 		v := form.Encode()
 		body := strings.NewReader(v)
 		thyme := time.Now()
-		testThatHttp.Request("post", "/new/customer/user/register", "", "", RegisterUser, body, "application/x-www-form-urlencoded")
+		testThatHttp.Request("post", "/customer/user/register", "", "", RegisterUser, body, "application/x-www-form-urlencoded")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &cu)
@@ -62,7 +62,7 @@ func TestCustomerUser(t *testing.T) {
 		v = form.Encode()
 		body = strings.NewReader(v)
 		thyme = time.Now()
-		testThatHttp.Request("post", "/new/customer/user/", ":id", cu.Id, UpdateCustomerUser, body, "application/x-www-form-urlencoded")
+		testThatHttp.Request("post", "/customer/user/", ":id", cu.Id, UpdateCustomerUser, body, "application/x-www-form-urlencoded")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &cu)
@@ -77,7 +77,7 @@ func TestCustomerUser(t *testing.T) {
 		v = form.Encode()
 		body = strings.NewReader(v)
 		thyme = time.Now()
-		testThatHttp.Request("post", "/new/customer/auth", "", "", AuthenticateUser, body, "application/x-www-form-urlencoded")
+		testThatHttp.Request("post", "/customer/auth", "", "", AuthenticateUser, body, "application/x-www-form-urlencoded")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &c)
@@ -86,7 +86,7 @@ func TestCustomerUser(t *testing.T) {
 
 		//test keyed user authentication
 		thyme = time.Now()
-		testThatHttp.Request("get", "/new/customer/auth", "", "?key="+apiKey, KeyedUserAuthentication, nil, "")
+		testThatHttp.Request("get", "/customer/auth", "", "?key="+apiKey, KeyedUserAuthentication, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &c)
@@ -95,7 +95,7 @@ func TestCustomerUser(t *testing.T) {
 
 		//test get user by id
 		thyme = time.Now()
-		testThatHttp.Request("get", "/new/customer/", ":id", cu.Id+"?key="+apiKey, GetUserById, nil, "")
+		testThatHttp.Request("get", "/customer/", ":id", cu.Id+"?key="+apiKey, GetUserById, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &cu)
@@ -107,7 +107,7 @@ func TestCustomerUser(t *testing.T) {
 		v = form.Encode()
 		body = strings.NewReader(v)
 		thyme = time.Now()
-		testThatHttp.Request("post", "/new/customer/user/changePassword", "", "?key="+apiKey, ChangePassword, body, "application/x-www-form-urlencoded")
+		testThatHttp.Request("post", "/customer/user/changePassword", "", "?key="+apiKey, ChangePassword, body, "application/x-www-form-urlencoded")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		var result string
@@ -120,7 +120,7 @@ func TestCustomerUser(t *testing.T) {
 		v = form.Encode()
 		body = strings.NewReader(v)
 		thyme = time.Now()
-		testThatHttp.Request("post", "/new/customer/user/resetPassword", "", "?key="+apiKey, ResetPassword, body, "application/x-www-form-urlencoded")
+		testThatHttp.Request("post", "/customer/user/resetPassword", "", "?key="+apiKey, ResetPassword, body, "application/x-www-form-urlencoded")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &result)
@@ -129,7 +129,7 @@ func TestCustomerUser(t *testing.T) {
 
 		//test generate api key
 		thyme = time.Now()
-		testThatHttp.Request("post", "/new/customer/user/", ":id/key/:type", cu.Id+"/key/PRIVATE?key="+apiKey, GenerateApiKey, nil, "")
+		testThatHttp.Request("post", "/customer/user/", ":id/key/:type", cu.Id+"/key/PRIVATE?key="+apiKey, GenerateApiKey, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		var newKey customer.ApiCredentials
@@ -142,7 +142,7 @@ func TestCustomerUser(t *testing.T) {
 		cu2.Create([]int{1})
 		c.JoinUser(cu2)
 		thyme = time.Now()
-		testThatHttp.Request("post", "/new/customer/allUsersByCustomerID/", ":id", strconv.Itoa(c.Id), DeleteCustomerUsersByCustomerID, nil, "")
+		testThatHttp.Request("delete", "/customer/allUsersByCustomerID/", ":id", strconv.Itoa(c.Id), DeleteCustomerUsersByCustomerID, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		var response string
@@ -152,7 +152,7 @@ func TestCustomerUser(t *testing.T) {
 
 		//test delete customer user
 		thyme = time.Now()
-		testThatHttp.Request("delete", "/new/customer/user/", ":id", cu.Id, DeleteCustomerUser, nil, "")
+		testThatHttp.Request("delete", "/customer/user/", ":id", cu.Id, DeleteCustomerUser, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &cu)

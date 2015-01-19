@@ -56,7 +56,6 @@ func TestCustomerLocation(t *testing.T) {
 		//test get all locations
 		thyme = time.Now()
 		testThatHttp.Request("get", "/new/customer/location", "", "", GetAllLocations, bodyJson, "application/json")
-		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds())
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		var locs customer.CustomerLocations
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &locs)

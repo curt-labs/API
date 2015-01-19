@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -292,6 +293,7 @@ func DeleteCustomerUsersByCustomerID(w http.ResponseWriter, r *http.Request, enc
 
 	err = customer.DeleteCustomerUsersByCustomerID(customerID)
 	if err != nil {
+		log.Print("E", err)
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return ""
 	}

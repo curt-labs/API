@@ -79,3 +79,7 @@ func AriesConnectionString() string {
 	}
 	return "root:@tcp(127.0.0.1:3306)/AriesAuto?parseTime=true&loc=America%2FChicago"
 }
+
+func GetCleanDBFlag() string {
+	return *EmptyDb
+}

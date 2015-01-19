@@ -123,7 +123,7 @@ var (
 						values(?,?,UUID(),NOW())` //DB schema DOES auto increment table id
 	insertAPIKeyToBrand = `insert into ApiKeyToBrand(keyID, brandID)
 						values(?,?)`
-	deleteAPIKeyToBrand = `delete from ApiKeyToBrand where keyID = (select id from ApiKey where user_id = ? && type_id = ?)`
+	deleteAPIKeyToBrand = `delete from ApiKeyToBrand where keyID in (select id from ApiKey where user_id = ? && type_id = ?)`
 
 	getCustomerUserKeysWithoutAuth = `select ak.api_key, akt.type from ApiKey as ak
 										join ApiKeyType as akt on ak.type_id = akt.id
