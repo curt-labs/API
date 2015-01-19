@@ -42,15 +42,6 @@ func TestVinLookup(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(len(v.Configurations), ShouldBeGreaterThanOrEqualTo, 1)
 
-			//get random vehicleConfig
-			// i := rand.Intn(len(v.Configurations))
-
-			//get parts
-			// parts, err := v.
-			// if err != sql.ErrNoRows {
-			// 	So(err, ShouldBeNil)
-			// 	So(len(parts), ShouldBeGreaterThanOrEqualTo, 1)
-			// }
 		}
 
 	})
@@ -63,16 +54,4 @@ func TestVinLookup(t *testing.T) {
 		So(err, ShouldNotBeNil)
 		So(vcs, ShouldHaveSameTypeAs, products.Lookup{})
 	})
-}
-
-func BenchmarkVinPartLookup(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		VinPartLookup(buickVin, &apicontext.DataContext{})
-	}
-}
-
-func BenchmarkGetVehicleConfigs(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		GetVehicleConfigs(buickVin)
-	}
 }
