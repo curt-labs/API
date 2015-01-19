@@ -2,7 +2,7 @@ package dealers_ctlr
 
 import (
 	"errors"
-	"log"
+	// "log"
 	"net/http"
 	"strconv"
 
@@ -17,9 +17,6 @@ func GetEtailers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 	dealers, err := customer.GetEtailers(dtx)
 	if err != nil {
 		apierr.GenerateError("Error retrieving etailers.", err, w, r)
-	}
-	if len(dealers) == 0 {
-		apierr.GenerateError("There are no etailers with the brand specified.", errors.New("No Results"), w, r)
 	}
 	return encoding.Must(enc.Encode(dealers))
 }
@@ -89,11 +86,7 @@ func GetLocalDealerTypes(w http.ResponseWriter, r *http.Request, enc encoding.En
 func PlatinumEtailers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	cust, err := customer.GetWhereToBuyDealers(dtx)
 	if err != nil {
-		log.Print(err)
 		apierr.GenerateError("Error retrieving platinum etailers.", err, w, r)
-	}
-	if len(cust) == 0 {
-		apierr.GenerateError("There are no platinum etailers with the specified brand.", errors.New("No results."), w, r)
 	}
 	return encoding.Must(enc.Encode(cust))
 }
@@ -120,9 +113,6 @@ func GetLocationById(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 
 func GetAllBusinessClasses(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	classes, err := customer.GetAllBusinessClasses(dtx)
-	if len(classes) == 0 {
-		apierr.GenerateError("No results.", err, w, r)
-	}
 	if err != nil {
 		apierr.GenerateError("No results.", err, w, r)
 	}
