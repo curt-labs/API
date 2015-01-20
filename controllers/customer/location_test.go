@@ -66,7 +66,6 @@ func TestCustomerLocation(t *testing.T) {
 }
 
 func BenchmarkCRUDCustomerLocation(b *testing.B) {
-
 	qs := make(url.Values, 0)
 	var loc customer.CustomerLocation
 
