@@ -24,6 +24,13 @@ func TestCustomer(t *testing.T) {
 		t.Log(err)
 	}
 
+	cu.Id = dtx.UserID
+	err = cu.Get(dtx.APIKey)
+	if err != nil {
+		t.Log(err)
+	}
+	c.Users = append(c.Users, cu)
+
 	Convey("Testing customer/Customer", t, func() {
 		//test create customer
 		c.Name = "Jason Voorhees"
@@ -65,7 +72,7 @@ func TestCustomer(t *testing.T) {
 		// get customer locations
 		thyme = time.Now()
 		testThatHttp.RequestWithDtx("get", "/customer/locations", "", "?key=", GetLocations, nil, "", dtx)
-		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds())
+		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()*6)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &c.Locations)
 		So(err, ShouldBeNil)
@@ -83,7 +90,7 @@ func TestCustomer(t *testing.T) {
 		// //get users
 		thyme = time.Now()
 		testThatHttp.RequestWithDtx("get", "/customer/users", "", "?key=", GetUsers, nil, "", dtx)
-		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds())
+		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()*5)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		var cus []customer.CustomerUser
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &cus)
