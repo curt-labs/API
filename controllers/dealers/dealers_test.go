@@ -128,7 +128,7 @@ func TestDealers_New(t *testing.T) {
 		//test search Locations by lat long
 		thyme = time.Now()
 		testThatHttp.Request("get", "/dealers/search/geo/", ":latitude/:longitude", fmt.Sprint(c.Latitude)+"/"+fmt.Sprint(c.Longitude)+"?key="+dtx.APIKey, SearchLocationsByType, nil, "")
-		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
+		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()*2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &dls)
 		So(err, ShouldBeNil)
