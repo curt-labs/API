@@ -495,7 +495,6 @@ func (u CustomerUser) GetCustomer(key string) (c Customer, err error) {
 	defer stmt.Close()
 
 	res := stmt.QueryRow(u.Id)
-
 	if err := c.ScanCustomer(res, key); err != nil {
 
 		if err == sql.ErrNoRows {
