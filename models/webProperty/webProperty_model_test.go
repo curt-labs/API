@@ -25,6 +25,7 @@ func TestWebPropertiesBetter(t *testing.T) {
 		//New WebProperty
 		w.Name = "test prop"
 		w.Url = "www.hotdavid.com"
+		w.CustID = MockedDTX.CustomerID
 
 		//make up badge
 		seed := int64(time.Now().Second() + time.Now().Minute() + time.Now().Hour() + time.Now().Year())
@@ -123,6 +124,7 @@ func TestWebPropertiesBetter(t *testing.T) {
 		So(err, ShouldBeNil)
 
 	})
+	t.Log(MockedDTX)
 	_ = apicontextmock.DeMock(MockedDTX)
 
 }
