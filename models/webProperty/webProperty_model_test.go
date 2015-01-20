@@ -21,7 +21,7 @@ func TestWebPropertiesBetter(t *testing.T) {
 	if MockedDTX, err = apicontextmock.Mock(); err != nil {
 		return
 	}
-	Convey("Testing Create", t, func() {
+	Convey("Testing WebProperties", t, func() {
 		//New WebProperty
 		w.Name = "test prop"
 		w.Url = "www.hotdavid.com"
@@ -52,8 +52,7 @@ func TestWebPropertiesBetter(t *testing.T) {
 		err = w.Create()
 		So(err, ShouldBeNil)
 		So(w, ShouldNotBeNil)
-	})
-	Convey("Testing Update", t, func() {
+
 		wr.Compliance = true
 		err = wr.Update()
 		So(err, ShouldBeNil)
@@ -67,8 +66,7 @@ func TestWebPropertiesBetter(t *testing.T) {
 		w.Name = "New Name"
 		err = w.Update()
 		So(err, ShouldBeNil)
-	})
-	Convey("Testing Get", t, func() {
+
 		err = wr.Get()
 		So(err, ShouldBeNil)
 
@@ -90,8 +88,7 @@ func TestWebPropertiesBetter(t *testing.T) {
 		//Get Property
 		err = w.Get(MockedDTX)
 		So(err, ShouldBeNil)
-	})
-	Convey("Testing GetAll", t, func() {
+
 		ws, err := GetAll(MockedDTX)
 		if err != sql.ErrNoRows {
 			So(err, ShouldBeNil)
@@ -114,8 +111,6 @@ func TestWebPropertiesBetter(t *testing.T) {
 			So(len(ts), ShouldBeGreaterThan, 0)
 		}
 
-	})
-	Convey("Testing GetAll", t, func() {
 		//Deletes
 		err = w.Delete()
 		So(err, ShouldBeNil)
