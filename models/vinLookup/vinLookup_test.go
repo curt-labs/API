@@ -3,7 +3,7 @@ package vinLookup
 import (
 	"database/sql"
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
-	"github.com/curt-labs/GoAPI/models/products"
+	//"github.com/curt-labs/GoAPI/models/products"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
