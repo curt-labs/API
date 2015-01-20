@@ -9,19 +9,23 @@ import (
 )
 
 type ApiErr struct {
-	Message     string     `json:"message" xml:"message"`
-	RequestBody string     `json:"request_body" xml:"request_body"`
-	QueryString url.Values `json:"query_string" xml:"query_string"`
+	Message        string     `json:"message" xml:"message"`
+	MessageDetails string     `json:"messageDetails" xml:"message_details"`
+	RequestBody    string     `json:"request_body" xml:"request_body"`
+	QueryString    url.Values `json:"query_string" xml:"query_string"`
 }
 
 func GenerateError(msg string, err error, res http.ResponseWriter, r *http.Request) {
 	e := ApiErr{
 		Message: "",
 	}
-	if msg != "" {
-		e.Message = msg
-	} else if err != nil {
-		e.Message = err.Error()
+
+	e.Message = msg
+	if err != nil {
+		if e.Message == "" {
+			e.Message = err.Error()
+		}
+		e.MessageDetails = err.Error()
 	}
 
 	if r != nil && r.Body != nil {
