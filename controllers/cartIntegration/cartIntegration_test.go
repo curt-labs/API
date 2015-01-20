@@ -3,11 +3,13 @@ package cartIntegration
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
 	"github.com/curt-labs/GoAPI/models/cartIntegration"
 	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/curt-labs/GoAPI/models/products"
 	. "github.com/smartystreets/goconvey/convey"
+	"log"
 	"strconv"
 	"testing"
 	"time"
@@ -15,13 +17,19 @@ import (
 
 func TestCartIntegration(t *testing.T) {
 	//setup
+	var err error
+	dtx, err := apicontextmock.Mock()
+	if err != nil {
+		t.Log(err)
+	}
+
 	var c cartIntegration.CartIntegration
 	var cs []cartIntegration.CartIntegration
 	var p products.Part
 	var price customer.Price
-	var err error
+
 	var cust customer.Customer
-	cust.CustomerId = 666
+	cust.CustomerId = dtx.CustomerID
 	cust.Create()
 	t.Log(cust)
 
@@ -88,13 +96,15 @@ func TestCartIntegration(t *testing.T) {
 
 		//test get CartIntegration by customer
 		thyme = time.Now()
-		testThatHttp.Request("get", "/cart/customer/", ":id", strconv.Itoa(cust.CustomerId), GetCIbyCustomer, nil, "")
+		testThatHttp.RequestWithDtx("get", "/cart/customer/", ":id", strconv.Itoa(cust.CustomerId), GetCIbyCustomer, nil, "", dtx)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &cs)
 
 		So(err, ShouldBeNil)
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		So(cs, ShouldHaveSameTypeAs, []cartIntegration.CartIntegration{})
+		log.Println("cs is: ")
+		log.Println(cs)
 		So(len(cs), ShouldBeGreaterThan, 0)
 
 		// //test get CartIntegration by customer
