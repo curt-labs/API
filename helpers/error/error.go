@@ -42,6 +42,9 @@ func GenerateError(msg string, err error, res http.ResponseWriter, r *http.Reque
 		res.Header().Set("Content-Type", "application/xml")
 		errorResp, marshalErr = xml.Marshal(e)
 	case "application/json":
+		//JSON is our defaulted content type encoding
+		res.Header().Set("Content-Type", "application/json")
+		errorResp, marshalErr = json.Marshal(e)
 	default:
 		//JSON is our defaulted content type encoding
 		res.Header().Set("Content-Type", "application/json")
