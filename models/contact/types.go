@@ -62,9 +62,6 @@ func GetAllContactTypes(dtx *apicontext.DataContext) (types ContactTypes, err er
 		}
 		types = append(types, ct)
 	}
-	if len(types) == 0 {
-		err = sql.ErrNoRows
-	}
 	return
 }
 

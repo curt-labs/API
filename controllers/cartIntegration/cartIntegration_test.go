@@ -23,7 +23,6 @@ func TestCartIntegration(t *testing.T) {
 	var cust customer.Customer
 	cust.CustomerId = 666
 	cust.Create()
-	t.Log(cust)
 
 	p.ShortDesc = "test"
 	p.ID = 123456789
@@ -90,7 +89,6 @@ func TestCartIntegration(t *testing.T) {
 		thyme = time.Now()
 		testThatHttp.Request("get", "/cart/customer/", ":id", strconv.Itoa(cust.CustomerId), GetCIbyCustomer, nil, "")
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &cs)
-
 		So(err, ShouldBeNil)
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)

@@ -1,6 +1,7 @@
 package contact
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 
@@ -14,6 +15,7 @@ import (
 func GetAllContactTypes(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	types, err := contact.GetAllContactTypes(dtx)
 	if err != nil {
+		log.Print(err)
 		apierror.GenerateError("Trouble getting all contact types", err, rw, req)
 	}
 	return encoding.Must(enc.Encode(types))

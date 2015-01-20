@@ -8,7 +8,6 @@ import (
 	"errors"
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
-	"github.com/curt-labs/GoAPI/models/products"
 	"io/ioutil"
 	"net/http"
 	"strconv"
