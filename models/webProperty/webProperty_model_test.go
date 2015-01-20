@@ -117,18 +117,18 @@ func TestWebPropertiesBetter(t *testing.T) {
 		}
 
 		//Deletes
-		// err = w.Delete()
-		// So(err, ShouldBeNil)
-		// err = wn.Delete()
-		// So(err, ShouldBeNil)
-		// err = wt.Delete()
-		// So(err, ShouldBeNil)
+		err = w.Delete()
+		So(err, ShouldBeNil)
+		err = wn.Delete()
+		So(err, ShouldBeNil)
+		err = wt.Delete()
+		So(err, ShouldBeNil)
 
-		// err = wr.Delete()
-		// So(err, ShouldBeNil)
+		err = wr.Delete()
+		So(err, ShouldBeNil)
 
 	})
-	//_ = apicontextmock.DeMock(MockedDTX)
+	_ = apicontextmock.DeMock(MockedDTX)
 
 }
 func BenchmarkCreateDeleteWebProperty(b *testing.B) {
