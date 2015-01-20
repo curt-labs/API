@@ -55,7 +55,7 @@ func TestCustomerLocation(t *testing.T) {
 
 		//test get all locations
 		thyme = time.Now()
-		testThatHttp.Request("get", "/customer/location", "", "", GetAllLocations, bodyJson, "application/json")
+		testThatHttp.Request("get", "/customer/locations", "", "", GetAllLocations, bodyJson, "application/json")
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		var locs customer.CustomerLocations
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &locs)
@@ -64,7 +64,7 @@ func TestCustomerLocation(t *testing.T) {
 
 		//test delete location
 		thyme = time.Now()
-		testThatHttp.Request("delete", "/new/customer/location/", ":id", strconv.Itoa(loc.Id), DeleteLocation, bodyJson, "application/json")
+		testThatHttp.Request("delete", "/customer/location/", ":id", strconv.Itoa(loc.Id), DeleteLocation, bodyJson, "application/json")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &loc)
@@ -75,7 +75,6 @@ func TestCustomerLocation(t *testing.T) {
 }
 
 func BenchmarkCRUDCustomerLocation(b *testing.B) {
-
 	qs := make(url.Values, 0)
 	var loc customer.CustomerLocation
 
