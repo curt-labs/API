@@ -102,7 +102,7 @@ func GetCustomerPrice(w http.ResponseWriter, r *http.Request, enc encoding.Encod
 		p.ID, err = strconv.Atoi(params["id"])
 	}
 
-	price, err := customer.GetCustomerPrice(dtx.APIKey, p.ID)
+	price, err := customer.GetCustomerPrice(dtx, p.ID)
 	if err != nil {
 		return err.Error()
 	}

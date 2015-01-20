@@ -5,7 +5,6 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/database"
 
 	"database/sql"
-	"log"
 	"time"
 )
 
@@ -101,7 +100,6 @@ func Mock() (*apicontext.DataContext, error) {
 		return &dtx, err
 	}
 
-	log.Print("DTX In Mock", dtx)
 	return &dtx, nil
 }
 
