@@ -2,7 +2,6 @@ package contact
 
 import (
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -38,9 +37,6 @@ func GetAllContacts(rw http.ResponseWriter, req *http.Request, enc encoding.Enco
 		}
 	}
 	contacts, err := contact.GetAllContacts(page, count, dtx)
-	if len(contacts) < 1 {
-		err = errors.New("No contacts found.")
-	}
 	if err != nil {
 		apierror.GenerateError("Trouble getting all contacts", err, rw, req)
 	}

@@ -20,7 +20,7 @@ func TestAppGuides(t *testing.T) {
 		//create
 		ag.FileType = "pdf"
 		ag.Url = "test.com"
-		ag.Website.ID = 1
+		ag.Website.ID = MockedDTX.WebsiteID
 		err = ag.Create(MockedDTX)
 		So(err, ShouldBeNil)
 
