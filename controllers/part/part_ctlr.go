@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -378,11 +379,11 @@ func Prices(w http.ResponseWriter, r *http.Request, params martini.Params, enc e
 	}()
 
 	go func() {
-		price, custErr := customer.GetCustomerPrice(dtx.APIKey, p.ID)
+		price, custErr := customer.GetCustomerPrice(dtx, p.ID)
 		if custErr != nil {
 			err = custErr
 		}
-
+		log.Print("GERE", price, err, p.ID, " ", dtx.APIKey, " ", dtx.CustomerID)
 		p.Pricing = append(p.Pricing, products.Price{0, 0, "Customer", price, false, time.Now()})
 		custChan <- 1
 	}()

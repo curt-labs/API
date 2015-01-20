@@ -206,12 +206,10 @@ var (
 						join Customer as c on cu.cust_ID = c.cust_id
 						where c.cust_id = ?
 						&& cu.active = 1`
-	customerPrice = `select distinct cp.price from ApiKey as ak
-						join CustomerUser cu on ak.user_id = cu.id
-						join Customer c on cu.cust_ID = c.cust_id
-						join CustomerPricing cp on c.cust_ID = cp.cust_id
-						where api_key = ?
-						and cp.partID = ?`
+	customerPrice = `select distinct cp.price from 
+						 CustomerPricing cp						
+						 where cp.cust_ID =  ?
+						 and cp.partID = ?`
 
 	customerPart = `select distinct ci.custPartID from ApiKey as ak
 						join CustomerUser cu on ak.user_id = cu.id
@@ -737,7 +735,7 @@ func (c *Customer) JoinUser(u CustomerUser) error {
 	return err
 }
 
-func GetCustomerPrice(api_key string, part_id int) (price float64, err error) {
+func GetCustomerPrice(dtx *apicontext.DataContext, part_id int) (price float64, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return price, err
@@ -750,7 +748,7 @@ func GetCustomerPrice(api_key string, part_id int) (price float64, err error) {
 	}
 	defer stmt.Close()
 
-	err = stmt.QueryRow(api_key, part_id).Scan(&price)
+	err = stmt.QueryRow(dtx.CustomerID, part_id).Scan(&price)
 	return price, err
 }
 
