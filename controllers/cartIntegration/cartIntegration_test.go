@@ -9,7 +9,6 @@ import (
 	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/curt-labs/GoAPI/models/products"
 	. "github.com/smartystreets/goconvey/convey"
-	"log"
 	"strconv"
 	"testing"
 	"time"
@@ -101,8 +100,6 @@ func TestCartIntegration(t *testing.T) {
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		So(cs, ShouldHaveSameTypeAs, []cartIntegration.CartIntegration{})
-		log.Println("cs is: ")
-		log.Println(cs)
 		So(len(cs), ShouldBeGreaterThan, 0)
 
 		// //test get CartIntegration by customer
