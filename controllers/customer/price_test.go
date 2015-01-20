@@ -27,7 +27,7 @@ func TestCustomerPrice(t *testing.T) {
 		v := form.Encode()
 		body := strings.NewReader(v)
 		thyme := time.Now()
-		testThatHttp.Request("post", "/new/customer/prices", "", "", CreateUpdatePrice, body, "application/x-www-form-urlencoded")
+		testThatHttp.Request("post", "/customer/prices", "", "", CreateUpdatePrice, body, "application/x-www-form-urlencoded")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &p)
@@ -40,7 +40,7 @@ func TestCustomerPrice(t *testing.T) {
 		v = form.Encode()
 		body = strings.NewReader(v)
 		thyme = time.Now()
-		testThatHttp.Request("post", "/new/customer/prices/", ":id", strconv.Itoa(p.ID), CreateUpdatePrice, body, "application/x-www-form-urlencoded")
+		testThatHttp.Request("post", "/customer/prices/", ":id", strconv.Itoa(p.ID), CreateUpdatePrice, body, "application/x-www-form-urlencoded")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &p)
@@ -52,7 +52,7 @@ func TestCustomerPrice(t *testing.T) {
 
 		//test get customer price
 		thyme = time.Now()
-		testThatHttp.Request("get", "/new/customer/prices/", ":id", strconv.Itoa(p.ID), GetPrice, nil, "")
+		testThatHttp.Request("get", "/customer/prices/", ":id", strconv.Itoa(p.ID), GetPrice, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &p)
@@ -61,7 +61,7 @@ func TestCustomerPrice(t *testing.T) {
 
 		//test get all customer price
 		thyme = time.Now()
-		testThatHttp.Request("get", "/new/customer/prices", "", "", GetAllPrices, nil, "")
+		testThatHttp.Request("get", "/customer/prices", "", "", GetAllPrices, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()*8) //Long
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &ps)
@@ -70,7 +70,7 @@ func TestCustomerPrice(t *testing.T) {
 
 		//test get customer price by part
 		thyme = time.Now()
-		testThatHttp.Request("get", "/new/customer/prices/part/", ":id", strconv.Itoa(p.ID), GetPricesByPart, nil, "")
+		testThatHttp.Request("get", "/customer/prices/part/", ":id", strconv.Itoa(p.ID), GetPricesByPart, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &ps)
@@ -79,7 +79,7 @@ func TestCustomerPrice(t *testing.T) {
 
 		//test get customer price by customer
 		thyme = time.Now()
-		testThatHttp.Request("get", "/new/customer/pricesByCustomer/", ":id", strconv.Itoa(c.Id), GetPriceByCustomer, nil, "")
+		testThatHttp.Request("get", "/customer/pricesByCustomer/", ":id", strconv.Itoa(c.Id), GetPriceByCustomer, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &p)
@@ -91,7 +91,7 @@ func TestCustomerPrice(t *testing.T) {
 		v = form.Encode()
 		body = strings.NewReader(v)
 		thyme = time.Now()
-		testThatHttp.Request("post", "/new/customer/prices/sale", "", "", GetSales, body, "application/x-www-form-urlencoded")
+		testThatHttp.Request("post", "/customer/prices/sale", "", "", GetSales, body, "application/x-www-form-urlencoded")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &ps)
@@ -100,7 +100,7 @@ func TestCustomerPrice(t *testing.T) {
 
 		//test delete customer price
 		thyme = time.Now()
-		testThatHttp.Request("delete", "/new/customer/prices/", ":id", strconv.Itoa(p.ID), DeletePrice, nil, "")
+		testThatHttp.Request("delete", "/customer/prices/", ":id", strconv.Itoa(p.ID), DeletePrice, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &p)
@@ -123,8 +123,8 @@ func BenchmarkCRUDCustomerPrice(b *testing.B) {
 		//create
 		(&httprunner.BenchmarkOptions{
 			Method:             "POST",
-			Route:              "/new/customer/prices",
-			ParameterizedRoute: "/new/customer/prices",
+			Route:              "/customer/prices",
+			ParameterizedRoute: "/customer/prices",
 			Handler:            CreateUpdatePrice,
 			QueryString:        &qs,
 			JsonBody:           p,
@@ -135,8 +135,8 @@ func BenchmarkCRUDCustomerPrice(b *testing.B) {
 		//get
 		(&httprunner.BenchmarkOptions{
 			Method:             "GET",
-			Route:              "/new/customer/prices",
-			ParameterizedRoute: "/new/customer/prices/" + strconv.Itoa(p.ID),
+			Route:              "/customer/prices",
+			ParameterizedRoute: "/customer/prices/" + strconv.Itoa(p.ID),
 			Handler:            GetPrice,
 			QueryString:        &qs,
 			JsonBody:           p,
@@ -147,8 +147,8 @@ func BenchmarkCRUDCustomerPrice(b *testing.B) {
 		//get all
 		(&httprunner.BenchmarkOptions{
 			Method:             "GET",
-			Route:              "/new/customer/prices",
-			ParameterizedRoute: "/new/customer/prices",
+			Route:              "/customer/prices",
+			ParameterizedRoute: "/customer/prices",
 			Handler:            GetAllPrices,
 			QueryString:        &qs,
 			JsonBody:           p,
@@ -159,8 +159,8 @@ func BenchmarkCRUDCustomerPrice(b *testing.B) {
 		//get by part
 		(&httprunner.BenchmarkOptions{
 			Method:             "GET",
-			Route:              "/new/customer/prices/part",
-			ParameterizedRoute: "/new/customer/prices/part/" + strconv.Itoa(p.ID),
+			Route:              "/customer/prices/part",
+			ParameterizedRoute: "/customer/prices/part/" + strconv.Itoa(p.ID),
 			Handler:            GetPricesByPart,
 			QueryString:        &qs,
 			JsonBody:           p,
@@ -171,8 +171,8 @@ func BenchmarkCRUDCustomerPrice(b *testing.B) {
 		//get by
 		(&httprunner.BenchmarkOptions{
 			Method:             "GET",
-			Route:              "/new/customer/pricesByCustomer",
-			ParameterizedRoute: "/new/customer/pricesByCustomer/" + strconv.Itoa(c.Id),
+			Route:              "/customer/pricesByCustomer",
+			ParameterizedRoute: "/customer/pricesByCustomer/" + strconv.Itoa(c.Id),
 			Handler:            GetPriceByCustomer,
 			QueryString:        &qs,
 			JsonBody:           p,
@@ -183,8 +183,8 @@ func BenchmarkCRUDCustomerPrice(b *testing.B) {
 		//delete
 		(&httprunner.BenchmarkOptions{
 			Method:             "DELETE",
-			Route:              "/new/customer/prices",
-			ParameterizedRoute: "/new/customer/prices/" + strconv.Itoa(p.ID),
+			Route:              "/customer/prices",
+			ParameterizedRoute: "/customer/prices/" + strconv.Itoa(p.ID),
 			Handler:            DeleteLocation,
 			QueryString:        &qs,
 			JsonBody:           p,

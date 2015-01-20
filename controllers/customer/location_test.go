@@ -24,7 +24,7 @@ func TestCustomerLocation(t *testing.T) {
 		v := form.Encode()
 		body := strings.NewReader(v)
 		thyme := time.Now()
-		testThatHttp.Request("post", "/new/customer/location", "", "", SaveLocation, body, "application/x-www-form-urlencoded")
+		testThatHttp.Request("post", "/customer/location", "", "", SaveLocation, body, "application/x-www-form-urlencoded")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()*2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &loc)
@@ -37,7 +37,7 @@ func TestCustomerLocation(t *testing.T) {
 		bodyBytes, _ := json.Marshal(loc)
 		bodyJson := bytes.NewReader(bodyBytes)
 		thyme = time.Now()
-		testThatHttp.Request("put", "/new/customer/location/", ":id", strconv.Itoa(loc.Id), SaveLocation, bodyJson, "application/json")
+		testThatHttp.Request("put", "/customer/location/", ":id", strconv.Itoa(loc.Id), SaveLocation, bodyJson, "application/json")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &loc)
@@ -46,7 +46,7 @@ func TestCustomerLocation(t *testing.T) {
 
 		//test get location
 		thyme = time.Now()
-		testThatHttp.Request("get", "/new/customer/location/", ":id", strconv.Itoa(loc.Id), GetLocation, bodyJson, "application/json")
+		testThatHttp.Request("get", "/customer/location/", ":id", strconv.Itoa(loc.Id), GetLocation, bodyJson, "application/json")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &loc)
@@ -55,7 +55,7 @@ func TestCustomerLocation(t *testing.T) {
 
 		//test get all locations
 		thyme = time.Now()
-		testThatHttp.Request("get", "/new/customer/location", "", "", GetAllLocations, bodyJson, "application/json")
+		testThatHttp.Request("get", "/customer/location", "", "", GetAllLocations, bodyJson, "application/json")
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		var locs customer.CustomerLocations
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &locs)
@@ -84,8 +84,8 @@ func BenchmarkCRUDCustomerLocation(b *testing.B) {
 		//create
 		(&httprunner.BenchmarkOptions{
 			Method:             "POST",
-			Route:              "/new/customer/location",
-			ParameterizedRoute: "/new/customer/location",
+			Route:              "/customer/location",
+			ParameterizedRoute: "/customer/location",
 			Handler:            SaveLocation,
 			QueryString:        &qs,
 			JsonBody:           loc,
@@ -96,8 +96,8 @@ func BenchmarkCRUDCustomerLocation(b *testing.B) {
 		//get
 		(&httprunner.BenchmarkOptions{
 			Method:             "GET",
-			Route:              "/new/customer/location",
-			ParameterizedRoute: "/new/customer/location/" + strconv.Itoa(loc.Id),
+			Route:              "/customer/location",
+			ParameterizedRoute: "/customer/location/" + strconv.Itoa(loc.Id),
 			Handler:            GetLocation,
 			QueryString:        &qs,
 			JsonBody:           loc,
@@ -108,8 +108,8 @@ func BenchmarkCRUDCustomerLocation(b *testing.B) {
 		//get all
 		(&httprunner.BenchmarkOptions{
 			Method:             "GET",
-			Route:              "/new/customer/location",
-			ParameterizedRoute: "/new/customer/location",
+			Route:              "/customer/location",
+			ParameterizedRoute: "/customer/location",
 			Handler:            GetLocations,
 			QueryString:        &qs,
 			JsonBody:           loc,
@@ -120,8 +120,8 @@ func BenchmarkCRUDCustomerLocation(b *testing.B) {
 		//delete
 		(&httprunner.BenchmarkOptions{
 			Method:             "DELETE",
-			Route:              "/new/customer/location",
-			ParameterizedRoute: "/new/customer/location/" + strconv.Itoa(loc.Id),
+			Route:              "/customer/location",
+			ParameterizedRoute: "/customer/location/" + strconv.Itoa(loc.Id),
 			Handler:            DeleteLocation,
 			QueryString:        &qs,
 			JsonBody:           loc,

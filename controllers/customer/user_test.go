@@ -206,8 +206,8 @@ func BenchmarkCRUDCustomerUser(b *testing.B) {
 		//create
 		(&httprunner.BenchmarkOptions{
 			Method:             "POST",
-			Route:              "/new/customer/user/register",
-			ParameterizedRoute: "/new/customer/user/register",
+			Route:              "/customer/user/register",
+			ParameterizedRoute: "/customer/user/register",
 			Handler:            RegisterUser,
 			QueryString:        &qs,
 			JsonBody:           cu,
@@ -219,8 +219,8 @@ func BenchmarkCRUDCustomerUser(b *testing.B) {
 		form = url.Values{"email": {"magic@underpants.com"}, "password": {"robthepoor"}}
 		(&httprunner.BenchmarkOptions{
 			Method:             "POST",
-			Route:              "/new/customer/auth",
-			ParameterizedRoute: "/new/customer/auth",
+			Route:              "/customer/auth",
+			ParameterizedRoute: "/customer/auth",
 			Handler:            AuthenticateUser,
 			QueryString:        &qs,
 			JsonBody:           nil,
@@ -231,8 +231,8 @@ func BenchmarkCRUDCustomerUser(b *testing.B) {
 		//authenticate user by key
 		(&httprunner.BenchmarkOptions{
 			Method:             "GET",
-			Route:              "/new/customer/auth",
-			ParameterizedRoute: "/new/customer/auth",
+			Route:              "/customer/auth",
+			ParameterizedRoute: "/customer/auth",
 			Handler:            KeyedUserAuthentication,
 			QueryString:        &qs,
 			JsonBody:           nil,
@@ -243,8 +243,8 @@ func BenchmarkCRUDCustomerUser(b *testing.B) {
 		//delete
 		(&httprunner.BenchmarkOptions{
 			Method:             "DELETE",
-			Route:              "/new/customer/user/register",
-			ParameterizedRoute: "/new/customer/user/register/" + cu.Id,
+			Route:              "/customer/user/register",
+			ParameterizedRoute: "/customer/user/register/" + cu.Id,
 			Handler:            DeleteCustomerUser,
 			QueryString:        &qs,
 			JsonBody:           cu,
