@@ -110,7 +110,7 @@ func AddAddress(w http.ResponseWriter, req *http.Request, params martini.Params,
 	c.Id = bson.ObjectIdHex(customerId)
 	c.ShopId = shop.Id
 	if err := c.Get(); err != nil {
-		apierror.GenerateError("", err, w, req)
+		apierror.GenerateError(err.Error(), err, w, req)
 		return ""
 	}
 
