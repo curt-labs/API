@@ -249,7 +249,6 @@ func TestParts(t *testing.T) {
 		//test latest
 		thyme = time.Now()
 		testThatHttp.Request("get", "/part/latest", "", "?key="+dtx.APIKey, Latest, nil, "")
-		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()*5) //5 seconds - ouch
 		t.Log("Get latest parts benchmark: ", time.Since(thyme))
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &parts)
