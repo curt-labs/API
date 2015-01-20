@@ -2,7 +2,6 @@ package contact
 
 import (
 	"database/sql"
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
@@ -11,8 +10,8 @@ import (
 func TestTypes(t *testing.T) {
 	var err error
 	var ct ContactType
-	MockedDTX := &apicontext.DataContext{}
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 
@@ -124,9 +123,8 @@ func TestTypes(t *testing.T) {
 }
 
 func BenchmarkGetAllContactTypes(b *testing.B) {
-	MockedDTX := &apicontext.DataContext{}
-	var err error
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 

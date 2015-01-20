@@ -78,7 +78,7 @@ func TestParts(t *testing.T) {
 		So(p, ShouldHaveSameTypeAs, products.Part{})
 		So(p.ID, ShouldEqual, 10999)
 
-		err = p.BindCustomer(dtx.APIKey) //setup
+		err = p.BindCustomer(dtx) //setup
 		So(err, ShouldBeNil)
 
 		var custPrice customer.Price
@@ -106,7 +106,7 @@ func TestParts(t *testing.T) {
 		bodyBytes, _ = json.Marshal(price)
 		bodyJson = bytes.NewReader(bodyBytes)
 		thyme = time.Now()
-		testThatHttp.Request("post", "/price/", ":id", strconv.Itoa(price.Id)+"?key="+dtx.APIKey, SavePrice, bodyJson, "application/json")
+		testThatHttp.RequestWithDtx("post", "/price/", ":id", strconv.Itoa(price.Id)+"?key="+dtx.APIKey, SavePrice, bodyJson, "application/json", dtx)
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &price)
@@ -249,7 +249,6 @@ func TestParts(t *testing.T) {
 		//test latest
 		thyme = time.Now()
 		testThatHttp.Request("get", "/part/latest", "", "?key="+dtx.APIKey, Latest, nil, "")
-		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()*3) //3 seconds
 		t.Log("Get latest parts benchmark: ", time.Since(thyme))
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &parts)

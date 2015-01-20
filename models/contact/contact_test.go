@@ -1,7 +1,6 @@
 package contact
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
@@ -10,8 +9,8 @@ import (
 func TestContacts(t *testing.T) {
 	var err error
 	var c Contact
-	MockedDTX := &apicontext.DataContext{}
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 
@@ -182,9 +181,8 @@ func TestContacts(t *testing.T) {
 }
 
 func BenchmarkGetAllContacts(b *testing.B) {
-	MockedDTX := &apicontext.DataContext{}
-	var err error
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 	for i := 0; i < b.N; i++ {

@@ -5,7 +5,6 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/database"
 
 	"database/sql"
-	"log"
 	"time"
 )
 
@@ -28,7 +27,9 @@ var (
 						values(?,?)`
 	insertCustomer = `insert into Customer(name,email, address, city, stateID, phone,fax, contact_person, dealer_type, latitude, longitude, password, website, customerID, isDummy, parentID, searchURL, eLocalURL, logo, address2, postal_code, mCodeID, salesRepID, APIKey, tier,showWebsite)
 			values('test','w','w','w',1,'w','w','w',1,'w','w','w','w',1,1,1,'w','w','w','w','w',1,1,'w',1,1)`
-	deleteCustomer = `delete from Customer where cust_id = ?`
+	insertCustomerToBrand = `insert into CustomerToBrand (cust_id, brandID) values (?,?)`
+	deleteCustomer        = `delete from Customer where cust_id = ?`
+	deleteCustomerToBrand = `delete from CustomerToBrand where cust_id = ?`
 
 	getCustomerUserKeysWithoutAuth = `select ak.api_key, akt.type from ApiKey as ak
 										join ApiKeyType as akt on ak.type_id = akt.id
@@ -100,8 +101,10 @@ func Mock() (*apicontext.DataContext, error) {
 	if err = CreateWebsiteToBrands(BrandIDs, websiteID); err != nil {
 		return &dtx, err
 	}
+	if err = InsertCustomerToBrand(dtx.CustomerID, BrandIDs); err != nil {
+		return &dtx, err
+	}
 
-	log.Print("DTX In Mock", dtx)
 	return &dtx, nil
 }
 
@@ -179,12 +182,41 @@ func DeleteCustomer(custId int) error {
 	}
 	defer db.Close()
 
-	stmt, err := db.Prepare(deleteCustomer)
+	stmt, err := db.Prepare(deleteCustomerToBrand)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 	_, err = stmt.Exec(custId)
+
+	stmt, err = db.Prepare(deleteCustomer)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(custId)
+	return err
+}
+
+func InsertCustomerToBrand(custId int, brandIds []int) error {
+	var err error
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(insertCustomerToBrand)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	for _, brandId := range brandIds {
+		_, err = stmt.Exec(custId, brandId)
+		if err != nil {
+			return err
+		}
+	}
 	return err
 }
 

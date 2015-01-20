@@ -122,6 +122,7 @@ func BenchmarkGetAllBlogs(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		GetAll(MockedDTX)
 	}
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkGetAllBlogCategories(b *testing.B) {
@@ -133,6 +134,7 @@ func BenchmarkGetAllBlogCategories(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		GetAllCategories(MockedDTX)
 	}
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 /**

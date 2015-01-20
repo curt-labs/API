@@ -1,7 +1,6 @@
 package customer
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	_ "github.com/go-sql-driver/mysql"
 	. "github.com/smartystreets/goconvey/convey"
@@ -11,8 +10,9 @@ import (
 func TestCustomerLocations(t *testing.T) {
 	var l CustomerLocation
 	var err error
-	MockedDTX := &apicontext.DataContext{}
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 	Convey("Testing Locations", t, func() {
@@ -63,7 +63,7 @@ func TestCustomerLocations(t *testing.T) {
 		})
 
 	})
-
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func TestBadCrudStmts(t *testing.T) {

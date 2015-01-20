@@ -1,9 +1,7 @@
 package forum
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
-
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
@@ -11,10 +9,8 @@ import (
 func TestTopics(t *testing.T) {
 	var top Topic
 	var lastTopicID int
-	var err error
-
-	MockedDTX := &apicontext.DataContext{}
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 

@@ -78,7 +78,7 @@ var (
 		where a.api_key = ? && (ctb.brandID = ? or 0 = ?)`
 	getAllWebPropertyNotes = `SELECT wn.id, wn.webPropID, wn.text, wn.dateAdded 
 		FROM WebPropNotes as wn
-		join WebProperties as w on w.typeID = wn.id
+		join WebProperties as w on w.id = wn.webPropID
 		join CustomerToBrand as ctb on ctb.cust_id = w.cust_id
 		join ApiKeyToBrand as atb on atb.brandID = ctb.brandID
 		join ApiKey as a on a.id = atb.keyID

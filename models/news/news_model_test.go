@@ -2,7 +2,6 @@ package news_model
 
 import (
 	"database/sql"
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
@@ -13,8 +12,8 @@ func TestNews(t *testing.T) {
 	var err error
 	n.Title = "test news"
 
-	MockedDTX := &apicontext.DataContext{}
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 
@@ -57,57 +56,57 @@ func TestNews(t *testing.T) {
 		err = n.Delete(MockedDTX)
 		So(err, ShouldBeNil)
 	})
+	_ = apicontextmock.DeMock(MockedDTX)
 
 }
 
 func BenchmarkGetAllNews(b *testing.B) {
-	var err error
-	MockedDTX := &apicontext.DataContext{}
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 	for i := 0; i < b.N; i++ {
 		GetAll(MockedDTX)
 	}
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkGetTitles(b *testing.B) {
-	var err error
-	MockedDTX := &apicontext.DataContext{}
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 	for i := 0; i < b.N; i++ {
 		GetTitles("1", "1", MockedDTX)
 	}
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkGetLeads(b *testing.B) {
-	var err error
-	MockedDTX := &apicontext.DataContext{}
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 	for i := 0; i < b.N; i++ {
 		GetLeads("1", "1", MockedDTX)
 	}
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkSearch(b *testing.B) {
-	var err error
-	MockedDTX := &apicontext.DataContext{}
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 	for i := 0; i < b.N; i++ {
 		Search("Title", "", "", "", "", "", "", "1", "1", MockedDTX)
 	}
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkGetNews(b *testing.B) {
-	var err error
-	MockedDTX := &apicontext.DataContext{}
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 	n := setupDummyNews()
@@ -118,12 +117,12 @@ func BenchmarkGetNews(b *testing.B) {
 	}
 	b.StopTimer()
 	n.Delete(MockedDTX)
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkCreateNews(b *testing.B) {
-	var err error
-	MockedDTX := &apicontext.DataContext{}
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 	n := setupDummyNews()
@@ -133,12 +132,12 @@ func BenchmarkCreateNews(b *testing.B) {
 		n.Delete(MockedDTX)
 		b.StartTimer()
 	}
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkUpdateNews(b *testing.B) {
-	var err error
-	MockedDTX := &apicontext.DataContext{}
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 	n := setupDummyNews()
@@ -151,12 +150,12 @@ func BenchmarkUpdateNews(b *testing.B) {
 	}
 	b.StopTimer()
 	n.Delete(MockedDTX)
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkDeleteNews(b *testing.B) {
-	var err error
-	MockedDTX := &apicontext.DataContext{}
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 	n := setupDummyNews()
@@ -167,6 +166,7 @@ func BenchmarkDeleteNews(b *testing.B) {
 	}
 	b.StopTimer()
 	n.Delete(MockedDTX)
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func setupDummyNews() *News {

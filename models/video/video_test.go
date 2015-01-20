@@ -1,7 +1,6 @@
 package video
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	"github.com/curt-labs/GoAPI/models/brand"
 	"github.com/curt-labs/GoAPI/models/products"
@@ -20,8 +19,8 @@ func TestVideo_New(t *testing.T) {
 	var cat products.Category
 	var err error
 
-	MockedDTX := &apicontext.DataContext{}
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 
@@ -176,9 +175,8 @@ func TestVideo_New(t *testing.T) {
 }
 
 func BenchmarkGetAllVideos(b *testing.B) {
-	MockedDTX := &apicontext.DataContext{}
-	var err error
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 	for i := 0; i < b.N; i++ {

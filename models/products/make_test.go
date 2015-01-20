@@ -1,7 +1,6 @@
 package products
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
@@ -11,9 +10,8 @@ func TestGetMakes(t *testing.T) {
 	var l Lookup
 	l.Brands = append(l.Brands, 1)
 
-	MockedDTX := &apicontext.DataContext{}
-	var err error
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 	Convey("Testing GetMakes() without year", t, func() {

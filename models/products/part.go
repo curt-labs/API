@@ -270,7 +270,7 @@ func (p *Part) Get(dtx *apicontext.DataContext) error {
 	var err error
 
 	go func(api_key string) {
-		err = p.BindCustomer(api_key)
+		err = p.BindCustomer(dtx)
 
 		p.GetInventory(api_key, "")
 		customerChan <- 1
@@ -643,7 +643,7 @@ func (p *Part) GetContent(dtx *apicontext.DataContext) error {
 	return nil
 }
 
-func (p *Part) BindCustomer(key string) error {
+func (p *Part) BindCustomer(dtx *apicontext.DataContext) error {
 	var price float64
 	var ref int
 
@@ -652,17 +652,17 @@ func (p *Part) BindCustomer(key string) error {
 	contentChan := make(chan int)
 
 	go func() {
-		price, _ = customer.GetCustomerPrice(key, p.ID)
+		price, _ = customer.GetCustomerPrice(dtx, p.ID)
 		priceChan <- 1
 	}()
 
 	go func() {
-		ref, _ = customer.GetCustomerCartReference(key, p.ID)
+		ref, _ = customer.GetCustomerCartReference(dtx.APIKey, p.ID)
 		refChan <- 1
 	}()
 
 	go func() {
-		content, _ := custcontent.GetPartContent(p.ID, key)
+		content, _ := custcontent.GetPartContent(p.ID, dtx.APIKey)
 		for _, con := range content {
 
 			strArr := strings.Split(con.ContentType.Type, ":")
