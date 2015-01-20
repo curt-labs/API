@@ -1,9 +1,7 @@
 package forum
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
-
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
@@ -11,13 +9,10 @@ import (
 func TestThreads(t *testing.T) {
 	var th Thread
 	var lastThreadID int
-	var err error
-
-	MockedDTX := &apicontext.DataContext{}
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
-
 	//setup a testing group, a topic, and an existing thread
 	g := Group{}
 	g.Name = "Test Group"

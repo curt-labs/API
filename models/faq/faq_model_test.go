@@ -1,22 +1,17 @@
 package faq_model
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
-)
-
-var (
-	MockedDTX = &apicontext.DataContext{BrandID: 1, WebsiteID: 1, APIKey: "NOT_GENERATED_YET"}
 )
 
 func TestGetFaqs(t *testing.T) {
 	var f Faq
 	var err error
 
-	MockedDTX := &apicontext.DataContext{}
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 
@@ -70,9 +65,8 @@ func TestGetFaqs(t *testing.T) {
 }
 
 func BenchmarkGetAllFaq(b *testing.B) {
-	MockedDTX := &apicontext.DataContext{}
-	var err error
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 	b.ResetTimer()
@@ -84,9 +78,8 @@ func BenchmarkGetAllFaq(b *testing.B) {
 }
 
 func BenchmarkGetFaq(b *testing.B) {
-	MockedDTX := &apicontext.DataContext{}
-	var err error
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 	f := setupDummyFaq()
@@ -101,9 +94,8 @@ func BenchmarkGetFaq(b *testing.B) {
 }
 
 func BenchmarkCreateFaq(b *testing.B) {
-	MockedDTX := &apicontext.DataContext{}
-	var err error
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 	f := setupDummyFaq()
@@ -117,9 +109,8 @@ func BenchmarkCreateFaq(b *testing.B) {
 }
 
 func BenchmarkUpdateFaq(b *testing.B) {
-	MockedDTX := &apicontext.DataContext{}
-	var err error
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 	f := setupDummyFaq()
@@ -136,9 +127,8 @@ func BenchmarkUpdateFaq(b *testing.B) {
 }
 
 func BenchmarkDeleteFaq(b *testing.B) {
-	MockedDTX := &apicontext.DataContext{}
-	var err error
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 	f := setupDummyFaq()

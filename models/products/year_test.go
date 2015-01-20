@@ -1,7 +1,6 @@
 package products
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
@@ -12,8 +11,8 @@ func TestGetYears(t *testing.T) {
 	l.Brands = append(l.Brands, 1)
 	var err error
 	l.Brands = append(l.Brands, 1)
-	MockedDTX := &apicontext.DataContext{}
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 	Convey("Testing GetYears()", t, func() {

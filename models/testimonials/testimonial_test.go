@@ -1,16 +1,14 @@
 package testimonials
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
 
 func TestTestimonials(t *testing.T) {
-	var err error
-	MockedDTX := &apicontext.DataContext{}
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 	var test Testimonial
@@ -63,9 +61,8 @@ func TestTestimonials(t *testing.T) {
 }
 
 func BenchmarkGetAllTestimonials(b *testing.B) {
-	var err error
-	MockedDTX := &apicontext.DataContext{}
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 	for i := 0; i < b.N; i++ {
@@ -75,9 +72,8 @@ func BenchmarkGetAllTestimonials(b *testing.B) {
 }
 
 func BenchmarkGetTestimonial(b *testing.B) {
-	var err error
-	MockedDTX := &apicontext.DataContext{}
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 	test := setupDummyTestimonial()
@@ -93,9 +89,8 @@ func BenchmarkGetTestimonial(b *testing.B) {
 }
 
 func BenchmarkCreateTestimonial(b *testing.B) {
-	var err error
-	MockedDTX := &apicontext.DataContext{}
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 	test := setupDummyTestimonial()
@@ -109,9 +104,8 @@ func BenchmarkCreateTestimonial(b *testing.B) {
 }
 
 func BenchmarkUpdateTestimonial(b *testing.B) {
-	var err error
-	MockedDTX := &apicontext.DataContext{}
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 	test := setupDummyTestimonial()
@@ -128,9 +122,8 @@ func BenchmarkUpdateTestimonial(b *testing.B) {
 }
 
 func BenchmarkDeleteTestimonial(b *testing.B) {
-	var err error
-	MockedDTX := &apicontext.DataContext{}
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 	test := setupDummyTestimonial()

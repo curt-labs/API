@@ -2,7 +2,6 @@ package webProperty_model
 
 import (
 	"database/sql"
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	. "github.com/smartystreets/goconvey/convey"
 	"math/rand"
@@ -17,8 +16,8 @@ func TestWebPropertiesBetter(t *testing.T) {
 	var wn WebPropertyNote
 	var wt WebPropertyType
 	var err error
-	MockedDTX := &apicontext.DataContext{}
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 	Convey("Testing WebProperties", t, func() {
@@ -124,7 +123,6 @@ func TestWebPropertiesBetter(t *testing.T) {
 		So(err, ShouldBeNil)
 
 	})
-	t.Log(MockedDTX)
 	_ = apicontextmock.DeMock(MockedDTX)
 
 }
@@ -190,9 +188,8 @@ func BenchmarkCreateDeleteWebPropertyType(b *testing.B) {
 }
 
 func BenchmarkGetWebProperty(b *testing.B) {
-	var err error
-	MockedDTX := &apicontext.DataContext{}
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 	Convey("Testing WebProperties", b, func() {
@@ -258,9 +255,8 @@ func BenchmarkGetWebPropertyType(b *testing.B) {
 }
 
 func BenchmarkGetAllWebProperty(b *testing.B) {
-	var err error
-	MockedDTX := &apicontext.DataContext{}
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 	Convey("Testing WebProperties", b, func() {
@@ -282,9 +278,8 @@ func BenchmarkGetAllWebProperty(b *testing.B) {
 }
 
 func BenchmarkGetAllWebPropertyRequirement(b *testing.B) {
-	var err error
-	MockedDTX := &apicontext.DataContext{}
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 	Convey("Testing Requirements", b, func() {
@@ -303,9 +298,8 @@ func BenchmarkGetAllWebPropertyRequirement(b *testing.B) {
 
 }
 func BenchmarkGetAllWebPropertyNote(b *testing.B) {
-	var err error
-	MockedDTX := &apicontext.DataContext{}
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 	Convey("Testing Note", b, func() {
@@ -324,9 +318,8 @@ func BenchmarkGetAllWebPropertyNote(b *testing.B) {
 
 }
 func BenchmarkGetAllWebPropertyType(b *testing.B) {
-	var err error
-	MockedDTX := &apicontext.DataContext{}
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 	Convey("Testing Type", b, func() {

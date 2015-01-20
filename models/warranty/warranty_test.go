@@ -2,7 +2,6 @@ package warranty
 
 import (
 	"database/sql"
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	"github.com/curt-labs/GoAPI/models/contact"
 	. "github.com/smartystreets/goconvey/convey"
@@ -11,9 +10,8 @@ import (
 )
 
 func TestWarranties(t *testing.T) {
-	var err error
-	MockedDTX := &apicontext.DataContext{}
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 	Convey("Testing CRUD", t, func() {
@@ -64,9 +62,8 @@ func TestWarranties(t *testing.T) {
 }
 
 func BenchmarkGetAllWarranties(b *testing.B) {
-	var err error
-	MockedDTX := &apicontext.DataContext{}
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
 		return
 	}
 	for i := 0; i < b.N; i++ {
