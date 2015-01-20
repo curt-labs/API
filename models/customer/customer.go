@@ -322,7 +322,7 @@ var (
 	customerByLocation = `select ` + customerLocationFields + `, ` + stateFields + `, ` + countryFields + `, ` + dealerTypeFields + `, ` + dealerTierFields + `, ` + mapIconFields + `, ` + mapixCodeFields + `, ` + salesRepFields + `  ,` + showSiteFields + `
 								from CustomerLocations as cl
 								join States as s on cl.stateID = s.stateID
-								left join country as cty on cty.countryID = s.countryID
+								left join Country as cty on cty.countryID = s.countryID
 								join Customer as c on cl.cust_id = c.cust_id
 								join DealerTypes as dt on c.dealer_type = dt.dealer_type
 								join DealerTiers as dtr on c.tier = dtr.ID
@@ -335,7 +335,7 @@ var (
 	searchDealerLocations = `select ` + customerLocationFields + `, ` + stateFields + `, ` + countryFields + `, ` + dealerTypeFields + `, ` + dealerTierFields + `, ` + mapIconFields + `, ` + mapixCodeFields + `, ` + salesRepFields + ` ,` + showSiteFields + `
 								from CustomerLocations as cl
 								join States as s on cl.stateID = s.stateID
-								left join country as cty on cty.countryID = s.countryID
+								left join Country as cty on cty.countryID = s.countryID
 								join Customer as c on cl.cust_id = c.cust_id
 								join DealerTypes as dt on c.dealer_type = dt.dealer_type
 								join DealerTiers as dtr on c.tier = dtr.ID
