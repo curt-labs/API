@@ -6,11 +6,13 @@ import (
 	"encoding/base64"
 	"encoding/xml"
 	"errors"
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
-	"github.com/curt-labs/GoAPI/helpers/database"
 	"io/ioutil"
 	"net/http"
 	"strconv"
+
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
+	"github.com/curt-labs/GoAPI/helpers/database"
+	"github.com/curt-labs/GoAPI/models/products"
 )
 
 type AcesVehicle struct {
