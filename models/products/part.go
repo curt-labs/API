@@ -594,11 +594,16 @@ func (p *Part) GetRelated(dtx *apicontext.DataContext) error {
 }
 
 func (p *Part) GetContent(dtx *apicontext.DataContext) error {
-	redis_key := fmt.Sprintf("part:%d:content:%s", p.ID, dtx.BrandString)
+	redis_key_content := fmt.Sprintf("part:%d:content:%s", p.ID, dtx.BrandString)
+	redis_key_installSheet := fmt.Sprintf("part:%d:installSheet:%s", p.ID, dtx.BrandString)
 
-	data, err := redis.Get(redis_key)
-	if err == nil && len(data) > 0 {
-		if err = json.Unmarshal(data, &p.Content); err == nil {
+	data_content, err_content := redis.Get(redis_key_content)
+	data_installSheet, err_installSheet := redis.Get(redis_key_installSheet)
+	if err_content == nil && err_installSheet == nil && len(data_content) > 0 && len(data_installSheet) > 0 {
+		err_content = json.Unmarshal(data_content, &p.Content)
+		err_installSheet = json.Unmarshal(data_installSheet, &p.InstallSheet)
+
+		if err_content == nil && err_installSheet == nil {
 			return nil
 		}
 	}
@@ -643,7 +648,8 @@ func (p *Part) GetContent(dtx *apicontext.DataContext) error {
 
 	p.Content = content
 	if dtx.BrandString != "" {
-		go redis.Setex(redis_key, p.Content, redis.CacheTimeout)
+		go redis.Setex(redis_key_content, p.Content, redis.CacheTimeout)
+		go redis.Setex(redis_key_installSheet, p.InstallSheet, redis.CacheTimeout)
 	}
 	return nil
 }
