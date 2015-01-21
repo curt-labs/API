@@ -2,34 +2,44 @@ package part_ctlr
 
 import (
 	"encoding/json"
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
-	"github.com/curt-labs/GoAPI/helpers/encoding"
-	"github.com/curt-labs/GoAPI/models/products"
-	"github.com/go-martini/martini"
+	"errors"
 	"io/ioutil"
-	// "github.com/ninnemana/analytics-go"
-	// "log"
 	"net/http"
 	"strconv"
+
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
+	"github.com/curt-labs/GoAPI/helpers/encoding"
+	"github.com/curt-labs/GoAPI/helpers/error"
+	"github.com/curt-labs/GoAPI/models/products"
+	"github.com/go-martini/martini"
 )
 
-func GetAllReviews(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+func GetAllReviews(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	revs, err := products.GetAllReviews(dtx)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble getting all part reviews", err, rw, req)
 		return ""
 	}
 
 	return encoding.Must(enc.Encode(revs))
 }
-func GetReview(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
-	id, err := strconv.Atoi(params["id"])
+func GetReview(rw http.ResponseWriter, req *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var rev products.Review
-	rev.Id = id
+	var err error
 
-	err = rev.Get(dtx)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if params["id"] == "" {
+		err = errors.New("Missing review ID parameter in query string")
+		apierror.GenerateError("Trouble getting review ID", err, rw, req)
+		return ""
+	}
+
+	if rev.Id, err = strconv.Atoi(params["id"]); err != nil {
+		apierror.GenerateError("Trouble getting review ID", err, rw, req)
+		return ""
+	}
+
+	if err = rev.Get(dtx); err != nil {
+		apierror.GenerateError("Trouble getting review", err, rw, req)
 		return ""
 	}
 
@@ -37,15 +47,19 @@ func GetReview(w http.ResponseWriter, r *http.Request, params martini.Params, en
 }
 
 func SaveReview(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
-	var r products.Review
-
+	var rev products.Review
 	var err error
+
 	idStr := params["id"]
 	if idStr != "" {
-		r.Id, err = strconv.Atoi(idStr)
-		err = r.Get(dtx)
+		rev.Id, err = strconv.Atoi(idStr)
 		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			apierror.GenerateError("Trouble getting review ID", err, rw, req)
+			return ""
+		}
+		err = rev.Get(dtx)
+		if err != nil {
+			apierror.GenerateError("Trouble getting review", err, rw, req)
 			return ""
 		}
 	}
@@ -53,38 +67,50 @@ func SaveReview(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder,
 	//json
 	requestBody, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble reading request body while saving review", err, rw, req)
 		return ""
 	}
-	err = json.Unmarshal(requestBody, &r)
+	err = json.Unmarshal(requestBody, &rev)
 	if err != nil {
-
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble unmarshalling json request body while saving review", err, rw, req)
 		return ""
 	}
 
 	//create or update
-	if r.Id > 0 {
-		err = r.Update()
+	if rev.Id > 0 {
+		err = rev.Update()
 	} else {
-		err = r.Create()
+		err = rev.Create()
 	}
 
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		msg := "Trouble creating review"
+		if rev.Id > 0 {
+			msg = "Trouble updating review"
+		}
+		apierror.GenerateError(msg, err, rw, req)
 		return ""
 	}
-	return encoding.Must(enc.Encode(r))
+	return encoding.Must(enc.Encode(rev))
 }
 
-func DeleteReview(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
-	id, err := strconv.Atoi(params["id"])
+func DeleteReview(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
 	var rev products.Review
-	rev.Id = id
+	var err error
 
-	err = rev.Delete()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if params["id"] == "" {
+		err = errors.New("Missing review ID parameter in query string")
+		apierror.GenerateError("Trouble getting review ID", err, rw, r)
+		return ""
+	}
+
+	if rev.Id, err = strconv.Atoi(params["id"]); err != nil {
+		apierror.GenerateError("Trouble getting review ID", err, rw, r)
+		return ""
+	}
+
+	if err = rev.Delete(); err != nil {
+		apierror.GenerateError("Trouble deleting review", err, rw, r)
 		return ""
 	}
 
