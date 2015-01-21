@@ -47,7 +47,7 @@ func TestCustomerLocations(t *testing.T) {
 
 		Convey("Testing GetAll()", func() {
 			locations, err := GetAllLocations(MockedDTX)
-			So(locations, ShouldNotBeNil)
+			So(len(locations), ShouldBeGreaterThanOrEqualTo, 0)
 			So(err, ShouldBeNil)
 		})
 		Convey("Get", func() {
