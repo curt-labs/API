@@ -87,7 +87,7 @@ var (
 	getAllWebPropertyRequirements = `SELECT DISTINCT wprc.ID, wpr.ID, wpr.ReqType, wpr.Requirement, wprc.Compliance, wprc.WebPropertiesID 
 		FROM WebPropRequirementCheck AS wprc 
 		LEFT JOIN WebPropRequirements AS wpr ON wpr.ID = wprc.WebPropRequirementsID
-		join WebProperties as w on w.typeID = wpr.id
+		join WebProperties as w on w.ID = wprc.WebPropertiesID
 		join CustomerToBrand as ctb on ctb.cust_id = w.cust_id
 		join ApiKeyToBrand as atb on atb.brandID = ctb.brandID
 		join ApiKey as a on a.id = atb.keyID
@@ -150,6 +150,7 @@ func (w *WebProperty) Get(dtx *apicontext.DataContext) error {
 	if err != nil {
 		return err
 	}
+
 	typesMap := webPropTypes.ToMap()
 	notesMap := webPropNotes.ToMap()
 	requirementsMap := WebPropertyRequirements.ToMap()
@@ -640,7 +641,7 @@ func GetAllWebPropertyRequirements(dtx *apicontext.DataContext) (WebPropertyRequ
 	var ws WebPropertyRequirements
 	var err error
 
-	redis_key := "1XXwebpropertyrequirements" + dtx.BrandString
+	redis_key := "webpropertyrequirements" + dtx.BrandString
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &ws)
@@ -666,7 +667,7 @@ func GetAllWebPropertyRequirements(dtx *apicontext.DataContext) (WebPropertyRequ
 		var reqType, req *string
 		var comp *bool
 		var wpid *int
-		res.Scan(
+		err = res.Scan(
 			&w.ID,
 			&w.RequirementID,
 			&reqType,
@@ -674,6 +675,9 @@ func GetAllWebPropertyRequirements(dtx *apicontext.DataContext) (WebPropertyRequ
 			&comp,
 			&wpid,
 		)
+		if err != nil {
+			return ws, err
+		}
 		if reqType != nil {
 			w.ReqType = *reqType
 		}

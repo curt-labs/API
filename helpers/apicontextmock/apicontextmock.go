@@ -112,6 +112,12 @@ func Mock() (*apicontext.DataContext, error) {
 	if err = InsertCustomerToBrand(dtx.CustomerID, BrandIDs); err != nil {
 		return &dtx, err
 	}
+
+	//brandString and array
+	err = dtx.GetBrandsArrayAndString(dtx.APIKey, dtx.BrandID)
+	if err != nil {
+		return &dtx, err
+	}
 	return &dtx, nil
 }
 
