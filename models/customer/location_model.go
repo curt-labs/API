@@ -17,8 +17,8 @@ var (
 	getLocations = `SELECT cl.locationID, cl.name, cl.address, cl.city, cl.stateID, cl.email,cl.phone, cl.fax, cl.latitude, cl.longitude, cl.cust_id, cl.contact_person, cl.isprimary, cl.postalCode, cl.ShippingDefault 
 			FROM CustomerLocations as cl
 			join CustomerToBrand as ctb on ctb.cust_id = cl.cust_id
-			join apiKeyToBrand as akb on akb.brandID = ctb.brandID
-			join apiKey as ak on ak.id = akb.keyID	
+			join ApiKeyToBrand as akb on akb.brandID = ctb.brandID
+			join ApiKey as ak on ak.id = akb.keyID
 			where ak.api_key = ? && (ctb.BrandID = ? or 0 = ?)`
 	createLocation = "INSERT INTO CustomerLocations (name, address, city, stateID, email, phone, fax, latitude, longitude, cust_id, contact_person, isprimary, postalCode, ShippingDefault) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
 	updateLocation = "UPDATE CustomerLocations SET name = ?, address = ?,  city = ?,  stateID = ?, email = ?,  phone = ?,  fax = ?,  latitude = ?,  longitude = ?,  cust_id = ?, contact_person = ?,  isprimary = ?, postalCode = ?, ShippingDefault = ? WHERE locationID = ?"
