@@ -1,11 +1,12 @@
 package testimonials
 
 import (
-	"database/sql"
-	"errors"
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	_ "github.com/go-sql-driver/mysql"
+
+	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -128,7 +129,6 @@ func (t *Testimonial) Get(dtx *apicontext.DataContext) error {
 		return err
 	}
 	defer stmt.Close()
-
 	err = stmt.QueryRow(dtx.APIKey, dtx.BrandID, dtx.BrandID, t.ID).Scan(
 		&t.ID,
 		&t.Rating,
@@ -146,7 +146,7 @@ func (t *Testimonial) Get(dtx *apicontext.DataContext) error {
 	return err
 }
 
-func (t *Testimonial) Create(dtx *apicontext.DataContext) (err error) {
+func (t *Testimonial) Create() (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -158,7 +158,8 @@ func (t *Testimonial) Create(dtx *apicontext.DataContext) (err error) {
 	}
 	defer stmt.Close()
 	t.DateAdded = time.Now()
-	res, err := stmt.Exec(t.Rating, t.Title, t.Content, t.DateAdded, t.Approved, t.Active, t.FirstName, t.LastName, t.Location, dtx.BrandID)
+
+	res, err := stmt.Exec(t.Rating, t.Title, t.Content, t.DateAdded, t.Approved, t.Active, t.FirstName, t.LastName, t.Location, t.BrandID)
 	if err != nil {
 		return err
 	}
@@ -167,7 +168,7 @@ func (t *Testimonial) Create(dtx *apicontext.DataContext) (err error) {
 	return nil
 }
 
-func (t *Testimonial) Update(dtx *apicontext.DataContext) (err error) {
+func (t *Testimonial) Update() (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -179,7 +180,7 @@ func (t *Testimonial) Update(dtx *apicontext.DataContext) (err error) {
 	}
 	defer stmt.Close()
 	t.DateAdded = time.Now()
-	_, err = stmt.Exec(t.Rating, t.Title, t.Content, t.Approved, t.Active, t.FirstName, t.LastName, t.Location, dtx.BrandID, t.ID)
+	_, err = stmt.Exec(t.Rating, t.Title, t.Content, t.Approved, t.Active, t.FirstName, t.LastName, t.Location, t.BrandID, t.ID)
 	if err != nil {
 		return err
 	}

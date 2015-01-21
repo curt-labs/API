@@ -67,7 +67,6 @@ func Save(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, param
 			apierror.GenerateError("Trouble getting testimonial", err, rw, req)
 		}
 	}
-
 	//json
 	requestBody, err := ioutil.ReadAll(req.Body)
 	if err != nil {
@@ -79,9 +78,9 @@ func Save(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, param
 	}
 	//create or update
 	if a.ID > 0 {
-		err = a.Update(dtx)
+		err = a.Update()
 	} else {
-		err = a.Create(dtx)
+		err = a.Create()
 	}
 
 	if err != nil {

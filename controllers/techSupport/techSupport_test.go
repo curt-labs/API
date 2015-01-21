@@ -63,4 +63,5 @@ func TestTechSupport(te *testing.T) {
 		So(err, ShouldBeNil)
 
 	})
+	_ = apicontextmock.DeMock(dtx)
 }
