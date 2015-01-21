@@ -108,7 +108,7 @@ func TestCustomerUser(t *testing.T) {
 		body = strings.NewReader(v)
 		thyme = time.Now()
 		testThatHttp.Request("post", "/customer/user/changePassword", "", "?key="+apiKey, ChangePassword, body, "application/x-www-form-urlencoded")
-		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
+		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()*2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		var result string
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &result)
