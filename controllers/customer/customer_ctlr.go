@@ -11,7 +11,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -51,7 +50,6 @@ func GetLocations(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 		http.Error(w, "Unauthorized!", http.StatusUnauthorized)
 		return ""
 	}
-	log.Print("CU", cu.CustomerID)
 	c, err := cu.GetCustomer(dtx.APIKey)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)

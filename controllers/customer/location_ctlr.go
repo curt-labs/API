@@ -2,15 +2,12 @@ package customer_ctlr
 
 import (
 	"encoding/json"
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
-	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/go-martini/martini"
 	"io/ioutil"
 	"net/http"
 	"strconv"
-	"strings"
 )
 
 const (
@@ -31,25 +28,6 @@ func GetLocation(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 		return err.Error()
 	}
 
-	return encoding.Must(enc.Encode(c))
-}
-
-func GetAllLocations(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
-	var c customer.CustomerLocations
-	var err error
-	c, err = customer.GetAllLocations(dtx)
-	if err != nil {
-		return err.Error()
-	}
-	sort := r.FormValue("sort")
-	direction := r.FormValue("direction")
-	if sort != "" {
-		if strings.ContainsAny(direction, "esc") {
-			sortutil.CiDescByField(c, sort)
-		} else {
-			sortutil.CiAscByField(c, sort)
-		}
-	}
 	return encoding.Must(enc.Encode(c))
 }
 
