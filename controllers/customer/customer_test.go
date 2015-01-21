@@ -3,6 +3,7 @@ package customer_ctlr
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	"github.com/curt-labs/GoAPI/helpers/httprunner"
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
@@ -13,18 +14,24 @@ import (
 	"flag"
 	"net/url"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 )
+
+var once sync.Once
+var dtx *apicontext.DataContext
+
+func initDtx() {
+	dtx, _ = apicontextmock.Mock()
+}
 
 func TestCustomer(t *testing.T) {
 	var err error
 	var c customer.Customer
 	var cu customer.CustomerUser
-	dtx, err := apicontextmock.Mock()
-	if err != nil {
-		t.Log(err)
-	}
+	once.Do(initDtx)
+	defer apicontextmock.DeMock(dtx)
 
 	cu.Id = dtx.UserID
 	err = cu.Get(dtx.APIKey)
@@ -137,17 +144,10 @@ func TestCustomer(t *testing.T) {
 	//cleanup
 	err = cu.Delete()
 	err = c.Delete()
-	err = apicontextmock.DeMock(dtx)
-	if err != nil {
-		t.Log(err)
-	}
+
 }
 
 func BenchmarkCRUDCustomer(b *testing.B) {
-	dtx, err := apicontextmock.Mock()
-	if err != nil {
-		b.Log(err)
-	}
 
 	qs := make(url.Values, 0)
 	qs.Add("key", dtx.APIKey)
@@ -225,12 +225,7 @@ func BenchmarkCRUDCustomer(b *testing.B) {
 		}).RequestBenchmark()
 
 	})
-	//teardown customer user
 
-	err = apicontextmock.DeMock(dtx)
-	if err != nil {
-		b.Log(err)
-	}
 }
 
 func TestCustomerContent(t *testing.T) {
@@ -248,10 +243,6 @@ func TestCustomerContent(t *testing.T) {
 	var err error
 	var apiKey string
 
-	dtx, err := apicontextmock.Mock()
-	if err != nil {
-		t.Log(err)
-	}
 	catContent.CategoryId = 1
 
 	ct.Type = "test"
@@ -422,18 +413,10 @@ func TestCustomerContent(t *testing.T) {
 
 	err = ct.Delete()
 
-	err = apicontextmock.DeMock(dtx)
-	if err != nil {
-		t.Log(err)
-	}
 }
 
 func BenchmarkCRUDContent(b *testing.B) {
 
-	dtx, err := apicontextmock.Mock()
-	if err != nil {
-		b.Log(err)
-	}
 	qs := make(url.Values, 0)
 	qs.Add("key", dtx.APIKey)
 
@@ -536,8 +519,4 @@ func BenchmarkCRUDContent(b *testing.B) {
 		}).RequestBenchmark()
 	})
 
-	err = apicontextmock.DeMock(dtx)
-	if err != nil {
-		b.Log(err)
-	}
 }
