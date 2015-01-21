@@ -127,7 +127,9 @@ func (w *WebProperty) Get(dtx *apicontext.DataContext) error {
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &w)
-		return err
+		if err == nil {
+			return err
+		}
 	}
 
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -221,7 +223,9 @@ func GetByCustomer(CustID int, dtx *apicontext.DataContext) (ws WebProperties, e
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &ws)
-		return
+		if err == nil {
+			return
+		}
 	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -321,7 +325,9 @@ func GetAll(dtx *apicontext.DataContext) (WebProperties, error) {
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &ws)
-		return ws, err
+		if err == nil {
+			return ws, err
+		}
 	}
 
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -571,7 +577,9 @@ func GetAllWebPropertyTypes(dtx *apicontext.DataContext) (WebPropertyTypes, erro
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &ws)
-		return ws, err
+		if err == nil {
+			return ws, err
+		}
 	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -603,7 +611,9 @@ func GetAllWebPropertyNotes(dtx *apicontext.DataContext) (WebPropertyNotes, erro
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &ws)
-		return ws, err
+		if err == nil {
+			return ws, err
+		}
 	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -630,11 +640,13 @@ func GetAllWebPropertyRequirements(dtx *apicontext.DataContext) (WebPropertyRequ
 	var ws WebPropertyRequirements
 	var err error
 
-	redis_key := "webpropertyrequirements" + dtx.BrandString
+	redis_key := "1XXwebpropertyrequirements" + dtx.BrandString
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &ws)
-		return ws, err
+		if err == nil {
+			return ws, err
+		}
 	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
