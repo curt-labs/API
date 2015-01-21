@@ -130,7 +130,7 @@ func TestCartIntegration(t *testing.T) {
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &cs)
 
 		So(err, ShouldBeNil)
-		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds())
+		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()*2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		So(cs, ShouldHaveSameTypeAs, []cartIntegration.CartIntegration{})
 		So(len(cs), ShouldBeGreaterThan, 0)

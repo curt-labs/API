@@ -203,7 +203,7 @@ func GetAllContents() (cs Contents, err error) {
 	}
 	defer stmt.Close()
 
-	var cType, title, mTitle, mDesc, slug, canon *string
+	var cType, title, mTitle, mDesc, slug, canon, keywords *string
 	var c Content
 	res, err := stmt.Query()
 	for res.Next() {
@@ -215,7 +215,7 @@ func GetAllContents() (cs Contents, err error) {
 			&c.LastModified,
 			&mTitle,
 			&mDesc,
-			&c.Keywords,
+			&keywords,
 			&c.IsPrimary,
 			&c.Published,
 			&c.Active,
@@ -239,6 +239,9 @@ func GetAllContents() (cs Contents, err error) {
 		}
 		if mDesc != nil {
 			c.MetaDescription = *mDesc
+		}
+		if keywords != nil {
+			c.Keywords = *keywords
 		}
 		if slug != nil {
 			c.Slug = *slug
