@@ -23,14 +23,14 @@ func GetContent(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder,
 		c.Id = id
 		err = c.Get()
 		if err != nil {
-			apierror.GenerateError("Trouble getting site content", err, rw, req)
+			apierror.GenerateError("Trouble getting site content by Id.", err, rw, req)
 		}
 	} else {
 		//Thar be a slug
 		c.Slug = idStr
 		err = c.GetBySlug()
 		if err != nil {
-			apierror.GenerateError("Trouble getting site content", err, rw, req)
+			apierror.GenerateError("Trouble getting site content by slug.", err, rw, req)
 		}
 	}
 	return encoding.Must(enc.Encode(c))
