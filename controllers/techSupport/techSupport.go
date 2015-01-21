@@ -1,13 +1,14 @@
 package techSupport
 
 import (
-	"encoding/json"
-	"errors"
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
+	apierror "github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/models/contact"
 	"github.com/curt-labs/GoAPI/models/techSupport"
 	"github.com/go-martini/martini"
+
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -21,14 +22,9 @@ const (
 
 func GetAllTechSupport(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var err error
-
 	ts, err := techSupport.GetAllTechSupport(dtx)
-	if len(ts) == 0 {
-		err = errors.New("No results.")
-	}
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Error getting Tech Support.", err, rw, req)
 	}
 	return encoding.Must(enc.Encode(ts))
 }
@@ -38,11 +34,13 @@ func GetTechSupport(rw http.ResponseWriter, req *http.Request, enc encoding.Enco
 	var t techSupport.TechSupport
 	id := params["id"]
 	t.ID, err = strconv.Atoi(id)
+	if err != nil {
+		apierror.GenerateError("Error parsing Id.", err, rw, req)
+	}
 
 	err = t.Get()
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Error getting Tech Support.", err, rw, req)
 	}
 	return encoding.Must(enc.Encode(t))
 }
@@ -51,16 +49,14 @@ func GetTechSupportByContact(rw http.ResponseWriter, req *http.Request, enc enco
 	var t techSupport.TechSupport
 	id := params["id"]
 	t.Contact.ID, err = strconv.Atoi(id)
+	if err != nil {
+		apierror.GenerateError("Error parsing contact Id.", err, rw, req)
+	}
 
 	ts, err := t.GetByContact(dtx)
-	if len(ts) == 0 {
-		err = errors.New("No results.")
-	}
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Error getting Tech Support by Contact Id.", err, rw, req)
 	}
-
 	return encoding.Must(enc.Encode(ts))
 }
 
@@ -77,14 +73,12 @@ func CreateTechSupport(rw http.ResponseWriter, req *http.Request, enc encoding.E
 		//json
 		requestBody, err := ioutil.ReadAll(req.Body)
 		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return encoding.Must(enc.Encode(false))
+			apierror.GenerateError("Error parsing JSON.", err, rw, req)
 		}
 
 		err = json.Unmarshal(requestBody, &t)
 		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return encoding.Must(enc.Encode(false))
+			apierror.GenerateError("Error unmarshalling request body.", err, rw, req)
 		}
 	} else {
 		//else, form
@@ -113,14 +107,12 @@ func CreateTechSupport(rw http.ResponseWriter, req *http.Request, enc encoding.E
 		t.Contact.PostalCode = req.FormValue("postal_code")
 		t.Contact.Country = req.FormValue("country")
 		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return err.Error()
+			apierror.GenerateError("Error parsing purchase date.", err, rw, req)
 		}
 	}
 	err = t.Create()
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Error creating Tech Support.", err, rw, req)
 	}
 
 	if sendEmail == true {
@@ -144,8 +136,7 @@ func CreateTechSupport(rw http.ResponseWriter, req *http.Request, enc encoding.E
 		subject := "Email from Tech Support Request Form"
 		err = contact.SendEmail(ct, subject, body) //contact type id, subject, techSupport
 		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return err.Error()
+			apierror.GenerateError("Error sending email to Tech Support.", err, rw, req)
 		}
 	}
 	//Return JSON
@@ -155,14 +146,14 @@ func CreateTechSupport(rw http.ResponseWriter, req *http.Request, enc encoding.E
 func DeleteTechSupport(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var err error
 	var t techSupport.TechSupport
-	id, err := strconv.Atoi(params["id"])
-	t.ID = id
+	t.ID, err = strconv.Atoi(params["id"])
+	if err != nil {
+		apierror.GenerateError("Error parsing Id.", err, rw, req)
+	}
 	err = t.Delete()
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return err.Error()
+		apierror.GenerateError("Error deleting Tech Support.", err, rw, req)
 	}
-
 	//Return JSON
 	return encoding.Must(enc.Encode(t))
 }
