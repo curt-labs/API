@@ -54,7 +54,7 @@ var (
                          where cp.catID IN(%s) and (p.status = 800 || p.status = 900)
                          order by cp.partID
                          limit %d, %d`
-	basicsStmt = `select p.status, p.dateAdded, p.dateModified, p.shortDesc, p.oldPartNumber, p.partID, p.priceCode, pc.class, p.brandID
+	basicsStmt = `select p.status, p.dateAdded, p.dateModified, p.shortDesc, p.oldPartNumber, p.partID, p.priceCode, pc.class, pc.image, p.brandID
                 from Part as p
                 left join Class as pc on p.classID = pc.classID
                 where p.partID = ? && p.status in (800,900) limit 1`
@@ -500,7 +500,7 @@ func (p *Part) Basics(dtx *apicontext.DataContext) error {
 		return errors.New("No Part Found for:" + string(p.ID))
 	}
 
-	var short, price, class, oldNum []byte
+	var short, price, class, oldNum, image []byte
 	err = row.Scan(
 		&p.Status,
 		&p.DateAdded,
@@ -510,7 +510,9 @@ func (p *Part) Basics(dtx *apicontext.DataContext) error {
 		&p.ID,
 		&price,
 		&class,
-		&p.BrandID)
+		&image,
+		&p.BrandID,
+	)
 	if err != nil {
 		return err
 	}
@@ -524,7 +526,10 @@ func (p *Part) Basics(dtx *apicontext.DataContext) error {
 		}
 	}
 	if class != nil {
-		p.PartClass = string(class[:])
+		p.Class.Name = string(class[:])
+	}
+	if image != nil {
+		p.Class.Image = string(image[:])
 	}
 	if oldNum != nil {
 		p.OldPartNumber = string(oldNum[:])
