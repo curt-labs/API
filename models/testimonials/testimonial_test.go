@@ -12,16 +12,17 @@ func TestTestimonials(t *testing.T) {
 		return
 	}
 	var test Testimonial
+	test.BrandID = MockedDTX.BrandID
 	Convey("Testing Create Testimonial", t, func() {
 		test.Content = "Test Content"
-		err = test.Create(MockedDTX)
+		err = test.Create()
 		So(err, ShouldBeNil)
 	})
 	Convey("Update", t, func() {
 		test.Content = "New Content"
 		test.Active = true
 		test.Approved = true
-		err = test.Update(MockedDTX)
+		err = test.Update()
 		So(err, ShouldBeNil)
 
 	})
@@ -79,7 +80,7 @@ func BenchmarkGetTestimonial(b *testing.B) {
 	test := setupDummyTestimonial()
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
-		test.Create(MockedDTX)
+		test.Create()
 		b.StartTimer()
 		test.Get(MockedDTX)
 		b.StopTimer()
@@ -96,7 +97,7 @@ func BenchmarkCreateTestimonial(b *testing.B) {
 	test := setupDummyTestimonial()
 	for i := 0; i < b.N; i++ {
 		b.StartTimer()
-		test.Create(MockedDTX)
+		test.Create()
 		b.StopTimer()
 		test.Delete()
 	}
@@ -111,10 +112,10 @@ func BenchmarkUpdateTestimonial(b *testing.B) {
 	test := setupDummyTestimonial()
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
-		test.Create(MockedDTX)
+		test.Create()
 		b.StartTimer()
 		test.Content = "This is a good test."
-		test.Update(MockedDTX)
+		test.Update()
 		b.StopTimer()
 		test.Delete()
 	}
@@ -129,7 +130,7 @@ func BenchmarkDeleteTestimonial(b *testing.B) {
 	test := setupDummyTestimonial()
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
-		test.Create(MockedDTX)
+		test.Create()
 		b.StartTimer()
 		test.Delete()
 	}
