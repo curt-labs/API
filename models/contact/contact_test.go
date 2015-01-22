@@ -26,49 +26,49 @@ func TestContacts(t *testing.T) {
 		Convey("Add Missing Values", func() {
 			Convey("Missing First Name", func() {
 				c.FirstName = ""
-				err = c.Add()
+				err = c.Add(MockedDTX)
 				So(c.ID, ShouldEqual, 0)
 				So(err, ShouldNotBeNil)
 				c.FirstName = "TEST"
 			})
 			Convey("Missing Last Name", func() {
 				c.LastName = ""
-				err = c.Add()
+				err = c.Add(MockedDTX)
 				So(c.ID, ShouldEqual, 0)
 				So(err, ShouldNotBeNil)
 				c.LastName = "TEST"
 			})
 			Convey("Bad Email", func() {
 				c.Email = "INVALID"
-				err = c.Add()
+				err = c.Add(MockedDTX)
 				So(c.ID, ShouldEqual, 0)
 				So(err, ShouldNotBeNil)
 				c.Email = "test@test.com"
 			})
 			Convey("Missing Type", func() {
 				c.Type = ""
-				err = c.Add()
+				err = c.Add(MockedDTX)
 				So(c.ID, ShouldEqual, 0)
 				So(err, ShouldNotBeNil)
 				c.Type = "TEST"
 			})
 			Convey("Missing Subject", func() {
 				c.Subject = ""
-				err = c.Add()
+				err = c.Add(MockedDTX)
 				So(c.ID, ShouldEqual, 0)
 				So(err, ShouldNotBeNil)
 				c.Subject = "TEST"
 			})
 			Convey("Missing Message", func() {
 				c.Message = ""
-				err = c.Add()
+				err = c.Add(MockedDTX)
 				So(c.ID, ShouldEqual, 0)
 				So(err, ShouldNotBeNil)
 				c.Message = "Testing this awesome code!"
 			})
 			Convey("Empty Contact", func() {
 				con := Contact{}
-				err = con.Add()
+				err = con.Add(MockedDTX)
 				So(c.ID, ShouldEqual, 0)
 				So(err, ShouldNotBeNil)
 			})
@@ -126,7 +126,7 @@ func TestContacts(t *testing.T) {
 		})
 
 		Convey("Add Valid Contact", func() {
-			err = c.Add()
+			err = c.Add(MockedDTX)
 			So(c.ID, ShouldNotEqual, 0)
 			So(err, ShouldBeNil)
 
@@ -192,27 +192,41 @@ func BenchmarkGetAllContacts(b *testing.B) {
 }
 
 func BenchmarkGetContact(b *testing.B) {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
+		return
+	}
 	c := setupDummyContact()
-	c.Add()
+	c.Add(MockedDTX)
 	for i := 0; i < b.N; i++ {
 		c.Get()
 	}
 	c.Delete()
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkAddContact(b *testing.B) {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
+		return
+	}
 	c := setupDummyContact()
 	for i := 0; i < b.N; i++ {
-		c.Add()
+		c.Add(MockedDTX)
 		b.StopTimer()
 		c.Delete()
 		b.StartTimer()
 	}
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkUpdateContact(b *testing.B) {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
+		return
+	}
 	c := setupDummyContact()
-	c.Add()
+	c.Add(MockedDTX)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		c.FirstName = "TESTER"
@@ -221,15 +235,21 @@ func BenchmarkUpdateContact(b *testing.B) {
 	}
 	b.StopTimer()
 	c.Delete()
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func BenchmarkDeleteContact(b *testing.B) {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
+		return
+	}
 	c := setupDummyContact()
-	c.Add()
+	c.Add(MockedDTX)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		c.Delete()
 	}
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func setupDummyContact() *Contact {

@@ -21,6 +21,7 @@ var (
 	getReceiverByType     = `select cr.contactReceiverID, cr.first_name, cr.last_name, cr.email from ContactReceiver_ContactType as crct 
 								left join ContactReceiver as cr on crct.contactReceiverID = cr.contactReceiverID 
 								where crct.contactTypeID = ?`
+	getTypeNameFromId = `select name from ContactType where contactTypeID = ?`
 )
 
 type ContactTypes []ContactType
@@ -87,6 +88,24 @@ func (ct *ContactType) Get() error {
 		return err
 	}
 	return errors.New("Invalid ContactType ID")
+}
+
+func GetContactTypeNameFromId(id int) (string, error) {
+	var err error
+	var name string
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return name, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(getTypeNameFromId)
+	if err != nil {
+		return name, err
+	}
+	defer stmt.Close()
+	err = stmt.QueryRow(id).Scan(&name)
+	return name, err
 }
 
 func (ct *ContactType) Add() error {

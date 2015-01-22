@@ -56,7 +56,7 @@ func GetContact(rw http.ResponseWriter, req *http.Request, params martini.Params
 	return encoding.Must(enc.Encode(c))
 }
 
-func AddDealerContact(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+func AddDealerContact(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	flag.Parse()
 
 	var d contact.DealerContact
@@ -66,6 +66,7 @@ func AddDealerContact(rw http.ResponseWriter, req *http.Request, enc encoding.En
 	ct.ID, err = strconv.Atoi(params["contactTypeID"]) //determines to whom emails go
 	if err != nil {
 		apierror.GenerateError("Trouble getting contact type ID", err, rw, req)
+		return ""
 	}
 
 	contType := req.Header.Get("Content-Type")
@@ -75,15 +76,29 @@ func AddDealerContact(rw http.ResponseWriter, req *http.Request, enc encoding.En
 		requestBody, err := ioutil.ReadAll(req.Body)
 		if err != nil {
 			apierror.GenerateError("Trouble reading JSON request body for adding contact", err, rw, req)
+			return ""
 		}
 
 		if err = json.Unmarshal(requestBody, &d); err != nil {
 			apierror.GenerateError("Trouble unmarshalling JSON request body into contact", err, rw, req)
+			return ""
 		}
-	} //else, form
+	}
+
+	typeId, err := strconv.Atoi(d.Type)
+	if err != nil {
+		apierror.GenerateError("Trouble parsing contact type Id.", err, rw, req)
+		return ""
+	}
+
+	d.Type, err = contact.GetContactTypeNameFromId(typeId)
+	if err != nil {
+		apierror.GenerateError("Trouble getting contact type from Id.", err, rw, req)
+		return ""
+	}
 
 	if d.Type == "" {
-		d.Type = "15"
+		d.Type = "New Customer"
 		d.Subject = "Becoming a Dealer"
 		subject = d.Subject
 	} else {
@@ -108,8 +123,9 @@ func AddDealerContact(rw http.ResponseWriter, req *http.Request, enc encoding.En
 		}
 	}
 
-	if err := d.Add(); err != nil {
+	if err := d.Add(dtx); err != nil {
 		apierror.GenerateError("Trouble adding contact", err, rw, req)
+		return ""
 	}
 
 	emailBody := fmt.Sprintf(
@@ -147,8 +163,8 @@ func AddDealerContact(rw http.ResponseWriter, req *http.Request, enc encoding.En
 	if emailBody != "" && *noEmail == false {
 		if err := contact.SendEmail(ct, subject, emailBody); err != nil {
 			apierror.GenerateError("Trouble sending email to receivers", err, rw, req)
+			return ""
 		}
-
 	}
 	return encoding.Must(enc.Encode(d))
 }
