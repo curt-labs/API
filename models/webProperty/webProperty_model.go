@@ -123,7 +123,7 @@ const (
 func (w *WebProperty) Get(dtx *apicontext.DataContext) error {
 	var err error
 
-	redis_key := "webproperty2:" + strconv.Itoa(w.ID)
+	redis_key := "webproperty:" + strconv.Itoa(w.ID)
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &w)
