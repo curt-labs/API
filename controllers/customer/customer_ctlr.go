@@ -85,8 +85,15 @@ func GetUsers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, para
 
 //Todo redundant
 func GetUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
-	qs, _ := url.Parse(r.URL.String())
+	qs, err := url.Parse(r.URL.String())
+	if err != nil {
+		apierr.GenerateError("Err parsing url.", err, w, r)
+	}
 	key := qs.Query().Get("key")
+
+	if key == "" {
+		key = r.FormValue("key")
+	}
 
 	user, err := customer.GetCustomerUserFromKey(key)
 	if err != nil {
