@@ -12,6 +12,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 )
@@ -83,8 +84,11 @@ func GetUsers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, para
 }
 
 //Todo redundant
-func GetUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
-	user, err := customer.GetCustomerUserFromKey(dtx.APIKey)
+func GetUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+	qs, _ := url.Parse(r.URL.String())
+	key := qs.Query().Get("key")
+
+	user, err := customer.GetCustomerUserFromKey(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return ""
