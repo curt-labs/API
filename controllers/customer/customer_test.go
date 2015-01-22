@@ -89,7 +89,7 @@ func TestCustomer(t *testing.T) {
 
 		// //get user
 		thyme = time.Now()
-		testThatHttp.RequestWithDtx("post", "/customer/user", "", "?key=", GetUser, nil, "", dtx)
+		testThatHttp.RequestWithDtx("post", "/customer/user", "", "?key="+dtx.APIKey, GetUser, nil, "", nil)
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &cu)
