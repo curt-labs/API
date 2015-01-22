@@ -3,6 +3,7 @@ package customer_ctlr
 import (
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
+	"github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/models/customer/content"
 	"github.com/go-martini/martini"
 
@@ -13,10 +14,10 @@ import (
 )
 
 // Get it all
-func GetAllContent(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+func GetAllContent(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	content, err := custcontent.AllCustomerContent(dtx.APIKey)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble getting customer content", err, rw, r)
 		return ""
 	}
 
@@ -25,17 +26,16 @@ func GetAllContent(w http.ResponseWriter, r *http.Request, enc encoding.Encoder,
 
 // Get Content by Content Id
 // Returns: CustomerContent
-func GetContentById(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
-
+func GetContentById(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	id, err := strconv.Atoi(params["id"])
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble getting customer content ID", err, rw, r)
 		return ""
 	}
 
 	content, err := custcontent.GetCustomerContent(id, dtx.APIKey)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble getting customer content", err, rw, r)
 		return ""
 	}
 
@@ -44,16 +44,16 @@ func GetContentById(w http.ResponseWriter, r *http.Request, enc encoding.Encoder
 
 // Get Content by Content Id
 // Returns: CustomerContent
-func GetContentRevisionsById(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
+func GetContentRevisionsById(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	id, err := strconv.Atoi(params["id"])
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble getting customer content ID", err, rw, r)
 		return ""
 	}
 
 	revs, err := custcontent.GetCustomerContentRevisions(id, dtx.APIKey)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble getting customer content revisions", err, rw, r)
 		return ""
 	}
 
@@ -61,108 +61,115 @@ func GetContentRevisionsById(w http.ResponseWriter, r *http.Request, enc encodin
 }
 
 // Part Content Endpoints
-func AllPartContent(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+func AllPartContent(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	content, err := custcontent.GetAllPartContent(dtx.APIKey)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble getting all part content", err, rw, r)
 		return ""
 	}
 
 	return encoding.Must(enc.Encode(content))
 }
 
-func UniquePartContent(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
+func UniquePartContent(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	partID, err := strconv.Atoi(params["id"])
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble getting part ID", err, rw, r)
 		return ""
 	}
 
 	content, err := custcontent.GetPartContent(partID, dtx.APIKey)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble getting part content", err, rw, r)
 		return ""
 	}
 
 	return encoding.Must(enc.Encode(content))
 }
 
-func CreatePartContent(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
-
+func CreatePartContent(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	id, err := strconv.Atoi(params["id"])
+	if err != nil {
+		apierror.GenerateError("Trouble getting part ID", err, rw, r)
+		return ""
+	}
+
 	// Defer the body closing until we're finished
 	defer r.Body.Close()
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble reading request body while creating part content", err, rw, r)
 		return ""
 	}
 
 	var content custcontent.CustomerContent
-	err = json.Unmarshal(body, &content)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err = json.Unmarshal(body, &content); err != nil {
+		apierror.GenerateError("Trouble unmarshalling json request body while creating part content", err, rw, r)
 		return ""
 	}
 
 	if err = content.Save(id, 0, dtx.APIKey); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble creating part content", err, rw, r)
 		return ""
 	}
 
 	return encoding.Must(enc.Encode(content))
 }
-func UpdatePartContent(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
-
+func UpdatePartContent(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	id, err := strconv.Atoi(params["id"])
+	if err != nil {
+		apierror.GenerateError("Trouble getting part ID", err, rw, r)
+		return ""
+	}
 
 	// Defer the body closing until we're finished
 	defer r.Body.Close()
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble reading request body while updating part content", err, rw, r)
 		return ""
 	}
 
 	var content custcontent.CustomerContent
-	err = json.Unmarshal(body, &content)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err = json.Unmarshal(body, &content); err != nil {
+		apierror.GenerateError("Trouble unmarshalling json request body while updating part content", err, rw, r)
 		return ""
 	}
 
 	if err = content.Save(id, 0, dtx.APIKey); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble updating part content", err, rw, r)
 		return ""
 	}
 
 	return encoding.Must(enc.Encode(content))
 }
 
-func DeletePartContent(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
-
+func DeletePartContent(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	id, err := strconv.Atoi(params["id"])
+	if err != nil {
+		apierror.GenerateError("Trouble getting part ID", err, rw, r)
+		return ""
+	}
 
 	// Defer the body closing until we're finished
 	defer r.Body.Close()
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble reading request body while deleting part content", err, rw, r)
 		return ""
 	}
 
 	var content custcontent.CustomerContent
-	err = json.Unmarshal(body, &content)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err = json.Unmarshal(body, &content); err != nil {
+		apierror.GenerateError("Trouble unmarshalling json request body while deleting part content", err, rw, r)
 		return ""
 	}
 
 	if err = content.Delete(id, 0, dtx.APIKey); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble deleting part content", err, rw, r)
 		return ""
 	}
 
@@ -170,107 +177,116 @@ func DeletePartContent(w http.ResponseWriter, r *http.Request, params martini.Pa
 }
 
 // Category Content Endpoints
-func AllCategoryContent(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+func AllCategoryContent(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	content, err := custcontent.GetAllCategoryContent(dtx.APIKey)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble getting all category content", err, rw, r)
 		return ""
 	}
 
 	return encoding.Must(enc.Encode(content))
 }
 
-func UniqueCategoryContent(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+func UniqueCategoryContent(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	catID, err := strconv.Atoi(params["id"])
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble getting category ID", err, rw, r)
 		return ""
 	}
 
 	content, err := custcontent.GetCategoryContent(catID, dtx.APIKey)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble getting category content", err, rw, r)
 		return ""
 	}
 
 	return encoding.Must(enc.Encode(content))
 }
 
-func CreateCategoryContent(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+func CreateCategoryContent(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	id, err := strconv.Atoi(params["id"])
+	if err != nil {
+		apierror.GenerateError("Trouble getting category ID", err, rw, r)
+		return ""
+	}
+
 	// Defer the body closing until we're finished
 	defer r.Body.Close()
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble reading request body while creating category content", err, rw, r)
 		return ""
 	}
 
 	var content custcontent.CustomerContent
-	err = json.Unmarshal(body, &content)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err = json.Unmarshal(body, &content); err != nil {
+		apierror.GenerateError("Trouble unmarshalling json request body while creating category content", err, rw, r)
 		return ""
 	}
 
 	if err = content.Save(0, id, dtx.APIKey); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble creating category content", err, rw, r)
 		return ""
 	}
 
 	return encoding.Must(enc.Encode(content))
 }
 
-func UpdateCategoryContent(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+func UpdateCategoryContent(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	id, err := strconv.Atoi(params["id"])
+	if err != nil {
+		apierror.GenerateError("Trouble getting category ID", err, rw, r)
+		return ""
+	}
 
 	// Defer the body closing until we're finished
 	defer r.Body.Close()
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble reading request body while updating category content", err, rw, r)
 		return ""
 	}
 
 	var content custcontent.CustomerContent
-	err = json.Unmarshal(body, &content)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err = json.Unmarshal(body, &content); err != nil {
+		apierror.GenerateError("Trouble unmarshalling json request body while updating category content", err, rw, r)
 		return ""
 	}
 
 	if err = content.Save(0, id, dtx.APIKey); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble updating category content", err, rw, r)
 		return ""
 	}
 
 	return encoding.Must(enc.Encode(content))
 }
 
-func DeleteCategoryContent(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
-
+func DeleteCategoryContent(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	id, err := strconv.Atoi(params["id"])
+	if err != nil {
+		apierror.GenerateError("Trouble getting category ID", err, rw, r)
+		return ""
+	}
 
 	// Defer the body closing until we're finished
 	defer r.Body.Close()
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble reading request body while deleting category content", err, rw, r)
 		return ""
 	}
 
 	var content custcontent.CustomerContent
-	err = json.Unmarshal(body, &content)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err = json.Unmarshal(body, &content); err != nil {
+		apierror.GenerateError("Trouble unmarshalling json request body while deleting category content", err, rw, r)
 		return ""
 	}
 
 	if err = content.Delete(0, id, dtx.APIKey); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble deleting category content", err, rw, r)
 		return ""
 	}
 
@@ -278,10 +294,10 @@ func DeleteCategoryContent(w http.ResponseWriter, r *http.Request, params martin
 }
 
 // Content Types
-func GetAllContentTypes(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+func GetAllContentTypes(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 	types, err := custcontent.AllCustomerContentTypes()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble getting all content types", err, rw, r)
 		return ""
 	}
 

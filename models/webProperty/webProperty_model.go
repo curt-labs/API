@@ -87,7 +87,7 @@ var (
 	getAllWebPropertyRequirements = `SELECT DISTINCT wprc.ID, wpr.ID, wpr.ReqType, wpr.Requirement, wprc.Compliance, wprc.WebPropertiesID 
 		FROM WebPropRequirementCheck AS wprc 
 		LEFT JOIN WebPropRequirements AS wpr ON wpr.ID = wprc.WebPropRequirementsID
-		join WebProperties as w on w.typeID = wpr.id
+		join WebProperties as w on w.ID = wprc.WebPropertiesID
 		join CustomerToBrand as ctb on ctb.cust_id = w.cust_id
 		join ApiKeyToBrand as atb on atb.brandID = ctb.brandID
 		join ApiKey as a on a.id = atb.keyID
@@ -127,7 +127,9 @@ func (w *WebProperty) Get(dtx *apicontext.DataContext) error {
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &w)
-		return err
+		if err == nil {
+			return err
+		}
 	}
 
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -148,6 +150,7 @@ func (w *WebProperty) Get(dtx *apicontext.DataContext) error {
 	if err != nil {
 		return err
 	}
+
 	typesMap := webPropTypes.ToMap()
 	notesMap := webPropNotes.ToMap()
 	requirementsMap := WebPropertyRequirements.ToMap()
@@ -221,7 +224,9 @@ func GetByCustomer(CustID int, dtx *apicontext.DataContext) (ws WebProperties, e
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &ws)
-		return
+		if err == nil {
+			return
+		}
 	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -321,7 +326,9 @@ func GetAll(dtx *apicontext.DataContext) (WebProperties, error) {
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &ws)
-		return ws, err
+		if err == nil {
+			return ws, err
+		}
 	}
 
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -571,7 +578,9 @@ func GetAllWebPropertyTypes(dtx *apicontext.DataContext) (WebPropertyTypes, erro
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &ws)
-		return ws, err
+		if err == nil {
+			return ws, err
+		}
 	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -603,7 +612,9 @@ func GetAllWebPropertyNotes(dtx *apicontext.DataContext) (WebPropertyNotes, erro
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &ws)
-		return ws, err
+		if err == nil {
+			return ws, err
+		}
 	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -634,7 +645,9 @@ func GetAllWebPropertyRequirements(dtx *apicontext.DataContext) (WebPropertyRequ
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &ws)
-		return ws, err
+		if err == nil {
+			return ws, err
+		}
 	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -654,7 +667,7 @@ func GetAllWebPropertyRequirements(dtx *apicontext.DataContext) (WebPropertyRequ
 		var reqType, req *string
 		var comp *bool
 		var wpid *int
-		res.Scan(
+		err = res.Scan(
 			&w.ID,
 			&w.RequirementID,
 			&reqType,
@@ -662,6 +675,9 @@ func GetAllWebPropertyRequirements(dtx *apicontext.DataContext) (WebPropertyRequ
 			&comp,
 			&wpid,
 		)
+		if err != nil {
+			return ws, err
+		}
 		if reqType != nil {
 			w.ReqType = *reqType
 		}

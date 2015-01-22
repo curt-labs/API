@@ -54,7 +54,7 @@ var (
                          where cp.catID IN(%s) and (p.status = 800 || p.status = 900)
                          order by cp.partID
                          limit %d, %d`
-	basicsStmt = `select p.status, p.dateAdded, p.dateModified, p.shortDesc, p.oldPartNumber, p.partID, p.priceCode, pc.class, p.brandID
+	basicsStmt = `select p.status, p.dateAdded, p.dateModified, p.shortDesc, p.oldPartNumber, p.partID, p.priceCode, pc.class, pc.image, p.brandID
                 from Part as p
                 left join Class as pc on p.classID = pc.classID
                 where p.partID = ? && p.status in (800,900) limit 1`
@@ -500,7 +500,7 @@ func (p *Part) Basics(dtx *apicontext.DataContext) error {
 		return errors.New("No Part Found for:" + string(p.ID))
 	}
 
-	var short, price, class, oldNum []byte
+	var short, price, class, oldNum, image []byte
 	err = row.Scan(
 		&p.Status,
 		&p.DateAdded,
@@ -510,7 +510,9 @@ func (p *Part) Basics(dtx *apicontext.DataContext) error {
 		&p.ID,
 		&price,
 		&class,
-		&p.BrandID)
+		&image,
+		&p.BrandID,
+	)
 	if err != nil {
 		return err
 	}
@@ -524,7 +526,10 @@ func (p *Part) Basics(dtx *apicontext.DataContext) error {
 		}
 	}
 	if class != nil {
-		p.PartClass = string(class[:])
+		p.Class.Name = string(class[:])
+	}
+	if image != nil {
+		p.Class.Image = string(image[:])
 	}
 	if oldNum != nil {
 		p.OldPartNumber = string(oldNum[:])
@@ -589,11 +594,16 @@ func (p *Part) GetRelated(dtx *apicontext.DataContext) error {
 }
 
 func (p *Part) GetContent(dtx *apicontext.DataContext) error {
-	redis_key := fmt.Sprintf("part:%d:content:%s", p.ID, dtx.BrandString)
+	redis_key_content := fmt.Sprintf("part:%d:content:%s", p.ID, dtx.BrandString)
+	redis_key_installSheet := fmt.Sprintf("part:%d:installSheet:%s", p.ID, dtx.BrandString)
 
-	data, err := redis.Get(redis_key)
-	if err == nil && len(data) > 0 {
-		if err = json.Unmarshal(data, &p.Content); err == nil {
+	data_content, err_content := redis.Get(redis_key_content)
+	data_installSheet, err_installSheet := redis.Get(redis_key_installSheet)
+	if err_content == nil && err_installSheet == nil && len(data_content) > 0 && len(data_installSheet) > 0 {
+		err_content = json.Unmarshal(data_content, &p.Content)
+		err_installSheet = json.Unmarshal(data_installSheet, &p.InstallSheet)
+
+		if err_content == nil && err_installSheet == nil {
 			return nil
 		}
 	}
@@ -638,7 +648,8 @@ func (p *Part) GetContent(dtx *apicontext.DataContext) error {
 
 	p.Content = content
 	if dtx.BrandString != "" {
-		go redis.Setex(redis_key, p.Content, redis.CacheTimeout)
+		go redis.Setex(redis_key_content, p.Content, redis.CacheTimeout)
+		go redis.Setex(redis_key_installSheet, p.InstallSheet, redis.CacheTimeout)
 	}
 	return nil
 }

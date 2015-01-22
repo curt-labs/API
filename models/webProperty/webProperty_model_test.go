@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	. "github.com/smartystreets/goconvey/convey"
-	"log"
 	"math/rand"
 	"strconv"
 	"testing"
@@ -52,8 +51,6 @@ func TestWebPropertiesBetter(t *testing.T) {
 		w.WebPropertyNotes = append(w.WebPropertyNotes, wn)
 		w.WebPropertyType = wt
 		w.CustID = MockedDTX.CustomerID
-		log.Println("customerID is:")
-		log.Println(w.CustID)
 		err = w.Create()
 		So(err, ShouldBeNil)
 		So(w, ShouldNotBeNil)
@@ -117,18 +114,18 @@ func TestWebPropertiesBetter(t *testing.T) {
 		}
 
 		//Deletes
-		err = w.Delete()
-		So(err, ShouldBeNil)
-		err = wn.Delete()
-		So(err, ShouldBeNil)
-		err = wt.Delete()
-		So(err, ShouldBeNil)
+		// err = w.Delete()
+		// So(err, ShouldBeNil)
+		// err = wn.Delete()
+		// So(err, ShouldBeNil)
+		// err = wt.Delete()
+		// So(err, ShouldBeNil)
 
-		err = wr.Delete()
-		So(err, ShouldBeNil)
+		// err = wr.Delete()
+		// So(err, ShouldBeNil)
 
 	})
-	_ = apicontextmock.DeMock(MockedDTX)
+	// _ = apicontextmock.DeMock(MockedDTX)
 
 }
 func BenchmarkCreateDeleteWebProperty(b *testing.B) {

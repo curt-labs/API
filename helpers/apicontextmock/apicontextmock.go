@@ -41,10 +41,10 @@ var (
 
 	createSite                 = `INSERT INTO Website (url, description) VALUES (?,?)`
 	joinToBrand                = `insert into WebsiteToBrand (WebsiteID, brandID) values (?,?)`
-	deleteApiKeyType           = `delete from ApiKeyType where type = (select type_id from ApiKey where id =?)`
-	deleteType                 = `delete from ApiKeyType where type = ?`
+	deleteApiKeyType           = `delete from ApiKeyType where id = (select type_id from ApiKey where api_key = ?)`
+	deleteType                 = `delete from ApiKeyType where type = (select type_id from ApiKey where api_key =?)`
 	deleteCustomerUser         = `delete from CustomerUser where id = ?`
-	deleteApiKey               = `delete from ApiKey where id =  ?`
+	deleteApiKey               = `delete from ApiKey where api_key =  ?`
 	deleteApiKeyToBrand        = `delete from ApiKeyToBrand where keyID = (select id from ApiKey where api_key = ?)`
 	deleteSite                 = `delete from Website where id = ?`
 	deleteSiteToBrand          = `delete from WebsiteToBrand where WebsiteID = ?`
@@ -54,81 +54,91 @@ var (
 
 func Mock() (*apicontext.DataContext, error) {
 	var dtx apicontext.DataContext
+	var err error
 	// Needs to create records in the db for the following because of foreign key constraints:
 	// Bare Min:
-
-	custID, err := InsertCustomer()
+	dtx.CustomerID, err = InsertCustomer()
 	if err != nil {
 		return &dtx, err
 	}
 
-	dtx.CustomerID = custID
 	// CustomerUser
-
-	if dtx.UserID, err = CreateCustomerUser(custID); err != nil {
-		return &dtx, err
-	}
-
-	// ApiKeyType
-	keyType := "SUPER"
-	dtx.Globals = make(map[string]interface{})
-	dtx.Globals["keyType"] = keyType
-	keyTypeID := "" // needed for when you create an API Key
-
-	if keyTypeID, err = CreateApiKeyType(keyType); err != nil {
-		return &dtx, err
-	}
-
-	// ApiKey and ApiKeyToBrand
-
-	BrandID := 1
-	if _, dtx.APIKey, err = CreateApiKey(dtx.UserID, keyTypeID, keyType, BrandID); err != nil {
+	if dtx.UserID, err = CreateCustomerUser(dtx.CustomerID); err != nil {
 		return &dtx, err
 	}
 
 	// Brand
-	dtx.BrandID = BrandID
+	dtx.BrandID = 1
+
+	// ApiKeyType
+	keyTypes := []string{"Authentication", "Private", "Public"}
+
+	keys := make(map[string]string)
+
+	for _, keyType := range keyTypes {
+		var keyTypeID string
+		if keyTypeID, err = CreateApiKeyType(keyType); err != nil {
+			return &dtx, err
+		}
+
+		// ApiKey and ApiKeyToBrand -
+		if _, keys[keyType], err = CreateApiKey(dtx.UserID, keyTypeID, keyType, dtx.BrandID); err != nil {
+			return &dtx, err
+		}
+	}
+
+	dtx.Globals = make(map[string]interface{})
+	dtx.Globals["keys"] = keys
+
+	//leaves APIKey as public one
+	for t, k := range keys {
+		if t == "Public" {
+			dtx.APIKey = k
+		}
+	}
 	// Website
-	websiteID := 0
-	if websiteID, err = CreateWebsite("http://www.testWebsite23sdf.com", "bogus website"); err != nil {
+	if dtx.WebsiteID, err = CreateWebsite("http://www.testWebsite23sdf.com", "bogus website"); err != nil {
 		return &dtx, err
 	}
 
-	dtx.WebsiteID = websiteID
 	// WebsiteToBrand
 	var BrandIDs []int
-	BrandIDs = append(BrandIDs, 1)
-	if err = CreateWebsiteToBrands(BrandIDs, websiteID); err != nil {
+	BrandIDs = append(BrandIDs, dtx.BrandID)
+	if err = CreateWebsiteToBrands(BrandIDs, dtx.WebsiteID); err != nil {
 		return &dtx, err
 	}
+
+	//CustomerToBrand
 	if err = InsertCustomerToBrand(dtx.CustomerID, BrandIDs); err != nil {
 		return &dtx, err
 	}
 
+	//brandString and array
+	err = dtx.GetBrandsArrayAndString(dtx.APIKey, dtx.BrandID)
+	if err != nil {
+		return &dtx, err
+	}
 	return &dtx, nil
 }
 
 func DeMock(dtx *apicontext.DataContext) error {
 	var err error
-	var ty string
-	t := dtx.Globals["keyType"]
-	if t != nil {
-		ty = t.(string)
+
+	keys := make(map[string]string)
+	keysInterface := dtx.Globals["keys"]
+	if keysInterface != nil {
+		keys = keysInterface.(map[string]string)
 	}
 
-	err = DeleteApiKey(dtx.APIKey)
-	if err != nil {
-		return err
-	}
-
-	err = JustGoddamDeleteAUsersApiKeys(dtx.UserID)
-	if err != nil {
-		return err
-	}
-
-	err = DeleteType(ty)
-	if err != nil {
-		return err
+	for kType, key := range keys {
+		err = DeleteApiKey(key)
+		if err != nil {
+			return err
+		}
+		err = DeleteType(kType)
+		if err != nil {
+			return err
+		}
 	}
 
 	err = DeleteCustomerUser(dtx.UserID)
@@ -145,7 +155,6 @@ func DeMock(dtx *apicontext.DataContext) error {
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -220,7 +229,7 @@ func InsertCustomerToBrand(custId int, brandIds []int) error {
 	return err
 }
 
-func DeleteType(t string) error {
+func DeleteType(apiKey string) error {
 	var err error
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -233,7 +242,7 @@ func DeleteType(t string) error {
 		return err
 	}
 	defer stmt.Close()
-	_, err = stmt.Exec(t)
+	_, err = stmt.Exec(apiKey)
 	if err != nil {
 		return err
 	}
@@ -427,7 +436,7 @@ func DeleteApiKey(key string) error {
 	}
 	defer db.Close()
 
-	stmt, err := db.Prepare(deleteApiKey)
+	stmt, err := db.Prepare(deleteApiKeyToBrand)
 	if err != nil {
 		return err
 	}
@@ -437,7 +446,7 @@ func DeleteApiKey(key string) error {
 		return err
 	}
 
-	stmt, err = db.Prepare(deleteApiKeyToBrand)
+	stmt, err = db.Prepare(deleteApiKey)
 	if err != nil {
 		return err
 	}
@@ -447,45 +456,6 @@ func DeleteApiKey(key string) error {
 		return err
 	}
 
-	stmt, err = db.Prepare(deleteApiKeyType)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	_, err = stmt.Exec(key)
-	if err != nil {
-		return err
-	}
-	return err
-}
-
-func JustGoddamDeleteAUsersApiKeys(userID string) error {
-	var err error
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	stmt, err := db.Prepare(deleteUsersApiKeys)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	_, err = stmt.Exec(userID)
-	if err != nil {
-		return err
-	}
-
-	stmt, err = db.Prepare(deleteUsersApiKeysToBrands)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	_, err = stmt.Exec(userID)
-	if err != nil {
-		return err
-	}
 	return err
 }
 
