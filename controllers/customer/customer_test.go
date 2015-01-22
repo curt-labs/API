@@ -70,8 +70,7 @@ func TestCustomer(t *testing.T) {
 		So(c.Id, ShouldBeGreaterThan, 0)
 
 		thyme = time.Now()
-		testThatHttp.Request("get", "/customer/", ":id", strconv.Itoa(c.Id)+"?key=", GetCustomer, nil, "")
-		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
+		testThatHttp.RequestWithDtx("post", "/customer", "", "?key=", GetCustomer, nil, "", dtx)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &c)
 		So(err, ShouldBeNil)

@@ -9,7 +9,6 @@ import (
 	"github.com/go-martini/martini"
 
 	"encoding/json"
-	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -20,13 +19,10 @@ import (
 func GetCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var err error
 	var c customer.Customer
-	idStr := params["id"]
-	if idStr != "" {
-		c.Id, err = strconv.Atoi(idStr)
-	} else {
-		apierr.GenerateError("No Id Supplied.", errors.New("No results."), w, r)
+	err = c.GetCustomerIdFromKey(dtx.APIKey)
+	if err != nil {
+		apierr.GenerateError("Trouble getting Id", err, w, r)
 	}
-
 	err = c.GetCustomer(dtx.APIKey)
 	if err != nil {
 		http.Error(w, "Error getting customer.", http.StatusServiceUnavailable)
