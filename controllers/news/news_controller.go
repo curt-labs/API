@@ -1,23 +1,23 @@
 package news_controller
 
 import (
-	// "errors"
-	// "fmt"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
+	"github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/helpers/pagination"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	"github.com/curt-labs/GoAPI/models/news"
 	"github.com/go-martini/martini"
-	// "log"
-	"net/http"
-	// "sort"
-	"strconv"
-	"strings"
-	"time"
 )
 
-const timeFormat = "Mon Jan 2 15:04:05 -0700 MST 2006"
+const (
+	timeFormat = "Mon Jan 2 15:04:05 -0700 MST 2006"
+)
 
 func GetAll(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var fs news_model.Newses
@@ -25,7 +25,8 @@ func GetAll(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *
 
 	fs, err = news_model.GetAll(dtx)
 	if err != nil {
-		return err.Error()
+		apierror.GenerateError("Trouble getting all news", err, rw, r)
+		return ""
 	}
 	sort := r.FormValue("sort")
 	direction := r.FormValue("direction")
@@ -48,17 +49,20 @@ func Get(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params m
 	if idStr != "" {
 		f.ID, err = strconv.Atoi(idStr)
 		if err != nil {
-			return err.Error()
+			apierror.GenerateError("Trouble getting news ID", err, rw, r)
+			return ""
 		}
 	} else {
 		f.ID, err = strconv.Atoi(params["id"])
 		if err != nil {
-			return err.Error()
+			apierror.GenerateError("Trouble getting news ID", err, rw, r)
+			return ""
 		}
 	}
 	err = f.Get(dtx)
 	if err != nil {
-		return err.Error()
+		apierror.GenerateError("Trouble getting news", err, rw, r)
+		return ""
 	}
 	return encoding.Must(enc.Encode(f))
 }
@@ -85,7 +89,8 @@ func Create(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *
 	}
 	err = n.Create(dtx)
 	if err != nil {
-		return err.Error()
+		apierror.GenerateError("Trouble creating news", err, rw, r)
+		return ""
 	}
 	return encoding.Must(enc.Encode(n))
 }
@@ -98,12 +103,14 @@ func Update(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, param
 	if idStr != "" {
 		n.ID, err = strconv.Atoi(idStr)
 		if err != nil {
-			return err.Error()
+			apierror.GenerateError("Trouble getting news ID", err, rw, r)
+			return ""
 		}
 	} else {
 		n.ID, err = strconv.Atoi(params["id"])
 		if err != nil {
-			return err.Error()
+			apierror.GenerateError("Trouble getting news ID", err, rw, r)
+			return ""
 		}
 	}
 	n.Get(dtx)
@@ -139,7 +146,8 @@ func Update(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, param
 
 	err = n.Update(dtx)
 	if err != nil {
-		return err.Error()
+		apierror.GenerateError("Trouble updating news", err, rw, r)
+		return ""
 	}
 	return encoding.Must(enc.Encode(n))
 }
@@ -152,17 +160,20 @@ func Delete(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, param
 	if idStr != "" {
 		n.ID, err = strconv.Atoi(idStr)
 		if err != nil {
-			return err.Error()
+			apierror.GenerateError("Trouble getting news ID", err, rw, r)
+			return ""
 		}
 	} else {
 		n.ID, err = strconv.Atoi(params["id"])
 		if err != nil {
-			return err.Error()
+			apierror.GenerateError("Trouble getting news ID", err, rw, r)
+			return ""
 		}
 	}
 	err = n.Delete(dtx)
 	if err != nil {
-		return err.Error()
+		apierror.GenerateError("Trouble deleting news", err, rw, r)
+		return ""
 	}
 	return encoding.Must(enc.Encode(n))
 }
@@ -175,7 +186,8 @@ func GetTitles(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dt
 
 	l, err = news_model.GetTitles(page, results, dtx)
 	if err != nil {
-		return err.Error()
+		apierror.GenerateError("Trouble getting news titles", err, rw, r)
+		return ""
 	}
 	return encoding.Must(enc.Encode(l))
 }
@@ -188,7 +200,8 @@ func GetLeads(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx
 
 	l, err = news_model.GetLeads(page, results, dtx)
 	if err != nil {
-		return err.Error()
+		apierror.GenerateError("Trouble getting news leads", err, rw, r)
+		return ""
 	}
 	return encoding.Must(enc.Encode(l))
 }
@@ -209,7 +222,8 @@ func Search(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *
 
 	l, err := news_model.Search(title, lead, content, publishStart, publishEnd, active, slug, page, results, dtx)
 	if err != nil {
-		return err.Error()
+		apierror.GenerateError("Trouble searching news", err, rw, r)
+		return ""
 	}
 	return encoding.Must(enc.Encode(l))
 }

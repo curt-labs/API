@@ -7,6 +7,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -154,7 +155,11 @@ var (
 								WHERE bv.AAIABaseVehicleID = ?
 								AND (sm.AAIASubmodelID = ?  OR sm.AAIASubmodelID IS NULL) `
 
-	getPartID = `SELECT PartNumber FROM vcdb_VehiclePart WHERE VehicleID = ?`
+	getPartID             = `SELECT PartNumber FROM vcdb_VehiclePart WHERE VehicleID = ?`
+	curtConfigTypeMapStmt = `select cat.name, cat.AcesTypeID, ca.value, ca.vcdbID
+		from ConfigAttributeType as cat
+		join ConfigAttribute as ca on ca.ConfigAttributeTypeID = cat.ID
+		where cat.AcesTypeID > 0 && ca.vcdbID > 0`
 )
 
 const (
@@ -176,6 +181,11 @@ func VinPartLookup(vin string, dtx *apicontext.DataContext) (l products.Lookup, 
 	l, err = av.getCurtVehicles(configMap)
 	if err != nil {
 		return l, err
+	}
+
+	//set lookup object's brands
+	for _, brand := range dtx.BrandArray {
+		l.Brands = append(l.Brands, brand)
 	}
 
 	//get parts
@@ -472,6 +482,8 @@ func (av *AcesVehicle) getCurtVehicles(configMap map[int]interface{}) (products.
 			cv.Configuration.AcesValueID = *acesConfigValID
 		}
 
+		log.Print(configMap)
+
 		//configs - assign to map, flag
 		configValFlag := true
 		if vs, ok := pcoMap[cv.Configuration.Type]; ok {
@@ -525,4 +537,39 @@ func (av *AcesVehicle) getCurtVehicles(configMap map[int]interface{}) (products.
 	l.Submodels = append(l.Submodels, l.Vehicle.Submodel)
 
 	return l, err
+}
+
+func getCurtConfigMapFromAcesConfigMap(acesConfigMap map[int]interface{}) (map[string]string, error) {
+	var err error
+	tempMap := make(map[string]string)
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(curtConfigTypeMapStmt)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	res, err := stmt.Query()
+	if err != nil {
+		return err
+	}
+	var catName, caValue string
+	var catAcesId, vcdbId int
+	for res.Next() {
+		err = res.Scan(
+			&catName,
+			&catAcesId,
+			&caValue,
+			&vcdbId,
+		)
+		if err != nil {
+			return err
+		}
+		tempMap[catName+":"+caValue] = strconv.Itoa(catAcesId) + ":" + strconv.Itoa(vcdbId)
+
+	}
 }

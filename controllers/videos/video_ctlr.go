@@ -2,22 +2,23 @@ package videos_ctlr
 
 import (
 	"encoding/json"
+	"io/ioutil"
+	"net/http"
+	"strconv"
+
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	apierror "github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/models/products"
 	"github.com/curt-labs/GoAPI/models/video"
 	"github.com/go-martini/martini"
-	"io/ioutil"
-	"net/http"
-	"strconv"
 )
 
 //gets old videos
 func DistinctVideos(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	videos, err := video.UniqueVideos(dtx)
 	if err != nil {
-		apierror.GenerateError("Error retrieving videos.", err, w, r)
+		apierror.GenerateError("Touble getting distinct videos", err, w, r)
 		return ""
 	}
 	return encoding.Must(enc.Encode(videos))
@@ -28,18 +29,16 @@ func Get(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params ma
 	var v video.Video
 	var err error
 
-	id, err := strconv.Atoi(params["id"])
-	if err != nil {
-		apierror.GenerateError("Error parsing Id.", err, w, r)
+	if v.ID, err = strconv.Atoi(params["id"]); err != nil {
+		apierror.GenerateError("Trouble getting video ID", err, w, r)
 		return ""
 	}
-	v.ID = id
-	err = v.Get()
 
-	if err != nil {
-		apierror.GenerateError("Error retrieving video.", err, w, r)
+	if err = v.Get(); err != nil {
+		apierror.GenerateError("Trouble getting video", err, w, r)
 		return ""
 	}
+
 	return encoding.Must(enc.Encode(v))
 }
 
@@ -47,165 +46,161 @@ func GetVideoDetails(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 	var v video.Video
 	var err error
 
-	id, err := strconv.Atoi(params["id"])
-	if err != nil {
-		apierror.GenerateError("Error parsing Id.", err, w, r)
+	if v.ID, err = strconv.Atoi(params["id"]); err != nil {
+		apierror.GenerateError("Trouble getting video ID", err, w, r)
 		return ""
 	}
-	v.ID = id
 
-	err = v.GetVideoDetails()
-	if err != nil {
-		apierror.GenerateError("Error getting video details.", err, w, r)
+	if err = v.GetVideoDetails(); err != nil {
+		apierror.GenerateError("Trouble getting video details", err, w, r)
 		return ""
 	}
+
 	return encoding.Must(enc.Encode(v))
 }
-func GetAllVideos(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
-	var err error
 
+func GetAllVideos(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	vs, err := video.GetAllVideos(dtx)
 	if err != nil {
-		apierror.GenerateError("Error getting videos.", err, w, r)
+		apierror.GenerateError("Trouble getting all videos", err, w, r)
 		return ""
 	}
+
 	return encoding.Must(enc.Encode(vs))
 }
 
 func GetChannel(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	var ch video.Channel
+	var vchan video.Channel
 	var err error
 
-	id, err := strconv.Atoi(params["id"])
-	if err != nil {
-		apierror.GenerateError("Error parsing Id.", err, w, r)
+	if vchan.ID, err = strconv.Atoi(params["id"]); err != nil {
+		apierror.GenerateError("Trouble getting video channel ID", err, w, r)
 		return ""
 	}
-	ch.ID = id
-	err = ch.Get()
 
-	if err != nil {
-		apierror.GenerateError("Error getting channel.", err, w, r)
+	if err = vchan.Get(); err != nil {
+		apierror.GenerateError("Trouble getting video channel", err, w, r)
 		return ""
 	}
-	return encoding.Must(enc.Encode(ch))
+
+	return encoding.Must(enc.Encode(vchan))
 }
 
 func GetAllChannels(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	var err error
-	cs, err := video.GetAllChannels()
+
+	vchans, err := video.GetAllChannels()
 
 	if err != nil {
-		apierror.GenerateError("Error getting channels.", err, w, r)
+		apierror.GenerateError("Trouble getting all video channels", err, w, r)
 		return ""
 	}
-	return encoding.Must(enc.Encode(cs))
+
+	return encoding.Must(enc.Encode(vchans))
 }
+
 func GetCdn(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var cdn video.CdnFile
 	var err error
 
-	id, err := strconv.Atoi(params["id"])
-	if err != nil {
-		apierror.GenerateError("Error parsing Id.", err, w, r)
+	if cdn.ID, err = strconv.Atoi(params["id"]); err != nil {
+		apierror.GenerateError("Trouble getting video CDN ID", err, w, r)
 		return ""
 	}
-	cdn.ID = id
-	err = cdn.Get()
 
-	if err != nil {
-		apierror.GenerateError("Error getting cdn.", err, w, r)
+	if err = cdn.Get(); err != nil {
+		apierror.GenerateError("Trouble getting video cdn", err, w, r)
+
 		return ""
 	}
+
 	return encoding.Must(enc.Encode(cdn))
 }
 
 func GetAllCdns(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	var err error
-
 	cdns, err := video.GetAllCdnFiles()
+
 	if err != nil {
-		apierror.GenerateError("Error getting cdns.", err, w, r)
+		apierror.GenerateError("Trouble getting all video CDNs", err, w, r)
 		return ""
 	}
+
 	return encoding.Must(enc.Encode(cdns))
 }
+
 func GetVideoType(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var vt video.VideoType
 	var err error
 
-	id, err := strconv.Atoi(params["id"])
-	if err != nil {
-		apierror.GenerateError("Error parsing Id.", err, w, r)
+	if vt.ID, err = strconv.Atoi(params["id"]); err != nil {
+		apierror.GenerateError("Trouble getting video type ID", err, w, r)
 		return ""
 	}
-	vt.ID = id
-	err = vt.Get()
 
-	if err != nil {
-		apierror.GenerateError("Error getting video types.", err, w, r)
+	if err = vt.Get(); err != nil {
+		apierror.GenerateError("Trouble getting video type", err, w, r)
 		return ""
 	}
+
 	return encoding.Must(enc.Encode(vt))
 }
 
 func GetAllVideoTypes(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	var err error
-
 	vts, err := video.GetAllVideoTypes()
 
 	if err != nil {
-		apierror.GenerateError("Error getting video types.", err, w, r)
+		apierror.GenerateError("Trouble getting all video types", err, w, r)
 		return ""
 	}
+
 	return encoding.Must(enc.Encode(vts))
 }
 
 func GetPartVideos(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var err error
 	var p products.Part
-	id, err := strconv.Atoi(params["id"])
-	if err != nil {
-		apierror.GenerateError("Error parsing Id.", err, w, r)
-		return ""
-	}
-	p.ID = id
-	videos, err := video.GetPartVideos(p)
 
-	if err != nil {
-		apierror.GenerateError("Error getting part videos.", err, w, r)
+	var videos video.Videos
+	if p.ID, err = strconv.Atoi(params["id"]); err != nil {
+		apierror.GenerateError("Trouble getting part ID", err, w, r)
 		return ""
 	}
+
+	if videos, err = video.GetPartVideos(p); err != nil {
+		apierror.GenerateError("Trouble getting part videos", err, w, r)
+		return ""
+	}
+
 	return encoding.Must(enc.Encode(videos))
 }
 
 func SaveVideo(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var v video.Video
 	var err error
-	idStr := params["id"]
-	if idStr != "" {
-		v.ID, err = strconv.Atoi(idStr)
-		if err != nil {
-			apierror.GenerateError("Error parsing Id.", err, w, r)
+
+	if params["id"] != "" {
+		if v.ID, err = strconv.Atoi(params["id"]); err != nil {
+			apierror.GenerateError("Trouble getting video ID", err, w, r)
 			return ""
 		}
-		err = v.Get()
-		if err != nil {
-			apierror.GenerateError("Error getting video.", err, w, r)
+		if err = v.Get(); err != nil {
+			apierror.GenerateError("Trouble getting video", err, w, r)
 			return ""
 		}
 	}
+
 	//json
 	requestBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		apierror.GenerateError("Error reading body.", err, w, r)
-		return ""
+
+		apierror.GenerateError("Trouble reading request body while saving video", err, w, r)
+		return encoding.Must(enc.Encode(false))
 	}
-	err = json.Unmarshal(requestBody, &v)
-	if err != nil {
-		apierror.GenerateError("Error unmarshalling request body.", err, w, r)
-		return ""
+
+	if err = json.Unmarshal(requestBody, &v); err != nil {
+		apierror.GenerateError("Trouble unmarshalling json request body while saving video", err, w, r)
+		return encoding.Must(enc.Encode(false))
 	}
+
 	//create or update
 	if v.ID > 0 {
 		err = v.Update()
@@ -214,57 +209,64 @@ func SaveVideo(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, par
 	}
 
 	if err != nil {
-		apierror.GenerateError("Error saving video.", err, w, r)
+		msg := "Trouble creating video"
+		if v.ID > 0 {
+			msg = "Trouble updating video"
+		}
+		apierror.GenerateError(msg, err, w, r)
 		return ""
 	}
+
 	return encoding.Must(enc.Encode(v))
 }
 func DeleteVideo(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var v video.Video
 	var err error
-	idStr := params["id"]
 
-	v.ID, err = strconv.Atoi(idStr)
-	if err != nil {
-		apierror.GenerateError("Error parsing Id.", err, w, r)
+	if v.ID, err = strconv.Atoi(params["id"]); err != nil {
+		apierror.GenerateError("Trouble getting video ID", err, w, r)
 		return ""
 	}
-	err = v.Delete()
-	if err != nil {
-		apierror.GenerateError("Error deleting video", err, w, r)
+
+	if err = v.Delete(); err != nil {
+		apierror.GenerateError("Trouble deleting video", err, w, r)
+
 		return ""
 	}
+
 	return encoding.Must(enc.Encode(v))
-
 }
 
 func SaveChannel(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var c video.Channel
 	var err error
-	idStr := params["id"]
-	if idStr != "" {
-		c.ID, err = strconv.Atoi(idStr)
-		if err != nil {
-			apierror.GenerateError("Error parsing Id.", err, w, r)
+
+	if params["id"] != "" {
+		if c.ID, err = strconv.Atoi(params["id"]); err != nil {
+			apierror.GenerateError("Trouble getting video channel ID", err, w, r)
 			return ""
 		}
-		err = c.Get()
-		if err != nil {
-			apierror.GenerateError("Error getting channel.", err, w, r)
+		if err = c.Get(); err != nil {
+			apierror.GenerateError("Trouble getting video channel", err, w, r)
+
 			return ""
 		}
 	}
+
 	//json
 	requestBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		apierror.GenerateError("Error reading request body.", err, w, r)
-		return ""
+
+		apierror.GenerateError("Trouble reading request body while saving video channel", err, w, r)
+		return encoding.Must(enc.Encode(false))
 	}
-	err = json.Unmarshal(requestBody, &c)
-	if err != nil {
-		apierror.GenerateError("Error unmarshalling request body.", err, w, r)
-		return ""
+
+	if err = json.Unmarshal(requestBody, &c); err != nil {
+		apierror.GenerateError("Trouble unmarshalling json request body while saving video channel", err, w, r)
+		return encoding.Must(enc.Encode(false))
+
 	}
+
 	//create or update
 	if c.ID > 0 {
 		err = c.Update()
@@ -273,56 +275,62 @@ func SaveChannel(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 	}
 
 	if err != nil {
-		apierror.GenerateError("Error saving channel.", err, w, r)
+
+		msg := "Trouble creating video channel"
+		if c.ID > 0 {
+			msg = "Trouble updating video channel"
+		}
+		apierror.GenerateError(msg, err, w, r)
 		return ""
 	}
+
 	return encoding.Must(enc.Encode(c))
 }
+
 func DeleteChannel(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var c video.Channel
 	var err error
-	idStr := params["id"]
 
-	c.ID, err = strconv.Atoi(idStr)
-	if err != nil {
-		apierror.GenerateError("Error parsing Id.", err, w, r)
+	if c.ID, err = strconv.Atoi(params["id"]); err != nil {
+		apierror.GenerateError("Trouble getting video channel ID", err, w, r)
 		return ""
 	}
-	err = c.Delete()
-	if err != nil {
-		apierror.GenerateError("Error deleting channel.", err, w, r)
+
+	if err = c.Delete(); err != nil {
+		apierror.GenerateError("Trouble deleting video channel", err, w, r)
 		return ""
 	}
+
 	return encoding.Must(enc.Encode(c))
 }
 
 func SaveCdn(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var c video.CdnFile
 	var err error
-	idStr := params["id"]
-	if idStr != "" {
-		c.ID, err = strconv.Atoi(idStr)
-		if err != nil {
-			apierror.GenerateError("Error parsing Id.", err, w, r)
+
+	if params["id"] != "" {
+		if c.ID, err = strconv.Atoi(params["id"]); err != nil {
+			apierror.GenerateError("Trouble getting video CDN ID", err, w, r)
 			return ""
 		}
-		err = c.Get()
-		if err != nil {
-			apierror.GenerateError("Error getting cdn.", err, w, r)
+		if err = c.Get(); err != nil {
+			apierror.GenerateError("Trouble getting video CDN", err, w, r)
 			return ""
 		}
 	}
+
 	//json
 	requestBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		apierror.GenerateError("Error reading request body.", err, w, r)
-		return ""
+		apierror.GenerateError("Trouble reading request body while saving video CDN", err, w, r)
+		return encoding.Must(enc.Encode(false))
 	}
-	err = json.Unmarshal(requestBody, &c)
-	if err != nil {
-		apierror.GenerateError("Error unmarshalling request body.", err, w, r)
-		return ""
+
+	if err = json.Unmarshal(requestBody, &c); err != nil {
+		apierror.GenerateError("Trouble unmarshalling json request body while saving video CDN", err, w, r)
+		return encoding.Must(enc.Encode(false))
 	}
+
 	//create or update
 	if c.ID > 0 {
 		err = c.Update()
@@ -331,56 +339,63 @@ func SaveCdn(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, param
 	}
 
 	if err != nil {
-		apierror.GenerateError("Error saving cdn.", err, w, r)
+
+		msg := "Trouble creating video CDN"
+		if c.ID > 0 {
+			msg = "Trouble updating video CDN"
+		}
+		apierror.GenerateError(msg, err, w, r)
 		return ""
 	}
+
 	return encoding.Must(enc.Encode(c))
 }
+
 func DeleteCdn(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var c video.CdnFile
 	var err error
-	idStr := params["id"]
 
-	c.ID, err = strconv.Atoi(idStr)
-	if err != nil {
-		apierror.GenerateError("Error parsing Id.", err, w, r)
+	if c.ID, err = strconv.Atoi(params["id"]); err != nil {
+		apierror.GenerateError("Trouble getting video CDN ID", err, w, r)
 		return ""
 	}
-	err = c.Delete()
-	if err != nil {
-		apierror.GenerateError("Error deleting cdn.", err, w, r)
+
+	if err = c.Delete(); err != nil {
+		apierror.GenerateError("Trouble deleting video CDN", err, w, r)
 		return ""
 	}
+
 	return encoding.Must(enc.Encode(c))
 }
 
 func SaveVideoType(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var c video.VideoType
 	var err error
-	idStr := params["id"]
-	if idStr != "" {
-		c.ID, err = strconv.Atoi(idStr)
-		if err != nil {
-			apierror.GenerateError("Error parsing Id.", err, w, r)
+
+	if params["id"] != "" {
+		if c.ID, err = strconv.Atoi(params["id"]); err != nil {
+			apierror.GenerateError("Trouble getting video type ID", err, w, r)
 			return ""
 		}
-		err = c.Get()
-		if err != nil {
-			apierror.GenerateError("Error getting video type.", err, w, r)
+		if err = c.Get(); err != nil {
+			apierror.GenerateError("Trouble getting video type", err, w, r)
 			return ""
 		}
 	}
+
 	//json
 	requestBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		apierror.GenerateError("Error reading request body.", err, w, r)
-		return ""
+
+		apierror.GenerateError("Trouble reading request body while saving video type", err, w, r)
+		return encoding.Must(enc.Encode(false))
 	}
-	err = json.Unmarshal(requestBody, &c)
-	if err != nil {
-		apierror.GenerateError("Error unmarshalling request body.", err, w, r)
-		return ""
+
+	if err = json.Unmarshal(requestBody, &c); err != nil {
+		apierror.GenerateError("Trouble unmarshalling json request body while saving video type", err, w, r)
+		return encoding.Must(enc.Encode(false))
 	}
+
 	//create or update
 	if c.ID > 0 {
 		err = c.Update()
@@ -389,26 +404,31 @@ func SaveVideoType(w http.ResponseWriter, r *http.Request, enc encoding.Encoder,
 	}
 
 	if err != nil {
-		apierror.GenerateError("Error saving video type.", err, w, r)
+
+		msg := "Trouble creating video type"
+		if c.ID > 0 {
+			msg = "Trouble updating video type"
+		}
+		apierror.GenerateError(msg, err, w, r)
 		return ""
 	}
+
 	return encoding.Must(enc.Encode(c))
 }
 func DeleteVideoType(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var c video.VideoType
 	var err error
-	idStr := params["id"]
 
-	c.ID, err = strconv.Atoi(idStr)
-	if err != nil {
-		apierror.GenerateError("Error parsing Id.", err, w, r)
+	if c.ID, err = strconv.Atoi(params["id"]); err != nil {
+		apierror.GenerateError("Trouble getting video type ID", err, w, r)
 		return ""
 	}
-	err = c.Delete()
-	if err != nil {
-		apierror.GenerateError("Error deleting video type.", err, w, r)
+
+	if err = c.Delete(); err != nil {
+		apierror.GenerateError("Trouble deleting video type", err, w, r)
 		return ""
 	}
+
 	return encoding.Must(enc.Encode(c))
 }
 
@@ -416,57 +436,61 @@ func GetCdnType(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, pa
 	var v video.CdnFileType
 	var err error
 
-	id, err := strconv.Atoi(params["id"])
-	if err != nil {
-		apierror.GenerateError("Error parsing Id.", err, w, r)
+	if v.ID, err = strconv.Atoi(params["id"]); err != nil {
+		apierror.GenerateError("Trouble getting video CDN type ID", err, w, r)
 		return ""
 	}
-	v.ID = id
-	err = v.Get()
 
-	if err != nil {
-		apierror.GenerateError("Error getting cdn type.", err, w, r)
+	if err = v.Delete(); err != nil {
+		apierror.GenerateError("Trouble deleting video CDN type", err, w, r)
+
 		return ""
 	}
+
 	return encoding.Must(enc.Encode(v))
 }
-func GetAllCdnTypes(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	var err error
 
+func GetAllCdnTypes(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	ct, err := video.GetAllCdnFileTypes()
+
 	if err != nil {
-		apierror.GenerateError("Error gettin cdn types.", err, w, r)
+
+		apierror.GenerateError("Trouble getting all video CDN types", err, w, r)
+
 		return ""
 	}
+
 	return encoding.Must(enc.Encode(ct))
 }
+
 func SaveCdnType(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var c video.CdnFileType
 	var err error
-	idStr := params["id"]
-	if idStr != "" {
-		c.ID, err = strconv.Atoi(idStr)
-		if err != nil {
-			apierror.GenerateError("Error parsing Id.", err, w, r)
+
+	if params["id"] != "" {
+		if c.ID, err = strconv.Atoi(params["id"]); err != nil {
+			apierror.GenerateError("Trouble getting video CDN type ID", err, w, r)
 			return ""
 		}
-		err = c.Get()
-		if err != nil {
-			apierror.GenerateError("Error getting cdn type.", err, w, r)
+		if err = c.Get(); err != nil {
+			apierror.GenerateError("Trouble getting video CDN type", err, w, r)
 			return ""
 		}
 	}
+
 	//json
 	requestBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		apierror.GenerateError("Error reading request body.", err, w, r)
-		return ""
+
+		apierror.GenerateError("Trouble reading request body while saving video CDN type", err, w, r)
+		return encoding.Must(enc.Encode(false))
 	}
-	err = json.Unmarshal(requestBody, &c)
-	if err != nil {
-		apierror.GenerateError("Error unmarshalling request body.", err, w, r)
-		return ""
+
+	if err = json.Unmarshal(requestBody, &c); err != nil {
+		apierror.GenerateError("Trouble unmarshalling json request body while saving video CDN type", err, w, r)
+		return encoding.Must(enc.Encode(false))
 	}
+
 	//create or update
 	if c.ID > 0 {
 		err = c.Update()
@@ -475,26 +499,32 @@ func SaveCdnType(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 	}
 
 	if err != nil {
-		apierror.GenerateError("Error saving cdn type.", err, w, r)
+
+		msg := "Trouble creating video CDN type"
+		if c.ID > 0 {
+			msg = "Trouble updating video CDN type"
+		}
+		apierror.GenerateError(msg, err, w, r)
 		return ""
 	}
+
 	return encoding.Must(enc.Encode(c))
 }
+
 func DeleteCdnType(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var c video.CdnFileType
 	var err error
-	idStr := params["id"]
 
-	c.ID, err = strconv.Atoi(idStr)
-	if err != nil {
-		apierror.GenerateError("Error parsing Id.", err, w, r)
+	if c.ID, err = strconv.Atoi(params["id"]); err != nil {
+		apierror.GenerateError("Trouble getting video CDN type ID", err, w, r)
 		return ""
 	}
-	err = c.Delete()
-	if err != nil {
-		apierror.GenerateError("Error deleting cdn type.", err, w, r)
+
+	if err = c.Delete(); err != nil {
+		apierror.GenerateError("Trouble deleting video CDN type", err, w, r)
 		return ""
 	}
+
 	return encoding.Must(enc.Encode(c))
 }
 
@@ -502,58 +532,59 @@ func GetChannelType(w http.ResponseWriter, r *http.Request, enc encoding.Encoder
 	var v video.ChannelType
 	var err error
 
-	id, err := strconv.Atoi(params["id"])
-	if err != nil {
-		apierror.GenerateError("Error parsing Id.", err, w, r)
+	if v.ID, err = strconv.Atoi(params["id"]); err != nil {
+		apierror.GenerateError("Trouble getting video channel type ID", err, w, r)
 		return ""
 	}
-	v.ID = id
-	err = v.Get()
 
-	if err != nil {
-		apierror.GenerateError("Error getting channel type.", err, w, r)
+	if err = v.Get(); err != nil {
+		apierror.GenerateError("Trouble getting video channel type", err, w, r)
 		return ""
 	}
+
 	return encoding.Must(enc.Encode(v))
 }
-func GetAllChannelTypes(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	var err error
 
+func GetAllChannelTypes(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	cs, err := video.GetAllChannelTypes()
 
 	if err != nil {
-		apierror.GenerateError("Error getting channel types.", err, w, r)
+
+		apierror.GenerateError("Trouble getting all video channel types", err, w, r)
 		return ""
 	}
+
 	return encoding.Must(enc.Encode(cs))
 }
+
 func SaveChannelType(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var c video.ChannelType
 	var err error
-	idStr := params["id"]
-	if idStr != "" {
-		c.ID, err = strconv.Atoi(idStr)
-		if err != nil {
-			apierror.GenerateError("Error parsing Id.", err, w, r)
+
+	if params["id"] != "" {
+		if c.ID, err = strconv.Atoi(params["id"]); err != nil {
+			apierror.GenerateError("Trouble getting video channel type ID", err, w, r)
 			return ""
 		}
-		err = c.Get()
-		if err != nil {
-			apierror.GenerateError("Error getting channel type.", err, w, r)
+		if err = c.Get(); err != nil {
+			apierror.GenerateError("Trouble getting video channel type", err, w, r)
 			return ""
 		}
 	}
+
 	//json
 	requestBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		apierror.GenerateError("Error reading request body.", err, w, r)
-		return ""
+
+		apierror.GenerateError("Trouble reading request body while saving video channel type", err, w, r)
+		return encoding.Must(enc.Encode(false))
 	}
-	err = json.Unmarshal(requestBody, &c)
-	if err != nil {
-		apierror.GenerateError("Error unmarshalling request body.", err, w, r)
-		return ""
+
+	if err = json.Unmarshal(requestBody, &c); err != nil {
+		apierror.GenerateError("Trouble unmarshalling json request body while saving video channel type", err, w, r)
+		return encoding.Must(enc.Encode(false))
 	}
+
 	//create or update
 	if c.ID > 0 {
 		err = c.Update()
@@ -562,25 +593,31 @@ func SaveChannelType(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 	}
 
 	if err != nil {
-		apierror.GenerateError("Error saving channel type.", err, w, r)
+
+		msg := "Trouble creating video channel type"
+		if c.ID > 0 {
+			msg = "Trouble updating video channel type"
+		}
+		apierror.GenerateError(msg, err, w, r)
 		return ""
 	}
+
 	return encoding.Must(enc.Encode(c))
 }
+
 func DeleteChannelType(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var c video.ChannelType
 	var err error
-	idStr := params["id"]
 
-	c.ID, err = strconv.Atoi(idStr)
-	if err != nil {
-		apierror.GenerateError("Error parsing Id.", err, w, r)
+	if c.ID, err = strconv.Atoi(params["id"]); err != nil {
+		apierror.GenerateError("Trouble getting video channel type ID", err, w, r)
 		return ""
 	}
-	err = c.Delete()
-	if err != nil {
-		apierror.GenerateError("Error deleting channel type.", err, w, r)
+
+	if err = c.Delete(); err != nil {
+		apierror.GenerateError("Trouble deleting video channel type", err, w, r)
 		return ""
 	}
+
 	return encoding.Must(enc.Encode(c))
 }
