@@ -1,7 +1,6 @@
 package vinLookup
 
 import (
-	"log"
 	"net/http"
 	"strconv"
 
@@ -16,7 +15,6 @@ func GetParts(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, p
 	vin := params["vin"]
 
 	parts, err := vinLookup.VinPartLookup(vin, dtx)
-	log.Print(err)
 	if err != nil {
 		apierror.GenerateError("Trouble getting parts", err, rw, req)
 	}

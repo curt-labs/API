@@ -6,7 +6,6 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	_ "github.com/go-sql-driver/mysql"
-	"log"
 	"strconv"
 	"strings"
 )
@@ -93,7 +92,7 @@ func (l *Lookup) LoadParts(ch chan []Part, dtx *apicontext.DataContext) {
 	baseVehicleChan := make(chan error)
 	go l.loadVehicleParts(vehicleChan)
 	go l.loadBaseVehicleParts(baseVehicleChan)
-	log.Print("VConfigs", l.Vehicle.Configurations)
+
 	if len(l.Vehicle.Configurations) > 0 {
 		configs, err := l.Vehicle.getDefinedConfigurations(l.CustomerKey)
 		if err != nil || configs == nil {
