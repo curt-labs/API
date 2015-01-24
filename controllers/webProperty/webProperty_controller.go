@@ -604,7 +604,7 @@ func DeleteWebPropertyType(rw http.ResponseWriter, r *http.Request, enc encoding
 		return ""
 	}
 
-	if err = t.Get(); err != nil {
+	if err = t.Delete(); err != nil {
 		apierror.GenerateError("Trouble deleting web property type", err, rw, r)
 		return ""
 	}
