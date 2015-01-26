@@ -2,8 +2,8 @@ package webProperty_controller
 
 import (
 	"encoding/json"
-	"errors"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -26,11 +26,6 @@ func GetAll(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *
 	props, err := webProperty_model.GetAll(dtx)
 	if err != nil {
 		apierror.GenerateError("Trouble getting all web properties", err, rw, r)
-		return ""
-	}
-	if len(props) == 0 {
-		err = errors.New("No results.")
-		apierror.GenerateError("No results.", err, rw, r)
 		return ""
 	}
 	sort := r.FormValue("sort")
@@ -103,11 +98,7 @@ func GetAllTypes(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 		apierror.GenerateError("Trouble getting web property types", err, rw, r)
 		return ""
 	}
-	if len(props) == 0 {
-		err = errors.New("No results.")
-		apierror.GenerateError("No results.", err, rw, r)
-		return ""
-	}
+
 	sort := r.FormValue("sort")
 	direction := r.FormValue("direction")
 	if sort != "" {
@@ -126,11 +117,7 @@ func GetAllNotes(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 		apierror.GenerateError("Trouble getting all web property notes", err, rw, r)
 		return ""
 	}
-	if len(props) == 0 {
-		err = errors.New("No results.")
-		apierror.GenerateError("No results", err, rw, r)
-		return ""
-	}
+
 	sort := r.FormValue("sort")
 	direction := r.FormValue("direction")
 	if sort != "" {
@@ -149,11 +136,7 @@ func GetAllRequirements(rw http.ResponseWriter, r *http.Request, enc encoding.En
 		apierror.GenerateError("Trouble getting all web property requirements", err, rw, r)
 		return ""
 	}
-	if len(props) == 0 {
-		err = errors.New("No results.")
-		apierror.GenerateError("No results", err, rw, r)
-		return ""
-	}
+
 	sort := r.FormValue("sort")
 	direction := r.FormValue("direction")
 	if sort != "" {
@@ -359,31 +342,47 @@ func CreateUpdateWebPropertyNote(rw http.ResponseWriter, r *http.Request, enc en
 	var n webProperty_model.WebPropertyNote
 	var err error
 
-	if r.FormValue("id") != "" || params["id"] != "" {
-		idStr := r.FormValue("id")
-		if idStr == "" {
-			idStr = params["id"]
-		}
-
-		if n.ID, err = strconv.Atoi(idStr); err != nil {
-			apierror.GenerateError("Trouble getting web property ID", err, rw, r)
+	contType := r.Header.Get("Content-Type")
+	if contType == "application/json" {
+		//json
+		requestBody, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			apierror.GenerateError("Trouble reading request body while saving web property note", err, rw, r)
 			return ""
 		}
 
-		if err = n.Get(); err != nil {
-			apierror.GenerateError("Trouble getting web property", err, rw, r)
+		if err = json.Unmarshal(requestBody, &n); err != nil {
+			apierror.GenerateError("Trouble unmarshalling request body while saving web property note", err, rw, r)
 			return ""
 		}
-	}
+	} else {
 
-	text := r.FormValue("text")
-	if text != "" {
-		n.Text = text
-	}
-	propID := r.FormValue("propertyID")
-	if propID != "" {
-		w.ID, err = strconv.Atoi(propID)
-		n.WebPropID = w.ID
+		if r.FormValue("id") != "" || params["id"] != "" {
+			idStr := r.FormValue("id")
+			if idStr == "" {
+				idStr = params["id"]
+			}
+
+			if n.ID, err = strconv.Atoi(idStr); err != nil {
+				apierror.GenerateError("Trouble getting web property ID", err, rw, r)
+				return ""
+			}
+
+			if err = n.Get(); err != nil {
+				apierror.GenerateError("Trouble getting web property", err, rw, r)
+				return ""
+			}
+		}
+
+		text := r.FormValue("text")
+		if text != "" {
+			n.Text = text
+		}
+		propID := r.FormValue("propertyID")
+		if propID != "" {
+			w.ID, err = strconv.Atoi(propID)
+			n.WebPropID = w.ID
+		}
 	}
 	if n.ID > 0 {
 		err = n.Update()
@@ -434,7 +433,7 @@ func GetWebPropertyRequirement(rw http.ResponseWriter, r *http.Request, enc enco
 		idStr = params["id"]
 	}
 
-	if wr.ID, err = strconv.Atoi(idStr); err != nil {
+	if wr.RequirementID, err = strconv.Atoi(idStr); err != nil {
 		apierror.GenerateError("Trouble getting web property requirement ID", err, rw, r)
 		return ""
 	}
@@ -451,32 +450,48 @@ func CreateUpdateWebPropertyRequirement(rw http.ResponseWriter, r *http.Request,
 	var wr webProperty_model.WebPropertyRequirement
 	var err error
 
-	if r.FormValue("id") != "" || params["id"] != "" {
-		idStr := r.FormValue("id")
-		if idStr == "" {
-			idStr = params["id"]
-		}
-
-		if wr.RequirementID, err = strconv.Atoi(idStr); err != nil {
-			apierror.GenerateError("Trouble getting web property requirement ID", err, rw, r)
+	contType := r.Header.Get("Content-Type")
+	if contType == "application/json" {
+		//json
+		requestBody, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			apierror.GenerateError("Trouble reading request body while saving web property requirement", err, rw, r)
 			return ""
 		}
 
-		if err = wr.Get(); err != nil {
-			apierror.GenerateError("Trouble getting web property requirement", err, rw, r)
+		if err = json.Unmarshal(requestBody, &wr); err != nil {
+			apierror.GenerateError("Trouble unmarshalling request body while saving web property requirement", err, rw, r)
 			return ""
 		}
-	}
+	} else {
 
-	reqType := r.FormValue("reqType")
-	requirement := r.FormValue("requirement")
+		if r.FormValue("id") != "" || params["id"] != "" {
+			idStr := r.FormValue("id")
+			if idStr == "" {
+				idStr = params["id"]
+			}
 
-	if reqType != "" {
-		wr.ReqType = reqType
-	}
+			if wr.RequirementID, err = strconv.Atoi(idStr); err != nil {
+				apierror.GenerateError("Trouble getting web property requirement ID", err, rw, r)
+				return ""
+			}
 
-	if requirement != "" {
-		wr.Requirement = requirement
+			if err = wr.Get(); err != nil {
+				apierror.GenerateError("Trouble getting web property requirement", err, rw, r)
+				return ""
+			}
+		}
+
+		reqType := r.FormValue("reqType")
+		requirement := r.FormValue("requirement")
+
+		if reqType != "" {
+			wr.ReqType = reqType
+		}
+
+		if requirement != "" {
+			wr.Requirement = requirement
+		}
 	}
 
 	if wr.RequirementID > 0 {
@@ -512,6 +527,7 @@ func DeleteWebPropertyRequirement(rw http.ResponseWriter, r *http.Request, enc e
 	}
 
 	if err = wr.Delete(); err != nil {
+		log.Print(err)
 		apierror.GenerateError("Trouble deleting web property requirement", err, rw, r)
 		return ""
 	}
@@ -545,32 +561,48 @@ func CreateUpdateWebPropertyType(rw http.ResponseWriter, r *http.Request, enc en
 	var t webProperty_model.WebPropertyType
 	var err error
 
-	if r.FormValue("id") != "" || params["id"] != "" {
-		idStr := r.FormValue("id")
-		if idStr == "" {
-			idStr = params["id"]
-		}
-
-		if t.ID, err = strconv.Atoi(idStr); err != nil {
-			apierror.GenerateError("Trouble getting web property type ID", err, rw, r)
+	contType := r.Header.Get("Content-Type")
+	if contType == "application/json" {
+		//json
+		requestBody, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			apierror.GenerateError("Trouble reading request body while saving web property type", err, rw, r)
 			return ""
 		}
 
-		if err = t.Get(); err != nil {
-			apierror.GenerateError("Trouble getting web property type", err, rw, r)
+		if err = json.Unmarshal(requestBody, &t); err != nil {
+			apierror.GenerateError("Trouble unmarshalling request body while saving web property type", err, rw, r)
 			return ""
 		}
-	}
+	} else {
 
-	typeID := r.FormValue("typeID")
-	theType := r.FormValue("type")
+		if r.FormValue("id") != "" || params["id"] != "" {
+			idStr := r.FormValue("id")
+			if idStr == "" {
+				idStr = params["id"]
+			}
 
-	if typeID != "" {
-		t.TypeID, err = strconv.Atoi(typeID)
-	}
+			if t.ID, err = strconv.Atoi(idStr); err != nil {
+				apierror.GenerateError("Trouble getting web property type ID", err, rw, r)
+				return ""
+			}
 
-	if theType != "" {
-		t.Type = theType
+			if err = t.Get(); err != nil {
+				apierror.GenerateError("Trouble getting web property type", err, rw, r)
+				return ""
+			}
+		}
+
+		typeID := r.FormValue("typeID")
+		theType := r.FormValue("type")
+
+		if typeID != "" {
+			t.TypeID, err = strconv.Atoi(typeID)
+		}
+
+		if theType != "" {
+			t.Type = theType
+		}
 	}
 
 	if t.ID > 0 {

@@ -92,17 +92,18 @@ var (
 		join ApiKeyToBrand as atb on atb.brandID = ctb.brandID
 		join ApiKey as a on a.id = atb.keyID
 		where a.api_key = ? && (ctb.brandID = ? or 0 = ?)`
-	create                            = "INSERT INTO WebProperties (name, cust_ID, badgeID, url, isEnabled,sellerID, typeID , isFinalApproved, isEnabledDate, isDenied, requestedDate, addedDate) VALUES (?,?,UUID(),?,?,?,?,?,?,?,?,?)"
-	deleteWebProp                     = "DELETE FROM WebProperties WHERE id = ?"
-	createNote                        = "INSERT INTO WebPropNotes (webPropID, text, dateAdded) VALUES (?,?,?)"
-	updateNote                        = "UPDATE WebPropNotes SET webPropID = ?, text = ?, dateAdded = ? WHERE id =?"
-	deleteNote                        = "DELETE FROM WebPropNotes WHERE id = ?"
-	deletePropertyNotes               = "DELETE FROM WebPropNotes WHERE WebPropID = ?"
-	createRequirementsBridge          = "INSERT INTO WebPropRequirementCheck (WebPropertiesID, Compliance, WebPropRequirementsID) VALUES (?,?,?)"
-	deleteRequirementsBridge          = "DELETE FROM WebPropRequirementCheck WHERE id = ?"
-	deletePropertyRequirementsBridges = "DELETE FROM WebPropRequirementCheck WHERE WebPropertiesID = ?"
-	update                            = "UPDATE WebProperties SET name = ?, cust_ID = ?,url = ?, isEnabled = ?,sellerID = ?, typeID = ?, isFinalApproved = ?, isEnabledDate = ?, isDenied = ?, requestedDate = ? WHERE id = ?"
-	search                            = `SELECT id, name, cust_ID, badgeID, url, isEnabled,sellerID, typeID , isFinalApproved, isEnabledDate, isDenied, requestedDate, addedDate FROM WebProperties
+	create                                  = "INSERT INTO WebProperties (name, cust_ID, badgeID, url, isEnabled,sellerID, typeID , isFinalApproved, isEnabledDate, isDenied, requestedDate, addedDate) VALUES (?,?,UUID(),?,?,?,?,?,?,?,?,?)"
+	deleteWebProp                           = "DELETE FROM WebProperties WHERE id = ?"
+	createNote                              = "INSERT INTO WebPropNotes (webPropID, text, dateAdded) VALUES (?,?,?)"
+	updateNote                              = "UPDATE WebPropNotes SET webPropID = ?, text = ?, dateAdded = ? WHERE id =?"
+	deleteNote                              = "DELETE FROM WebPropNotes WHERE id = ?"
+	deletePropertyNotes                     = "DELETE FROM WebPropNotes WHERE WebPropID = ?"
+	createRequirementsBridge                = "INSERT INTO WebPropRequirementCheck (WebPropertiesID, Compliance, WebPropRequirementsID) VALUES (?,?,?)"
+	deleteRequirementsBridge                = "DELETE FROM WebPropRequirementCheck WHERE id = ?"
+	deleteRequirementsBridgeByRequirementId = "DELETE FROM WebPropRequirementCheck WHERE WebPropRequirementsID = ?"
+	deletePropertyRequirementsBridges       = "DELETE FROM WebPropRequirementCheck WHERE WebPropertiesID = ?"
+	update                                  = "UPDATE WebProperties SET name = ?, cust_ID = ?,url = ?, isEnabled = ?,sellerID = ?, typeID = ?, isFinalApproved = ?, isEnabledDate = ?, isDenied = ?, requestedDate = ? WHERE id = ?"
+	search                                  = `SELECT id, name, cust_ID, badgeID, url, isEnabled,sellerID, typeID , isFinalApproved, isEnabledDate, isDenied, requestedDate, addedDate FROM WebProperties
 									 WHERE  name LIKE ? AND cust_ID LIKE ? AND url LIKE ? AND isEnabled LIKE ? AND sellerID LIKE ? AND typeID  LIKE ? AND isFinalApproved LIKE ? AND isEnabledDate LIKE ? AND
 									 isDenied LIKE ? AND requestedDate LIKE ? AND addedDate LIKE ? `
 	createRequirement = "INSERT INTO WebPropRequirements (ReqType, Requirement) VALUES (?,?)"
@@ -855,6 +856,27 @@ func (r *WebPropertyRequirement) DeleteJoin() error {
 	return nil
 }
 
+func (r *WebPropertyRequirement) DeleteJoinByRequirementId() error {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	stmt, err := tx.Prepare(deleteRequirementsBridgeByRequirementId)
+	_, err = stmt.Exec(r.RequirementID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+
+	return nil
+}
+
 func (r *WebProperty) DeleteJoinByPropId() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -926,6 +948,7 @@ func (r *WebPropertyRequirement) Create() error {
 		return err
 	}
 	id, err := res.LastInsertId()
+
 	r.RequirementID = int(id)
 	if err != nil {
 		tx.Rollback()
@@ -958,6 +981,15 @@ func (r *WebPropertyRequirement) Update() error {
 }
 
 func (r *WebPropertyRequirement) Delete() error {
+	var err error
+	err = r.Get()
+	if err != nil {
+		return err
+	}
+	err = r.DeleteJoinByRequirementId()
+	if err != nil {
+		return err
+	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -974,7 +1006,7 @@ func (r *WebPropertyRequirement) Delete() error {
 		return err
 	}
 	tx.Commit()
-	r.DeleteJoin()
+	// r.DeleteJoin()
 
 	return nil
 }
@@ -1039,9 +1071,11 @@ func (t *WebPropertyType) Create() error {
 		return err
 	}
 	id, err := res.LastInsertId()
+	if err != nil {
+		return err
+	}
 	t.ID = int(id)
 	tx.Commit()
-
 	return nil
 }
 
