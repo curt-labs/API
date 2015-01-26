@@ -3,12 +3,13 @@ package customer_ctlr
 import (
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
-	apierr "github.com/curt-labs/GoAPI/helpers/error"
+	"github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/curt-labs/GoAPI/models/products"
 	"github.com/go-martini/martini"
 
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -16,16 +17,17 @@ import (
 	"strings"
 )
 
-func GetCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
+func GetCustomer(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var err error
 	var c customer.Customer
-	err = c.GetCustomerIdFromKey(dtx.APIKey)
-	if err != nil {
-		apierr.GenerateError("Trouble getting Id", err, w, r)
+
+	if err = c.GetCustomerIdFromKey(dtx.APIKey); err != nil {
+		apierror.GenerateError("Trouble getting customer ID", err, rw, r)
+		return ""
 	}
-	err = c.GetCustomer(dtx.APIKey)
-	if err != nil {
-		http.Error(w, "Error getting customer.", http.StatusServiceUnavailable)
+
+	if err = c.GetCustomer(dtx.APIKey); err != nil {
+		apierror.GenerateError("Trouble getting customer", err, rw, r, http.StatusServiceUnavailable)
 		return ""
 	}
 
@@ -41,123 +43,150 @@ func GetCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 	return encoding.Must(enc.Encode(c))
 }
 
-func GetLocations(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
+func GetLocations(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	cu, err := customer.GetCustomerUserFromKey(dtx.APIKey)
 	if err != nil {
-		http.Error(w, "Unauthorized!", http.StatusUnauthorized)
+		err = errors.New("Unauthorized!")
+		apierror.GenerateError("Unauthorized!", err, rw, r, http.StatusUnauthorized)
 		return ""
 	}
 	c, err := cu.GetCustomer(dtx.APIKey)
 	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		err = errors.New("Unauthorized!")
+		apierror.GenerateError("Unauthorized!", err, rw, r, http.StatusUnauthorized)
 		return ""
 	}
 	return encoding.Must(enc.Encode(c.Locations))
 }
 
 //TODO - redundant
-func GetUsers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
+func GetUsers(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	user, err := customer.GetCustomerUserFromKey(dtx.APIKey)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble getting customer user", err, rw, r)
 		return ""
 	}
+
 	if !user.Sudo {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		err = errors.New("Unauthorized!")
+		apierror.GenerateError("Unauthorized!", err, rw, r, http.StatusUnauthorized)
 		return ""
 	}
 
 	cust, err := user.GetCustomer(dtx.APIKey)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble getting customer", err, rw, r)
 		return ""
 	}
-	err = cust.GetUsers(dtx.APIKey)
-	if err != nil {
-		return err.Error()
+
+	if err = cust.GetUsers(dtx.APIKey); err != nil {
+		apierror.GenerateError("Trouble getting users", err, rw, r)
+		return ""
 	}
+
 	return encoding.Must(enc.Encode(cust.Users))
 }
 
 //Todo redundant
-func GetUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+//Hacky like this to work with old forms of authentication
+func GetUser(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 	qs, err := url.Parse(r.URL.String())
 	if err != nil {
-		apierr.GenerateError("Err parsing url.", err, w, r)
+		apierror.GenerateError("err parsing url", err, rw, r)
+		return ""
 	}
-	key := qs.Query().Get("key")
 
+	key := qs.Query().Get("key")
 	if key == "" {
 		key = r.FormValue("key")
 	}
 
 	user, err := customer.GetCustomerUserFromKey(key)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble getting customer user", err, rw, r)
 		return ""
 	}
+
 	return encoding.Must(enc.Encode(user))
 }
 
-func GetCustomerPrice(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
+func GetCustomerPrice(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var err error
-	id := params["id"]
 	var p products.Part
-	if id != "" {
-		p.ID, err = strconv.Atoi(params["id"])
+
+	id := r.FormValue("id")
+	if id == "" {
+		id = params["id"]
 	}
 
-	price, err := customer.GetCustomerPrice(dtx, p.ID)
-	if err != nil {
-		return err.Error()
+	if p.ID, err = strconv.Atoi(id); err != nil {
+		apierror.GenerateError("Trouble getting part ID", err, rw, r)
+		return ""
 	}
+
+	var price float64
+	if price, err = customer.GetCustomerPrice(dtx, p.ID); err != nil {
+		apierror.GenerateError("Trouble getting price", err, rw, r)
+		return ""
+	}
+
 	return encoding.Must(enc.Encode(price))
 }
 
-func GetCustomerCartReference(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
+func GetCustomerCartReference(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var err error
-	id := params["id"]
 	var p products.Part
-	if id != "" {
-		p.ID, err = strconv.Atoi(params["id"])
+
+	id := r.FormValue("id")
+	if id == "" {
+		id = params["id"]
 	}
 
-	ref, err := customer.GetCustomerCartReference(dtx.APIKey, p.ID)
-	if err != nil {
-		return err.Error()
+	if p.ID, err = strconv.Atoi(id); err != nil {
+		apierror.GenerateError("Trouble getting part ID", err, rw, r)
+		return ""
 	}
+
+	var ref int
+	if ref, err = customer.GetCustomerCartReference(dtx.APIKey, p.ID); err != nil {
+		apierror.GenerateError("Trouble getting customer cart reference", err, rw, r)
+		return ""
+	}
+
 	return encoding.Must(enc.Encode(ref))
 }
 
-func SaveCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
+func SaveCustomer(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var c customer.Customer
 	var err error
-	idStr := params["id"]
-	if idStr != "" {
-		c.Id, err = strconv.Atoi(idStr)
-		err = c.FindCustomerIdFromCustId()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+
+	if r.FormValue("id") != "" || params["id"] != "" {
+		id := r.FormValue("id")
+		if id == "" {
+			id = params["id"]
+		}
+
+		if c.Id, err = strconv.Atoi(id); err != nil {
+			apierror.GenerateError("Trouble getting customer ID", err, rw, r)
 			return ""
 		}
 
-		err = c.Basics(dtx.APIKey)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		if err = c.Basics(dtx.APIKey); err != nil {
+			apierror.GenerateError("Trouble getting customer", err, rw, r)
 			return ""
 		}
 	}
 
 	//json
-	requestBody, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return encoding.Must(enc.Encode(false))
+	var requestBody []byte
+	if requestBody, err = ioutil.ReadAll(r.Body); err != nil {
+		apierror.GenerateError("Trouble reading request body while saving customer", err, rw, r)
+		return ""
 	}
-	err = json.Unmarshal(requestBody, &c)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return encoding.Must(enc.Encode(false))
+
+	if err = json.Unmarshal(requestBody, &c); err != nil {
+		apierror.GenerateError("Trouble unmarshalling json request body while saving customer", err, rw, r)
+		return ""
 	}
 
 	//create or update
@@ -168,30 +197,35 @@ func SaveCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 	}
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		msg := "Trouble creating customer"
+		if c.Id > 0 {
+			msg = "Trouble updating customer"
+		}
+		apierror.GenerateError(msg, err, rw, r)
 		return ""
 	}
+
 	return encoding.Must(enc.Encode(c))
 }
 
-func DeleteCustomer(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func DeleteCustomer(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var c customer.Customer
 	var err error
-	idStr := params["id"]
-	if idStr == "" {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return ""
+
+	id := r.FormValue("id")
+	if id == "" {
+		id = params["id"]
 	}
-	c.Id, err = strconv.Atoi(idStr)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+
+	if c.Id, err = strconv.Atoi(id); err != nil {
+		apierror.GenerateError("Trouble getting customer ID", err, rw, r)
 		return ""
 	}
 
-	err = c.Delete()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err = c.Delete(); err != nil {
+		apierror.GenerateError("Trouble deleting customer", err, rw, r)
 		return ""
 	}
+
 	return encoding.Must(enc.Encode(c))
 }
