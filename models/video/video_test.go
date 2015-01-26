@@ -37,6 +37,8 @@ func TestVideo_New(t *testing.T) {
 		So(err, ShouldBeNil)
 		//create cdn type
 		cdnft.Title = "test cdntype"
+		cdnft.MimeType = "test"
+		cdnft.Description = "test desc"
 		err = cdnft.Create()
 		So(err, ShouldBeNil)
 		t.Log("created cdnft: ", cdnft)

@@ -10,6 +10,7 @@ import (
 
 	"database/sql"
 	"encoding/json"
+	"log"
 	"strconv"
 	"time"
 )
@@ -1215,22 +1216,26 @@ func GetAllCdnFileTypes() (cts []CdnFileType, err error) {
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &cts)
+		log.Println("fetching cdn file types from redis")
 		return cts, err
 	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
+		log.Println("error opening connection:" + err.Error())
 		return cts, err
 	}
 	defer db.Close()
 
 	stmt, err := db.Prepare(getAllCdnTypes)
 	if err != nil {
+		log.Println("error preparing statement:" + err.Error())
 		return cts, err
 	}
 	defer stmt.Close()
 
 	res, err := stmt.Query()
 	if err != nil {
+		log.Println("error exec query:" + err.Error())
 		return cts, err
 	}
 	var c CdnFileType
@@ -1242,12 +1247,16 @@ func GetAllCdnFileTypes() (cts []CdnFileType, err error) {
 			&c.Title,
 			&desc,
 		)
+		log.Println("looping through res.next")
 		if err != nil {
+			log.Println("err scanning:" + err.Error())
 			return cts, err
 		}
 		if desc != nil {
 			c.Description = *desc
 		}
+		log.Println("appending:")
+		log.Println(c)
 		cts = append(cts, c)
 	}
 	defer res.Close()

@@ -65,6 +65,7 @@ func TestSite(t *testing.T) {
 	Convey("Site Menu", t, func() {
 		var m site.Menu
 		var menus site.Menus
+		m.WebsiteId = dtx.WebsiteID
 		qs := make(url.Values, 0)
 		qs.Add("key", dtx.APIKey)
 
