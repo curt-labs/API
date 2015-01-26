@@ -76,6 +76,7 @@ func TestVideo_New(t *testing.T) {
 		cdnft.Title = "test cdntype 2"
 		err = cdnft.Update()
 		So(err, ShouldBeNil)
+		t.Log("Updated cdnft: ", cdnft)
 		//update video type
 		vt.Name = "test videoType 2"
 		err = vt.Update()
@@ -158,8 +159,8 @@ func TestVideo_New(t *testing.T) {
 		err = ch.Delete()
 		So(err, ShouldBeNil)
 		//delete cdn type
-		// err = cdnft.Delete()
-		// So(err, ShouldBeNil)
+		err = cdnft.Delete()
+		So(err, ShouldBeNil)
 		//delete video type
 		err = vt.Delete()
 		So(err, ShouldBeNil)
