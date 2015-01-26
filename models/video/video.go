@@ -10,7 +10,6 @@ import (
 
 	"database/sql"
 	"encoding/json"
-	"log"
 	"strconv"
 	"time"
 )
@@ -87,12 +86,13 @@ type Category struct {
 }
 
 const (
-	videoFields       = ` v.ID, v.subjectTypeID, v.title, v.description, v.dateAdded, v.dateModified, v.isPrimary, v.thumbnail `
-	videoTypeFields   = `  vt.name, vt.icon `
-	channelFields     = ` c.ID, c.typeID, c.link, c.embedCode, c.foriegnID, c.dateAdded, c.dateModified, c.title, c.desc `
-	channelTypeFields = ` ct.name, ct.description `
-	cdnFileFields     = `cf.ID, cf.typeID, cf.path, cf.dateAdded, cf.lastUploaded, cf.bucket, cf.objectName, cf.fileSize `
-	cdnFileTypeFields = ` cft.mimeType, cft.title, cft.description `
+	videoFields            = ` v.ID, v.subjectTypeID, v.title, v.description, v.dateAdded, v.dateModified, v.isPrimary, v.thumbnail `
+	videoTypeFields        = `  vt.name, vt.icon `
+	channelFields          = ` c.ID, c.typeID, c.link, c.embedCode, c.foriegnID, c.dateAdded, c.dateModified, c.title, c.desc `
+	channelTypeFields      = ` ct.name, ct.description `
+	cdnFileFields          = `cf.ID, cf.typeID, cf.path, cf.dateAdded, cf.lastUploaded, cf.bucket, cf.objectName, cf.fileSize `
+	cdnFileTypeFields      = ` cft.mimeType, cft.title, cft.description `
+	AllCdnFileTypeRedisKey = "video:cdnFileTypes"
 )
 
 var (
@@ -1212,30 +1212,26 @@ func (c *CdnFileType) Get() (err error) {
 }
 
 func GetAllCdnFileTypes() (cts []CdnFileType, err error) {
-	redis_key := "video:cdnFileTypes"
+	redis_key := AllCdnFileTypeRedisKey
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &cts)
-		log.Println("fetching cdn file types from redis")
 		return cts, err
 	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		log.Println("error opening connection:" + err.Error())
 		return cts, err
 	}
 	defer db.Close()
 
 	stmt, err := db.Prepare(getAllCdnTypes)
 	if err != nil {
-		log.Println("error preparing statement:" + err.Error())
 		return cts, err
 	}
 	defer stmt.Close()
 
 	res, err := stmt.Query()
 	if err != nil {
-		log.Println("error exec query:" + err.Error())
 		return cts, err
 	}
 	var c CdnFileType
@@ -1247,16 +1243,12 @@ func GetAllCdnFileTypes() (cts []CdnFileType, err error) {
 			&c.Title,
 			&desc,
 		)
-		log.Println("looping through res.next")
 		if err != nil {
-			log.Println("err scanning:" + err.Error())
 			return cts, err
 		}
 		if desc != nil {
 			c.Description = *desc
 		}
-		log.Println("appending:")
-		log.Println(c)
 		cts = append(cts, c)
 	}
 	defer res.Close()
@@ -1284,6 +1276,8 @@ func (c *CdnFileType) Create() (err error) {
 	err = tx.Commit()
 	id, err := res.LastInsertId()
 	c.ID = int(id)
+	// delete redis key for GetAllCdnFileTypes:
+	redis.Delete(AllCdnFileTypeRedisKey)
 	return err
 }
 
@@ -1306,6 +1300,8 @@ func (c *CdnFileType) Update() (err error) {
 		return err
 	}
 	err = tx.Commit()
+	// delete redis key for GetAllCdnFileTypes:
+	redis.Delete(AllCdnFileTypeRedisKey)
 	return err
 }
 func (c *CdnFileType) Delete() (err error) {
@@ -1327,6 +1323,8 @@ func (c *CdnFileType) Delete() (err error) {
 		return err
 	}
 	err = tx.Commit()
+	// delete redis key for GetAllCdnFileTypes:
+	redis.Delete(AllCdnFileTypeRedisKey)
 	return err
 }
 
