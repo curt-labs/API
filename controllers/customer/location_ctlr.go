@@ -2,12 +2,14 @@ package customer_ctlr
 
 import (
 	"encoding/json"
-	"github.com/curt-labs/GoAPI/helpers/encoding"
-	"github.com/curt-labs/GoAPI/models/customer"
-	"github.com/go-martini/martini"
 	"io/ioutil"
 	"net/http"
 	"strconv"
+
+	"github.com/curt-labs/GoAPI/helpers/encoding"
+	"github.com/curt-labs/GoAPI/helpers/error"
+	"github.com/curt-labs/GoAPI/models/customer"
+	"github.com/go-martini/martini"
 )
 
 const (
@@ -15,33 +17,45 @@ const (
 )
 
 func GetLocation(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	var c customer.CustomerLocation
+	var cl customer.CustomerLocation
 	var err error
 
-	c.Id, err = strconv.Atoi(params["id"])
-	if err != nil {
-		return err.Error()
+	id := r.FormValue("id")
+	if id == "" {
+		id = params["id"]
 	}
 
-	err = c.Get()
-	if err != nil {
-		return err.Error()
+	if cl.Id, err = strconv.Atoi(id); err != nil {
+		apierror.GenerateError("Trouble getting location ID", err, rw, r)
+		return ""
 	}
 
-	return encoding.Must(enc.Encode(c))
+	if err = cl.Get(); err != nil {
+		apierror.GenerateError("Trouble getting location", err, rw, r)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(cl))
 }
 
 func SaveLocation(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	var w customer.CustomerLocation
+	var cl customer.CustomerLocation
 	var err error
-	err = r.ParseForm()
 
-	id := params["id"]
-	if id == "" {
-		id = r.Form.Get("id")
-		if id != "" {
-			w.Id, err = strconv.Atoi(id)
-			w.Get()
+	if r.FormValue("id") != "" || params["id"] != "" {
+		id := r.FormValue("id")
+		if id == "" {
+			id = params["id"]
+		}
+
+		if cl.Id, err = strconv.Atoi(id); err != nil {
+			apierror.GenerateError("Trouble getting location ID", err, rw, r)
+			return ""
+		}
+
+		if err = cl.Get(); err != nil {
+			apierror.GenerateError("Trouble getting location", err, rw, r)
+			return ""
 		}
 	}
 
@@ -61,109 +75,155 @@ func SaveLocation(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder,
 	shippingDefault := r.FormValue("shippingDefault")
 
 	if name != "" {
-		w.Name = name
-	}
-	if address != "" {
-		w.Address = address
-	}
-	if city != "" {
-		w.City = city
-	}
-	if state != "" {
-		w.State.Id, err = strconv.Atoi(state)
-	}
-	if email != "" {
-		w.Email = email
-	}
-	if phone != "" {
-		w.Phone = phone
-	}
-	if fax != "" {
-		w.Fax = fax
-	}
-	if latitude != "" {
-		w.Latitude, err = strconv.ParseFloat(latitude, 64)
-	}
-	if longitude != "" {
-		w.Longitude, err = strconv.ParseFloat(longitude, 64)
-	}
-	if customerID != "" {
-		w.CustomerId, err = strconv.Atoi(customerID)
-	}
-	if contactPerson != "" {
-		w.ContactPerson = contactPerson
-	}
-	if isPrimary != "" {
-		w.IsPrimary, err = strconv.ParseBool(isPrimary)
-	}
-	if postalCode != "" {
-		w.PostalCode = postalCode
-	}
-	if shippingDefault != "" {
-		w.ShippingDefault, err = strconv.ParseBool(shippingDefault)
-	} else {
-		w.ShippingDefault = false
+		cl.Name = name
 	}
 
-	if id != "" {
-		err = w.Update()
+	if address != "" {
+		cl.Address = address
+	}
+
+	if city != "" {
+		cl.City = city
+	}
+
+	if state != "" {
+		if cl.State.Id, err = strconv.Atoi(state); err != nil {
+			apierror.GenerateError("Trouble setting state ID", err, rw, r)
+			return ""
+		}
+	}
+
+	if email != "" {
+		cl.Email = email
+	}
+
+	if phone != "" {
+		cl.Phone = phone
+	}
+
+	if fax != "" {
+		cl.Fax = fax
+	}
+
+	if latitude != "" {
+		if cl.Latitude, err = strconv.ParseFloat(latitude, 64); err != nil {
+			cl.Latitude = 0
+		}
+	}
+
+	if longitude != "" {
+		if cl.Longitude, err = strconv.ParseFloat(longitude, 64); err != nil {
+			cl.Longitude = 0
+		}
+	}
+
+	if customerID != "" {
+		if cl.CustomerId, err = strconv.Atoi(customerID); err != nil {
+			apierror.GenerateError("Trouble getting customer ID", err, rw, r)
+			return ""
+		}
+	}
+
+	if contactPerson != "" {
+		cl.ContactPerson = contactPerson
+	}
+
+	if isPrimary != "" {
+		if cl.IsPrimary, err = strconv.ParseBool(isPrimary); err != nil {
+			cl.IsPrimary = false
+		}
+	}
+
+	if postalCode != "" {
+		cl.PostalCode = postalCode
+	}
+
+	if shippingDefault != "" {
+		if cl.ShippingDefault, err = strconv.ParseBool(shippingDefault); err != nil {
+			cl.ShippingDefault = false
+		}
+	}
+
+	if cl.Id > 0 {
+		err = cl.Update()
 	} else {
-		err = w.Create()
+		err = cl.Create()
 	}
 
 	if err != nil {
-		return err.Error()
+		msg := "Trouble creating location"
+		if cl.Id > 0 {
+			msg = "Trouble updating location"
+		}
+		apierror.GenerateError(msg, err, rw, r)
+		return ""
 	}
-	return encoding.Must(enc.Encode(w))
+
+	return encoding.Must(enc.Encode(cl))
 }
 
-func SaveLocationJson(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	var l customer.CustomerLocation
+func SaveLocationJson(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+	var cl customer.CustomerLocation
 	var err error
-	id := params["id"]
-	if id != "" {
-		l.Id, err = strconv.Atoi(id)
-		err = l.Get()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return ""
-		}
+
+	id := r.FormValue("id")
+	if id == "" {
+		id = params["id"]
+	}
+
+	if cl.Id, err = strconv.Atoi(id); err != nil {
+		apierror.GenerateError("Trouble getting location ID", err, rw, r)
+		return ""
 	}
 
 	defer r.Body.Close()
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble reading request body while saving location", err, rw, r)
 		return ""
 	}
-	err = json.Unmarshal(body, &l)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+
+	if err = json.Unmarshal(body, &cl); err != nil {
+		apierror.GenerateError("Trouble unmarshalling json request body while saving location", err, rw, r)
 		return ""
 	}
-	if l.Id != 0 {
-		err = l.Update()
+
+	if cl.Id > 0 {
+		err = cl.Update()
 	} else {
-		err = l.Create()
+		err = cl.Create()
 	}
+
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		msg := "Trouble creating location"
+		if cl.Id > 0 {
+			msg = "Trouble updating location"
+		}
+		apierror.GenerateError(msg, err, rw, r)
 		return ""
 	}
-	return encoding.Must(enc.Encode(l))
+
+	return encoding.Must(enc.Encode(cl))
 }
 
 func DeleteLocation(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	var w customer.CustomerLocation
+	var cl customer.CustomerLocation
 	var err error
 
-	id := params["id"]
-	if id != "" {
-		w.Id, err = strconv.Atoi(id)
-		if err != nil {
-			return err.Error()
-		}
-		w.Delete()
+	id := r.FormValue("id")
+	if id == "" {
+		id = params["id"]
 	}
-	return encoding.Must(enc.Encode(w))
+
+	if cl.Id, err = strconv.Atoi(id); err != nil {
+		apierror.GenerateError("Trouble getting location ID", err, rw, r)
+		return ""
+	}
+
+	if err = cl.Delete(); err != nil {
+		apierror.GenerateError("Trouble deleting location", err, rw, r)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(cl))
 }
