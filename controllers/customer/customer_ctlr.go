@@ -12,6 +12,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 )
@@ -87,12 +88,25 @@ func GetUsers(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, par
 }
 
 //Todo redundant
-func GetUser(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
-	user, err := customer.GetCustomerUserFromKey(dtx.APIKey)
+//Hacky like this to work with old forms of authentication
+func GetUser(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+	qs, err := url.Parse(r.URL.String())
+	if err != nil {
+		apierror.GenerateError("err parsing url", err, rw, r)
+		return ""
+	}
+
+	key := qs.Query().Get("key")
+	if key == "" {
+		key = r.FormValue("key")
+	}
+
+	user, err := customer.GetCustomerUserFromKey(key)
 	if err != nil {
 		apierror.GenerateError("Trouble getting customer user", err, rw, r)
 		return ""
 	}
+
 	return encoding.Must(enc.Encode(user))
 }
 
