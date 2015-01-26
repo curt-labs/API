@@ -526,7 +526,6 @@ func DeleteWebPropertyRequirement(rw http.ResponseWriter, r *http.Request, enc e
 	}
 
 	if err = wr.Delete(); err != nil {
-		log.Print(err)
 		apierror.GenerateError("Trouble deleting web property requirement", err, rw, r)
 		return ""
 	}
