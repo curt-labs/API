@@ -2,6 +2,8 @@ package site
 
 import (
 	"database/sql"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	. "github.com/smartystreets/goconvey/convey"
 	"math/rand"
 	"testing"
@@ -12,6 +14,11 @@ func TestSite_New(t *testing.T) {
 	var r ContentRevision
 	var m Menu
 	var err error
+
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
 
 	Convey("Testing Create Menus", t, func() {
 		m.Name = "name"
@@ -86,7 +93,7 @@ func TestSite_New(t *testing.T) {
 		}
 		//get content
 
-		err = c.Get()
+		err = c.Get(MockedDTX)
 		So(c.Title, ShouldEqual, "title2")
 		So(err, ShouldBeNil)
 
@@ -134,6 +141,7 @@ func TestSite_New(t *testing.T) {
 		err = m.Delete()
 		So(err, ShouldBeNil)
 	})
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func TestWebsite(t *testing.T) {

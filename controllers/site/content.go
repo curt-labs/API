@@ -6,13 +6,14 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/models/site"
 	"github.com/go-martini/martini"
 )
 
-func GetContent(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+func GetContent(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var c site.Content
 	var err error
 	idStr := params["id"]
@@ -21,7 +22,7 @@ func GetContent(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder,
 	if err == nil {
 		//Thar be an Id int
 		c.Id = id
-		err = c.Get()
+		err = c.Get(dtx)
 		if err != nil {
 			apierror.GenerateError("Trouble getting site content by Id.", err, rw, req)
 		}
@@ -36,7 +37,7 @@ func GetContent(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder,
 	return encoding.Must(enc.Encode(c))
 }
 
-func GetAllContents(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+func GetAllContents(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	m, err := site.GetAllContents()
 	if err != nil {
 		apierror.GenerateError("Trouble getting all site contents", err, rw, req)
@@ -44,7 +45,7 @@ func GetAllContents(rw http.ResponseWriter, req *http.Request, enc encoding.Enco
 	return encoding.Must(enc.Encode(m))
 }
 
-func GetContentRevisions(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+func GetContentRevisions(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var c site.Content
 	var err error
 	idStr := params["id"]
@@ -58,13 +59,13 @@ func GetContentRevisions(rw http.ResponseWriter, req *http.Request, enc encoding
 	return encoding.Must(enc.Encode(c))
 }
 
-func SaveContent(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+func SaveContent(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var c site.Content
 	var err error
 	idStr := params["id"]
 	if idStr != "" {
 		c.Id, err = strconv.Atoi(idStr)
-		err = c.Get()
+		err = c.Get(dtx)
 		if err != nil {
 			apierror.GenerateError("Trouble getting site content", err, rw, req)
 		}
@@ -92,7 +93,7 @@ func SaveContent(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder
 	return encoding.Must(enc.Encode(c))
 }
 
-func DeleteContent(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+func DeleteContent(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var err error
 	var c site.Content
 

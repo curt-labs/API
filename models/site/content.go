@@ -1,6 +1,7 @@
 package site
 
 import (
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	_ "github.com/go-sql-driver/mysql"
 
@@ -48,8 +49,12 @@ const (
 )
 
 var (
-	getLatestRevision      = `SELECT revisionID, content_text, createdOn, active FROM SiteContentRevision AS scr WHERE scr.contentID = ? ORDER BY createdOn DESC LIMIT 1`
-	getContent             = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s WHERE s.contentID = ? `
+	getLatestRevision = `SELECT revisionID, content_text, createdOn, active FROM SiteContentRevision AS scr WHERE scr.contentID = ? ORDER BY createdOn DESC LIMIT 1`
+	getContent        = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s
+								Join WebsiteToBrand as wub on wub.WebsiteID = s.websiteID
+								Join ApiKeyToBrand as akb on akb.brandID = wub.brandID
+								Join ApiKey as ak on akb.keyID = ak.id
+								where s.contentID = ? && (ak.api_key = ? && (wub.brandID = ? OR 0=?))`
 	getAllContent          = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s  `
 	getContentRevisions    = `SELECT revisionID, content_text, createdOn, active FROM SiteContentRevision AS scr WHERE scr.contentID = ? `
 	getAllContentRevisions = `SELECT revisionID, content_text, createdOn, active FROM SiteContentRevision AS scr `
@@ -73,7 +78,7 @@ var (
 )
 
 //Fetch content by id
-func (c *Content) Get() (err error) {
+func (c *Content) Get(dtx *apicontext.DataContext) (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -86,7 +91,7 @@ func (c *Content) Get() (err error) {
 	defer stmt.Close()
 
 	var cType, title, mTitle, mDesc, slug, canon *string
-	err = stmt.QueryRow(c.Id).Scan(
+	err = stmt.QueryRow(c.Id, dtx.APIKey, dtx.BrandID, dtx.BrandID).Scan(
 		&c.Id,
 		&cType,
 		&title,
