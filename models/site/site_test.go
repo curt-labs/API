@@ -2,6 +2,8 @@ package site
 
 import (
 	"database/sql"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	. "github.com/smartystreets/goconvey/convey"
 	"math/rand"
 	"testing"
@@ -12,6 +14,11 @@ func TestSite_New(t *testing.T) {
 	var r ContentRevision
 	var m Menu
 	var err error
+
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
 
 	Convey("Testing Create Menus", t, func() {
 		m.Name = "name"
@@ -28,6 +35,7 @@ func TestSite_New(t *testing.T) {
 		c.Title = "title"
 		c.MetaTitle = "mTitle"
 		c.MetaDescription = "mDesc"
+		c.WebsiteId = MockedDTX.WebsiteID
 		err = c.Create()
 		So(err, ShouldBeNil)
 		//update content
@@ -86,7 +94,7 @@ func TestSite_New(t *testing.T) {
 		}
 		//get content
 
-		err = c.Get()
+		err = c.Get(MockedDTX)
 		So(c.Title, ShouldEqual, "title2")
 		So(err, ShouldBeNil)
 
@@ -103,12 +111,12 @@ func TestSite_New(t *testing.T) {
 			So(c.ContentRevisions, ShouldNotBeNil)
 		}
 		//get contents
-		cs, err := GetAllContents()
+		cs, err := GetAllContents(MockedDTX)
 		So(err, ShouldBeNil)
 		So(len(cs), ShouldBeGreaterThanOrEqualTo, 0)
 		//get contents by slug
 		t.Log(c.Slug)
-		err = c.GetBySlug()
+		err = c.GetBySlug(MockedDTX)
 		So(err, ShouldBeNil)
 
 		//menu-content join
@@ -134,6 +142,7 @@ func TestSite_New(t *testing.T) {
 		err = m.Delete()
 		So(err, ShouldBeNil)
 	})
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func TestWebsite(t *testing.T) {

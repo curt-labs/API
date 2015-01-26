@@ -8,7 +8,7 @@ import (
 
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
-	apierror "github.com/curt-labs/GoAPI/helpers/error"
+	"github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/models/products"
 	"github.com/curt-labs/GoAPI/models/video"
 	"github.com/go-martini/martini"
