@@ -35,6 +35,7 @@ type CustomerUser struct {
 	Sudo               bool             `json:"sudo" xml:"sudo,attr"`
 	CustomerID         int              `json:"customerId,omitempty" xml:"customerId,omitempty"`
 	Current            bool             `json:"current" xml:"current,attr"`
+	NotCustomer        bool             `json:"notCustomer" xml:"notCustomer,attr"`
 	PasswordConversion bool             `json:"passwordConversion,omitempty" xml:"passwordConversion,omitempty"`
 	Keys               []ApiCredentials `json:"keys" xml:"keys"`
 	Brands             brand.Brands     `json:"brands,omitempty" xml:"brands,omitempty"`
