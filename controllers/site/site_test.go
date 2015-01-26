@@ -36,10 +36,12 @@ func TestSite(t *testing.T) {
 		So(response.Code, ShouldEqual, 200)
 		So(json.Unmarshal(response.Body.Bytes(), &c), ShouldEqual, nil)
 		log.Println(c)
+		log.Println(c.WebsiteId)
 		c.Active = true
 		response = httprunner.ParameterizedJsonRequest("PUT", "/site/content/:id", "/site/content/"+strconv.Itoa(c.Id), &qs, c, SaveContent)
-		So(response.Code, ShouldEqual, 200)
 		log.Println(response)
+		So(response.Code, ShouldEqual, 200)
+
 		So(json.Unmarshal(response.Body.Bytes(), &c), ShouldEqual, nil)
 
 		response = httprunner.ParameterizedRequest("GET", "/site/content/:id", "/site/content/"+strconv.Itoa(c.Id), &qs, nil, GetContent)
