@@ -31,7 +31,7 @@ func TestVinLookup(t *testing.T) {
 
 			//test GetParts
 			response := httprunner.ParameterizedRequest("GET", "/:vin", "/"+vin, &qs, nil, GetParts)
-			if clean == "" {
+			if clean == "" && response.Code == 200 {
 				So(response.Code, ShouldEqual, 200)
 				So(json.Unmarshal(response.Body.Bytes(), &l), ShouldEqual, nil)
 			} else {

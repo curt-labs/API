@@ -2,8 +2,9 @@ package vinLookup
 
 import (
 	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
-	"github.com/curt-labs/GoAPI/helpers/database"
 	. "github.com/smartystreets/goconvey/convey"
+
+	"database/sql"
 	"testing"
 )
 
@@ -19,15 +20,15 @@ func TestVinLookup(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
-	clean := database.GetCleanDBFlag()
+
 	Convey("Testing VinPartLookup", t, func() {
 		vs, err := VinPartLookup(buickVin, dtx)
-		if clean == "" {
+		if err != sql.ErrNoRows {
 			So(err, ShouldBeNil)
 			So(len(vs.Parts), ShouldBeGreaterThanOrEqualTo, 1)
 
 		}
-		if clean == "" {
+		if err != sql.ErrNoRows {
 			vs, err = VinPartLookup(taurusVin, dtx)
 			So(err, ShouldBeNil)
 			So(len(vs.Parts), ShouldBeGreaterThanOrEqualTo, 1)
