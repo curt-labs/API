@@ -3,7 +3,6 @@ package webProperty_controller
 import (
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
