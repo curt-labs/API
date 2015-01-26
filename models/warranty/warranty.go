@@ -1,12 +1,13 @@
 package warranty
 
 import (
-	"database/sql"
-	"errors"
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/models/contact"
 	_ "github.com/go-sql-driver/mysql"
+
+	"database/sql"
+	"errors"
 	"time"
 )
 

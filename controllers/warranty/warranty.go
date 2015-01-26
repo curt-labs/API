@@ -26,6 +26,7 @@ func GetAllWarranties(rw http.ResponseWriter, req *http.Request, enc encoding.En
 	ws, err := warranty.GetAllWarranties(dtx)
 	if err != nil {
 		apierror.GenerateError("Trouble getting all warranties", err, rw, req)
+		return ""
 	}
 	return encoding.Must(enc.Encode(ws))
 }
@@ -39,6 +40,7 @@ func GetWarranty(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder
 	err = w.Get()
 	if err != nil {
 		apierror.GenerateError("Trouble getting warranty", err, rw, req)
+		return ""
 	}
 	return encoding.Must(enc.Encode(w))
 }
@@ -48,10 +50,15 @@ func GetWarrantyByContact(rw http.ResponseWriter, req *http.Request, enc encodin
 	var w warranty.Warranty
 	id := params["id"]
 	w.Contact.ID, err = strconv.Atoi(id)
+	if err != nil {
+		apierror.GenerateError("Trouble parsing contact ID.", err, rw, req)
+		return ""
+	}
 
 	ws, err := w.GetByContact()
 	if err != nil {
-		apierror.GenerateError("Trouble getting warranty by contact", err, rw, req)
+		apierror.GenerateError("Trouble getting warranty by contact.", err, rw, req)
+		return ""
 	}
 	return encoding.Must(enc.Encode(ws))
 }
@@ -62,18 +69,27 @@ func CreateWarranty(rw http.ResponseWriter, req *http.Request, enc encoding.Enco
 	var err error
 
 	contactTypeID, err := strconv.Atoi(params["contactReceiverTypeID"]) //to whom the emails go
+	if err != nil {
+		apierror.GenerateError("Trouble parsing contact type ID.", err, rw, req)
+		return ""
+	}
 	sendEmail, err := strconv.ParseBool(params["sendEmail"])
-
+	if err != nil {
+		apierror.GenerateError("Trouble parsing send email.", err, rw, req)
+		return ""
+	}
 	if strings.Contains(contType, "application/json") {
 		//json
 		requestBody, err := ioutil.ReadAll(req.Body)
 		if err != nil {
 			apierror.GenerateError("Trouble reading request body for creating warranty", err, rw, req)
+			return ""
 		}
 
 		err = json.Unmarshal(requestBody, &w)
 		if err != nil {
 			apierror.GenerateError("Trouble unmarshalling request body for creating warranty", err, rw, req)
+			return ""
 		}
 
 	} else {
@@ -83,6 +99,7 @@ func CreateWarranty(rw http.ResponseWriter, req *http.Request, enc encoding.Enco
 		date, err := time.Parse(timeFormat, req.FormValue("date"))
 		if err != nil {
 			apierror.GenerateError("Trouble creating warranty", err, rw, req)
+			return ""
 		}
 		w.Date = &date
 		w.SerialNumber = req.FormValue("serial_number")
@@ -102,6 +119,7 @@ func CreateWarranty(rw http.ResponseWriter, req *http.Request, enc encoding.Enco
 	err = w.Create()
 	if err != nil {
 		apierror.GenerateError("Trouble creating warranty", err, rw, req)
+		return ""
 	}
 	if sendEmail == true {
 		//Send Email
@@ -119,6 +137,7 @@ func CreateWarranty(rw http.ResponseWriter, req *http.Request, enc encoding.Enco
 		err = contact.SendEmail(ct, subject, body) //contact type id, subject, techSupport
 		if err != nil {
 			apierror.GenerateError("Trouble sending email to receivers while creating warranty", err, rw, req)
+			return ""
 		}
 	}
 	//Return JSON
@@ -132,10 +151,12 @@ func DeleteWarranty(rw http.ResponseWriter, req *http.Request, enc encoding.Enco
 
 	if w.ID, err = strconv.Atoi(id); err != nil {
 		apierror.GenerateError("Trouble getting warranty ID", err, rw, req)
+		return ""
 	}
 
 	if err = w.Delete(); err != nil {
 		apierror.GenerateError("Trouble deleting warranty", err, rw, req)
+		return ""
 	}
 
 	//Return JSON
