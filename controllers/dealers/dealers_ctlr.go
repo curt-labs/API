@@ -2,13 +2,12 @@ package dealers_ctlr
 
 import (
 	"errors"
-	// "log"
 	"net/http"
 	"strconv"
 
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
-	apierr "github.com/curt-labs/GoAPI/helpers/error"
+	"github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/go-martini/martini"
 )
@@ -16,7 +15,7 @@ import (
 func GetEtailers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	dealers, err := customer.GetEtailers(dtx)
 	if err != nil {
-		apierr.GenerateError("Error retrieving etailers.", err, w, r)
+		apierror.GenerateError("Error retrieving etailers.", err, w, r)
 	}
 	return encoding.Must(enc.Encode(dealers))
 }
@@ -38,7 +37,7 @@ func GetLocalDealers(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 	}
 
 	if key == "" {
-		apierr.GenerateError("Unauthorized.", err, w, r)
+		apierror.GenerateError("Unauthorized.", err, w, r)
 	}
 	// Get the latlng
 	latlng := params["latlng"]
@@ -53,7 +52,7 @@ func GetLocalDealers(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 
 	dealerLocations, err := customer.GetLocalDealers(center, latlng)
 	if err != nil {
-		apierr.GenerateError("Error retrieving locations.", err, w, r)
+		apierror.GenerateError("Error retrieving locations.", err, w, r)
 	}
 	return encoding.Must(enc.Encode(dealerLocations))
 
@@ -62,7 +61,7 @@ func GetLocalDealers(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 func GetLocalRegions(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	regions, err := customer.GetLocalRegions()
 	if err != nil {
-		apierr.GenerateError("Error retrieving local regions.", err, w, r)
+		apierror.GenerateError("Error retrieving local regions.", err, w, r)
 	}
 	return encoding.Must(enc.Encode(regions))
 }
@@ -70,7 +69,7 @@ func GetLocalRegions(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 func GetLocalDealerTiers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	tiers, err := customer.GetLocalDealerTiers(dtx)
 	if err != nil {
-		apierr.GenerateError("Error retrieving dealer tiers.", err, w, r)
+		apierror.GenerateError("Error retrieving dealer tiers.", err, w, r)
 	}
 	return encoding.Must(enc.Encode(tiers))
 }
@@ -78,7 +77,7 @@ func GetLocalDealerTiers(w http.ResponseWriter, r *http.Request, enc encoding.En
 func GetLocalDealerTypes(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	types, err := customer.GetLocalDealerTypes(dtx)
 	if err != nil {
-		apierr.GenerateError("Error retrieving dealer types.", err, w, r)
+		apierror.GenerateError("Error retrieving dealer types.", err, w, r)
 	}
 	return encoding.Must(enc.Encode(types))
 }
@@ -86,7 +85,7 @@ func GetLocalDealerTypes(w http.ResponseWriter, r *http.Request, enc encoding.En
 func PlatinumEtailers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	cust, err := customer.GetWhereToBuyDealers(dtx)
 	if err != nil {
-		apierr.GenerateError("Error retrieving platinum etailers.", err, w, r)
+		apierror.GenerateError("Error retrieving platinum etailers.", err, w, r)
 	}
 	return encoding.Must(enc.Encode(cust))
 }
@@ -94,18 +93,18 @@ func PlatinumEtailers(w http.ResponseWriter, r *http.Request, enc encoding.Encod
 func GetLocationById(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	str_id := params["id"]
 	if str_id == "" {
-		apierr.GenerateError("You must supply a location identification number.", errors.New("No id."), w, r)
+		apierror.GenerateError("You must supply a location identification number.", errors.New("No id."), w, r)
 	}
 	id, err := strconv.Atoi(str_id)
 	if err != nil {
-		apierr.GenerateError("You must supply a location identification number.", err, w, r)
+		apierror.GenerateError("You must supply a location identification number.", err, w, r)
 	}
 	var l customer.CustomerLocation
 	l.Id = id
 	// loc, err := customer.GetLocationById(id)
 	err = l.Get()
 	if err != nil {
-		apierr.GenerateError("Error retrieving locations.", err, w, r)
+		apierror.GenerateError("Error retrieving locations.", err, w, r)
 	}
 
 	return encoding.Must(enc.Encode(l))
@@ -114,7 +113,7 @@ func GetLocationById(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 func GetAllBusinessClasses(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	classes, err := customer.GetAllBusinessClasses(dtx)
 	if err != nil {
-		apierr.GenerateError("No results.", err, w, r)
+		apierror.GenerateError("No results.", err, w, r)
 	}
 	return encoding.Must(enc.Encode(classes))
 }
@@ -127,7 +126,7 @@ func SearchLocations(w http.ResponseWriter, r *http.Request, params martini.Para
 	}
 	locs, err := customer.SearchLocations(search_term)
 	if err != nil {
-		apierr.GenerateError("Error searching locations.", err, w, r)
+		apierror.GenerateError("Error searching locations.", err, w, r)
 	}
 
 	return encoding.Must(enc.Encode(locs))
@@ -141,7 +140,7 @@ func SearchLocationsByType(w http.ResponseWriter, r *http.Request, params martin
 	}
 	locs, err := customer.SearchLocationsByType(search_term)
 	if err != nil {
-		apierr.GenerateError("Error searching locations.", err, w, r)
+		apierror.GenerateError("Error searching locations.", err, w, r)
 	}
 
 	return encoding.Must(enc.Encode(locs))
@@ -170,7 +169,7 @@ func SearchLocationsByLatLng(w http.ResponseWriter, r *http.Request, params mart
 
 	locs, err := customer.SearchLocationsByLatLng(latlng)
 	if err != nil {
-		apierr.GenerateError("Error searching locations.", err, w, r)
+		apierror.GenerateError("Error searching locations.", err, w, r)
 	}
 
 	return encoding.Must(enc.Encode(locs))

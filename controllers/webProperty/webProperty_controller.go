@@ -3,18 +3,19 @@ package webProperty_controller
 import (
 	"encoding/json"
 	"errors"
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
-	"github.com/curt-labs/GoAPI/helpers/encoding"
-	"github.com/curt-labs/GoAPI/helpers/sortutil"
-	customer "github.com/curt-labs/GoAPI/models/customer"
-	"github.com/curt-labs/GoAPI/models/webProperty"
-	"github.com/go-martini/martini"
 	"io/ioutil"
-	// "log"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
+	"github.com/curt-labs/GoAPI/helpers/encoding"
+	"github.com/curt-labs/GoAPI/helpers/error"
+	"github.com/curt-labs/GoAPI/helpers/sortutil"
+	"github.com/curt-labs/GoAPI/models/customer"
+	"github.com/curt-labs/GoAPI/models/webProperty"
+	"github.com/go-martini/martini"
 )
 
 const (
@@ -24,11 +25,12 @@ const (
 func GetAll(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	props, err := webProperty_model.GetAll(dtx)
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble getting all web properties", err, rw, r)
 		return ""
 	}
 	if len(props) == 0 {
-		http.Error(rw, "No results.", http.StatusInternalServerError)
+		err = errors.New("No results.")
+		apierror.GenerateError("No results.", err, rw, r)
 		return ""
 	}
 	sort := r.FormValue("sort")
@@ -46,26 +48,22 @@ func GetAll(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *
 func Get(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var w webProperty_model.WebProperty
 	var err error
+
 	idStr := r.FormValue("id")
-	if idStr != "" {
-		w.ID, err = strconv.Atoi(idStr)
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return ""
-		}
-	} else {
-		w.ID, err = strconv.Atoi(params["id"])
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return ""
-		}
+	if idStr == "" {
+		idStr = params["id"]
 	}
 
-	err = w.Get(dtx)
-	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+	if w.ID, err = strconv.Atoi(idStr); err != nil {
+		apierror.GenerateError("Trouble getting web property ID", err, rw, r)
 		return ""
 	}
+
+	if err = w.Get(dtx); err != nil {
+		apierror.GenerateError("Trouble getting web property", err, rw, r)
+		return ""
+	}
+
 	sort := r.FormValue("sort")
 	direction := r.FormValue("direction")
 	if sort != "" {
@@ -87,12 +85,12 @@ func GetByPrivateKey(rw http.ResponseWriter, r *http.Request, enc encoding.Encod
 	cust := customer.Customer{}
 
 	if err = cust.GetCustomerIdFromKey(privateKey); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble getting customer", err, rw, r)
 		return ""
 	}
 
 	if webProperties, err = webProperty_model.GetByCustomer(cust.Id, dtx); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble getting web property", err, rw, r)
 		return ""
 	}
 
@@ -101,11 +99,13 @@ func GetByPrivateKey(rw http.ResponseWriter, r *http.Request, enc encoding.Encod
 
 func GetAllTypes(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	props, err := webProperty_model.GetAllWebPropertyTypes(dtx)
+	if err != nil {
+		apierror.GenerateError("Trouble getting web property types", err, rw, r)
+		return ""
+	}
 	if len(props) == 0 {
 		err = errors.New("No results.")
-	}
-	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("No results.", err, rw, r)
 		return ""
 	}
 	sort := r.FormValue("sort")
@@ -122,11 +122,13 @@ func GetAllTypes(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 }
 func GetAllNotes(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	props, err := webProperty_model.GetAllWebPropertyNotes(dtx)
+	if err != nil {
+		apierror.GenerateError("Trouble getting all web property notes", err, rw, r)
+		return ""
+	}
 	if len(props) == 0 {
 		err = errors.New("No results.")
-	}
-	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("No results", err, rw, r)
 		return ""
 	}
 	sort := r.FormValue("sort")
@@ -143,11 +145,13 @@ func GetAllNotes(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 }
 func GetAllRequirements(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	props, err := webProperty_model.GetAllWebPropertyRequirements(dtx)
+	if err != nil {
+		apierror.GenerateError("Trouble getting all web property requirements", err, rw, r)
+		return ""
+	}
 	if len(props) == 0 {
 		err = errors.New("No results.")
-	}
-	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("No results", err, rw, r)
 		return ""
 	}
 	sort := r.FormValue("sort")
@@ -166,12 +170,11 @@ func GetAllRequirements(rw http.ResponseWriter, r *http.Request, enc encoding.En
 func CreateUpdateWebProperty(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var w webProperty_model.WebProperty
 	var err error
-	//get private key & custID
-	privateKey := r.FormValue("key")
+
 	cust := customer.Customer{}
 
-	if err = cust.GetCustomerIdFromKey(privateKey); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+	if err = cust.GetCustomerIdFromKey(dtx.APIKey); err != nil {
+		apierror.GenerateError("Trouble getting customer ID from API Key", err, rw, r)
 		return ""
 	}
 
@@ -183,33 +186,30 @@ func CreateUpdateWebProperty(rw http.ResponseWriter, r *http.Request, enc encodi
 		//json
 		requestBody, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			apierror.GenerateError("Trouble reading request body while saving web property", err, rw, r)
 			return ""
 		}
 
-		err = json.Unmarshal(requestBody, &w)
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
+		if err = json.Unmarshal(requestBody, &w); err != nil {
+			apierror.GenerateError("Trouble unmarshalling request body while saving web property", err, rw, r)
 			return ""
 		}
 	} else {
-		idStr := r.FormValue("id")
-		if idStr != "" {
-			w.ID, err = strconv.Atoi(idStr)
-			if err != nil {
-				http.Error(rw, err.Error(), http.StatusInternalServerError)
+		if r.FormValue("id") != "" || params["id"] != "" {
+			idStr := r.FormValue("id")
+			if idStr == "" {
+				idStr = params["id"]
+			}
+
+			if w.ID, err = strconv.Atoi(idStr); err != nil {
+				apierror.GenerateError("Trouble getting web property ID", err, rw, r)
 				return ""
 			}
-		}
-		if params["id"] != "" {
-			w.ID, err = strconv.Atoi(params["id"])
-			if err != nil {
-				http.Error(rw, err.Error(), http.StatusInternalServerError)
+
+			if err = w.Get(dtx); err != nil {
+				apierror.GenerateError("Trouble getting web property", err, rw, r)
 				return ""
 			}
-		}
-		if w.ID > 0 {
-			w.Get(dtx)
 		}
 
 		name := r.FormValue("name")
@@ -217,10 +217,10 @@ func CreateUpdateWebProperty(rw http.ResponseWriter, r *http.Request, enc encodi
 		isEnabled := r.FormValue("isEnabled")
 		sellerID := r.FormValue("sellerID")
 		webPropertyTypeID := r.FormValue("webPropertyTypeID")
-		isFinalApproved := r.FormValue("metaDescription")
-		isEnabledDate := r.FormValue("metaDescription")
-		isDenied := r.FormValue("metaDescription")
-		requestedDate := r.FormValue("metaDescription")
+		isFinalApproved := r.FormValue("isApproved")
+		enabledDate := r.FormValue("enabledDate")
+		isDenied := r.FormValue("isDenied")
+		requestedDate := r.FormValue("requestedDate")
 		typeID := r.FormValue("typeID")
 
 		if name != "" {
@@ -230,38 +230,53 @@ func CreateUpdateWebProperty(rw http.ResponseWriter, r *http.Request, enc encodi
 			w.Url = url
 		}
 		if isEnabled != "" {
-			w.IsEnabled, err = strconv.ParseBool(isEnabled)
+			if w.IsEnabled, err = strconv.ParseBool(isEnabled); err != nil {
+				apierror.GenerateError("Trouble parsing boolean value for webproperty.isEnabled", err, rw, r)
+				return ""
+			}
 		}
 		if sellerID != "" {
 			w.SellerID = sellerID
 		}
 		if webPropertyTypeID != "" {
-			w.WebPropertyType.ID, err = strconv.Atoi(webPropertyTypeID)
+			if w.WebPropertyType.ID, err = strconv.Atoi(webPropertyTypeID); err != nil {
+				apierror.GenerateError("Trouble getting web property type ID", err, rw, r)
+				return ""
+			}
 		}
 		if isFinalApproved != "" {
-			w.IsFinalApproved, err = strconv.ParseBool(isFinalApproved)
+			if w.IsFinalApproved, err = strconv.ParseBool(isFinalApproved); err != nil {
+				apierror.GenerateError("Trouble parsing boolean value for webproperty.isApproved", err, rw, r)
+				return ""
+			}
 		}
-		if isEnabledDate != "" {
-			en, err := time.Parse(timeFormat, isEnabledDate)
+		if enabledDate != "" {
+			en, err := time.Parse(timeFormat, enabledDate)
 			if err != nil {
-				http.Error(rw, err.Error(), http.StatusInternalServerError)
+				apierror.GenerateError("Trouble parsing date for webproperty.enabledDate", err, rw, r)
 				return ""
 			}
 			w.IsEnabledDate = &en
 		}
 		if isDenied != "" {
-			w.IsDenied, err = strconv.ParseBool(isDenied)
+			if w.IsDenied, err = strconv.ParseBool(isDenied); err != nil {
+				apierror.GenerateError("Trouble parsing boolean value for webproperty.isDenied", err, rw, r)
+				return ""
+			}
 		}
 		if requestedDate != "" {
 			req, err := time.Parse(timeFormat, requestedDate)
 			if err != nil {
-				http.Error(rw, err.Error(), http.StatusInternalServerError)
+				apierror.GenerateError("Trouble parsing boolean value for webproperty.requestedDate", err, rw, r)
 				return ""
 			}
 			w.RequestedDate = &req
 		}
 		if typeID != "" {
-			w.WebPropertyType.ID, err = strconv.Atoi(typeID)
+			if w.WebPropertyType.ID, err = strconv.Atoi(typeID); err != nil {
+				apierror.GenerateError("Trouble getting type ID", err, rw, r)
+				return ""
+			}
 		}
 	}
 
@@ -285,62 +300,58 @@ func CreateUpdateWebProperty(rw http.ResponseWriter, r *http.Request, enc encodi
 	}
 
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		msg := "Trouble creating web property"
+		if w.ID > 0 {
+			msg = "Trouble updating web property"
+		}
+		apierror.GenerateError(msg, err, rw, r)
 		return ""
 	}
 	return encoding.Must(enc.Encode(w))
 }
 
 func DeleteWebProperty(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	var p webProperty_model.WebProperty
+	var w webProperty_model.WebProperty
 	var err error
 
 	idStr := r.FormValue("id")
-	if idStr != "" {
-		p.ID, err = strconv.Atoi(idStr)
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return ""
-		}
-	} else {
-		p.ID, err = strconv.Atoi(params["id"])
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return ""
-		}
+	if idStr == "" {
+		idStr = params["id"]
 	}
-	err = p.Delete()
-	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+
+	if w.ID, err = strconv.Atoi(idStr); err != nil {
+		apierror.GenerateError("Trouble getting web property ID", err, rw, r)
 		return ""
 	}
-	return encoding.Must(enc.Encode(p))
+
+	if err = w.Delete(); err != nil {
+		apierror.GenerateError("Trouble deleting web property", err, rw, r)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(w))
 }
 
 func GetWebPropertyNote(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	var n webProperty_model.WebPropertyNote
+	var wn webProperty_model.WebPropertyNote
 	var err error
 
 	idStr := r.FormValue("id")
-	if idStr != "" {
-		n.ID, err = strconv.Atoi(idStr)
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return ""
-		}
-	} else {
-		n.ID, err = strconv.Atoi(params["id"])
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return ""
-		}
+	if idStr == "" {
+		idStr = params["id"]
 	}
-	err = n.Get()
-	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+
+	if wn.ID, err = strconv.Atoi(idStr); err != nil {
+		apierror.GenerateError("Trouble getting web property note ID", err, rw, r)
 		return ""
 	}
-	return encoding.Must(enc.Encode(n))
+
+	if err = wn.Get(); err != nil {
+		apierror.GenerateError("Trouble getting web property note", err, rw, r)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(wn))
 }
 
 func CreateUpdateWebPropertyNote(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
@@ -348,23 +359,21 @@ func CreateUpdateWebPropertyNote(rw http.ResponseWriter, r *http.Request, enc en
 	var n webProperty_model.WebPropertyNote
 	var err error
 
-	idStr := r.FormValue("id")
-	if idStr != "" {
-		n.ID, err = strconv.Atoi(idStr)
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
+	if r.FormValue("id") != "" || params["id"] != "" {
+		idStr := r.FormValue("id")
+		if idStr == "" {
+			idStr = params["id"]
+		}
+
+		if n.ID, err = strconv.Atoi(idStr); err != nil {
+			apierror.GenerateError("Trouble getting web property ID", err, rw, r)
 			return ""
 		}
-	}
-	if params["id"] != "" {
-		n.ID, err = strconv.Atoi(params["id"])
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
+
+		if err = n.Get(); err != nil {
+			apierror.GenerateError("Trouble getting web property", err, rw, r)
 			return ""
 		}
-	}
-	if n.ID > 0 {
-		n.Get()
 	}
 
 	text := r.FormValue("text")
@@ -383,222 +392,223 @@ func CreateUpdateWebPropertyNote(rw http.ResponseWriter, r *http.Request, enc en
 	}
 
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		msg := "Trouble creating web property note"
+		if n.ID > 0 {
+			msg = "Trouble updating web property note"
+		}
+		apierror.GenerateError(msg, err, rw, r)
 		return ""
 	}
+
 	return encoding.Must(enc.Encode(n))
 }
+
 func DeleteWebPropertyNote(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var n webProperty_model.WebPropertyNote
 	var err error
 
 	idStr := r.FormValue("id")
-	if idStr != "" {
-		n.ID, err = strconv.Atoi(idStr)
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return ""
-		}
-	} else {
-		n.ID, err = strconv.Atoi(params["id"])
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return ""
-		}
+	if idStr == "" {
+		idStr = params["id"]
 	}
-	err = n.Delete()
-	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+
+	if n.ID, err = strconv.Atoi(idStr); err != nil {
+		apierror.GenerateError("Trouble getting web property note ID", err, rw, r)
 		return ""
 	}
+
+	if err = n.Delete(); err != nil {
+		apierror.GenerateError("Trouble deleting web property note", err, rw, r)
+		return ""
+	}
+
 	return encoding.Must(enc.Encode(n))
 }
 
 func GetWebPropertyRequirement(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	var req webProperty_model.WebPropertyRequirement
+	var wr webProperty_model.WebPropertyRequirement
 	var err error
+
 	idStr := r.FormValue("id")
-	if idStr != "" {
-		req.RequirementID, err = strconv.Atoi(idStr)
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return ""
-		}
-	} else {
-		req.RequirementID, err = strconv.Atoi(params["id"])
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return ""
-		}
+	if idStr == "" {
+		idStr = params["id"]
 	}
-	err = req.Get()
-	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+
+	if wr.ID, err = strconv.Atoi(idStr); err != nil {
+		apierror.GenerateError("Trouble getting web property requirement ID", err, rw, r)
 		return ""
 	}
-	return encoding.Must(enc.Encode(req))
 
+	if err = wr.Get(); err != nil {
+		apierror.GenerateError("Trouble getting web property requirement", err, rw, r)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(wr))
 }
 
 func CreateUpdateWebPropertyRequirement(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	var req webProperty_model.WebPropertyRequirement
+	var wr webProperty_model.WebPropertyRequirement
 	var err error
-	idStr := r.FormValue("id")
-	if idStr != "" {
-		req.RequirementID, err = strconv.Atoi(idStr)
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
+
+	if r.FormValue("id") != "" || params["id"] != "" {
+		idStr := r.FormValue("id")
+		if idStr == "" {
+			idStr = params["id"]
+		}
+
+		if wr.RequirementID, err = strconv.Atoi(idStr); err != nil {
+			apierror.GenerateError("Trouble getting web property requirement ID", err, rw, r)
+			return ""
+		}
+
+		if err = wr.Get(); err != nil {
+			apierror.GenerateError("Trouble getting web property requirement", err, rw, r)
 			return ""
 		}
 	}
-	if params["id"] != "" {
-		req.RequirementID, err = strconv.Atoi(params["id"])
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return ""
-		}
-	}
-	if req.RequirementID > 0 {
-		err = req.Get()
-	}
+
 	reqType := r.FormValue("reqType")
 	requirement := r.FormValue("requirement")
 
 	if reqType != "" {
-		req.ReqType = reqType
+		wr.ReqType = reqType
 	}
+
 	if requirement != "" {
-		req.Requirement = requirement
+		wr.Requirement = requirement
 	}
-	if req.RequirementID > 0 {
-		err = req.Update()
+
+	if wr.RequirementID > 0 {
+		err = wr.Update()
 	} else {
-		err = req.Create()
+		err = wr.Create()
 	}
+
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		msg := "Trouble creating web property requirement"
+		if wr.RequirementID > 0 {
+			msg = "Trouble updating web property requirement"
+		}
+		apierror.GenerateError(msg, err, rw, r)
 		return ""
 	}
-	return encoding.Must(enc.Encode(req))
 
+	return encoding.Must(enc.Encode(wr))
 }
 
 func DeleteWebPropertyRequirement(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	var req webProperty_model.WebPropertyRequirement
+	var wr webProperty_model.WebPropertyRequirement
 	var err error
+
 	idStr := r.FormValue("id")
-	if idStr != "" {
-		req.RequirementID, err = strconv.Atoi(idStr)
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return ""
-		}
-	} else {
-		req.RequirementID, err = strconv.Atoi(params["id"])
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return ""
-		}
+	if idStr == "" {
+		idStr = params["id"]
 	}
-	err = req.Delete()
-	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+
+	if wr.RequirementID, err = strconv.Atoi(idStr); err != nil {
+		apierror.GenerateError("Trouble getting web property requirement ID", err, rw, r)
 		return ""
 	}
-	return encoding.Must(enc.Encode(req))
+
+	if err = wr.Delete(); err != nil {
+		apierror.GenerateError("Trouble deleting web property requirement", err, rw, r)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(wr))
 }
 
 func GetWebPropertyType(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var t webProperty_model.WebPropertyType
 	var err error
+
 	idStr := r.FormValue("id")
-	if idStr != "" {
-		t.ID, err = strconv.Atoi(idStr)
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return ""
-		}
-	} else {
-		t.ID, err = strconv.Atoi(params["id"])
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return ""
-		}
+	if idStr == "" {
+		idStr = params["id"]
 	}
-	err = t.Get()
-	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+
+	if t.ID, err = strconv.Atoi(idStr); err != nil {
+		apierror.GenerateError("Trouble getting web property type ID", err, rw, r)
 		return ""
 	}
-	return encoding.Must(enc.Encode(t))
 
+	if err = t.Get(); err != nil {
+		apierror.GenerateError("Trouble getting web property type", err, rw, r)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(t))
 }
 
 func CreateUpdateWebPropertyType(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var t webProperty_model.WebPropertyType
 	var err error
-	idStr := r.FormValue("id")
-	if idStr != "" {
-		t.ID, err = strconv.Atoi(idStr)
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
+
+	if r.FormValue("id") != "" || params["id"] != "" {
+		idStr := r.FormValue("id")
+		if idStr == "" {
+			idStr = params["id"]
+		}
+
+		if t.ID, err = strconv.Atoi(idStr); err != nil {
+			apierror.GenerateError("Trouble getting web property type ID", err, rw, r)
+			return ""
+		}
+
+		if err = t.Get(); err != nil {
+			apierror.GenerateError("Trouble getting web property type", err, rw, r)
 			return ""
 		}
 	}
-	if params["id"] != "" {
-		t.ID, err = strconv.Atoi(params["id"])
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return ""
-		}
-	}
-	if t.ID > 0 {
-		err = t.Get()
-	}
+
 	typeID := r.FormValue("typeID")
 	theType := r.FormValue("type")
 
 	if typeID != "" {
 		t.TypeID, err = strconv.Atoi(typeID)
 	}
+
 	if theType != "" {
 		t.Type = theType
 	}
+
 	if t.ID > 0 {
 		err = t.Update()
 	} else {
 		err = t.Create()
 	}
+
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		msg := "Trouble creating web property type"
+		if t.ID > 0 {
+			msg = "Trboule updating web property type"
+		}
+		apierror.GenerateError(msg, err, rw, r)
 		return ""
 	}
 	return encoding.Must(enc.Encode(t))
-
 }
 
 func DeleteWebPropertyType(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var t webProperty_model.WebPropertyType
 	var err error
+
 	idStr := r.FormValue("id")
-	if idStr != "" {
-		t.ID, err = strconv.Atoi(idStr)
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return ""
-		}
-	} else {
-		t.ID, err = strconv.Atoi(params["id"])
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return ""
-		}
+	if idStr == "" {
+		idStr = params["id"]
 	}
-	err = t.Delete()
-	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+
+	if t.ID, err = strconv.Atoi(idStr); err != nil {
+		apierror.GenerateError("Trouble getting web property type ID", err, rw, r)
 		return ""
 	}
+
+	if err = t.Delete(); err != nil {
+		apierror.GenerateError("Trouble deleting web property type", err, rw, r)
+		return ""
+	}
+
 	return encoding.Must(enc.Encode(t))
 }
 
@@ -612,18 +622,18 @@ func Search(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) strin
 	isEnabled := r.FormValue("isEnabled")
 	sellerID := r.FormValue("sellerID")
 	webPropertyTypeID := r.FormValue("webPropertyTypeID")
-	isFinalApproved := r.FormValue("metaDescription")
-	isEnabledDate := r.FormValue("metaDescription")
-	isDenied := r.FormValue("metaDescription")
-	requestedDate := r.FormValue("metaDescription")
+	isFinalApproved := r.FormValue("isApproved")
+	enabledDate := r.FormValue("enabledDate")
+	isDenied := r.FormValue("isDenied")
+	requestedDate := r.FormValue("requestedDate")
 	typeID := r.FormValue("typeID")
 
 	page := r.FormValue("page")
 	results := r.FormValue("results")
 
-	l, err := webProperty_model.Search(name, custID, badgeID, url, isEnabled, sellerID, webPropertyTypeID, isFinalApproved, isEnabledDate, isDenied, requestedDate, typeID, page, results)
+	l, err := webProperty_model.Search(name, custID, badgeID, url, isEnabled, sellerID, webPropertyTypeID, isFinalApproved, enabledDate, isDenied, requestedDate, typeID, page, results)
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble searching for web properties", err, rw, r)
 		return ""
 	}
 

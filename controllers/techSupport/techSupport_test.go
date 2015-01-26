@@ -35,7 +35,7 @@ func TestTechSupport(te *testing.T) {
 		t.Contact.Brand.ID = dtx.BrandID
 		t.BrandID = dtx.BrandID
 
-		err = t.Contact.Add()
+		err = t.Contact.Add(dtx)
 		So(err, ShouldBeNil)
 
 		response := httprunner.ParameterizedJsonRequest("POST", "/techSupport/:contactReceiverTypeID/:sendEmail", "/techSupport/1/false", &qs, t, CreateTechSupport)
