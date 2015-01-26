@@ -24,7 +24,7 @@ func TestSite(t *testing.T) {
 		var c site.Content
 		var contents site.Contents
 		var cr site.ContentRevision
-		c.WebsiteId = 1
+		c.WebsiteId = dtx.WebsiteID
 		qs := make(url.Values, 0)
 		qs.Add("key", dtx.APIKey)
 
