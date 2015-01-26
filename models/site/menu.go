@@ -2,6 +2,7 @@ package site
 
 import (
 	"database/sql"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	// "github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
@@ -29,10 +30,22 @@ const (
 )
 
 var (
-	getMenu         = ` SELECT ` + menuFields + ` FROM Menu AS m WHERE menuID = ? `
-	getAllMenus     = ` SELECT ` + menuFields + ` FROM Menu AS m`
+	getMenu = ` SELECT ` + menuFields + ` FROM Menu AS m
+								Join WebsiteToBrand as wub on wub.WebsiteID = m.websiteID
+								Join ApiKeyToBrand as akb on akb.brandID = wub.brandID
+								Join ApiKey as ak on akb.keyID = ak.id
+	 							WHERE menuID = ? && (ak.api_key = ? && (wub.brandID = ? OR 0=?))`
+	getAllMenus = ` SELECT ` + menuFields + ` FROM Menu AS m
+								Join WebsiteToBrand as wub on wub.WebsiteID = m.websiteID
+								Join ApiKeyToBrand as akb on akb.brandID = wub.brandID
+								Join ApiKey as ak on akb.keyID = ak.id
+	 							WHERE (ak.api_key = ? && (wub.brandID = ? OR 0=?))`
 	getMenuContents = `SELECT ` + siteContentFields + `, ` + menuSiteContentFields + `  from Menu_SiteContent as msc JOIN SiteContent AS s ON s.contentID = msc.ContentID  WHERE msc.menuID = ?`
-	getMenuByName   = ` SELECT ` + menuFields + ` FROM Menu AS m WHERE menu_name = ? `
+	getMenuByName   = ` SELECT ` + menuFields + ` FROM Menu AS m 
+								Join WebsiteToBrand as wub on wub.WebsiteID = m.websiteID
+								Join ApiKeyToBrand as akb on akb.brandID = wub.brandID
+								Join ApiKey as ak on akb.keyID = ak.id
+	 							WHERE menu_name = ? && (ak.api_key = ? && (wub.brandID = ? OR 0=?))`
 	//operations
 	createMenu                    = `INSERT INTO Menu (menu_name, isPrimary, active, display_name, requireAuthentication, showOnSiteMap, sort, websiteID) VALUES(?,?,?,?,?,?,?,?)`
 	updateMenu                    = `UPDATE Menu SET menu_name = ?, isPrimary = ?, active = ?, display_name = ?, requireAuthentication = ?, showOnSiteMap = ?, sort = ?, websiteID = ? WHERE menuID = ?`
@@ -43,7 +56,7 @@ var (
 )
 
 //Fetch menu by Id
-func (m *Menu) Get() (err error) {
+func (m *Menu) Get(dtx *apicontext.DataContext) (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -57,7 +70,7 @@ func (m *Menu) Get() (err error) {
 
 	var display *string
 
-	err = stmt.QueryRow(m.Id).Scan(
+	err = stmt.QueryRow(m.Id, dtx.APIKey, dtx.BrandID, dtx.BrandID).Scan(
 		&m.Id,
 		&m.Name,
 		&m.IsPrimary,
@@ -78,7 +91,7 @@ func (m *Menu) Get() (err error) {
 }
 
 //Fetch up a menu by name
-func (m *Menu) GetByName() (err error) {
+func (m *Menu) GetByName(dtx *apicontext.DataContext) (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -92,7 +105,7 @@ func (m *Menu) GetByName() (err error) {
 
 	var display *string
 
-	err = stmt.QueryRow(m.Name).Scan(
+	err = stmt.QueryRow(m.Name, dtx.APIKey, dtx.BrandID, dtx.BrandID).Scan(
 		&m.Id,
 		&m.Name,
 		&m.IsPrimary,
@@ -113,7 +126,7 @@ func (m *Menu) GetByName() (err error) {
 }
 
 //Fetch all menus
-func GetAllMenus() (ms Menus, err error) {
+func GetAllMenus(dtx *apicontext.DataContext) (ms Menus, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return ms, err
@@ -128,7 +141,7 @@ func GetAllMenus() (ms Menus, err error) {
 	var display *string
 	var m Menu
 
-	res, err := stmt.Query()
+	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	if err != nil {
 		return ms, err
 	}

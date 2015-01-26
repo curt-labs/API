@@ -6,13 +6,14 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/models/site"
 	"github.com/go-martini/martini"
 )
 
-func GetSiteDetails(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+func GetSiteDetails(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var w site.Website
 	var err error
 	idStr := params["id"]
@@ -23,7 +24,7 @@ func GetSiteDetails(rw http.ResponseWriter, req *http.Request, enc encoding.Enco
 	}
 	w.ID = id
 
-	err = w.GetDetails()
+	err = w.GetDetails(dtx)
 	if err != nil {
 		apierror.GenerateError("Trouble getting site details", err, rw, req)
 	}

@@ -23,6 +23,7 @@ func TestSite_New(t *testing.T) {
 	Convey("Testing Create Menus", t, func() {
 		m.Name = "name"
 		m.ShowOnSitemap = true
+		m.WebsiteId = MockedDTX.WebsiteID
 		err = m.Create()
 		So(err, ShouldBeNil)
 		//Update menu
@@ -61,15 +62,15 @@ func TestSite_New(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		//get menus
-		err = m.Get()
+		err = m.Get(MockedDTX)
 		So(m.Name, ShouldEqual, "name2")
 		So(err, ShouldBeNil)
 
-		ms, err := GetAllMenus()
+		ms, err := GetAllMenus(MockedDTX)
 		So(err, ShouldBeNil)
 		So(len(ms), ShouldBeGreaterThan, 0)
 
-		err = m.GetByName()
+		err = m.GetByName(MockedDTX)
 		So(err, ShouldBeNil)
 
 		err = m.GetContents()
@@ -148,6 +149,11 @@ func TestSite_New(t *testing.T) {
 func TestWebsite(t *testing.T) {
 	var w Website
 	var err error
+
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
 	Convey("Testing Create Website", t, func() {
 		w.Url = "www.example.com"
 		err = w.Create()
@@ -171,7 +177,7 @@ func TestWebsite(t *testing.T) {
 		}
 	})
 	Convey("Testing GetSiteDetails", t, func() {
-		err = w.GetDetails()
+		err = w.GetDetails(MockedDTX)
 		So(err, ShouldBeNil)
 	})
 	Convey("Testing Delete Website", t, func() {
