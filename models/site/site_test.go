@@ -35,6 +35,7 @@ func TestSite_New(t *testing.T) {
 		c.Title = "title"
 		c.MetaTitle = "mTitle"
 		c.MetaDescription = "mDesc"
+		c.WebsiteId = MockedDTX.WebsiteID
 		err = c.Create()
 		So(err, ShouldBeNil)
 		//update content
@@ -110,12 +111,12 @@ func TestSite_New(t *testing.T) {
 			So(c.ContentRevisions, ShouldNotBeNil)
 		}
 		//get contents
-		cs, err := GetAllContents()
+		cs, err := GetAllContents(MockedDTX)
 		So(err, ShouldBeNil)
 		So(len(cs), ShouldBeGreaterThanOrEqualTo, 0)
 		//get contents by slug
 		t.Log(c.Slug)
-		err = c.GetBySlug()
+		err = c.GetBySlug(MockedDTX)
 		So(err, ShouldBeNil)
 
 		//menu-content join

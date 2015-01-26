@@ -55,11 +55,19 @@ var (
 								Join ApiKeyToBrand as akb on akb.brandID = wub.brandID
 								Join ApiKey as ak on akb.keyID = ak.id
 								where s.contentID = ? && (ak.api_key = ? && (wub.brandID = ? OR 0=?))`
-	getAllContent          = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s  `
+	getAllContent = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s  
+								Join WebsiteToBrand as wub on wub.WebsiteID = s.websiteID
+								Join ApiKeyToBrand as akb on akb.brandID = wub.brandID
+								Join ApiKey as ak on akb.keyID = ak.id
+								where (ak.api_key = ? && (wub.brandID = ? OR 0=?))`
 	getContentRevisions    = `SELECT revisionID, content_text, createdOn, active FROM SiteContentRevision AS scr WHERE scr.contentID = ? `
 	getAllContentRevisions = `SELECT revisionID, content_text, createdOn, active FROM SiteContentRevision AS scr `
 	getContentRevision     = `SELECT revisionID, content_text, createdOn, active FROM SiteContentRevision AS scr WHERE revisionID = ?`
-	getContentBySlug       = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s WHERE s.slug = ? `
+	getContentBySlug       = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s 
+								Join WebsiteToBrand as wub on wub.WebsiteID = s.websiteID
+								Join ApiKeyToBrand as akb on akb.brandID = wub.brandID
+								Join ApiKey as ak on akb.keyID = ak.id
+								WHERE s.slug = ? && (ak.api_key = ? && (wub.brandID = ? OR 0=?))`
 
 	//operations
 	createRevision = `INSERT INTO SiteContentRevision (contentID, content_text, createdOn, active) VALUES (?,?,?,?)`
@@ -136,7 +144,7 @@ func (c *Content) Get(dtx *apicontext.DataContext) (err error) {
 }
 
 //Fetch content by slug
-func (c *Content) GetBySlug() (err error) {
+func (c *Content) GetBySlug(dtx *apicontext.DataContext) (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -148,7 +156,7 @@ func (c *Content) GetBySlug() (err error) {
 	}
 	defer stmt.Close()
 	var cType, title, mTitle, mDesc, slug, canon *string
-	err = stmt.QueryRow(c.Slug).Scan(
+	err = stmt.QueryRow(c.Slug, dtx.APIKey, dtx.BrandID, dtx.BrandID).Scan(
 		&c.Id,
 		&cType,
 		&title,
@@ -196,7 +204,7 @@ func (c *Content) GetBySlug() (err error) {
 }
 
 //Fetch a great many contents
-func GetAllContents() (cs Contents, err error) {
+func GetAllContents(dtx *apicontext.DataContext) (cs Contents, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return cs, err
@@ -210,7 +218,7 @@ func GetAllContents() (cs Contents, err error) {
 
 	var cType, title, mTitle, mDesc, slug, canon, keywords *string
 	var c Content
-	res, err := stmt.Query()
+	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	for res.Next() {
 		err = res.Scan(
 			&c.Id,

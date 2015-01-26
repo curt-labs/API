@@ -29,7 +29,7 @@ func GetContent(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder,
 	} else {
 		//Thar be a slug
 		c.Slug = idStr
-		err = c.GetBySlug()
+		err = c.GetBySlug(dtx)
 		if err != nil {
 			apierror.GenerateError("Trouble getting site content by slug.", err, rw, req)
 		}
@@ -38,7 +38,7 @@ func GetContent(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder,
 }
 
 func GetAllContents(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
-	m, err := site.GetAllContents()
+	m, err := site.GetAllContents(dtx)
 	if err != nil {
 		apierror.GenerateError("Trouble getting all site contents", err, rw, req)
 	}
