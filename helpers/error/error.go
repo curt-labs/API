@@ -3,6 +3,8 @@ package apierror
 import (
 	"encoding/json"
 	"encoding/xml"
+	"github.com/curt-labs/GoAPI/helpers/database"
+	"gopkg.in/mgo.v2"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -38,6 +40,9 @@ func GenerateError(msg string, err error, res http.ResponseWriter, r *http.Reque
 		e.QueryString = r.URL.Query()
 	}
 
+	//mongo
+	logError(e)
+
 	var errorResp []byte
 	var marshalErr error
 
@@ -68,4 +73,15 @@ func GenerateError(msg string, err error, res http.ResponseWriter, r *http.Reque
 	res.WriteHeader(respCode)
 	res.Write(errorResp)
 	return
+}
+
+func logError(e ApiErr) error {
+	session, err := mgo.DialWithInfo(database.MongoConnectionString())
+	if err != nil {
+		return err
+	}
+	defer session.Close()
+	c := session.DB("errorDB").C("errors")
+	err = c.Insert(e)
+	return err
 }
