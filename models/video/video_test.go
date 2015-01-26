@@ -54,8 +54,8 @@ func TestVideo_New(t *testing.T) {
 		So(err, ShouldBeNil)
 		//create video
 		v.Title = "test vid"
-		v.Brands = append(v.Brands, brand.Brand{MockedDTX.BrandID}) //matches mocked brand
-		p.ID = 11000                                                //force part
+		v.Brands = append(v.Brands, brand.Brand{ID: MockedDTX.BrandID}) //matches mocked brand
+		p.ID = 11000                                                    //force part
 
 		v.VideoType = vt
 		v.Categories = append(v.Categories, cat)
