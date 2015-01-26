@@ -1,14 +1,15 @@
 package video
 
 import (
-	"database/sql"
-	"encoding/json"
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	"github.com/curt-labs/GoAPI/models/brand"
 	"github.com/curt-labs/GoAPI/models/products"
 	_ "github.com/go-sql-driver/mysql"
+
+	"database/sql"
+	"encoding/json"
 	"strconv"
 	"time"
 )
@@ -1233,15 +1234,19 @@ func GetAllCdnFileTypes() (cts []CdnFileType, err error) {
 		return cts, err
 	}
 	var c CdnFileType
+	var desc *string
 	for res.Next() {
 		err = res.Scan(
 			&c.ID,
 			&c.MimeType,
 			&c.Title,
-			&c.Description,
+			&desc,
 		)
 		if err != nil {
 			return cts, err
+		}
+		if desc != nil {
+			c.Description = *desc
 		}
 		cts = append(cts, c)
 	}

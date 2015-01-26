@@ -15,7 +15,7 @@ type ApiErr struct {
 	QueryString    url.Values `json:"query_string" xml:"query_string"`
 }
 
-func GenerateError(msg string, err error, res http.ResponseWriter, r *http.Request) {
+func GenerateError(msg string, err error, res http.ResponseWriter, r *http.Request, errorCode ...int) {
 	e := ApiErr{
 		Message: "",
 	}
@@ -60,7 +60,12 @@ func GenerateError(msg string, err error, res http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	res.WriteHeader(http.StatusInternalServerError)
+	respCode := http.StatusInternalServerError
+	if len(errorCode) > 0 {
+		respCode = errorCode[0]
+	}
+
+	res.WriteHeader(respCode)
 	res.Write(errorResp)
 	return
 }

@@ -289,7 +289,7 @@ func AuthenticateAndGetCustomer(key string, dtx *apicontext.DataContext) (cust C
 	return cust, nil
 }
 
-func (u *CustomerUser) AuthenticateUser(brandIds []int) error {
+func (u *CustomerUser) AuthenticateUser() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return AuthError
@@ -381,6 +381,15 @@ func (u *CustomerUser) AuthenticateUser(brandIds []int) error {
 		}
 		_, err = stmtPass.Exec(hashedPass, u.Id)
 		return errors.New("Incorrect password.")
+	}
+
+	err = u.GetBrands()
+	if err != nil {
+		return err
+	}
+	var brandIds []int
+	for _, brand := range u.Brands {
+		brandIds = append(brandIds, brand.ID)
 	}
 
 	resetChan := make(chan int)
@@ -826,7 +835,7 @@ func (cu *CustomerUser) ChangePass(oldPass, newPass string, dtx *apicontext.Data
 	stmt, err := tx.Prepare(setCustomerUserPassword)
 	encryptNewPass, err := bcrypt.GenerateFromPassword([]byte(newPass), bcrypt.DefaultCost)
 
-	err = cu.AuthenticateUser(dtx.BrandArray)
+	err = cu.AuthenticateUser()
 	if err != nil {
 		return errors.New("Old password is incorrect.")
 	}

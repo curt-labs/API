@@ -24,10 +24,7 @@ func AuthenticateUser(w http.ResponseWriter, r *http.Request, enc encoding.Encod
 	user.Email = email
 	user.Password = pass
 
-	//default brand for setting key
-	defaultBrandArray := []int{1}
-
-	err := user.AuthenticateUser(defaultBrandArray)
+	err := user.AuthenticateUser()
 	if err != nil {
 
 		http.Error(w, err.Error(), http.StatusUnauthorized)

@@ -407,14 +407,14 @@ func main() {
 	})
 
 	m.Group("/webProperties", func(r martini.Router) {
-		r.Post("/json/type", internalCors, webProperty_controller.SaveType_Json)
-		r.Post("/json/type/:id", internalCors, webProperty_controller.SaveType_Json)
-		r.Post("/json/requirement", internalCors, webProperty_controller.SaveRequirement_Json)
-		r.Post("/json/requirement/:id", internalCors, webProperty_controller.SaveRequirement_Json)
-		r.Post("/json/note", internalCors, webProperty_controller.SaveNote_Json)
-		r.Post("/json/note/:id", internalCors, webProperty_controller.SaveNote_Json)
-		r.Post("/json/:id", internalCors, webProperty_controller.Save_Json)
-		r.Put("/json", internalCors, webProperty_controller.Save_Json)
+		r.Post("/json/type", internalCors, webProperty_controller.CreateUpdateWebPropertyType)
+		r.Post("/json/type/:id", internalCors, webProperty_controller.CreateUpdateWebPropertyType)
+		r.Post("/json/requirement", internalCors, webProperty_controller.CreateUpdateWebPropertyRequirement)
+		r.Post("/json/requirement/:id", internalCors, webProperty_controller.CreateUpdateWebPropertyRequirement)
+		r.Post("/json/note", internalCors, webProperty_controller.CreateUpdateWebPropertyNote)
+		r.Post("/json/note/:id", internalCors, webProperty_controller.CreateUpdateWebPropertyNote)
+		r.Post("/json/:id", internalCors, webProperty_controller.CreateUpdateWebProperty)
+		r.Put("/json", internalCors, webProperty_controller.CreateUpdateWebProperty)
 		r.Post("/note/:id", internalCors, webProperty_controller.CreateUpdateWebPropertyNote)               //updates when an id is present; otherwise, creates
 		r.Put("/note", internalCors, webProperty_controller.CreateUpdateWebPropertyNote)                    //updates when an id is present; otherwise, creates
 		r.Delete("/note/:id", internalCors, webProperty_controller.DeleteWebPropertyNote)                   //{id}

@@ -38,7 +38,7 @@ func TestUser(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(len(cu.Keys), ShouldEqual, 3)
 		}
-		err = cu.AuthenticateUser(dtx.BrandArray)
+		err = cu.AuthenticateUser()
 		So(err, ShouldBeNil)
 	})
 	Convey("Testing Update", t, func() {
