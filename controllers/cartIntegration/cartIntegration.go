@@ -65,7 +65,7 @@ func GetCI(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params
 	}
 	ci.ID, err = strconv.Atoi(id)
 
-	err = ci.Get()
+	err = ci.Get(dtx)
 	if err != nil {
 		apierror.GenerateError("Trouble getting cart integration", err, rw, r)
 	}
@@ -81,7 +81,7 @@ func GetCIbyPart(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 	}
 	ci.PartID, err = strconv.Atoi(id)
 
-	cis, err := cartIntegration.GetCartIntegrationsByPart(ci)
+	cis, err := cartIntegration.GetCartIntegrationsByPart(ci, dtx)
 	if err != nil {
 		apierror.GenerateError("Trouble getting cart integrations by part number", err, rw, r)
 	}
@@ -105,7 +105,7 @@ func GetCIbyCustomer(rw http.ResponseWriter, r *http.Request, enc encoding.Encod
 	//set cartIntegration customer ID to cust_id
 	ci.CustID = c.Id
 
-	cis, err := cartIntegration.GetCartIntegrationsByCustomer(ci)
+	cis, err := cartIntegration.GetCartIntegrationsByCustomer(ci, dtx)
 	if err != nil {
 		apierror.GenerateError("Trouble getting cart integrations by customer", err, rw, r)
 	}
@@ -118,7 +118,7 @@ func SaveCI(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, param
 	id := params["id"]
 	if id != "" {
 		ci.ID, err = strconv.Atoi(id)
-		err = ci.Get()
+		err = ci.Get(dtx)
 		if err != nil {
 			apierror.GenerateError("Trouble getting cart integration", err, rw, r)
 		}
@@ -136,7 +136,7 @@ func SaveCI(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, param
 	if ci.ID != 0 {
 		err = ci.Update()
 	} else {
-		err = ci.Create()
+		err = ci.Create(dtx)
 	}
 	if err != nil {
 		apierror.GenerateError("Trouble creating/updating cart integration", err, rw, r)
@@ -168,7 +168,7 @@ func GetCustomerPricing(rw http.ResponseWriter, r *http.Request, enc encoding.En
 	if custID == 0 {
 		apierror.GenerateError("Trouble getting custID for customer pricing", err, rw, r)
 	}
-	prices, err := cartIntegration.GetPricesByCustomerID(custID)
+	prices, err := cartIntegration.GetPricesByCustomerID(custID, dtx)
 	if err != nil {
 		apierror.GenerateError("Trouble getting prices by customer ID", err, rw, r)
 	}
@@ -192,7 +192,7 @@ func GetCustomerPricingPaged(rw http.ResponseWriter, r *http.Request, enc encodi
 		apierror.GenerateError("Trouble getting count for paged customer pricing", err, rw, r)
 	}
 
-	prices, err := cartIntegration.GetPricesByCustomerIDPaged(custID, page, count)
+	prices, err := cartIntegration.GetPricesByCustomerIDPaged(custID, page, count, dtx)
 	if custID == 0 {
 		apierror.GenerateError("Trouble getting prices for paged customer pricing", err, rw, r)
 	}
@@ -207,7 +207,7 @@ func GetCustomerPricingCount(rw http.ResponseWriter, r *http.Request, enc encodi
 	if custID == 0 {
 		apierror.GenerateError("Trouble getting custID for pricing count", err, rw, r)
 	}
-	count, err := cartIntegration.GetPricingCount(custID)
+	count, err := cartIntegration.GetPricingCount(custID, dtx)
 	if custID == 0 {
 		apierror.GenerateError("Trouble getting pricing count", err, rw, r)
 	}

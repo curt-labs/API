@@ -205,6 +205,7 @@ func (r *Review) Get(dtx *apicontext.DataContext) (err error) {
 }
 
 func (r *Review) Create() (err error) {
+	go redis.Delete("reviews:*")
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -232,6 +233,7 @@ func (r *Review) Create() (err error) {
 }
 
 func (r *Review) Update() (err error) {
+	go redis.Delete("reviews:*")
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -256,6 +258,7 @@ func (r *Review) Update() (err error) {
 }
 
 func (r *Review) Delete() (err error) {
+	go redis.Delete("reviews:*")
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -280,6 +283,7 @@ func (r *Review) Delete() (err error) {
 	return err
 }
 func (r *Review) DeletebyPart() (err error) {
+	go redis.Delete("reviews:*")
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err

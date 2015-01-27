@@ -425,7 +425,7 @@ func GetAll(dtx *apicontext.DataContext) (WebProperties, error) {
 	return ws, err
 }
 func (w *WebProperty) Create() (err error) {
-
+	go redis.Delete("webproperties:brands:*")
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -486,7 +486,7 @@ func (w *WebProperty) Create() (err error) {
 }
 
 func (w *WebProperty) Update() (err error) {
-
+	go redis.Delete("webproperties:brands:*")
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -535,6 +535,7 @@ func (w *WebProperty) Update() (err error) {
 	return nil
 }
 func (w *WebProperty) Delete() error {
+	go redis.Delete("webproperties:brands:*")
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -575,7 +576,7 @@ func GetAllWebPropertyTypes(dtx *apicontext.DataContext) (WebPropertyTypes, erro
 	var ws WebPropertyTypes
 	var err error
 
-	redis_key := "webpropertytypes" + dtx.BrandString
+	redis_key := "webpropertytypes:" + dtx.BrandString
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &ws)
@@ -609,7 +610,7 @@ func GetAllWebPropertyNotes(dtx *apicontext.DataContext) (WebPropertyNotes, erro
 	var ws WebPropertyNotes
 	var err error
 
-	redis_key := "webpropertynotes" + dtx.BrandString
+	redis_key := "webpropertynotes:" + dtx.BrandString
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &ws)
@@ -642,7 +643,7 @@ func GetAllWebPropertyRequirements(dtx *apicontext.DataContext) (WebPropertyRequ
 	var ws WebPropertyRequirements
 	var err error
 
-	redis_key := "webpropertyrequirements" + dtx.BrandString
+	redis_key := "webpropertyrequirements:" + dtx.BrandString
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &ws)
@@ -720,6 +721,7 @@ func (n *WebPropertyNote) Get() error {
 }
 
 func (n *WebPropertyNote) Create() error {
+	go redis.Delete("webpropertynotes:brands:*")
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -749,6 +751,7 @@ func (n *WebPropertyNote) Create() error {
 }
 
 func (n *WebPropertyNote) Update() error {
+	go redis.Delete("webpropertynotes:brands:*")
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -772,6 +775,7 @@ func (n *WebPropertyNote) Update() error {
 }
 
 func (n *WebPropertyNote) Delete() error {
+	go redis.Delete("webpropertynotes:brands:*")
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -793,6 +797,7 @@ func (n *WebPropertyNote) Delete() error {
 }
 
 func (n *WebProperty) DeleteNotesByPropId() error {
+	go redis.Delete("webpropertynotes:brands:*")
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -932,6 +937,7 @@ func (r *WebPropertyRequirement) Get() error {
 }
 
 func (r *WebPropertyRequirement) Create() error {
+	go redis.Delete("webpropertyrequirements:brands:*")
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -960,6 +966,7 @@ func (r *WebPropertyRequirement) Create() error {
 }
 
 func (r *WebPropertyRequirement) Update() error {
+	go redis.Delete("webpropertyrequirements:brands:*")
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -981,6 +988,7 @@ func (r *WebPropertyRequirement) Update() error {
 }
 
 func (r *WebPropertyRequirement) Delete() error {
+	go redis.Delete("webpropertyrequirements:brands:*")
 	var err error
 	err = r.Get()
 	if err != nil {
@@ -1034,6 +1042,7 @@ func (t *WebPropertyType) Get() error {
 }
 
 func (t *WebPropertyType) Update() error {
+	go redis.Delete("webpropertytypes:brands:*")
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1055,6 +1064,7 @@ func (t *WebPropertyType) Update() error {
 }
 
 func (t *WebPropertyType) Create() error {
+	go redis.Delete("webpropertytypes:brands:*")
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1080,6 +1090,7 @@ func (t *WebPropertyType) Create() error {
 }
 
 func (t *WebPropertyType) Delete() error {
+	go redis.Delete("webpropertytypes:brands:*")
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err

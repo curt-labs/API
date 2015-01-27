@@ -86,13 +86,18 @@ type Category struct {
 }
 
 const (
-	videoFields            = ` v.ID, v.subjectTypeID, v.title, v.description, v.dateAdded, v.dateModified, v.isPrimary, v.thumbnail `
-	videoTypeFields        = `  vt.name, vt.icon `
-	channelFields          = ` c.ID, c.typeID, c.link, c.embedCode, c.foriegnID, c.dateAdded, c.dateModified, c.title, c.desc `
-	channelTypeFields      = ` ct.name, ct.description `
-	cdnFileFields          = `cf.ID, cf.typeID, cf.path, cf.dateAdded, cf.lastUploaded, cf.bucket, cf.objectName, cf.fileSize `
-	cdnFileTypeFields      = ` cft.mimeType, cft.title, cft.description `
-	AllCdnFileTypeRedisKey = "video:cdnFileTypes"
+	videoFields             = ` v.ID, v.subjectTypeID, v.title, v.description, v.dateAdded, v.dateModified, v.isPrimary, v.thumbnail `
+	videoTypeFields         = `  vt.name, vt.icon `
+	channelFields           = ` c.ID, c.typeID, c.link, c.embedCode, c.foriegnID, c.dateAdded, c.dateModified, c.title, c.desc `
+	channelTypeFields       = ` ct.name, ct.description `
+	cdnFileFields           = `cf.ID, cf.typeID, cf.path, cf.dateAdded, cf.lastUploaded, cf.bucket, cf.objectName, cf.fileSize `
+	cdnFileTypeFields       = ` cft.mimeType, cft.title, cft.description `
+	AllCdnFileTypeRedisKey  = "video:cdnFileTypes"
+	AllVideoTypesRedisKey   = "video:videoTypes"
+	AllChannelTypesRedisKey = "video:channelTypes"
+	AllCdnFilesRedisKey     = "video:cdnFiles"
+	AllChannelsRedisKey     = "video:channels"
+	AllVideosRedisKey       = "video"
 )
 
 var (
@@ -239,8 +244,7 @@ func (v *Video) GetVideoDetails() (err error) {
 }
 
 func GetAllVideos(dtx *apicontext.DataContext) (vs Videos, err error) {
-	redis_key := "video"
-	data, err := redis.Get(redis_key)
+	data, err := redis.Get(AllVideosRedisKey + ":" + dtx.BrandString)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &vs)
 		return vs, err
@@ -266,7 +270,7 @@ func GetAllVideos(dtx *apicontext.DataContext) (vs Videos, err error) {
 	if len(vs) == 0 {
 		err = sql.ErrNoRows
 	}
-	go redis.Setex(redis_key, vs, 86400)
+	go redis.Setex(AllVideosRedisKey+":"+dtx.BrandString, vs, 86400)
 	return vs, err
 }
 
@@ -390,6 +394,7 @@ func (v *Video) GetCdnFiles() (cdns CdnFiles, err error) {
 }
 
 func (v *Video) Create() (err error) {
+	go redis.Delete(AllVideosRedisKey + ":brands:*")
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -474,6 +479,7 @@ func (v *Video) Create() (err error) {
 }
 
 func (v *Video) Update() (err error) {
+	go redis.Delete(AllVideosRedisKey + ":brands:*")
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -591,6 +597,7 @@ func (v *Video) Update() (err error) {
 }
 
 func (v *Video) Delete() (err error) {
+	go redis.Delete(AllVideosRedisKey + ":brands:*")
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -930,8 +937,7 @@ func (c *Channel) Get() (err error) {
 }
 
 func GetAllChannels() (cs Channels, err error) {
-	redis_key := "video:channels"
-	data, err := redis.Get(redis_key)
+	data, err := redis.Get(AllChannelsRedisKey)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &cs)
 		return cs, err
@@ -957,11 +963,12 @@ func GetAllChannels() (cs Channels, err error) {
 	if len(cs) == 0 {
 		err = sql.ErrNoRows
 	}
-	go redis.Setex(redis_key, cs, 86400)
+	go redis.Setex(AllChannelsRedisKey, cs, 86400)
 	return cs, err
 }
 
 func (c *Channel) Create() (err error) {
+	go redis.Delete(AllChannelsRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -986,6 +993,7 @@ func (c *Channel) Create() (err error) {
 }
 
 func (c *Channel) Update() (err error) {
+	go redis.Delete(AllChannelsRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1007,6 +1015,7 @@ func (c *Channel) Update() (err error) {
 	return err
 }
 func (c *Channel) Delete() (err error) {
+	go redis.Delete(AllChannelsRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1084,8 +1093,7 @@ func (c *CdnFile) Get() (err error) {
 }
 
 func GetAllCdnFiles() (cs CdnFiles, err error) {
-	redis_key := "video:cdnFiles"
-	data, err := redis.Get(redis_key)
+	data, err := redis.Get(AllCdnFilesRedisKey)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &cs)
 		return cs, err
@@ -1111,11 +1119,12 @@ func GetAllCdnFiles() (cs CdnFiles, err error) {
 	if len(cs) == 0 {
 		err = sql.ErrNoRows
 	}
-	go redis.Setex(redis_key, cs, 86400)
+	go redis.Setex(AllCdnFilesRedisKey, cs, 86400)
 	return cs, err
 }
 
 func (c *CdnFile) Create() (err error) {
+	go redis.Delete(AllCdnFilesRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1140,6 +1149,7 @@ func (c *CdnFile) Create() (err error) {
 }
 
 func (c *CdnFile) Update() (err error) {
+	go redis.Delete(AllCdnFilesRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1161,6 +1171,7 @@ func (c *CdnFile) Update() (err error) {
 	return err
 }
 func (c *CdnFile) Delete() (err error) {
+	go redis.Delete(AllCdnFilesRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1212,8 +1223,7 @@ func (c *CdnFileType) Get() (err error) {
 }
 
 func GetAllCdnFileTypes() (cts []CdnFileType, err error) {
-	redis_key := AllCdnFileTypeRedisKey
-	data, err := redis.Get(redis_key)
+	data, err := redis.Get(AllCdnFileTypeRedisKey)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &cts)
 		return cts, err
@@ -1252,7 +1262,7 @@ func GetAllCdnFileTypes() (cts []CdnFileType, err error) {
 		cts = append(cts, c)
 	}
 	defer res.Close()
-	go redis.Setex(redis_key, cts, 86400)
+	go redis.Setex(AllCdnFileTypeRedisKey, cts, 86400)
 	return cts, err
 }
 
@@ -1353,8 +1363,7 @@ func (c *VideoType) Get() (err error) {
 }
 
 func GetAllVideoTypes() (vts []VideoType, err error) {
-	redis_key := "video:videoTypes"
-	data, err := redis.Get(redis_key)
+	data, err := redis.Get(AllVideoTypesRedisKey)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &vts)
 		return vts, err
@@ -1389,11 +1398,12 @@ func GetAllVideoTypes() (vts []VideoType, err error) {
 		vts = append(vts, vt)
 	}
 	defer rows.Close()
-	go redis.Setex(redis_key, vts, 86400)
+	go redis.Setex(AllVideoTypesRedisKey, vts, 86400)
 	return vts, err
 }
 
 func (c *VideoType) Create() (err error) {
+	go redis.Delete(AllVideoTypesRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1417,6 +1427,7 @@ func (c *VideoType) Create() (err error) {
 }
 
 func (c *VideoType) Update() (err error) {
+	go redis.Delete(AllVideoTypesRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1438,6 +1449,7 @@ func (c *VideoType) Update() (err error) {
 	return err
 }
 func (c *VideoType) Delete() (err error) {
+	go redis.Delete(AllVideoTypesRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1484,8 +1496,7 @@ func (c *ChannelType) Get() (err error) {
 }
 
 func GetAllChannelTypes() (cts []ChannelType, err error) {
-	redis_key := "video:channelTypes"
-	data, err := redis.Get(redis_key)
+	data, err := redis.Get(AllChannelTypesRedisKey)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &cts)
 		return cts, err
@@ -1518,11 +1529,12 @@ func GetAllChannelTypes() (cts []ChannelType, err error) {
 		cts = append(cts, c)
 	}
 	defer res.Close()
-	go redis.Setex(redis_key, cts, 86400)
+	go redis.Setex(AllChannelTypesRedisKey, cts, 86400)
 	return cts, err
 }
 
 func (c *ChannelType) Create() (err error) {
+	go redis.Delete(AllChannelTypesRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1546,6 +1558,7 @@ func (c *ChannelType) Create() (err error) {
 }
 
 func (c *ChannelType) Update() (err error) {
+	go redis.Delete(AllChannelTypesRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1567,6 +1580,7 @@ func (c *ChannelType) Update() (err error) {
 	return err
 }
 func (c *ChannelType) Delete() (err error) {
+	go redis.Delete(AllChannelTypesRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
