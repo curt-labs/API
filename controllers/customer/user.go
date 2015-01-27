@@ -233,26 +233,6 @@ func RegisterUser(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 		return ""
 	}
 
-	brands := strings.TrimSpace(r.FormValue("brands"))
-	brandStrArr := strings.Split(brands, ",")
-	//default to CURT (1)
-	if len(brandStrArr) <= 1 {
-		brandStrArr = []string{"1"}
-	}
-	var brandArr []int
-	for _, brand := range brandStrArr {
-		brint, err := strconv.Atoi(brand)
-		if err != nil {
-			apierror.GenerateError("Error parsing brand IDs", err, rw, r)
-			return ""
-		}
-		brandArr = append(brandArr, brint)
-	}
-	//default to CURT (1)
-	if len(brandArr) == 0 {
-		brandArr = append(brandArr, 1)
-	}
-
 	var user customer.CustomerUser
 	user.Email = email
 	user.Password = pass
@@ -272,8 +252,17 @@ func RegisterUser(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 	user.Sudo = isSudo
 	user.Current = notCustomer
 
+	if err = user.GetBrands(); err != nil {
+		apierror.GenerateError("Trouble getting user brands.", err, rw, r)
+		return ""
+	}
+	var brandIds []int
+	for _, brand := range user.Brands {
+		brandIds = append(brandIds, brand.ID)
+	}
+
 	// cu, err := user.Register(pass, customerID, isActive, locationID, isSudo, cust_ID, notCustomer)
-	if err = user.Create(brandArr); err != nil {
+	if err = user.Create(brandIds); err != nil {
 		apierror.GenerateError("Trouble registering new customer user", err, rw, r)
 		return ""
 	}
@@ -343,7 +332,7 @@ func UpdateCustomerUser(rw http.ResponseWriter, r *http.Request, enc encoding.En
 	}
 
 	if err = cu.Get(key); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble getting customer user", err, rw, r)
 		return ""
 	}
 

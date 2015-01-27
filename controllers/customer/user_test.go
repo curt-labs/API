@@ -23,6 +23,7 @@ func TestCustomerUser(t *testing.T) {
 	var cu customer.CustomerUser
 	var c customer.Customer
 	c.Name = "Dog Bountyhunter"
+	c.BrandIDs = append(c.BrandIDs, 1)
 	c.Create()
 
 	var pub, pri, auth apiKeyType.ApiKeyType
@@ -38,7 +39,7 @@ func TestCustomerUser(t *testing.T) {
 	}
 	Convey("Testing customer/User", t, func() {
 		//test create customer user
-		form := url.Values{"name": {"Mitt Romney"}, "email": {"magic@underpants.com"}, "pass": {"robthepoor"}, "customerID": {strconv.Itoa(c.Id)}, "isActive": {"true"}, "locationID": {"1"}, "isSudo": {"true"}, "cust_ID": {"1"}}
+		form := url.Values{"name": {"Mitt Romney"}, "email": {"magic@underpants.com"}, "pass": {"robthepoor"}, "customerID": {strconv.Itoa(c.Id)}, "isActive": {"true"}, "locationID": {"1"}, "isSudo": {"true"}, "cust_ID": {strconv.Itoa(c.Id)}}
 		v := form.Encode()
 		body := strings.NewReader(v)
 		thyme := time.Now()
