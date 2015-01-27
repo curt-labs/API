@@ -27,7 +27,11 @@ var (
 						Join ApiKeyToBrand as akb on akb.brandID = cub.brandID
 						Join ApiKey as ak on akb.keyID = ak.id
 						where ci.custID = ? && (ak.api_key = ? && (cub.brandID = ? OR 0=?))`
-	getCI    = `select referenceID, partID, custPartID, custID from CartIntegration where custID = ? && partID = ?`
+	getCI = `select ci.referenceID, ci.partID, ci.custPartID, ci.custID from CartIntegration as ci
+						Join CustomerToBrand as cub on cub.cust_id = ci.custID
+						Join ApiKeyToBrand as akb on akb.brandID = cub.brandID
+						Join ApiKey as ak on akb.keyID = ak.id
+						where ci.custID = ? && ci.partID = ? && (ak.api_key = ? && (cub.brandID = ? OR 0=?))`
 	insertCI = `insert into CartIntegration (partID, custPartID, custID) values (?,?,?)`
 	updateCI = `update CartIntegration set partID = ?, custPartID = ?, custID = ? where referenceID = ?`
 	deleteCI = `delete from CartIntegration where referenceID = ?`
@@ -119,7 +123,7 @@ func GetCartIntegrationsByCustomer(ci CartIntegration, dtx *apicontext.DataConte
 	return cis, err
 }
 
-func (c *CartIntegration) Get() (err error) {
+func (c *CartIntegration) Get(dtx *apicontext.DataContext) (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -130,15 +134,15 @@ func (c *CartIntegration) Get() (err error) {
 		return err
 	}
 	defer stmt.Close()
-	err = stmt.QueryRow(c.CustID, c.PartID).Scan(&c.ID, &c.PartID, &c.CustPartID, &c.CustID)
+	err = stmt.QueryRow(c.CustID, c.PartID, dtx.APIKey, dtx.BrandID, dtx.BrandID).Scan(&c.ID, &c.PartID, &c.CustPartID, &c.CustID)
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
 	return nil
 }
 
-func (c *CartIntegration) Create() (err error) {
-	if err := c.Get(); err == nil && c.ID > 0 {
+func (c *CartIntegration) Create(dtx *apicontext.DataContext) (err error) {
+	if err := c.Get(dtx); err == nil && c.ID > 0 {
 		return c.Update()
 	}
 

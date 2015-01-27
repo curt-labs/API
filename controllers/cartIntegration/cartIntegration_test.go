@@ -73,7 +73,7 @@ func TestCartIntegration(t *testing.T) {
 
 		//test get CartIntegration
 		thyme = time.Now()
-		testThatHttp.Request("get", "/cart/", ":id", strconv.Itoa(c.ID), GetCI, nil, "")
+		testThatHttp.RequestWithDtx("get", "/cart/", ":id", strconv.Itoa(c.ID), GetCI, nil, "", dtx)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &c)
 
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)

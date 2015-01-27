@@ -65,7 +65,7 @@ func GetCI(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params
 	}
 	ci.ID, err = strconv.Atoi(id)
 
-	err = ci.Get()
+	err = ci.Get(dtx)
 	if err != nil {
 		apierror.GenerateError("Trouble getting cart integration", err, rw, r)
 	}
@@ -118,7 +118,7 @@ func SaveCI(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, param
 	id := params["id"]
 	if id != "" {
 		ci.ID, err = strconv.Atoi(id)
-		err = ci.Get()
+		err = ci.Get(dtx)
 		if err != nil {
 			apierror.GenerateError("Trouble getting cart integration", err, rw, r)
 		}
@@ -136,7 +136,7 @@ func SaveCI(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, param
 	if ci.ID != 0 {
 		err = ci.Update()
 	} else {
-		err = ci.Create()
+		err = ci.Create(dtx)
 	}
 	if err != nil {
 		apierror.GenerateError("Trouble creating/updating cart integration", err, rw, r)
