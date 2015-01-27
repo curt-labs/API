@@ -105,7 +105,7 @@ func GetCIbyCustomer(rw http.ResponseWriter, r *http.Request, enc encoding.Encod
 	//set cartIntegration customer ID to cust_id
 	ci.CustID = c.Id
 
-	cis, err := cartIntegration.GetCartIntegrationsByCustomer(ci)
+	cis, err := cartIntegration.GetCartIntegrationsByCustomer(ci, dtx)
 	if err != nil {
 		apierror.GenerateError("Trouble getting cart integrations by customer", err, rw, r)
 	}

@@ -60,7 +60,7 @@ func TestCI(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(len(cis), ShouldBeGreaterThan, 0)
 
-		cis, err = GetCartIntegrationsByCustomer(ci)
+		cis, err = GetCartIntegrationsByCustomer(ci, MockedDTX)
 		So(err, ShouldBeNil)
 		So(len(cis), ShouldBeGreaterThan, 0)
 
@@ -137,11 +137,17 @@ func BenchmarkGetCartIntegrationByPart(b *testing.B) {
 }
 
 func BenchmarkGetCartIngegrationByCustomer(b *testing.B) {
+	var err error
+
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
 	ci := setupDummyCartIntegration()
 	ci.Create()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		GetCartIntegrationsByCustomer(*ci)
+		GetCartIntegrationsByCustomer(*ci, MockedDTX)
 	}
 	b.StopTimer()
 	ci.Delete()
