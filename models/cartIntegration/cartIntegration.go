@@ -2,8 +2,11 @@ package cartIntegration
 
 import (
 	"database/sql"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	_ "github.com/go-sql-driver/mysql"
+	"strconv"
+	"strings"
 )
 
 type CartIntegration struct {
@@ -14,7 +17,10 @@ type CartIntegration struct {
 }
 
 var (
-	getAllCI       = `select referenceID, partID, custPartID, custID from CartIntegration`
+	getAllCI = `select ci.referenceID, ci.partID, ci.custPartID, ci.custID from CartIntegration as ci
+						Join CustomerToBrand as cub on cub.cust_id = ci.custID
+
+				`
 	getCIsByPartID = `select referenceID, partID, custPartID, custID from CartIntegration where partID = ?`
 	getCIsByCustID = `select referenceID, partID, custPartID, custID from CartIntegration where custID =  ?`
 	getCI          = `select referenceID, partID, custPartID, custID from CartIntegration where custID = ? && partID = ?`
@@ -23,13 +29,23 @@ var (
 	deleteCI       = `delete from CartIntegration where referenceID = ?`
 )
 
-func GetAllCartIntegrations() (cis []CartIntegration, err error) {
+func GetAllCartIntegrations(dtx *apicontext.DataContext) (cis []CartIntegration, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return cis, err
 	}
 	defer db.Close()
-	stmt, err := db.Prepare(getAllCI)
+	// reason for this is because a join on api key table was wayyyyyy too slow (too many records).
+	stmtBeginning := `select ci.referenceID, ci.partID, ci.custPartID, ci.custID from CartIntegration as ci
+						Join CustomerToBrand as cub on cub.cust_id = ci.custID `
+	brandStmt := "where cub.brandID in ("
+	for _, b := range dtx.BrandArray {
+		brandStmt += strconv.Itoa(b) + ","
+	}
+	brandStmt = strings.TrimRight(brandStmt, ",") + ")"
+	wholeStmt := stmtBeginning + brandStmt
+	stmt, err := db.Prepare(wholeStmt)
+
 	if err != nil {
 		return cis, err
 	}
