@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	ExcusedRoutes = []string{"/customer/auth", "/customer/user", "/new/customer/auth", "/customer/user/register", "/customer/user/resetPassword"}
+	ExcusedRoutes = []string{"/status", "/customer/auth", "/customer/user", "/new/customer/auth", "/customer/user/register", "/customer/user/resetPassword"}
 )
 
 func Meddler() martini.Handler {
@@ -39,7 +39,20 @@ func Meddler() martini.Handler {
 
 		// check if we need to make a call
 		// to the shopping cart middleware
-		if strings.Contains(strings.ToLower(r.URL.String()), "/shopify") {
+		if strings.Contains(strings.ToLower(r.URL.Path), "/shopify/account") { // account perms
+			if strings.ToLower(r.URL.Path) == "/shopify/account/login" {
+				shopID := r.URL.Query().Get("shop")
+				if bson.IsObjectIdHex(shopID) {
+					c.Map(&cart.Shop{
+						Id: bson.ObjectIdHex(shopID),
+					})
+				}
+			} else if err := mapCartAccount(c, res, r); err != nil {
+				apierror.GenerateError("", err, res, r)
+				return
+			}
+			excused = true
+		} else if strings.Contains(strings.ToLower(r.URL.Path), "/shopify") { // shop perms
 			if err := mapCart(c, res, r); err != nil {
 				apierror.GenerateError("", err, res, r)
 				return
@@ -95,6 +108,36 @@ func mapCart(c martini.Context, res http.ResponseWriter, r *http.Request) error 
 	}
 
 	c.Map(&shop)
+	return nil
+}
+
+func mapCartAccount(c martini.Context, res http.ResponseWriter, r *http.Request) error {
+
+	auth := r.Header.Get("Authorization")
+	token := strings.Replace(auth, "Bearer ", "", 1)
+
+	cust, err := cart.AuthenticateAccount(token)
+	if err != nil {
+		return err
+	}
+
+	shop := cart.Shop{
+		Id: cust.ShopId,
+	}
+
+	if shop.Id.Hex() == "" {
+		return fmt.Errorf("error: %s", "invalid shop identifier")
+	}
+
+	if err := shop.Get(); err != nil {
+		return err
+	}
+	if shop.Id.Hex() == "" {
+		return fmt.Errorf("error: %s", "invalid shop identifier")
+	}
+
+	c.Map(&shop)
+	c.Map(token)
 	return nil
 }
 

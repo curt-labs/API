@@ -269,7 +269,7 @@ func (b *Blog) Get(dtx *apicontext.DataContext) error {
 	return err
 }
 
-func (b *Blog) Create() error {
+func (b *Blog) Create(dtx *apicontext.DataContext) error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -295,11 +295,11 @@ func (b *Blog) Create() error {
 	}
 	tx.Commit()
 	b.createCatBridge()
-	err = redis.Setex("blog:"+strconv.Itoa(b.ID), b, 86400)
+	err = redis.Setex("blog:"+strconv.Itoa(b.ID)+":"+dtx.BrandString, b, 86400)
 	return nil
 }
 
-func (b *Blog) Delete() error {
+func (b *Blog) Delete(dtx *apicontext.DataContext) error {
 	var err error
 	err = b.deleteCatBridge()
 	if err != nil {
@@ -322,7 +322,7 @@ func (b *Blog) Delete() error {
 	}
 	tx.Commit()
 	if err == nil {
-		redis.Delete("blog:" + strconv.Itoa(b.ID))
+		redis.Delete("blog:" + strconv.Itoa(b.ID) + ":" + dtx.BrandString)
 	}
 
 	return err

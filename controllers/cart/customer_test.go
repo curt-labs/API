@@ -184,7 +184,7 @@ func Test_GetCustomer(t *testing.T) {
 	})
 }
 
-func Test_LoginCustomer(t *testing.T) {
+func Test_AccountLogin(t *testing.T) {
 	Convey("no shop identifier", t, func() {
 		response = httprunner.Request("GET", "/shopify/customers/1234", nil, GetCustomer)
 		So(response.Code, ShouldEqual, 500)
@@ -222,35 +222,34 @@ func Test_LoginCustomer(t *testing.T) {
 			So(response.Code, ShouldEqual, 200)
 			So(json.Unmarshal(response.Body.Bytes(), &cust), ShouldBeNil)
 
-			response = httprunner.JsonRequest("POST", "/shopify/customers/login", &qs, cart.CustomerAddress{}, LoginCustomer)
+			response = httprunner.JsonRequest("POST", "/shopify/customers/login", &qs, cart.CustomerAddress{}, AccountLogin)
 			So(response.Code, ShouldEqual, 500)
 			So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
 
 			cust.Email = ""
 			cust.Password = ""
-			response = httprunner.JsonRequest("POST", "/shopify/customers/login", &qs, cust, LoginCustomer)
+			response = httprunner.JsonRequest("POST", "/shopify/customers/login", &qs, cust, AccountLogin)
 			So(response.Code, ShouldEqual, 500)
 			So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
 
 			cust.Email = "ninnemana@gmail.com"
-			response = httprunner.JsonRequest("POST", "/shopify/customers/login", &qs, cust, LoginCustomer)
+			response = httprunner.JsonRequest("POST", "/shopify/customers/login", &qs, cust, AccountLogin)
 			So(response.Code, ShouldEqual, 500)
 			So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
 
 			cust.Email = "ninnemana@gmail.com"
 			cust.Password = "bad_password"
-			response = httprunner.JsonRequest("POST", "/shopify/customers/login", &qs, cust, LoginCustomer)
+			response = httprunner.JsonRequest("POST", "/shopify/customers/login", &qs, cust, AccountLogin)
 			So(response.Code, ShouldEqual, 500)
 			So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
 
 			cust.Email = "ninnemana@gmail.com"
 			cust.Password = "password"
-			response = httprunner.JsonRequest("POST", "/shopify/customers/login", &qs, cust, LoginCustomer)
+			response = httprunner.JsonRequest("POST", "/shopify/customers/login", &qs, cust, AccountLogin)
 			So(response.Code, ShouldEqual, 200)
-			t.Log(response.Body.String())
-			So(json.Unmarshal(response.Body.Bytes(), &cust), ShouldBeNil)
-			t.Log(cust.Password)
-			So(cust.Password, ShouldEqual, "")
+			var c cart.Customer
+			So(json.Unmarshal(response.Body.Bytes(), &c), ShouldBeNil)
+			So(c.Password, ShouldEqual, "")
 		})
 	})
 }

@@ -37,7 +37,7 @@ func TestBlog(t *testing.T) {
 		form = url.Values{"title": {"test"}, "slug": {"a slug"}, "texts": {"some text here"}, "categoryID": {strconv.Itoa(bc.ID)}}
 		v = form.Encode()
 		body = strings.NewReader(v)
-		testThatHttp.Request("post", "/blogs", "", "", CreateBlog, body, "application/x-www-form-urlencoded")
+		testThatHttp.RequestWithDtx("post", "/blogs", "", "", CreateBlog, body, "application/x-www-form-urlencoded", dtx)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &b)
 		So(err, ShouldBeNil)
@@ -99,7 +99,7 @@ func TestBlog(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		//test delete blog
-		testThatHttp.Request("delete", "/blog/", ":id", strconv.Itoa(b.ID), DeleteBlog, nil, "application/x-www-form-urlencoded")
+		testThatHttp.RequestWithDtx("delete", "/blog/", ":id", strconv.Itoa(b.ID), DeleteBlog, nil, "application/x-www-form-urlencoded", dtx)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &b)
 		So(err, ShouldBeNil)

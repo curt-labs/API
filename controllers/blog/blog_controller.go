@@ -96,7 +96,7 @@ func CreateBlog(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, d
 		b.BlogCategories = append(b.BlogCategories, bc)
 	}
 
-	err = b.Create()
+	err = b.Create(dtx)
 	if err != nil {
 		apierror.GenerateError("Trouble creating blog", err, rw, r)
 	}
@@ -240,7 +240,7 @@ func UpdateBlog(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 	return encoding.Must(enc.Encode(b))
 }
 
-func DeleteBlog(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func DeleteBlog(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var b blog_model.Blog
 	var err error
 	idStr := r.FormValue("id")
@@ -255,7 +255,7 @@ func DeleteBlog(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 			apierror.GenerateError("Trouble getting blog ID", err, rw, r)
 		}
 	}
-	err = b.Delete()
+	err = b.Delete(dtx)
 	if err != nil {
 		apierror.GenerateError("Trouble deleting blog", err, rw, r)
 	}

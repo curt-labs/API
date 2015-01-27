@@ -4,9 +4,14 @@ import (
 	"code.google.com/p/go.crypto/bcrypt"
 	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/database"
+	jwt "github.com/dgrijalva/jwt-go"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"time"
+)
+
+const (
+	jwtSigningKey = "goapi_curt"
 )
 
 type Customer struct {
@@ -17,7 +22,7 @@ type Customer struct {
 	DefaultAddress   *CustomerAddress  `json:"default_address" xml:"default_address" bson:"default_address"`
 	CreatedAt        time.Time         `json:"created_at" xml:"created_at,attr" bson:"created_at"`
 	Email            string            `json:"email" xml:"email,attr" bson:"email"`
-	Password         string            `json:"password" xml:"password,attr" bson:"password"`
+	Password         string            `json:"password,omitempty" xml:"password,attr,omitempty" bson:"password"`
 	FirstName        string            `json:"first_name" xml:"first_name,attr" bson:"first_name"`
 	LastName         string            `json:"last_name" xml:"last_name,attr" bson:"last_name"`
 	MetaFields       []MetaField       `json:"meta_fields" xml:"meta_fields>meta_field" bson:"meta_fields"`
@@ -31,6 +36,7 @@ type Customer struct {
 	UpdatedAt        time.Time         `json:"updated_at" xml:"updated_at,attr" bson:"updated_at"`
 	VerifiedEmail    bool              `json:"verified_email" xml:"verified_email,attr" bson:"verified_email"`
 	Orders           []Order           `json:"orders" xml:"orders" bson:"orders"`
+	Token            string            `json:"token" xml:"token,attr" bson:"token"`
 }
 
 type MetaField struct {
@@ -189,7 +195,7 @@ func SearchCustomers(query string, shopId bson.ObjectId) ([]Customer, error) {
 }
 
 // Login a customer.
-func (c *Customer) Login() error {
+func (c *Customer) Login(ref string) error {
 	pass := c.Password
 	c.Password = ""
 
@@ -212,29 +218,32 @@ func (c *Customer) Login() error {
 	}
 
 	for _, cust := range custs {
-		if err := bcrypt.CompareHashAndPassword([]byte(cust.Password), []byte(pass)); err == nil {
-			c.Id = cust.Id
-			c.ShopId = cust.ShopId
-			c.AcceptsMarketing = cust.AcceptsMarketing
-			c.Addresses = cust.Addresses
-			c.DefaultAddress = cust.DefaultAddress
-			c.CreatedAt = cust.CreatedAt
-			c.Email = cust.Email
-			c.FirstName = cust.FirstName
-			c.LastName = cust.LastName
-			c.MetaFields = cust.MetaFields
-			c.LastOrderId = cust.LastOrderId
-			c.LastOrderName = cust.LastOrderName
-			c.OrdersCount = cust.OrdersCount
-			c.Note = cust.Note
-			c.State = cust.State
-			c.Tags = cust.Tags
-			c.UpdatedAt = cust.UpdatedAt
-			c.VerifiedEmail = cust.VerifiedEmail
-			c.Orders = cust.Orders
-			c.Password = ""
-			return nil
+		if err := bcrypt.CompareHashAndPassword([]byte(cust.Password), []byte(pass)); err != nil {
+			continue
 		}
+
+		c.Id = cust.Id
+		c.ShopId = cust.ShopId
+		c.AcceptsMarketing = cust.AcceptsMarketing
+		c.Addresses = cust.Addresses
+		c.DefaultAddress = cust.DefaultAddress
+		c.CreatedAt = cust.CreatedAt
+		c.Email = cust.Email
+		c.FirstName = cust.FirstName
+		c.LastName = cust.LastName
+		c.MetaFields = cust.MetaFields
+		c.LastOrderId = cust.LastOrderId
+		c.LastOrderName = cust.LastOrderName
+		c.OrdersCount = cust.OrdersCount
+		c.Note = cust.Note
+		c.State = cust.State
+		c.Tags = cust.Tags
+		c.UpdatedAt = cust.UpdatedAt
+		c.VerifiedEmail = cust.VerifiedEmail
+		c.Orders = cust.Orders
+		c.generateToken(ref)
+
+		return nil
 	}
 
 	return fmt.Errorf("error: %s", "credentials do not match")
@@ -413,4 +422,43 @@ func (c *Customer) Delete() error {
 	}
 
 	return sess.DB("CurtCart").C("customer").RemoveId(c.Id)
+}
+
+func (c *Customer) generateToken(referer string) error {
+	c.Password = ""
+	var err error
+
+	// create token
+	token := jwt.New(jwt.SigningMethodHS256)
+
+	// assign claims
+	token.Claims["iss"] = "carter.curtmfg.com"
+	token.Claims["sub"] = referer
+	token.Claims["exp"] = time.Now().Add(time.Hour * 1).Unix()
+	token.Claims["iat"] = time.Now().Unix()
+
+	c.Token, err = token.SignedString([]byte(jwtSigningKey))
+	if err != nil {
+		return err
+	}
+
+	sess, err := mgo.DialWithInfo(database.MongoConnectionString())
+	if err != nil {
+		return err
+	}
+	defer sess.Close()
+
+	var change = mgo.Change{
+		ReturnNew: true,
+		Update: bson.M{
+			"$set": bson.M{
+				"token": c.Token,
+			},
+		},
+	}
+
+	_, err = sess.DB("CurtCart").C("customer").Find(bson.M{"_id": c.Id, "shop_id": c.ShopId}).Apply(change, c)
+
+	c.Password = ""
+	return err
 }
