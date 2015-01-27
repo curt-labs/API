@@ -137,27 +137,35 @@ func main() {
 		r.Delete("/:id", contact.DeleteContact)
 	})
 
-	m.Group("/shopify", func(r martini.Router) {
-		// Customers
-		r.Get("/customers", cart_ctlr.GetCustomers)
-		r.Get("/customers/search", cart_ctlr.SearchCustomer)
-		r.Get("/customers/:id", cart_ctlr.GetCustomer)
-		r.Get("/customers/:id/orders", cart_ctlr.GetCustomerOrders)
-		r.Post("/customers", cart_ctlr.AddCustomer)
-		r.Post("/customers/login", cart_ctlr.LoginCustomer)
-		r.Put("/customers/:id", cart_ctlr.EditCustomer)
-		r.Delete("/customers/:id", cart_ctlr.DeleteCustomer)
+	m.Group("/shopify/customers", func(r martini.Router) {
+		// Customers - shop endpoints
+		r.Get("", cart_ctlr.GetCustomers)
+		r.Post("", cart_ctlr.AddCustomer)
+		r.Get("/search", cart_ctlr.SearchCustomer)
+		r.Get("/:id", cart_ctlr.GetCustomer)
+		r.Put("/:id", cart_ctlr.EditCustomer)
+		r.Delete("/:id", cart_ctlr.DeleteCustomer)
+		r.Get("/:id/orders", cart_ctlr.GetCustomerOrders)
 
 		// Addresses
-		r.Get("/customers/:id/addresses", cart_ctlr.GetAddresses)
-		r.Get("/customers/:id/addresses/:address", cart_ctlr.GetAddress)
-		r.Post("/customers/:id/addresses", cart_ctlr.AddAddress)
-		r.Put("/customers/:id/addresses/:address/default", cart_ctlr.SetDefaultAddress)
-		r.Put("/customers/:id/addresses/:address", cart_ctlr.EditAddress)
-		r.Delete("/customers/:id/addresses/:address", cart_ctlr.DeleteAddress)
+		r.Get("/:id/addresses", cart_ctlr.GetAddresses)
+		r.Get("/:id/addresses/:address", cart_ctlr.GetAddress)
+		r.Post("/:id/addresses", cart_ctlr.AddAddress)
+		r.Put("/:id/addresses/:address/default", cart_ctlr.SetDefaultAddress)
+		r.Put("/:id/addresses/:address", cart_ctlr.EditAddress)
+		r.Delete("/:id/addresses/:address", cart_ctlr.DeleteAddress)
 
+	})
+
+	m.Group("/shopify/order", func(r martini.Router) {
 		// Orders
 		r.Post("/order", cart_ctlr.CreateOrder)
+	})
+
+	m.Group("/shopify/account", func(r martini.Router) {
+		// Account - user endpoints
+		r.Get("", cart_ctlr.GetAccount)
+		r.Post("/login", cart_ctlr.AccountLogin)
 	})
 
 	m.Group("/cart", func(r martini.Router) {
@@ -486,6 +494,11 @@ func main() {
 
 		//option 2 - one call - returns vehicles with parts
 		r.Get("/:vin", vinLookup.GetParts) //returns vehicles + configs with associates parts -or- an array of parts if only one vehicle config matches
+	})
+
+	m.Get("/status", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Write([]byte("running"))
 	})
 
 	m.Get("/", func(w http.ResponseWriter, r *http.Request) {

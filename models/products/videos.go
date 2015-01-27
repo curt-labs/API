@@ -14,9 +14,9 @@ type PartVideo struct {
 	ID             int
 	PartID         int
 	YouTubeVideoId string
-	Type           string //TODO dispose
+	Type           string
 	IsPrimary      bool
-	TypeIcon       *url.URL //TODO dispose
+	TypeIcon       *url.URL
 	VideoType      VideoType
 }
 
@@ -87,6 +87,7 @@ func (p *Part) GetVideos() error {
 }
 
 func (p *PartVideo) CreatePartVideo() (err error) {
+	go redis.Delete(fmt.Sprintf("part:*:%d:videos", p.PartID))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -111,6 +112,7 @@ func (p *PartVideo) CreatePartVideo() (err error) {
 }
 
 func (p *PartVideo) DeleteByPart() (err error) {
+	go redis.Delete(fmt.Sprintf("part:*:%d:videos", p.PartID))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err

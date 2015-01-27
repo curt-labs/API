@@ -768,6 +768,7 @@ func (c *Category) GetPartCount(key string, v *Vehicle, specs *map[string][]stri
 }
 
 func (c *Category) Create() (err error) {
+	go redis.Delete("category:top*")
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -826,7 +827,9 @@ func (c *Category) Delete() (err error) {
 
 	_, err = stmt.Exec(c.ID)
 	if err == nil {
-		redis.Delete(fmt.Sprintf("category:%d:%d", c.BrandID, c.ID))
+		go redis.Delete(fmt.Sprintf("category:%d:%d", c.BrandID, c.ID))
+		go redis.Delete("category:title:*")
+		go redis.Delete("category:top:*")
 	}
 
 	return err

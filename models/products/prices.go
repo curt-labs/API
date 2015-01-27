@@ -119,6 +119,7 @@ func (p *Price) Get() error {
 	return nil
 }
 func (p *Price) Create() (err error) {
+	go redis.Delete(fmt.Sprintf("part:*:%d:pricing", p.PartId))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -145,6 +146,8 @@ func (p *Price) Create() (err error) {
 }
 
 func (p *Price) Update() (err error) {
+	go redis.Delete(fmt.Sprintf("pricing:%d", p.Id))
+	go redis.Delete(fmt.Sprintf("part:*:%d:pricing", p.PartId))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -163,10 +166,16 @@ func (p *Price) Update() (err error) {
 		return err
 	}
 	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	go redis.Setex(fmt.Sprintf("pricing:%d", p.Id), p, 86400)
 	return err
 }
 
 func (p *Price) Delete() (err error) {
+	go redis.Delete(fmt.Sprintf("pricing:%d", p.Id))
+	go redis.Delete(fmt.Sprintf("part:*:%d:pricing", p.PartId))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -187,6 +196,8 @@ func (p *Price) Delete() (err error) {
 }
 
 func (p *Price) DeleteByPart() (err error) {
+	go redis.Delete(fmt.Sprintf("pricing:%d", p.Id))
+	go redis.Delete(fmt.Sprintf("part:*:%d:pricing", p.PartId))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err

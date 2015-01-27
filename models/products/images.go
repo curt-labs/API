@@ -83,6 +83,7 @@ func (p *Part) GetImages(dtx *apicontext.DataContext) error {
 }
 
 func (i *Image) Create() (err error) {
+	go redis.Delete(fmt.Sprintf("part:%d:images:*", i.PartID))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -106,6 +107,7 @@ func (i *Image) Create() (err error) {
 }
 
 func (i *Image) DeleteByPart() (err error) {
+	go redis.Delete(fmt.Sprintf("part:%d:images:*", i.PartID))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
