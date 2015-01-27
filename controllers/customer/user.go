@@ -332,7 +332,7 @@ func UpdateCustomerUser(rw http.ResponseWriter, r *http.Request, enc encoding.En
 	}
 
 	if err = cu.Get(key); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble getting customer user", err, rw, r)
 		return ""
 	}
 
