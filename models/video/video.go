@@ -244,7 +244,7 @@ func (v *Video) GetVideoDetails() (err error) {
 }
 
 func GetAllVideos(dtx *apicontext.DataContext) (vs Videos, err error) {
-	data, err := redis.Get(AllVideosRedisKey)
+	data, err := redis.Get(AllVideosRedisKey + ":" + dtx.BrandString)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &vs)
 		return vs, err
@@ -270,7 +270,7 @@ func GetAllVideos(dtx *apicontext.DataContext) (vs Videos, err error) {
 	if len(vs) == 0 {
 		err = sql.ErrNoRows
 	}
-	go redis.Setex(AllVideosRedisKey, vs, 86400)
+	go redis.Setex(AllVideosRedisKey+":"+dtx.BrandString, vs, 86400)
 	return vs, err
 }
 
