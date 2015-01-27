@@ -7,6 +7,7 @@ import (
 
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"time"
 )
@@ -130,7 +131,7 @@ func (p *Price) Create() error {
 	if err != nil {
 		return err
 	}
-	redis.Setex("prices:"+strconv.Itoa(p.ID), p, 86400)
+	redis.Setex("price:"+strconv.Itoa(p.ID), p, 86400)
 	return nil
 }
 func (p *Price) Update() error {
@@ -154,7 +155,9 @@ func (p *Price) Update() error {
 	if err != nil {
 		return err
 	}
-	err = redis.Setex("prices:"+strconv.Itoa(p.ID), p, 86400)
+	go redis.Setex("price:"+strconv.Itoa(p.ID), p, 86400)
+	go redis.Delete(fmt.Sprintf("prices:part:%d", strconv.Itoa(p.PartID)))
+	go redis.Delete(fmt.Sprintf("customers:prices:%d", strconv.Itoa(p.CustID)))
 	return nil
 }
 
@@ -178,7 +181,9 @@ func (p *Price) Delete() error {
 	if err != nil {
 		return err
 	}
-	err = redis.Delete("prices:" + strconv.Itoa(p.ID))
+	go redis.Delete("price:" + strconv.Itoa(p.ID))
+	go redis.Delete(fmt.Sprintf("prices:part:%d", strconv.Itoa(p.PartID)))
+	go redis.Delete(fmt.Sprintf("customers:prices:%d", strconv.Itoa(p.CustID)))
 	return nil
 }
 

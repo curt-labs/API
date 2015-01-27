@@ -2,13 +2,22 @@ package webProperty_model
 
 import (
 	"database/sql"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	. "github.com/smartystreets/goconvey/convey"
 	"math/rand"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 )
+
+var once sync.Once
+var MockedDTX *apicontext.DataContext
+
+func initDtx() {
+	MockedDTX, _ = apicontextmock.Mock()
+}
 
 func TestWebPropertiesBetter(t *testing.T) {
 	var w WebProperty
@@ -16,10 +25,8 @@ func TestWebPropertiesBetter(t *testing.T) {
 	var wn WebPropertyNote
 	var wt WebPropertyType
 	var err error
-	MockedDTX, err := apicontextmock.Mock()
-	if err != nil {
-		return
-	}
+	once.Do(initDtx)
+	defer apicontextmock.DeMock(MockedDTX)
 	Convey("Testing WebProperties", t, func() {
 		//New WebProperty
 		w.Name = "test prop"
@@ -33,17 +40,17 @@ func TestWebPropertiesBetter(t *testing.T) {
 		w.CustID = MockedDTX.CustomerID
 		//Test Requirement
 		wr.ReqType = "Req Type"
-		err = wr.Create()
+		err = wr.Create(MockedDTX)
 		So(err, ShouldBeNil)
 		//Test Note
 		wn.Text = "Note text"
-		err = wn.Create()
+		err = wn.Create(MockedDTX)
 		So(err, ShouldBeNil)
 
 		//Test Type
 		wt.Type = "A type"
 		wt.TypeID = 1
-		err = wt.Create()
+		err = wt.Create(MockedDTX)
 		So(err, ShouldBeNil)
 
 		//Create Web Property
@@ -51,22 +58,22 @@ func TestWebPropertiesBetter(t *testing.T) {
 		w.WebPropertyNotes = append(w.WebPropertyNotes, wn)
 		w.WebPropertyType = wt
 		w.CustID = MockedDTX.CustomerID
-		err = w.Create()
+		err = w.Create(MockedDTX)
 		So(err, ShouldBeNil)
 		So(w, ShouldNotBeNil)
 
 		wr.Compliance = true
-		err = wr.Update()
+		err = wr.Update(MockedDTX)
 		So(err, ShouldBeNil)
 		wn.Text = "New Text"
-		err = wn.Update()
+		err = wn.Update(MockedDTX)
 		So(err, ShouldBeNil)
 		wt.Type = "B type"
-		err = wt.Update()
+		err = wt.Update(MockedDTX)
 		So(err, ShouldBeNil)
 		//Update Property
 		w.Name = "New Name"
-		err = w.Update()
+		err = w.Update(MockedDTX)
 		So(err, ShouldBeNil)
 
 		err = wr.Get()
@@ -138,8 +145,8 @@ func BenchmarkCreateDeleteWebProperty(b *testing.B) {
 		w.Url = "www.test.com"
 		b.StartTimer()
 		for i := 0; i < b.N; i++ {
-			w.Create()
-			w.Delete()
+			w.Create(MockedDTX)
+			w.Delete(MockedDTX)
 		}
 		b.StopTimer()
 
@@ -153,8 +160,8 @@ func BenchmarkCreateDeleteWebPropertyRequirement(b *testing.B) {
 		w.Requirement = "test req"
 		b.StartTimer()
 		for i := 0; i < b.N; i++ {
-			w.Create()
-			w.Delete()
+			w.Create(MockedDTX)
+			w.Delete(MockedDTX)
 		}
 		b.StopTimer()
 
@@ -167,8 +174,8 @@ func BenchmarkCreateDeleteWebPropertyNote(b *testing.B) {
 		w.Text = "test note"
 		b.StartTimer()
 		for i := 0; i < b.N; i++ {
-			w.Create()
-			w.Delete()
+			w.Create(MockedDTX)
+			w.Delete(MockedDTX)
 		}
 		b.StopTimer()
 
@@ -181,8 +188,8 @@ func BenchmarkCreateDeleteWebPropertyType(b *testing.B) {
 		w.Type = "test type"
 		b.StartTimer()
 		for i := 0; i < b.N; i++ {
-			w.Create()
-			w.Delete()
+			w.Create(MockedDTX)
+			w.Delete(MockedDTX)
 		}
 		b.StopTimer()
 
@@ -201,13 +208,13 @@ func BenchmarkGetWebProperty(b *testing.B) {
 		w.CustID = 1
 		w.BadgeID = "666"
 		w.Url = "www.test.com"
-		w.Create()
+		w.Create(MockedDTX)
 		b.StartTimer()
 		for i := 0; i < b.N; i++ {
 			w.Get(MockedDTX)
 		}
 		b.StopTimer()
-		w.Delete()
+		w.Delete(MockedDTX)
 	})
 	//_ = apicontextmock.DeMock(MockedDTX)
 }
@@ -217,13 +224,13 @@ func BenchmarkGetWebPropertyRequirement(b *testing.B) {
 		b.ResetTimer()
 		var w WebPropertyRequirement
 		w.Requirement = "test req"
-		w.Create()
+		w.Create(MockedDTX)
 		b.StartTimer()
 		for i := 0; i < b.N; i++ {
 			w.Get()
 		}
 		b.StopTimer()
-		w.Delete()
+		w.Delete(MockedDTX)
 	})
 
 }
@@ -232,13 +239,13 @@ func BenchmarkGetWebPropertyNote(b *testing.B) {
 		b.ResetTimer()
 		var w WebPropertyNote
 		w.Text = "test note"
-		w.Create()
+		w.Create(MockedDTX)
 		b.StartTimer()
 		for i := 0; i < b.N; i++ {
 			w.Get()
 		}
 		b.StopTimer()
-		w.Delete()
+		w.Delete(MockedDTX)
 	})
 }
 func BenchmarkGetWebPropertyType(b *testing.B) {
@@ -246,13 +253,13 @@ func BenchmarkGetWebPropertyType(b *testing.B) {
 		b.ResetTimer()
 		var w WebPropertyType
 		w.Type = "test type"
-		w.Create()
+		w.Create(MockedDTX)
 		b.StartTimer()
 		for i := 0; i < b.N; i++ {
 			w.Get()
 		}
 		b.StopTimer()
-		w.Delete()
+		w.Delete(MockedDTX)
 	})
 }
 
@@ -268,13 +275,13 @@ func BenchmarkGetAllWebProperty(b *testing.B) {
 		w.CustID = 1
 		w.BadgeID = "666"
 		w.Url = "www.test.com"
-		w.Create()
+		w.Create(MockedDTX)
 		b.StartTimer()
 		for i := 0; i < b.N; i++ {
 			_, _ = GetAll(MockedDTX)
 		}
 		b.StopTimer()
-		w.Delete()
+		w.Delete(MockedDTX)
 	})
 	//_ = apicontextmock.DeMock(MockedDTX)
 }
@@ -288,13 +295,13 @@ func BenchmarkGetAllWebPropertyRequirement(b *testing.B) {
 		b.ResetTimer()
 		var w WebPropertyRequirement
 		w.Requirement = "test req"
-		w.Create()
+		w.Create(MockedDTX)
 		b.StartTimer()
 		for i := 0; i < b.N; i++ {
 			_, _ = GetAllWebPropertyRequirements(MockedDTX)
 		}
 		b.StopTimer()
-		w.Delete()
+		w.Delete(MockedDTX)
 	})
 	//_ = apicontextmock.DeMock(MockedDTX)
 
@@ -308,13 +315,13 @@ func BenchmarkGetAllWebPropertyNote(b *testing.B) {
 		b.ResetTimer()
 		var w WebPropertyNote
 		w.Text = "test note"
-		w.Create()
+		w.Create(MockedDTX)
 		b.StartTimer()
 		for i := 0; i < b.N; i++ {
 			_, _ = GetAllWebPropertyNotes(MockedDTX)
 		}
 		b.StopTimer()
-		w.Delete()
+		w.Delete(MockedDTX)
 	})
 	//_ = apicontextmock.DeMock(MockedDTX)
 
@@ -328,13 +335,13 @@ func BenchmarkGetAllWebPropertyType(b *testing.B) {
 		b.ResetTimer()
 		var w WebPropertyType
 		w.Type = "test type"
-		w.Create()
+		w.Create(MockedDTX)
 		b.StartTimer()
 		for i := 0; i < b.N; i++ {
 			_, _ = GetAllWebPropertyTypes(MockedDTX)
 		}
 		b.StopTimer()
-		w.Delete()
+		w.Delete(MockedDTX)
 	})
 	//_ = apicontextmock.DeMock(MockedDTX)
 }
@@ -347,13 +354,13 @@ func BenchmarkUpdateWebProperty(b *testing.B) {
 		w.CustID = 1
 		w.BadgeID = "666"
 		w.Url = "www.test.com"
-		w.Create()
+		w.Create(MockedDTX)
 		b.StartTimer()
 		for i := 0; i < b.N; i++ {
-			w.Update()
+			w.Update(MockedDTX)
 		}
 		b.StopTimer()
-		w.Delete()
+		w.Delete(MockedDTX)
 	})
 }
 func BenchmarkUpdateWebPropertyRequirement(b *testing.B) {
@@ -361,13 +368,13 @@ func BenchmarkUpdateWebPropertyRequirement(b *testing.B) {
 		b.ResetTimer()
 		var w WebPropertyRequirement
 		w.Requirement = "test req"
-		w.Create()
+		w.Create(MockedDTX)
 		b.StartTimer()
 		for i := 0; i < b.N; i++ {
-			w.Update()
+			w.Update(MockedDTX)
 		}
 		b.StopTimer()
-		w.Delete()
+		w.Delete(MockedDTX)
 	})
 }
 func BenchmarkUpdateWebPropertyNote(b *testing.B) {
@@ -375,13 +382,13 @@ func BenchmarkUpdateWebPropertyNote(b *testing.B) {
 		b.ResetTimer()
 		var w WebPropertyNote
 		w.Text = "test note"
-		w.Create()
+		w.Create(MockedDTX)
 		b.StartTimer()
 		for i := 0; i < b.N; i++ {
-			w.Update()
+			w.Update(MockedDTX)
 		}
 		b.StopTimer()
-		w.Delete()
+		w.Delete(MockedDTX)
 	})
 }
 func BenchmarkUpdateWebPropertyType(b *testing.B) {
@@ -389,12 +396,12 @@ func BenchmarkUpdateWebPropertyType(b *testing.B) {
 		b.ResetTimer()
 		var w WebPropertyType
 		w.Type = "test type"
-		w.Create()
+		w.Create(MockedDTX)
 		b.StartTimer()
 		for i := 0; i < b.N; i++ {
-			w.Update()
+			w.Update(MockedDTX)
 		}
 		b.StopTimer()
-		w.Delete()
+		w.Delete(MockedDTX)
 	})
 }

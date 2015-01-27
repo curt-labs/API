@@ -9,6 +9,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
 
+	"log"
 	"strconv"
 	"time"
 )
@@ -331,7 +332,6 @@ func GetAll(dtx *apicontext.DataContext) (WebProperties, error) {
 			return ws, err
 		}
 	}
-
 	db, err := sql.Open("mysql", database.ConnectionString())
 
 	if err != nil {
@@ -424,8 +424,8 @@ func GetAll(dtx *apicontext.DataContext) (WebProperties, error) {
 	go redis.Setex(redis_key, ws, 86400)
 	return ws, err
 }
-func (w *WebProperty) Create() (err error) {
-	go redis.Delete("webproperties:brands:*")
+func (w *WebProperty) Create(dtx *apicontext.DataContext) (err error) {
+	go redis.Delete("webproperties:" + dtx.BrandString)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -476,7 +476,7 @@ func (w *WebProperty) Create() (err error) {
 	for _, note := range w.WebPropertyNotes {
 		note.WebPropID = w.ID
 
-		err = note.Create()
+		err = note.Create(dtx)
 		if err != nil {
 			return err
 		}
@@ -485,8 +485,9 @@ func (w *WebProperty) Create() (err error) {
 	return nil
 }
 
-func (w *WebProperty) Update() (err error) {
-	go redis.Delete("webproperties:brands:*")
+func (w *WebProperty) Update(dtx *apicontext.DataContext) (err error) {
+	go redis.Delete("webproperties:" + dtx.BrandString)
+	log.Print("HERE")
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -520,12 +521,12 @@ func (w *WebProperty) Update() (err error) {
 	for _, note := range w.WebPropertyNotes {
 		note.WebPropID = w.ID
 		if note.ID > 0 {
-			err = note.Update()
+			err = note.Update(dtx)
 			if err != nil {
 				return err
 			}
 		} else {
-			err = note.Create()
+			err = note.Create(dtx)
 			if err != nil {
 				return err
 			}
@@ -534,8 +535,8 @@ func (w *WebProperty) Update() (err error) {
 
 	return nil
 }
-func (w *WebProperty) Delete() error {
-	go redis.Delete("webproperties:brands:*")
+func (w *WebProperty) Delete(dtx *apicontext.DataContext) error {
+	go redis.Delete("webproperties:" + dtx.BrandString)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -546,7 +547,7 @@ func (w *WebProperty) Delete() error {
 	requirementsChan := make(chan int)
 
 	go func() {
-		err = w.DeleteNotesByPropId()
+		err = w.DeleteNotesByPropId(dtx)
 		notesChan <- 1
 	}()
 	go func() {
@@ -720,8 +721,8 @@ func (n *WebPropertyNote) Get() error {
 	return nil
 }
 
-func (n *WebPropertyNote) Create() error {
-	go redis.Delete("webpropertynotes:brands:*")
+func (n *WebPropertyNote) Create(dtx *apicontext.DataContext) error {
+	go redis.Delete("webpropertynotes:" + dtx.BrandString)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -750,8 +751,8 @@ func (n *WebPropertyNote) Create() error {
 	return nil
 }
 
-func (n *WebPropertyNote) Update() error {
-	go redis.Delete("webpropertynotes:brands:*")
+func (n *WebPropertyNote) Update(dtx *apicontext.DataContext) error {
+	go redis.Delete("webpropertynotes:" + dtx.BrandString)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -774,8 +775,8 @@ func (n *WebPropertyNote) Update() error {
 	return nil
 }
 
-func (n *WebPropertyNote) Delete() error {
-	go redis.Delete("webpropertynotes:brands:*")
+func (n *WebPropertyNote) Delete(dtx *apicontext.DataContext) error {
+	go redis.Delete("webpropertynotes:" + dtx.BrandString)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -796,8 +797,8 @@ func (n *WebPropertyNote) Delete() error {
 	return nil
 }
 
-func (n *WebProperty) DeleteNotesByPropId() error {
-	go redis.Delete("webpropertynotes:brands:*")
+func (n *WebProperty) DeleteNotesByPropId(dtx *apicontext.DataContext) error {
+	go redis.Delete("webpropertynotes:" + dtx.BrandString)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -936,8 +937,8 @@ func (r *WebPropertyRequirement) Get() error {
 	return nil
 }
 
-func (r *WebPropertyRequirement) Create() error {
-	go redis.Delete("webpropertyrequirements:brands:*")
+func (r *WebPropertyRequirement) Create(dtx *apicontext.DataContext) error {
+	go redis.Delete("webpropertyrequirements:" + dtx.BrandString)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -965,8 +966,8 @@ func (r *WebPropertyRequirement) Create() error {
 	return nil
 }
 
-func (r *WebPropertyRequirement) Update() error {
-	go redis.Delete("webpropertyrequirements:brands:*")
+func (r *WebPropertyRequirement) Update(dtx *apicontext.DataContext) error {
+	go redis.Delete("webpropertyrequirements:" + dtx.BrandString)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -987,8 +988,8 @@ func (r *WebPropertyRequirement) Update() error {
 	return nil
 }
 
-func (r *WebPropertyRequirement) Delete() error {
-	go redis.Delete("webpropertyrequirements:brands:*")
+func (r *WebPropertyRequirement) Delete(dtx *apicontext.DataContext) error {
+	go redis.Delete("webpropertyrequirements:" + dtx.BrandString)
 	var err error
 	err = r.Get()
 	if err != nil {
@@ -1041,8 +1042,8 @@ func (t *WebPropertyType) Get() error {
 	return nil
 }
 
-func (t *WebPropertyType) Update() error {
-	go redis.Delete("webpropertytypes:brands:*")
+func (t *WebPropertyType) Update(dtx *apicontext.DataContext) error {
+	go redis.Delete("webpropertytypes:" + dtx.BrandString)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1063,8 +1064,8 @@ func (t *WebPropertyType) Update() error {
 	return nil
 }
 
-func (t *WebPropertyType) Create() error {
-	go redis.Delete("webpropertytypes:brands:*")
+func (t *WebPropertyType) Create(dtx *apicontext.DataContext) error {
+	go redis.Delete("webpropertytypes:" + dtx.BrandString)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1089,8 +1090,8 @@ func (t *WebPropertyType) Create() error {
 	return nil
 }
 
-func (t *WebPropertyType) Delete() error {
-	go redis.Delete("webpropertytypes:brands:*")
+func (t *WebPropertyType) Delete(dtx *apicontext.DataContext) error {
+	go redis.Delete("webpropertytypes:" + dtx.BrandString)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err

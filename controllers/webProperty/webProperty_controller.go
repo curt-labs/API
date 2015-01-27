@@ -263,7 +263,7 @@ func CreateUpdateWebProperty(rw http.ResponseWriter, r *http.Request, enc encodi
 	}
 
 	if w.ID > 0 {
-		err = w.Update()
+		err = w.Update(dtx)
 	} else {
 		//notes (text) and property requirements (reqID) can be created when web property is created
 		notes := r.Form["note"]
@@ -278,7 +278,7 @@ func CreateUpdateWebProperty(rw http.ResponseWriter, r *http.Request, enc encodi
 			n.RequirementID, err = strconv.Atoi(v)
 			w.WebPropertyRequirements = append(w.WebPropertyRequirements, n)
 		}
-		err = w.Create()
+		err = w.Create(dtx)
 	}
 
 	if err != nil {
@@ -292,7 +292,7 @@ func CreateUpdateWebProperty(rw http.ResponseWriter, r *http.Request, enc encodi
 	return encoding.Must(enc.Encode(w))
 }
 
-func DeleteWebProperty(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func DeleteWebProperty(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var w webProperty_model.WebProperty
 	var err error
 
@@ -306,7 +306,7 @@ func DeleteWebProperty(rw http.ResponseWriter, r *http.Request, enc encoding.Enc
 		return ""
 	}
 
-	if err = w.Delete(); err != nil {
+	if err = w.Delete(dtx); err != nil {
 		apierror.GenerateError("Trouble deleting web property", err, rw, r)
 		return ""
 	}
@@ -336,7 +336,7 @@ func GetWebPropertyNote(rw http.ResponseWriter, r *http.Request, enc encoding.En
 	return encoding.Must(enc.Encode(wn))
 }
 
-func CreateUpdateWebPropertyNote(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func CreateUpdateWebPropertyNote(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var w webProperty_model.WebProperty
 	var n webProperty_model.WebPropertyNote
 	var err error
@@ -384,9 +384,9 @@ func CreateUpdateWebPropertyNote(rw http.ResponseWriter, r *http.Request, enc en
 		}
 	}
 	if n.ID > 0 {
-		err = n.Update()
+		err = n.Update(dtx)
 	} else {
-		err = n.Create()
+		err = n.Create(dtx)
 	}
 
 	if err != nil {
@@ -401,7 +401,7 @@ func CreateUpdateWebPropertyNote(rw http.ResponseWriter, r *http.Request, enc en
 	return encoding.Must(enc.Encode(n))
 }
 
-func DeleteWebPropertyNote(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func DeleteWebPropertyNote(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var n webProperty_model.WebPropertyNote
 	var err error
 
@@ -415,7 +415,7 @@ func DeleteWebPropertyNote(rw http.ResponseWriter, r *http.Request, enc encoding
 		return ""
 	}
 
-	if err = n.Delete(); err != nil {
+	if err = n.Delete(dtx); err != nil {
 		apierror.GenerateError("Trouble deleting web property note", err, rw, r)
 		return ""
 	}
@@ -445,7 +445,7 @@ func GetWebPropertyRequirement(rw http.ResponseWriter, r *http.Request, enc enco
 	return encoding.Must(enc.Encode(wr))
 }
 
-func CreateUpdateWebPropertyRequirement(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func CreateUpdateWebPropertyRequirement(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var wr webProperty_model.WebPropertyRequirement
 	var err error
 
@@ -494,9 +494,9 @@ func CreateUpdateWebPropertyRequirement(rw http.ResponseWriter, r *http.Request,
 	}
 
 	if wr.RequirementID > 0 {
-		err = wr.Update()
+		err = wr.Update(dtx)
 	} else {
-		err = wr.Create()
+		err = wr.Create(dtx)
 	}
 
 	if err != nil {
@@ -511,7 +511,7 @@ func CreateUpdateWebPropertyRequirement(rw http.ResponseWriter, r *http.Request,
 	return encoding.Must(enc.Encode(wr))
 }
 
-func DeleteWebPropertyRequirement(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func DeleteWebPropertyRequirement(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var wr webProperty_model.WebPropertyRequirement
 	var err error
 
@@ -525,7 +525,7 @@ func DeleteWebPropertyRequirement(rw http.ResponseWriter, r *http.Request, enc e
 		return ""
 	}
 
-	if err = wr.Delete(); err != nil {
+	if err = wr.Delete(dtx); err != nil {
 		apierror.GenerateError("Trouble deleting web property requirement", err, rw, r)
 		return ""
 	}
@@ -555,7 +555,7 @@ func GetWebPropertyType(rw http.ResponseWriter, r *http.Request, enc encoding.En
 	return encoding.Must(enc.Encode(t))
 }
 
-func CreateUpdateWebPropertyType(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func CreateUpdateWebPropertyType(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var t webProperty_model.WebPropertyType
 	var err error
 
@@ -604,9 +604,9 @@ func CreateUpdateWebPropertyType(rw http.ResponseWriter, r *http.Request, enc en
 	}
 
 	if t.ID > 0 {
-		err = t.Update()
+		err = t.Update(dtx)
 	} else {
-		err = t.Create()
+		err = t.Create(dtx)
 	}
 
 	if err != nil {
@@ -620,7 +620,7 @@ func CreateUpdateWebPropertyType(rw http.ResponseWriter, r *http.Request, enc en
 	return encoding.Must(enc.Encode(t))
 }
 
-func DeleteWebPropertyType(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func DeleteWebPropertyType(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var t webProperty_model.WebPropertyType
 	var err error
 
@@ -634,7 +634,7 @@ func DeleteWebPropertyType(rw http.ResponseWriter, r *http.Request, enc encoding
 		return ""
 	}
 
-	if err = t.Delete(); err != nil {
+	if err = t.Delete(dtx); err != nil {
 		apierror.GenerateError("Trouble deleting web property type", err, rw, r)
 		return ""
 	}
