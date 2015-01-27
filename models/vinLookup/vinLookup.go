@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
@@ -154,7 +155,11 @@ var (
 								WHERE bv.AAIABaseVehicleID = ?
 								AND (sm.AAIASubmodelID = ?  OR sm.AAIASubmodelID IS NULL) `
 
-	getPartID = `SELECT PartNumber FROM vcdb_VehiclePart WHERE VehicleID = ?`
+	getPartID             = `SELECT PartNumber FROM vcdb_VehiclePart WHERE VehicleID = ?`
+	curtConfigTypeMapStmt = `select cat.name, cat.AcesTypeID, ca.value, ca.vcdbID
+		from ConfigAttributeType as cat
+		join ConfigAttribute as ca on ca.ConfigAttributeTypeID = cat.ID
+		where cat.AcesTypeID > 0 && ca.vcdbID > 0`
 )
 
 const (
@@ -176,6 +181,11 @@ func VinPartLookup(vin string, dtx *apicontext.DataContext) (l products.Lookup, 
 	l, err = av.getCurtVehicles(configMap)
 	if err != nil {
 		return l, err
+	}
+
+	//set lookup object's brands
+	for _, brand := range dtx.BrandArray {
+		l.Brands = append(l.Brands, brand)
 	}
 
 	//get parts
@@ -202,9 +212,6 @@ func GetVehicleConfigs(vin string) (l products.Lookup, err error) {
 
 	//get CURT vehicle
 	l, err = av.getCurtVehicles(configMap)
-	if len(l.Parts) == 0 {
-		err = sql.ErrNoRows
-	}
 	return l, err
 }
 
@@ -428,10 +435,10 @@ func (av *AcesVehicle) getCurtVehicles(configMap map[int]interface{}) (products.
 	var subID, configKeyID, configValueID, acesConfigValID *int
 	var cv CurtVehicle
 
-	var pco products.ConfigurationOption
+	// var pco products.ConfigurationOption
 	var vehicleConfig products.Configuration
 
-	pcoMap := make(map[string][]string)
+	// pcoMap := make(map[string][]string)
 
 	for res.Next() {
 
@@ -472,37 +479,39 @@ func (av *AcesVehicle) getCurtVehicles(configMap map[int]interface{}) (products.
 			cv.Configuration.AcesValueID = *acesConfigValID
 		}
 
-		//configs - assign to map, flag
-		configValFlag := true
-		if vs, ok := pcoMap[cv.Configuration.Type]; ok {
-			for _, v := range vs {
-				if v == cv.Configuration.Value {
-					configValFlag = false
-				}
-			}
-		}
-		if configValFlag == true {
-			if name, ok := configMap[cv.Configuration.TypeID]; ok {
-				//configMap contains this config type
+		// log.Print(configMap)
 
-				if cv.Configuration.AcesValueID == name {
-					pcoMap[cv.Configuration.Type] = append(pcoMap[cv.Configuration.Type], cv.Configuration.Value)
+		// //configs - assign to map, flag
+		// configValFlag := true
+		// if vs, ok := pcoMap[cv.Configuration.Type]; ok {
+		// 	for _, v := range vs {
+		// 		if v == cv.Configuration.Value {
+		// 			configValFlag = false
+		// 		}
+		// 	}
+		// }
+		// if configValFlag == true {
+		// 	if name, ok := configMap[cv.Configuration.TypeID]; ok {
+		// 		//configMap contains this config type
 
-					//vehicleConfigs (not l.ConfugurationOption)
-					vehicleConfig.Key = cv.Configuration.Type
-					vehicleConfig.Value = cv.Configuration.Value
-					l.Vehicle.Configurations = append(l.Vehicle.Configurations, vehicleConfig)
-				}
-			} else {
-				pcoMap[cv.Configuration.Type] = append(pcoMap[cv.Configuration.Type], cv.Configuration.Value)
+		// 		if cv.Configuration.AcesValueID == name {
+		// 			pcoMap[cv.Configuration.Type] = append(pcoMap[cv.Configuration.Type], cv.Configuration.Value)
 
-				//vehicleConfigs (not l.ConfugurationOption)
-				vehicleConfig.Key = cv.Configuration.Type
-				vehicleConfig.Value = cv.Configuration.Value
-				l.Vehicle.Configurations = append(l.Vehicle.Configurations, vehicleConfig)
-			}
+		// 			//vehicleConfigs (not l.ConfugurationOption)
+		// 			vehicleConfig.Key = cv.Configuration.Type
+		// 			vehicleConfig.Value = cv.Configuration.Value
+		// 			l.Vehicle.Configurations = append(l.Vehicle.Configurations, vehicleConfig)
+		// 		}
+		// 	} else {
+		// 		pcoMap[cv.Configuration.Type] = append(pcoMap[cv.Configuration.Type], cv.Configuration.Value)
 
-		}
+		// 		//vehicleConfigs (not l.ConfugurationOption)
+		// 		vehicleConfig.Key = cv.Configuration.Type
+		// 		vehicleConfig.Value = cv.Configuration.Value
+		// 		l.Vehicle.Configurations = append(l.Vehicle.Configurations, vehicleConfig)
+		// 	}
+
+		// }
 
 		l.Vehicle.Base.Make = cv.BaseVehicle.MakeName
 		l.Vehicle.Base.Model = cv.BaseVehicle.ModelName
@@ -513,10 +522,21 @@ func (av *AcesVehicle) getCurtVehicles(configMap map[int]interface{}) (products.
 	defer res.Close()
 
 	//assign configs
-	for key, val := range pcoMap {
-		pco.Type = key
-		pco.Options = val
-		l.Configurations = append(l.Configurations, pco)
+	// for key, val := range pcoMap {
+	// 	pco.Type = key
+	// 	pco.Options = val
+	// 	l.Configurations = append(l.Configurations, pco)
+	// }
+
+	//NEW
+	curtConfigMap, err := getCurtConfigMapFromAcesConfigMap(configMap)
+	if err != nil {
+		return l, err
+	}
+	for configType, config := range curtConfigMap {
+		vehicleConfig.Key = configType
+		vehicleConfig.Value = config
+		l.Vehicle.Configurations = append(l.Vehicle.Configurations, vehicleConfig)
 	}
 
 	l.Makes = append(l.Makes, l.Vehicle.Base.Make)
@@ -525,4 +545,49 @@ func (av *AcesVehicle) getCurtVehicles(configMap map[int]interface{}) (products.
 	l.Submodels = append(l.Submodels, l.Vehicle.Submodel)
 
 	return l, err
+}
+
+func getCurtConfigMapFromAcesConfigMap(acesConfigMap map[int]interface{}) (map[string]string, error) {
+	var err error
+	tempMap := make(map[string]string) //maps [acestypeid:acesconfigid]curttype:curtconfig
+	curtMap := make(map[string]string) //maps [curttype]curtconfig
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return curtMap, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(curtConfigTypeMapStmt)
+	if err != nil {
+		return curtMap, err
+	}
+	defer stmt.Close()
+	res, err := stmt.Query()
+	if err != nil {
+		return curtMap, err
+	}
+	var catName, caValue string
+	var catAcesId, vcdbId int
+	for res.Next() {
+		err = res.Scan(
+			&catName,
+			&catAcesId,
+			&caValue,
+			&vcdbId,
+		)
+		if err != nil {
+			return curtMap, err
+		}
+		tempMap[strconv.Itoa(catAcesId)+":"+strconv.Itoa(vcdbId)] = catName + ":" + caValue
+	}
+
+	for acesType, acesConfig := range acesConfigMap {
+		acesConfigInt := acesConfig.(int)
+		if acesConfigInt > 0 {
+			if curtConfig, ok := tempMap[strconv.Itoa(acesType)+":"+strconv.Itoa(acesConfigInt)]; ok {
+				curtMap[strings.Split(curtConfig, ":")[0]] = strings.Split(curtConfig, ":")[1]
+			}
+		}
+	}
+	return curtMap, err
 }

@@ -184,7 +184,7 @@ func (c *Contact) Get() error {
 	return errors.New("Invalid Contact ID")
 }
 
-func (c *Contact) Add() error {
+func (c *Contact) Add(dtx *apicontext.DataContext) error {
 	if strings.TrimSpace(c.FirstName) == "" {
 		return errors.New("First name is required")
 	}

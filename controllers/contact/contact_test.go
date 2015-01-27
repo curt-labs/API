@@ -47,7 +47,7 @@ func TestContact(t *testing.T) {
 		flag.Set("noEmail", "true") //do not send email during tests
 		c.LastName = "smith"
 		c.FirstName = "fred"
-		c.Type = ct.Name
+		c.Type = strconv.Itoa(ct.ID)
 		c.Email = "test@test.com"
 		c.Message = "test mes"
 		c.Subject = "test sub"

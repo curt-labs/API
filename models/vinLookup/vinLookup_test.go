@@ -1,10 +1,10 @@
 package vinLookup
 
 import (
-	"database/sql"
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
-	//"github.com/curt-labs/GoAPI/models/products"
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	. "github.com/smartystreets/goconvey/convey"
+
+	"database/sql"
 	"testing"
 )
 
@@ -16,15 +16,20 @@ var (
 )
 
 func TestVinLookup(t *testing.T) {
+	dtx, err := apicontextmock.Mock()
+	if err != nil {
+		t.Log(err)
+	}
+
 	Convey("Testing VinPartLookup", t, func() {
-		vs, err := VinPartLookup(buickVin, &apicontext.DataContext{})
+		vs, err := VinPartLookup(buickVin, dtx)
 		if err != sql.ErrNoRows {
 			So(err, ShouldBeNil)
 			So(len(vs.Parts), ShouldBeGreaterThanOrEqualTo, 1)
 
 		}
 		if err != sql.ErrNoRows {
-			vs, err = VinPartLookup(taurusVin, &apicontext.DataContext{})
+			vs, err = VinPartLookup(taurusVin, dtx)
 			So(err, ShouldBeNil)
 			So(len(vs.Parts), ShouldBeGreaterThanOrEqualTo, 1)
 
@@ -36,22 +41,5 @@ func TestVinLookup(t *testing.T) {
 		}
 
 	})
-	// Convey("Testing GetVehicleConfigs->GetParts", t, func() {
-	// 	v, err := GetVehicleConfigs(caddyVin)
-	// 	if err != sql.ErrNoRows {
-	// 		So(err, ShouldBeNil)
-	// 		So(len(v.Configurations), ShouldBeGreaterThanOrEqualTo, 1)
-
-	// 	}
-
-	// })
-	// Convey("Testing Bad Vin", t, func() {
-	// 	vs, err := VinPartLookup(bogusVin, &apicontext.DataContext{})
-	// 	So(err, ShouldNotBeNil)
-	// 	So(vs, ShouldHaveSameTypeAs, products.Lookup{})
-
-	// 	vcs, err := GetVehicleConfigs(bogusVin)
-	// 	So(err, ShouldNotBeNil)
-	// 	So(vcs, ShouldHaveSameTypeAs, products.Lookup{})
-	// })
+	_ = apicontextmock.DeMock(dtx)
 }

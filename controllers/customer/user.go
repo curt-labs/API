@@ -3,45 +3,38 @@ package customer_ctlr
 import (
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
-	apierr "github.com/curt-labs/GoAPI/helpers/error"
+	"github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/go-martini/martini"
 
 	"encoding/json"
-	"fmt"
+	"errors"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
 )
 
 //Post - Form Authentication
-func AuthenticateUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
-	email := r.FormValue("email")
-	pass := r.FormValue("password")
-	var user customer.CustomerUser
-	user.Email = email
-	user.Password = pass
-
-	//default brand for setting key
-	defaultBrandArray := []int{1}
-
-	err := user.AuthenticateUser(defaultBrandArray)
-	if err != nil {
-
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return ""
+func AuthenticateUser(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+	var err error
+	user := customer.CustomerUser{
+		Email:    r.FormValue("email"),
+		Password: r.FormValue("password"),
 	}
-	err = user.GetLocation()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+
+	if err = user.AuthenticateUser(); err != nil {
+		apierror.GenerateError("Trouble authenticating customer user", err, rw, r)
 		return ""
 	}
 
-	err = user.GetKeys()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+	if err = user.GetLocation(); err != nil {
+		apierror.GenerateError("Trouble getting customer user location", err, rw, r)
+		return ""
+	}
+
+	if err = user.GetKeys(); err != nil {
+		apierror.GenerateError("Trouble getting customer user API keys", err, rw, r)
 		return ""
 	}
 
@@ -52,7 +45,7 @@ func AuthenticateUser(w http.ResponseWriter, r *http.Request, enc encoding.Encod
 
 	cust, err := user.GetCustomer(key)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		apierror.GenerateError("Trouble getting customer user", err, rw, r)
 		return ""
 	}
 
@@ -60,71 +53,66 @@ func AuthenticateUser(w http.ResponseWriter, r *http.Request, enc encoding.Encod
 }
 
 //Get - Key (in params) Authentication
-func KeyedUserAuthentication(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+func KeyedUserAuthentication(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+	var err error
+
 	qs := r.URL.Query()
 	key := qs.Get("key")
-	var err error
+
 	dtx := &apicontext.DataContext{APIKey: key}
-	dtx.BrandArray, err = dtx.GetBrandsFromKey()
+	if dtx.BrandArray, err = dtx.GetBrandsFromKey(); err != nil {
+		apierror.GenerateError("Trouble getting brands from API key", err, rw, r)
+		return ""
+	}
 
 	cust, err := customer.AuthenticateAndGetCustomer(key, dtx)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusForbidden)
+		apierror.GenerateError("Trouble getting customer while authenticating", err, rw, r)
 		return ""
 	}
 
 	return encoding.Must(enc.Encode(cust))
 }
 
-//Makes user current
-// func ResetAuthentication(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string { //Testing only
-// 	var err error
-// 	qs := r.URL.Query()
-// 	id := qs.Get("id")
-// 	var u customer.CustomerUser
-// 	u.Id = id
-// 	err = u.ResetAuthentication()
-// 	if err != nil {
-// 		http.Error(w, err.Error(), http.StatusInternalServerError)
-// 		return ""
-// 	}
-// 	return "Success"
-// }
+func GetUserById(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+	var err error
+	var user customer.CustomerUser
 
-func GetUserById(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	qs := r.URL.Query()
 	key := qs.Get("key")
 
-	var err error
-	id := params["id"]
-	if id == "" {
-		id = r.FormValue("id")
-		if id == "" {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return ""
-		}
-	}
-
-	var user customer.CustomerUser
-	user.Id = id
-
-	err = user.Get(key)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+	if params["id"] != "" {
+		user.Id = params["id"]
+	} else if r.FormValue("id") != "" {
+		user.Id = r.FormValue("id")
+	} else {
+		err = errors.New("Trouble getting customer user ID")
+		apierror.GenerateError("Trouble getting customer user ID", err, rw, r)
 		return ""
 	}
+
+	if err = user.Get(key); err != nil {
+		apierror.GenerateError("Trouble getting customer user", err, rw, r)
+		return ""
+	}
+
 	return encoding.Must(enc.Encode(user))
 }
 
-func ResetPassword(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+func ResetPassword(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+	var err error
+
 	email := r.FormValue("email")
 	custID := r.FormValue("customerID")
+
 	if email == "" {
-		http.Error(w, "no email provided", http.StatusInternalServerError)
+		err = errors.New("No email address provided")
+		apierror.GenerateError("No email address provided", err, rw, r)
 		return ""
 	}
 	if custID == "" {
-		http.Error(w, "customerID cannot be blank", http.StatusInternalServerError)
+		err = errors.New("Customer ID cannot be blank")
+		apierror.GenerateError("Customer ID cannot be blank", err, rw, r)
 		return ""
 	}
 
@@ -133,26 +121,31 @@ func ResetPassword(w http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 
 	resp, err := user.ResetPass()
 	if err != nil || resp == "" {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		apierror.GenerateError("Trouble resetting user password", err, rw, r)
+		return ""
 	}
+
 	return encoding.Must(enc.Encode(resp))
 }
 
-func ChangePassword(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
-	email := r.FormValue("email")
+func ChangePassword(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+	user := customer.CustomerUser{
+		Email: r.FormValue("email"),
+	}
+
 	oldPass := r.FormValue("oldPass")
 	newPass := r.FormValue("newPass")
-	var user customer.CustomerUser
-	user.Email = email
 
-	err := user.ChangePass(oldPass, newPass, dtx)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+	if err := user.ChangePass(oldPass, newPass, dtx); err != nil {
+		apierror.GenerateError("Trouble changing password for customer user", err, rw, r)
+		return ""
 	}
+
 	return encoding.Must(enc.Encode("Success"))
 }
 
-func GenerateApiKey(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+func GenerateApiKey(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+	var err error
 	qs := r.URL.Query()
 	key := qs.Get("key")
 	if key == "" {
@@ -161,7 +154,7 @@ func GenerateApiKey(w http.ResponseWriter, r *http.Request, params martini.Param
 
 	user, err := customer.GetCustomerUserFromKey(key)
 	if err != nil || user.Id == "" {
-		http.Error(w, "failed to authenticate API key; you must provide a private key.", http.StatusInternalServerError)
+		apierror.GenerateError("Trouble getting customer user using this api key", err, rw, r)
 		return ""
 	}
 
@@ -178,30 +171,42 @@ func GenerateApiKey(w http.ResponseWriter, r *http.Request, params martini.Param
 	}
 
 	if !authed {
-		http.Error(w, "you do not have sufficient permissions to perform this operation.", http.StatusInternalServerError)
+		err = errors.New("You do not have sufficient permissions to perform this operation.")
+		apierror.GenerateError("Unauthorized", err, rw, r, http.StatusUnauthorized)
 		return ""
 	}
 
-	generateType := params["type"]
 	id := params["id"]
+	if r.FormValue("id") != "" {
+		id = r.FormValue("id")
+	}
+
+	generateType := params["type"]
+	if r.FormValue("type") != "" {
+		generateType = r.FormValue("type")
+	}
+
 	if id == "" {
-		http.Error(w, "you must provide a reference to the user whose key should be generated", http.StatusInternalServerError)
+		err = errors.New("You must provide a reference to the user whose key should be generated.")
+		apierror.GenerateError("Invalid user reference", err, rw, r)
 		return ""
 	}
 	if generateType == "" {
-		http.Error(w, "you must provide the type of key to be generated", http.StatusInternalServerError)
+		err = errors.New("You must provide the type of key to be generated")
+		apierror.GenerateError("Invalid API key type", err, rw, r)
 		return ""
 	}
 
 	user.Id = id
-	if err := user.Get(key); err != nil {
-		http.Error(w, "failed to retrieve the reference user account", http.StatusInternalServerError)
+	if err = user.Get(key); err != nil {
+		apierror.GenerateError("Invalid user reference", err, rw, r)
 		return ""
 	}
 
 	generated, err := user.GenerateAPIKey(generateType, dtx.BrandArray)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to generate an API key: %s", err.Error()), http.StatusInternalServerError)
+		err = errors.New("Failed to generate an API Key: ")
+		apierror.GenerateError("Failed to generate an API Key", err, rw, r)
 		return ""
 	}
 
@@ -209,7 +214,9 @@ func GenerateApiKey(w http.ResponseWriter, r *http.Request, params martini.Param
 }
 
 //a/k/a CreateUser
-func RegisterUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+func RegisterUser(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+	var err error
+
 	name := r.FormValue("name")
 	email := r.FormValue("email")
 	pass := r.FormValue("pass")
@@ -221,26 +228,9 @@ func RegisterUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) 
 	notCustomer, err := strconv.ParseBool(r.FormValue("notCustomer"))
 
 	if email == "" || pass == "" {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return "Email and password are required."
-	}
-	brands := strings.TrimSpace(r.FormValue("brands"))
-	brandStrArr := strings.Split(brands, ",")
-	//default to CURT (1)
-	if len(brandStrArr) <= 1 {
-		brandStrArr = []string{"1"}
-	}
-	var brandArr []int
-	for _, brand := range brandStrArr {
-		brint, err := strconv.Atoi(brand)
-		if err != nil {
-			apierr.GenerateError("Error parsing brand IDs", err, w, r)
-		}
-		brandArr = append(brandArr, brint)
-	}
-	//default to CURT (1)
-	if len(brandArr) == 0 {
-		brandArr = append(brandArr, 1)
+		err = errors.New("Email and password are required.")
+		apierror.GenerateError("Email and password are required", err, rw, r)
+		return ""
 	}
 
 	var user customer.CustomerUser
@@ -261,77 +251,99 @@ func RegisterUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) 
 	user.Active = isActive
 	user.Sudo = isSudo
 	user.Current = notCustomer
-	err = user.Create(brandArr)
+
+	if err = user.GetBrands(); err != nil {
+		apierror.GenerateError("Trouble getting user brands.", err, rw, r)
+		return ""
+	}
+	var brandIds []int
+	for _, brand := range user.Brands {
+		brandIds = append(brandIds, brand.ID)
+	}
+
 	// cu, err := user.Register(pass, customerID, isActive, locationID, isSudo, cust_ID, notCustomer)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+	if err = user.Create(brandIds); err != nil {
+		apierror.GenerateError("Trouble registering new customer user", err, rw, r)
 		return ""
 	}
 
 	return encoding.Must(enc.Encode(user))
 }
-func DeleteCustomerUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	id := params["id"]
-	var err error
 
+func DeleteCustomerUser(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+	var err error
 	var cu customer.CustomerUser
-	cu.Id = id
-	err = cu.Delete()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+
+	if params["id"] != "" {
+		cu.Id = params["id"]
+	} else if r.FormValue("id") != "" {
+		cu.Id = r.FormValue("id")
+	} else {
+		err = errors.New("Trouble getting customer user ID")
+		apierror.GenerateError("Trouble getting customer user ID", err, rw, r)
+		return ""
+	}
+
+	if err = cu.Delete(); err != nil {
+		apierror.GenerateError("Trouble deleting customer user", err, rw, r)
 		return ""
 	}
 
 	return encoding.Must(enc.Encode(cu))
 }
-func DeleteCustomerUsersByCustomerID(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
-	customerID, err := strconv.Atoi(params["id"])
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+
+func DeleteCustomerUsersByCustomerID(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+	var err error
+	var customerID int
+
+	id := params["id"]
+	if id == "" {
+		id = r.FormValue("id")
+	}
+
+	if customerID, err = strconv.Atoi(id); err != nil {
+		apierror.GenerateError("Trouble getting customer ID", err, rw, r)
 		return ""
 	}
 
-	err = customer.DeleteCustomerUsersByCustomerID(customerID)
-	if err != nil {
-		log.Print("E", err)
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+	if err = customer.DeleteCustomerUsersByCustomerID(customerID); err != nil {
+		apierror.GenerateError("Trouble deleting customer users", err, rw, r)
 		return ""
 	}
 
 	return encoding.Must(enc.Encode("Success."))
 }
 
-func UpdateCustomerUser(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func UpdateCustomerUser(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+	var err error
+	var cu customer.CustomerUser
+
 	qs := r.URL.Query()
 	key := qs.Get("key")
 
-	var err error
-	id := params["id"]
-	if id == "" {
-		id = r.FormValue("id")
-		if id == "" {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return ""
-		}
+	if params["id"] != "" {
+		cu.Id = params["id"]
+	} else if r.FormValue("id") != "" {
+		cu.Id = r.FormValue("id")
+	} else {
+		err = errors.New("Trouble getting customer user ID")
+		apierror.GenerateError("Trouble getting customer user ID", err, rw, r)
+		return ""
 	}
 
-	var cu customer.CustomerUser
-	cu.Id = id
-	err = cu.Get(key)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err = cu.Get(key); err != nil {
+		apierror.GenerateError("Trouble getting customer user", err, rw, r)
 		return ""
 	}
 
 	if strings.ToLower(r.Header.Get("Content-Type")) == "application/json" {
-		data, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		var data []byte
+		if data, err = ioutil.ReadAll(r.Body); err != nil {
+			apierror.GenerateError("Trouble reading request body while updating customer user", err, rw, r)
 			return ""
 		}
-
-		if err := json.Unmarshal(data, &cu); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		if err = json.Unmarshal(data, &cu); err != nil {
+			apierror.GenerateError("Trouble unmarshalling json request body while updating customer user", err, rw, r)
 			return ""
 		}
 	} else {
@@ -348,22 +360,30 @@ func UpdateCustomerUser(w http.ResponseWriter, r *http.Request, enc encoding.Enc
 			cu.Email = email
 		}
 		if isActive != "" {
-			cu.Active, err = strconv.ParseBool(isActive)
+			if cu.Active, err = strconv.ParseBool(isActive); err != nil {
+				cu.Active = false
+			}
 		}
 		if locationID != "" {
-			cu.Location.Id, err = strconv.Atoi(locationID)
+			if cu.Location.Id, err = strconv.Atoi(locationID); err != nil {
+				apierror.GenerateError("Trouble getting location ID", err, rw, r)
+				return ""
+			}
 		}
 		if isSudo != "" {
-			cu.Sudo, err = strconv.ParseBool(isSudo)
+			if cu.Sudo, err = strconv.ParseBool(isSudo); err != nil {
+				cu.Sudo = false
+			}
 		}
 		if notCustomer != "" {
-			cu.Current, err = strconv.ParseBool(notCustomer)
+			if cu.NotCustomer, err = strconv.ParseBool(notCustomer); err != nil {
+				cu.NotCustomer = false
+			}
 		}
 	}
 
-	err = cu.UpdateCustomerUser()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+	if err = cu.UpdateCustomerUser(); err != nil {
+		apierror.GenerateError("Trouble updating customer user", err, rw, r)
 		return ""
 	}
 

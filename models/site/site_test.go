@@ -2,6 +2,8 @@ package site
 
 import (
 	"database/sql"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	. "github.com/smartystreets/goconvey/convey"
 	"math/rand"
 	"testing"
@@ -13,9 +15,15 @@ func TestSite_New(t *testing.T) {
 	var m Menu
 	var err error
 
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
+
 	Convey("Testing Create Menus", t, func() {
 		m.Name = "name"
 		m.ShowOnSitemap = true
+		m.WebsiteId = MockedDTX.WebsiteID
 		err = m.Create()
 		So(err, ShouldBeNil)
 		//Update menu
@@ -28,6 +36,7 @@ func TestSite_New(t *testing.T) {
 		c.Title = "title"
 		c.MetaTitle = "mTitle"
 		c.MetaDescription = "mDesc"
+		c.WebsiteId = MockedDTX.WebsiteID
 		err = c.Create()
 		So(err, ShouldBeNil)
 		//update content
@@ -53,15 +62,15 @@ func TestSite_New(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		//get menus
-		err = m.Get()
+		err = m.Get(MockedDTX)
 		So(m.Name, ShouldEqual, "name2")
 		So(err, ShouldBeNil)
 
-		ms, err := GetAllMenus()
+		ms, err := GetAllMenus(MockedDTX)
 		So(err, ShouldBeNil)
 		So(len(ms), ShouldBeGreaterThan, 0)
 
-		err = m.GetByName()
+		err = m.GetByName(MockedDTX)
 		So(err, ShouldBeNil)
 
 		err = m.GetContents()
@@ -86,7 +95,7 @@ func TestSite_New(t *testing.T) {
 		}
 		//get content
 
-		err = c.Get()
+		err = c.Get(MockedDTX)
 		So(c.Title, ShouldEqual, "title2")
 		So(err, ShouldBeNil)
 
@@ -103,12 +112,12 @@ func TestSite_New(t *testing.T) {
 			So(c.ContentRevisions, ShouldNotBeNil)
 		}
 		//get contents
-		cs, err := GetAllContents()
+		cs, err := GetAllContents(MockedDTX)
 		So(err, ShouldBeNil)
 		So(len(cs), ShouldBeGreaterThanOrEqualTo, 0)
 		//get contents by slug
 		t.Log(c.Slug)
-		err = c.GetBySlug()
+		err = c.GetBySlug(MockedDTX)
 		So(err, ShouldBeNil)
 
 		//menu-content join
@@ -134,11 +143,17 @@ func TestSite_New(t *testing.T) {
 		err = m.Delete()
 		So(err, ShouldBeNil)
 	})
+	_ = apicontextmock.DeMock(MockedDTX)
 }
 
 func TestWebsite(t *testing.T) {
 	var w Website
 	var err error
+
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
 	Convey("Testing Create Website", t, func() {
 		w.Url = "www.example.com"
 		err = w.Create()
@@ -162,7 +177,7 @@ func TestWebsite(t *testing.T) {
 		}
 	})
 	Convey("Testing GetSiteDetails", t, func() {
-		err = w.GetDetails()
+		err = w.GetDetails(MockedDTX)
 		So(err, ShouldBeNil)
 	})
 	Convey("Testing Delete Website", t, func() {

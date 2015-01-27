@@ -7,6 +7,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 
 	"encoding/json"
+	"log"
 	"net/url"
 	"strconv"
 	"testing"
@@ -23,6 +24,7 @@ func TestSite(t *testing.T) {
 		var c site.Content
 		var contents site.Contents
 		var cr site.ContentRevision
+		c.WebsiteId = dtx.WebsiteID
 		qs := make(url.Values, 0)
 		qs.Add("key", dtx.APIKey)
 
@@ -33,10 +35,13 @@ func TestSite(t *testing.T) {
 		response := httprunner.ParameterizedJsonRequest("POST", "/site/content", "/site/content", &qs, c, SaveContent)
 		So(response.Code, ShouldEqual, 200)
 		So(json.Unmarshal(response.Body.Bytes(), &c), ShouldEqual, nil)
-
+		log.Println(c)
+		log.Println(c.WebsiteId)
 		c.Active = true
 		response = httprunner.ParameterizedJsonRequest("PUT", "/site/content/:id", "/site/content/"+strconv.Itoa(c.Id), &qs, c, SaveContent)
+		log.Println(response)
 		So(response.Code, ShouldEqual, 200)
+
 		So(json.Unmarshal(response.Body.Bytes(), &c), ShouldEqual, nil)
 
 		response = httprunner.ParameterizedRequest("GET", "/site/content/:id", "/site/content/"+strconv.Itoa(c.Id), &qs, nil, GetContent)
@@ -60,6 +65,7 @@ func TestSite(t *testing.T) {
 	Convey("Site Menu", t, func() {
 		var m site.Menu
 		var menus site.Menus
+		m.WebsiteId = dtx.WebsiteID
 		qs := make(url.Values, 0)
 		qs.Add("key", dtx.APIKey)
 

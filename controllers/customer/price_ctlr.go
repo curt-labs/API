@@ -1,14 +1,16 @@
 package customer_ctlr
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/encoding"
-	"github.com/curt-labs/GoAPI/helpers/sortutil"
-	"github.com/curt-labs/GoAPI/models/customer"
-	"github.com/go-martini/martini"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/curt-labs/GoAPI/helpers/encoding"
+	"github.com/curt-labs/GoAPI/helpers/error"
+	"github.com/curt-labs/GoAPI/helpers/sortutil"
+	"github.com/curt-labs/GoAPI/models/customer"
+	"github.com/go-martini/martini"
 )
 
 const (
@@ -18,36 +20,37 @@ const (
 func GetPrice(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var c customer.Price
 	var err error
+
 	id := r.FormValue("id")
-	if id != "" {
-		c.ID, err = strconv.Atoi(id)
-		if err != nil {
-			return err.Error()
-		}
-	}
-	if params["id"] != "" {
-		c.ID, err = strconv.Atoi(params["id"])
-		if err != nil {
-			return err.Error()
-		}
+	if id == "" {
+		id = params["id"]
 	}
 
-	err = c.Get()
-	if err != nil {
-		return err.Error()
+	if c.ID, err = strconv.Atoi(id); err != nil {
+		apierror.GenerateError("Trouble getting price ID", err, rw, r)
+		return ""
 	}
+
+	if err = c.Get(); err != nil {
+		apierror.GenerateError("Trouble getting price", err, rw, r)
+		return ""
+	}
+
 	return encoding.Must(enc.Encode(c))
 }
+
 func GetAllPrices(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 	var c customer.Prices
 	var err error
 
-	c, err = customer.GetAllPrices()
-	if err != nil {
-		return err.Error()
+	if c, err = customer.GetAllPrices(); err != nil {
+		apierror.GenerateError("Trouble getting all prices", err, rw, r)
+		return ""
 	}
+
 	sort := r.FormValue("sort")
 	direction := r.FormValue("direction")
+
 	if sort != "" {
 		if strings.ContainsAny(direction, "esc") {
 			sortutil.CiDescByField(c, sort)
@@ -55,6 +58,7 @@ func GetAllPrices(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 			sortutil.CiAscByField(c, sort)
 		}
 	}
+
 	return encoding.Must(enc.Encode(c))
 }
 
@@ -62,21 +66,21 @@ func CreateUpdatePrice(rw http.ResponseWriter, r *http.Request, enc encoding.Enc
 	var w customer.Price
 	var err error
 
-	id := r.FormValue("id")
-	if id != "" {
-		w.ID, err = strconv.Atoi(id)
-		if err != nil {
-			return err.Error()
+	if r.FormValue("id") != "" || params["id"] != "" {
+		id := r.FormValue("id")
+		if id == "" {
+			id = params["id"]
 		}
-	}
-	if params["id"] != "" {
-		w.ID, err = strconv.Atoi(params["id"])
-		if err != nil {
-			return err.Error()
+
+		if w.ID, err = strconv.Atoi(id); err != nil {
+			apierror.GenerateError("Trouble getting price ID", err, rw, r)
+			return ""
 		}
-	}
-	if w.ID > 0 {
-		w.Get()
+
+		if err = w.Get(); err != nil {
+			apierror.GenerateError("Trouble getting price", err, rw, r)
+			return ""
+		}
 	}
 
 	custID := r.FormValue("custID")
@@ -87,55 +91,66 @@ func CreateUpdatePrice(rw http.ResponseWriter, r *http.Request, enc encoding.Enc
 	saleEnd := r.FormValue("saleEnd")
 
 	if custID != "" {
-		w.CustID, err = strconv.Atoi(custID)
-		if err != nil {
-			return err.Error()
+		if w.CustID, err = strconv.Atoi(custID); err != nil {
+			apierror.GenerateError("Trouble getting customer ID", err, rw, r)
+			return ""
 		}
 	}
+
 	if partID != "" {
-		w.PartID, err = strconv.Atoi(partID)
-		if err != nil {
-			return err.Error()
+		if w.PartID, err = strconv.Atoi(partID); err != nil {
+			apierror.GenerateError("Trouble getting part ID", err, rw, r)
+			return ""
 		}
 	}
+
 	if price != "" {
-		w.Price, err = strconv.ParseFloat(price, 64)
-		if err != nil {
-			return err.Error()
+		if w.Price, err = strconv.ParseFloat(price, 64); err != nil {
+			apierror.GenerateError("Trouble getting price", err, rw, r)
+			return ""
 		}
 	}
+
 	if isSale != "" {
-		saleBool, err := strconv.ParseBool(isSale)
-		if err != nil {
-			return err.Error()
+		saleBool := false
+		if saleBool, err = strconv.ParseBool(isSale); err != nil {
+			apierror.GenerateError("Trouble setting sale", err, rw, r)
+			return ""
 		}
-		if saleBool == true {
+		if saleBool {
 			w.IsSale = 1
 		}
 	}
+
 	if saleStart != "" {
-		w.SaleStart, err = time.Parse(inputTimeFormat, saleStart)
-		if err != nil {
-			return err.Error()
+		if w.SaleStart, err = time.Parse(inputTimeFormat, saleStart); err != nil {
+			apierror.GenerateError("Trouble getting sale start", err, rw, r)
+			return ""
 		}
 	}
+
 	if saleEnd != "" {
-		w.SaleEnd, err = time.Parse(inputTimeFormat, saleEnd)
-		if err != nil {
-			return err.Error()
+		if w.SaleEnd, err = time.Parse(inputTimeFormat, saleEnd); err != nil {
+			apierror.GenerateError("Trouble getting sale end", err, rw, r)
+			return ""
 		}
 	}
 
 	if w.ID > 0 {
 		err = w.Update()
 	} else {
-
 		err = w.Create()
 	}
 
 	if err != nil {
-		return err.Error()
+		msg := "Trouble creating customer price"
+		if w.ID > 0 {
+			msg = "Trouble updating customer price"
+		}
+		apierror.GenerateError(msg, err, rw, r)
+		return ""
 	}
+
 	return encoding.Must(enc.Encode(w))
 }
 
@@ -144,41 +159,42 @@ func DeletePrice(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 	var err error
 
 	id := r.FormValue("id")
-	if id != "" {
-		w.ID, err = strconv.Atoi(id)
-		if err != nil {
-			return err.Error()
-		}
+	if id == "" {
+		id = params["id"]
 	}
-	if params["id"] != "" {
-		w.ID, err = strconv.Atoi(params["id"])
-		if err != nil {
-			return err.Error()
-		}
+
+	if w.ID, err = strconv.Atoi(id); err != nil {
+		apierror.GenerateError("Trouble gett price ID", err, rw, r)
+		return ""
 	}
-	w.Delete()
+
+	if err = w.Delete(); err != nil {
+		apierror.GenerateError("Trouble deleting price", err, rw, r)
+		return ""
+	}
 
 	return encoding.Must(enc.Encode(w))
 }
+
 func GetPricesByPart(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var err error
 	var ps customer.Prices
 	var partID int
 
 	id := r.FormValue("id")
-	if id != "" {
-		partID, err = strconv.Atoi(id)
-		if err != nil {
-			return err.Error()
-		}
+	if id == "" {
+		id = params["id"]
 	}
-	if params["id"] != "" {
-		partID, err = strconv.Atoi(params["id"])
-		if err != nil {
-			return err.Error()
-		}
+
+	if partID, err = strconv.Atoi(id); err != nil {
+		apierror.GenerateError("Trouble getting part ID", err, rw, r)
+		return ""
 	}
-	ps, err = customer.GetPricesByPart(partID)
+
+	if ps, err = customer.GetPricesByPart(partID); err != nil {
+		apierror.GenerateError("Trouble getting prices by part", err, rw, r)
+		return ""
+	}
 
 	sort := r.FormValue("sort")
 	direction := r.FormValue("direction")
@@ -189,9 +205,7 @@ func GetPricesByPart(rw http.ResponseWriter, r *http.Request, enc encoding.Encod
 			sortutil.AscByField(ps, sort)
 		}
 	}
-	if err != nil {
-		return err.Error()
-	}
+
 	return encoding.Must(enc.Encode(ps))
 }
 
@@ -199,35 +213,38 @@ func GetSales(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, par
 	var err error
 	var ps customer.Prices
 	var c customer.Customer
+
 	id := r.FormValue("id")
-	if id != "" {
-		c.Id, err = strconv.Atoi(id)
-		if err != nil {
-			return err.Error()
-		}
-	} else {
+	if id == "" {
 		id = params["id"]
-		if id == "" {
-			return "No Customer Id Supplied."
-		}
-		c.Id, err = strconv.Atoi(id)
+	}
+
+	if c.Id, err = strconv.Atoi(id); err != nil {
+		apierror.GenerateError("Trouble getting customer ID", err, rw, r)
+		return ""
 	}
 
 	start := r.FormValue("start")
 	end := r.FormValue("end")
 
 	startDate, err := time.Parse(inputTimeFormat, start)
+	if err != nil {
+		apierror.GenerateError("Trouble getting sales start date", err, rw, r)
+		return ""
+	}
+
 	endDate, err := time.Parse(inputTimeFormat, end)
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble getting sales end date", err, rw, r)
 		return ""
 	}
 
 	ps, err = c.GetPricesBySaleRange(startDate, endDate)
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		apierror.GenerateError("Trouble getting prices by sales range", err, rw, r)
 		return ""
 	}
+
 	return encoding.Must(enc.Encode(ps))
 }
 
@@ -237,25 +254,19 @@ func GetPriceByCustomer(rw http.ResponseWriter, r *http.Request, enc encoding.En
 	var c customer.Customer
 
 	id := r.FormValue("id")
+	if id == "" {
+		id = params["id"]
+	}
 
-	if id != "" {
-		c.Id, err = strconv.Atoi(id)
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return ""
-		}
-	}
-	if params["id"] != "" {
-		c.Id, err = strconv.Atoi(params["id"])
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return ""
-		}
-	}
-	ps, err = c.GetPricesByCustomer()
-	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+	if c.Id, err = strconv.Atoi(id); err != nil {
+		apierror.GenerateError("Trouble getting customer ID", err, rw, r)
 		return ""
 	}
+
+	if ps, err = c.GetPricesByCustomer(); err != nil {
+		apierror.GenerateError("Trouble getting prices by customer ID", err, rw, r)
+		return ""
+	}
+
 	return encoding.Must(enc.Encode(ps))
 }

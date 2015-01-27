@@ -2,6 +2,7 @@ package contact
 
 import (
 	"bytes"
+	"errors"
 	"github.com/curt-labs/GoAPI/helpers/email"
 	"text/template"
 )
@@ -17,6 +18,13 @@ const emailTemplate = "To: {{.To}}}\nSubject: {{.Subject}}\n{{.Body}}\n"
 func SendEmail(ct ContactType, subject string, body string) (err error) {
 	var tos []string
 	receivers, err := ct.GetReceivers()
+	if err != nil {
+		return err
+	}
+	if len(receivers) < 1 {
+		err = errors.New("No recipients for selected contact type.")
+		return err
+	}
 	for _, r := range receivers {
 		tos = append(tos, r.Email)
 	}
@@ -33,6 +41,9 @@ func SendEmail(ct ContactType, subject string, body string) (err error) {
 		body,
 	}
 	err = t.Execute(&msg, context)
+	if err != nil {
+		return err
+	}
 
 	err = email.Send(tos, subject, msg.String(), false)
 

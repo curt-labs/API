@@ -2,6 +2,7 @@ package site
 
 import (
 	"database/sql"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	// "github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
@@ -75,13 +76,13 @@ func (w *Website) Get() (err error) {
 	return err
 }
 
-func (w *Website) GetDetails() (err error) {
+func (w *Website) GetDetails(dtx *apicontext.DataContext) (err error) {
 	err = w.Get()
 	if err != nil {
 		return err
 	}
 
-	menus, err := GetAllMenus()
+	menus, err := GetAllMenus(dtx)
 	menuMap := menus.ToMap()
 
 	for _, menu := range menuMap {

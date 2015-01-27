@@ -39,6 +39,7 @@ func TestVideo_New(t *testing.T) {
 		cdnft.Title = "test cdntype"
 		err = cdnft.Create()
 		So(err, ShouldBeNil)
+		t.Log("created cdnft: ", cdnft)
 		//create cdn
 		cdn.ObjectName = "test cdn"
 		cdn.Type = cdnft
@@ -54,8 +55,8 @@ func TestVideo_New(t *testing.T) {
 		So(err, ShouldBeNil)
 		//create video
 		v.Title = "test vid"
-		v.Brands = append(v.Brands, brand.Brand{ID: 1}) //matches mocked brand
-		p.ID = 11000                                    //force part
+		v.Brands = append(v.Brands, brand.Brand{ID: MockedDTX.BrandID}) //matches mocked brand
+		p.ID = 11000                                                    //force part
 
 		v.VideoType = vt
 		v.Categories = append(v.Categories, cat)
@@ -75,6 +76,7 @@ func TestVideo_New(t *testing.T) {
 		cdnft.Title = "test cdntype 2"
 		err = cdnft.Update()
 		So(err, ShouldBeNil)
+		t.Log("Updated cdnft: ", cdnft)
 		//update video type
 		vt.Name = "test videoType 2"
 		err = vt.Update()
@@ -138,8 +140,10 @@ func TestVideo_New(t *testing.T) {
 		So(len(cdns), ShouldBeGreaterThan, 0)
 		//get all cdn types
 		cdnfts, err := GetAllCdnFileTypes()
+		t.Log("CDNFTS: ", cdnfts)
 		So(err, ShouldBeNil)
 		So(len(cdnfts), ShouldBeGreaterThan, 0)
+
 		//get all video types
 		vts, err := GetAllVideoTypes()
 		So(err, ShouldBeNil)

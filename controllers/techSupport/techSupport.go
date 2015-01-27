@@ -3,7 +3,7 @@ package techSupport
 import (
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
-	apierror "github.com/curt-labs/GoAPI/helpers/error"
+	"github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/models/contact"
 	"github.com/curt-labs/GoAPI/models/techSupport"
 	"github.com/go-martini/martini"
