@@ -39,7 +39,6 @@ func TestVideo_New(t *testing.T) {
 		cdnft.Title = "test cdntype"
 		err = cdnft.Create()
 		So(err, ShouldBeNil)
-		t.Log("created cdnft: ", cdnft)
 		//create cdn
 		cdn.ObjectName = "test cdn"
 		cdn.Type = cdnft
@@ -76,7 +75,7 @@ func TestVideo_New(t *testing.T) {
 		cdnft.Title = "test cdntype 2"
 		err = cdnft.Update()
 		So(err, ShouldBeNil)
-		t.Log("Updated cdnft: ", cdnft)
+
 		//update video type
 		vt.Name = "test videoType 2"
 		err = vt.Update()
@@ -140,7 +139,6 @@ func TestVideo_New(t *testing.T) {
 		So(len(cdns), ShouldBeGreaterThan, 0)
 		//get all cdn types
 		cdnfts, err := GetAllCdnFileTypes()
-		t.Log("CDNFTS: ", cdnfts)
 		So(err, ShouldBeNil)
 		So(len(cdnfts), ShouldBeGreaterThan, 0)
 
