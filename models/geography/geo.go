@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	getAllStatesStmt             = `select * from States`
-	getAllCountriesStmt          = `select * from Country`
+	getAllStatesStmt             = `select st.stateID, st.state, st.abbr, st.countryID, c.name, c.abbr from States st join Country c on c.countryID = st.countryID`
+	getAllCountriesStmt          = `select c.countryID, c.name, c.abbr from Country c`
 	getAllCountriesAndStatesStmt = `select C.*, S.stateID, S.state, S.abbr from Country C
 									inner join States S on S.countryID = C.countryID
 									order by C.countryID, S.state`
@@ -151,6 +151,8 @@ func GetAllStates() (states States, err error) {
 			&state.State,
 			&state.Abbreviation,
 			&state.Country.Id,
+			&state.Country.Country,
+			&state.Country.Abbreviation,
 		)
 		if err != nil {
 			return
