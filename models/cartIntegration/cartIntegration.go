@@ -17,11 +17,11 @@ type CartIntegration struct {
 }
 
 var (
-	getAllCI = `select ci.referenceID, ci.partID, ci.custPartID, ci.custID from CartIntegration as ci
+	getCIsByPartID = `select ci.referenceID, ci.partID, ci.custPartID, ci.custID from CartIntegration as ci
 						Join CustomerToBrand as cub on cub.cust_id = ci.custID
-
-				`
-	getCIsByPartID = `select referenceID, partID, custPartID, custID from CartIntegration where partID = ?`
+						Join ApiKeyToBrand as akb on akb.brandID = cub.brandID
+						Join ApiKey as ak on akb.keyID = ak.id
+						where ci.partID = ? && (ak.api_key = ? && (cub.brandID = ? OR 0=?))`
 	getCIsByCustID = `select referenceID, partID, custPartID, custID from CartIntegration where custID =  ?`
 	getCI          = `select referenceID, partID, custPartID, custID from CartIntegration where custID = ? && partID = ?`
 	insertCI       = `insert into CartIntegration (partID, custPartID, custID) values (?,?,?)`
@@ -63,7 +63,7 @@ func GetAllCartIntegrations(dtx *apicontext.DataContext) (cis []CartIntegration,
 	return cis, err
 }
 
-func GetCartIntegrationsByPart(ci CartIntegration) (cis []CartIntegration, err error) {
+func GetCartIntegrationsByPart(ci CartIntegration, dtx *apicontext.DataContext) (cis []CartIntegration, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return cis, err
@@ -74,7 +74,7 @@ func GetCartIntegrationsByPart(ci CartIntegration) (cis []CartIntegration, err e
 		return cis, err
 	}
 	defer stmt.Close()
-	res, err := stmt.Query(ci.PartID)
+	res, err := stmt.Query(ci.PartID, dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	var c CartIntegration
 	for res.Next() {
 		err = res.Scan(&c.ID, &c.PartID, &c.CustPartID, &c.CustID)

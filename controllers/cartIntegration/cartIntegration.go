@@ -81,7 +81,7 @@ func GetCIbyPart(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 	}
 	ci.PartID, err = strconv.Atoi(id)
 
-	cis, err := cartIntegration.GetCartIntegrationsByPart(ci)
+	cis, err := cartIntegration.GetCartIntegrationsByPart(ci, dtx)
 	if err != nil {
 		apierror.GenerateError("Trouble getting cart integrations by part number", err, rw, r)
 	}

@@ -16,7 +16,14 @@ func TestCI(t *testing.T) {
 	var price customer.Price
 	var cust customer.Customer
 	var err error
+
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
+
 	cust.CustomerId = 666
+	cust.BrandIDs = MockedDTX.BrandArray
 	cust.Create()
 
 	part.ShortDesc = "test"
@@ -30,11 +37,6 @@ func TestCI(t *testing.T) {
 	price.CustID = cust.CustomerId
 	price.PartID = part.ID
 	price.Create()
-
-	MockedDTX := &apicontext.DataContext{}
-	if MockedDTX, err = apicontextmock.Mock(); err != nil {
-		return
-	}
 
 	Convey("Testing CartIntegration", t, func() {
 
@@ -54,7 +56,7 @@ func TestCI(t *testing.T) {
 		err = ci.Get()
 		So(err, ShouldBeNil)
 
-		cis, err := GetCartIntegrationsByPart(ci)
+		cis, err := GetCartIntegrationsByPart(ci, MockedDTX)
 		So(err, ShouldBeNil)
 		So(len(cis), ShouldBeGreaterThan, 0)
 
@@ -118,11 +120,17 @@ func BenchmarkGetCartIntegration(b *testing.B) {
 }
 
 func BenchmarkGetCartIntegrationByPart(b *testing.B) {
+	var err error
+
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
 	ci := setupDummyCartIntegration()
 	ci.Create()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		GetCartIntegrationsByPart(*ci)
+		GetCartIntegrationsByPart(*ci, MockedDTX)
 	}
 	b.StopTimer()
 	ci.Delete()

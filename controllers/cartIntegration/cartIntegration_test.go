@@ -28,6 +28,7 @@ func TestCartIntegration(t *testing.T) {
 	var price customer.Price
 
 	var cust customer.Customer
+	cust.BrandIDs = dtx.BrandArray
 	cust.CustomerId = dtx.CustomerID
 	cust.Create()
 
@@ -83,7 +84,7 @@ func TestCartIntegration(t *testing.T) {
 
 		//test get CartIntegration by part
 		thyme = time.Now()
-		testThatHttp.Request("get", "/cart/part/", ":id", strconv.Itoa(c.PartID), GetCIbyPart, nil, "")
+		testThatHttp.RequestWithDtx("get", "/cart/part/", ":id", strconv.Itoa(c.PartID), GetCIbyPart, nil, "", dtx)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &cs)
 
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
