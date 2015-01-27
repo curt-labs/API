@@ -125,25 +125,23 @@ func TestCustomer(t *testing.T) {
 			So(customer.Password, ShouldEqual, "")
 
 			customer.Password = "bad_password"
-			err = customer.Login()
-			t.Log(customer.Password)
+			err = customer.Login("http://example.com")
 			So(err, ShouldNotBeNil)
 
 			customer.Password = "password"
 			customer.Email = "alex@ninneman.org"
-			err = customer.Login()
+			err = customer.Login("http://example.com")
 			So(err, ShouldNotBeNil)
 
 			customer.Email = "ninnemana@gmail.com"
 			os.Setenv("MONGO_URL", "0.0.0.1")
-			err = customer.Login()
+			err = customer.Login("http://example.com")
 			So(err, ShouldNotBeNil)
 			os.Setenv("MONGO_URL", "")
 
 			customer.Password = "password"
-			err = customer.Login()
+			err = customer.Login("http://example.com")
 			So(err, ShouldBeNil)
-			t.Log(customer.Password)
 			So(customer.Password, ShouldEqual, "")
 
 			tmpID := customer.Id
