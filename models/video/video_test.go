@@ -61,7 +61,7 @@ func TestVideo_New(t *testing.T) {
 		v.Categories = append(v.Categories, cat)
 		v.Channels = append(v.Channels, ch)
 		v.Files = append(v.Files, cdn)
-		err = v.Create()
+		err = v.Create(MockedDTX)
 		So(err, ShouldBeNil)
 		//update chan type
 		ct.Name = "test Channel Type 2"
@@ -90,7 +90,7 @@ func TestVideo_New(t *testing.T) {
 		p.ID = 110001 //force part
 		v.Parts = append(v.Parts, p)
 
-		err = v.Update()
+		err = v.Update(MockedDTX)
 		So(err, ShouldBeNil)
 		//get video
 		err = v.Get()
@@ -169,7 +169,7 @@ func TestVideo_New(t *testing.T) {
 		err = cat.Delete()
 		So(err, ShouldBeNil)
 		//delete video
-		err = v.Delete()
+		err = v.Delete(MockedDTX)
 		So(err, ShouldBeNil)
 	})
 	_ = apicontextmock.DeMock(MockedDTX)

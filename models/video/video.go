@@ -393,8 +393,8 @@ func (v *Video) GetCdnFiles() (cdns CdnFiles, err error) {
 	return cdns, err
 }
 
-func (v *Video) Create() (err error) {
-	go redis.Delete(AllVideosRedisKey + ":brands:*")
+func (v *Video) Create(dtx *apicontext.DataContext) (err error) {
+	go redis.Delete(AllVideosRedisKey + dtx.BrandString)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -478,8 +478,8 @@ func (v *Video) Create() (err error) {
 	return err
 }
 
-func (v *Video) Update() (err error) {
-	go redis.Delete(AllVideosRedisKey + ":brands:*")
+func (v *Video) Update(dtx *apicontext.DataContext) (err error) {
+	go redis.Delete(AllVideosRedisKey + dtx.BrandString)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -596,8 +596,8 @@ func (v *Video) Update() (err error) {
 	return err
 }
 
-func (v *Video) Delete() (err error) {
-	go redis.Delete(AllVideosRedisKey + ":brands:*")
+func (v *Video) Delete(dtx *apicontext.DataContext) (err error) {
+	go redis.Delete(AllVideosRedisKey + dtx.BrandString)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err

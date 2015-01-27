@@ -173,7 +173,7 @@ func GetPartVideos(w http.ResponseWriter, r *http.Request, enc encoding.Encoder,
 	return encoding.Must(enc.Encode(videos))
 }
 
-func SaveVideo(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func SaveVideo(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var v video.Video
 	var err error
 
@@ -203,9 +203,9 @@ func SaveVideo(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, par
 
 	//create or update
 	if v.ID > 0 {
-		err = v.Update()
+		err = v.Update(dtx)
 	} else {
-		err = v.Create()
+		err = v.Create(dtx)
 	}
 
 	if err != nil {
@@ -219,7 +219,7 @@ func SaveVideo(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, par
 
 	return encoding.Must(enc.Encode(v))
 }
-func DeleteVideo(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func DeleteVideo(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var v video.Video
 	var err error
 
@@ -228,7 +228,7 @@ func DeleteVideo(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 		return ""
 	}
 
-	if err = v.Delete(); err != nil {
+	if err = v.Delete(dtx); err != nil {
 		apierror.GenerateError("Trouble deleting video", err, w, r)
 
 		return ""
