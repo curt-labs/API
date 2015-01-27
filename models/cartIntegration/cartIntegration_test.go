@@ -68,16 +68,16 @@ func TestCI(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(pricesList, ShouldHaveSameTypeAs, []PricePoint{})
 
-		pagedPricesList, err := GetPricesByCustomerIDPaged(ci.CustID, 1, 1)
+		pagedPricesList, err := GetPricesByCustomerIDPaged(ci.CustID, 1, 1, MockedDTX)
 		So(err, ShouldBeNil)
 		So(pagedPricesList, ShouldHaveSameTypeAs, []PricePoint{})
 
-		count, err := GetPricingCount(ci.CustID)
+		count, err := GetPricingCount(ci.CustID, MockedDTX)
 		So(err, ShouldBeNil)
 		So(count, ShouldBeGreaterThanOrEqualTo, 0)
 
 		p.CartIntegration = ci
-		err = p.GetCustPriceID()
+		err = p.GetCustPriceID(MockedDTX)
 		So(err, ShouldBeNil)
 		So(p.CartIntegration.CustPartID, ShouldEqual, ci.CustPartID)
 
@@ -187,7 +187,7 @@ func BenchmarkGetPricesByCustomerIDPaged(b *testing.B) {
 	ci.Create(MockedDTX)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		GetPricesByCustomerIDPaged(ci.CustID, 1, 1)
+		GetPricesByCustomerIDPaged(ci.CustID, 1, 1, MockedDTX)
 	}
 	b.StopTimer()
 	ci.Delete()
@@ -204,7 +204,7 @@ func BenchmarkGetPricingCount(b *testing.B) {
 	ci.Create(MockedDTX)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		GetPricingCount(ci.CustID)
+		GetPricingCount(ci.CustID, MockedDTX)
 	}
 	b.StopTimer()
 	ci.Delete()

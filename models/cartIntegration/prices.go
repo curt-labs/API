@@ -54,17 +54,28 @@ var (
 							LEFT JOIN CartIntegration ci ON ci.partID = p.partID 
 							AND ci.custID = 
 								(select cust_id from Customer where customerID = ?)
-							WHERE p.status = 800 OR p.status = 900
+							Join CustomerToBrand as cub on cub.cust_id = ci.custID
+							Join ApiKeyToBrand as akb on akb.brandID = cub.brandID
+							Join ApiKey as ak on akb.keyID = ak.id
+							WHERE (p.status = 800 OR p.status = 900) && (ak.api_key = ? && (cub.brandID = ? OR 0=?))
 							ORDER BY p.partID
 							limit ?,?`
 	getPricingCountForCustomer = `SELECT count(p.partID) FROM Part p
 							LEFT JOIN CartIntegration ci ON ci.partID = p.partID 
 							AND ci.custID = 
 								(select cust_id from Customer where customerID = ?)
-							WHERE p.status = 800 OR p.status = 900
+							Join CustomerToBrand as cub on cub.cust_id = ci.custID
+							Join ApiKeyToBrand as akb on akb.brandID = cub.brandID
+							Join ApiKey as ak on akb.keyID = ak.id
+							WHERE (p.status = 800 OR p.status = 900) && (ak.api_key = ? && (cub.brandID = ? OR 0=?))
 							ORDER BY p.partID`
 
-	getIntegration = `SELECT custPartID FROM CartIntegration WHERE custID = ? AND partID = ? limit 1`
+	getIntegration = `SELECT ci.custPartID FROM CartIntegration as ci 
+							Join CustomerToBrand as cub on cub.cust_id = ci.custID
+							Join ApiKeyToBrand as akb on akb.brandID = cub.brandID
+							Join ApiKey as ak on akb.keyID = ak.id
+							WHERE ci.custID = ? AND ci.partID = ? && (ak.api_key = ? && (cub.brandID = ? OR 0=?)) 
+							limit 1`
 )
 
 //all pricepoints
@@ -123,7 +134,7 @@ func GetPricesByCustomerID(custID int, dtx *apicontext.DataContext) (priceslist 
 }
 
 //get paged pricePoints
-func GetPricesByCustomerIDPaged(custID int, page, count int) (priceslist []PricePoint, err error) {
+func GetPricesByCustomerIDPaged(custID int, page, count int, dtx *apicontext.DataContext) (priceslist []PricePoint, err error) {
 	page = ((page - 1) * count)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -135,7 +146,7 @@ func GetPricesByCustomerIDPaged(custID int, page, count int) (priceslist []Price
 		return priceslist, err
 	}
 	defer stmt.Close()
-	res, err := stmt.Query(custID, custID, page, count)
+	res, err := stmt.Query(custID, custID, dtx.APIKey, dtx.BrandID, dtx.BrandID, page, count)
 	var p PricePoint
 	var cpid, isSale *int
 	var price *float64
@@ -187,7 +198,7 @@ func (p *PricePoint) toString() (err error) {
 	return nil
 }
 
-func GetPricingCount(custID int) (count int, err error) {
+func GetPricingCount(custID int, dtx *apicontext.DataContext) (count int, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return count, err
@@ -198,7 +209,7 @@ func GetPricingCount(custID int) (count int, err error) {
 		return count, err
 	}
 	defer stmt.Close()
-	err = stmt.QueryRow(custID).Scan(&count)
+	err = stmt.QueryRow(custID, dtx.APIKey, dtx.BrandID, dtx.BrandID).Scan(&count)
 	if err != nil {
 		return count, err
 	}
@@ -217,7 +228,7 @@ func GetPriceMatrix(partID int, matrices []PriceMatrix) (pm PriceMatrix) {
 }
 
 //Useful to CRUD customer prices - customer/price
-func (p *PricePoint) GetCustPriceID() (err error) {
+func (p *PricePoint) GetCustPriceID(dtx *apicontext.DataContext) (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -230,7 +241,7 @@ func (p *PricePoint) GetCustPriceID() (err error) {
 	}
 	defer stmt.Close()
 
-	row := stmt.QueryRow(p.CartIntegration.CustID, p.CartIntegration.PartID)
+	row := stmt.QueryRow(p.CartIntegration.CustID, p.CartIntegration.PartID, dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	if row == nil {
 		return fmt.Errorf("%s", "failed to retrieve integration")
 	}

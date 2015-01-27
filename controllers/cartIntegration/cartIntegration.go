@@ -192,7 +192,7 @@ func GetCustomerPricingPaged(rw http.ResponseWriter, r *http.Request, enc encodi
 		apierror.GenerateError("Trouble getting count for paged customer pricing", err, rw, r)
 	}
 
-	prices, err := cartIntegration.GetPricesByCustomerIDPaged(custID, page, count)
+	prices, err := cartIntegration.GetPricesByCustomerIDPaged(custID, page, count, dtx)
 	if custID == 0 {
 		apierror.GenerateError("Trouble getting prices for paged customer pricing", err, rw, r)
 	}
@@ -207,7 +207,7 @@ func GetCustomerPricingCount(rw http.ResponseWriter, r *http.Request, enc encodi
 	if custID == 0 {
 		apierror.GenerateError("Trouble getting custID for pricing count", err, rw, r)
 	}
-	count, err := cartIntegration.GetPricingCount(custID)
+	count, err := cartIntegration.GetPricingCount(custID, dtx)
 	if custID == 0 {
 		apierror.GenerateError("Trouble getting pricing count", err, rw, r)
 	}
