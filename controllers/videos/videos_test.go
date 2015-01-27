@@ -188,7 +188,7 @@ func TestVideos(t *testing.T) {
 		var b brand.Brand
 		b.ID = dtx.BrandID
 		p.ShortDesc = "test part"
-		p.Create()
+		p.Create(dtx)
 
 		qs := make(url.Values, 0)
 		qs.Add("key", dtx.APIKey)
@@ -231,7 +231,7 @@ func TestVideos(t *testing.T) {
 		So(response.Code, ShouldEqual, 200)
 		So(json.Unmarshal(response.Body.Bytes(), &v), ShouldEqual, nil)
 
-		p.Delete()
+		p.Delete(dtx)
 	})
 
 	_ = apicontextmock.DeMock(dtx)

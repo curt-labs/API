@@ -29,10 +29,10 @@ func TestCI(t *testing.T) {
 	part.ShortDesc = "test"
 	part.ID = 123456789
 	part.Status = 800
-	err = part.Create()
+	err = part.Create(MockedDTX)
 	if err != nil {
 		err = nil
-		err = part.Update()
+		err = part.Update(MockedDTX)
 	}
 	price.CustID = cust.CustomerId
 	price.PartID = part.ID
@@ -92,7 +92,7 @@ func TestCI(t *testing.T) {
 	})
 	//cleanup
 	cust.Delete()
-	part.Delete()
+	part.Delete(MockedDTX)
 	price.Delete()
 }
 

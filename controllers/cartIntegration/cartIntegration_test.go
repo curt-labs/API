@@ -35,10 +35,10 @@ func TestCartIntegration(t *testing.T) {
 	p.ShortDesc = "test"
 	p.ID = 123456789
 	p.Status = 800
-	err = p.Create()
+	err = p.Create(dtx)
 	if err != nil {
 		err = nil
-		err = p.Update()
+		err = p.Update(dtx)
 	}
 	price.CustID = cust.Id
 	price.PartID = p.ID
@@ -148,7 +148,7 @@ func TestCartIntegration(t *testing.T) {
 	})
 	//cleanup
 	cust.Delete()
-	p.Delete()
+	p.Delete(dtx)
 	price.Delete()
 }
 

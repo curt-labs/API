@@ -166,7 +166,7 @@ func TestVideo_New(t *testing.T) {
 		err = cdn.Delete()
 		So(err, ShouldBeNil)
 		//delete cat
-		err = cat.Delete()
+		err = cat.Delete(MockedDTX)
 		So(err, ShouldBeNil)
 		//delete video
 		err = v.Delete(MockedDTX)

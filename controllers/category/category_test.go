@@ -3,6 +3,7 @@ package category_ctlr
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
 	"github.com/curt-labs/GoAPI/models/products"
 	. "github.com/smartystreets/goconvey/convey"
@@ -18,6 +19,11 @@ func TestCategory(t *testing.T) {
 	var parts []products.Part
 	var err error
 
+	dtx, err := apicontextmock.Mock()
+	if err != nil {
+		t.Log(err)
+	}
+
 	//setup
 	var cat products.Category
 	cat.Title = "test cat"
@@ -30,7 +36,7 @@ func TestCategory(t *testing.T) {
 
 	var p products.Part
 	p.Categories = append(p.Categories, cat)
-	p.Create()
+	p.Create(dtx)
 
 	Convey("Testing Category", t, func() {
 		//test get parents
@@ -82,9 +88,9 @@ func TestCategory(t *testing.T) {
 
 	})
 	//teardown
-	cat.Delete()
-	sub.Delete()
-	p.Delete()
+	cat.Delete(dtx)
+	sub.Delete(dtx)
+	p.Delete(dtx)
 }
 
 func BenchmarkBrands(b *testing.B) {

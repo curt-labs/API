@@ -14,7 +14,6 @@ import (
 )
 
 func TestWarranties(t *testing.T) {
-
 	dtx, err := apicontextmock.Mock()
 	if err != nil {
 		t.Log(err)
@@ -28,7 +27,7 @@ func TestWarranties(t *testing.T) {
 		//part setup
 		p.ID = 8675309
 		p.BrandID = dtx.BrandID
-		p.Create()
+		p.Create(dtx)
 
 		qs := make(url.Values, 0)
 		qs.Add("key", dtx.APIKey)
@@ -59,7 +58,7 @@ func TestWarranties(t *testing.T) {
 		So(response.Code, ShouldEqual, 200)
 		So(json.Unmarshal(response.Body.Bytes(), &w), ShouldEqual, nil)
 
-		p.Delete()
+		p.Delete(dtx)
 	})
 
 	_ = apicontextmock.DeMock(dtx)
