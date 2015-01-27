@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/models/cartIntegration"
@@ -55,7 +56,7 @@ func ParsePricePointFields(w http.ResponseWriter, r *http.Request, enc encoding.
 	return encoding.Must(enc.Encode(p))
 }
 
-func GetCI(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func GetCI(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var ci cartIntegration.CartIntegration
 	var err error
 	id := params["id"]
@@ -71,7 +72,7 @@ func GetCI(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params
 	return encoding.Must(enc.Encode(ci))
 }
 
-func GetCIbyPart(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func GetCIbyPart(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var ci cartIntegration.CartIntegration
 	var err error
 	id := params["id"]
@@ -87,7 +88,7 @@ func GetCIbyPart(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 	return encoding.Must(enc.Encode(cis))
 }
 
-func GetCIbyCustomer(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func GetCIbyCustomer(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var ci cartIntegration.CartIntegration
 	var err error
 	id := params["id"]
@@ -111,7 +112,7 @@ func GetCIbyCustomer(rw http.ResponseWriter, r *http.Request, enc encoding.Encod
 	return encoding.Must(enc.Encode(cis))
 }
 
-func SaveCI(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func SaveCI(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var ci cartIntegration.CartIntegration
 	var err error
 	id := params["id"]
@@ -143,7 +144,7 @@ func SaveCI(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, param
 	return encoding.Must(enc.Encode(ci))
 }
 
-func DeleteCI(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func DeleteCI(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var ci cartIntegration.CartIntegration
 	var err error
 	id := params["id"]
@@ -161,7 +162,7 @@ func DeleteCI(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, par
 	return encoding.Must(enc.Encode(ci))
 }
 
-func GetCustomerPricing(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func GetCustomerPricing(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var err error
 	custID, err := strconv.Atoi(params["custID"])
 	if custID == 0 {
@@ -173,7 +174,7 @@ func GetCustomerPricing(rw http.ResponseWriter, r *http.Request, enc encoding.En
 	}
 	return encoding.Must(enc.Encode(prices))
 }
-func GetCustomerPricingPaged(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func GetCustomerPricingPaged(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var err error
 
 	custID, err := strconv.Atoi(params["custID"])
@@ -200,7 +201,7 @@ func GetCustomerPricingPaged(rw http.ResponseWriter, r *http.Request, enc encodi
 }
 
 //kind of dumb, like the tedious version of len(prices); it existed in the cartIntegration project, so maybe it's needed for something
-func GetCustomerPricingCount(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func GetCustomerPricingCount(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var err error
 	custID, err := strconv.Atoi(params["custID"])
 	if custID == 0 {

@@ -2,6 +2,8 @@ package cartIntegration
 
 import (
 	"database/sql"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/curt-labs/GoAPI/models/products"
 	. "github.com/smartystreets/goconvey/convey"
@@ -29,7 +31,13 @@ func TestCI(t *testing.T) {
 	price.PartID = part.ID
 	price.Create()
 
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
+
 	Convey("Testing CartIntegration", t, func() {
+
 		var ci CartIntegration
 		var p PricePoint
 		ci.PartID = part.ID
@@ -74,7 +82,7 @@ func TestCI(t *testing.T) {
 		err = ci.Delete()
 		So(err, ShouldBeNil)
 
-		cis, err = GetAllCartIntegrations()
+		cis, err = GetAllCartIntegrations(MockedDTX)
 		if err != sql.ErrNoRows {
 			So(err, ShouldBeNil)
 			So(cis, ShouldHaveSameTypeAs, []CartIntegration{})
@@ -87,8 +95,14 @@ func TestCI(t *testing.T) {
 }
 
 func BenchmarkGetAllCartIntegrations(b *testing.B) {
+	var err error
+
+	MockedDTX := &apicontext.DataContext{}
+	if MockedDTX, err = apicontextmock.Mock(); err != nil {
+		return
+	}
 	for i := 0; i < b.N; i++ {
-		GetAllCartIntegrations()
+		GetAllCartIntegrations(MockedDTX)
 	}
 }
 
