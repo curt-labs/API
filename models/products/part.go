@@ -831,7 +831,7 @@ func (p *Part) PartBreadcrumbs(dtx *apicontext.DataContext) error {
 }
 
 func (p *Part) GetPartCategories(dtx *apicontext.DataContext) (cats []Category, err error) {
-	redis_key := fmt.Sprintf("part:%d:categories", p.ID, dtx.BrandString)
+	redis_key := fmt.Sprintf("part:%d:categories:%s", p.ID, dtx.BrandString)
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -1187,6 +1187,7 @@ func (p *Part) Create() (err error) {
 }
 
 func (p *Part) Delete() (err error) {
+	go redis.Delete(fmt.Sprintf("part:%d:*", p.ID))
 
 	var price Price
 	price.PartId = p.ID
@@ -1325,6 +1326,7 @@ func (p *Part) Delete() (err error) {
 }
 
 func (p *Part) Update() (err error) {
+	go redis.Delete(fmt.Sprintf("part:%d:*", p.ID))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1604,6 +1606,7 @@ func (p *Part) Update() (err error) {
 
 //Join Creators
 func (p *Part) CreatePartAttributeJoin(a Attribute) (err error) {
+	go redis.Delete(fmt.Sprintf("part:%d:attributes:brands:*", p.ID))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1623,6 +1626,7 @@ func (p *Part) CreatePartAttributeJoin(a Attribute) (err error) {
 
 //Creates "VehiclePart" Join, which also contains installation fields
 func (p *Part) CreateInstallation(i Installation) (err error) {
+	go redis.Delete(fmt.Sprintf("part:%d:installation:brands:*", p.ID))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1643,6 +1647,7 @@ func (p *Part) CreateInstallation(i Installation) (err error) {
 }
 
 func (p *Part) CreateContentBridge(cats []Category, c Content) (err error) {
+	go redis.Delete(fmt.Sprintf("part:%d:content:brands:*", p.ID))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1666,6 +1671,7 @@ func (p *Part) CreateContentBridge(cats []Category, c Content) (err error) {
 }
 
 func (p *Part) CreateRelatedPart(relatedID int) (err error) {
+	go redis.Delete(fmt.Sprintf("part:%d:related:brands:*", p.ID))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1684,6 +1690,7 @@ func (p *Part) CreateRelatedPart(relatedID int) (err error) {
 }
 
 func (p *Part) CreatePartCategoryJoin(c Category) (err error) {
+	go redis.Delete(fmt.Sprintf("part:%d:categories:*", p.ID))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1703,6 +1710,8 @@ func (p *Part) CreatePartCategoryJoin(c Category) (err error) {
 
 //delete Joins
 func (p *Part) DeletePartAttributeJoins() (err error) {
+	go redis.Delete(fmt.Sprintf("part:%d:attributes:brands:*", p.ID))
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1720,6 +1729,8 @@ func (p *Part) DeletePartAttributeJoins() (err error) {
 	return nil
 }
 func (p *Part) DeleteInstallations() (err error) {
+	go redis.Delete(fmt.Sprintf("part:%d:installation:brands:*", p.ID))
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1737,6 +1748,8 @@ func (p *Part) DeleteInstallations() (err error) {
 	return nil
 }
 func (p *Part) DeleteContentBridges() (err error) {
+	go redis.Delete(fmt.Sprintf("part:%d:content:brands:*", p.ID))
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1754,6 +1767,8 @@ func (p *Part) DeleteContentBridges() (err error) {
 	return nil
 }
 func (p *Part) DeleteRelatedParts() (err error) {
+	go redis.Delete(fmt.Sprintf("part:%d:related:brands:*", p.ID))
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1771,6 +1786,8 @@ func (p *Part) DeleteRelatedParts() (err error) {
 	return nil
 }
 func (p *Part) DeletePartCategoryJoins() (err error) {
+	go redis.Delete(fmt.Sprintf("part:%d:category:brands:*", p.ID))
+	go redis.Delete(fmt.Sprintf("part:%d:categories:*", p.ID))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
