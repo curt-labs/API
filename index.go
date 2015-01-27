@@ -488,6 +488,11 @@ func main() {
 		r.Get("/:vin", vinLookup.GetParts) //returns vehicles + configs with associates parts -or- an array of parts if only one vehicle config matches
 	})
 
+	m.Get("/status", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Write([]byte("running"))
+	})
+
 	m.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "http://labs.curtmfg.com/", http.StatusFound)
 	})
