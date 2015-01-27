@@ -40,7 +40,7 @@ func TestGetBlogs(t *testing.T) {
 		cs = append(cs, bc)
 		f.BlogCategories = cs
 
-		err = f.Create()
+		err = f.Create(MockedDTX)
 		So(err, ShouldBeNil)
 
 		err = c.Create(MockedDTX)
@@ -103,7 +103,7 @@ func TestGetBlogs(t *testing.T) {
 	})
 
 	Convey("Testing Delete", t, func() {
-		err = f.Delete()
+		err = f.Delete(MockedDTX)
 		So(err, ShouldBeNil)
 
 		err = c.Delete(MockedDTX)
@@ -182,12 +182,12 @@ func BenchmarkUpdateBlog(b *testing.B) {
 	blog := setupDummyBlog()
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
-		blog.Create()
+		blog.Create(MockedDTX)
 		b.StartTimer()
 		blog.Text = "Blog post magic. Whoop! Whoop!"
 		blog.Update(MockedDTX)
 		b.StopTimer()
-		blog.Delete()
+		blog.Delete(MockedDTX)
 	}
 }
 
@@ -200,9 +200,9 @@ func BenchmarkDeleteBlog(b *testing.B) {
 	blog := setupDummyBlog()
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
-		blog.Create()
+		blog.Create(MockedDTX)
 		b.StartTimer()
-		blog.Delete()
+		blog.Delete(MockedDTX)
 	}
 	_ = apicontextmock.DeMock(MockedDTX)
 }
