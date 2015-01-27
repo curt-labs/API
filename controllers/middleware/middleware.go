@@ -50,7 +50,7 @@ func Meddler() martini.Handler {
 		if !excused {
 			dataContext, err := processDataContext(r, c)
 			if err != nil {
-				http.Error(res, err.Error(), http.StatusUnauthorized)
+				apierror.GenerateError("Trouble processing the data context", err, res, r, http.StatusUnauthorized)
 				return
 			}
 
