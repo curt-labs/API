@@ -3,9 +3,11 @@ package cartIntegration
 import (
 	"database/sql"
 	"fmt"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/models/products"
 	_ "github.com/go-sql-driver/mysql"
+
 	"strconv"
 	"time"
 )
@@ -34,18 +36,31 @@ type PriceMatrix struct {
 
 var (
 	getCustomerPricing = `SELECT p.partID, ci.custPartID, cp.price, cp.isSale, cp.sale_start, cp.sale_end FROM Part p
-							LEFT JOIN CustomerPricing cp ON cp.partID = p.partID AND cp.cust_id = (select cust_id from Customer where customerID = ?)
-							LEFT JOIN CartIntegration ci ON ci.partID = p.partID AND ci.custID = (select cust_id from Customer where customerID = ?)
-							WHERE p.status = 800 OR p.status = 900
+							LEFT JOIN CustomerPricing cp ON cp.partID = p.partID 
+							AND cp.cust_id = 
+								(select cust_id from Customer where customerID = ?)
+							LEFT JOIN CartIntegration ci ON ci.partID = p.partID 
+							AND ci.custID = 
+								(select cust_id from Customer where customerID = ?)
+							Join CustomerToBrand as cub on cub.cust_id = ci.custID
+							Join ApiKeyToBrand as akb on akb.brandID = cub.brandID
+							Join ApiKey as ak on akb.keyID = ak.id
+							WHERE (p.status = 800 OR p.status = 900) && (ak.api_key = ? && (cub.brandID = ? OR 0=?))
 							ORDER BY p.partID`
 	getLimitedCustomerPricing = `SELECT p.partID, ci.custPartID, cp.price, cp.isSale, cp.sale_start, cp.sale_end FROM Part p
-							LEFT JOIN CustomerPricing cp ON cp.partID = p.partID AND cp.cust_id = (select cust_id from Customer where customerID = ?)
-							LEFT JOIN CartIntegration ci ON ci.partID = p.partID AND ci.custID = (select cust_id from Customer where customerID = ?)
+							LEFT JOIN CustomerPricing cp ON cp.partID = p.partID 
+							AND cp.cust_id = 
+								(select cust_id from Customer where customerID = ?)
+							LEFT JOIN CartIntegration ci ON ci.partID = p.partID 
+							AND ci.custID = 
+								(select cust_id from Customer where customerID = ?)
 							WHERE p.status = 800 OR p.status = 900
 							ORDER BY p.partID
 							limit ?,?`
 	getPricingCountForCustomer = `SELECT count(p.partID) FROM Part p
-							LEFT JOIN CartIntegration ci ON ci.partID = p.partID AND ci.custID = (select cust_id from Customer where customerID = ?)
+							LEFT JOIN CartIntegration ci ON ci.partID = p.partID 
+							AND ci.custID = 
+								(select cust_id from Customer where customerID = ?)
 							WHERE p.status = 800 OR p.status = 900
 							ORDER BY p.partID`
 
@@ -53,7 +68,7 @@ var (
 )
 
 //all pricepoints
-func GetPricesByCustomerID(custID int) (priceslist []PricePoint, err error) {
+func GetPricesByCustomerID(custID int, dtx *apicontext.DataContext) (priceslist []PricePoint, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return priceslist, err
@@ -64,7 +79,7 @@ func GetPricesByCustomerID(custID int) (priceslist []PricePoint, err error) {
 		return priceslist, err
 	}
 	defer stmt.Close()
-	res, err := stmt.Query(custID, custID)
+	res, err := stmt.Query(custID, custID, dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	if err != nil {
 		return priceslist, err
 	}

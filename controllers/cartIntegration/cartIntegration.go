@@ -168,7 +168,7 @@ func GetCustomerPricing(rw http.ResponseWriter, r *http.Request, enc encoding.En
 	if custID == 0 {
 		apierror.GenerateError("Trouble getting custID for customer pricing", err, rw, r)
 	}
-	prices, err := cartIntegration.GetPricesByCustomerID(custID)
+	prices, err := cartIntegration.GetPricesByCustomerID(custID, dtx)
 	if err != nil {
 		apierror.GenerateError("Trouble getting prices by customer ID", err, rw, r)
 	}

@@ -64,7 +64,7 @@ func TestCI(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(len(cis), ShouldBeGreaterThan, 0)
 
-		pricesList, err := GetPricesByCustomerID(ci.CustID)
+		pricesList, err := GetPricesByCustomerID(ci.CustID, MockedDTX)
 		So(err, ShouldBeNil)
 		So(pricesList, ShouldHaveSameTypeAs, []PricePoint{})
 
@@ -170,7 +170,7 @@ func BenchmarkGetPricesByCustomerID(b *testing.B) {
 	ci.Create(MockedDTX)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		GetPricesByCustomerID(ci.CustID)
+		GetPricesByCustomerID(ci.CustID, MockedDTX)
 	}
 	b.StopTimer()
 	ci.Delete()

@@ -127,7 +127,7 @@ func TestCartIntegration(t *testing.T) {
 
 		//test get CustomerPricingPaged
 		thyme = time.Now()
-		testThatHttp.Request("get", "/cart/customer/pricing/", ":custID", strconv.Itoa(cust.CustomerId), GetCustomerPricing, nil, "")
+		testThatHttp.RequestWithDtx("get", "/cart/customer/pricing/", ":custID", strconv.Itoa(cust.CustomerId), GetCustomerPricing, nil, "", dtx)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &cs)
 
 		So(err, ShouldBeNil)
