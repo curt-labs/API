@@ -78,9 +78,9 @@ func SaveReview(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder,
 
 	//create or update
 	if rev.Id > 0 {
-		err = rev.Update()
+		err = rev.Update(dtx)
 	} else {
-		err = rev.Create()
+		err = rev.Create(dtx)
 	}
 
 	if err != nil {
@@ -94,7 +94,7 @@ func SaveReview(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder,
 	return encoding.Must(enc.Encode(rev))
 }
 
-func DeleteReview(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+func DeleteReview(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var rev products.Review
 	var err error
 
@@ -109,7 +109,7 @@ func DeleteReview(rw http.ResponseWriter, r *http.Request, params martini.Params
 		return ""
 	}
 
-	if err = rev.Delete(); err != nil {
+	if err = rev.Delete(dtx); err != nil {
 		apierror.GenerateError("Trouble deleting review", err, rw, r)
 		return ""
 	}

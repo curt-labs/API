@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
@@ -118,8 +119,8 @@ func (p *Price) Get() error {
 
 	return nil
 }
-func (p *Price) Create() (err error) {
-	go redis.Delete(fmt.Sprintf("part:*:%d:pricing", p.PartId))
+func (p *Price) Create(dtx *apicontext.DataContext) (err error) {
+	go redis.Delete(fmt.Sprintf("part:%s:%d:pricing", dtx.BrandString, p.PartId))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -145,9 +146,9 @@ func (p *Price) Create() (err error) {
 	return err
 }
 
-func (p *Price) Update() (err error) {
+func (p *Price) Update(dtx *apicontext.DataContext) (err error) {
 	go redis.Delete(fmt.Sprintf("pricing:%d", p.Id))
-	go redis.Delete(fmt.Sprintf("part:*:%d:pricing", p.PartId))
+	go redis.Delete(fmt.Sprintf("part:%s:%d:pricing", dtx.BrandString, p.PartId))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -173,9 +174,9 @@ func (p *Price) Update() (err error) {
 	return err
 }
 
-func (p *Price) Delete() (err error) {
+func (p *Price) Delete(dtx *apicontext.DataContext) (err error) {
 	go redis.Delete(fmt.Sprintf("pricing:%d", p.Id))
-	go redis.Delete(fmt.Sprintf("part:*:%d:pricing", p.PartId))
+	go redis.Delete(fmt.Sprintf("part:%s:%d:pricing", dtx.BrandString, p.PartId))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -195,9 +196,9 @@ func (p *Price) Delete() (err error) {
 	return err
 }
 
-func (p *Price) DeleteByPart() (err error) {
+func (p *Price) DeleteByPart(dtx *apicontext.DataContext) (err error) {
 	go redis.Delete(fmt.Sprintf("pricing:%d", p.Id))
-	go redis.Delete(fmt.Sprintf("part:*:%d:pricing", p.PartId))
+	go redis.Delete(fmt.Sprintf("part:%s:%d:pricing", dtx.BrandString, p.PartId))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err

@@ -204,8 +204,8 @@ func (r *Review) Get(dtx *apicontext.DataContext) (err error) {
 	return nil
 }
 
-func (r *Review) Create() (err error) {
-	go redis.Delete("reviews:*")
+func (r *Review) Create(dtx *apicontext.DataContext) (err error) {
+	go redis.Delete("reviews:" + dtx.BrandString)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -232,8 +232,8 @@ func (r *Review) Create() (err error) {
 	return err
 }
 
-func (r *Review) Update() (err error) {
-	go redis.Delete("reviews:*")
+func (r *Review) Update(dtx *apicontext.DataContext) (err error) {
+	go redis.Delete("reviews:" + dtx.BrandString)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -257,8 +257,8 @@ func (r *Review) Update() (err error) {
 	return err
 }
 
-func (r *Review) Delete() (err error) {
-	go redis.Delete("reviews:*")
+func (r *Review) Delete(dtx *apicontext.DataContext) (err error) {
+	go redis.Delete("reviews:" + dtx.BrandString)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -282,8 +282,8 @@ func (r *Review) Delete() (err error) {
 
 	return err
 }
-func (r *Review) DeletebyPart() (err error) {
-	go redis.Delete("reviews:*")
+func (r *Review) DeletebyPart(dtx *apicontext.DataContext) (err error) {
+	go redis.Delete("reviews:" + dtx.BrandString)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err

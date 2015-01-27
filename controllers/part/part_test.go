@@ -147,7 +147,7 @@ func TestParts(t *testing.T) {
 		partVid.YouTubeVideoId = "11122333XYZ"
 		partVid.PartID = p.ID
 		partVid.VideoType.ID = vt.ID
-		err = partVid.CreatePartVideo()
+		err = partVid.CreatePartVideo(dtx)
 
 		thyme = time.Now()
 		testThatHttp.Request("get", "/part/videos/", ":part", strconv.Itoa(p.ID)+"?key="+dtx.APIKey, Videos, nil, "")
@@ -165,7 +165,7 @@ func TestParts(t *testing.T) {
 		review.Rating = 1
 		review.Active = true
 		review.Approved = true
-		err = review.Create()
+		err = review.Create(dtx)
 		thyme = time.Now()
 		testThatHttp.Request("get", "/part/reviews/", ":part", strconv.Itoa(p.ID)+"?key="+dtx.APIKey, ActiveApprovedReviews, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
@@ -174,7 +174,7 @@ func TestParts(t *testing.T) {
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &reviews)
 		So(err, ShouldBeNil)
 		So(len(reviews), ShouldBeGreaterThan, 0)
-		review.Delete() //teardown - part has FK constraint on review.partID
+		review.Delete(dtx) //teardown - part has FK constraint on review.partID
 
 		//get packaging - no package created in test
 		thyme = time.Now()
@@ -330,12 +330,12 @@ func TestParts(t *testing.T) {
 
 		// //teardown
 		custPrice.Delete()
-		partVid.DeleteByPart()
+		partVid.DeleteByPart(dtx)
 
 	})
 	//teardown
-	p.Delete()
-	cat.Delete()
+	p.Delete(dtx)
+	cat.Delete(dtx)
 	if database.GetCleanDBFlag() != "" {
 		pub.Delete()
 		pri.Delete()

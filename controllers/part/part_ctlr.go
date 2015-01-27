@@ -427,7 +427,7 @@ func Prices(w http.ResponseWriter, r *http.Request, params martini.Params, enc e
 	return encoding.Must(enc.Encode(p.Pricing))
 }
 
-func SavePrice(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+func SavePrice(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var p products.Price
 	var err error
 	idStr := params["id"]
@@ -452,9 +452,9 @@ func SavePrice(rw http.ResponseWriter, r *http.Request, params martini.Params, e
 	}
 	//create or update
 	if p.Id > 0 {
-		err = p.Update()
+		err = p.Update(dtx)
 	} else {
-		err = p.Create()
+		err = p.Create(dtx)
 	}
 	if err != nil {
 		msg := "Trouble while creating part price"
@@ -467,7 +467,7 @@ func SavePrice(rw http.ResponseWriter, r *http.Request, params martini.Params, e
 	return encoding.Must(enc.Encode(p))
 }
 
-func DeletePrice(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+func DeletePrice(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var p products.Price
 	var err error
 	idStr := params["id"]
@@ -477,7 +477,7 @@ func DeletePrice(rw http.ResponseWriter, r *http.Request, params martini.Params,
 		return ""
 	}
 
-	if err = p.Delete(); err != nil {
+	if err = p.Delete(dtx); err != nil {
 		apierror.GenerateError("Trouble deleting price", err, rw, r)
 		return ""
 	}
@@ -559,7 +559,7 @@ func CreatePart(rw http.ResponseWriter, r *http.Request, params martini.Params, 
 		return encoding.Must(enc.Encode(false))
 	}
 
-	if err = p.Create(); err != nil {
+	if err = p.Create(dtx); err != nil {
 		apierror.GenerateError("Trouble creating part", err, rw, r)
 		return ""
 	}
@@ -598,14 +598,14 @@ func UpdatePart(rw http.ResponseWriter, r *http.Request, params martini.Params, 
 		return encoding.Must(enc.Encode(false))
 	}
 
-	if err = p.Update(); err != nil {
+	if err = p.Update(dtx); err != nil {
 		apierror.GenerateError("Trouble updating part", err, rw, r)
 		return ""
 	}
 	return encoding.Must(enc.Encode(p))
 }
 
-func DeletePart(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+func DeletePart(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var p products.Part
 	var err error
 	idStr := params["id"]
@@ -615,7 +615,7 @@ func DeletePart(rw http.ResponseWriter, r *http.Request, params martini.Params, 
 		return ""
 	}
 
-	if err = p.Delete(); err != nil {
+	if err = p.Delete(dtx); err != nil {
 		apierror.GenerateError("Trouble deleting part", err, rw, r)
 		return ""
 	}

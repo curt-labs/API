@@ -237,7 +237,7 @@ func ReverseLookup(partId int) (vehicles []Vehicle, err error) {
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
-		if err = json.Unmarshal(data, vehicles); err != nil {
+		if err = json.Unmarshal(data, &vehicles); err != nil {
 			return
 		}
 	}

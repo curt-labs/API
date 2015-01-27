@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
@@ -86,8 +87,8 @@ func (p *Part) GetVideos() error {
 	return nil
 }
 
-func (p *PartVideo) CreatePartVideo() (err error) {
-	go redis.Delete(fmt.Sprintf("part:*:%d:videos", p.PartID))
+func (p *PartVideo) CreatePartVideo(dtx *apicontext.DataContext) (err error) {
+	go redis.Delete(fmt.Sprintf("part:%s:%d:videos", dtx.BrandString, p.PartID))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -111,8 +112,8 @@ func (p *PartVideo) CreatePartVideo() (err error) {
 	return nil
 }
 
-func (p *PartVideo) DeleteByPart() (err error) {
-	go redis.Delete(fmt.Sprintf("part:*:%d:videos", p.PartID))
+func (p *PartVideo) DeleteByPart(dtx *apicontext.DataContext) (err error) {
+	go redis.Delete(fmt.Sprintf("part:%s:%d:videos", dtx.BrandString, p.PartID))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err

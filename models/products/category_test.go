@@ -124,7 +124,7 @@ func TestTopTierCategories(t *testing.T) {
 
 	})
 	Convey("Delete", t, func() {
-		err := cat.Delete()
+		err := cat.Delete(MockedDTX)
 		So(err, ShouldBeNil)
 
 	})

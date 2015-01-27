@@ -26,13 +26,13 @@ func TestGetReviews(t *testing.T) {
 			p.Featured = false
 			p.AcesPartTypeID = 1212
 
-			p.Create()
+			p.Create(MockedDTX)
 		})
 		Convey("Testing Create()", func() {
 			l.PartID = 999999
 			l.Name = "testName"
 			l.ReviewText = "Long description"
-			err := l.Create()
+			err := l.Create(MockedDTX)
 			So(err, ShouldBeNil)
 			err = l.Get(MockedDTX)
 			So(err, ShouldBeNil)
@@ -45,7 +45,7 @@ func TestGetReviews(t *testing.T) {
 			l.Name = "newName"
 			l.Email = "email"
 			l.Subject = "Desc"
-			err := l.Update()
+			err := l.Update(MockedDTX)
 			So(err, ShouldBeNil)
 			err = l.Get(MockedDTX)
 
@@ -71,10 +71,10 @@ func TestGetReviews(t *testing.T) {
 
 		Convey("Testing Delete()", func() {
 			l.Get(MockedDTX)
-			err := l.Delete()
+			err := l.Delete(MockedDTX)
 			So(err, ShouldBeNil)
 			//delete part
-			p.Delete()
+			p.Delete(MockedDTX)
 		})
 
 	})

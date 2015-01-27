@@ -100,8 +100,8 @@ func (p *Part) GetPartPackaging(dtx *apicontext.DataContext) error {
 	return nil
 }
 
-func (p *Package) Create() (err error) {
-	go redis.Delete(fmt.Sprintf("part:%d:packages:*", p.PartID))
+func (p *Package) Create(dtx *apicontext.DataContext) (err error) {
+	go redis.Delete(fmt.Sprintf("part:%d:packages:"+dtx.BrandString, p.PartID))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -124,8 +124,8 @@ func (p *Package) Create() (err error) {
 	return
 }
 
-func (p *Package) DeleteByPart() (err error) {
-	go redis.Delete(fmt.Sprintf("part:%d:packages:*", p.PartID))
+func (p *Package) DeleteByPart(dtx *apicontext.DataContext) (err error) {
+	go redis.Delete(fmt.Sprintf("part:%d:packages:"+dtx.BrandString, p.PartID))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
