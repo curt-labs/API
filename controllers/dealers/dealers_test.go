@@ -28,7 +28,7 @@ func TestDealers_New(t *testing.T) {
 	}
 	//setup lcoation for getById
 	loc.Address = "123 Test Ave."
-	loc.Create()
+	loc.Create(dtx)
 
 	Convey("Testing Dealers_New", t, func() {
 		//test get etailers
@@ -136,7 +136,7 @@ func TestDealers_New(t *testing.T) {
 
 	})
 	//teardown
-	loc.Delete()
+	loc.Delete(dtx)
 	_ = apicontextmock.DeMock(dtx)
 }
 
