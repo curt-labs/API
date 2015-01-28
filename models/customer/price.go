@@ -41,7 +41,8 @@ var (
 )
 
 const (
-	timeFormat = "2006-01-02"
+	timeFormat        = "2006-01-02"
+	allPricesRedisKey = "prices"
 )
 
 func (p *Price) Get() error {
@@ -75,8 +76,7 @@ func (p *Price) Get() error {
 func GetAllPrices() (Prices, error) {
 	var ps Prices
 	var err error
-	redis_key := "prices"
-	data, err := redis.Get(redis_key)
+	data, err := redis.Get(allPricesRedisKey)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &ps)
 		return ps, err
@@ -100,7 +100,7 @@ func GetAllPrices() (Prices, error) {
 		ps = append(ps, p)
 	}
 	defer res.Close()
-	go redis.Setex(redis_key, ps, 86400)
+	go redis.Setex(allPricesRedisKey, ps, 86400)
 	return ps, nil
 }
 
@@ -131,7 +131,8 @@ func (p *Price) Create() error {
 	if err != nil {
 		return err
 	}
-	redis.Setex("price:"+strconv.Itoa(p.ID), p, 86400)
+	go redis.Delete(allPricesRedisKey)
+	go redis.Setex("price:"+strconv.Itoa(p.ID), p, 86400)
 	return nil
 }
 func (p *Price) Update() error {

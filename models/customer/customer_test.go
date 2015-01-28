@@ -30,7 +30,7 @@ func TestCustomerModel(t *testing.T) {
 		var cl CustomerLocation
 		cl.Name = "testLocation"
 		cl.CustomerId = c.Id
-		err = cl.Create()
+		err = cl.Create(dtx)
 		So(err, ShouldBeNil)
 
 		//get Location
@@ -109,7 +109,7 @@ func TestCustomerModel(t *testing.T) {
 		err = c.Delete()
 		So(err, ShouldBeNil)
 
-		err = cl.Delete()
+		err = cl.Delete(dtx)
 		So(err, ShouldBeNil)
 
 		err = cu.Delete()

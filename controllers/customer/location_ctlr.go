@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/models/customer"
@@ -38,7 +39,7 @@ func GetLocation(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 	return encoding.Must(enc.Encode(cl))
 }
 
-func SaveLocation(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func SaveLocation(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var cl customer.CustomerLocation
 	var err error
 
@@ -145,9 +146,9 @@ func SaveLocation(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder,
 	}
 
 	if cl.Id > 0 {
-		err = cl.Update()
+		err = cl.Update(dtx)
 	} else {
-		err = cl.Create()
+		err = cl.Create(dtx)
 	}
 
 	if err != nil {
@@ -162,7 +163,7 @@ func SaveLocation(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder,
 	return encoding.Must(enc.Encode(cl))
 }
 
-func SaveLocationJson(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func SaveLocationJson(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var cl customer.CustomerLocation
 	var err error
 
@@ -189,9 +190,9 @@ func SaveLocationJson(rw http.ResponseWriter, r *http.Request, enc encoding.Enco
 	}
 
 	if cl.Id > 0 {
-		err = cl.Update()
+		err = cl.Update(dtx)
 	} else {
-		err = cl.Create()
+		err = cl.Create(dtx)
 	}
 
 	if err != nil {
@@ -206,7 +207,7 @@ func SaveLocationJson(rw http.ResponseWriter, r *http.Request, enc encoding.Enco
 	return encoding.Must(enc.Encode(cl))
 }
 
-func DeleteLocation(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+func DeleteLocation(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var cl customer.CustomerLocation
 	var err error
 
@@ -220,7 +221,7 @@ func DeleteLocation(rw http.ResponseWriter, r *http.Request, enc encoding.Encode
 		return ""
 	}
 
-	if err = cl.Delete(); err != nil {
+	if err = cl.Delete(dtx); err != nil {
 		apierror.GenerateError("Trouble deleting location", err, rw, r)
 		return ""
 	}

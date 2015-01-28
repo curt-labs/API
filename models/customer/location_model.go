@@ -3,6 +3,8 @@ package customer
 import (
 	"database/sql"
 	"encoding/json"
+	"strconv"
+
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/conversions"
 	"github.com/curt-labs/GoAPI/helpers/database"
@@ -138,7 +140,7 @@ func GetAllLocations(dtx *apicontext.DataContext) (CustomerLocations, error) {
 	return ls, err
 }
 
-func (l *CustomerLocation) Create() error {
+func (l *CustomerLocation) Create(dtx *apicontext.DataContext) error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -178,10 +180,12 @@ func (l *CustomerLocation) Create() error {
 	if err != nil {
 		return err
 	}
-	tx.Commit()
-	return nil
+	err = tx.Commit()
+	go redis.Delete("customers:locations:" + dtx.BrandString)
+	go redis.Delete("customerLocations:" + strconv.Itoa(l.CustomerId))
+	return err
 }
-func (l *CustomerLocation) Update() error {
+func (l *CustomerLocation) Update(dtx *apicontext.DataContext) error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -217,11 +221,13 @@ func (l *CustomerLocation) Update() error {
 		tx.Rollback()
 		return err
 	}
-	tx.Commit()
-	return nil
+	err = tx.Commit()
+	go redis.Delete("customers:locations:" + dtx.BrandString)
+	go redis.Delete("customerLocations:" + strconv.Itoa(l.CustomerId))
+	return err
 }
 
-func (l *CustomerLocation) Delete() error {
+func (l *CustomerLocation) Delete(dtx *apicontext.DataContext) error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -240,6 +246,8 @@ func (l *CustomerLocation) Delete() error {
 		tx.Rollback()
 		return err
 	}
-	tx.Commit()
-	return nil
+	err = tx.Commit()
+	go redis.Delete("customers:locations:" + dtx.BrandString)
+	go redis.Delete("customerLocations:" + strconv.Itoa(l.CustomerId))
+	return err
 }

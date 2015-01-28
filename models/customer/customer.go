@@ -627,7 +627,8 @@ func (c *Customer) Update() (err error) {
 	for _, brandID := range c.BrandIDs {
 		err = c.CreateCustomerBrand(brandID)
 	}
-	err = redis.Set(custPrefix+strconv.Itoa(c.Id), c)
+	go redis.Set(custPrefix+strconv.Itoa(c.Id), c)
+	go redis.Delete("customerLocations:" + strconv.Itoa(c.Id))
 	return nil
 }
 
@@ -650,8 +651,8 @@ func (c *Customer) Delete() (err error) {
 	if err != nil {
 		return err
 	}
-	redis.Delete(custPrefix + strconv.Itoa(c.Id))
-
+	go redis.Delete(custPrefix + strconv.Itoa(c.Id))
+	go redis.Delete("customerLocations:" + strconv.Itoa(c.Id))
 	return nil
 }
 
@@ -1249,7 +1250,7 @@ func (d *DealerType) Create() error {
 	return err
 }
 
-func (d *DealerType) Delete() error {
+func (d *DealerType) Delete(dtx *apicontext.DataContext) error {
 	var err error
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1262,6 +1263,8 @@ func (d *DealerType) Delete() error {
 	}
 	defer stmt.Close()
 	_, err = stmt.Exec(d.Id)
+	go redis.Delete("local:types:" + dtx.BrandString)
+	go redis.Delete("dealers:etailer:" + dtx.BrandString)
 	return err
 }
 

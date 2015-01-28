@@ -33,13 +33,13 @@ func TestCustomerLocations(t *testing.T) {
 			l.IsPrimary = true
 			l.PostalCode = "Tes"
 			l.ShippingDefault = false
-			err := l.Create()
+			err := l.Create(MockedDTX)
 			So(err, ShouldBeNil)
 		})
 
 		Convey("Update", func() {
 			l.Name = "Chuck Norris"
-			err := l.Update()
+			err := l.Update(MockedDTX)
 			So(err, ShouldBeNil)
 			So(l.Name, ShouldNotEqual, "test")
 
@@ -57,7 +57,7 @@ func TestCustomerLocations(t *testing.T) {
 		})
 
 		Convey("Delete", func() {
-			err := l.Delete()
+			err := l.Delete(MockedDTX)
 			So(err, ShouldBeNil)
 
 		})
@@ -67,6 +67,10 @@ func TestCustomerLocations(t *testing.T) {
 }
 
 func TestBadCrudStmts(t *testing.T) {
+	MockedDTX, err := apicontextmock.Mock()
+	if err != nil {
+		return
+	}
 	Convey("Testing bad statements", t, func() {
 		var l CustomerLocation
 		l.Name = "test"
@@ -78,19 +82,20 @@ func TestBadCrudStmts(t *testing.T) {
 		updateLocation = "Bad Query Stmt"
 		deleteLocation = "Bad Query Stmt"
 		Convey("Testing Bad Create()", func() {
-			err := l.Create()
+			err := l.Create(MockedDTX)
 			So(err, ShouldNotBeNil)
 		})
 
 		Convey("Testing Bad Update()", func() {
 			l.Name = "test2"
-			err := l.Update()
+			err := l.Update(MockedDTX)
 			So(err, ShouldNotBeNil)
 		})
 		Convey("Testing Bad Delete()", func() {
-			err := l.Delete()
+			err := l.Delete(MockedDTX)
 			So(err, ShouldNotBeNil)
 		})
 
 	})
+	_ = apicontextmock.DeMock(MockedDTX)
 }
