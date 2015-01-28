@@ -66,19 +66,11 @@ func main() {
 	m.Use(sessions.Sessions("api_sessions", store))
 	m.Use(encoding.MapEncoder)
 
-	internalCors := cors.Allow(&cors.Options{
-		AllowOrigins:     []string{"https://*.curtmfg.com", "http://*.curtmfg.com"},
-		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
-		AllowHeaders:     []string{"Origin"},
-		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: true,
-	})
-
 	m.Group("/applicationGuide", func(r martini.Router) {
 		r.Get("/website/:id", applicationGuide.GetApplicationGuidesByWebsite)
 		r.Get("/:id", applicationGuide.GetApplicationGuide)
-		r.Delete("/:id", internalCors, applicationGuide.DeleteApplicationGuide)
-		r.Post("", internalCors, applicationGuide.CreateApplicationGuide)
+		r.Delete("/:id", applicationGuide.DeleteApplicationGuide)
+		r.Post("", applicationGuide.CreateApplicationGuide)
 	})
 
 	m.Group("/blogs", func(r martini.Router) {
@@ -86,13 +78,13 @@ func main() {
 		r.Get("/categories", blog_controller.GetAllCategories) //all categories; sort on any field e.g. ?sort=Name&direction=descending
 		r.Get("/category/:id", blog_controller.GetBlogCategory)
 		r.Get("/search", blog_controller.Search) //search field = value e.g. /blogs/search?key=8AEE0620-412E-47FC-900A-947820EA1C1D&slug=cyclo
-		r.Post("/categories", internalCors, blog_controller.CreateBlogCategory)
-		r.Delete("/categories/:id", internalCors, blog_controller.DeleteBlogCategory)
-		r.Get("/:id", blog_controller.GetBlog)                     //get blog by {id}
-		r.Put("/:id", internalCors, blog_controller.UpdateBlog)    //create {post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active} returns new id
-		r.Post("", internalCors, blog_controller.CreateBlog)       //update {post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active} required{id}
-		r.Delete("/:id", internalCors, blog_controller.DeleteBlog) //{?id=id}
-		r.Delete("", internalCors, blog_controller.DeleteBlog)     //{id}
+		r.Post("/categories", blog_controller.CreateBlogCategory)
+		r.Delete("/categories/:id", blog_controller.DeleteBlogCategory)
+		r.Get("/:id", blog_controller.GetBlog)       //get blog by {id}
+		r.Put("/:id", blog_controller.UpdateBlog)    //create {post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active} returns new id
+		r.Post("", blog_controller.CreateBlog)       //update {post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active} required{id}
+		r.Delete("/:id", blog_controller.DeleteBlog) //{?id=id}
+		r.Delete("", blog_controller.DeleteBlog)     //{id}
 	})
 
 	m.Group("/brands", func(r martini.Router) {
@@ -169,15 +161,15 @@ func main() {
 	})
 
 	m.Group("/cart", func(r martini.Router) {
-		r.Get("/customer/pricing/:custID/:page/:count", internalCors, cartIntegration.GetCustomerPricingPaged)
-		r.Get("/customer/pricing/:custID", internalCors, cartIntegration.GetCustomerPricing)
-		r.Get("/customer/count/:custID", internalCors, cartIntegration.GetCustomerPricingCount)
-		r.Get("/part/:id", internalCors, cartIntegration.GetCIbyPart)
-		r.Get("/customer/:id", internalCors, cartIntegration.GetCIbyCustomer) //shallower object than GetCustomerPricing
-		r.Get("/:id", internalCors, cartIntegration.GetCI)
-		r.Put("/:id", internalCors, cartIntegration.SaveCI)
-		r.Post("", internalCors, cartIntegration.SaveCI)
-		r.Delete("/:id", internalCors, cartIntegration.DeleteCI)
+		r.Get("/customer/pricing/:custID/:page/:count", cartIntegration.GetCustomerPricingPaged)
+		r.Get("/customer/pricing/:custID", cartIntegration.GetCustomerPricing)
+		r.Get("/customer/count/:custID", cartIntegration.GetCustomerPricingCount)
+		r.Get("/part/:id", cartIntegration.GetCIbyPart)
+		r.Get("/customer/:id", cartIntegration.GetCIbyCustomer) //shallower object than GetCustomerPricing
+		r.Get("/:id", cartIntegration.GetCI)
+		r.Put("/:id", cartIntegration.SaveCI)
+		r.Post("", cartIntegration.SaveCI)
+		r.Delete("/:id", cartIntegration.DeleteCI)
 	})
 
 	m.Group("/customer", func(r martini.Router) {
@@ -194,10 +186,10 @@ func main() {
 		r.Post("/user/:id/key/:type", customer_ctlr.GenerateApiKey)
 		r.Get("/user/:id", customer_ctlr.GetUserById)
 		r.Post("/user/:id", customer_ctlr.UpdateCustomerUser)
-		r.Delete("/user/:id", internalCors, customer_ctlr.DeleteCustomerUser)
+		r.Delete("/user/:id", customer_ctlr.DeleteCustomerUser)
 		r.Any("/users", customer_ctlr.GetUsers)
 
-		r.Delete("/allUsersByCustomerID/:id", internalCors, customer_ctlr.DeleteCustomerUsersByCustomerID) //Takes CustomerID (UUID)---danger!
+		r.Delete("/allUsersByCustomerID/:id", customer_ctlr.DeleteCustomerUsersByCustomerID) //Takes CustomerID (UUID)---danger!
 
 		r.Put("/location/json", customer_ctlr.SaveLocationJson)
 		r.Put("/location/json/:id", customer_ctlr.SaveLocationJson)
@@ -252,26 +244,26 @@ func main() {
 
 	m.Group("/dealers", func(r martini.Router) {
 		r.Get("/business/classes", dealers_ctlr.GetAllBusinessClasses)
-		r.Get("/etailer", internalCors, dealers_ctlr.GetEtailers)
-		r.Get("/local", internalCors, dealers_ctlr.GetLocalDealers)
-		r.Get("/local/regions", internalCors, dealers_ctlr.GetLocalRegions)
-		r.Get("/local/tiers", internalCors, dealers_ctlr.GetLocalDealerTiers)
-		r.Get("/local/types", internalCors, dealers_ctlr.GetLocalDealerTypes)
-		r.Get("/etailer/platinum", internalCors, dealers_ctlr.PlatinumEtailers)
-		r.Get("/location/:id", internalCors, dealers_ctlr.GetLocationById)
-		r.Get("/search/:search", internalCors, dealers_ctlr.SearchLocations)
-		r.Get("/search/type/:search", internalCors, dealers_ctlr.SearchLocationsByType)
-		r.Get("/search/geo/:latitude/:longitude", internalCors, dealers_ctlr.SearchLocationsByLatLng)
+		r.Get("/etailer", dealers_ctlr.GetEtailers)
+		r.Get("/local", dealers_ctlr.GetLocalDealers)
+		r.Get("/local/regions", dealers_ctlr.GetLocalRegions)
+		r.Get("/local/tiers", dealers_ctlr.GetLocalDealerTiers)
+		r.Get("/local/types", dealers_ctlr.GetLocalDealerTypes)
+		r.Get("/etailer/platinum", dealers_ctlr.PlatinumEtailers)
+		r.Get("/location/:id", dealers_ctlr.GetLocationById)
+		r.Get("/search/:search", dealers_ctlr.SearchLocations)
+		r.Get("/search/type/:search", dealers_ctlr.SearchLocationsByType)
+		r.Get("/search/geo/:latitude/:longitude", dealers_ctlr.SearchLocationsByLatLng)
 	})
 
 	m.Group("/faqs", func(r martini.Router) {
-		r.Get("", faq_controller.GetAll)                        //get all faqs; takes optional sort param {sort=true} to sort by question
-		r.Get("/search", faq_controller.Search)                 //takes {question, answer, page, results} - all parameters are optional
-		r.Get("/(:id)", faq_controller.Get)                     //get by id {id}
-		r.Post("", internalCors, faq_controller.Create)         //takes {question, answer}; returns object with new ID
-		r.Put("/(:id)", internalCors, faq_controller.Update)    //{id, question and/or answer}
-		r.Delete("/(:id)", internalCors, faq_controller.Delete) //{id}
-		r.Delete("", internalCors, faq_controller.Delete)       //{?id=id}
+		r.Get("", faq_controller.GetAll)          //get all faqs; takes optional sort param {sort=true} to sort by question
+		r.Get("/search", faq_controller.Search)   //takes {question, answer, page, results} - all parameters are optional
+		r.Get("/(:id)", faq_controller.Get)       //get by id {id}
+		r.Post("", faq_controller.Create)         //takes {question, answer}; returns object with new ID
+		r.Put("/(:id)", faq_controller.Update)    //{id, question and/or answer}
+		r.Delete("/(:id)", faq_controller.Delete) //{id}
+		r.Delete("", faq_controller.Delete)       //{?id=id}
 	})
 
 	m.Group("/forum", func(r martini.Router) {
@@ -306,15 +298,15 @@ func main() {
 	})
 
 	m.Group("/news", func(r martini.Router) {
-		r.Get("", news_controller.GetAll)                      //get all news; takes optional sort param {sort=title||lead||content||startDate||endDate||active||slug} to sort by question
-		r.Get("/titles", news_controller.GetTitles)            //get titles!{page, results} - all parameters are optional
-		r.Get("/leads", news_controller.GetLeads)              //get leads!{page, results} - all parameters are optional
-		r.Get("/search", news_controller.Search)               //takes {title, lead, content, publishStart, publishEnd, active, slug, page, results, page, results} - all parameters are optional
-		r.Get("/:id", news_controller.Get)                     //get by id {id}
-		r.Post("", internalCors, news_controller.Create)       //takes {question, answer}; returns object with new ID
-		r.Post("/:id", internalCors, news_controller.Update)   //{id, question and/or answer}
-		r.Delete("/:id", internalCors, news_controller.Delete) //{id}
-		r.Delete("", internalCors, news_controller.Delete)     //{id}
+		r.Get("", news_controller.GetAll)           //get all news; takes optional sort param {sort=title||lead||content||startDate||endDate||active||slug} to sort by question
+		r.Get("/titles", news_controller.GetTitles) //get titles!{page, results} - all parameters are optional
+		r.Get("/leads", news_controller.GetLeads)   //get leads!{page, results} - all parameters are optional
+		r.Get("/search", news_controller.Search)    //takes {title, lead, content, publishStart, publishEnd, active, slug, page, results, page, results} - all parameters are optional
+		r.Get("/:id", news_controller.Get)          //get by id {id}
+		r.Post("", news_controller.Create)          //takes {question, answer}; returns object with new ID
+		r.Post("/:id", news_controller.Update)      //{id, question and/or answer}
+		r.Delete("/:id", news_controller.Delete)    //{id}
+		r.Delete("", news_controller.Delete)        //{id}
 	})
 
 	m.Group("/part", func(r martini.Router) {
@@ -337,16 +329,16 @@ func main() {
 		r.Get("/:part/:year/:make/:model/:submodel/:config(.+)", part_ctlr.GetWithVehicle)
 		r.Get("/:part", part_ctlr.Get)
 		r.Get("", part_ctlr.All)
-		r.Put("/:id", internalCors, part_ctlr.UpdatePart)
-		r.Post("", internalCors, part_ctlr.CreatePart)
-		r.Delete("/:id", internalCors, part_ctlr.DeletePart)
+		r.Put("/:id", part_ctlr.UpdatePart)
+		r.Post("", part_ctlr.CreatePart)
+		r.Delete("/:id", part_ctlr.DeletePart)
 	})
 
 	m.Group("/price", func(r martini.Router) {
-		r.Get("/:id", internalCors, part_ctlr.GetPrice)
-		r.Post("", internalCors, part_ctlr.SavePrice)
-		r.Put("/:id", internalCors, part_ctlr.SavePrice)
-		r.Delete("/:id", internalCors, part_ctlr.DeletePrice)
+		r.Get("/:id", part_ctlr.GetPrice)
+		r.Post("", part_ctlr.SavePrice)
+		r.Put("/:id", part_ctlr.SavePrice)
+		r.Delete("/:id", part_ctlr.DeletePrice)
 	})
 
 	m.Group("/reviews", func(r martini.Router) {
@@ -415,36 +407,36 @@ func main() {
 	})
 
 	m.Group("/webProperties", func(r martini.Router) {
-		r.Post("/json/type", internalCors, webProperty_controller.CreateUpdateWebPropertyType)
-		r.Post("/json/type/:id", internalCors, webProperty_controller.CreateUpdateWebPropertyType)
-		r.Post("/json/requirement", internalCors, webProperty_controller.CreateUpdateWebPropertyRequirement)
-		r.Post("/json/requirement/:id", internalCors, webProperty_controller.CreateUpdateWebPropertyRequirement)
-		r.Post("/json/note", internalCors, webProperty_controller.CreateUpdateWebPropertyNote)
-		r.Post("/json/note/:id", internalCors, webProperty_controller.CreateUpdateWebPropertyNote)
-		r.Post("/json/:id", internalCors, webProperty_controller.CreateUpdateWebProperty)
-		r.Put("/json", internalCors, webProperty_controller.CreateUpdateWebProperty)
-		r.Post("/note/:id", internalCors, webProperty_controller.CreateUpdateWebPropertyNote)               //updates when an id is present; otherwise, creates
-		r.Put("/note", internalCors, webProperty_controller.CreateUpdateWebPropertyNote)                    //updates when an id is present; otherwise, creates
-		r.Delete("/note/:id", internalCors, webProperty_controller.DeleteWebPropertyNote)                   //{id}
-		r.Get("/note/:id", webProperty_controller.GetWebPropertyNote)                                       //{id}
-		r.Post("/type/:id", internalCors, webProperty_controller.CreateUpdateWebPropertyType)               //updates when an id is present; otherwise, creates
-		r.Put("/type", internalCors, webProperty_controller.CreateUpdateWebPropertyType)                    //updates when an id is present; otherwise, creates
-		r.Delete("/type/:id", internalCors, webProperty_controller.DeleteWebPropertyType)                   //{id}
-		r.Get("/type/:id", webProperty_controller.GetWebPropertyType)                                       //{id}
-		r.Post("/requirement/:id", internalCors, webProperty_controller.CreateUpdateWebPropertyRequirement) //updates when an id is present; otherwise, creates
-		r.Put("/requirement", internalCors, webProperty_controller.CreateUpdateWebPropertyRequirement)      //updates when an id is present; otherwise, creates
-		r.Delete("/requirement/:id", internalCors, webProperty_controller.DeleteWebPropertyRequirement)     //{id}
-		r.Get("/requirement/:id", webProperty_controller.GetWebPropertyRequirement)                         //{id}
-		r.Get("/search", internalCors, webProperty_controller.Search)
+		r.Post("/json/type", webProperty_controller.CreateUpdateWebPropertyType)
+		r.Post("/json/type/:id", webProperty_controller.CreateUpdateWebPropertyType)
+		r.Post("/json/requirement", webProperty_controller.CreateUpdateWebPropertyRequirement)
+		r.Post("/json/requirement/:id", webProperty_controller.CreateUpdateWebPropertyRequirement)
+		r.Post("/json/note", webProperty_controller.CreateUpdateWebPropertyNote)
+		r.Post("/json/note/:id", webProperty_controller.CreateUpdateWebPropertyNote)
+		r.Post("/json/:id", webProperty_controller.CreateUpdateWebProperty)
+		r.Put("/json", webProperty_controller.CreateUpdateWebProperty)
+		r.Post("/note/:id", webProperty_controller.CreateUpdateWebPropertyNote)               //updates when an id is present; otherwise, creates
+		r.Put("/note", webProperty_controller.CreateUpdateWebPropertyNote)                    //updates when an id is present; otherwise, creates
+		r.Delete("/note/:id", webProperty_controller.DeleteWebPropertyNote)                   //{id}
+		r.Get("/note/:id", webProperty_controller.GetWebPropertyNote)                         //{id}
+		r.Post("/type/:id", webProperty_controller.CreateUpdateWebPropertyType)               //updates when an id is present; otherwise, creates
+		r.Put("/type", webProperty_controller.CreateUpdateWebPropertyType)                    //updates when an id is present; otherwise, creates
+		r.Delete("/type/:id", webProperty_controller.DeleteWebPropertyType)                   //{id}
+		r.Get("/type/:id", webProperty_controller.GetWebPropertyType)                         //{id}
+		r.Post("/requirement/:id", webProperty_controller.CreateUpdateWebPropertyRequirement) //updates when an id is present; otherwise, creates
+		r.Put("/requirement", webProperty_controller.CreateUpdateWebPropertyRequirement)      //updates when an id is present; otherwise, creates
+		r.Delete("/requirement/:id", webProperty_controller.DeleteWebPropertyRequirement)     //{id}
+		r.Get("/requirement/:id", webProperty_controller.GetWebPropertyRequirement)           //{id}
+		r.Get("/search", webProperty_controller.Search)
 		r.Get("/type", webProperty_controller.GetAllTypes)
 		r.Get("/note", webProperty_controller.GetAllNotes)
 		r.Get("/requirement", webProperty_controller.GetAllRequirements)
 		r.Get("/customer", webProperty_controller.GetByPrivateKey)
-		r.Get("", internalCors, webProperty_controller.GetAll)
-		r.Get("/:id", internalCors, webProperty_controller.Get)                      //?id=id
-		r.Delete("/:id", internalCors, webProperty_controller.DeleteWebProperty)     //{id}
-		r.Post("/:id", internalCors, webProperty_controller.CreateUpdateWebProperty) //
-		r.Put("", internalCors, webProperty_controller.CreateUpdateWebProperty)      //can create notes(text) and requirements (requirement, by requirement=requirementID) while creating a property
+		r.Get("", webProperty_controller.GetAll)
+		r.Get("/:id", webProperty_controller.Get)                      //?id=id
+		r.Delete("/:id", webProperty_controller.DeleteWebProperty)     //{id}
+		r.Post("/:id", webProperty_controller.CreateUpdateWebProperty) //
+		r.Put("", webProperty_controller.CreateUpdateWebProperty)      //can create notes(text) and requirements (requirement, by requirement=requirementID) while creating a property
 	})
 
 	m.Post("/vehicle", vehicle.Query)
