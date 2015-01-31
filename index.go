@@ -56,11 +56,7 @@ func main() {
 	m.Use(gzip.All())
 	m.Use(middleware.Meddler())
 	m.Use(cors.Allow(&cors.Options{
-		AllowOrigins:     []string{"*"},
-		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "X-Requested-With", "Accept", "Authorization"},
-		ExposeHeaders:    []string{"Content-Length", "Content-Type"},
-		AllowCredentials: true,
+		AllowAllOrigins: true,
 	}))
 	store := sessions.NewCookieStore([]byte("api_secret_session"))
 	m.Use(sessions.Sessions("api_sessions", store))
@@ -495,11 +491,6 @@ func main() {
 
 	m.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "http://labs.curtmfg.com/", http.StatusFound)
-	})
-
-	m.Options("/*", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
-		w.Write([]byte("ok"))
 	})
 
 	srv := &http.Server{
