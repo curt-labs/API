@@ -24,6 +24,11 @@ var (
 
 func Meddler() martini.Handler {
 	return func(res http.ResponseWriter, r *http.Request, c martini.Context) {
+		res.Header().Add("Access-Control-Allow-Origin", "*")
+		if strings.ToLower(r.Method) == "options" {
+			return
+		}
+
 		if strings.Contains(r.URL.String(), "favicon") {
 			res.Write([]byte(""))
 			return

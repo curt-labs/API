@@ -56,9 +56,13 @@ func main() {
 	m.Use(gzip.All())
 	m.Use(middleware.Meddler())
 	m.Use(cors.Allow(&cors.Options{
-		AllowAllOrigins:  true,
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Content-Type", "Accept", "Access-Control-Allow-Origin", "Authorization"},
+		ExposeHeaders:    []string{"Content-Type", "Accept", "Access-Control-Allow-Origin", "Authorization"},
 		AllowCredentials: false,
 	}))
+
 	store := sessions.NewCookieStore([]byte("api_secret_session"))
 	m.Use(sessions.Sessions("api_sessions", store))
 	m.Use(encoding.MapEncoder)

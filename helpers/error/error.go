@@ -46,6 +46,7 @@ func GenerateError(msg string, err error, res http.ResponseWriter, r *http.Reque
 	var errorResp []byte
 	var marshalErr error
 
+	res.Header().Set("Access-Control-Allow-Origin", "*")
 	switch r.Header.Get("Content-Type") {
 	case "application/xml":
 		res.Header().Set("Content-Type", "application/xml")
