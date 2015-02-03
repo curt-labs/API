@@ -32,11 +32,11 @@ func (mq *Queue) Init() error {
 	mq.Producers = make(map[string]*nsq.Producer)
 	for _, addr := range mq.ServerAddresses {
 		producer, err := nsq.NewProducer(addr, mq.Config)
-		if err == nil {
-			mq.Producers[addr] = producer
+		if err != nil {
+			return err
 		}
+		mq.Producers[addr] = producer
 	}
-
 	return nil
 }
 
