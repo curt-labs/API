@@ -230,18 +230,26 @@ func logRequest(r *http.Request, reqTime time.Duration) {
 		props[k] = v
 	}
 
-	err := client.Track(map[string]interface{}{
-		"event":       r.URL.String(),
-		"userId":      key,
-		"properties":  props,
-		"method":      r.Method,
-		"header":      r.Header,
-		"query":       r.URL.Query().Encode(),
-		"referer":     r.Referer(),
-		"userAgent":   r.UserAgent(),
-		"form":        r.Form,
-		"requestTime": int64((reqTime.Nanoseconds() * 1000) * 1000),
+	err := client.Track(&analytics.Track{
+		Event:      r.URL.String(),
+		UserId:     key,
+		Properties: props,
 	})
+
+	/**
+		err := client.Track(map[string]interface{}{
+			"event":       r.URL.String(),
+			"userId":      key,
+			"properties":  props,
+			"method":      r.Method,
+			"header":      r.Header,
+			"query":       r.URL.Query().Encode(),
+			"referer":     r.Referer(),
+			"userAgent":   r.UserAgent(),
+			"form":        r.Form,
+			"requestTime": int64((reqTime.Nanoseconds() * 1000) * 1000),
+		})
+	**/
 	if err != nil {
 		m := slack.Message{
 			Channel:  "debugging",
