@@ -1,7 +1,6 @@
 package nsqq
 
 import (
-	"fmt"
 	"github.com/bitly/go-nsq"
 )
 
@@ -50,7 +49,6 @@ func (mq *Queue) Dispose() {
 func (mq *Queue) Push(data []byte) error {
 	for _, p := range mq.Producers {
 		if err := p.Publish(mq.Topic, data); err != nil {
-			fmt.Println(err)
 			return err
 		}
 	}
