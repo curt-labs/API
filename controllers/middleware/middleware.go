@@ -224,6 +224,11 @@ func logRequest(r *http.Request, reqTime time.Duration) {
 		key = r.FormValue("key")
 	}
 
+	//don't continue if we still don't have a key!
+	if key == "" {
+		return
+	}
+
 	vals := r.URL.Query()
 	props := make(map[string]interface{}, 0)
 	for k, v := range vals {
