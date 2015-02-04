@@ -71,7 +71,6 @@ func Test_AddAddress(t *testing.T) {
 
 		response = httprunner.ParameterizedJsonRequest("POST", "/shopify/customers/:id/addresses", "/shopify/customers/1234/addresses", &qs, nil, AddAddress)
 		So(response.Code, ShouldEqual, 500)
-		t.Log(response.Body.String())
 		So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
 	})
 
@@ -412,7 +411,7 @@ func BenchmarkGetCustomerAddresses(b *testing.B) {
 		Email:     "ninnemana@gmail.com",
 		Password:  "password",
 	}
-	if err := cust.Insert(); err != nil {
+	if err := cust.Insert("http://www.example.com"); err != nil {
 		b.Error(err.Error())
 		b.Fail()
 	}

@@ -97,30 +97,30 @@ func TestCustomer(t *testing.T) {
 			}
 			var customer Customer
 			customer.ShopId = shop.Id
-			err := customer.Insert()
+			err := customer.Insert("http://www.example.com")
 			So(err, ShouldNotBeNil)
 
 			customer.Email = "ninnemana@gmail.com"
 			customer.Password = "password"
-			err = customer.Insert()
+			err = customer.Insert("http://www.example.com")
 			So(err, ShouldNotBeNil)
 
 			customer.FirstName = "Alex"
-			err = customer.Insert()
+			err = customer.Insert("http://www.example.com")
 			So(err, ShouldNotBeNil)
 
 			customer.LastName = "Ninneman"
 			os.Setenv("MONGO_URL", "0.0.0.1")
-			err = customer.Insert()
+			err = customer.Insert("http://www.example.com")
 			So(err, ShouldNotBeNil)
 			os.Setenv("MONGO_URL", "")
 
 			customer.Password = ""
-			err = customer.Insert()
+			err = customer.Insert("http://www.example.com")
 			So(err, ShouldNotBeNil)
 
 			customer.Password = "password"
-			err = customer.Insert()
+			err = customer.Insert("http://www.example.com")
 			So(err, ShouldBeNil)
 			So(customer.Password, ShouldEqual, "")
 

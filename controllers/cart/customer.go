@@ -135,7 +135,7 @@ func AddCustomer(w http.ResponseWriter, req *http.Request, params martini.Params
 
 	c.ShopId = shop.Id
 
-	if err = c.Insert(); err != nil {
+	if err = c.Insert(req.Referer()); err != nil {
 		apierror.GenerateError(err.Error(), err, w, req)
 		return ""
 	}

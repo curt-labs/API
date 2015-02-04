@@ -97,7 +97,7 @@ func TestBindCustomer(t *testing.T) {
 			o.Customer.FirstName = "Alex"
 			o.Customer.LastName = "Ninneman"
 			o.Customer.Password = "password"
-			err = o.Customer.Insert()
+			err = o.Customer.Insert("http://www.example.com")
 			So(err, ShouldBeNil)
 
 			So(o.bindCustomer(), ShouldBeNil)

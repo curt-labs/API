@@ -288,7 +288,7 @@ func (c *Customer) GetByEmail() error {
 }
 
 // Add new customer.
-func (c *Customer) Insert() error {
+func (c *Customer) Insert(ref string) error {
 	if c.Email == "" {
 		c.Password = ""
 		return fmt.Errorf("error: %s", "invalid email address")
@@ -318,6 +318,7 @@ func (c *Customer) Insert() error {
 		return fmt.Errorf("error: %s", err.Error())
 	}
 	c.Password = string(cryptic)
+	c.generateToken(ref)
 
 	sess, err := mgo.DialWithInfo(database.MongoConnectionString())
 	if err != nil {

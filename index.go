@@ -158,7 +158,10 @@ func main() {
 	m.Group("/shopify/account", func(r martini.Router) {
 		// Account - user endpoints
 		r.Get("", cart_ctlr.GetAccount)
+		r.Post("", cart_ctlr.AddAccount)
+		r.Put("", cart_ctlr.EditAccount)
 		r.Post("/login", cart_ctlr.AccountLogin)
+
 	})
 
 	m.Group("/cart", func(r martini.Router) {

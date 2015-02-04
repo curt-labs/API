@@ -121,46 +121,48 @@ func newPb(size int) (bar *pb.ProgressBar) {
 	return
 }
 
-func Request(method, route string, body *url.Values, handler martini.Handler) *httptest.ResponseRecorder {
-	m := martini.New()
-	r := martini.NewRouter()
-	switch strings.ToUpper(method) {
-	case "GET":
-		r.Get(route, handler)
-	case "POST":
-		r.Post(route, handler)
-	case "PUT":
-		r.Put(route, handler)
-	case "PATCH":
-		r.Patch(route, handler)
-	case "DELETE":
-		r.Delete(route, handler)
-	case "HEAD":
-		r.Head(route, handler)
-	default:
-		r.Any(route, handler)
-	}
-	m.Use(render.Renderer())
-	m.Use(encoding.MapEncoder)
-	m.Use(middleware.Meddler())
-	m.Action(r.Handle)
-
-	var request *http.Request
+func Request(method, route string, body *url.Values, handler martini.Handler) httptest.ResponseRecorder {
+	// var request *http.Request
 	if body != nil && strings.ToUpper(method) != "GET" {
-		request, _ = http.NewRequest(method, route, bytes.NewBufferString(body.Encode()))
+		return Req(handler, method, "", route, nil, body)
+		// request, _ = http.NewRequest(method, route, bytes.NewBufferString(body.Encode()))
 	} else if body != nil {
-		request, _ = http.NewRequest(method, route+"?"+body.Encode(), nil)
-	} else {
-		request, _ = http.NewRequest(method, route, nil)
+		return Req(handler, method, "", route, body)
+		// request, _ = http.NewRequest(method, route+"?"+body.Encode(), nil)
 	}
-
-	response := httptest.NewRecorder()
-	m.ServeHTTP(response, request)
-
-	return response
+	return Req(handler, method, "", route)
 }
 
-func ParameterizedRequest(method, prepared_route string, route string, qs *url.Values, body *url.Values, handler martini.Handler) *httptest.ResponseRecorder {
+func ParameterizedRequest(method, prepared_route string, route string, qs *url.Values, body *url.Values, handler martini.Handler) httptest.ResponseRecorder {
+	return Req(handler, method, prepared_route, route, qs, body)
+}
+
+func ParameterizedJsonRequest(method, prepared_route string, route string, qs *url.Values, iface interface{}, handler martini.Handler) httptest.ResponseRecorder {
+	headers := map[string]interface{}{
+		"Content-Type": "application/json",
+	}
+	return Req(handler, method, prepared_route, route, qs, nil, iface, headers)
+}
+
+func JsonRequest(method, route string, qs *url.Values, iface interface{}, handler martini.Handler) httptest.ResponseRecorder {
+	headers := map[string]interface{}{
+		"Content-Type": "application/json",
+	}
+	return Req(handler, method, "", route, qs, nil, iface, headers)
+}
+
+func Req(handler martini.Handler, method, prepared_route, route string, args ...interface{}) httptest.ResponseRecorder {
+
+	// args[0] - *url.Values
+	// args[1] - *url.Values
+	// args[2] - interface{} req.Body
+	// args[3] - map[string]interface{} Headers
+
+	var response httptest.ResponseRecorder
+	if prepared_route == "" {
+		prepared_route = route
+	}
+
 	m := martini.New()
 	r := martini.NewRouter()
 	switch strings.ToUpper(method) {
@@ -179,110 +181,43 @@ func ParameterizedRequest(method, prepared_route string, route string, qs *url.V
 	default:
 		r.Any(prepared_route, handler)
 	}
+
 	m.Use(render.Renderer())
 	m.Use(encoding.MapEncoder)
 	m.Use(middleware.Meddler())
 	m.Action(r.Handle)
 
-	if qs != nil {
+	if len(args) > 0 && args[0] != nil {
+		qs := args[0].(*url.Values)
 		route = route + "?" + qs.Encode()
 	}
 
 	var request *http.Request
-	if body != nil && strings.ToUpper(method) != "GET" {
-		request, _ = http.NewRequest(method, route, bytes.NewBufferString(body.Encode()))
+	if len(args) > 1 && args[1] != nil && args[1].(*url.Values) != nil {
+		request, _ = http.NewRequest(method, route, bytes.NewBuffer([]byte(args[1].(*url.Values).Encode())))
+	} else if len(args) > 1 && args[1] == nil {
+		js, err := json.Marshal(args[2])
+		if err != nil {
+			return response
+		}
+		request, _ = http.NewRequest(method, route, bytes.NewBuffer(js))
 	} else {
 		request, _ = http.NewRequest(method, route, nil)
 	}
 
-	response := httptest.NewRecorder()
-	m.ServeHTTP(response, request)
-
-	return response
-}
-
-func ParameterizedJsonRequest(method, prepared_route string, route string, qs *url.Values, iface interface{}, handler martini.Handler) *httptest.ResponseRecorder {
-	m := martini.New()
-	r := martini.NewRouter()
-	switch strings.ToUpper(method) {
-	case "GET":
-		r.Get(prepared_route, handler)
-	case "POST":
-		r.Post(prepared_route, handler)
-	case "PUT":
-		r.Put(prepared_route, handler)
-	case "PATCH":
-		r.Patch(prepared_route, handler)
-	case "DELETE":
-		r.Delete(prepared_route, handler)
-	case "HEAD":
-		r.Head(prepared_route, handler)
-	default:
-		r.Any(prepared_route, handler)
+	if len(args) == 4 {
+		headers := args[3].(map[string]interface{})
+		for key, val := range headers {
+			request.Header.Set(key, val.(string))
+		}
 	}
 
-	m.Use(render.Renderer())
-	m.Use(encoding.MapEncoder)
-	m.Use(middleware.Meddler())
-	m.Action(r.Handle)
-
-	js, err := json.Marshal(iface)
-	if err != nil {
-		return nil
+	resp := httptest.NewRecorder()
+	if resp == nil {
+		return response
 	}
-
-	if qs != nil {
-		route = route + "?" + qs.Encode()
-	}
-
-	request, _ := http.NewRequest(method, route, bytes.NewBuffer(js))
-	request.Header.Set("Content-Type", "application/json")
-
-	response := httptest.NewRecorder()
-	m.ServeHTTP(response, request)
-
-	return response
-}
-
-func JsonRequest(method, route string, qs *url.Values, iface interface{}, handler martini.Handler) *httptest.ResponseRecorder {
-	m := martini.New()
-	r := martini.NewRouter()
-	switch strings.ToUpper(method) {
-	case "GET":
-		r.Get(route, handler)
-	case "POST":
-		r.Post(route, handler)
-	case "PUT":
-		r.Put(route, handler)
-	case "PATCH":
-		r.Patch(route, handler)
-	case "DELETE":
-		r.Delete(route, handler)
-	case "HEAD":
-		r.Head(route, handler)
-	default:
-		r.Any(route, handler)
-	}
-
-	m.Use(render.Renderer())
-	m.Use(encoding.MapEncoder)
-	m.Use(middleware.Meddler())
-	m.Action(r.Handle)
-
-	js, err := json.Marshal(iface)
-	if err != nil {
-		return nil
-	}
-
-	if qs != nil {
-		route = route + "?" + qs.Encode()
-	}
-
-	request, _ := http.NewRequest(method, route, bytes.NewBuffer(js))
-	request.Header.Set("Content-Type", "application/json")
-
-	response := httptest.NewRecorder()
-	m.ServeHTTP(response, request)
+	response = *resp
+	m.ServeHTTP(&response, request)
 
 	return response
 }
