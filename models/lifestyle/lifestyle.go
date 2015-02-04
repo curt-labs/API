@@ -437,6 +437,9 @@ func (l *Lifestyle) Update(dtx *apicontext.DataContext) (err error) {
 			return err
 		}
 	}
+
+	redis_key := "lifestyle:get:" + strconv.Itoa(l.ID) + ":" + dtx.BrandString
+	go redis.Setex(redis_key, l, redis.CacheTimeout)
 	return err
 }
 
