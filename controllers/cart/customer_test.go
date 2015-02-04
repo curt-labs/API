@@ -124,7 +124,7 @@ func Test_AddCustomer(t *testing.T) {
 		So(response.Code, ShouldEqual, 500)
 		So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
 
-		cust.Email = "ninnemana@gmail.com"
+		cust.Email = time.Now().Format(time.RFC3339Nano) + "@gmail.com"
 		response = httprunner.JsonRequest("POST", "/shopify/customers", &qs, cust, AddCustomer)
 		So(response.Code, ShouldEqual, 500)
 		So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
@@ -167,7 +167,7 @@ func Test_GetCustomer(t *testing.T) {
 				ShopId:    *shopID,
 				FirstName: "Alex",
 				LastName:  "Ninneman",
-				Email:     "ninnemana@gmail.com",
+				Email:     time.Now().Format(time.RFC3339Nano) + "@gmail.com",
 				Password:  "password",
 			}
 			response = httprunner.JsonRequest("POST", "/shopify/customers", &qs, cust, AddCustomer)
@@ -216,7 +216,7 @@ func Test_EditCustomer(t *testing.T) {
 				ShopId:    *shopID,
 				FirstName: "Alex",
 				LastName:  "Ninneman",
-				Email:     "ninnemana@gmail.com",
+				Email:     time.Now().Format(time.RFC3339Nano) + "@gmail.com",
 				Password:  "password",
 			}
 			response = httprunner.JsonRequest("POST", "/shopify/customers", &qs, cust, AddCustomer)
@@ -227,12 +227,12 @@ func Test_EditCustomer(t *testing.T) {
 			So(response.Code, ShouldEqual, 500)
 			So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
 
-			cust.Email = ""
+			cust.FirstName = ""
 			response = httprunner.ParameterizedJsonRequest("PUT", "/shopify/customers/:id", "/shopify/customers/"+cust.Id.Hex(), &qs, cust, EditCustomer)
 			So(response.Code, ShouldEqual, 500)
 			So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
 
-			cust.Email = "alex@ninneman.org"
+			cust.FirstName = "Alex"
 			response = httprunner.ParameterizedJsonRequest("PUT", "/shopify/customers/:id", "/shopify/customers/"+cust.Id.Hex(), &qs, cust, EditCustomer)
 			So(response.Code, ShouldEqual, 200)
 			So(json.Unmarshal(response.Body.Bytes(), &cust), ShouldBeNil)
@@ -271,7 +271,7 @@ func Test_DeleteCustomer(t *testing.T) {
 				ShopId:    *shopID,
 				FirstName: "Alex",
 				LastName:  "Ninneman",
-				Email:     "ninnemana@gmail.com",
+				Email:     time.Now().Format(time.RFC3339Nano) + "@gmail.com",
 				Password:  "password",
 			}
 			response = httprunner.JsonRequest("POST", "/shopify/customers", &qs, cust, AddCustomer)
@@ -359,7 +359,7 @@ func Test_GetCustomerOrders(t *testing.T) {
 				ShopId:    *shopID,
 				FirstName: "Alex",
 				LastName:  "Ninneman",
-				Email:     "ninnemana@gmail.com",
+				Email:     time.Now().Format(time.RFC3339Nano) + "@gmail.com",
 				Password:  "password",
 			}
 			response = httprunner.JsonRequest("POST", "/shopify/customers", &qs, cust, AddCustomer)
@@ -415,7 +415,7 @@ func BenchmarkAddCustomer(b *testing.B) {
 		ShopId:    *shopID,
 		FirstName: "Alex",
 		LastName:  "Ninneman",
-		Email:     "ninnemana@gmail.com",
+		Email:     time.Now().Format(time.RFC3339Nano) + "@gmail.com",
 		Password:  "password",
 	}
 
@@ -480,7 +480,7 @@ func BenchmarkEditCustomer(b *testing.B) {
 		ShopId:    *shopID,
 		FirstName: "Alex",
 		LastName:  "Ninneman",
-		Email:     "ninnemana@gmail.com",
+		Email:     time.Now().Format(time.RFC3339Nano) + "@gmail.com",
 		Password:  "password",
 	}
 
@@ -516,7 +516,7 @@ func BenchmarkDeleteCustomer(b *testing.B) {
 		ShopId:    *shopID,
 		FirstName: "Alex",
 		LastName:  "Ninneman",
-		Email:     "ninnemana@gmail.com",
+		Email:     time.Now().Format(time.RFC3339Nano) + "@gmail.com",
 	}
 
 	if err := cust.Insert("http://www.example.com"); err != nil {
@@ -551,7 +551,7 @@ func BenchmarkSearchCustomer(b *testing.B) {
 		ShopId:    *shopID,
 		FirstName: "Alex",
 		LastName:  "Ninneman",
-		Email:     "ninnemana@gmail.com",
+		Email:     time.Now().Format(time.RFC3339Nano) + "@gmail.com",
 	}
 
 	if err := cust.Insert("http://www.example.com"); err != nil {
@@ -584,7 +584,7 @@ func BenchmarkGetCustomerOrders(b *testing.B) {
 		ShopId:    *shopID,
 		FirstName: "Alex",
 		LastName:  "Ninneman",
-		Email:     "ninnemana@gmail.com",
+		Email:     time.Now().Format(time.RFC3339Nano) + "@gmail.com",
 		Password:  "password",
 	}
 	if err := cust.Insert("http://www.example.com"); err != nil {

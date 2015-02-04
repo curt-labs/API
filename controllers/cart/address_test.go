@@ -8,6 +8,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 	"net/url"
 	"testing"
+	"time"
 )
 
 func Test_GetCustomerAddresses(t *testing.T) {
@@ -41,10 +42,11 @@ func Test_GetCustomerAddresses(t *testing.T) {
 				ShopId:    *shopID,
 				FirstName: "Alex",
 				LastName:  "Ninneman",
-				Email:     "ninnemana@gmail.com",
+				Email:     time.Now().Format(time.RFC3339Nano) + "@gmail.com",
 				Password:  "password",
 			}
 			response = httprunner.JsonRequest("POST", "/shopify/customers", &qs, cust, AddCustomer)
+			t.Log(response.Body.String())
 			So(response.Code, ShouldEqual, 200)
 			So(json.Unmarshal(response.Body.Bytes(), &cust), ShouldBeNil)
 
@@ -92,7 +94,7 @@ func Test_AddAddress(t *testing.T) {
 			ShopId:    *shopID,
 			FirstName: "Alex",
 			LastName:  "Ninneman",
-			Email:     "ninnemana@gmail.com",
+			Email:     time.Now().Format(time.RFC3339Nano) + "@gmail.com",
 			Password:  "password",
 		}
 		response = httprunner.JsonRequest("POST", "/shopify/customers", &qs, cust, AddCustomer)
@@ -144,7 +146,7 @@ func Test_GetAddress(t *testing.T) {
 			ShopId:    *shopID,
 			FirstName: "Alex",
 			LastName:  "Ninneman",
-			Email:     "ninnemana@gmail.com",
+			Email:     time.Now().Format(time.RFC3339Nano) + "@gmail.com",
 			Password:  "password",
 		}
 		response = httprunner.JsonRequest("POST", "/shopify/customers", &qs, cust, AddCustomer)
@@ -204,7 +206,7 @@ func Test_EditAddress(t *testing.T) {
 			ShopId:    *shopID,
 			FirstName: "Alex",
 			LastName:  "Ninneman",
-			Email:     "ninnemana@gmail.com",
+			Email:     time.Now().Format(time.RFC3339Nano) + "@gmail.com",
 			Password:  "password",
 		}
 		response = httprunner.JsonRequest("POST", "/shopify/customers", &qs, cust, AddCustomer)
@@ -273,7 +275,7 @@ func Test_SetDefaultAddress(t *testing.T) {
 			ShopId:    *shopID,
 			FirstName: "Alex",
 			LastName:  "Ninneman",
-			Email:     "ninnemana@gmail.com",
+			Email:     time.Now().Format(time.RFC3339Nano) + "@gmail.com",
 			Password:  "password",
 		}
 		response = httprunner.JsonRequest("POST", "/shopify/customers", &qs, cust, AddCustomer)
@@ -333,7 +335,7 @@ func Test_DeleteAddress(t *testing.T) {
 			ShopId:    *shopID,
 			FirstName: "Alex",
 			LastName:  "Ninneman",
-			Email:     "ninnemana@gmail.com",
+			Email:     time.Now().Format(time.RFC3339Nano) + "@gmail.com",
 			Password:  "password",
 		}
 		response = httprunner.JsonRequest("POST", "/shopify/customers", &qs, cust, AddCustomer)
@@ -408,7 +410,7 @@ func BenchmarkGetCustomerAddresses(b *testing.B) {
 		ShopId:    *shopID,
 		FirstName: "Alex",
 		LastName:  "Ninneman",
-		Email:     "ninnemana@gmail.com",
+		Email:     time.Now().Format(time.RFC3339Nano) + "@gmail.com",
 		Password:  "password",
 	}
 	if err := cust.Insert("http://www.example.com"); err != nil {

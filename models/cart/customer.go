@@ -475,7 +475,7 @@ func (c *Customer) validateEmail() error {
 
 	var tmp Customer
 	err = col.Find(bson.M{"email": c.Email}).One(&tmp)
-	if err != nil {
+	if err != nil && err != mgo.ErrNotFound {
 		return err
 	}
 

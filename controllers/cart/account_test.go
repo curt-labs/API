@@ -8,6 +8,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 	"net/url"
 	"testing"
+	"time"
 )
 
 func Test_AddAccount(t *testing.T) {
@@ -39,7 +40,8 @@ func Test_AddAccount(t *testing.T) {
 		So(response.Code, ShouldEqual, 500)
 		So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
 
-		cust.Email = "ninnemana@gmail.com"
+		cust.Email = time.Now().Format(time.RFC3339Nano) + "@gmail.com"
+
 		response = httprunner.JsonRequest("POST", "/shopify/account", &qs, nil, AddAccount)
 		So(response.Code, ShouldEqual, 500)
 		So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
@@ -64,7 +66,7 @@ func Test_AccountLogin(t *testing.T) {
 			ShopId:    *shopID,
 			FirstName: "Alex",
 			LastName:  "Ninneman",
-			Email:     "alex@ninneman.org",
+			Email:     time.Now().Format(time.RFC3339Nano) + "@gmail.com",
 		}
 
 		cust.Password = "password"
@@ -97,7 +99,7 @@ func Test_GetAccount(t *testing.T) {
 			ShopId:    *shopID,
 			FirstName: "Alex",
 			LastName:  "Ninneman",
-			Email:     "alex@ninneman.org",
+			Email:     time.Now().Format(time.RFC3339Nano) + "@gmail.com",
 		}
 
 		cust.Password = "password"
@@ -113,7 +115,6 @@ func Test_GetAccount(t *testing.T) {
 			"Authorization": "Bearer ",
 		}
 		response = httprunner.Req(GetAccount, "GET", "", "/shopify/account", &qs, nil, nil, header)
-		t.Log(response.Body.String())
 		So(response.Code, ShouldEqual, 500)
 		So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
 
@@ -139,7 +140,7 @@ func Test_EditAccount(t *testing.T) {
 			ShopId:    *shopID,
 			FirstName: "Alex",
 			LastName:  "Ninneman",
-			Email:     "alex@ninneman.org",
+			Email:     time.Now().Format(time.RFC3339Nano) + "@gmail.com",
 		}
 
 		cust.Password = "password"
@@ -147,7 +148,7 @@ func Test_EditAccount(t *testing.T) {
 		So(response.Code, ShouldEqual, 200)
 		So(json.Unmarshal(response.Body.Bytes(), &cust), ShouldBeNil)
 
-		cust.Email = "ninnemana@gmail.com"
+		cust.Email = time.Now().Format(time.RFC3339Nano) + "@gmail.com"
 		header := map[string]interface{}{
 			"Authorization": "Bearer as;ldskfja;lfdj",
 		}
@@ -158,14 +159,13 @@ func Test_EditAccount(t *testing.T) {
 		header = map[string]interface{}{
 			"Authorization": "Bearer " + cust.Token,
 		}
-		cust.Email = ""
+		cust.FirstName = ""
 		response = httprunner.Req(EditAccount, "PUT", "", "/shopify/account", &qs, nil, cust, header)
 		So(response.Code, ShouldEqual, 500)
 		So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
 
-		cust.Email = "ninnemana@gmail.com"
+		cust.FirstName = "Alex"
 		response = httprunner.Req(EditAccount, "PUT", "", "/shopify/account", &qs, nil, cust, header)
-		t.Log(response.Body.String())
 		So(response.Code, ShouldEqual, 200)
 		So(json.Unmarshal(response.Body.Bytes(), &cust), ShouldBeNil)
 	})

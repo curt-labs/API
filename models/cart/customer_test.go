@@ -294,8 +294,8 @@ func clearMongo() {
 		return
 	}
 	defer sess.Close()
-	sess.DB("CurtCart").C("customer").DropCollection()
-	sess.DB("CurtCart").C("order").DropCollection()
-	sess.DB("CurtCart").C("shop").DropCollection()
+	sess.DB("CurtCart").C("customer").RemoveAll(bson.M{})
+	sess.DB("CurtCart").C("order").RemoveAll(bson.M{})
+	sess.DB("CurtCart").C("shop").RemoveAll(bson.M{})
 
 }
