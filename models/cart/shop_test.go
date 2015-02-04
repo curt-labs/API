@@ -8,6 +8,8 @@ import (
 )
 
 func TestGet(t *testing.T) {
+	clearMongo()
+
 	Convey("Testing GetShop", t, func() {
 		Convey("Bad Connection", func() {
 			os.Setenv("MONGO_URL", "0.0.0.1")

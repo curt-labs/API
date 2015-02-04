@@ -1,7 +1,9 @@
 package cart
 
 import (
+	"github.com/curt-labs/GoAPI/helpers/database"
 	. "github.com/smartystreets/goconvey/convey"
+	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"os"
 	"testing"
@@ -9,6 +11,8 @@ import (
 )
 
 func TestSinceId(t *testing.T) {
+	clearMongo()
+
 	Convey("Testing CustomerSinceId with no shop", t, func() {
 		Convey("with bad connection", func() {
 			os.Setenv("MONGO_URL", "0.0.0.1")
@@ -45,6 +49,8 @@ func TestSinceId(t *testing.T) {
 }
 
 func TestGetCustomer(t *testing.T) {
+	clearMongo()
+
 	Convey("Testing Customer Gets with no shop", t, func() {
 		Convey("Testing GetCustomers with bad connection", func() {
 			os.Setenv("MONGO_URL", "0.0.0.1")
@@ -81,6 +87,8 @@ func TestGetCustomer(t *testing.T) {
 }
 
 func TestCustomer(t *testing.T) {
+	clearMongo()
+
 	Convey("Testing Get with no Id", t, func() {
 		cust := Customer{}
 		err := cust.Get()
@@ -236,6 +244,7 @@ func TestCustomer(t *testing.T) {
 }
 
 func TestCustomerCount(t *testing.T) {
+	clearMongo()
 	Convey("Test CustomerCount", t, func() {
 		Convey("Bad Connection", func() {
 			os.Setenv("MONGO_URL", "0.0.0.1")
@@ -258,6 +267,7 @@ func TestCustomerCount(t *testing.T) {
 }
 
 func TestSearchCustomers(t *testing.T) {
+	clearMongo()
 	Convey("Bad Connection", t, func() {
 		os.Setenv("MONGO_URL", "0.0.0.1")
 		custs, err := SearchCustomers("", bson.NewObjectId())
@@ -276,4 +286,16 @@ func TestSearchCustomers(t *testing.T) {
 		So(err, ShouldNotBeNil)
 		So(custs, ShouldHaveSameTypeAs, []Customer{})
 	})
+}
+
+func clearMongo() {
+	sess, err := mgo.DialWithInfo(database.MongoConnectionString())
+	if err != nil {
+		return
+	}
+	defer sess.Close()
+	sess.DB("CurtCart").C("customer").DropCollection()
+	sess.DB("CurtCart").C("order").DropCollection()
+	sess.DB("CurtCart").C("shop").DropCollection()
+
 }

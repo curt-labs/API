@@ -289,9 +289,9 @@ func (c *Customer) GetByEmail() error {
 
 // Add new customer.
 func (c *Customer) Insert(ref string) error {
-	if c.Email == "" {
+	if err := c.validateEmail(); err != nil {
 		c.Password = ""
-		return fmt.Errorf("error: %s", "invalid email address")
+		return err
 	}
 	if c.Password == "" {
 		return fmt.Errorf("error: %s", "invalid password")
@@ -357,10 +357,6 @@ func (c *Customer) Update() error {
 		c.Password = ""
 		return fmt.Errorf("error: %s", "cannot update a customer that doesn't exist")
 	}
-	if c.Email == "" {
-		c.Password = ""
-		return fmt.Errorf("error: %s", "invalid email address")
-	}
 	if c.FirstName == "" {
 		c.Password = ""
 		return fmt.Errorf("error: %s", "invalid first anem")
@@ -385,7 +381,6 @@ func (c *Customer) Update() error {
 				"accepts_marketing": c.AcceptsMarketing,
 				"addresses":         c.Addresses,
 				"default_address":   c.DefaultAddress,
-				"email":             c.Email,
 				"first_name":        c.FirstName,
 				"last_name":         c.LastName,
 				"meta_fields":       c.MetaFields,
@@ -463,4 +458,30 @@ func (c *Customer) generateToken(referer string) error {
 
 	c.Password = ""
 	return err
+}
+
+func (c *Customer) validateEmail() error {
+	if c.Email == "" {
+		return fmt.Errorf("error: %s", "invalid email address")
+	}
+
+	sess, err := mgo.DialWithInfo(database.MongoConnectionString())
+	if err != nil {
+		return err
+	}
+	defer sess.Close()
+
+	col := sess.DB("CurtCart").C("customer")
+
+	var tmp Customer
+	err = col.Find(bson.M{"email": c.Email}).One(&tmp)
+	if err != nil {
+		return err
+	}
+
+	if tmp.Id.Hex() != "" {
+		return fmt.Errorf("error: %s", "email already exists")
+	}
+
+	return nil
 }

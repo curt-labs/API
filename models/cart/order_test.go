@@ -8,6 +8,7 @@ import (
 )
 
 func TestOrderValidation(t *testing.T) {
+	clearMongo()
 	Convey("Testing validate()", t, func() {
 		Convey("with no data", func() {
 			var o Order
@@ -60,6 +61,7 @@ func TestOrderValidation(t *testing.T) {
 }
 
 func TestOrderCount(t *testing.T) {
+	clearMongo()
 	Convey("Testing GetOrderCount", t, func() {
 		Convey("with bad connection", func() {
 			os.Setenv("MONGO_URL", "0.0.0.1")
@@ -78,6 +80,7 @@ func TestOrderCount(t *testing.T) {
 }
 
 func TestBindCustomer(t *testing.T) {
+	clearMongo()
 	Convey("Testing bindCustomer()", t, func() {
 		var o Order
 		o.Customer = &Customer{}
@@ -114,6 +117,7 @@ func TestBindCustomer(t *testing.T) {
 }
 
 func TestCreate(t *testing.T) {
+	clearMongo()
 	Convey("Testing Order.Create()", t, func() {
 		var o Order
 		So(o.Create(), ShouldNotBeNil)

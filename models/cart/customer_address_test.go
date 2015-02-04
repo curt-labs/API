@@ -6,6 +6,8 @@ import (
 )
 
 func TestValidate(t *testing.T) {
+	clearMongo()
+
 	Convey("Testing Validate", t, func() {
 		var addr CustomerAddress
 		err := addr.Validate()
