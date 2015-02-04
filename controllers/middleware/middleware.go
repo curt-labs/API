@@ -45,13 +45,13 @@ func Meddler() martini.Handler {
 		// check if we need to make a call
 		// to the shopping cart middleware
 		if strings.Contains(strings.ToLower(r.URL.Path), "/shopify/account") { // account perms
-			if strings.ToLower(r.URL.Path) == "/shopify/account/login" {
+			if strings.ToLower(r.URL.Path) == "/shopify/account/login" || (strings.ToLower(r.Method) == "post" && strings.ToLower(r.URL.Path) == "/shopify/account") {
 				shopID := r.URL.Query().Get("shop")
+				var crt cart.Shop
 				if bson.IsObjectIdHex(shopID) {
-					c.Map(&cart.Shop{
-						Id: bson.ObjectIdHex(shopID),
-					})
+					crt.Id = bson.ObjectIdHex(shopID)
 				}
+				c.Map(&crt)
 			} else if err := mapCartAccount(c, res, r); err != nil {
 				apierror.GenerateError("", err, res, r)
 				return

@@ -1,56 +1,56 @@
 package cart_ctlr
 
-// import (
-// 	"encoding/json"
-// 	"github.com/curt-labs/GoAPI/helpers/error"
-// 	"github.com/curt-labs/GoAPI/helpers/httprunner"
-// 	"github.com/curt-labs/GoAPI/models/cart"
-// 	. "github.com/smartystreets/goconvey/convey"
-// 	"net/url"
-// 	"testing"
-// )
+import (
+	"encoding/json"
+	"github.com/curt-labs/GoAPI/helpers/error"
+	"github.com/curt-labs/GoAPI/helpers/httprunner"
+	"github.com/curt-labs/GoAPI/models/cart"
+	. "github.com/smartystreets/goconvey/convey"
+	"net/url"
+	"testing"
+)
 
-// func Test_AddAccount(t *testing.T) {
-// 	Convey("with no shop identifier", t, func() {
-// 		qs := make(url.Values, 0)
+func Test_AddAccount(t *testing.T) {
+	Convey("with no shop identifier", t, func() {
+		qs := make(url.Values, 0)
 
-// 		resp := httprunner.JsonRequest("POST", "/shopify/account", &qs, cart.Shop{}, AddAccount)
-// 		So(resp.Code, ShouldEqual, 500)
-// 		So(json.Unmarshal(resp.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
-// 	})
+		resp := httprunner.JsonRequest("POST", "/shopify/account", &qs, cart.Shop{}, AddAccount)
+		So(resp.Code, ShouldEqual, 500)
+		So(json.Unmarshal(resp.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
+	})
 
-// 	Convey("with shop identifier", t, func() {
-// 		shopID := cart.InsertTestData()
-// 		So(shopID, ShouldNotBeNil)
-// 		val := shopID.Hex()
-// 		qs := make(url.Values, 0)
-// 		qs.Add("shop", val)
+	Convey("with shop identifier", t, func() {
+		shopID := cart.InsertTestData()
+		So(shopID, ShouldNotBeNil)
+		val := shopID.Hex()
+		qs := make(url.Values, 0)
+		qs.Add("shop", val)
 
-// 		response = httprunner.JsonRequest("POST", "/shopify/account", &qs, cart.Shop{}, AddAccount)
-// 		So(response.Code, ShouldEqual, 500)
-// 		So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
+		response = httprunner.JsonRequest("POST", "/shopify/account", &qs, cart.Shop{}, AddAccount)
+		So(response.Code, ShouldEqual, 500)
+		So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
 
-// 		cust := cart.Customer{
-// 			ShopId:    *shopID,
-// 			FirstName: "Alex",
-// 			LastName:  "Ninneman",
-// 		}
+		cust := cart.Customer{
+			ShopId:    *shopID,
+			FirstName: "Alex",
+			LastName:  "Ninneman",
+		}
 
-// 		response = httprunner.JsonRequest("POST", "/shopify/account", &qs, cust, AddAccount)
-// 		So(response.Code, ShouldEqual, 500)
-// 		So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
+		response = httprunner.JsonRequest("POST", "/shopify/account", &qs, cust, AddAccount)
+		So(response.Code, ShouldEqual, 500)
+		So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
 
-// 		cust.Email = "ninnemana@gmail.com"
-// 		response = httprunner.JsonRequest("POST", "/shopify/account", &qs, cust, AddAccount)
-// 		So(response.Code, ShouldEqual, 500)
-// 		So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
+		cust.Email = "ninnemana@gmail.com"
+		response = httprunner.JsonRequest("POST", "/shopify/account", &qs, cust, AddAccount)
+		So(response.Code, ShouldEqual, 500)
+		So(json.Unmarshal(response.Body.Bytes(), &apierror.ApiErr{}), ShouldBeNil)
 
-// 		cust.Password = "password"
-// 		response = httprunner.JsonRequest("POST", "/shopify/account", &qs, cust, AddAccount)
-// 		So(response.Code, ShouldEqual, 200)
-// 		So(json.Unmarshal(response.Body.Bytes(), &cust), ShouldBeNil)
-// 	})
-// }
+		cust.Password = "password"
+		response = httprunner.JsonRequest("POST", "/shopify/account", &qs, cust, AddAccount)
+		So(response.Code, ShouldEqual, 200)
+		So(json.Unmarshal(response.Body.Bytes(), &cust), ShouldBeNil)
+	})
+}
 
 // func Test_GetAccount(t *testing.T) {
 // 	Convey("no shop identifier", t, func() {
