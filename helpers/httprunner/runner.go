@@ -122,13 +122,10 @@ func newPb(size int) (bar *pb.ProgressBar) {
 }
 
 func Request(method, route string, body *url.Values, handler martini.Handler) httptest.ResponseRecorder {
-	// var request *http.Request
 	if body != nil && strings.ToUpper(method) != "GET" {
 		return Req(handler, method, "", route, nil, body)
-		// request, _ = http.NewRequest(method, route, bytes.NewBufferString(body.Encode()))
 	} else if body != nil {
 		return Req(handler, method, "", route, body)
-		// request, _ = http.NewRequest(method, route+"?"+body.Encode(), nil)
 	}
 	return Req(handler, method, "", route)
 }
