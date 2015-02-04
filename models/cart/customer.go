@@ -317,8 +317,9 @@ func (c *Customer) Insert(ref string) error {
 		c.Password = ""
 		return fmt.Errorf("error: %s", err.Error())
 	}
-	c.Password = string(cryptic)
+	pass := string(cryptic)
 	c.generateToken(ref)
+	c.Password = pass
 
 	sess, err := mgo.DialWithInfo(database.MongoConnectionString())
 	if err != nil {

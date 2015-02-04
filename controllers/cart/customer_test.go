@@ -42,9 +42,7 @@ func Test_GetCustomers(t *testing.T) {
 			qs := make(url.Values, 0)
 			qs.Add("shop", val)
 
-			t.Log(qs)
 			response = httprunner.Request("GET", "/shopify/customers", &qs, GetCustomers)
-			t.Log(response.Body.String())
 			So(response.Code, ShouldEqual, 200)
 
 			So(json.Unmarshal(response.Body.Bytes(), &[]cart.Customer{}), ShouldBeNil)
