@@ -58,6 +58,7 @@ func MongoConnectionString() *mgo.DialInfo {
 	info.Password = os.Getenv("MONGO_CART_PASSWORD")
 	info.Database = os.Getenv("MONGO_CART_DATABASE")
 	info.Timeout = time.Second * 2
+	info.FailFast = true
 	if info.Database == "" {
 		info.Database = "CurtCart"
 	}
