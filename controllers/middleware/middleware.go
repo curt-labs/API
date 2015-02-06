@@ -21,6 +21,7 @@ import (
 )
 
 var (
+	requestQueue  = nsqq.NewQueue("goapi")
 	ExcusedRoutes = []string{"/status", "/customer/auth", "/customer/user", "/new/customer/auth", "/customer/user/register", "/customer/user/resetPassword"}
 )
 
@@ -251,13 +252,14 @@ func logRequest(r *http.Request, reqTime time.Duration) {
 		Properties: props,
 	}
 
-	js, err := json.Marshal(tracker)
-	if err == nil {
-		mq := nsqq.NewQueue("goapi")
-		mq.Push(js)
+	if requestQueue != nil {
+		js, err := json.Marshal(tracker)
+		if err == nil {
+			requestQueue.Push(js)
+		}
 	}
 
-	if err = client.Track(tracker); err != nil {
+	if err := client.Track(tracker); err != nil {
 		m := slack.Message{
 			Channel:  "debugging",
 			Username: "GoAPI",

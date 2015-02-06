@@ -1,10 +1,16 @@
 package nsqq
 
 import (
+	"io/ioutil"
+	"log"
 	"os"
 	"strings"
 
 	"github.com/bitly/go-nsq"
+)
+
+var (
+	nullLogger = log.New(ioutil.Discard, "", log.LstdFlags)
 )
 
 type Queue struct {
@@ -42,6 +48,7 @@ func (mq *Queue) Init() error {
 		if err != nil {
 			return err
 		}
+		producer.SetLogger(nullLogger, nsq.LogLevelInfo)
 		mq.Producers[addr] = producer
 	}
 	return nil
