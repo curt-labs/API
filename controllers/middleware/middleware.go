@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/error"
+	"github.com/curt-labs/GoAPI/helpers/nsq"
 	"github.com/curt-labs/GoAPI/helpers/slack"
 	"github.com/curt-labs/GoAPI/models/cart"
 	"github.com/curt-labs/GoAPI/models/customer"
@@ -243,13 +245,19 @@ func logRequest(r *http.Request, reqTime time.Duration) {
 	props["form"] = r.Form
 	props["requestTime"] = int64((reqTime.Nanoseconds() * 1000) * 1000)
 
-	err := client.Track(&analytics.Track{
+	tracker := &analytics.Track{
 		Event:      r.URL.String(),
 		UserId:     key,
 		Properties: props,
-	})
+	}
 
-	if err != nil {
+	js, err := json.Marshal(tracker)
+	if err == nil {
+		mq := nsqq.NewQueue("goapi")
+		mq.Push(js)
+	}
+
+	if err = client.Track(tracker); err != nil {
 		m := slack.Message{
 			Channel:  "debugging",
 			Username: "GoAPI",

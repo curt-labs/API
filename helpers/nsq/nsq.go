@@ -1,6 +1,9 @@
 package nsqq
 
 import (
+	"os"
+	"strings"
+
 	"github.com/bitly/go-nsq"
 )
 
@@ -11,11 +14,15 @@ type Queue struct {
 	Producers       map[string]*nsq.Producer
 }
 
-func NewQueue(topicname string, addresses []string) *Queue {
+func NewQueue(topicname string, addresses ...[]string) *Queue {
 	q := Queue{
-		Topic:           topicname,
-		ServerAddresses: addresses,
+		Topic: topicname,
 	}
+
+	if len(addresses) > 0 {
+		q.ServerAddresses = addresses[0]
+	}
+
 	q.Init()
 	return &q
 }
@@ -26,7 +33,7 @@ func (mq *Queue) Init() error {
 	}
 
 	if len(mq.ServerAddresses) == 0 {
-		mq.ServerAddresses = []string{"127.0.0.1:4160"}
+		mq.ServerAddresses = getDaemonHosts()
 	}
 
 	mq.Producers = make(map[string]*nsq.Producer)
@@ -53,4 +60,12 @@ func (mq *Queue) Push(data []byte) error {
 		}
 	}
 	return nil
+}
+
+func getDaemonHosts() []string {
+	hostString := os.Getenv("NSQ_DAEMON_HOSTS")
+	if hostString == "" {
+		return []string{"127.0.0.1:4160"}
+	}
+	return strings.Split(hostString, ",")
 }
