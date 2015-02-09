@@ -162,6 +162,13 @@ func main() {
 		r.Put("", cart_ctlr.EditAccount)
 		r.Post("/login", cart_ctlr.AccountLogin)
 
+		// m.Group("/shopify/account/address", func(r martini.Router) {
+		// 	r.Get("", cart_ctlr.GetAccountAddresses)
+		// 	r.Post("", cart_ctlr.AddAccountAddress)
+		// 	r.Put("", cart_ctlr.EditAccountAddress)
+		// 	r.Delete("", cart_ctlr.DeleteAccountAddress)
+		// })
+
 	})
 
 	m.Group("/cart", func(r martini.Router) {

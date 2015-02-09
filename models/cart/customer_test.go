@@ -297,5 +297,4 @@ func clearMongo() {
 	sess.DB("CurtCart").C("customer").RemoveAll(bson.M{})
 	sess.DB("CurtCart").C("order").RemoveAll(bson.M{})
 	sess.DB("CurtCart").C("shop").RemoveAll(bson.M{})
-
 }

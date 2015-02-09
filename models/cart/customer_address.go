@@ -2,7 +2,10 @@ package cart
 
 import (
 	"fmt"
+	"github.com/curt-labs/GoAPI/helpers/database"
+	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
+	"time"
 )
 
 type CustomerAddress struct {
@@ -21,6 +24,75 @@ type CustomerAddress struct {
 	CountryCode  string         `json:"country_code" xml:"geo>country>code,attr" bson:"country_code"`
 	CountryName  string         `json:"country_name" xml:"geo>country>name,attr" bson:"country_name"`
 	Zip          string         `json:"zip" xml:"geo>zip,attr" bson:"zip"`
+	CreatedAt    time.Time      `json:"created_at" xml:"created_at,attr" bson:"created_at"`
+	UpdatedAt    time.Time      `json:"updated_at" xml:"updated_at,attr" bson:"updated_at"`
+}
+
+func (c *Customer) AddAddress(addr CustomerAddress) error {
+	if c.Id.Hex() == "" {
+		return fmt.Errorf("error: %s", "cannot update a customer that doesn't exist")
+	}
+	if addr.Id == nil || !addr.Id.Valid() {
+		addrId := bson.NewObjectId()
+		addr.Id = &addrId
+	}
+
+	if err := addr.Validate(); err != nil {
+		return err
+	}
+
+	addr.UpdatedAt = time.Now()
+	addr.CreatedAt = time.Now()
+
+	sess, err := mgo.DialWithInfo(database.MongoConnectionString())
+	if err != nil {
+		return err
+	}
+	defer sess.Close()
+
+	var change = mgo.Change{
+		ReturnNew: true,
+		Update: bson.M{
+			"$addToSet": bson.M{
+				"addresses": addr,
+			},
+		},
+	}
+
+	_, err = sess.DB("CurtCart").C("customer").Find(bson.M{"_id": c.Id, "shop_id": c.ShopId}).Apply(change, c)
+
+	return err
+}
+
+func (c *Customer) SaveAddress(addr CustomerAddress) error {
+	if c.Id.Hex() == "" {
+		return fmt.Errorf("error: %s", "cannot update a customer that doesn't exist")
+	}
+
+	if err := addr.Validate(); err != nil {
+		return err
+	}
+
+	addr.UpdatedAt = time.Now()
+
+	sess, err := mgo.DialWithInfo(database.MongoConnectionString())
+	if err != nil {
+		return err
+	}
+	defer sess.Close()
+
+	// change.
+	var change = mgo.Change{
+		ReturnNew: true,
+		Update: bson.M{
+			"$set": bson.M{
+				"addresses.$": addr,
+			},
+		},
+	}
+
+	_, err = sess.DB("CurtCart").C("customer").Find(bson.M{"_id": c.Id, "shop_id": c.ShopId}).Apply(change, c)
+	return err
 }
 
 func (c *CustomerAddress) Validate() error {
