@@ -316,6 +316,84 @@ func Test_EditAddress(t *testing.T) {
 	})
 }
 
+func Test_DeleteAddress(t *testing.T) {
+	clearMongo()
+
+	id := InsertTestData()
+	if id == nil {
+		return
+	}
+
+	var customer Customer
+	customer.ShopId = *id
+	customer.FirstName = "Alex"
+	customer.LastName = "Ninneman"
+	customer.Password = "password"
+	customer.Email = "ninnemana@gmail.com"
+	err := customer.Insert("http://example.com")
+	if err != nil {
+		t.Log(err)
+		return
+	}
+
+	addr := CustomerAddress{
+		Company:      "CURT Manufacturing, LLC",
+		Name:         "Alex's House",
+		FirstName:    "Alex",
+		LastName:     "Ninneman",
+		Phone:        "7153082604",
+		Address1:     "1119 Sunset Lane",
+		City:         "Altoona",
+		Province:     "Wisconsin",
+		ProvinceCode: "WI",
+		Country:      "United States of America",
+		CountryName:  "United States",
+		CountryCode:  "USA",
+		Zip:          "54720",
+	}
+
+	Convey("Delete Address", t, func() {
+
+		err = customer.AddAddress(addr)
+		So(err, ShouldBeNil)
+
+		err = customer.Get()
+		So(err, ShouldBeNil)
+		So(len(customer.Addresses), ShouldBeGreaterThan, 0)
+
+		addr = customer.Addresses[0]
+
+		id := customer.Id
+		customer.Id = ""
+		err = customer.DeleteAddress(addr)
+		So(err, ShouldNotBeNil)
+
+		customer.Id = id
+		os.Setenv("MONGO_URL", "0.0.0.1")
+		err = customer.DeleteAddress(addr)
+		So(err, ShouldNotBeNil)
+		os.Setenv("MONGO_URL", "")
+
+		addrId := addr.Id
+		var tmpId bson.ObjectId
+		addr.Id = &tmpId
+		err = customer.DeleteAddress(addr)
+		So(err, ShouldNotBeNil)
+
+		addr.Id = addrId
+
+		addr1 := addr.Address1
+		addr.Address1 = ""
+		err = customer.DeleteAddress(addr)
+		So(err, ShouldNotBeNil)
+		addr.Address1 = addr1
+
+		err := customer.DeleteAddress(addr)
+		So(err, ShouldBeNil)
+
+	})
+}
+
 func Test_deepEqual(t *testing.T) {
 	Convey("Augmenting properties to run deep equal", t, func() {
 		var a1 *CustomerAddress

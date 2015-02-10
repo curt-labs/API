@@ -61,6 +61,12 @@ func CustomersSinceId(shopId bson.ObjectId, since_id bson.ObjectId, page, limit 
 		"_id": bson.M{
 			"$gt": since_id.String(),
 		},
+		"$or": []bson.M{
+			bson.M{"customer.addresses.deleted": false},
+			bson.M{"customer.addresses.deleted": bson.M{
+				"$exists": false,
+			}},
+		},
 	}
 	if created_at_min != nil || created_at_max != nil {
 		createdQs := bson.M{}
@@ -110,6 +116,12 @@ func GetCustomers(id bson.ObjectId, page, limit int, created_at_min, created_at_
 	c := sess.DB("CurtCart").C("customer")
 	qs := bson.M{
 		"shop_id": id,
+		"$or": []bson.M{
+			bson.M{"customer.addresses.deleted": false},
+			bson.M{"customer.addresses.deleted": bson.M{
+				"$exists": false,
+			}},
+		},
 	}
 	if created_at_min != nil || created_at_max != nil {
 		createdQs := bson.M{}
@@ -159,7 +171,16 @@ func CustomerCount(shopId bson.ObjectId) (int, error) {
 	}
 	defer sess.Close()
 
-	return sess.DB("CurtCart").C("customer").Find(bson.M{"shop_id": shopId}).Count()
+	qs := bson.M{
+		"shop_id": shopId,
+		"$or": []bson.M{
+			bson.M{"customer.addresses.deleted": false},
+			bson.M{"customer.addresses.deleted": bson.M{
+				"$exists": false,
+			}},
+		},
+	}
+	return sess.DB("CurtCart").C("customer").Find(qs).Count()
 }
 
 func SearchCustomers(query string, shopId bson.ObjectId) ([]Customer, error) {
@@ -180,6 +201,12 @@ func SearchCustomers(query string, shopId bson.ObjectId) ([]Customer, error) {
 		},
 		"shop_id":  shopId,
 		"password": 0,
+		"$or": []bson.M{
+			bson.M{"customer.addresses.deleted": false},
+			bson.M{"customer.addresses.deleted": bson.M{
+				"$exists": false,
+			}},
+		},
 	}
 
 	err = sess.DB("CurtCart").C("customer").Find(qs).All(&custs)
@@ -208,7 +235,17 @@ func (c *Customer) Login(ref string) error {
 	col := sess.DB("CurtCart").C("customer")
 
 	var custs []Customer
-	err = col.Find(bson.M{"email": c.Email, "shop_id": c.ShopId}).All(&custs)
+	qs := bson.M{
+		"email":   c.Email,
+		"shop_id": c.ShopId,
+		"$or": []bson.M{
+			bson.M{"customer.addresses.deleted": false},
+			bson.M{"customer.addresses.deleted": bson.M{
+				"$exists": false,
+			}},
+		},
+	}
+	err = col.Find(qs).All(&custs)
 	if err != nil {
 		return err
 	}
@@ -259,7 +296,17 @@ func (c *Customer) Get() error {
 
 	col := sess.DB("CurtCart").C("customer")
 
-	err = col.Find(bson.M{"_id": c.Id, "shop_id": c.ShopId}).One(&c)
+	qs := bson.M{
+		"_id":     c.Id,
+		"shop_id": c.ShopId,
+		"$or": []bson.M{
+			bson.M{"customer.addresses.deleted": false},
+			bson.M{"customer.addresses.deleted": bson.M{
+				"$exists": false,
+			}},
+		},
+	}
+	err = col.Find(qs).One(&c)
 	if err != nil {
 		return err
 	}
@@ -278,7 +325,17 @@ func (c *Customer) GetByEmail() error {
 
 	col := sess.DB("CurtCart").C("customer")
 
-	err = col.Find(bson.M{"email": c.Email, "shop_id": c.ShopId}).One(&c)
+	qs := bson.M{
+		"email":   c.Email,
+		"shop_id": c.ShopId,
+		"$or": []bson.M{
+			bson.M{"customer.addresses.deleted": false},
+			bson.M{"customer.addresses.deleted": bson.M{
+				"$exists": false,
+			}},
+		},
+	}
+	err = col.Find(qs).One(&c)
 	if err != nil {
 		return err
 	}
@@ -391,7 +448,17 @@ func (c *Customer) Update() error {
 		},
 	}
 
-	_, err = sess.DB("CurtCart").C("customer").Find(bson.M{"_id": c.Id, "shop_id": c.ShopId}).Apply(change, c)
+	qs := bson.M{
+		"_id":     c.Id,
+		"shop_id": c.ShopId,
+		"$or": []bson.M{
+			bson.M{"customer.addresses.deleted": false},
+			bson.M{"customer.addresses.deleted": bson.M{
+				"$exists": false,
+			}},
+		},
+	}
+	_, err = sess.DB("CurtCart").C("customer").Find(qs).Apply(change, c)
 
 	c.Password = ""
 	return err

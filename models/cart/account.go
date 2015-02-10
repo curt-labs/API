@@ -16,7 +16,16 @@ func AuthenticateAccount(token string) (Customer, error) {
 	defer sess.Close()
 
 	var cust Customer
-	err = sess.DB("CurtCart").C("customer").Find(bson.M{"token": token}).One(&cust)
+	qs := bson.M{
+		"token": token,
+		"$or": []bson.M{
+			bson.M{"customer.addresses.deleted": false},
+			bson.M{"customer.addresses.deleted": bson.M{
+				"$exists": false,
+			}},
+		},
+	}
+	err = sess.DB("CurtCart").C("customer").Find(qs).One(&cust)
 	if err != nil || !cust.Id.Valid() {
 		return Customer{}, fmt.Errorf("error: %s", "failed to authenticate using JWT")
 	}
@@ -32,7 +41,16 @@ func IdentifierFromToken(t string) (bson.ObjectId, error) {
 	defer sess.Close()
 
 	var cust Customer
-	err = sess.DB("CurtCart").C("customer").Find(bson.M{"token": t}).One(&cust)
+	qs := bson.M{
+		"token": t,
+		"$or": []bson.M{
+			bson.M{"customer.addresses.deleted": false},
+			bson.M{"customer.addresses.deleted": bson.M{
+				"$exists": false,
+			}},
+		},
+	}
+	err = sess.DB("CurtCart").C("customer").Find(qs).One(&cust)
 	if err != nil || !cust.Id.Valid() {
 		return "", fmt.Errorf("error: %s", "failed to identify using JWT")
 	}

@@ -26,6 +26,7 @@ type CustomerAddress struct {
 	Zip          string         `json:"zip" xml:"geo>zip,attr" bson:"zip"`
 	CreatedAt    time.Time      `json:"created_at" xml:"created_at,attr" bson:"created_at"`
 	UpdatedAt    time.Time      `json:"updated_at" xml:"updated_at,attr" bson:"updated_at"`
+	Deleted      bool           `json:"-" xml:"-" bson:"deleted"`
 }
 
 func (c *Customer) AddAddress(addr CustomerAddress) error {
@@ -90,6 +91,46 @@ func (c *Customer) SaveAddress(addr CustomerAddress) error {
 		},
 	}
 	return sess.DB("CurtCart").C("customer").Update(qry, change)
+}
+
+func (c *Customer) DeleteAddress(addr CustomerAddress) error {
+	if c.Id.Hex() == "" {
+		return fmt.Errorf("error: %s", "cannot update a customer that doesn't exist")
+	}
+
+	if err := addr.Validate(); err != nil {
+		return err
+	}
+
+	addr.UpdatedAt = time.Now()
+
+	sess, err := mgo.DialWithInfo(database.MongoConnectionString())
+	if err != nil {
+		return err
+	}
+	defer sess.Close()
+
+	qry := bson.M{
+		"addresses._id": addr.Id,
+	}
+	change := bson.M{
+		"$set": bson.M{
+			"customer.$.address.deleted": true,
+		},
+	}
+
+	err = sess.DB("CurtCart").C("customer").Update(qry, change)
+	if err != nil {
+		return err
+	}
+
+	for k, a := range c.Addresses {
+		if a.Id == addr.Id {
+			c.Addresses = append(c.Addresses[:k], c.Addresses[k+1:]...)
+		}
+	}
+
+	return nil
 }
 
 func (c *CustomerAddress) Validate() error {
