@@ -245,8 +245,17 @@ func Test_EditAddress(t *testing.T) {
 		err = customer.AddAddress(addr)
 		So(err, ShouldBeNil)
 
+		err = customer.Get()
+		So(err, ShouldBeNil)
+		So(len(customer.Addresses), ShouldBeGreaterThan, 0)
+
+		addr = customer.Addresses[0]
+
+		t.Log(addr.Id)
+
 		addr.City = ""
 		err = customer.SaveAddress(addr)
+		t.Log(err)
 		So(err, ShouldNotBeNil)
 
 		addr.City = "Altoona"

@@ -81,18 +81,15 @@ func (c *Customer) SaveAddress(addr CustomerAddress) error {
 	}
 	defer sess.Close()
 
-	// change.
-	var change = mgo.Change{
-		ReturnNew: true,
-		Update: bson.M{
-			"$set": bson.M{
-				"addresses.$": addr,
-			},
+	qry := bson.M{
+		"addresses._id": addr.Id,
+	}
+	change := bson.M{
+		"$set": bson.M{
+			"customer.$.address": addr,
 		},
 	}
-
-	_, err = sess.DB("CurtCart").C("customer").Find(bson.M{"_id": c.Id, "shop_id": c.ShopId}).Apply(change, c)
-	return err
+	return sess.DB("CurtCart").C("customer").Update(qry, change)
 }
 
 func (c *CustomerAddress) Validate() error {
