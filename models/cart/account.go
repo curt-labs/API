@@ -17,11 +17,7 @@ func AuthenticateAccount(token string) (Customer, error) {
 
 	var cust Customer
 	err = sess.DB("CurtCart").C("customer").Find(bson.M{"token": token}).One(&cust)
-	if err != nil {
-		return Customer{}, err
-	}
-
-	if !cust.Id.Valid() {
+	if err != nil || !cust.Id.Valid() {
 		return Customer{}, fmt.Errorf("error: %s", "failed to authenticate using JWT")
 	}
 
@@ -37,12 +33,8 @@ func IdentifierFromToken(t string) (bson.ObjectId, error) {
 
 	var cust Customer
 	err = sess.DB("CurtCart").C("customer").Find(bson.M{"token": t}).One(&cust)
-	if err != nil || cust.Id == "" {
-		return "", err
-	}
-
-	if !cust.Id.Valid() {
-		return "", fmt.Errorf("error: %s", "failed to find referenced customer")
+	if err != nil || !cust.Id.Valid() {
+		return "", fmt.Errorf("error: %s", "failed to identify using JWT")
 	}
 
 	return cust.Id, nil
