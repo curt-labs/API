@@ -102,7 +102,7 @@ func (l *Lookup) LoadParts(ch chan []Part, dtx *apicontext.DataContext) {
 
 		chosenValArr := make(map[string]string, 0)
 		for _, config := range l.Vehicle.Configurations {
-			chosenValArr[strings.ToLower(config.Value)] = strings.TrimSpace(strings.ToLower(config.Value))
+			chosenValArr[strings.TrimSpace(strings.ToLower(config.Value))] = strings.TrimSpace(strings.ToLower(config.Value))
 		}
 
 		for _, config := range *configs {
