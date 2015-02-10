@@ -119,7 +119,7 @@ func (a1 *CustomerAddress) deepEqual(a2 *CustomerAddress) bool {
 	if (a1 == nil && a2 != nil) || (a1 != nil && a2 == nil) {
 		return false
 	}
-	if a1.Address1 != a2.Address2 {
+	if a1.Address1 != a2.Address1 {
 		return false
 	}
 	if a1.Address2 != a2.Address2 {
