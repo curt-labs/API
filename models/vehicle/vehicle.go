@@ -12,20 +12,22 @@ import (
 )
 
 type ConfigOption struct {
-	Type    string
-	Options []string
+	Type    string   `json:"type,omitempty" xml:"type,omitempty"`
+	Options []string `json:"options,omitempty" xml:"options,omitempty"`
 }
 
 type Vehicle struct {
-	ID                    int
-	Year                  int
-	Make, Model, Submodel string
-	Configuration         []Config
+	ID            int      `json:"id,omitempty" xml:"id,omitempty"`
+	Year          int      `json:"year,omitempty" xml:"year,omitempty"`
+	Make          string   `json:"make,omitempty" xml:"make,omitempty"`
+	Model         string   `json:"model,omitempty" xml:"model,omitempty"`
+	Submodel      string   `json:"submodel,omitempty" xml:"submodel,omitempty"`
+	Configuration []Config `json:"configuration,omitempty" xml:"configuration,omitempty"`
 }
 
 type Config struct {
-	Type  string
-	Value string
+	Type  string `json:"type,omitempty" xml:"type,omitempty"`
+	Value string `json:"value,omitempty" xml:"value,omitempty"`
 }
 
 var (
@@ -275,23 +277,28 @@ func ReverseLookup(partId int) (vehicles []Vehicle, err error) {
 		}
 
 		v, ok := vehicleArray[id]
-		if ok {
+		if ok && configType != "" && configVal != "" {
 			// Vehicle Record exists for this ID
 			// so we'll simply append this configuration variable
 			config := Config{Type: configType, Value: configVal}
 			v.Configuration = append(v.Configuration, config)
 		} else {
-			config := Config{
-				Type:  configType,
-				Value: configVal,
+			var config Config
+			if configType != "" && configVal != "" {
+				config = Config{
+					Type:  configType,
+					Value: configVal,
+				}
 			}
 			v = Vehicle{
-				ID:            id,
-				Year:          year,
-				Make:          ma,
-				Model:         mo,
-				Submodel:      sm,
-				Configuration: []Config{config},
+				ID:       id,
+				Year:     year,
+				Make:     ma,
+				Model:    mo,
+				Submodel: sm,
+			}
+			if config.Type != "" && config.Value != "" {
+				v.Configuration = append(v.Configuration, config)
 			}
 		}
 		vehicleArray[v.ID] = v
@@ -301,7 +308,6 @@ func ReverseLookup(partId int) (vehicles []Vehicle, err error) {
 	for _, v := range vehicleArray {
 		vehicles = append(vehicles, v)
 	}
-
 	go redis.Setex(redis_key, vehicles, redis.CacheTimeout)
 
 	return
