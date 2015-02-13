@@ -5,30 +5,34 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	"github.com/curt-labs/GoAPI/models/brand"
-	"github.com/curt-labs/GoAPI/models/products"
+	// "github.com/curt-labs/GoAPI/models/products"
 	_ "github.com/go-sql-driver/mysql"
 
 	"database/sql"
 	"encoding/json"
+	// "log"
 	"strconv"
 	"time"
 )
 
 type Video struct {
-	ID           int                 `json:"id,omitempty" xml:"id,omitempty"`
-	Title        string              `json:"title, omitempty" xml:"title,omitempty"`
-	VideoType    VideoType           `json:"videoType,omitempty" xml:"v,omitempty"`
-	Description  string              `json:"description,omitempty" xml:"description,omitempty"`
-	DateAdded    time.Time           `json:"dateAdded,omitempty" xml:"dateAdded,omitempty"`
-	DateModified time.Time           `json:"dateModified,omitempty" xml:"dateModified,omitempty"`
-	IsPrimary    bool                `json:"isPrimary,omitempty" xml:"v,omitempty"`
-	Thumbnail    string              `json:"thumbnail,omitempty" xml:"thumbnail,omitempty"`
-	Channels     Channels            `json:"channels,omitempty" xml:"channels,omitempty"`
-	Files        CdnFiles            `json:"files,omitempty" xml:"files,omitempty"`
-	Categories   []products.Category `json:"categories,omitempty" xml:"categories,omitempty"`
-	Parts        []products.Part     `json:"parts,omitempty" xml:"parts,omitempty"`
-	WebsiteId    int                 `json:"websiteId,omitempty" xml:"websiteId,omitempty"` //TODO
-	Brands       brand.Brands        `json:"brands,omitempty" xml:"brands,omitempty"`
+	ID           int       `json:"id,omitempty" xml:"id,omitempty"`
+	Title        string    `json:"title, omitempty" xml:"title,omitempty"`
+	VideoType    VideoType `json:"videoType,omitempty" xml:"v,omitempty"`
+	Description  string    `json:"description,omitempty" xml:"description,omitempty"`
+	DateAdded    time.Time `json:"dateAdded,omitempty" xml:"dateAdded,omitempty"`
+	DateModified time.Time `json:"dateModified,omitempty" xml:"dateModified,omitempty"`
+	IsPrimary    bool      `json:"isPrimary,omitempty" xml:"v,omitempty"`
+	Thumbnail    string    `json:"thumbnail,omitempty" xml:"thumbnail,omitempty"`
+	Channels     Channels  `json:"channels,omitempty" xml:"channels,omitempty"`
+	Files        CdnFiles  `json:"files,omitempty" xml:"files,omitempty"`
+	// Categories   []products.Category `json:"categories,omitempty" xml:"categories,omitempty"`
+	// Parts        []products.Part     `json:"parts,omitempty" xml:"parts,omitempty"`
+	CategoryIds []int `json:"categoryIds,omitempty" xml:"categoryIds,omitempty"`
+	PartIds     []int `json:"partIds,omitempty" xml:"partIds,omitempty"`
+
+	WebsiteId int          `json:"websiteId,omitempty" xml:"websiteId,omitempty"` //TODO
+	Brands    brand.Brands `json:"brands,omitempty" xml:"brands,omitempty"`
 }
 type Videos []Video
 
@@ -135,6 +139,7 @@ var (
 	deleteVideoChannelJoin  = `DELETE FROM VideoChannels WHERE videoID = ?`
 	deleteVideoPartJoin     = `DELETE FROM VideoJoin WHERE videoID = ? AND partID = ?`
 	deleteVideoCategoryJoin = `DELETE FROM VideoJoin WHERE videoID = ? AND catID = ?`
+	getVideoIdFromPart      = `select videoID from VideoJoin where partID = ?`
 
 	//crud
 	getChannel         = "SELECT ID, typeID, link, embedCode, foriegnID, dateAdded, dateModified, title, `desc` FROM Channel WHERE ID = ?"
@@ -196,49 +201,56 @@ func (v *Video) GetVideoDetails() (err error) {
 		err = json.Unmarshal(data, &v)
 		return err
 	}
-	baseChan := make(chan bool)
-	brandChan := make(chan bool)
-	chanChan := make(chan bool)
-	cdnChan := make(chan bool)
-	go func() (err error) {
-		err = v.Get()
-		if err != nil {
-			return err
-		}
-		baseChan <- true
+
+	brandChan := make(chan error)
+	chanChan := make(chan error)
+	cdnChan := make(chan error)
+
+	err = v.Get()
+	if err != nil {
 		return err
-	}()
-	go func() (err error) {
+	}
+
+	go func() {
 		err = v.GetBrands()
 		if err != nil {
-			return err
+			brandChan <- err
 		}
-		brandChan <- true
-		return err
+		brandChan <- nil
+
 	}()
-	go func() (err error) {
+	go func() {
 		chs, err := v.GetChannels()
 		if err != nil {
-			return err
+			chanChan <- err
 		}
 		v.Channels = chs
-		chanChan <- true
-		return err
+		chanChan <- nil
+
 	}()
-	go func() (err error) {
+	go func() {
 		cdns, err := v.GetCdnFiles()
 		if err != nil {
-			return err
+			cdnChan <- err
 		}
 		v.Files = cdns
-		cdnChan <- true
-		return err
+		cdnChan <- nil
+
 	}()
 
-	<-baseChan
-	<-brandChan
-	<-chanChan
-	<-cdnChan
+	err = <-brandChan
+	if err != nil {
+		return err
+	}
+	err = <-chanChan
+	if err != nil {
+		return err
+	}
+	err = <-cdnChan
+	if err != nil {
+		return err
+	}
+
 	go redis.Setex(redis_key, v, 86400)
 	return nil
 }
@@ -274,37 +286,88 @@ func GetAllVideos(dtx *apicontext.DataContext) (vs Videos, err error) {
 	return vs, err
 }
 
-func GetPartVideos(p products.Part) (vs Videos, err error) {
-	redis_key := "video:part:" + strconv.Itoa(p.ID)
+// func GetPartVideosX(partId int) (vs Videos, err error) {
+// 	redis_key := "video:part:" + strconv.Itoa(partId)
+// 	data, err := redis.Get(redis_key)
+// 	if err == nil && len(data) > 0 {
+// 		err = json.Unmarshal(data, &vs)
+// 		return vs, err
+// 	}
+// 	db, err := sql.Open("mysql", database.ConnectionString())
+// 	if err != nil {
+// 		return vs, err
+// 	}
+// 	defer db.Close()
+// 	stmt, err := db.Prepare(getPartVideos)
+// 	if err != nil {
+// 		return vs, err
+// 	}
+// 	defer stmt.Close()
+// 	rows, err := stmt.Query(partId)
+// 	if err != nil {
+// 		return vs, err
+// 	}
+
+// 	ch := make(chan Videos)
+// 	go populateVideos(rows, ch)
+// 	vs = <-ch
+// 	if len(vs) == 0 {
+// 		err = sql.ErrNoRows
+// 	}
+// 	log.Print(vs)
+// 	for _, v := range vs {
+// 		err = v.GetVideoDetails()
+// 		if err != nil {
+// 			return vs, err
+// 		}
+// 		// log.Print("+----->", v.Channels)
+// 	}
+
+// 	go redis.Setex(redis_key, vs, 86400)
+// 	log.Print(vs)
+// 	return vs, err
+// }
+
+func GetPartVideos(partId int) (vs Videos, err error) {
+	redis_key := "video:part:" + strconv.Itoa(partId)
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &vs)
 		return vs, err
 	}
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return vs, err
 	}
 	defer db.Close()
-	stmt, err := db.Prepare(getPartVideos)
+
+	stmt, err := db.Prepare(getVideoIdFromPart)
 	if err != nil {
 		return vs, err
 	}
 	defer stmt.Close()
-	rows, err := stmt.Query(p.ID)
+	res, err := stmt.Query(partId)
 	if err != nil {
 		return vs, err
 	}
-
-	ch := make(chan Videos)
-	go populateVideos(rows, ch)
-	vs = <-ch
-	if len(vs) == 0 {
-		err = sql.ErrNoRows
+	var v Video
+	for res.Next() {
+		err = res.Scan(&v.ID)
+		if err != nil {
+			return vs, err
+		}
+		err = v.GetVideoDetails()
+		if err != nil {
+			return vs, err
+		}
+		vs = append(vs, v)
 	}
+
 	go redis.Setex(redis_key, vs, 86400)
 	return vs, err
 }
+
 func (v *Video) GetBrands() (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -452,8 +515,8 @@ func (v *Video) Create(dtx *apicontext.DataContext) (err error) {
 		return err
 	}()
 	go func() (err error) {
-		if len(v.Categories) > 0 {
-			for _, cat := range v.Categories {
+		if len(v.CategoryIds) > 0 {
+			for _, cat := range v.CategoryIds {
 				err = v.CreateJoinCategory(cat)
 			}
 		}
@@ -461,8 +524,8 @@ func (v *Video) Create(dtx *apicontext.DataContext) (err error) {
 		return err
 	}()
 	go func() (err error) {
-		if len(v.Parts) > 0 {
-			for _, part := range v.Parts {
+		if len(v.PartIds) > 0 {
+			for _, part := range v.PartIds {
 				err = v.CreateJoinPart(part)
 			}
 		}
@@ -556,8 +619,8 @@ func (v *Video) Update(dtx *apicontext.DataContext) (err error) {
 		return nil
 	}()
 	go func() (err error) {
-		if len(v.Categories) > 0 {
-			for _, cat := range v.Categories {
+		if len(v.CategoryIds) > 0 {
+			for _, cat := range v.CategoryIds {
 				err = v.DeleteJoinCategory(cat)
 				if err != nil {
 					return err
@@ -572,8 +635,8 @@ func (v *Video) Update(dtx *apicontext.DataContext) (err error) {
 		return nil
 	}()
 	go func() (err error) {
-		if len(v.Parts) > 0 {
-			for _, part := range v.Parts {
+		if len(v.PartIds) > 0 {
+			for _, part := range v.PartIds {
 				err = v.DeleteJoinPart(part)
 				if err != nil {
 					return err
@@ -655,8 +718,8 @@ func (v *Video) Delete(dtx *apicontext.DataContext) (err error) {
 		return nil
 	}()
 	go func() (err error) {
-		if len(v.Categories) > 0 {
-			for _, cat := range v.Categories {
+		if len(v.CategoryIds) > 0 {
+			for _, cat := range v.CategoryIds {
 				err = v.DeleteJoinCategory(cat)
 				if err != nil {
 					return err
@@ -667,8 +730,8 @@ func (v *Video) Delete(dtx *apicontext.DataContext) (err error) {
 		return nil
 	}()
 	go func() (err error) {
-		if len(v.Parts) > 0 {
-			for _, part := range v.Parts {
+		if len(v.PartIds) > 0 {
+			for _, part := range v.PartIds {
 				err = v.DeleteJoinPart(part)
 				if err != nil {
 					return err
@@ -749,7 +812,7 @@ func (v *Video) CreateJoinChannel(channel Channel) (err error) {
 	return err
 }
 
-func (v *Video) CreateJoinPart(p products.Part) (err error) {
+func (v *Video) CreateJoinPart(partId int) (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -761,7 +824,7 @@ func (v *Video) CreateJoinPart(p products.Part) (err error) {
 		return err
 	}
 	defer stmt.Close()
-	_, err = stmt.Exec(v.ID, p.ID, v.WebsiteId, v.IsPrimary)
+	_, err = stmt.Exec(v.ID, partId, v.WebsiteId, v.IsPrimary)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -771,7 +834,7 @@ func (v *Video) CreateJoinPart(p products.Part) (err error) {
 }
 
 //HTML5
-func (v *Video) CreateJoinCategory(c products.Category) (err error) {
+func (v *Video) CreateJoinCategory(prodCatId int) (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -783,7 +846,7 @@ func (v *Video) CreateJoinCategory(c products.Category) (err error) {
 		return err
 	}
 	defer stmt.Close()
-	_, err = stmt.Exec(v.ID, c.ID, v.WebsiteId, v.IsPrimary)
+	_, err = stmt.Exec(v.ID, prodCatId, v.WebsiteId, v.IsPrimary)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -853,7 +916,7 @@ func (v *Video) DeleteJoinChannels() (err error) {
 	return err
 }
 
-func (v *Video) DeleteJoinPart(p products.Part) (err error) {
+func (v *Video) DeleteJoinPart(partId int) (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -865,7 +928,7 @@ func (v *Video) DeleteJoinPart(p products.Part) (err error) {
 		return err
 	}
 	defer stmt.Close()
-	_, err = stmt.Exec(v.ID, p.ID)
+	_, err = stmt.Exec(v.ID, partId)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -875,7 +938,7 @@ func (v *Video) DeleteJoinPart(p products.Part) (err error) {
 }
 
 //HTML5
-func (v *Video) DeleteJoinCategory(c products.Category) (err error) {
+func (v *Video) DeleteJoinCategory(prodCatId int) (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -887,7 +950,7 @@ func (v *Video) DeleteJoinCategory(c products.Category) (err error) {
 		return err
 	}
 	defer stmt.Close()
-	_, err = stmt.Exec(v.ID, c.ID)
+	_, err = stmt.Exec(v.ID, prodCatId)
 	if err != nil {
 		tx.Rollback()
 		return err

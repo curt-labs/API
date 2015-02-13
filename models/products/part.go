@@ -10,6 +10,7 @@ import (
 	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/curt-labs/GoAPI/models/customer/content"
 	"github.com/curt-labs/GoAPI/models/vehicle"
+	"github.com/curt-labs/GoAPI/models/video"
 	_ "github.com/go-sql-driver/mysql"
 
 	"database/sql"
@@ -116,7 +117,7 @@ type Part struct {
 	Images            []Image           `json:"images" xml:"images"`
 	Related           []int             `json:"related" xml:"related"`
 	Categories        []Category        `json:"categories" xml:"categories"`
-	Videos            []PartVideo       `json:"videos" xml:"videos"`
+	Videos            []video.Video     `json:"videos" xml:"videos"`
 	Packages          []Package         `json:"packages" xml:"packages"`
 	Customer          CustomerPart      `json:"customer,omitempty" xml:"customer,omitempty"`
 	Class             Class             `json:"class,omitempty" xml:"class,omitempty"`
@@ -204,7 +205,9 @@ func (p *Part) FromDatabase(dtx *apicontext.DataContext) error {
 	}()
 
 	go func() {
-		vidErr := p.GetVideos()
+		// vidErr := p.GetVideos()
+		var vidErr error
+		p.Videos, vidErr = video.GetPartVideos(p.ID)
 		if vidErr != nil {
 			errs = append(errs, vidErr.Error())
 		}
@@ -1149,8 +1152,9 @@ func (p *Part) Create(dtx *apicontext.DataContext) (err error) {
 	}()
 	go func() (err error) {
 		for _, video := range p.Videos {
-			video.PartID = p.ID
-			err = video.CreatePartVideo(dtx)
+			// video.PartID = p.ID
+			err = video.CreateJoinPart(p.ID)
+			// err = video.CreatePartVideo(dtx)
 			if err != nil {
 				videoChan <- 1
 				return err
@@ -1557,8 +1561,9 @@ func (p *Part) Update(dtx *apicontext.DataContext) (err error) {
 	}()
 	go func() (err error) {
 		for _, video := range p.Videos {
-			video.PartID = p.ID
-			err = video.CreatePartVideo(dtx)
+			// video.PartID = p.ID
+			err = video.CreateJoinPart(p.ID)
+			// err = video.CreatePartVideo(dtx)
 			if err != nil {
 				videoChanC <- 1
 				return err

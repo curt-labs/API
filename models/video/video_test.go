@@ -3,7 +3,7 @@ package video
 import (
 	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	"github.com/curt-labs/GoAPI/models/brand"
-	"github.com/curt-labs/GoAPI/models/products"
+	// "github.com/curt-labs/GoAPI/models/products"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
@@ -15,8 +15,8 @@ func TestVideo_New(t *testing.T) {
 	var cdnft CdnFileType
 	var vt VideoType
 	var ct ChannelType
-	var p products.Part
-	var cat products.Category
+	// var p products.Part
+	// var cat products.Category
 	var err error
 
 	MockedDTX, err := apicontextmock.Mock()
@@ -49,16 +49,16 @@ func TestVideo_New(t *testing.T) {
 		err = vt.Create()
 		So(err, ShouldBeNil)
 		//create cat
-		cat.Title = "test cat title"
-		err = cat.Create()
-		So(err, ShouldBeNil)
+		// cat.Title = "test cat title"
+		// err = cat.Create()
+		// So(err, ShouldBeNil)
 		//create video
 		v.Title = "test vid"
 		v.Brands = append(v.Brands, brand.Brand{ID: MockedDTX.BrandID}) //matches mocked brand
-		p.ID = 11000                                                    //force part
+		// p.ID = 11000                                                    //force part
 
 		v.VideoType = vt
-		v.Categories = append(v.Categories, cat)
+		v.CategoryIds = append(v.CategoryIds, 1)
 		v.Channels = append(v.Channels, ch)
 		v.Files = append(v.Files, cdn)
 		err = v.Create(MockedDTX)
@@ -87,8 +87,7 @@ func TestVideo_New(t *testing.T) {
 		//update video
 		v.Title = "test vid 2"
 
-		p.ID = 110001 //force part
-		v.Parts = append(v.Parts, p)
+		v.PartIds = append(v.PartIds, 110001)
 
 		err = v.Update(MockedDTX)
 		So(err, ShouldBeNil)
@@ -103,7 +102,7 @@ func TestVideo_New(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(len(vs), ShouldBeGreaterThan, 0)
 		//getall part videos
-		vs, err = GetPartVideos(p)
+		vs, err = GetPartVideos(110001)
 		So(err, ShouldBeNil)
 		So(len(vs), ShouldBeGreaterThan, 0)
 		//get all channels
@@ -166,8 +165,8 @@ func TestVideo_New(t *testing.T) {
 		err = cdn.Delete()
 		So(err, ShouldBeNil)
 		//delete cat
-		err = cat.Delete(MockedDTX)
-		So(err, ShouldBeNil)
+		// err = cat.Delete(MockedDTX)
+		// So(err, ShouldBeNil)
 		//delete video
 		err = v.Delete(MockedDTX)
 		So(err, ShouldBeNil)
@@ -188,9 +187,9 @@ func BenchmarkGetAllVideos(b *testing.B) {
 }
 
 func BenchmarkGetPartVideos(b *testing.B) {
-	p := products.Part{ID: 11000}
+	// p := 11000
 	for i := 0; i < b.N; i++ {
-		GetPartVideos(p)
+		GetPartVideos(11000)
 	}
 }
 

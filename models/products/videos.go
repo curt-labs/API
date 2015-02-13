@@ -80,8 +80,6 @@ func (p *Part) GetVideos() error {
 	}
 	defer rows.Close()
 
-	p.Videos = videos
-
 	go redis.Setex(redis_key, p.Videos, redis.CacheTimeout)
 
 	return nil

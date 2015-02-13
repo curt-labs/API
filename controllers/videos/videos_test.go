@@ -194,7 +194,7 @@ func TestVideos(t *testing.T) {
 		qs.Add("key", dtx.APIKey)
 
 		v.Title = "controller test video title"
-		v.Parts = append(v.Parts, p)
+		v.PartIds = append(v.PartIds, p.ID)
 		v.Brands = append(v.Brands, b)
 
 		response := httprunner.ParameterizedJsonRequest("POST", "", "", &qs, v, SaveVideo)

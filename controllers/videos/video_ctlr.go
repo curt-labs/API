@@ -9,7 +9,6 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/error"
-	"github.com/curt-labs/GoAPI/models/products"
 	"github.com/curt-labs/GoAPI/models/video"
 	"github.com/go-martini/martini"
 )
@@ -157,15 +156,16 @@ func GetAllVideoTypes(w http.ResponseWriter, r *http.Request, enc encoding.Encod
 
 func GetPartVideos(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var err error
-	var p products.Part
+	// var p products.Part
+	var prodId int
 
 	var videos video.Videos
-	if p.ID, err = strconv.Atoi(params["id"]); err != nil {
+	if prodId, err = strconv.Atoi(params["id"]); err != nil {
 		apierror.GenerateError("Trouble getting part ID", err, w, r)
 		return ""
 	}
 
-	if videos, err = video.GetPartVideos(p); err != nil {
+	if videos, err = video.GetPartVideos(prodId); err != nil {
 		apierror.GenerateError("Trouble getting part videos", err, w, r)
 		return ""
 	}
