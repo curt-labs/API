@@ -138,16 +138,15 @@ func TestParts(t *testing.T) {
 		thyme = time.Now()
 		testThatHttp.Request("get", "/part/", ":part", strconv.Itoa(p.ID)+".pdf?key="+dtx.APIKey, InstallSheet, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()*6) //three seconds
-		t.Log("Get install sheet benchmark: ", time.Since(thyme))
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 
 		//test get videos
 		//create part video
-		var partVid products.PartVideo
-		partVid.YouTubeVideoId = "11122333XYZ"
-		partVid.PartID = p.ID
-		partVid.VideoType.ID = vt.ID
-		err = partVid.CreatePartVideo(dtx)
+		var partVid video.Video
+
+		err = partVid.Create(dtx)
+
+		err = partVid.CreateJoinPart(p.ID)
 
 		thyme = time.Now()
 		testThatHttp.Request("get", "/part/videos/", ":part", strconv.Itoa(p.ID)+"?key="+dtx.APIKey, Videos, nil, "")
@@ -239,7 +238,7 @@ func TestParts(t *testing.T) {
 		//test get
 		thyme = time.Now()
 		testThatHttp.Request("get", "/part/", ":part", strconv.Itoa(p.ID)+"?key="+dtx.APIKey, Get, nil, "")
-		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
+		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds())
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		var part products.Part
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &part)
@@ -311,7 +310,7 @@ func TestParts(t *testing.T) {
 		bodyJson = bytes.NewReader(bodyBytes)
 		thyme = time.Now()
 		testThatHttp.Request("put", "/part/", ":id", strconv.Itoa(p.ID)+"?key="+dtx.APIKey, UpdatePart, bodyJson, "application/json")
-		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()/2)
+		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds())
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &p)
 		So(err, ShouldBeNil)
@@ -330,7 +329,8 @@ func TestParts(t *testing.T) {
 
 		// //teardown
 		custPrice.Delete()
-		partVid.DeleteByPart(dtx)
+		partVid.Delete(dtx)
+		partVid.DeleteJoinPart(p.ID)
 
 	})
 	//teardown

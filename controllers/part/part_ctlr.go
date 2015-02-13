@@ -16,6 +16,7 @@ import (
 	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/curt-labs/GoAPI/models/products"
 	"github.com/curt-labs/GoAPI/models/vehicle"
+	"github.com/curt-labs/GoAPI/models/video"
 	"github.com/go-martini/martini"
 	"github.com/ninnemana/analytics-go"
 )
@@ -334,12 +335,13 @@ func Videos(w http.ResponseWriter, r *http.Request, params martini.Params, enc e
 		ID: id,
 	}
 
-	if err = p.GetVideos(); err != nil {
+	var vs video.Videos
+	if vs, err = video.GetPartVideos(p.ID); err != nil {
 		apierror.GenerateError("Trouble getting part videos", err, w, r)
 		return ""
 	}
 
-	return encoding.Must(enc.Encode(p.Videos))
+	return encoding.Must(enc.Encode(vs))
 }
 
 func InstallSheet(w http.ResponseWriter, r *http.Request, params martini.Params, dtx *apicontext.DataContext) {

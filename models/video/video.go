@@ -10,7 +10,6 @@ import (
 
 	"database/sql"
 	"encoding/json"
-	// "log"
 	"strconv"
 	"time"
 )
@@ -363,7 +362,6 @@ func GetPartVideos(partId int) (vs Videos, err error) {
 		}
 		vs = append(vs, v)
 	}
-
 	go redis.Setex(redis_key, vs, 86400)
 	return vs, err
 }
