@@ -997,23 +997,39 @@ func (p *Part) GetPartByOldPartNumber(key string) (err error) {
 		return err
 	}
 	defer stmt.Close()
+
+	var shortDesc *string
+	var priceCode, acesPartTypeID *int
 	err = stmt.QueryRow(p.OldPartNumber).Scan(
 		&p.ID,
 		&p.Status,
 		&p.DateModified,
 		&p.DateAdded,
-		&p.ShortDesc,
-		&p.PriceCode,
+		&shortDesc,
+		&priceCode,
 		&p.Class.ID,
 		&p.Featured,
-		&p.AcesPartTypeID,
+		&acesPartTypeID,
 		&p.BrandID,
 	)
-	if err != sql.ErrNoRows {
-		if err != nil {
-			return err
+	if err != nil {
+		if err == sql.ErrNoRows {
+			err = errors.New("Invalid Part Number")
+			return
 		}
+		return err
 	}
+
+	if shortDesc != nil {
+		p.ShortDesc = *shortDesc
+	}
+	if priceCode != nil {
+		p.PriceCode = *priceCode
+	}
+	if acesPartTypeID != nil {
+		p.AcesPartTypeID = *acesPartTypeID
+	}
+
 	return nil
 }
 
