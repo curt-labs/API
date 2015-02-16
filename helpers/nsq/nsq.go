@@ -20,13 +20,15 @@ type Queue struct {
 	Producers       map[string]*nsq.Producer
 }
 
-func NewQueue(topicname string, addresses ...[]string) *Queue {
+func NewQueue(topicname string) *Queue {
 	q := Queue{
-		Topic: topicname,
+		Topic:  topicname,
+		Config: nsq.NewConfig(),
 	}
 
-	if len(addresses) > 0 {
-		q.ServerAddresses = addresses[0]
+	if hosts := os.Getenv("NSQ_DAEMON_HOSTS"); hosts != "" {
+		segs := strings.Split(hosts, ",")
+		q.ServerAddresses = segs
 	}
 
 	q.Init()
@@ -34,9 +36,6 @@ func NewQueue(topicname string, addresses ...[]string) *Queue {
 }
 
 func (mq *Queue) Init() error {
-	if mq.Config == nil {
-		mq.Config = nsq.NewConfig()
-	}
 
 	if len(mq.ServerAddresses) == 0 {
 		mq.ServerAddresses = getDaemonHosts()
@@ -61,6 +60,7 @@ func (mq *Queue) Dispose() {
 }
 
 func (mq *Queue) Push(data []byte) error {
+
 	for _, p := range mq.Producers {
 		if err := p.Publish(mq.Topic, data); err != nil {
 			return err
