@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -11,7 +10,6 @@ import (
 
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/error"
-	"github.com/curt-labs/GoAPI/helpers/nsq"
 	"github.com/curt-labs/GoAPI/helpers/slack"
 	"github.com/curt-labs/GoAPI/models/cart"
 	"github.com/curt-labs/GoAPI/models/customer"
@@ -21,7 +19,6 @@ import (
 )
 
 var (
-	requestQueue  = nsqq.NewQueue("goapi")
 	ExcusedRoutes = []string{"/status", "/customer/auth", "/customer/user", "/new/customer/auth", "/customer/user/register", "/customer/user/resetPassword"}
 )
 
@@ -250,13 +247,6 @@ func logRequest(r *http.Request, reqTime time.Duration) {
 		Event:      r.URL.String(),
 		UserId:     key,
 		Properties: props,
-	}
-
-	if requestQueue != nil {
-		js, err := json.Marshal(tracker)
-		if err == nil {
-			requestQueue.Push(js)
-		}
 	}
 
 	if err := client.Track(tracker); err != nil {
