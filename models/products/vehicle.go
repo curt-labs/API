@@ -6,6 +6,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	_ "github.com/go-sql-driver/mysql"
+	"math"
 	"strconv"
 	"strings"
 )
@@ -85,7 +86,11 @@ type Pagination struct {
 	TotalPages    int `json:"total_pages" xml:"total_pages"`
 }
 
-func (l *Lookup) LoadParts(ch chan []Part, dtx *apicontext.DataContext) {
+func (l *Lookup) LoadParts(ch chan []Part, page int, count int, dtx *apicontext.DataContext) {
+	if count == 0 {
+		count = DefaultPageCount
+	}
+
 	parts := make([]Part, 0)
 
 	vehicleChan := make(chan error)
@@ -129,24 +134,51 @@ func (l *Lookup) LoadParts(ch chan []Part, dtx *apicontext.DataContext) {
 	<-baseVehicleChan
 	removeDuplicates(&l.Parts)
 
-	parts = make([]Part, 0)
-	for i, p := range l.Parts {
-		if err := p.Get(dtx); err == nil && p.ShortDesc != "" {
-			parts = append(parts, p)
-		} else if len(parts) > 0 {
-			parts = append(parts[:i], parts[i+1:]...)
+	// we need to strip the result set down the paginated
+	// version
+	partCount := len(l.Parts)
+	pagedParts := l.Parts
+	if partCount > count {
+		start := 0
+		if page > 1 {
+			start = count * (page - 1)
 		}
+		pagedParts = l.Parts[start : start+count]
+	}
+
+	parts = make([]Part, 0)
+	perChan := make(chan int)
+	for i, p := range pagedParts {
+		go func(j int, prt Part) {
+			if err := prt.Get(dtx); err == nil && prt.ShortDesc != "" {
+				parts = append(parts, prt)
+			}
+			perChan <- 1
+		}(i, p)
+	}
+
+	for _, _ = range pagedParts {
+		<-perChan
 	}
 	l.Parts = parts
 
 	sortutil.AscByField(l.Parts, "ID")
 
+	mod := math.Mod(float64(partCount), float64(count))
+	totalPages := partCount / count
+	if mod > 0 {
+		totalPages++
+	}
+	if page == 0 {
+		page = 1
+	}
+
 	l.Pagination = Pagination{
-		TotalItems:    len(l.Parts),
+		TotalItems:    partCount,
 		ReturnedCount: len(l.Parts),
-		Page:          1,
-		PerPage:       len(l.Parts),
-		TotalPages:    1,
+		Page:          page,
+		PerPage:       count,
+		TotalPages:    totalPages,
 	}
 
 	ch <- parts

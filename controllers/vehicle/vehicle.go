@@ -24,10 +24,19 @@ var (
 // until the model is provided.
 func Query(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var l products.Lookup
+	var page int
+	var count int
+
+	qs := r.URL.Query()
+
+	page, _ = strconv.Atoi(qs.Get("page"))
+	count, _ = strconv.Atoi(qs.Get("count"))
+	qs.Del("page")
+	qs.Del("count")
+
 	l.Vehicle = LoadVehicle(r)
 	l.Brands = dtx.BrandArray
 
-	qs := r.URL.Query()
 	if qs.Get("key") != "" {
 		l.CustomerKey = qs.Get("key")
 	} else if r.FormValue("key") != "" {
@@ -53,7 +62,7 @@ func Query(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *ap
 
 		// Kick off part getter
 		partChan := make(chan []products.Part)
-		go l.LoadParts(partChan, dtx)
+		go l.LoadParts(partChan, page, count, dtx)
 
 		if l.Vehicle.Submodel == "" { // Get Submodels
 			if err := l.GetSubmodels(); err != nil {
@@ -125,6 +134,8 @@ func LoadVehicle(r *http.Request) (v products.Vehicle) {
 		return
 	}
 	delete(r.Form, "submodel")
+	delete(r.Form, "page")
+	delete(r.Form, "count")
 
 	// Get vehicle configuration options
 	for key, opt := range r.Form {

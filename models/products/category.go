@@ -579,13 +579,23 @@ func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *
 		return fmt.Errorf("error: %s %d", "invalid category reference", c.ID)
 	}
 
+	if count == 0 {
+		count = DefaultPageCount
+	}
+	queryPage := page
+	if page == 1 {
+		queryPage = count
+	} else if page > 1 {
+		queryPage = count * (page - 1)
+	}
+
 	if v != nil {
 		vehicleChan := make(chan []Part)
 		l := Lookup{
 			Vehicle:     *v,
 			CustomerKey: key,
 		}
-		go l.LoadParts(vehicleChan, dtx)
+		go l.LoadParts(vehicleChan, page, count, dtx)
 
 		parts := <-vehicleChan
 
@@ -605,16 +615,6 @@ func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *
 		c.ProductListing.TotalPages = 1
 
 		return nil
-	}
-
-	if count == 0 {
-		count = DefaultPageCount
-	}
-	queryPage := page
-	if page == 1 {
-		queryPage = count
-	} else if page > 1 {
-		queryPage = count * (page - 1)
 	}
 
 	parts := make([]Part, 0)

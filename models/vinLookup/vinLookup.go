@@ -191,7 +191,7 @@ func VinPartLookup(vin string, dtx *apicontext.DataContext) (l products.Lookup, 
 	//get parts
 	var ps []products.Part
 	ch := make(chan []products.Part)
-	go l.LoadParts(ch, dtx)
+	go l.LoadParts(ch, 1, 1000, dtx)
 	ps = <-ch
 
 	l.Parts = ps
