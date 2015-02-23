@@ -19,7 +19,7 @@ func TestLoadParts(t *testing.T) {
 
 		Convey("without year/make/model", func() {
 			ch := make(chan []Part)
-			go l.LoadParts(ch, MockedDTX)
+			go l.LoadParts(ch, 1, 1, MockedDTX)
 			parts := <-ch
 			So(parts, ShouldNotEqual, nil)
 			So(len(parts), ShouldEqual, 0)
@@ -31,7 +31,7 @@ func TestLoadParts(t *testing.T) {
 			l.Vehicle.Base.Model = "123"
 			l.Vehicle.Submodel = "LKJ"
 			ch := make(chan []Part)
-			go l.LoadParts(ch, MockedDTX)
+			go l.LoadParts(ch, 1, 1, MockedDTX)
 			parts := <-ch
 			So(parts, ShouldNotEqual, nil)
 			So(len(parts), ShouldEqual, 0)
@@ -46,7 +46,7 @@ func TestLoadParts(t *testing.T) {
 			l.Vehicle.Base.Year = l.Years[api_helpers.RandGenerator(len(l.Years)-1)]
 
 			ch := make(chan []Part)
-			go l.LoadParts(ch, MockedDTX)
+			go l.LoadParts(ch, 1, 1, MockedDTX)
 			parts := <-ch
 			So(parts, ShouldNotEqual, nil)
 			So(len(parts), ShouldEqual, 0)
@@ -67,7 +67,7 @@ func TestLoadParts(t *testing.T) {
 			l.Vehicle.Base.Make = l.Makes[api_helpers.RandGenerator(len(l.Makes)-1)]
 
 			ch := make(chan []Part)
-			go l.LoadParts(ch, MockedDTX)
+			go l.LoadParts(ch, 1, 1, MockedDTX)
 			parts := <-ch
 			So(parts, ShouldNotEqual, nil)
 			So(len(parts), ShouldEqual, 0)
@@ -97,7 +97,7 @@ func TestLoadParts(t *testing.T) {
 			l.Vehicle.Base.Model = l.Models[api_helpers.RandGenerator(len(l.Models)-1)]
 
 			ch := make(chan []Part)
-			go l.LoadParts(ch, MockedDTX)
+			go l.LoadParts(ch, 1, 1, MockedDTX)
 			parts := <-ch
 			So(parts, ShouldNotEqual, nil)
 		})
@@ -134,7 +134,7 @@ func TestLoadParts(t *testing.T) {
 			l.Vehicle.Submodel = l.Submodels[api_helpers.RandGenerator(len(l.Submodels)-1)]
 
 			ch := make(chan []Part)
-			go l.LoadParts(ch, MockedDTX)
+			go l.LoadParts(ch, 1, 1, MockedDTX)
 			parts := <-ch
 			So(parts, ShouldNotEqual, nil)
 		})
