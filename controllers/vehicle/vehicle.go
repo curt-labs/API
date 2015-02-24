@@ -3,6 +3,7 @@ package vehicle
 import (
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/models/products"
+	"github.com/curt-labs/GoAPI/models/vehicle"
 )
 
 var (
@@ -156,4 +158,30 @@ func LoadVehicle(r *http.Request) (v products.Vehicle) {
 	}
 
 	return
+}
+
+func GetVehicle(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+	var v vehicle.Vehicle
+	var err error
+
+	baseId, err := strconv.Atoi(r.FormValue("base"))
+	if err != nil {
+		log.Print("K", err)
+		apierror.GenerateError("Error parsing AAIA BaseId", err, w, r)
+	}
+	subId, err := strconv.Atoi(r.FormValue("sub"))
+	if err != nil {
+		log.Print("Kwewe", err)
+		apierror.GenerateError("Error parsing AAIA SubId", err, w, r)
+	}
+	configVals := r.FormValue("configs")
+	configs := strings.Split(configVals, ",")
+
+	v, err = vehicle.GetVehicle(baseId, subId, configs)
+	if err != nil {
+		log.Print("Kewew", err)
+		apierror.GenerateError("Error getting vehicle", err, w, r)
+	}
+
+	return encoding.Must(enc.Encode(v))
 }

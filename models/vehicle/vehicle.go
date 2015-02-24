@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/curt-labs/GoAPI/helpers/api"
 	"github.com/curt-labs/GoAPI/helpers/database"
@@ -177,6 +178,19 @@ var (
 					and (ca.value in (`
 	vehicleNotesStmtMiddle_Grouped = `) or ca.value is null) and vp.PartNumber IN (`
 	vehicleNotesStmtEnd_Grouped    = `)`
+
+	getVehicleStmt = `select v.ID, bv.AAIABaseVehicleID, bv.YearID, ma.ID, ma.MakeName, mo.ID, mo.ModelName, sm.AAIASubmodelID, sm.SubmodelName,  
+		group_concat(cat.ID), group_concat(cat.name), group_concat(cat.AcesTypeID), group_concat(ca.ID), group_concat(ca.value), group_concat(ca.vcdbID) 
+		from vcdb_Vehicle as v 
+		join BaseVehicle as bv on bv.ID = v.BaseVehicleID
+		left join vcdb_Model as mo on mo.ID = bv.ModelID
+		left join vcdb_Make as ma on ma.ID = bv.MakeID
+		left join Submodel as sm on sm.ID = v.SubmodelID
+		left join VehicleConfigAttribute as vca on vca.VehicleConfigID = v.ConfigID
+		left join ConfigAttribute as ca on ca.ID = vca.AttributeID
+		left join ConfigAttributeType as cat on cat.ID = ca.ConfigAttributeTypeID
+		where bv.AAIABaseVehicleID = ?  
+		and sm.AAIASubmodelID = ?`
 )
 
 func (vehicle *Vehicle) GetGroupsByBase() (groups []int) {
@@ -322,4 +336,65 @@ func AppendIfMissing(existing []int, slice []int) []int {
 		}
 	}
 	return append(existing, slice...)
+}
+
+//For TrucksPlus Aces XML Lookup
+func GetVehicle(baseId, subId int, configs []string) (Vehicle, error) {
+	var err error
+	var v Vehicle
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return v, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(getVehicleStmt)
+	if err != nil {
+		return v, err
+	}
+	defer stmt.Close()
+
+	var makeId, modelId, catId, acesCatId, conId, acesConId *int
+	var catName, conName, submodel *string
+
+	err = stmt.QueryRow(baseId, subId).Scan(
+		&v.ID,
+		&baseId,
+		&v.Year,
+		&makeId,
+		&v.Make,
+		&modelId,
+		&v.Model,
+		&subId,
+		&submodel,
+		&catId,
+		&catName,
+		&acesCatId,
+		&conId,
+		&conName,
+		&acesConId,
+	)
+	if err != nil {
+		return v, err
+	}
+	if submodel != nil {
+		v.Submodel = *submodel
+	}
+
+	//match  config
+	catArray := make([]string, 0)
+	conArray := make([]string, 0)
+	if catName != nil && conName != nil {
+		catArray = strings.Split(*catName, ",")
+		conArray = strings.Split(*conName, ",")
+	}
+
+	for i, _ := range catArray {
+		var configuration Config
+		configuration.Type = catArray[i]
+		configuration.Value = conArray[i]
+		v.Configuration = append(v.Configuration, configuration)
+	}
+
+	return v, err
 }
