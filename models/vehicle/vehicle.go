@@ -234,7 +234,6 @@ func (v *Vehicle) GetNotes(partId int) (notes []string, err error) {
 }
 
 func ReverseLookup(partId int) (vehicles []Vehicle, err error) {
-
 	redis_key := fmt.Sprintf("part:%d:vehicles", partId)
 
 	data, err := redis.Get(redis_key)
