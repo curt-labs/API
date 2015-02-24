@@ -146,7 +146,12 @@ func (l *Lookup) LoadParts(ch chan []Part, page int, count int, dtx *apicontext.
 		if page > 1 {
 			start = count * (page - 1)
 		}
-		pagedParts = l.Parts[start : start+count]
+		end := start + count
+		if len(l.Parts) <= end {
+			pagedParts = l.Parts[start:]
+		} else {
+			pagedParts = l.Parts[start : start+count]
+		}
 	}
 
 	parts = make([]Part, 0)
