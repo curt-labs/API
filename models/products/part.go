@@ -245,8 +245,11 @@ func (p *Part) FromDatabase(dtx *apicontext.DataContext) error {
 		}
 		contentChan <- 1
 	}()
-
-	if basicErr := p.Basics(dtx); basicErr != nil {
+	var basicErr error
+	if basicErr = p.Basics(dtx); basicErr != nil {
+		if basicErr == sql.ErrNoRows {
+			basicErr = errors.New("Part #" + strconv.Itoa(p.ID) + " does not exist.")
+		}
 		errs = append(errs, basicErr.Error())
 	}
 
@@ -259,6 +262,10 @@ func (p *Part) FromDatabase(dtx *apicontext.DataContext) error {
 	<-packageChan
 	<-categoryChan
 	<-contentChan
+
+	if basicErr != nil {
+		return errors.New("Could not find part: " + basicErr.Error())
+	}
 
 	go func(tmp Part) {
 		redis.Setex(fmt.Sprintf("part:%d:%d", tmp.BrandID, tmp.ID), tmp, redis.CacheTimeout)
@@ -288,8 +295,6 @@ func (p *Part) Get(dtx *apicontext.DataContext) error {
 
 	if p.Status == 0 {
 		if err := p.FromDatabase(dtx); err != nil {
-			customerChan <- 1
-			close(customerChan)
 			return err
 		}
 	}

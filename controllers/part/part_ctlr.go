@@ -139,12 +139,11 @@ func Get(w http.ResponseWriter, r *http.Request, params martini.Params, enc enco
 		}
 	}()
 
+	<-vehicleChan
 	if err = p.Get(dtx); err != nil {
 		apierror.GenerateError("Trouble getting part", err, w, r)
 		return ""
 	}
-
-	<-vehicleChan
 
 	return encoding.Must(enc.Encode(p))
 }
