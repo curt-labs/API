@@ -128,6 +128,11 @@ func Get(w http.ResponseWriter, r *http.Request, params martini.Params, enc enco
 		ID: id,
 	}
 
+	if err = p.Get(dtx); err != nil {
+		apierror.GenerateError("Trouble getting part", err, w, r)
+		return ""
+	}
+
 	vehicleChan := make(chan error)
 	go func() {
 		vs, err := vehicle.ReverseLookup(p.ID)
@@ -140,10 +145,6 @@ func Get(w http.ResponseWriter, r *http.Request, params martini.Params, enc enco
 	}()
 
 	<-vehicleChan
-	if err = p.Get(dtx); err != nil {
-		apierror.GenerateError("Trouble getting part", err, w, r)
-		return ""
-	}
 
 	return encoding.Must(enc.Encode(p))
 }
@@ -523,6 +524,11 @@ func OldPartNumber(rw http.ResponseWriter, r *http.Request, params martini.Param
 		ID: pa.ID,
 	}
 
+	if err = p.Get(dtx); err != nil {
+		apierror.GenerateError("Trouble getting part by old part number", err, rw, r)
+		return ""
+	}
+
 	vehicleChan := make(chan error)
 	go func() {
 		vs, err := vehicle.ReverseLookup(p.ID)
@@ -533,11 +539,6 @@ func OldPartNumber(rw http.ResponseWriter, r *http.Request, params martini.Param
 			vehicleChan <- nil
 		}
 	}()
-
-	if err = p.Get(dtx); err != nil {
-		apierror.GenerateError("Trouble getting part by old part number", err, rw, r)
-		return ""
-	}
 
 	<-vehicleChan
 
