@@ -157,3 +157,30 @@ func LoadVehicle(r *http.Request) (v products.Vehicle) {
 
 	return
 }
+
+func Inquire(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+	defer r.Body.Close()
+
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil || len(data) == 0 {
+		apierror.GenerateError("missed payload", err, rw, r, http.StatusInternalServerError)
+		return ""
+	}
+
+	var i products.VehicleInquiry
+	err = json.Unmarshal(data, &i)
+	if err != nil {
+		apierror.GenerateError("bad payload", err, rw, r, http.StatusInternalServerError)
+		return ""
+	}
+
+	err = i.Push()
+	if err != nil {
+		apierror.GenerateError("failed submission", err, rw, r, http.StatusInternalServerError)
+		return ""
+	}
+
+	i.SendEmail(dtx)
+
+	return ""
+}
