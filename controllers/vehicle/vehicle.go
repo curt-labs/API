@@ -3,7 +3,6 @@ package vehicle
 import (
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -166,12 +165,10 @@ func GetVehicle(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) st
 
 	baseId, err := strconv.Atoi(r.FormValue("base"))
 	if err != nil {
-		log.Print("K", err)
 		apierror.GenerateError("Error parsing AAIA BaseId", err, w, r)
 	}
 	subId, err := strconv.Atoi(r.FormValue("sub"))
 	if err != nil {
-		log.Print("Kwewe", err)
 		apierror.GenerateError("Error parsing AAIA SubId", err, w, r)
 	}
 	configVals := r.FormValue("configs")
@@ -179,9 +176,36 @@ func GetVehicle(w http.ResponseWriter, r *http.Request, enc encoding.Encoder) st
 
 	v, err = vehicle.GetVehicle(baseId, subId, configs)
 	if err != nil {
-		log.Print("Kewew", err)
 		apierror.GenerateError("Error getting vehicle", err, w, r)
 	}
 
 	return encoding.Must(enc.Encode(v))
+}
+
+func Inquire(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+	defer r.Body.Close()
+
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil || len(data) == 0 {
+		apierror.GenerateError("missed payload", err, rw, r, http.StatusInternalServerError)
+		return ""
+	}
+
+	var i products.VehicleInquiry
+	err = json.Unmarshal(data, &i)
+	if err != nil {
+		apierror.GenerateError("bad payload", err, rw, r, http.StatusInternalServerError)
+		return ""
+	}
+
+	err = i.Push()
+	if err != nil {
+		apierror.GenerateError("failed submission", err, rw, r, http.StatusInternalServerError)
+		return ""
+	}
+
+	i.SendEmail(dtx)
+
+	return ""
+
 }

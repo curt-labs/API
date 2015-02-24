@@ -266,18 +266,16 @@ func (p *Part) FromDatabase(dtx *apicontext.DataContext) error {
 	if basicErr != nil {
 		return errors.New("Could not find part: " + basicErr.Error())
 	}
-
 	go func(tmp Part) {
-		redis.Setex(fmt.Sprintf("part:%d:%d", tmp.BrandID, tmp.ID), tmp, redis.CacheTimeout)
+		redis.Setex(fmt.Sprintf("part:%d:%d", dtx.BrandString, tmp.ID), tmp, redis.CacheTimeout)
 	}(*p)
 
 	return nil
 }
 
 func (p *Part) Get(dtx *apicontext.DataContext) error {
-	customerChan := make(chan int)
-
 	var err error
+	customerChan := make(chan int)
 
 	go func(api_key string) {
 		err = p.BindCustomer(dtx)
@@ -286,9 +284,9 @@ func (p *Part) Get(dtx *apicontext.DataContext) error {
 		customerChan <- 1
 	}(dtx.APIKey)
 
-	redis_key := fmt.Sprintf("part:%d:%d", p.BrandID, p.ID)
+	redis_key := fmt.Sprintf("part:%d:%d", dtx.BrandString, p.ID)
 
-	part_bytes, _ := redis.Get(redis_key)
+	part_bytes, err := redis.Get(redis_key)
 	if len(part_bytes) > 0 {
 		json.Unmarshal(part_bytes, &p)
 	}

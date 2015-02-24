@@ -2,9 +2,12 @@ package products
 
 import (
 	"database/sql"
+	"encoding/json"
+	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
+	"github.com/curt-labs/GoAPI/models/contact"
 	_ "github.com/go-sql-driver/mysql"
 	"math"
 	"strconv"
@@ -143,7 +146,12 @@ func (l *Lookup) LoadParts(ch chan []Part, page int, count int, dtx *apicontext.
 		if page > 1 {
 			start = count * (page - 1)
 		}
-		pagedParts = l.Parts[start : start+count]
+		end := start + count
+		if len(l.Parts) <= end {
+			pagedParts = l.Parts[start:]
+		} else {
+			pagedParts = l.Parts[start : start+count]
+		}
 	}
 
 	parts = make([]Part, 0)
@@ -335,4 +343,109 @@ func (v *Vehicle) GetVcdbID() (int, error) {
 	err = row.Scan(&id)
 
 	return id, err
+}
+
+func (v *Vehicle) stringify() string {
+	str := fmt.Sprintf("%d %s %s", v.Base.Year, v.Base.Make, v.Base.Model)
+	if v.Submodel != "" {
+		str = fmt.Sprintf("%s %s", str, v.Submodel)
+	}
+	if len(v.Configurations) > 0 {
+		for _, conf := range v.Configurations {
+			if conf.Key != "" && conf.Value != "" {
+				str = fmt.Sprintf("%s %s:%s", str, conf.Key, conf.Value)
+			}
+		}
+	}
+
+	return str
+}
+
+// Vehicle Inquiry
+type VehicleInquiry struct {
+	Name     string `json:"name" xml:"name,attr"`
+	Category int    `json:"category" xml:"category,attr"`
+	Phone    string `json:"phone" xml:"phone,attr"`
+	Email    string `json:"email" xml:"email,attr"`
+	Vehicle  string `json:"vehicle" xml:"vehicle"`
+	Message  string `json:"message" xml:"message"`
+}
+
+var (
+	insertStmt = `insert into VehicleInquiry(name, category, phone, email, vehicle, message, date_added) values(?,?,?,?,?,?, now())`
+)
+
+func (i *VehicleInquiry) Push() error {
+
+	if i.Name == "" {
+		return fmt.Errorf("%s", "name is required")
+	}
+	if i.Category == 0 {
+		return fmt.Errorf("%s", "category is required")
+	}
+	if i.Phone == "" && i.Email == "" {
+		return fmt.Errorf("%s", "a form of contact is required")
+	}
+	if i.Vehicle == "" {
+		return fmt.Errorf("%s", "the vehicle of inquiry is required")
+	}
+
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(insertStmt)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(i.Name, i.Category, i.Phone, i.Email, i.Vehicle, i.Message)
+	return err
+}
+
+func (i *VehicleInquiry) SendEmail(dtx *apicontext.DataContext) error {
+
+	cts, err := contact.GetAllContactTypes(dtx)
+	if err != nil {
+		return err
+	}
+
+	var ct contact.ContactType
+	for _, t := range cts {
+		if t.Name == "Vehicle Inquiry" {
+			ct = t
+			break
+		}
+	}
+
+	// Get Category
+	var cat Category
+	cat.ID = i.Category
+	cat.GetCategory(dtx.APIKey, 1, 1, true, nil, nil, dtx)
+
+	// Start to build email body
+	body := fmt.Sprintf("Name: %s\n", i.Name)
+	body = fmt.Sprintf("%sEmail: %s\n", body, i.Email)
+	body = fmt.Sprintf("%sPhone: %s\n", body, i.Phone)
+	body = fmt.Sprintf("%sCategory: %s\n", body, cat.Title)
+
+	// Decode vehicle
+	var v Vehicle
+	if err := json.Unmarshal([]byte(i.Vehicle), &v); err == nil {
+		str := v.stringify()
+		if str != "" {
+			body = fmt.Sprintf("%sVehicle: %s\n", body, str)
+		}
+	}
+
+	if i.Message != "" {
+		body = fmt.Sprintf("%s\nMessage: %s\n", body, i.Message)
+	}
+
+	// Send Email
+	return contact.SendEmail(ct, "Email from VehicleInquiry Request Form", body) //contact type id, subject, techSupport
+
 }
