@@ -179,16 +179,33 @@ var (
 	vehicleNotesStmtMiddle_Grouped = `) or ca.value is null) and vp.PartNumber IN (`
 	vehicleNotesStmtEnd_Grouped    = `)`
 
-	getVehicleStmt = `select v.ID, bv.AAIABaseVehicleID, bv.YearID, ma.ID, ma.MakeName, mo.ID, mo.ModelName, sm.AAIASubmodelID, sm.SubmodelName,  
-		group_concat(cat.ID), group_concat(cat.name), group_concat(cat.AcesTypeID), group_concat(ca.ID), group_concat(ca.value), group_concat(ca.vcdbID) 
-		from vcdb_Vehicle as v 
-		join BaseVehicle as bv on bv.ID = v.BaseVehicleID
-		left join vcdb_Model as mo on mo.ID = bv.ModelID
-		left join vcdb_Make as ma on ma.ID = bv.MakeID
-		left join Submodel as sm on sm.ID = v.SubmodelID
-		left join VehicleConfigAttribute as vca on vca.VehicleConfigID = v.ConfigID
+	// getVehicleStmt = `select v.ID, bv.AAIABaseVehicleID, bv.YearID, ma.ID, ma.MakeName, mo.ID, mo.ModelName, sm.AAIASubmodelID, sm.SubmodelName,
+	// 	group_concat(cat.ID,"|"), group_concat(cat.name,"|"), group_concat(cat.AcesTypeID,"|"), group_concat(ca.ID,"|"), group_concat(ca.value,"|"), group_concat(ca.vcdbID,"|")
+	// 	from vcdb_Vehicle as v
+	// 	join BaseVehicle as bv on bv.ID = v.BaseVehicleID
+	// 	left join vcdb_Model as mo on mo.ID = bv.ModelID
+	// 	left join vcdb_Make as ma on ma.ID = bv.MakeID
+	// 	left join Submodel as sm on sm.ID = v.SubmodelID
+	// 	left join VehicleConfigAttribute as vca on vca.VehicleConfigID = v.ConfigID
+	// 	left join ConfigAttribute as ca on ca.ID = vca.AttributeID
+	// 	left join ConfigAttributeType as cat on cat.ID = ca.ConfigAttributeTypeID
+	// 	where bv.AAIABaseVehicleID = ?
+	// 	and sm.AAIASubmodelID = ?`
+	getVehicleToSubStmt = `select v.ID, bv.AAIABaseVehicleID, bv.YearID, ma.ID, ma.MakeName, mo.ID, mo.ModelName,  sm.AAIASubmodelID, sm.SubmodelName
+			from vcdb_Vehicle as v 
+			join BaseVehicle as bv on bv.ID = v.BaseVehicleID
+			left join vcdb_Model as mo on mo.ID = bv.ModelID
+			left join vcdb_Make as ma on ma.ID = bv.MakeID
+			left join Submodel as sm on sm.ID = v.SubmodelID
+			where bv.AAIABaseVehicleID = ?  
+			and sm.AAIASubmodelID = ?`
+	getVehicleConfigs = `select cat.name , ca.value
+		from VehicleConfigAttribute as vca 
 		left join ConfigAttribute as ca on ca.ID = vca.AttributeID
-		left join ConfigAttributeType as cat on cat.ID = ca.ConfigAttributeTypeID
+		left join ConfigAttributeType as cat on cat.ID = ca.ConfigAttributeTypeID 
+		left join vcdb_Vehicle as v on v.ConfigID = vca.VehicleConfigID
+		left join BaseVehicle as bv on bv.ID = v.BaseVehicleID
+		left join Submodel as sm on sm.ID = v.SubmodelID
 		where bv.AAIABaseVehicleID = ?  
 		and sm.AAIASubmodelID = ?`
 )
@@ -348,15 +365,15 @@ func GetVehicle(baseId, subId int, configs []string) (Vehicle, error) {
 	}
 	defer db.Close()
 
-	stmt, err := db.Prepare(getVehicleStmt)
+	stmt, err := db.Prepare(getVehicleToSubStmt)
 	if err != nil {
 		return v, err
 	}
 	defer stmt.Close()
 
-	var makeId, modelId, catId, acesCatId, conId, acesConId *int
-	var catName, conName, submodel *string
-
+	//get Base+Submodel
+	var makeId, modelId *int
+	var submodel *string
 	err = stmt.QueryRow(baseId, subId).Scan(
 		&v.ID,
 		&baseId,
@@ -367,12 +384,6 @@ func GetVehicle(baseId, subId int, configs []string) (Vehicle, error) {
 		&v.Model,
 		&subId,
 		&submodel,
-		&catId,
-		&catName,
-		&acesCatId,
-		&conId,
-		&conName,
-		&acesConId,
 	)
 	if err != nil {
 		return v, err
@@ -381,20 +392,32 @@ func GetVehicle(baseId, subId int, configs []string) (Vehicle, error) {
 		v.Submodel = *submodel
 	}
 
-	//match  config
-	catArray := make([]string, 0)
-	conArray := make([]string, 0)
-	if catName != nil && conName != nil {
-		catArray = strings.Split(*catName, ",")
-		conArray = strings.Split(*conName, ",")
+	stmt, err = db.Prepare(getVehicleConfigs)
+	if err != nil {
+		return v, err
 	}
 
-	for i, _ := range catArray {
-		var configuration Config
-		configuration.Type = catArray[i]
-		configuration.Value = conArray[i]
-		v.Configuration = append(v.Configuration, configuration)
+	//Configs
+	res, err := stmt.Query(baseId, subId)
+	if err != nil {
+		return v, err
 	}
-
+	var name, value *string
+	for res.Next() {
+		err = res.Scan(&name, &value)
+		if err != nil {
+			return v, err
+		}
+		if value != nil {
+			for _, config := range configs {
+				if strings.TrimSpace(strings.ToLower(*value)) == strings.TrimSpace(strings.ToLower(config)) {
+					var vehicleConfig Config
+					vehicleConfig.Value = *value
+					vehicleConfig.Type = *name
+					v.Configuration = append(v.Configuration, vehicleConfig)
+				}
+			}
+		}
+	}
 	return v, err
 }
