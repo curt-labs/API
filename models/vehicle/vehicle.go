@@ -386,6 +386,9 @@ func GetVehicle(baseId, subId int, configs []string) (Vehicle, error) {
 		&submodel,
 	)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			err = nil
+		}
 		return v, err
 	}
 	if submodel != nil {
@@ -413,7 +416,9 @@ func GetVehicle(baseId, subId int, configs []string) (Vehicle, error) {
 				if strings.TrimSpace(strings.ToLower(*value)) == strings.TrimSpace(strings.ToLower(config)) {
 					var vehicleConfig Config
 					vehicleConfig.Value = *value
-					vehicleConfig.Type = *name
+					if name != nil {
+						vehicleConfig.Type = *name
+					}
 					v.Configuration = append(v.Configuration, vehicleConfig)
 				}
 			}
