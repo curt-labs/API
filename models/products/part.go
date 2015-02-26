@@ -634,13 +634,17 @@ func (p *Part) GetContent(dtx *apicontext.DataContext) error {
 	var content []Content
 	for rows.Next() {
 		var con Content
+		var conText *string
 		err = rows.Scan(
 			&con.ContentType.Id,
 			&con.ContentType.Type,
-			&con.Text,
+			&conText,
 		)
 		if err != nil {
 			return err
+		}
+		if conText != nil {
+			con.Text = *conText
 		}
 
 		if strings.Contains(strings.ToLower(con.ContentType.Type), "install") {

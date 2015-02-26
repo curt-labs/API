@@ -13,6 +13,8 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+
+	"log"
 )
 
 //Post - Form Authentication
@@ -24,6 +26,7 @@ func AuthenticateUser(rw http.ResponseWriter, r *http.Request, enc encoding.Enco
 	}
 
 	if err = user.AuthenticateUser(); err != nil {
+		log.Println(err)
 		apierror.GenerateError("Trouble authenticating customer user", err, rw, r)
 		return ""
 	}
