@@ -1,7 +1,6 @@
 package products
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/api"
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
@@ -649,7 +648,8 @@ func (p *Part) GetContent(dtx *apicontext.DataContext) error {
 
 		if strings.Contains(strings.ToLower(con.ContentType.Type), "install") {
 			//sheetUrl, _ := url.Parse(con.Value)
-			p.InstallSheet, _ = url.Parse(api_helpers.API_DOMAIN + "/part/" + strconv.Itoa(p.ID) + ".pdf")
+			p.InstallSheet, _ = url.Parse(con.Text)
+			// p.InstallSheet, _ = url.Parse(api_helpers.API_DOMAIN + "/part/" + strconv.Itoa(p.ID) + ".pdf")
 		} else {
 			content = append(content, con)
 		}
