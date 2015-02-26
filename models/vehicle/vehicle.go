@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
+	"strconv"
 	"strings"
 
 	"github.com/curt-labs/GoAPI/helpers/api"
@@ -180,25 +182,43 @@ var (
 	vehicleNotesStmtEnd_Grouped    = `)`
 
 	// getVehicleStmt = `select v.ID, bv.AAIABaseVehicleID, bv.YearID, ma.ID, ma.MakeName, mo.ID, mo.ModelName, sm.AAIASubmodelID, sm.SubmodelName,
-	// 	group_concat(cat.ID,"|"), group_concat(cat.name,"|"), group_concat(cat.AcesTypeID,"|"), group_concat(ca.ID,"|"), group_concat(ca.value,"|"), group_concat(ca.vcdbID,"|")
-	// 	from vcdb_Vehicle as v
-	// 	join BaseVehicle as bv on bv.ID = v.BaseVehicleID
-	// 	left join vcdb_Model as mo on mo.ID = bv.ModelID
-	// 	left join vcdb_Make as ma on ma.ID = bv.MakeID
-	// 	left join Submodel as sm on sm.ID = v.SubmodelID
-	// 	left join VehicleConfigAttribute as vca on vca.VehicleConfigID = v.ConfigID
-	// 	left join ConfigAttribute as ca on ca.ID = vca.AttributeID
-	// 	left join ConfigAttributeType as cat on cat.ID = ca.ConfigAttributeTypeID
-	// 	where bv.AAIABaseVehicleID = ?
-	// 	and sm.AAIASubmodelID = ?`
-	getVehicleToSubStmt = `select v.ID, bv.AAIABaseVehicleID, bv.YearID, ma.ID, ma.MakeName, mo.ID, mo.ModelName,  sm.AAIASubmodelID, sm.SubmodelName
-			from vcdb_Vehicle as v 
-			join BaseVehicle as bv on bv.ID = v.BaseVehicleID
-			left join vcdb_Model as mo on mo.ID = bv.ModelID
-			left join vcdb_Make as ma on ma.ID = bv.MakeID
-			left join Submodel as sm on sm.ID = v.SubmodelID
-			where bv.AAIABaseVehicleID = ?  
-			and sm.AAIASubmodelID = ?`
+	//  	cat.ID, cat.name, cat.AcesTypeID, ca.ID, ca.value, ca.vcdbID
+	//  	from vcdb_Vehicle as v
+	//  	join BaseVehicle as bv on bv.ID = v.BaseVehicleID
+	//  	left join vcdb_Model as mo on mo.ID = bv.ModelID
+	//  	left join vcdb_Make as ma on ma.ID = bv.MakeID
+	//  	left join Submodel as sm on sm.ID = v.SubmodelID
+	//  	left join VehicleConfigAttribute as vca on vca.VehicleConfigID = v.ConfigID
+	//  	left join ConfigAttribute as ca on ca.ID = vca.AttributeID
+	//  	left join ConfigAttributeType as cat on cat.ID = ca.ConfigAttributeTypeID
+	//  	where bv.AAIABaseVehicleID = ?
+	//  	and sm.AAIASubmodelID = ?`
+	getVehicleNewStmt = `select v.ID, bv.AAIABaseVehicleID, bv.YearID, ma.ID, ma.MakeName, mo.ID, mo.ModelName, sm.AAIASubmodelID, sm.SubmodelName,
+	 	 group_concat(ca.ID)
+	 	from vcdb_Vehicle as v
+	 	join BaseVehicle as bv on bv.ID = v.BaseVehicleID
+	 	left join vcdb_Model as mo on mo.ID = bv.ModelID
+	 	left join vcdb_Make as ma on ma.ID = bv.MakeID
+	 	left join Submodel as sm on sm.ID = v.SubmodelID
+	 	left join VehicleConfigAttribute as vca on vca.VehicleConfigID = v.ConfigID
+	 	left join ConfigAttribute as ca on ca.ID = vca.AttributeID
+	 	left join ConfigAttributeType as cat on cat.ID = ca.ConfigAttributeTypeID
+	 	where bv.AAIABaseVehicleID = ?
+	 	and sm.AAIASubmodelID = ?
+	 	group by v.ID`
+
+	getConfigsStmt = `select cat.ID, cat.name,  ca.ID, ca.value
+			from ConfigAttribute as ca
+			join ConfigAttributeType as cat on cat.ID = ca.ConfigAttributeTypeID
+			where ca.ID = ?`
+	// getVehicleToSubStmt = `select v.ID, bv.AAIABaseVehicleID, bv.YearID, ma.ID, ma.MakeName, mo.ID, mo.ModelName,  sm.AAIASubmodelID, sm.SubmodelName
+	// 		from vcdb_Vehicle as v
+	// 		join BaseVehicle as bv on bv.ID = v.BaseVehicleID
+	// 		left join vcdb_Model as mo on mo.ID = bv.ModelID
+	// 		left join vcdb_Make as ma on ma.ID = bv.MakeID
+	// 		left join Submodel as sm on sm.ID = v.SubmodelID
+	// 		where bv.AAIABaseVehicleID = ?
+	// 		and sm.AAIASubmodelID = ?`
 	getVehicleConfigs = `select cat.name , ca.value
 		from VehicleConfigAttribute as vca 
 		left join ConfigAttribute as ca on ca.ID = vca.AttributeID
@@ -359,13 +379,21 @@ func AppendIfMissing(existing []int, slice []int) []int {
 func GetVehicle(baseId, subId int, configs []string) (Vehicle, error) {
 	var err error
 	var v Vehicle
+	var outputVehicle Vehicle
+
+	//get config Attribute IDs from configs
+	configIds, err := getConfigAttributeIDs(configs)
+	if err != nil {
+		return outputVehicle, err
+	}
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return v, err
 	}
 	defer db.Close()
 
-	stmt, err := db.Prepare(getVehicleToSubStmt)
+	stmt, err := db.Prepare(getVehicleNewStmt)
 	if err != nil {
 		return v, err
 	}
@@ -373,56 +401,127 @@ func GetVehicle(baseId, subId int, configs []string) (Vehicle, error) {
 
 	//get Base+Submodel
 	var makeId, modelId *int
-	var submodel *string
-	err = stmt.QueryRow(baseId, subId).Scan(
-		&v.ID,
-		&baseId,
-		&v.Year,
-		&makeId,
-		&v.Make,
-		&modelId,
-		&v.Model,
-		&subId,
-		&submodel,
-	)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			err = nil
-		}
-		return v, err
-	}
-	if submodel != nil {
-		v.Submodel = *submodel
-	}
+	var submodel, configIDConcat *string
+	// vehicleMap := make(map[int]Vehicle) //maps vehicle to v.ID
+	// vehicleConfigMap := make(map[int][]Config)
 
-	stmt, err = db.Prepare(getVehicleConfigs)
-	if err != nil {
-		return v, err
-	}
-
-	//Configs
 	res, err := stmt.Query(baseId, subId)
 	if err != nil {
 		return v, err
 	}
-	var name, value *string
 	for res.Next() {
-		err = res.Scan(&name, &value)
+		err = res.Scan(
+			&v.ID,
+			&baseId,
+			&v.Year,
+			&makeId,
+			&v.Make,
+			&modelId,
+			&v.Model,
+			&subId,
+			&submodel,
+			&configIDConcat,
+		)
 		if err != nil {
-			return v, err
+			if err == sql.ErrNoRows {
+				err = nil
+			}
+			return outputVehicle, err
 		}
-		if value != nil {
-			for _, config := range configs {
-				if strings.TrimSpace(strings.ToLower(*value)) == strings.TrimSpace(strings.ToLower(config)) {
-					var vehicleConfig Config
-					vehicleConfig.Value = *value
-					if name != nil {
-						vehicleConfig.Type = *name
-					}
-					v.Configuration = append(v.Configuration, vehicleConfig)
+		if submodel != nil {
+			v.Submodel = *submodel
+		}
+		//check configIds against configConcat
+		var configsArray []string
+		var configsIntArray []int
+		if configIDConcat != nil {
+			configsArray = strings.Split(*configIDConcat, ",")
+			if err != nil {
+				return outputVehicle, err
+			}
+			for _, configInt := range configsArray {
+				thisInt, err := strconv.Atoi(configInt)
+				if err != nil {
+					return outputVehicle, err
 				}
+				configsIntArray = append(configsIntArray, thisInt)
 			}
 		}
+
+		configsMap := make(map[int]int)
+		for _, eachConfigID := range configsIntArray {
+			configsMap[eachConfigID] = eachConfigID
+		}
+		log.Print(v, configIds, configsMap)
+		notHere := false
+		for _, idFromParams := range configIds {
+			if _, ok := configsMap[idFromParams]; !ok {
+				notHere = true
+			}
+		}
+		if notHere == false {
+			//actually get the configurations
+			v.Configuration, err = getConfigurations(configsIntArray)
+			log.Print("HERE", v)
+			outputVehicle = v
+		}
+
 	}
-	return v, err
+
+	log.Print(outputVehicle)
+	return outputVehicle, err
+}
+
+func getConfigAttributeIDs(configs []string) ([]int, error) {
+	var err error
+	var conIds []int
+
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return conIds, err
+	}
+	defer db.Close()
+	for _, configStr := range configs {
+		stmt, err := db.Prepare(`select ID from ConfigAttribute where value = trim(lower(?))`)
+		if err != nil {
+			return conIds, err
+		}
+		defer stmt.Close()
+		var id int
+		configStr = strings.ToLower(strings.TrimSpace(configStr))
+		err = stmt.QueryRow(configStr).Scan(&id)
+		if err == sql.ErrNoRows {
+			err = nil
+		}
+		if err != nil {
+			return conIds, err
+		}
+		conIds = append(conIds, id)
+	}
+	return conIds, err
+}
+
+func getConfigurations(configIds []int) ([]Config, error) {
+	var err error
+	var configArray []Config
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return configArray, err
+	}
+	defer db.Close()
+	for _, id := range configIds {
+		stmt, err := db.Prepare(getConfigsStmt)
+		if err != nil {
+			return configArray, err
+		}
+		defer stmt.Close()
+		var c Config
+		var catId, caId *int
+		err = stmt.QueryRow(id).Scan(&catId, &c.Type, &caId, &c.Value)
+		if err != nil {
+			return configArray, err
+		}
+		configArray = append(configArray, c)
+	}
+	return configArray, err
 }
