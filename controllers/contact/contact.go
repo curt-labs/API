@@ -12,6 +12,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/error"
+	"github.com/curt-labs/GoAPI/models/brand"
 	"github.com/curt-labs/GoAPI/models/contact"
 	"github.com/curt-labs/GoAPI/models/geography"
 	"github.com/go-martini/martini"
@@ -63,6 +64,19 @@ func AddDealerContact(rw http.ResponseWriter, req *http.Request, enc encoding.En
 	var ct contact.ContactType
 	var subject string
 	var err error
+	var brandName string
+
+	brandIDs, err := dtx.GetBrandsFromKey()
+	if err != nil {
+		brandName = "Unknown Brand"
+	}
+	for _, bID := range brandIDs {
+		var brand brand.Brand
+		brand.ID = bID
+		brand.Get()
+		brandName = brand.Name
+	}
+
 	ct.ID, err = strconv.Atoi(params["contactTypeID"]) //determines to whom emails go
 	if err != nil {
 		apierror.GenerateError("Trouble getting contact type ID", err, rw, req)
@@ -102,7 +116,7 @@ func AddDealerContact(rw http.ResponseWriter, req *http.Request, enc encoding.En
 		d.Subject = "Becoming a Dealer"
 		subject = d.Subject
 	} else {
-		subject = "Email from Customer Service Form"
+		d.Subject = "Contact Submission regarding " + d.Type + ", from " + d.FirstName + " " + d.LastName + "."
 	}
 
 	//state/country
@@ -129,7 +143,7 @@ func AddDealerContact(rw http.ResponseWriter, req *http.Request, enc encoding.En
 	}
 
 	emailBody := fmt.Sprintf(
-		`This contact is interested in becoming a Dealer.
+		`This %s contact is inquiring about: %s.
 				Name: %s
 				Email: %s
 				Phone: %s
@@ -139,6 +153,8 @@ func AddDealerContact(rw http.ResponseWriter, req *http.Request, enc encoding.En
 				Country: %s
 				Subject: %s 
 				Message: %s`,
+		brandName,
+		d.Type,
 		d.FirstName+" "+d.LastName,
 		d.Email,
 		d.Phone,
