@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 
@@ -181,18 +180,6 @@ var (
 	vehicleNotesStmtMiddle_Grouped = `) or ca.value is null) and vp.PartNumber IN (`
 	vehicleNotesStmtEnd_Grouped    = `)`
 
-	// getVehicleStmt = `select v.ID, bv.AAIABaseVehicleID, bv.YearID, ma.ID, ma.MakeName, mo.ID, mo.ModelName, sm.AAIASubmodelID, sm.SubmodelName,
-	//  	cat.ID, cat.name, cat.AcesTypeID, ca.ID, ca.value, ca.vcdbID
-	//  	from vcdb_Vehicle as v
-	//  	join BaseVehicle as bv on bv.ID = v.BaseVehicleID
-	//  	left join vcdb_Model as mo on mo.ID = bv.ModelID
-	//  	left join vcdb_Make as ma on ma.ID = bv.MakeID
-	//  	left join Submodel as sm on sm.ID = v.SubmodelID
-	//  	left join VehicleConfigAttribute as vca on vca.VehicleConfigID = v.ConfigID
-	//  	left join ConfigAttribute as ca on ca.ID = vca.AttributeID
-	//  	left join ConfigAttributeType as cat on cat.ID = ca.ConfigAttributeTypeID
-	//  	where bv.AAIABaseVehicleID = ?
-	//  	and sm.AAIASubmodelID = ?`
 	getVehicleNewStmt = `select v.ID, bv.AAIABaseVehicleID, bv.YearID, ma.ID, ma.MakeName, mo.ID, mo.ModelName, sm.AAIASubmodelID, sm.SubmodelName,
 	 	 group_concat(ca.ID)
 	 	from vcdb_Vehicle as v
@@ -211,14 +198,7 @@ var (
 			from ConfigAttribute as ca
 			join ConfigAttributeType as cat on cat.ID = ca.ConfigAttributeTypeID
 			where ca.ID = ?`
-	// getVehicleToSubStmt = `select v.ID, bv.AAIABaseVehicleID, bv.YearID, ma.ID, ma.MakeName, mo.ID, mo.ModelName,  sm.AAIASubmodelID, sm.SubmodelName
-	// 		from vcdb_Vehicle as v
-	// 		join BaseVehicle as bv on bv.ID = v.BaseVehicleID
-	// 		left join vcdb_Model as mo on mo.ID = bv.ModelID
-	// 		left join vcdb_Make as ma on ma.ID = bv.MakeID
-	// 		left join Submodel as sm on sm.ID = v.SubmodelID
-	// 		where bv.AAIABaseVehicleID = ?
-	// 		and sm.AAIASubmodelID = ?`
+
 	getVehicleConfigs = `select cat.name , ca.value
 		from VehicleConfigAttribute as vca 
 		left join ConfigAttribute as ca on ca.ID = vca.AttributeID
@@ -228,6 +208,23 @@ var (
 		left join Submodel as sm on sm.ID = v.SubmodelID
 		where bv.AAIABaseVehicleID = ?  
 		and sm.AAIASubmodelID = ?`
+	getVehicleByBaseStmt = `select v.ID, bv.AAIABaseVehicleID, bv.YearID, ma.ID, ma.MakeName, mo.ID, mo.ModelName 
+	 	from vcdb_Vehicle as v
+	 	join BaseVehicle as bv on bv.ID = v.BaseVehicleID
+	 	left join vcdb_Model as mo on mo.ID = bv.ModelID
+	 	left join vcdb_Make as ma on ma.ID = bv.MakeID
+	 	left join Submodel as sm on sm.ID = v.SubmodelID
+	 	where bv.AAIABaseVehicleID = ?
+	 	and (sm.AAIASubmodelID = 20 or v.SubmodelID is null or v.SubmodelID = 0)`
+	getVehicleBySubmodelStmt = `select v.ID, bv.AAIABaseVehicleID, bv.YearID, ma.ID, ma.MakeName, mo.ID, mo.ModelName, sm.AAIASubmodelID, sm.SubmodelName
+	 	from vcdb_Vehicle as v
+	 	join BaseVehicle as bv on bv.ID = v.BaseVehicleID
+	 	left join vcdb_Model as mo on mo.ID = bv.ModelID
+	 	left join vcdb_Make as ma on ma.ID = bv.MakeID
+	 	left join Submodel as sm on sm.ID = v.SubmodelID
+	 	where bv.AAIABaseVehicleID = ?
+	 	and sm.AAIASubmodelID = ?`
+	getConfigAttributes = `select ID from ConfigAttribute where value = trim(lower(?))`
 )
 
 func (vehicle *Vehicle) GetGroupsByBase() (groups []int) {
@@ -376,16 +373,102 @@ func AppendIfMissing(existing []int, slice []int) []int {
 }
 
 //For TrucksPlus Aces XML Lookup
+//takes aaia base and sub Ids
 func GetVehicle(baseId, subId int, configs []string) (Vehicle, error) {
 	var err error
 	var v Vehicle
-	var outputVehicle Vehicle
 
 	//get config Attribute IDs from configs
 	configIds, err := getConfigAttributeIDs(configs)
 	if err != nil {
-		return outputVehicle, err
+		return v, err
 	}
+
+	if subId == 20 || subId == 0 {
+		//basevehicle
+		return GetVehicleByBase(baseId)
+	}
+	for _, c := range configIds {
+		if c > 0 {
+			//config
+			return GetVehicleByConfig(baseId, subId, configIds)
+		}
+	}
+	//submodel
+	return GetVehicleBySubmodel(baseId, subId)
+}
+
+func GetVehicleByBase(baseId int) (Vehicle, error) {
+	var err error
+	var v Vehicle
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return v, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(getVehicleByBaseStmt)
+	if err != nil {
+		return v, err
+	}
+	defer stmt.Close()
+
+	var makeId, modelId *int
+
+	err = stmt.QueryRow(baseId).Scan(
+		&v.ID,
+		&baseId,
+		&v.Year,
+		&makeId,
+		&v.Make,
+		&modelId,
+		&v.Model,
+	)
+	return v, err
+}
+
+func GetVehicleBySubmodel(baseId, subId int) (Vehicle, error) {
+	var err error
+	var v Vehicle
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return v, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(getVehicleBySubmodelStmt)
+	if err != nil {
+		return v, err
+	}
+	defer stmt.Close()
+
+	var makeId, modelId *int
+	var submodel *string
+
+	err = stmt.QueryRow(baseId, subId).Scan(
+		&v.ID,
+		&baseId,
+		&v.Year,
+		&makeId,
+		&v.Make,
+		&modelId,
+		&v.Model,
+		&subId,
+		&submodel,
+	)
+	if err != nil {
+		return v, err
+	}
+	if submodel != nil {
+		v.Submodel = *submodel
+	}
+	return v, err
+}
+
+func GetVehicleByConfig(baseId, subId int, configs []int) (Vehicle, error) {
+	var err error
+	var v Vehicle
+	var outputVehicle Vehicle
 
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -402,8 +485,6 @@ func GetVehicle(baseId, subId int, configs []string) (Vehicle, error) {
 	//get Base+Submodel
 	var makeId, modelId *int
 	var submodel, configIDConcat *string
-	// vehicleMap := make(map[int]Vehicle) //maps vehicle to v.ID
-	// vehicleConfigMap := make(map[int][]Config)
 
 	res, err := stmt.Query(baseId, subId)
 	if err != nil {
@@ -431,47 +512,50 @@ func GetVehicle(baseId, subId int, configs []string) (Vehicle, error) {
 		if submodel != nil {
 			v.Submodel = *submodel
 		}
-		//check configIds against configConcat
+
+		//get int map of configs associated with this DB vehicle (maps configId to itself)
 		var configsArray []string
 		var configsIntArray []int
+		configsMap := make(map[int]int)
 		if configIDConcat != nil {
 			configsArray = strings.Split(*configIDConcat, ",")
 			if err != nil {
 				return outputVehicle, err
 			}
-			for _, configInt := range configsArray {
-				thisInt, err := strconv.Atoi(configInt)
+			for _, configStr := range configsArray {
+				thisInt, err := strconv.Atoi(configStr)
 				if err != nil {
 					return outputVehicle, err
 				}
-				configsIntArray = append(configsIntArray, thisInt)
+				configsIntArray = append(configsIntArray, thisInt) //array of these configIds
+				configsMap[thisInt] = thisInt                      //map of these configIds
+
 			}
 		}
-
-		configsMap := make(map[int]int)
-		for _, eachConfigID := range configsIntArray {
-			configsMap[eachConfigID] = eachConfigID
-		}
-		log.Print(v, configIds, configsMap)
 		notHere := false
-		for _, idFromParams := range configIds {
-			if _, ok := configsMap[idFromParams]; !ok {
-				notHere = true
+
+		for _, idFromParams := range configs {
+			if idFromParams > 0 {
+				if _, ok := configsMap[idFromParams]; !ok {
+					notHere = true
+				}
 			}
 		}
+
 		if notHere == false {
-			//actually get the configurations
+			//actually get the configurations, assign to the vehicle being returned
 			v.Configuration, err = getConfigurations(configsIntArray)
-			log.Print("HERE", v)
+			if err != nil {
+				return outputVehicle, err
+			}
 			outputVehicle = v
+			return outputVehicle, nil
 		}
-
 	}
-
-	log.Print(outputVehicle)
 	return outputVehicle, err
 }
 
+//converts a string array of attr values to an int array of their attribute ids
 func getConfigAttributeIDs(configs []string) ([]int, error) {
 	var err error
 	var conIds []int
@@ -482,7 +566,7 @@ func getConfigAttributeIDs(configs []string) ([]int, error) {
 	}
 	defer db.Close()
 	for _, configStr := range configs {
-		stmt, err := db.Prepare(`select ID from ConfigAttribute where value = trim(lower(?))`)
+		stmt, err := db.Prepare(getConfigAttributes)
 		if err != nil {
 			return conIds, err
 		}
@@ -501,6 +585,7 @@ func getConfigAttributeIDs(configs []string) ([]int, error) {
 	return conIds, err
 }
 
+//gets an array of Configs from an array of attribute Ids
 func getConfigurations(configIds []int) ([]Config, error) {
 	var err error
 	var configArray []Config
