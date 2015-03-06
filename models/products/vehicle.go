@@ -10,6 +10,7 @@ import (
 	"github.com/curt-labs/GoAPI/models/contact"
 	_ "github.com/go-sql-driver/mysql"
 	"math"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -30,35 +31,22 @@ var (
 		join Model as mo on bv.ModelID = mo.ModelID
 		where bv.YearID = ? && ma.MakeName = ? && mo.ModelName = ? && (v.SubmodelID = 0 || v.SubmodelID is null)
 		limit 1`
-	getVehicleParts = `
-		select distinct vp.PartNumber
-		from vcdb_Vehicle as v
-		join Submodel as s on v.SubModelID = s.ID
-		join BaseVehicle as bv on v.BaseVehicleID = bv.ID
-		join vcdb_Model as mo on bv.ModelID = mo.ID
-		join vcdb_Make as ma on bv.MakeID = ma.ID
+
+	partMatcherStmt = `select p.partID, cat.name, ca.value from vcdb_Vehicle as v
+		left join VehicleConfigAttribute as vca on v.ConfigID = vca.VehicleConfigID
+		left join ConfigAttribute as ca on vca.AttributeID = ca.ID
+		left join ConfigAttributeType as cat on ca.ConfigAttributeTypeID = cat.ID
+		left join Submodel as sm on v.SubmodelID = sm.ID
 		join vcdb_VehiclePart as vp on v.ID = vp.VehicleID
 		join Part as p on vp.PartNumber = p.partID
-		where (p.status = 800 || p.status = 900) && 
-		bv.YearID = ? && ma.MakeName = ? &&
-		mo.ModelName = ? && s.SubmodelName = ? &&
-		(v.ConfigID = 0 || v.ConfigID is null)
-		&& p.brandID in(?)
-		order by vp.PartNumber`
-	getBaseVehicleParts = `
-		select distinct vp.PartNumber
-		from vcdb_Vehicle as v
 		join BaseVehicle as bv on v.BaseVehicleID = bv.ID
-		join vcdb_Model as mo on bv.ModelID = mo.ID
 		join vcdb_Make as ma on bv.MakeID = ma.ID
-		join vcdb_VehiclePart as vp on v.ID = vp.VehicleID
-		join Part as p on vp.PartNumber = p.partID
-		where (p.status = 800 || p.status = 900) &&
-		bv.YearID = ? && ma.MakeName = ? &&
-		mo.ModelName = ? && (v.SubmodelID = 0 || v.SubmodelID is null) &&
-		(v.ConfigID = 0 || v.ConfigID is null)
-		&& p.brandID in (?)
-		order by vp.PartNumber`
+		join vcdb_Model as mo on bv.ModelID = mo.ID
+		where bv.YearID = ? && ma.MakeName = ? && mo.ModelName = ? &&
+		(sm.SubmodelName = ? || sm.ID is null) && p.brandID in (?) &&
+		(p.status = 800 || p.status = 900)
+		group by p.partID, cat.name, ca.value
+		order by p.partID, cat.name, ca.value`
 )
 
 type Vehicle struct {
@@ -93,82 +81,128 @@ func (l *Lookup) LoadParts(ch chan []Part, page int, count int, dtx *apicontext.
 	if count == 0 {
 		count = DefaultPageCount
 	}
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		ch <- nil
+		return
+	}
+	defer db.Close()
 
-	parts := make([]Part, 0)
+	stmt, err := db.Prepare(partMatcherStmt)
+	if err != nil {
+		ch <- nil
+		return
+	}
+	defer stmt.Close()
 
-	vehicleChan := make(chan error)
-	baseVehicleChan := make(chan error)
-	go l.loadVehicleParts(vehicleChan)
-	go l.loadBaseVehicleParts(baseVehicleChan)
+	brands := make([]string, 0)
+	for _, b := range dtx.BrandArray {
+		brands = append(brands, strconv.Itoa(b))
+	}
 
-	if len(l.Vehicle.Configurations) > 0 {
-		configs, err := l.Vehicle.getDefinedConfigurations(l.CustomerKey)
-		if err != nil || configs == nil {
-			ch <- parts
-			return
+	rows, err := stmt.Query(l.Vehicle.Base.Year, l.Vehicle.Base.Make, l.Vehicle.Base.Model, l.Vehicle.Submodel, strings.Join(brands, ","))
+	if err != nil || rows == nil {
+		ch <- nil
+		return
+	}
+	defer rows.Close()
+
+	maps := make(map[int][]ConfigurationOption, 0)
+	parts := make([]int, 0)
+
+	// Compile configuration map from database results
+	for rows.Next() {
+		var part int
+		var config_type *string
+		var config_val *string
+		if err := rows.Scan(&part, &config_type, &config_val); err != nil {
+			continue
+		}
+		if part == 0 {
+			continue
+		}
+		if config_type == nil || config_val == nil || *config_type == "" || *config_val == "" {
+			parts = append(parts, part)
+			continue
 		}
 
-		chosenValArr := make(map[string]string, 0)
-		for _, config := range l.Vehicle.Configurations {
-			chosenValArr[strings.TrimSpace(strings.ToLower(config.Value))] = strings.TrimSpace(strings.ToLower(config.Value))
+		opt := ConfigurationOption{
+			Type:    strings.TrimSpace(*config_type),
+			Options: make([]string, 0),
 		}
 
-		for _, config := range *configs {
-			// configValArr := make(map[string]string, 0)
-			matches := true
-			for _, val := range config {
-
-				v := strings.TrimSpace(strings.ToLower(val.Value))
-
-				if _, ok := chosenValArr[v]; !ok {
-					matches = false
-				}
-			}
-			if matches {
-				for _, partID := range config[0].Parts {
-					p := Part{ID: partID}
-					l.Parts = append(l.Parts, p)
+		if maps[part] == nil {
+			maps[part] = make([]ConfigurationOption, 0)
+			opt.Options = append(opt.Options, *config_val)
+			maps[part] = append(maps[part], opt)
+		} else {
+			for i, conf := range maps[part] {
+				if strings.ToLower(strings.TrimSpace(conf.Type)) == strings.ToLower(strings.TrimSpace(*config_type)) {
+					maps[part][i].Options = append(maps[part][i].Options, *config_val)
+					continue
 				}
 			}
 		}
 	}
 
-	<-vehicleChan
-	<-baseVehicleChan
-	removeDuplicates(&l.Parts)
+	// index the qualified configurations
+	confIndex := make(map[string]string, 0)
+	for _, c := range l.Vehicle.Configurations {
+		confIndex[strings.ToLower(strings.TrimSpace(c.Key))] = strings.TrimSpace(c.Value)
+	}
 
-	// we need to strip the result set down the paginated
-	// version
-	partCount := len(l.Parts)
-	pagedParts := l.Parts
+	// run a comparison of the database results
+	// against the qualified configurations,
+	// storing part numbers that are fully matched.
+	for part, configs := range maps {
+		qualified := 0
+		for _, config := range configs {
+			if val := confIndex[strings.ToLower(strings.TrimSpace(config.Type))]; val != "" {
+
+				for _, opt := range config.Options {
+					if strings.ToLower(strings.TrimSpace(val)) == strings.ToLower(strings.TrimSpace(opt)) {
+						qualified = qualified + 1
+					}
+				}
+			}
+		}
+
+		if qualified == len(configs) {
+			parts = append(parts, part)
+		}
+	}
+
+	sort.Ints(parts)
+
+	partCount := len(parts)
+	pagedParts := parts
 	if partCount > count {
 		start := 0
 		if page > 1 {
 			start = count * (page - 1)
 		}
 		end := start + count
-		if len(l.Parts) <= end {
-			pagedParts = l.Parts[start:]
+		if len(parts) <= end {
+			pagedParts = parts[start:]
 		} else {
-			pagedParts = l.Parts[start : start+count]
+			pagedParts = parts[start : start+count]
 		}
 	}
 
-	parts = make([]Part, 0)
+	l.Parts = make([]Part, 0)
 	perChan := make(chan int)
 	for i, p := range pagedParts {
 		go func(j int, prt Part) {
 			if err := prt.Get(dtx); err == nil && prt.ShortDesc != "" {
-				parts = append(parts, prt)
+				l.Parts = append(l.Parts, prt)
 			}
 			perChan <- 1
-		}(i, p)
+		}(i, Part{ID: p})
 	}
 
 	for _, _ = range pagedParts {
 		<-perChan
 	}
-	l.Parts = parts
 
 	sortutil.AscByField(l.Parts, "ID")
 
@@ -189,122 +223,8 @@ func (l *Lookup) LoadParts(ch chan []Part, page int, count int, dtx *apicontext.
 		TotalPages:    totalPages,
 	}
 
-	ch <- parts
-}
-
-func (l *Lookup) loadVehicleParts(ch chan error) {
-	stmtBeginning := `select distinct vp.PartNumber
-		from vcdb_Vehicle as v
-		join Submodel as s on v.SubModelID = s.ID
-		join BaseVehicle as bv on v.BaseVehicleID = bv.ID
-		join vcdb_Model as mo on bv.ModelID = mo.ID
-		join vcdb_Make as ma on bv.MakeID = ma.ID
-		join vcdb_VehiclePart as vp on v.ID = vp.VehicleID
-		join Part as p on vp.PartNumber = p.partID
-		where (p.status = 800 || p.status = 900) && 
-		bv.YearID = ? && ma.MakeName = ? &&
-		mo.ModelName = ? && s.SubmodelName = ? &&
-		(v.ConfigID = 0 || v.ConfigID is null)`
-	stmtEnd := `order by vp.PartNumber`
-	brandStmt := " && p.brandID in ("
-	for _, b := range l.Brands {
-		brandStmt += strconv.Itoa(b) + ","
-	}
-	brandStmt = strings.TrimRight(brandStmt, ",") + ")"
-	wholeStmt := stmtBeginning + brandStmt + stmtEnd
-
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		ch <- err
-		return
-	}
-	defer db.Close()
-
-	stmt, err := db.Prepare(wholeStmt)
-	if err != nil {
-		ch <- err
-		return
-	}
-
-	rows, err := stmt.Query(l.Vehicle.Base.Year, l.Vehicle.Base.Make, l.Vehicle.Base.Model, l.Vehicle.Submodel)
-	if err != nil || rows == nil {
-		ch <- err
-		return
-	}
-
-	for rows.Next() {
-		var p Part
-		if err = rows.Scan(&p.ID); err == nil {
-			l.Parts = append(l.Parts, p)
-		}
-	}
-	defer rows.Close()
 	ch <- nil
 	return
-}
-
-func (l *Lookup) loadBaseVehicleParts(ch chan error) {
-	stmtBeginning := `select distinct vp.PartNumber
-		from vcdb_Vehicle as v
-		join BaseVehicle as bv on v.BaseVehicleID = bv.ID
-		join vcdb_Model as mo on bv.ModelID = mo.ID
-		join vcdb_Make as ma on bv.MakeID = ma.ID
-		join vcdb_VehiclePart as vp on v.ID = vp.VehicleID
-		join Part as p on vp.PartNumber = p.partID
-		where (p.status = 800 || p.status = 900) &&
-		bv.YearID = ? && ma.MakeName = ? &&
-		mo.ModelName = ? && (v.SubmodelID = 0 || v.SubmodelID is null) &&
-		(v.ConfigID = 0 || v.ConfigID is null)`
-	stmtEnd := `order by vp.PartNumber`
-	brandStmt := " && p.brandID in ("
-	for _, b := range l.Brands {
-		brandStmt += strconv.Itoa(b) + ","
-	}
-	brandStmt = strings.TrimRight(brandStmt, ",") + ")"
-	wholeStmt := stmtBeginning + brandStmt + stmtEnd
-
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		ch <- err
-		return
-	}
-	defer db.Close()
-
-	stmt, err := db.Prepare(wholeStmt)
-	if err != nil {
-		ch <- err
-		return
-	}
-
-	rows, err := stmt.Query(l.Vehicle.Base.Year, l.Vehicle.Base.Make, l.Vehicle.Base.Model)
-	if err != nil || rows == nil {
-		ch <- err
-		return
-	}
-
-	for rows.Next() {
-		var p Part
-		if err = rows.Scan(&p.ID); err == nil {
-			l.Parts = append(l.Parts, p)
-		}
-	}
-	defer rows.Close()
-
-	ch <- nil
-	return
-}
-
-func removeDuplicates(xs *[]Part) {
-	found := make(map[int]bool)
-	j := 0
-	for i, x := range *xs {
-		if !found[x.ID] {
-			found[x.ID] = true
-			(*xs)[j] = (*xs)[i]
-			j++
-		}
-	}
-	*xs = (*xs)[:j]
 }
 
 func (v *Vehicle) GetVcdbID() (int, error) {
