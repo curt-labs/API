@@ -1356,6 +1356,9 @@ func (p *Part) Delete(dtx *apicontext.DataContext) (err error) {
 }
 
 func (p *Part) Update(dtx *apicontext.DataContext) (err error) {
+	if p.ID == 0 {
+		return errors.New("Part ID is zero.")
+	}
 	go redis.Delete(fmt.Sprintf("part:%d:"+dtx.BrandString, p.ID))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
