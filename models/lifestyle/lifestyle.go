@@ -3,6 +3,7 @@ package lifestyle
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
@@ -472,6 +473,9 @@ func (l *Lifestyle) Delete() (err error) {
 }
 
 func (l *Lifestyle) deleteContents() (err error) {
+	if l.ID == 0 {
+		return errors.New("Lifestyle content ID is zero.")
+	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err

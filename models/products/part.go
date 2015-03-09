@@ -266,7 +266,7 @@ func (p *Part) FromDatabase(dtx *apicontext.DataContext) error {
 		return errors.New("Could not find part: " + basicErr.Error())
 	}
 	go func(tmp Part) {
-		redis.Setex(fmt.Sprintf("part:%d:%d", dtx.BrandString, tmp.ID), tmp, redis.CacheTimeout)
+		redis.Setex(fmt.Sprintf("part:%s:%d", dtx.BrandString, tmp.ID), tmp, redis.CacheTimeout)
 	}(*p)
 
 	return nil
@@ -1214,6 +1214,9 @@ func (p *Part) Create(dtx *apicontext.DataContext) (err error) {
 }
 
 func (p *Part) Delete(dtx *apicontext.DataContext) (err error) {
+	if p.ID == 0 {
+		return errors.New("Part ID is zero.")
+	}
 	go redis.Delete(fmt.Sprintf("part:%d:"+dtx.BrandString, p.ID))
 
 	var price Price
@@ -1353,6 +1356,9 @@ func (p *Part) Delete(dtx *apicontext.DataContext) (err error) {
 }
 
 func (p *Part) Update(dtx *apicontext.DataContext) (err error) {
+	if p.ID == 0 {
+		return errors.New("Part ID is zero.")
+	}
 	go redis.Delete(fmt.Sprintf("part:%d:"+dtx.BrandString, p.ID))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
