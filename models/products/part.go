@@ -266,7 +266,7 @@ func (p *Part) FromDatabase(dtx *apicontext.DataContext) error {
 		return errors.New("Could not find part: " + basicErr.Error())
 	}
 	go func(tmp Part) {
-		redis.Setex(fmt.Sprintf("part:%d:%d", dtx.BrandString, tmp.ID), tmp, redis.CacheTimeout)
+		redis.Setex(fmt.Sprintf("part:%s:%d", dtx.BrandString, tmp.ID), tmp, redis.CacheTimeout)
 	}(*p)
 
 	return nil
