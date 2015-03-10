@@ -327,6 +327,7 @@ func GetAllVideos(dtx *apicontext.DataContext) (vs Videos, err error) {
 // 	return vs, err
 // }
 
+// TODO - This is very slow...
 func GetPartVideos(partId int) (vs Videos, err error) {
 	redis_key := "video:part:" + strconv.Itoa(partId)
 	data, err := redis.Get(redis_key)

@@ -752,6 +752,8 @@ func (p *Part) GetInstallSheet(r *http.Request, dtx *apicontext.DataContext) (da
 	return
 }
 
+// TODO This is very slow...
+//
 // PartBreacrumbs
 //
 // Description: Builds out Category breadcrumb array for the current part object.
