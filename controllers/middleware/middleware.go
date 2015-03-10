@@ -11,7 +11,7 @@ import (
 
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/error"
-	"github.com/curt-labs/GoAPI/helpers/rabbitmq"
+	"github.com/curt-labs/GoAPI/helpers/nsq"
 	"github.com/curt-labs/GoAPI/helpers/slack"
 	"github.com/curt-labs/GoAPI/models/cart"
 	"github.com/curt-labs/GoAPI/models/customer"
@@ -21,22 +21,10 @@ import (
 )
 
 var (
-	requestQueue  *rabbitmq.Producer
 	ExcusedRoutes = []string{"/status", "/customer/auth", "/customer/user", "/new/customer/auth", "/customer/user/register", "/customer/user/resetPassword"}
 )
 
 func Meddler() martini.Handler {
-	var err error
-	exchange := rabbitmq.Exchange{
-		Name:       "exchange",
-		RoutingKey: "GoAPI",
-	}
-
-	requestQueue, err = rabbitmq.NewProducer(exchange, nil)
-	if err != nil {
-		fmt.Printf("RabbitMQ error: %s\n", err)
-	}
-
 	return func(res http.ResponseWriter, r *http.Request, c martini.Context) {
 		res.Header().Add("Access-Control-Allow-Origin", "*")
 		if strings.ToLower(r.Method) == "options" {
@@ -263,12 +251,7 @@ func logRequest(r *http.Request, reqTime time.Duration) {
 		Properties: props,
 	}
 
-	if requestQueue != nil {
-		js, err := json.Marshal(tracker)
-		if err == nil {
-			requestQueue.SendMessage(js)
-		}
-	}
+	go nsq.Push("goapi_analytics", tracker)
 
 	if err := client.Track(tracker); err != nil {
 		m := slack.Message{
