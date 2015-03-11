@@ -166,7 +166,7 @@ var (
 )
 
 //Base Video
-func (v *Video) Get() (err error) {
+func (v *Video) Get() error {
 	redis_key := "video:" + strconv.Itoa(v.ID)
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -193,7 +193,7 @@ func (v *Video) Get() (err error) {
 	return err
 }
 
-func (v *Video) GetVideoDetails() (err error) {
+func (v *Video) GetVideoDetails() error {
 	redis_key := "video:details:" + strconv.Itoa(v.ID)
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -250,6 +250,10 @@ func (v *Video) GetVideoDetails() (err error) {
 		return err
 	}
 
+	close(brandChan)
+	close(chanChan)
+	close(cdnChan)
+
 	go redis.Setex(redis_key, v, 86400)
 	return nil
 }
@@ -258,74 +262,38 @@ func GetAllVideos(dtx *apicontext.DataContext) (vs Videos, err error) {
 	data, err := redis.Get(AllVideosRedisKey + ":" + dtx.BrandString)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &vs)
-		return vs, err
+		return
 	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		return vs, err
+		return
 	}
 	defer db.Close()
 	stmt, err := db.Prepare(getAllVideos)
 	if err != nil {
-		return vs, err
+		return
 	}
 	defer stmt.Close()
 	rows, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	if err != nil {
-		return vs, err
+		return
 	}
 
 	ch := make(chan Videos)
 	go populateVideos(rows, ch)
 	vs = <-ch
+
+	close(ch)
+
 	if len(vs) == 0 {
 		err = sql.ErrNoRows
+		return
 	}
+
 	go redis.Setex(AllVideosRedisKey+":"+dtx.BrandString, vs, 86400)
-	return vs, err
+
+	return
 }
-
-// func GetPartVideosX(partId int) (vs Videos, err error) {
-// 	redis_key := "video:part:" + strconv.Itoa(partId)
-// 	data, err := redis.Get(redis_key)
-// 	if err == nil && len(data) > 0 {
-// 		err = json.Unmarshal(data, &vs)
-// 		return vs, err
-// 	}
-// 	db, err := sql.Open("mysql", database.ConnectionString())
-// 	if err != nil {
-// 		return vs, err
-// 	}
-// 	defer db.Close()
-// 	stmt, err := db.Prepare(getPartVideos)
-// 	if err != nil {
-// 		return vs, err
-// 	}
-// 	defer stmt.Close()
-// 	rows, err := stmt.Query(partId)
-// 	if err != nil {
-// 		return vs, err
-// 	}
-
-// 	ch := make(chan Videos)
-// 	go populateVideos(rows, ch)
-// 	vs = <-ch
-// 	if len(vs) == 0 {
-// 		err = sql.ErrNoRows
-// 	}
-// 	log.Print(vs)
-// 	for _, v := range vs {
-// 		err = v.GetVideoDetails()
-// 		if err != nil {
-// 			return vs, err
-// 		}
-// 		// log.Print("+----->", v.Channels)
-// 	}
-
-// 	go redis.Setex(redis_key, vs, 86400)
-// 	log.Print(vs)
-// 	return vs, err
-// }
 
 // TODO - This is very slow...
 func GetPartVideos(partId int) (vs Videos, err error) {
@@ -333,41 +301,45 @@ func GetPartVideos(partId int) (vs Videos, err error) {
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &vs)
-		return vs, err
+		return
 	}
 
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		return vs, err
+		return
 	}
 	defer db.Close()
 
 	stmt, err := db.Prepare(getVideoIdFromPart)
 	if err != nil {
-		return vs, err
+		return
 	}
 	defer stmt.Close()
+
 	res, err := stmt.Query(partId)
 	if err != nil {
-		return vs, err
+		return
 	}
+
 	var v Video
 	for res.Next() {
 		err = res.Scan(&v.ID)
 		if err != nil {
-			return vs, err
+			return
 		}
 		err = v.GetVideoDetails()
 		if err != nil {
-			return vs, err
+			return
 		}
 		vs = append(vs, v)
 	}
+	defer res.Close()
+
 	go redis.Setex(redis_key, vs, 86400)
 	return vs, err
 }
 
-func (v *Video) GetBrands() (err error) {
+func (v *Video) GetBrands() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -399,30 +371,30 @@ func (v *Video) GetChannels() (chs Channels, err error) {
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &chs)
-		return chs, err
+		return
 	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		return chs, err
+		return
 	}
 	defer db.Close()
 	stmt, err := db.Prepare(getVideoChannels)
 	if err != nil {
-		return chs, err
+		return
 	}
 	defer stmt.Close()
 	rows, err := stmt.Query(v.ID)
 	if err != nil {
-		return chs, err
+		return
 	}
 
-	if err == nil {
-		ch := make(chan Channels)
-		go populateChannels(rows, ch)
-		chs = <-ch
-	}
+	ch := make(chan Channels)
+	go populateChannels(rows, ch)
+	chs = <-ch
+
 	go redis.Setex(redis_key, chs, 86400)
-	return chs, err
+
+	return
 }
 
 func (v *Video) GetCdnFiles() (cdns CdnFiles, err error) {
@@ -430,21 +402,21 @@ func (v *Video) GetCdnFiles() (cdns CdnFiles, err error) {
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &cdns)
-		return cdns, err
+		return
 	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		return cdns, err
+		return
 	}
 	defer db.Close()
 	stmt, err := db.Prepare(getVideoCdns)
 	if err != nil {
-		return cdns, err
+		return
 	}
 	defer stmt.Close()
 	rows, err := stmt.Query(v.ID)
 	if err != nil {
-		return cdns, err
+		return
 	}
 	if err == nil {
 		ch := make(chan CdnFiles)
@@ -452,10 +424,11 @@ func (v *Video) GetCdnFiles() (cdns CdnFiles, err error) {
 		cdns = <-ch
 	}
 	go redis.Setex(redis_key, cdns, 86400)
-	return cdns, err
+
+	return
 }
 
-func (v *Video) Create(dtx *apicontext.DataContext) (err error) {
+func (v *Video) Create(dtx *apicontext.DataContext) error {
 	go redis.Delete(AllVideosRedisKey + dtx.BrandString)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -540,7 +513,7 @@ func (v *Video) Create(dtx *apicontext.DataContext) (err error) {
 	return err
 }
 
-func (v *Video) Update(dtx *apicontext.DataContext) (err error) {
+func (v *Video) Update(dtx *apicontext.DataContext) error {
 	go redis.Delete(AllVideosRedisKey + dtx.BrandString)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -658,7 +631,7 @@ func (v *Video) Update(dtx *apicontext.DataContext) (err error) {
 	return err
 }
 
-func (v *Video) Delete(dtx *apicontext.DataContext) (err error) {
+func (v *Video) Delete(dtx *apicontext.DataContext) error {
 	go redis.Delete(AllVideosRedisKey + dtx.BrandString)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -749,7 +722,7 @@ func (v *Video) Delete(dtx *apicontext.DataContext) (err error) {
 	return err
 }
 
-func (v *Video) CreateJoinBrand(brandID int) (err error) {
+func (v *Video) CreateJoinBrand(brandID int) error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -768,7 +741,7 @@ func (v *Video) CreateJoinBrand(brandID int) (err error) {
 	return err
 }
 
-func (v *Video) CreateJoinFile(f CdnFile) (err error) {
+func (v *Video) CreateJoinFile(f CdnFile) error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -790,7 +763,7 @@ func (v *Video) CreateJoinFile(f CdnFile) (err error) {
 }
 
 //Youtube
-func (v *Video) CreateJoinChannel(channel Channel) (err error) {
+func (v *Video) CreateJoinChannel(channel Channel) error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -811,7 +784,7 @@ func (v *Video) CreateJoinChannel(channel Channel) (err error) {
 	return err
 }
 
-func (v *Video) CreateJoinPart(partId int) (err error) {
+func (v *Video) CreateJoinPart(partId int) error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -833,7 +806,7 @@ func (v *Video) CreateJoinPart(partId int) (err error) {
 }
 
 //HTML5
-func (v *Video) CreateJoinCategory(prodCatId int) (err error) {
+func (v *Video) CreateJoinCategory(prodCatId int) error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -853,7 +826,7 @@ func (v *Video) CreateJoinCategory(prodCatId int) (err error) {
 	tx.Commit()
 	return err
 }
-func (v *Video) DeleteJoinBrand() (err error) {
+func (v *Video) DeleteJoinBrand() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -872,7 +845,7 @@ func (v *Video) DeleteJoinBrand() (err error) {
 	return err
 }
 
-func (v *Video) DeleteJoinFiles() (err error) {
+func (v *Video) DeleteJoinFiles() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -894,7 +867,7 @@ func (v *Video) DeleteJoinFiles() (err error) {
 }
 
 //Youtube
-func (v *Video) DeleteJoinChannels() (err error) {
+func (v *Video) DeleteJoinChannels() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -915,7 +888,7 @@ func (v *Video) DeleteJoinChannels() (err error) {
 	return err
 }
 
-func (v *Video) DeleteJoinPart(partId int) (err error) {
+func (v *Video) DeleteJoinPart(partId int) error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -937,7 +910,7 @@ func (v *Video) DeleteJoinPart(partId int) (err error) {
 }
 
 //HTML5
-func (v *Video) DeleteJoinCategory(prodCatId int) (err error) {
+func (v *Video) DeleteJoinCategory(prodCatId int) error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -958,7 +931,7 @@ func (v *Video) DeleteJoinCategory(prodCatId int) (err error) {
 	return err
 }
 
-func (c *Channel) Get() (err error) {
+func (c *Channel) Get() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1002,34 +975,36 @@ func GetAllChannels() (cs Channels, err error) {
 	data, err := redis.Get(AllChannelsRedisKey)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &cs)
-		return cs, err
+		return
 	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		return cs, err
+		return
 	}
 	defer db.Close()
 	stmt, err := db.Prepare(getAllChannels)
 	if err != nil {
-		return cs, err
+		return
 	}
 	defer stmt.Close()
 	rows, err := stmt.Query()
 	if err != nil {
-		return cs, err
+		return
 	}
 
 	ch := make(chan Channels)
 	go populateChannels(rows, ch)
 	cs = <-ch
+
 	if len(cs) == 0 {
 		err = sql.ErrNoRows
+		return
 	}
 	go redis.Setex(AllChannelsRedisKey, cs, 86400)
-	return cs, err
+	return
 }
 
-func (c *Channel) Create() (err error) {
+func (c *Channel) Create() error {
 	go redis.Delete(AllChannelsRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1054,7 +1029,7 @@ func (c *Channel) Create() (err error) {
 	return err
 }
 
-func (c *Channel) Update() (err error) {
+func (c *Channel) Update() error {
 	go redis.Delete(AllChannelsRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1076,7 +1051,7 @@ func (c *Channel) Update() (err error) {
 	err = tx.Commit()
 	return err
 }
-func (c *Channel) Delete() (err error) {
+func (c *Channel) Delete() error {
 	go redis.Delete(AllChannelsRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1099,7 +1074,7 @@ func (c *Channel) Delete() (err error) {
 	return err
 }
 
-func (c *CdnFile) Get() (err error) {
+func (c *CdnFile) Get() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1158,21 +1133,21 @@ func GetAllCdnFiles() (cs CdnFiles, err error) {
 	data, err := redis.Get(AllCdnFilesRedisKey)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &cs)
-		return cs, err
+		return
 	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		return cs, err
+		return
 	}
 	defer db.Close()
 	stmt, err := db.Prepare(getAllCdnFiles)
 	if err != nil {
-		return cs, err
+		return
 	}
 	defer stmt.Close()
 	rows, err := stmt.Query()
 	if err != nil {
-		return cs, err
+		return
 	}
 
 	ch := make(chan CdnFiles)
@@ -1180,12 +1155,13 @@ func GetAllCdnFiles() (cs CdnFiles, err error) {
 	cs = <-ch
 	if len(cs) == 0 {
 		err = sql.ErrNoRows
+		return
 	}
 	go redis.Setex(AllCdnFilesRedisKey, cs, 86400)
-	return cs, err
+	return
 }
 
-func (c *CdnFile) Create() (err error) {
+func (c *CdnFile) Create() error {
 	go redis.Delete(AllCdnFilesRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1210,7 +1186,7 @@ func (c *CdnFile) Create() (err error) {
 	return err
 }
 
-func (c *CdnFile) Update() (err error) {
+func (c *CdnFile) Update() error {
 	go redis.Delete(AllCdnFilesRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1232,7 +1208,7 @@ func (c *CdnFile) Update() (err error) {
 	err = tx.Commit()
 	return err
 }
-func (c *CdnFile) Delete() (err error) {
+func (c *CdnFile) Delete() error {
 	go redis.Delete(AllCdnFilesRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1255,7 +1231,7 @@ func (c *CdnFile) Delete() (err error) {
 	return err
 }
 
-func (c *CdnFileType) Get() (err error) {
+func (c *CdnFileType) Get() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1288,23 +1264,23 @@ func GetAllCdnFileTypes() (cts []CdnFileType, err error) {
 	data, err := redis.Get(AllCdnFileTypeRedisKey)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &cts)
-		return cts, err
+		return
 	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		return cts, err
+		return
 	}
 	defer db.Close()
 
 	stmt, err := db.Prepare(getAllCdnTypes)
 	if err != nil {
-		return cts, err
+		return
 	}
 	defer stmt.Close()
 
 	res, err := stmt.Query()
 	if err != nil {
-		return cts, err
+		return
 	}
 	var c CdnFileType
 	var desc *string
@@ -1316,7 +1292,7 @@ func GetAllCdnFileTypes() (cts []CdnFileType, err error) {
 			&desc,
 		)
 		if err != nil {
-			return cts, err
+			return
 		}
 		if desc != nil {
 			c.Description = *desc
@@ -1324,11 +1300,12 @@ func GetAllCdnFileTypes() (cts []CdnFileType, err error) {
 		cts = append(cts, c)
 	}
 	defer res.Close()
+
 	go redis.Setex(AllCdnFileTypeRedisKey, cts, 86400)
-	return cts, err
+	return
 }
 
-func (c *CdnFileType) Create() (err error) {
+func (c *CdnFileType) Create() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1349,11 +1326,11 @@ func (c *CdnFileType) Create() (err error) {
 	id, err := res.LastInsertId()
 	c.ID = int(id)
 	// delete redis key for GetAllCdnFileTypes:
-	redis.Delete(AllCdnFileTypeRedisKey)
+	go redis.Delete(AllCdnFileTypeRedisKey)
 	return err
 }
 
-func (c *CdnFileType) Update() (err error) {
+func (c *CdnFileType) Update() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1373,10 +1350,10 @@ func (c *CdnFileType) Update() (err error) {
 	}
 	err = tx.Commit()
 	// delete redis key for GetAllCdnFileTypes:
-	redis.Delete(AllCdnFileTypeRedisKey)
+	go redis.Delete(AllCdnFileTypeRedisKey)
 	return err
 }
-func (c *CdnFileType) Delete() (err error) {
+func (c *CdnFileType) Delete() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1396,11 +1373,11 @@ func (c *CdnFileType) Delete() (err error) {
 	}
 	err = tx.Commit()
 	// delete redis key for GetAllCdnFileTypes:
-	redis.Delete(AllCdnFileTypeRedisKey)
+	go redis.Delete(AllCdnFileTypeRedisKey)
 	return err
 }
 
-func (c *VideoType) Get() (err error) {
+func (c *VideoType) Get() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1428,28 +1405,28 @@ func GetAllVideoTypes() (vts []VideoType, err error) {
 	data, err := redis.Get(AllVideoTypesRedisKey)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &vts)
-		return vts, err
+		return
 	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		return vts, err
+		return
 	}
 	defer db.Close()
 	stmt, err := db.Prepare(getAllVideoTypes)
 	if err != nil {
-		return vts, err
+		return
 	}
 	defer stmt.Close()
 	rows, err := stmt.Query()
 	if err != nil {
-		return vts, err
+		return
 	}
 	var vt VideoType
 	var vName, vIcon *string
 	for rows.Next() {
 		err = rows.Scan(&vt.ID, &vName, &vIcon)
 		if err != nil {
-			return vts, err
+			return
 		}
 		if vName != nil {
 			vt.Name = *vName
@@ -1461,10 +1438,10 @@ func GetAllVideoTypes() (vts []VideoType, err error) {
 	}
 	defer rows.Close()
 	go redis.Setex(AllVideoTypesRedisKey, vts, 86400)
-	return vts, err
+	return
 }
 
-func (c *VideoType) Create() (err error) {
+func (c *VideoType) Create() error {
 	go redis.Delete(AllVideoTypesRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1488,7 +1465,7 @@ func (c *VideoType) Create() (err error) {
 	return err
 }
 
-func (c *VideoType) Update() (err error) {
+func (c *VideoType) Update() error {
 	go redis.Delete(AllVideoTypesRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1510,7 +1487,7 @@ func (c *VideoType) Update() (err error) {
 	err = tx.Commit()
 	return err
 }
-func (c *VideoType) Delete() (err error) {
+func (c *VideoType) Delete() error {
 	go redis.Delete(AllVideoTypesRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1533,7 +1510,7 @@ func (c *VideoType) Delete() (err error) {
 	return err
 }
 
-func (c *ChannelType) Get() (err error) {
+func (c *ChannelType) Get() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1561,23 +1538,23 @@ func GetAllChannelTypes() (cts []ChannelType, err error) {
 	data, err := redis.Get(AllChannelTypesRedisKey)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &cts)
-		return cts, err
+		return
 	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		return cts, err
+		return
 	}
 	defer db.Close()
 
 	stmt, err := db.Prepare(getAllChannelTypes)
 	if err != nil {
-		return cts, err
+		return
 	}
 	defer stmt.Close()
 	var c ChannelType
 	res, err := stmt.Query()
 	if err != nil {
-		return cts, err
+		return
 	}
 	for res.Next() {
 		err = res.Scan(
@@ -1586,7 +1563,7 @@ func GetAllChannelTypes() (cts []ChannelType, err error) {
 			&c.Description,
 		)
 		if err != nil {
-			return cts, err
+			return
 		}
 		cts = append(cts, c)
 	}
@@ -1595,7 +1572,7 @@ func GetAllChannelTypes() (cts []ChannelType, err error) {
 	return cts, err
 }
 
-func (c *ChannelType) Create() (err error) {
+func (c *ChannelType) Create() error {
 	go redis.Delete(AllChannelTypesRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1619,7 +1596,7 @@ func (c *ChannelType) Create() (err error) {
 	return err
 }
 
-func (c *ChannelType) Update() (err error) {
+func (c *ChannelType) Update() error {
 	go redis.Delete(AllChannelTypesRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1641,7 +1618,7 @@ func (c *ChannelType) Update() (err error) {
 	err = tx.Commit()
 	return err
 }
-func (c *ChannelType) Delete() (err error) {
+func (c *ChannelType) Delete() error {
 	go redis.Delete(AllChannelTypesRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
