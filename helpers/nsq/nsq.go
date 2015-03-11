@@ -7,14 +7,20 @@ import (
 	"os"
 )
 
+var (
+	NsqHost = os.Getenv("NSQ_HOST")
+)
+
 func Push(topic string, data interface{}) error {
 	config := nsqq.NewConfig()
 	w, err := nsqq.NewProducer(getDaemonHosts(), config)
+	if w == nil && err == nil {
+		return fmt.Errorf("%s", "failed to connect to producer")
+	}
+	defer w.Stop()
+
 	if err != nil {
 		return err
-	}
-	if w == nil {
-		return fmt.Errorf("%s", "failed to connect to producer")
 	}
 
 	js, err := json.Marshal(data)
@@ -31,9 +37,8 @@ func Push(topic string, data interface{}) error {
 }
 
 func getDaemonHosts() string {
-	hostString := os.Getenv("NSQ_HOST")
-	if hostString == "" {
+	if NsqHost == "" {
 		return "127.0.0.1:4150"
 	}
-	return hostString
+	return NsqHost
 }
