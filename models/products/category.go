@@ -17,6 +17,14 @@ import (
 )
 
 var (
+	CategoriesByBrandStmt = `
+		select c.catID, c.ParentID, c.sort, c.dateAdded,
+		c.catTitle, c.shortDesc, c.longDesc,
+		c.image, c.icon, c.isLifestyle, c.vehicleSpecific,
+		c.vehicleRequired, cc.code, cc.font 
+		from Categories as c
+		left join ColorCode as cc on c.codeID = cc.codeID
+		where c.BrandID = ?`
 	PartCategoryStmt = `
 		select c.catID, c.ParentID, c.sort, c.dateAdded,
 		c.catTitle, c.shortDesc, c.longDesc,

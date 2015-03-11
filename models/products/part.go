@@ -752,8 +752,6 @@ func (p *Part) GetInstallSheet(r *http.Request, dtx *apicontext.DataContext) (da
 	return
 }
 
-// TODO This is very slow...
-//
 // PartBreacrumbs
 //
 // Description: Builds out Category breadcrumb array for the current part object.
@@ -761,6 +759,11 @@ func (p *Part) GetInstallSheet(r *http.Request, dtx *apicontext.DataContext) (da
 // Inherited: part Part
 // Returns: error
 func (p *Part) PartBreadcrumbs(dtx *apicontext.DataContext) error {
+	if p.ID == 0 {
+		return errors.New("Invalid Part Number")
+	}
+
+	//check redis!
 	redis_key := fmt.Sprintf("part:%d:breadcrumbs:%s", p.ID, dtx.BrandString)
 
 	data, err := redis.Get(redis_key)
@@ -770,30 +773,27 @@ func (p *Part) PartBreadcrumbs(dtx *apicontext.DataContext) error {
 		}
 	}
 
-	if p.ID == 0 {
-		return errors.New("Invalid Part Number")
-	}
-
+	// Oh alright, let's talk with our database
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
 	}
 	defer db.Close()
 
-	qry, err := db.Prepare(PartCategoryStmt)
+	partCategoryStmt, err := db.Prepare(PartCategoryStmt)
 	if err != nil {
 		return err
 	}
-	defer qry.Close()
+	defer partCategoryStmt.Close()
 
-	parentQuery, err := db.Prepare(ParentCategoryStmt)
+	lookupCategoriesStmt, err := db.Prepare(CategoriesByBrandStmt)
 	if err != nil {
 		return err
 	}
-	defer parentQuery.Close()
+	defer lookupCategoriesStmt.Close()
 
 	// Execute SQL Query against current ID
-	catRow := qry.QueryRow(p.ID)
+	catRow := partCategoryStmt.QueryRow(p.ID)
 	if catRow == nil {
 		return errors.New("No part found for " + string(p.ID))
 	}
@@ -801,44 +801,49 @@ func (p *Part) PartBreadcrumbs(dtx *apicontext.DataContext) error {
 	ch := make(chan Category)
 	go PopulateCategory(catRow, ch, dtx)
 	initCat := <-ch
+	close(ch)
 
-	// Instantiate our array with the initial category
-	var cats []Category
-	cats = append(cats, initCat)
+	// Build thee lookup
+	catLookup := make(map[int]Category)
+	rows, err := lookupCategoriesStmt.Query(dtx.BrandID)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
 
-	if initCat.ParentID > 0 { // Not top level category
+	multiChan := make(chan []Category, 0)
+	go PopulateCategoryMulti(rows, multiChan)
+	cats := <-multiChan
+	close(multiChan)
 
-		// Loop through the categories retrieving parents until we
-		// hit the top-tier category
-		parent := initCat.ParentID
-		for {
-			if parent == 0 {
-				break
-			}
-
-			// Execute out SQL query to retrieve a category by ParentID
-			catRow = parentQuery.QueryRow(parent)
-			if catRow == nil {
-				break
-			}
-
-			ch := make(chan Category)
-			go PopulateCategory(catRow, ch, dtx)
-
-			// Append new Category onto array
-			subCat := <-ch
-			cats = append(cats, subCat)
-			parent = subCat.ParentID
-		}
+	for _, cat := range cats {
+		catLookup[cat.ID] = cat
 	}
 
-	// Apply breadcrumbs to our part object and return
-	p.Categories = cats
+	// Okay, let's put it together!
+	var categories []Category
+	categories = append(categories, initCat)
+
+	nextParentID := initCat.ParentID
+	for {
+		if nextParentID == 0 {
+			break
+		}
+		if c, found := catLookup[nextParentID]; found {
+			nextParentID = c.ParentID
+			categories = append(categories, c)
+			continue
+		}
+		nextParentID = 0
+	}
+
+	p.Categories = categories
 	if dtx.BrandString != "" {
 		go func(cats []Category) {
 			redis.Setex(redis_key, cats, redis.CacheTimeout)
 		}(p.Categories)
 	}
+
 	return nil
 }
 
