@@ -20,7 +20,7 @@ var (
 	partAttrStmt = `select field, value from PartAttribute where partID = ?`
 )
 
-func (p *Part) GetAttributes(dtx *apicontext.DataContext) (err error) {
+func (p *Part) GetAttributes(dtx *apicontext.DataContext) error {
 
 	redis_key := fmt.Sprintf("part:%d:attributes:%s", p.ID, dtx.BrandString)
 
@@ -33,13 +33,13 @@ func (p *Part) GetAttributes(dtx *apicontext.DataContext) (err error) {
 
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		return
+		return err
 	}
 	defer db.Close()
 
 	qry, err := db.Prepare(partAttrStmt)
 	if err != nil {
-		return
+		return err
 	}
 	defer qry.Close()
 
@@ -47,7 +47,6 @@ func (p *Part) GetAttributes(dtx *apicontext.DataContext) (err error) {
 	if err != nil || rows == nil {
 		return err
 	}
-	defer rows.Close()
 
 	var attrs []Attribute
 	for rows.Next() {
@@ -59,8 +58,9 @@ func (p *Part) GetAttributes(dtx *apicontext.DataContext) (err error) {
 	defer rows.Close()
 
 	p.Attributes = attrs
-	if dtx.BrandString != "" {
+	if dtx.BrandString != "" && p.Attributes != nil {
 		go redis.Setex(redis_key, p.Attributes, redis.CacheTimeout)
 	}
-	return
+
+	return nil
 }

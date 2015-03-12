@@ -5,6 +5,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	"github.com/curt-labs/GoAPI/models/brand"
+
 	// "github.com/curt-labs/GoAPI/models/products"
 	_ "github.com/go-sql-driver/mysql"
 
@@ -297,11 +298,14 @@ func GetAllVideos(dtx *apicontext.DataContext) (vs Videos, err error) {
 
 // TODO - This is very slow...
 func GetPartVideos(partId int) (vs Videos, err error) {
+	vs = make([]Video, 0)
 	redis_key := "video:part:" + strconv.Itoa(partId)
+
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
-		err = json.Unmarshal(data, &vs)
-		return
+		if err = json.Unmarshal(data, &vs); err == nil {
+			return
+		}
 	}
 
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -335,7 +339,10 @@ func GetPartVideos(partId int) (vs Videos, err error) {
 	}
 	defer res.Close()
 
-	go redis.Setex(redis_key, vs, 86400)
+	if vs != nil {
+		go redis.Setex(redis_key, vs, redis.CacheTimeout)
+	}
+
 	return vs, err
 }
 

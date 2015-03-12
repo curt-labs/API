@@ -128,12 +128,8 @@ func Get(w http.ResponseWriter, r *http.Request, params martini.Params, enc enco
 		ID: id,
 	}
 
-	if err = p.Get(dtx); err != nil {
-		apierror.GenerateError("Trouble getting part", err, w, r)
-		return ""
-	}
-
 	vehicleChan := make(chan error)
+	defer close(vehicleChan)
 	go func() {
 		vs, err := vehicle.ReverseLookup(p.ID)
 		if err != nil {
@@ -143,6 +139,12 @@ func Get(w http.ResponseWriter, r *http.Request, params martini.Params, enc enco
 			vehicleChan <- nil
 		}
 	}()
+
+	if err = p.Get(dtx); err != nil {
+
+		apierror.GenerateError("Trouble getting part", err, w, r)
+		return ""
+	}
 
 	<-vehicleChan
 

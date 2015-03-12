@@ -11,6 +11,7 @@ import (
 	"github.com/curt-labs/GoAPI/models/vehicle"
 	"github.com/curt-labs/GoAPI/models/video"
 	_ "github.com/go-sql-driver/mysql"
+	"sync"
 
 	"database/sql"
 	"encoding/json"
@@ -105,7 +106,6 @@ type Part struct {
 	DateModified      time.Time         `json:"date_modified" xml:"date_modified,attr"`
 	DateAdded         time.Time         `json:"date_added" xml:"date_added,attr"`
 	ShortDesc         string            `json:"short_description" xml:"short_description,attr"`
-	PartClass         string            `json:"part_class" xml:"part_class,attr"` //sloppy - delete me in favor of child object "Class"
 	InstallSheet      *url.URL          `json:"install_sheet" xml:"install_sheet"`
 	Attributes        []Attribute       `json:"attributes" xml:"attributes"`
 	VehicleAttributes []string          `json:"vehicle_atttributes" xml:"vehicle_attributes"`
@@ -161,30 +161,35 @@ type Installations []Installation
 func (p *Part) FromDatabase(dtx *apicontext.DataContext) error {
 	var errs []string
 
-	attrChan := make(chan int)
-	priceChan := make(chan int)
-	reviewChan := make(chan int)
-	imageChan := make(chan int)
-	videoChan := make(chan int)
-	relatedChan := make(chan int)
-	packageChan := make(chan int)
-	categoryChan := make(chan int)
-	contentChan := make(chan int)
+	var wg sync.WaitGroup
+	var cats []Category
+	var attrs []Attribute
+	var prices []Price
+	var revs []Review
+	var avgRev float64
+	var imgs []Image
+	var vids []video.Video
+	var related []int
+	var pkgs []Package
+	var cons []Content
+	wg.Add(9)
 
-	go func() {
+	go func(tmp *Part) {
 		attrErr := p.GetAttributes(dtx)
 		if attrErr != nil {
 			errs = append(errs, attrErr.Error())
 		}
-		attrChan <- 1
-	}()
+		attrs = p.Attributes
+		wg.Done()
+	}(p)
 
 	go func() {
 		priceErr := p.GetPricing()
 		if priceErr != nil {
 			errs = append(errs, priceErr.Error())
 		}
-		priceChan <- 1
+		prices = p.Pricing
+		wg.Done()
 	}()
 
 	go func() {
@@ -192,7 +197,9 @@ func (p *Part) FromDatabase(dtx *apicontext.DataContext) error {
 		if reviewErr != nil {
 			errs = append(errs, reviewErr.Error())
 		}
-		reviewChan <- 1
+		revs = p.Reviews
+		avgRev = p.AverageReview
+		wg.Done()
 	}()
 
 	go func() {
@@ -200,17 +207,18 @@ func (p *Part) FromDatabase(dtx *apicontext.DataContext) error {
 		if imgErr != nil {
 			errs = append(errs, imgErr.Error())
 		}
-		imageChan <- 1
+		imgs = p.Images
+		wg.Done()
 	}()
 
 	go func() {
-		// vidErr := p.GetVideos()
 		var vidErr error
-		p.Videos, vidErr = video.GetPartVideos(p.ID)
+		vids, vidErr = video.GetPartVideos(p.ID)
 		if vidErr != nil {
 			errs = append(errs, vidErr.Error())
 		}
-		videoChan <- 1
+
+		wg.Done()
 	}()
 
 	go func() {
@@ -218,7 +226,8 @@ func (p *Part) FromDatabase(dtx *apicontext.DataContext) error {
 		if relErr != nil {
 			errs = append(errs, relErr.Error())
 		}
-		relatedChan <- 1
+		related = p.Related
+		wg.Done()
 	}()
 
 	go func() {
@@ -226,15 +235,18 @@ func (p *Part) FromDatabase(dtx *apicontext.DataContext) error {
 		if pkgErr != nil {
 			errs = append(errs, pkgErr.Error())
 		}
-		packageChan <- 1
+		pkgs = p.Packages
+		wg.Done()
 	}()
 
 	go func() {
+		p.Categories = make([]Category, 0)
 		catErr := p.PartBreadcrumbs(dtx)
 		if catErr != nil {
 			errs = append(errs, catErr.Error())
 		}
-		categoryChan <- 1
+		cats = p.Categories
+		wg.Done()
 	}()
 
 	go func() {
@@ -242,7 +254,8 @@ func (p *Part) FromDatabase(dtx *apicontext.DataContext) error {
 		if conErr != nil {
 			errs = append(errs, conErr.Error())
 		}
-		contentChan <- 1
+		cons = p.Content
+		wg.Done()
 	}()
 	var basicErr error
 	if basicErr = p.Basics(dtx); basicErr != nil {
@@ -252,19 +265,24 @@ func (p *Part) FromDatabase(dtx *apicontext.DataContext) error {
 		errs = append(errs, basicErr.Error())
 	}
 
-	<-attrChan
-	<-priceChan
-	<-reviewChan
-	<-imageChan
-	<-videoChan
-	<-relatedChan
-	<-packageChan
-	<-categoryChan
-	<-contentChan
+	wg.Wait()
+
+	p.Categories = cats
+	p.Videos = vids
+	p.Attributes = attrs
+	p.Pricing = prices
+	p.Images = imgs
+	p.Packages = pkgs
+	p.Content = cons
+	p.Related = related
+	p.RelatedCount = len(related)
+	p.Reviews = revs
+	p.AverageReview = avgRev
 
 	if basicErr != nil {
 		return errors.New("Could not find part: " + basicErr.Error())
 	}
+
 	go func(tmp Part) {
 		redis.Setex(fmt.Sprintf("part:%s:%d", dtx.BrandString, tmp.ID), tmp, redis.CacheTimeout)
 	}(*p)
@@ -274,22 +292,25 @@ func (p *Part) FromDatabase(dtx *apicontext.DataContext) error {
 
 func (p *Part) Get(dtx *apicontext.DataContext) error {
 	var err error
+	var custPart CustomerPart
+	var pi PartInventory
 	customerChan := make(chan int)
 
 	go func(api_key string) {
-		err = p.BindCustomer(dtx)
+		custPart = p.BindCustomer(dtx)
+		pi, _ = p.GetInventory(api_key, "")
 
-		p.GetInventory(api_key, "")
 		customerChan <- 1
 	}(dtx.APIKey)
 
-	redis_key := fmt.Sprintf("part:%d:%d", dtx.BrandString, p.ID)
+	redis_key := fmt.Sprintf("part:%s:%d", dtx.BrandString, p.ID)
 
 	part_bytes, err := redis.Get(redis_key)
-	if len(part_bytes) > 0 {
+	if len(part_bytes) > 0 && err == nil {
 		json.Unmarshal(part_bytes, &p)
 	}
 
+	p.Status = 0
 	if p.Status == 0 {
 		if err := p.FromDatabase(dtx); err != nil {
 			return err
@@ -299,7 +320,10 @@ func (p *Part) Get(dtx *apicontext.DataContext) error {
 	<-customerChan
 	close(customerChan)
 
-	return err
+	p.Customer = custPart
+	p.Inventory = pi
+
+	return nil
 }
 
 func All(page, count int, dtx *apicontext.DataContext) ([]Part, error) {
@@ -657,14 +681,16 @@ func (p *Part) GetContent(dtx *apicontext.DataContext) error {
 	defer rows.Close()
 
 	p.Content = content
-	if dtx.BrandString != "" {
+	if dtx.BrandString != "" && len(p.Content) > 0 {
 		go redis.Setex(redis_key_content, p.Content, redis.CacheTimeout)
+	}
+	if dtx.BrandString != "" && p.InstallSheet != nil {
 		go redis.Setex(redis_key_installSheet, p.InstallSheet, redis.CacheTimeout)
 	}
 	return nil
 }
 
-func (p *Part) BindCustomer(dtx *apicontext.DataContext) error {
+func (p *Part) BindCustomer(dtx *apicontext.DataContext) CustomerPart {
 	var price float64
 	var ref int
 
@@ -703,12 +729,10 @@ func (p *Part) BindCustomer(dtx *apicontext.DataContext) error {
 	<-refChan
 	<-contentChan
 
-	cust := CustomerPart{
+	return CustomerPart{
 		Price:         price,
 		CartReference: ref,
 	}
-	p.Customer = cust
-	return nil
 }
 
 func (p *Part) GetInstallSheet(r *http.Request, dtx *apicontext.DataContext) (data []byte, err error) {

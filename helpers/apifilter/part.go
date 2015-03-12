@@ -241,20 +241,21 @@ func (filtered FilteredOptions) partClass(parts []products.Part) Options {
 
 	existing := make(map[string]string, 0)
 	for _, p := range parts {
-		if p.PartClass == "" {
-			p.PartClass = "Other"
+		if p.Class.Name == "" {
+			p.Class.ID = 0
+			p.Class.Name = "Other"
 		}
 
-		if _, ok := existing[p.PartClass]; !ok {
+		if _, ok := existing[p.Class.Name]; !ok {
 			newOption := Option{
-				Value: p.PartClass,
+				Value: p.Class.Name,
 			}
 			opt.Options = append(opt.Options, newOption)
-			existing[p.PartClass] = p.PartClass
+			existing[p.Class.Name] = p.Class.Name
 		}
 
 		for i, o := range opt.Options {
-			if p.PartClass == o.Value {
+			if p.Class.Name == o.Value {
 				o.Products = append(o.Products, p.ID)
 				opt.Options[i] = o
 			}

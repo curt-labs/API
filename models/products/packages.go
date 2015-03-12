@@ -50,6 +50,7 @@ func (p *Part) GetPartPackaging(dtx *apicontext.DataContext) error {
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
+		p.Packages = make([]Package, 0)
 		if err = json.Unmarshal(data, &p.Packages); err != nil {
 			return nil
 		}

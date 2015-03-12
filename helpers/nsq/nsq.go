@@ -11,12 +11,19 @@ var (
 	NsqHost = os.Getenv("NSQ_HOST")
 )
 
+type nopLogger struct{}
+
+func (*nopLogger) Output(int, string) error {
+	return nil
+}
+
 func Push(topic string, data interface{}) error {
 	config := nsqq.NewConfig()
 	w, err := nsqq.NewProducer(getDaemonHosts(), config)
 	if w == nil && err == nil {
 		return fmt.Errorf("%s", "failed to connect to producer")
 	}
+	w.SetLogger(&nopLogger{}, nsqq.LogLevelError)
 	defer w.Stop()
 
 	if err != nil {

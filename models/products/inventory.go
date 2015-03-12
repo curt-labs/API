@@ -85,20 +85,22 @@ type FeedRecord struct {
 	DateUpdate time.Time `json:"date_updated" xml:"date_updated`
 }
 
-func (p *Part) GetInventory(apiKey, warehouseCode string) error {
+func (p *Part) GetInventory(apiKey, warehouseCode string) (PartInventory, error) {
 	redis_key := fmt.Sprintf("part:%d:%d:inventory", p.BrandID, p.ID)
+
+	pi := PartInventory{}
 
 	data, err := redis.Get(redis_key)
 	if err != nil {
 		if err == redix.ErrNil {
-			return nil
+			return pi, nil
 		}
-		return err
+		return pi, err
 	}
 
 	var recs []FeedRecord
 	if err = json.Unmarshal(data, &recs); err != nil {
-		return err
+		return pi, err
 	}
 
 	for _, rec := range recs {
@@ -109,13 +111,13 @@ func (p *Part) GetInventory(apiKey, warehouseCode string) error {
 			DateUpdated: rec.DateUpdate,
 		}
 		if (warehouseCode != "" && warehouseCode == i.Warehouse.Code) || warehouseCode == "" {
-			p.Inventory.Warehouses = append(p.Inventory.Warehouses, i)
+			pi.Warehouses = append(p.Inventory.Warehouses, i)
 		}
 	}
 
 	for _, w := range p.Inventory.Warehouses {
-		p.Inventory.TotalAvailability = p.Inventory.TotalAvailability + w.Quantity
+		pi.TotalAvailability = pi.TotalAvailability + w.Quantity
 	}
 
-	return nil
+	return pi, nil
 }

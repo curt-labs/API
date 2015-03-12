@@ -41,6 +41,7 @@ func (p *Part) GetPricing() error {
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
+		p.Pricing = make([]Price, 0)
 		if err = json.Unmarshal(data, &p.Pricing); err == nil {
 			return nil
 		}
