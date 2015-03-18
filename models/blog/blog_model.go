@@ -434,7 +434,10 @@ func (c *Category) Get(dtx *apicontext.DataContext) error {
 	err = stmt.QueryRow(dtx.APIKey, dtx.BrandID, dtx.BrandID, c.ID).Scan(&c.ID, &c.Name, &c.Slug, &c.Active)
 
 	go redis.Setex(redis_key, c, 86400)
-	return err
+	if err != sql.ErrNoRows {
+		return err
+	}
+	return nil
 }
 
 func (c *Category) Create(dtx *apicontext.DataContext) error {

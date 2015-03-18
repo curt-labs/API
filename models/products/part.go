@@ -184,7 +184,7 @@ func (p *Part) FromDatabase(dtx *apicontext.DataContext) error {
 	}(p)
 
 	go func() {
-		priceErr := p.GetPricing()
+		priceErr := p.GetPricing(dtx)
 		if priceErr != nil {
 			errs = append(errs, priceErr.Error())
 		}
@@ -193,7 +193,7 @@ func (p *Part) FromDatabase(dtx *apicontext.DataContext) error {
 	}()
 
 	go func() {
-		reviewErr := p.GetActiveApprovedReviews()
+		reviewErr := p.GetActiveApprovedReviews(dtx)
 		if reviewErr != nil {
 			errs = append(errs, reviewErr.Error())
 		}
@@ -284,7 +284,7 @@ func (p *Part) FromDatabase(dtx *apicontext.DataContext) error {
 	}
 
 	go func(tmp Part) {
-		redis.Setex(fmt.Sprintf("part:%s:%d", dtx.BrandString, tmp.ID), tmp, redis.CacheTimeout)
+		redis.Setex(fmt.Sprintf("part:%d:%s", tmp.ID, dtx.BrandString), tmp, redis.CacheTimeout)
 	}(*p)
 
 	return nil
@@ -298,12 +298,12 @@ func (p *Part) Get(dtx *apicontext.DataContext) error {
 
 	go func(api_key string) {
 		custPart = p.BindCustomer(dtx)
-		pi, _ = p.GetInventory(api_key, "")
+		pi, _ = p.GetInventory(api_key, "", dtx)
 
 		customerChan <- 1
 	}(dtx.APIKey)
 
-	redis_key := fmt.Sprintf("part:%s:%d", dtx.BrandString, p.ID)
+	redis_key := fmt.Sprintf("part:%d:%s", p.ID, dtx.BrandString)
 
 	part_bytes, err := redis.Get(redis_key)
 	if len(part_bytes) > 0 && err == nil {
@@ -736,7 +736,7 @@ func (p *Part) BindCustomer(dtx *apicontext.DataContext) CustomerPart {
 }
 
 func (p *Part) GetInstallSheet(r *http.Request, dtx *apicontext.DataContext) (data []byte, err error) {
-	redis_key := fmt.Sprintf("part:%d:installsheet:%s", p.ID, dtx.BrandString)
+	redis_key := fmt.Sprintf("part:%d:installSheet:%s", p.ID, dtx.BrandString)
 
 	data, err = redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -963,67 +963,6 @@ func (p *Part) GetPartCategories(dtx *apicontext.DataContext) (cats []Category, 
 	return
 }
 
-// func (tree *CategoryTree) CategoryTreeBuilder() {
-
-//  db, err := sql.Open("mysql", database.ConnectionString())
-//  if err != nil {
-//      return
-//  }
-//  defer db.Close()
-
-//  subQry, err := db.Prepare(SubIDStmt)
-//  if err != nil {
-//      return
-//  }
-//  defer subQry.Close()
-
-//  // Execute against current Category Id
-//  // to retrieve all category Ids that are children.
-//  rows, err := subQry.Query(tree.ID)
-//  if err != nil {
-//      return
-//  }
-
-//  chans := make(chan int, 0)
-//  var rowCount int
-//  for rows.Next() {
-//      var catID int
-//      if err := rows.Scan(&catID); err != nil {
-//          continue
-//      }
-
-//      go func(catID int) {
-
-//          // Need to parse out string array into ints and populate
-//          cat := Category{
-//              ID: catID,
-//          }
-//          tree.SubCategories = append(tree.SubCategories, cat.ID)
-
-//          subRows, err := subQry.Query(cat.ID)
-//          if err == nil && subRows != nil {
-//              for subRows.Next() {
-//                  var subID int
-//                  if err := subRows.Scan(&subID); err == nil {
-//                      tree.SubCategories = append(tree.SubCategories, subID)
-//                  }
-
-//                  // subTree.CategoryTreeBuilder()
-//                  // tree.SubCategories = append(tree.SubCategories, subTree.SubCategories...)
-//              }
-//          }
-//          chans <- 1
-//      }(catID)
-//      rowCount++
-//  }
-
-//  for i := 0; i < rowCount; i++ {
-//      <-chans
-//  }
-
-//  return
-// }
-
 func (p *Part) GetPartByOldPartNumber(key string) (err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1248,7 +1187,7 @@ func (p *Part) Delete(dtx *apicontext.DataContext) (err error) {
 	if p.ID == 0 {
 		return errors.New("Part ID is zero.")
 	}
-	go redis.Delete(fmt.Sprintf("part:%d:"+dtx.BrandString, p.ID))
+	go redis.Delete(fmt.Sprintf("part:%d:%s", p.ID, dtx.BrandString))
 
 	var price Price
 	price.PartId = p.ID
@@ -1390,7 +1329,7 @@ func (p *Part) Update(dtx *apicontext.DataContext) (err error) {
 	if p.ID == 0 {
 		return errors.New("Part ID is zero.")
 	}
-	go redis.Delete(fmt.Sprintf("part:%d:"+dtx.BrandString, p.ID))
+	go redis.Delete(fmt.Sprintf("part:%d:%s", p.ID, dtx.BrandString))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1671,7 +1610,7 @@ func (p *Part) Update(dtx *apicontext.DataContext) (err error) {
 
 //Join Creators
 func (p *Part) CreatePartAttributeJoin(a Attribute, dtx *apicontext.DataContext) (err error) {
-	go redis.Delete(fmt.Sprintf("part:%d:attributes:"+dtx.BrandString, p.ID))
+	go redis.Delete(fmt.Sprintf("part:%d:attributes:%s", p.ID, dtx.BrandString))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1691,7 +1630,7 @@ func (p *Part) CreatePartAttributeJoin(a Attribute, dtx *apicontext.DataContext)
 
 //Creates "VehiclePart" Join, which also contains installation fields
 func (p *Part) CreateInstallation(i Installation, dtx *apicontext.DataContext) (err error) {
-	go redis.Delete(fmt.Sprintf("part:%d:installation:"+dtx.BrandString, p.ID))
+	go redis.Delete(fmt.Sprintf("part:%d:installation:%s", p.ID, dtx.BrandString))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1712,7 +1651,7 @@ func (p *Part) CreateInstallation(i Installation, dtx *apicontext.DataContext) (
 }
 
 func (p *Part) CreateContentBridge(cats []Category, c Content, dtx *apicontext.DataContext) (err error) {
-	go redis.Delete(fmt.Sprintf("part:%d:content:"+dtx.BrandString, p.ID))
+	go redis.Delete(fmt.Sprintf("part:%d:content:%s", p.ID, dtx.BrandString))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1736,7 +1675,7 @@ func (p *Part) CreateContentBridge(cats []Category, c Content, dtx *apicontext.D
 }
 
 func (p *Part) CreateRelatedPart(relatedID int, dtx *apicontext.DataContext) (err error) {
-	go redis.Delete(fmt.Sprintf("part:%d:related:", dtx.BrandString, p.ID))
+	go redis.Delete(fmt.Sprintf("part:%d:related:%s", p.ID, dtx.BrandString))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1755,7 +1694,7 @@ func (p *Part) CreateRelatedPart(relatedID int, dtx *apicontext.DataContext) (er
 }
 
 func (p *Part) CreatePartCategoryJoin(c Category, dtx *apicontext.DataContext) (err error) {
-	go redis.Delete(fmt.Sprintf("part:%d:categories:"+dtx.BrandString, p.ID))
+	go redis.Delete(fmt.Sprintf("part:%d:categories:%s", p.ID, dtx.BrandString))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1775,7 +1714,7 @@ func (p *Part) CreatePartCategoryJoin(c Category, dtx *apicontext.DataContext) (
 
 //delete Joins
 func (p *Part) DeletePartAttributeJoins(dtx *apicontext.DataContext) (err error) {
-	go redis.Delete(fmt.Sprintf("part:%d:attributes:brands:"+dtx.BrandString, p.ID))
+	go redis.Delete(fmt.Sprintf("part:%d:attributes:%s", p.ID, dtx.BrandString))
 
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1794,7 +1733,7 @@ func (p *Part) DeletePartAttributeJoins(dtx *apicontext.DataContext) (err error)
 	return nil
 }
 func (p *Part) DeleteInstallations(dtx *apicontext.DataContext) (err error) {
-	go redis.Delete(fmt.Sprintf("part:%d:installation:"+dtx.BrandString, p.ID))
+	go redis.Delete(fmt.Sprintf("part:%d:installation:%s", p.ID, dtx.BrandString))
 
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1813,7 +1752,7 @@ func (p *Part) DeleteInstallations(dtx *apicontext.DataContext) (err error) {
 	return nil
 }
 func (p *Part) DeleteContentBridges(dtx *apicontext.DataContext) (err error) {
-	go redis.Delete(fmt.Sprintf("part:%d:content:"+dtx.BrandString, p.ID))
+	go redis.Delete(fmt.Sprintf("part:%d:content:%s", p.ID, dtx.BrandString))
 
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1832,7 +1771,7 @@ func (p *Part) DeleteContentBridges(dtx *apicontext.DataContext) (err error) {
 	return nil
 }
 func (p *Part) DeleteRelatedParts(dtx *apicontext.DataContext) (err error) {
-	go redis.Delete(fmt.Sprintf("part:%d:related:"+dtx.BrandString, p.ID))
+	go redis.Delete(fmt.Sprintf("part:%d:related:%s", p.ID, dtx.BrandString))
 
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1851,8 +1790,8 @@ func (p *Part) DeleteRelatedParts(dtx *apicontext.DataContext) (err error) {
 	return nil
 }
 func (p *Part) DeletePartCategoryJoins(dtx *apicontext.DataContext) (err error) {
-	go redis.Delete(fmt.Sprintf("part:%d:category:"+dtx.BrandString, p.ID))
-	go redis.Delete(fmt.Sprintf("part:%d:categories:"+dtx.BrandString, p.ID))
+	go redis.Delete(fmt.Sprintf("part:%d:category:%s", p.ID, dtx.BrandString))
+	go redis.Delete(fmt.Sprintf("part:%d:categories:%s", p.ID, dtx.BrandString))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err

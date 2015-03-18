@@ -190,7 +190,9 @@ func (v *Video) Get() error {
 
 	go populateVideo(row, ch)
 	*v = <-ch
-	go redis.Setex(redis_key, v, 86400)
+	if v != nil {
+		go redis.Setex(redis_key, *v, redis.CacheTimeout)
+	}
 	return err
 }
 
@@ -255,7 +257,9 @@ func (v *Video) GetVideoDetails() error {
 	close(chanChan)
 	close(cdnChan)
 
-	go redis.Setex(redis_key, v, 86400)
+	if v != nil {
+		go redis.Setex(redis_key, v, redis.CacheTimeout)
+	}
 	return nil
 }
 
@@ -399,7 +403,9 @@ func (v *Video) GetChannels() (chs Channels, err error) {
 	go populateChannels(rows, ch)
 	chs = <-ch
 
-	go redis.Setex(redis_key, chs, 86400)
+	if chs != nil {
+		go redis.Setex(redis_key, chs, redis.CacheTimeout)
+	}
 
 	return
 }
@@ -425,12 +431,14 @@ func (v *Video) GetCdnFiles() (cdns CdnFiles, err error) {
 	if err != nil {
 		return
 	}
-	if err == nil {
-		ch := make(chan CdnFiles)
-		go populateCdns(rows, ch)
-		cdns = <-ch
+
+	ch := make(chan CdnFiles)
+	go populateCdns(rows, ch)
+	cdns = <-ch
+
+	if cdns != nil {
+		go redis.Setex(redis_key, cdns, redis.CacheTimeout)
 	}
-	go redis.Setex(redis_key, cdns, 86400)
 
 	return
 }
@@ -442,7 +450,12 @@ func (v *Video) Create(dtx *apicontext.DataContext) error {
 		return err
 	}
 	defer db.Close()
+
 	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
 	stmt, err := tx.Prepare(createVideo)
 	if err != nil {
 		return err
@@ -528,6 +541,10 @@ func (v *Video) Update(dtx *apicontext.DataContext) error {
 	}
 	defer db.Close()
 	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
 	stmt, err := tx.Prepare(updateVideo)
 	if err != nil {
 		return err
@@ -645,7 +662,12 @@ func (v *Video) Delete(dtx *apicontext.DataContext) error {
 		return err
 	}
 	defer db.Close()
+
 	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
 	stmt, err := tx.Prepare(deleteVideo)
 	if err != nil {
 		return err
@@ -754,7 +776,12 @@ func (v *Video) CreateJoinFile(f CdnFile) error {
 		return err
 	}
 	defer db.Close()
+
 	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
 	stmt, err := tx.Prepare(joinVideoCdn)
 	if err != nil {
 		return err
@@ -776,7 +803,12 @@ func (v *Video) CreateJoinChannel(channel Channel) error {
 		return err
 	}
 	defer db.Close()
+
 	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
 	stmt, err := tx.Prepare(joinVideoChannel)
 	if err != nil {
 		return err
@@ -797,7 +829,12 @@ func (v *Video) CreateJoinPart(partId int) error {
 		return err
 	}
 	defer db.Close()
+
 	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
 	stmt, err := tx.Prepare(joinVideoPart)
 	if err != nil {
 		return err
@@ -819,7 +856,12 @@ func (v *Video) CreateJoinCategory(prodCatId int) error {
 		return err
 	}
 	defer db.Close()
+
 	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
 	stmt, err := tx.Prepare(joinVideoCategory)
 	if err != nil {
 		return err
@@ -858,7 +900,12 @@ func (v *Video) DeleteJoinFiles() error {
 		return err
 	}
 	defer db.Close()
+
 	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
 	stmt, err := tx.Prepare(deleteVideoCdnJoin)
 	if err != nil {
 		return err
@@ -880,7 +927,11 @@ func (v *Video) DeleteJoinChannels() error {
 		return err
 	}
 	defer db.Close()
+
 	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
 	stmt, err := tx.Prepare(deleteVideoChannelJoin)
 	if err != nil {
 		return err
@@ -901,7 +952,11 @@ func (v *Video) DeleteJoinPart(partId int) error {
 		return err
 	}
 	defer db.Close()
+
 	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
 	stmt, err := tx.Prepare(deleteVideoPartJoin)
 	if err != nil {
 		return err
@@ -923,7 +978,12 @@ func (v *Video) DeleteJoinCategory(prodCatId int) error {
 		return err
 	}
 	defer db.Close()
+
 	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
 	stmt, err := tx.Prepare(deleteVideoCategoryJoin)
 	if err != nil {
 		return err
@@ -1019,6 +1079,9 @@ func (c *Channel) Create() error {
 	}
 	defer db.Close()
 	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
 	stmt, err := tx.Prepare(createChannel)
 	if err != nil {
 		return err
@@ -1044,6 +1107,9 @@ func (c *Channel) Update() error {
 	}
 	defer db.Close()
 	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
 	stmt, err := tx.Prepare(updateChannel)
 	if err != nil {
 		return err
@@ -1066,6 +1132,9 @@ func (c *Channel) Delete() error {
 	}
 	defer db.Close()
 	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
 	stmt, err := tx.Prepare(deleteChannel)
 	if err != nil {
 		return err
@@ -1176,6 +1245,10 @@ func (c *CdnFile) Create() error {
 	}
 	defer db.Close()
 	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
 	stmt, err := tx.Prepare(createCdn)
 	if err != nil {
 		return err
@@ -1201,6 +1274,10 @@ func (c *CdnFile) Update() error {
 	}
 	defer db.Close()
 	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
 	stmt, err := tx.Prepare(updateCdn)
 	if err != nil {
 		return err
@@ -1223,6 +1300,10 @@ func (c *CdnFile) Delete() error {
 	}
 	defer db.Close()
 	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
 	stmt, err := tx.Prepare(deleteCdn)
 	if err != nil {
 		return err
@@ -1319,6 +1400,10 @@ func (c *CdnFileType) Create() error {
 	}
 	defer db.Close()
 	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
 	stmt, err := tx.Prepare(createCdnType)
 	if err != nil {
 		return err
@@ -1344,6 +1429,10 @@ func (c *CdnFileType) Update() error {
 	}
 	defer db.Close()
 	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
 	stmt, err := tx.Prepare(updateCdnType)
 	if err != nil {
 		return err
@@ -1367,6 +1456,10 @@ func (c *CdnFileType) Delete() error {
 	}
 	defer db.Close()
 	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
 	stmt, err := tx.Prepare(deleteCdnType)
 	if err != nil {
 		return err
@@ -1456,6 +1549,10 @@ func (c *VideoType) Create() error {
 	}
 	defer db.Close()
 	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
 	stmt, err := tx.Prepare(createVideoType)
 	if err != nil {
 		return err
@@ -1480,6 +1577,10 @@ func (c *VideoType) Update() error {
 	}
 	defer db.Close()
 	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
 	stmt, err := tx.Prepare(updateVideoType)
 	if err != nil {
 		return err
@@ -1501,7 +1602,12 @@ func (c *VideoType) Delete() error {
 		return err
 	}
 	defer db.Close()
+
 	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
 	stmt, err := tx.Prepare(deleteVideoType)
 	if err != nil {
 		return err
@@ -1586,7 +1692,12 @@ func (c *ChannelType) Create() error {
 		return err
 	}
 	defer db.Close()
+
 	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
 	stmt, err := tx.Prepare(createChannelType)
 	if err != nil {
 		return err
@@ -1610,7 +1721,12 @@ func (c *ChannelType) Update() error {
 		return err
 	}
 	defer db.Close()
+
 	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
 	stmt, err := tx.Prepare(updateChannelType)
 	if err != nil {
 		return err
@@ -1632,7 +1748,12 @@ func (c *ChannelType) Delete() error {
 		return err
 	}
 	defer db.Close()
+
 	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
 	stmt, err := tx.Prepare(deleteChannelType)
 	if err != nil {
 		return err

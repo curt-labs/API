@@ -36,8 +36,8 @@ const (
 	timeFormat = "2006-01-02 15:04:05"
 )
 
-func (p *Part) GetPricing() error {
-	redis_key := fmt.Sprintf("part:%d:%d:pricing", p.BrandID, p.ID)
+func (p *Part) GetPricing(dtx *apicontext.DataContext) error {
+	redis_key := fmt.Sprintf("part:%d:pricing:%s", p.ID, dtx.BrandString)
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -62,6 +62,8 @@ func (p *Part) GetPricing() error {
 	if err != nil || rows == nil {
 		return err
 	}
+
+	p.Pricing = make([]Price, 0)
 	for rows.Next() {
 		var pr Price
 		var skip = false
@@ -76,7 +78,8 @@ func (p *Part) GetPricing() error {
 		}
 	}
 	defer rows.Close()
-	go redis.Setex(redis_key, p.Pricing, 86400)
+
+	go redis.Setex(redis_key, p.Pricing, redis.CacheTimeout)
 	return nil
 }
 
@@ -121,13 +124,18 @@ func (p *Price) Get() error {
 	return nil
 }
 func (p *Price) Create(dtx *apicontext.DataContext) (err error) {
-	go redis.Delete(fmt.Sprintf("part:%s:%d:pricing", dtx.BrandString, p.PartId))
+	go redis.Delete(fmt.Sprintf("part:%s:pricing:%s", p.PartId, dtx.BrandString))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
 	}
 	defer db.Close()
+
 	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
 	stmt, err := tx.Prepare(createPrice)
 	if err != nil {
 		return err
@@ -149,13 +157,18 @@ func (p *Price) Create(dtx *apicontext.DataContext) (err error) {
 
 func (p *Price) Update(dtx *apicontext.DataContext) (err error) {
 	go redis.Delete(fmt.Sprintf("pricing:%d", p.Id))
-	go redis.Delete(fmt.Sprintf("part:%s:%d:pricing", dtx.BrandString, p.PartId))
+	go redis.Delete(fmt.Sprintf("part:%d:pricing:%s", p.PartId, dtx.BrandString))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
 	}
 	defer db.Close()
+
 	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
 	stmt, err := tx.Prepare(updatePrice)
 	if err != nil {
 		return err
@@ -177,13 +190,18 @@ func (p *Price) Update(dtx *apicontext.DataContext) (err error) {
 
 func (p *Price) Delete(dtx *apicontext.DataContext) (err error) {
 	go redis.Delete(fmt.Sprintf("pricing:%d", p.Id))
-	go redis.Delete(fmt.Sprintf("part:%s:%d:pricing", dtx.BrandString, p.PartId))
+	go redis.Delete(fmt.Sprintf("part:%d:pricing:%s", p.PartId, dtx.BrandString))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
 	}
 	defer db.Close()
+
 	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
 	stmt, err := tx.Prepare(deletePrice)
 	if err != nil {
 		return err
@@ -199,13 +217,18 @@ func (p *Price) Delete(dtx *apicontext.DataContext) (err error) {
 
 func (p *Price) DeleteByPart(dtx *apicontext.DataContext) (err error) {
 	go redis.Delete(fmt.Sprintf("pricing:%d", p.Id))
-	go redis.Delete(fmt.Sprintf("part:%s:%d:pricing", dtx.BrandString, p.PartId))
+	go redis.Delete(fmt.Sprintf("part:%d:pricing:%s", p.PartId, dtx.BrandString))
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
 	}
 	defer db.Close()
+
 	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
 	stmt, err := tx.Prepare(deletePrices)
 	if err != nil {
 		return err

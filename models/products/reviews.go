@@ -44,8 +44,8 @@ type Review struct {
 type Reviews []Review
 
 //gets kosher reviews by part
-func (p *Part) GetActiveApprovedReviews() error {
-	redis_key := fmt.Sprintf("part:%d:%d:reviews", p.BrandID, p.ID)
+func (p *Part) GetActiveApprovedReviews(dtx *apicontext.DataContext) error {
+	redis_key := fmt.Sprintf("part:%d:reviews:%s", p.ID, dtx.BrandString)
 
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -71,7 +71,7 @@ func (p *Part) GetActiveApprovedReviews() error {
 		return err
 	}
 
-	var reviews []Review
+	reviews := make([]Review, 0)
 	var ratingCounter int
 	for rows.Next() {
 		var r Review

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	redix "github.com/garyburd/redigo/redis"
+	"log"
 	"os"
 	"time"
 )
@@ -38,10 +39,12 @@ func RedisPool(master bool) *redix.Pool {
 		Dial: func() (redix.Conn, error) {
 			c, err := redix.Dial("tcp", addr)
 			if err != nil {
+				log.Println(err)
 				return nil, err
 			}
-			if password != "" {
+			if password != "" && master {
 				if _, err := c.Do("AUTH", password); err != nil {
+					log.Println(err)
 					c.Close()
 					return nil, err
 				}
@@ -78,6 +81,9 @@ func Setex(key string, obj interface{}, exp int) error {
 		return err
 	}
 
+	if pool == nil {
+		return errors.New(PoolAllocationErr)
+	}
 	conn := pool.Get()
 	if err := conn.Send("select", Db); err != nil {
 		return err

@@ -86,7 +86,7 @@ func TestGetReviews(t *testing.T) {
 	})
 	Convey("Testing ActiveApprovedReviews", t, func() {
 		var l Part //will be no rows
-		err := l.GetActiveApprovedReviews()
+		err := l.GetActiveApprovedReviews(MockedDTX)
 		So(err, ShouldBeNil)
 	})
 	_ = apicontextmock.DeMock(MockedDTX)

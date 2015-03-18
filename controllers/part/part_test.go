@@ -78,8 +78,7 @@ func TestParts(t *testing.T) {
 		So(p, ShouldHaveSameTypeAs, products.Part{})
 		So(p.ID, ShouldEqual, 10999)
 
-		err = p.BindCustomer(dtx) //setup
-		So(err, ShouldBeNil)
+		p.BindCustomer(dtx)
 
 		var custPrice customer.Price
 		custPrice.CustID = dtx.CustomerID
@@ -237,6 +236,7 @@ func TestParts(t *testing.T) {
 
 		//test get
 		thyme = time.Now()
+		t.Log(strconv.Itoa(p.ID))
 		testThatHttp.Request("get", "/part/", ":part", strconv.Itoa(p.ID)+"?key="+dtx.APIKey, Get, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds())
 		So(testThatHttp.Response.Code, ShouldEqual, 200)

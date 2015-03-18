@@ -3,6 +3,7 @@ package products
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	redix "github.com/garyburd/redigo/redis"
 	"time"
@@ -85,8 +86,8 @@ type FeedRecord struct {
 	DateUpdate time.Time `json:"date_updated" xml:"date_updated`
 }
 
-func (p *Part) GetInventory(apiKey, warehouseCode string) (PartInventory, error) {
-	redis_key := fmt.Sprintf("part:%d:%d:inventory", p.BrandID, p.ID)
+func (p *Part) GetInventory(apiKey, warehouseCode string, dtx *apicontext.DataContext) (PartInventory, error) {
+	redis_key := fmt.Sprintf("part:%d:inventory:%s", p.ID, dtx.BrandString)
 
 	pi := PartInventory{}
 

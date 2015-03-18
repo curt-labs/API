@@ -130,6 +130,8 @@ func TestDealers_New(t *testing.T) {
 		testThatHttp.Request("get", "/dealers/search/geo/", ":latitude/:longitude", fmt.Sprint(c.Latitude)+"/"+fmt.Sprint(c.Longitude)+"?key="+dtx.APIKey, SearchLocationsByType, nil, "")
 		So(time.Since(thyme).Nanoseconds(), ShouldBeLessThan, time.Second.Nanoseconds()*2)
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
+		So(testThatHttp.Response, ShouldNotBeNil)
+		So(testThatHttp.Response.Body, ShouldNotBeNil)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &dls)
 		So(err, ShouldBeNil)
 		So(dls, ShouldHaveSameTypeAs, customer.DealerLocations{})

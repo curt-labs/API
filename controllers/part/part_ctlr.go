@@ -129,7 +129,6 @@ func Get(w http.ResponseWriter, r *http.Request, params martini.Params, enc enco
 	}
 
 	vehicleChan := make(chan error)
-	defer close(vehicleChan)
 	go func() {
 		vs, err := vehicle.ReverseLookup(p.ID)
 		if err != nil {
@@ -147,6 +146,8 @@ func Get(w http.ResponseWriter, r *http.Request, params martini.Params, enc enco
 	}
 
 	<-vehicleChan
+
+	close(vehicleChan)
 
 	return encoding.Must(enc.Encode(p))
 }
@@ -308,7 +309,7 @@ func Packaging(w http.ResponseWriter, r *http.Request, params martini.Params, en
 	return encoding.Must(enc.Encode(p.Packages))
 }
 
-func ActiveApprovedReviews(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+func ActiveApprovedReviews(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	id, err := strconv.Atoi(params["part"])
 	if err != nil {
 		apierror.GenerateError("Trouble getting part ID", err, w, r)
@@ -318,7 +319,7 @@ func ActiveApprovedReviews(w http.ResponseWriter, r *http.Request, params martin
 		ID: id,
 	}
 
-	if err = p.GetActiveApprovedReviews(); err != nil {
+	if err = p.GetActiveApprovedReviews(dtx); err != nil {
 		apierror.GenerateError("Trouble getting part reviews", err, w, r)
 		return ""
 	}
@@ -407,7 +408,7 @@ func Prices(w http.ResponseWriter, r *http.Request, params martini.Params, enc e
 	custChan := make(chan int)
 
 	go func() {
-		err = p.GetPricing()
+		err = p.GetPricing(dtx)
 		priceChan <- 1
 	}()
 

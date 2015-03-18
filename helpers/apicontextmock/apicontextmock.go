@@ -378,6 +378,9 @@ func CreateApiKey(UserID string, keyTypeID string, keyType string, brandID int) 
 	}
 	defer db.Close()
 	tx, err := db.Begin()
+	if err != nil {
+		return keyID, key, err
+	}
 
 	stmt, err := tx.Prepare(insertAPIKey)
 	if err != nil {

@@ -352,6 +352,7 @@ func ReverseLookup(partId int) (vehicles []Vehicle, err error) {
 	}
 	defer rows.Close()
 
+	vehicles = make([]Vehicle, 0)
 	for _, v := range vehicleArray {
 		vehicles = append(vehicles, v)
 	}
