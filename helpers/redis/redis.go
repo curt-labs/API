@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	redix "github.com/garyburd/redigo/redis"
-	"log"
 	"os"
 	"time"
 )
@@ -39,12 +38,10 @@ func RedisPool(master bool) *redix.Pool {
 		Dial: func() (redix.Conn, error) {
 			c, err := redix.Dial("tcp", addr)
 			if err != nil {
-				log.Println(err)
 				return nil, err
 			}
 			if password != "" && master {
 				if _, err := c.Do("AUTH", password); err != nil {
-					log.Println(err)
 					c.Close()
 					return nil, err
 				}

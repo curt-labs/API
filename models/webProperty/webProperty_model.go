@@ -8,8 +8,6 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/pagination"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
-
-	"log"
 	"strconv"
 	"time"
 )
@@ -487,7 +485,7 @@ func (w *WebProperty) Create(dtx *apicontext.DataContext) (err error) {
 
 func (w *WebProperty) Update(dtx *apicontext.DataContext) (err error) {
 	go redis.Delete("webproperties:" + dtx.BrandString)
-	log.Print("HERE")
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
