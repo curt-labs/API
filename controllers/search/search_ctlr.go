@@ -16,6 +16,7 @@ func Search(rw http.ResponseWriter, r *http.Request, params martini.Params, enc 
 	res, err := search.Dsl(terms, dtx)
 	if err != nil {
 		apierror.GenerateError("Trouble searching", err, rw, r)
+		return ""
 	}
 
 	return encoding.Must(enc.Encode(res))
