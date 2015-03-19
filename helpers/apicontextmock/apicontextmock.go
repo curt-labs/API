@@ -3,8 +3,10 @@ package apicontextmock
 import (
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
+	_ "github.com/go-sql-driver/mysql"
 
 	"database/sql"
+
 	"time"
 )
 

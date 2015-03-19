@@ -1,6 +1,7 @@
 package search_ctlr
 
 import (
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"net/http"
 
 	"github.com/curt-labs/GoAPI/helpers/encoding"
@@ -9,10 +10,10 @@ import (
 	"github.com/go-martini/martini"
 )
 
-func Search(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+func Search(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	terms := params["term"]
 
-	res, err := search.Dsl(terms, []string{})
+	res, err := search.Dsl(terms, dtx)
 	if err != nil {
 		apierror.GenerateError("Trouble searching", err, rw, r)
 	}

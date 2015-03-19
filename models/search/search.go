@@ -2,11 +2,16 @@ package search
 
 import (
 	"errors"
-	"github.com/mattbaird/elastigo/lib"
+	"github.com/curt-labs/GoAPI/helpers/apicontext"
+	"github.com/ninnemana/elastigo/lib"
 	"os"
 )
 
-func Dsl(query string, fields []string) (elastigo.SearchResult, error) {
+func Dsl(query string, dtx *apicontext.DataContext) (*elastigo.SearchResult, error) {
+
+	if query == "" {
+		return nil, errors.New("cannot execute a search on an empty query")
+	}
 
 	var con *elastigo.Conn
 	if host := os.Getenv("ELASTICSEARCH_IP"); host != "" {
@@ -19,28 +24,38 @@ func Dsl(query string, fields []string) (elastigo.SearchResult, error) {
 		}
 	}
 	if con == nil {
-		return elastigo.SearchResult{}, errors.New("failed to connect to elasticsearch")
+		return nil, errors.New("failed to connect to elasticsearch")
 	}
 
-	qry := map[string]interface{}{
-		"query": map[string]interface{}{
-			"query_string": map[string]interface{}{
-				"query":  query,
-				"fields": fields,
-			},
-		},
-		"highlight": map[string]interface{}{
-			"fields": map[string]interface{}{
-				"*": map[string]interface{}{},
-			},
-		},
+	searchCurt := false
+	searchAries := false
+	searchAll := false
+
+	for _, br := range dtx.BrandArray {
+		if br == 1 { // search curt
+			searchCurt = true
+		} else if br == 3 { // search aries
+			searchAries = true
+		}
 	}
 
-	// Get the brands that this customer is subscribed to
-	// and iterate over those brands hitting the search endpoint for all.
-	// This will require us to join all brand results together into one
-	// big SearchResult.
+	if searchAries && searchCurt {
+		searchAll = true
+	}
 
-	var args map[string]interface{}
-	return con.Search("*", "", args, qry)
+	if searchAll {
+		return elastigo.Search("all").Query(
+			elastigo.Query().Search(query),
+		).Result(con)
+	} else if searchCurt {
+		return elastigo.Search("curt").Query(
+			elastigo.Query().Search(query),
+		).Result(con)
+	} else if searchAries {
+		return elastigo.Search("aries").Query(
+			elastigo.Query().Search(query),
+		).Result(con)
+	}
+
+	return nil, errors.New("no index for determined brands")
 }
