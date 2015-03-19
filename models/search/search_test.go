@@ -20,7 +20,7 @@ func TestDsl(t *testing.T) {
 	Convey("Testing Search Dsl", t, func() {
 
 		Convey("empty query", func() {
-			res, err := Dsl("", dtx)
+			res, err := Dsl("", 0, 0, dtx)
 			So(err, ShouldNotBeNil)
 			So(res, ShouldBeNil)
 		})
@@ -29,7 +29,7 @@ func TestDsl(t *testing.T) {
 			os.Setenv("ELASTICSEARCH_PORT", "")
 			os.Setenv("ELASTICSEARCH_USER", "")
 			os.Setenv("ELASTICSEARCH_PASS", "")
-			res, err := Dsl("hitch", dtx)
+			res, err := Dsl("hitch", 0, 0, dtx)
 			So(err, ShouldNotBeNil)
 			So(res, ShouldBeNil)
 			os.Setenv("ELASTICSEARCH_IP", ip)
@@ -39,27 +39,34 @@ func TestDsl(t *testing.T) {
 		})
 		Convey("query of `hitch` with no brand", func() {
 			dtx.BrandArray = []int{}
-			res, err := Dsl("hitch", dtx)
+			res, err := Dsl("hitch", 1, 0, dtx)
 			So(err, ShouldNotBeNil)
 			So(res, ShouldBeNil)
 		})
 		Convey("query of `hitch` with aries", func() {
 			dtx.BrandArray = []int{3}
-			res, err := Dsl("hitch", dtx)
+			res, err := Dsl("hitch", 0, 0, dtx)
 			So(err, ShouldBeNil)
 			So(res, ShouldNotBeNil)
 		})
 		Convey("query of `hitch` with curt", func() {
 			dtx.BrandArray = []int{1}
-			res, err := Dsl("hitch", dtx)
+			res, err := Dsl("hitch", 0, 0, dtx)
 			So(err, ShouldBeNil)
 			So(res, ShouldNotBeNil)
 		})
 		Convey("query of `hitch`", func() {
 			dtx.BrandArray = []int{1, 3}
-			res, err := Dsl("hitch", dtx)
+			res, err := Dsl("hitch", 0, 0, dtx)
 			So(err, ShouldBeNil)
 			So(res, ShouldNotBeNil)
+		})
+		Convey("query of `hitch` with 1 result", func() {
+			dtx.BrandArray = []int{1, 3}
+			res, err := Dsl("hitch", 0, 1, dtx)
+			So(err, ShouldBeNil)
+			So(res, ShouldNotBeNil)
+			So(res.Hits.Len(), ShouldEqual, 1)
 		})
 
 	})
