@@ -453,6 +453,7 @@ func main() {
 	m.Post("/vehicle", vehicle.Query)
 	m.Post("/findVehicle", vehicle.GetVehicle)
 	m.Post("/vehicle/inquire", vehicle.Inquire)
+	m.Post("/vehicle/mongo", vehicle.Lookup)
 
 	m.Group("/videos", func(r martini.Router) {
 		r.Get("/distinct", videos_ctlr.DistinctVideos) //old "videos" table - curtmfg?
