@@ -272,13 +272,20 @@ func PopulateCategory(row *sql.Row, ch chan Category, dtx *apicontext.DataContex
 		initCat.ColorCode = fmt.Sprintf("rgb(%s,%s,%s)", cc[0:3], cc[3:6], cc[6:9])
 		initCat.FontCode = fmt.Sprintf("#%s", *fontCode)
 	}
-	con, err := initCat.GetContent()
-	if err == nil {
-		initCat.Content = con
-	}
+
+	conChan := make(chan []Content)
+	go func() {
+		con, _ := initCat.GetContent()
+		conChan <- con
+	}()
 
 	if subCats, err := initCat.GetSubCategories(dtx); err == nil {
 		initCat.SubCategories = subCats
+	}
+
+	select {
+	case con := <-conChan:
+		initCat.Content = con
 	}
 
 	ch <- initCat
@@ -386,6 +393,7 @@ func GetCategoryByTitle(cat_title string, dtx *apicontext.DataContext) (cat Cate
 }
 
 func GetCategoryById(cat_id int, dtx *apicontext.DataContext) (cat Category, err error) {
+
 	redis_key := fmt.Sprintf("category:id:%d", cat_id)
 
 	// Attempt to get the category from Redis
@@ -538,9 +546,8 @@ func (c *Category) GetCategory(key string, page int, count int, ignoreParts bool
 		c.Content = append(c.Content, co)
 	}
 
-	prods := <-partChan
 	if !ignoreParts {
-		c.ProductListing = prods
+		c.ProductListing = <-partChan
 		close(partChan)
 	}
 	return err
@@ -636,7 +643,6 @@ func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *
 	}
 
 	if err != nil || len(parts) == 0 || specs != nil {
-		ids := make([]int, 0)
 		db, err := sql.Open("mysql", database.ConnectionString())
 		if err != nil {
 			return err
@@ -676,30 +682,30 @@ func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *
 			return err
 		}
 
+		ch := make(chan error)
+		count := 0
+
 		for rows.Next() {
 			var ct *int
 			var id *int
 			if err := rows.Scan(&id, &ct); err == nil && id != nil {
-				ids = append(ids, *id)
+				go func(i int) {
+					p := Part{
+						ID: i,
+					}
+					err := p.Get(dtx)
+					if err == nil {
+						c.ProductListing.Parts = append(c.ProductListing.Parts, p)
+					}
+					ch <- err
+				}(*id)
+				count++
+
 			}
 		}
 		defer rows.Close()
 
-		ch := make(chan error)
-		for _, id := range ids {
-			go func(i int) {
-				p := Part{
-					ID: i,
-				}
-				err := p.Get(dtx)
-				if err == nil {
-					c.ProductListing.Parts = append(c.ProductListing.Parts, p)
-				}
-				ch <- err
-			}(id)
-		}
-
-		for _, _ = range ids {
+		for i := 0; i < count; i++ {
 			<-ch
 		}
 	}

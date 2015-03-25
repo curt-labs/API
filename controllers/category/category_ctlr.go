@@ -17,7 +17,8 @@ import (
 )
 
 var (
-	NoFilterCategories = map[int]int{1: 1, 3: 3, 4: 4, 5: 5, 8: 8, 9: 9, 254: 254, 2: 2, 11: 11, 12: 12, 13: 13, 14: 14, 273: 273}
+	// NoFilterCategories = map[int]int{1: 1, 3: 3, 4: 4, 5: 5, 8: 8, 9: 9, 254: 254, 2: 2, 11: 11, 12: 12, 13: 13, 14: 14, 273: 273}
+	NoFilterCategories = map[int]int{}
 	NoFilterKeys       = map[string]string{"key": "key", "page": "page", "count": "count"}
 )
 

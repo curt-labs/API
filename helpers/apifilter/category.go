@@ -21,7 +21,7 @@ var (
 		join CatPart as cp on p.partID = cp.partID
 		where
 		(p.status = 800 || p.status = 900) &&
-		cp.catID = ? && !FIND_IN_SET(pa.field, ?)
+		cp.catID = ? && !FIND_IN_SET(pa.field, ?) && pa.canFilter = 1
 		group by pa.field, pa.value
 		order by pa.field, pa.value`
 	GetCategoryPrices = `
@@ -59,7 +59,7 @@ func CategoryFilter(cat products.Category, specs *map[string][]string) ([]Option
 	case <-attrChan:
 
 	case <-time.After(5 * time.Second):
-
+		return FilteredOptions{}, nil
 	}
 
 	sortutil.AscByField(filtered, "Key")
