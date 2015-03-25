@@ -13,7 +13,7 @@ import (
 var (
 	partPackageStmt = `select pp.height as height, pp.length as length, pp.width as width, pp.weight as weight, pp.quantity as quantity,
 				um_dim.code as dimensionUnit, um_dim.name as dimensionUnitLabel, um_wt.code as weightUnit, um_wt.name as weightUnitLabel,
-				um_pkg.code as packageUnit, um_pkg.name as packageUnitLabel
+				um_pkg.code as packageUnit, um_pkg.name as packageUnitLabel,pp.typeId
 				from PartPackage as pp
 				join UnitOfMeasure as um_dim on pp.dimensionUOM = um_dim.ID
 				join UnitOfMeasure as um_wt on pp.weightUOM = um_wt.ID
@@ -21,6 +21,7 @@ var (
 				where pp.partID = ?`
 	createPackage  = `INSERT INTO PartPackage (partID, height, width, length, weight, dimensionUOM, weightUOM, packageUOM, quantity, typeID)`
 	deletePackages = `DELETE FROM PartPackages WHERE partID = ?`
+	getPackageType = `select ID, name from PackageType where ID = ?`
 )
 
 type Package struct {
@@ -87,7 +88,16 @@ func (p *Part) GetPartPackaging(dtx *apicontext.DataContext) error {
 			&pkg.WeightUnit,
 			&pkg.WeightUnitLabel,
 			&pkg.PackageUnit,
-			&pkg.PackageUnitLabel)
+			&pkg.PackageUnitLabel,
+			&pkg.PackageType.ID,
+		)
+		if err != nil {
+			return err
+		}
+		err = pkg.PackageType.Get()
+		if err != nil {
+			return err
+		}
 		if err == nil {
 			pkgs = append(pkgs, pkg)
 		}
@@ -142,4 +152,20 @@ func (p *Package) DeleteByPart(dtx *apicontext.DataContext) (err error) {
 		return err
 	}
 	return nil
+}
+
+func (p *PackageType) Get() error {
+	var err error
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(getPackageType)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	return stmt.QueryRow(p.ID).Scan(&p.ID, &p.Name)
 }

@@ -62,6 +62,7 @@ func MongoConnectionString() *mgo.DialInfo {
 	if info.Database == "" {
 		info.Database = "CurtCart"
 	}
+	info.Source = "admin"
 
 	return &info
 }
