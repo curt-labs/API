@@ -67,6 +67,27 @@ func MongoConnectionString() *mgo.DialInfo {
 	return &info
 }
 
+func AriesMongoConnectionString() *mgo.DialInfo {
+	var info mgo.DialInfo
+	addr := os.Getenv("MONGO_URL")
+	if addr == "" {
+		addr = "127.0.0.1"
+	}
+
+	info.Addrs = append(info.Addrs, addr)
+	info.Username = os.Getenv("MONGO_ARIES_USERNAME")
+	info.Password = os.Getenv("MONGO_ARIES_PASSWORD")
+	info.Database = os.Getenv("MONGO_ARIES_DATABASE")
+	info.Timeout = time.Second * 2
+	info.FailFast = true
+	if info.Database == "" {
+		info.Database = "aries"
+	}
+	info.Source = "admin"
+
+	return &info
+}
+
 func AriesConnectionString() string {
 	if addr := os.Getenv("DATABASE_HOST"); addr != "" {
 		proto := os.Getenv("DATABASE_PROTOCOL")

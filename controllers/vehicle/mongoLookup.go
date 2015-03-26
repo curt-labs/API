@@ -7,8 +7,17 @@ import (
 	"github.com/curt-labs/GoAPI/models/products"
 
 	"net/http"
-	"strconv"
 )
+
+func Collections(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+	cols, err := products.GetAriesVehicleCollections()
+	if err != nil {
+		apierror.GenerateError(err.Error(), err, w, r)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(cols))
+}
 
 func Lookup(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var v products.NoSqlVehicle
@@ -19,8 +28,7 @@ func Lookup(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *a
 	delete(r.Form, "collection")
 
 	// Get vehicle year
-	y_str := r.FormValue("year")
-	v.Year, _ = strconv.Atoi(y_str)
+	v.Year = r.FormValue("year")
 	delete(r.Form, "year")
 
 	// Get vehicle make
@@ -34,6 +42,12 @@ func Lookup(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *a
 	// Get vehicle submodel
 	v.Style = r.FormValue("style")
 	delete(r.Form, "style")
+
+	// vals, err := products.GetApps(v, collection)
+	// if err != nil {
+	// 	apierror.GenerateError("Trouble finding vehicles.", err, w, r)
+	// 	return ""
+	// }
 
 	l, err := products.FindVehicles(v, collection, dtx)
 	if err != nil {
