@@ -3,6 +3,7 @@ package products
 import (
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
+	"sort"
 	"strings"
 
 	"gopkg.in/mgo.v2"
@@ -78,7 +79,8 @@ func GetApps(v NoSqlVehicle, collection string) (stage string, vals []string, er
 	if v.Year != "" {
 		queryMap["year"] = strings.ToLower(v.Year)
 	} else {
-		c.Find(queryMap).Sort("-year").Distinct("year", &vals)
+		c.Find(queryMap).Distinct("year", &vals)
+		sort.Sort(sort.Reverse(sort.StringSlice(vals)))
 		stage = "year"
 		return
 	}
@@ -87,6 +89,7 @@ func GetApps(v NoSqlVehicle, collection string) (stage string, vals []string, er
 		queryMap["make"] = strings.ToLower(v.Make)
 	} else {
 		c.Find(queryMap).Sort("make").Distinct("make", &vals)
+		sort.Strings(vals)
 		stage = "make"
 		return
 	}
@@ -95,6 +98,7 @@ func GetApps(v NoSqlVehicle, collection string) (stage string, vals []string, er
 		queryMap["model"] = strings.ToLower(v.Model)
 	} else {
 		c.Find(queryMap).Sort("model").Distinct("model", &vals)
+		sort.Strings(vals)
 		stage = "model"
 		return
 	}
@@ -103,12 +107,15 @@ func GetApps(v NoSqlVehicle, collection string) (stage string, vals []string, er
 	if len(vals) == 1 && vals[0] == "" {
 		vals = []string{}
 	}
+	sort.Strings(vals)
 	stage = "style"
 
 	return
 }
 
 func FindVehicles(v NoSqlVehicle, collection string, dtx *apicontext.DataContext) (l NoSqlLookup, err error) {
+
+	l = NoSqlLookup{}
 
 	stage, vals, err := GetApps(v, collection)
 	if err != nil {

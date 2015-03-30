@@ -18,6 +18,7 @@ func ConnectionString() string {
 		user := os.Getenv("DATABASE_USERNAME")
 		pass := os.Getenv("DATABASE_PASSWORD")
 		db := os.Getenv("CURT_DEV_NAME")
+
 		return fmt.Sprintf("%s:%s@%s(%s)/%s?parseTime=true&loc=%s", user, pass, proto, addr, db, "America%2FChicago")
 	}
 

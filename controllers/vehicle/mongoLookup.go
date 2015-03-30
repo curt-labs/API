@@ -43,12 +43,6 @@ func Lookup(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *a
 	v.Style = r.FormValue("style")
 	delete(r.Form, "style")
 
-	// vals, err := products.GetApps(v, collection)
-	// if err != nil {
-	// 	apierror.GenerateError("Trouble finding vehicles.", err, w, r)
-	// 	return ""
-	// }
-
 	l, err := products.FindVehicles(v, collection, dtx)
 	if err != nil {
 		apierror.GenerateError("Trouble finding vehicles.", err, w, r)
