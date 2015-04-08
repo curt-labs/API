@@ -13,6 +13,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/error"
+	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/curt-labs/GoAPI/models/products"
 	"github.com/curt-labs/GoAPI/models/vehicle"
@@ -135,6 +136,7 @@ func Get(w http.ResponseWriter, r *http.Request, params martini.Params, enc enco
 			vehicleChan <- err
 		} else {
 			p.Vehicles = vs
+
 			vehicleChan <- nil
 		}
 	}()
@@ -148,6 +150,8 @@ func Get(w http.ResponseWriter, r *http.Request, params martini.Params, enc enco
 	<-vehicleChan
 
 	close(vehicleChan)
+
+	sortutil.AscByField(p.Vehicles, "ID")
 
 	return encoding.Must(enc.Encode(p))
 }
