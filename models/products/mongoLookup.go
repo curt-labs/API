@@ -107,6 +107,7 @@ func GetApps(v NoSqlVehicle, collection string) (stage string, vals []string, er
 	if len(vals) == 1 {
 		vals = []string{}
 	}
+
 	sort.Strings(vals)
 	stage = "style"
 
@@ -137,10 +138,6 @@ func FindVehicles(v NoSqlVehicle, collection string, dtx *apicontext.DataContext
 		if stage != "style" || len(l.Styles) > 0 {
 			return
 		}
-	}
-
-	if v.Style == "ANYTHING_YOU_WANT" {
-		v.Style = ""
 	}
 
 	session, err := mgo.DialWithInfo(database.AriesMongoConnectionString())
