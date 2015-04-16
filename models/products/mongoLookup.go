@@ -104,7 +104,7 @@ func GetApps(v NoSqlVehicle, collection string) (stage string, vals []string, er
 	}
 
 	c.Find(queryMap).Distinct("style", &vals)
-	if len(vals) == 1 && vals[0] == "" {
+	if len(vals) == 1 {
 		vals = []string{}
 	}
 	sort.Strings(vals)
@@ -139,6 +139,10 @@ func FindVehicles(v NoSqlVehicle, collection string, dtx *apicontext.DataContext
 		}
 	}
 
+	if v.Style == "ANYTHING_YOU_WANT" {
+		v.Style = ""
+	}
+
 	session, err := mgo.DialWithInfo(database.AriesMongoConnectionString())
 	if err != nil {
 		return
@@ -156,13 +160,24 @@ func FindVehicles(v NoSqlVehicle, collection string, dtx *apicontext.DataContext
 
 	c.Find(queryMap).Distinct("parts", &ids)
 
+	ch := make(chan *Part)
 	//add parts
 	for _, id := range ids {
-		p := Part{ID: id}
-		if err := p.Get(dtx); err != nil {
-			continue
+		go func(i int) {
+			p := &Part{ID: i}
+			if err := p.Get(dtx); err != nil {
+				ch <- nil
+			} else {
+				ch <- p
+			}
+		}(id)
+	}
+
+	for _, _ = range ids {
+		res := <-ch
+		if res != nil {
+			l.Parts = append(l.Parts, *res)
 		}
-		l.Parts = append(l.Parts, p)
 	}
 
 	return l, err
