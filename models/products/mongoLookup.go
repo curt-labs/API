@@ -160,24 +160,13 @@ func FindVehicles(v NoSqlVehicle, collection string, dtx *apicontext.DataContext
 
 	c.Find(queryMap).Distinct("parts", &ids)
 
-	ch := make(chan *Part)
 	//add parts
 	for _, id := range ids {
-		go func(i int) {
-			p := &Part{ID: i}
-			if err := p.Get(dtx); err != nil {
-				ch <- nil
-			} else {
-				ch <- p
-			}
-		}(id)
-	}
-
-	for _, _ = range ids {
-		res := <-ch
-		if res != nil {
-			l.Parts = append(l.Parts, *res)
+		p := Part{ID: id}
+		if err := p.Get(dtx); err != nil {
+			continue
 		}
+		l.Parts = append(l.Parts, p)
 	}
 
 	return l, err

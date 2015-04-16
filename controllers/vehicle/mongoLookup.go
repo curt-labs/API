@@ -40,14 +40,7 @@ func Lookup(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *a
 	delete(r.Form, "model")
 
 	// Get vehicle submodel
-	if s, ok := r.Form["style"]; ok && len(s) == 1 {
-		tmp := s[0]
-		if tmp == "" {
-			v.Style = "ANYTHING_YOU_WANT"
-		} else {
-			v.Style = tmp
-		}
-	}
+	v.Style = r.FormValue("style")
 	delete(r.Form, "style")
 
 	l, err := products.FindVehicles(v, collection, dtx)
