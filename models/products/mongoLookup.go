@@ -104,7 +104,7 @@ func GetApps(v NoSqlVehicle, collection string) (stage string, vals []string, er
 	}
 
 	c.Find(queryMap).Distinct("style", &vals)
-	if len(vals) == 1 {
+	if len(vals) == 1 && vals[0] == "" {
 		vals = []string{}
 	}
 
