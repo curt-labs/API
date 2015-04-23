@@ -599,7 +599,7 @@ func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *
 	}
 	queryPage := page
 	if page == 1 {
-		queryPage = count
+		queryPage = 0
 	} else if page > 1 {
 		queryPage = count * (page - 1)
 	}
@@ -633,7 +633,6 @@ func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *
 	}
 
 	parts := make([]Part, 0)
-
 	redis_key := fmt.Sprintf("category:%d:%d:parts:%d:%d", c.BrandID, c.ID, queryPage, count)
 
 	// First lets try to access the category:top endpoint in Redis
