@@ -8,6 +8,10 @@ import (
 	"time"
 )
 
+type Scanner interface {
+	Scan(...interface{}) error
+}
+
 var (
 	EmptyDb = flag.String("clean", "", "bind empty database with structure defined")
 )

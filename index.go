@@ -14,6 +14,7 @@ import (
 	"github.com/curt-labs/GoAPI/controllers/faq"
 	"github.com/curt-labs/GoAPI/controllers/forum"
 	"github.com/curt-labs/GoAPI/controllers/geography"
+	"github.com/curt-labs/GoAPI/controllers/landingPages"
 	"github.com/curt-labs/GoAPI/controllers/middleware"
 	"github.com/curt-labs/GoAPI/controllers/news"
 	"github.com/curt-labs/GoAPI/controllers/part"
@@ -392,6 +393,10 @@ func main() {
 		r.Post("", site.SaveSite)
 		r.Put("/:id", site.SaveSite)
 		r.Delete("/:id", site.DeleteSite)
+	})
+
+	m.Group("/lp", func(r martini.Router) {
+		r.Get("/:id", landingPage.Get)
 	})
 
 	m.Group("/techSupport", func(r martini.Router) {
