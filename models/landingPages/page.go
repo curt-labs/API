@@ -7,12 +7,15 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"net/url"
 	"time"
+
+	"github.com/russross/blackfriday"
 )
 
 type LandingPage struct {
 	Id, WebsiteID                               int
 	NewWindow                                   bool
 	Name, PageContent, LinkClasses              string
+	HtmlContent                                 string
 	StartDate, EndDate                          time.Time
 	ConversionID, ConversionLabel, MenuPosition string
 	Url                                         *url.URL
@@ -61,6 +64,7 @@ func (lp *LandingPage) Get(dtx *apicontext.DataContext) (err error) {
 	if err != nil {
 		return
 	}
+	lp.HtmlContent = string(blackfriday.MarkdownBasic([]byte(lp.PageContent)))
 	return
 }
 
