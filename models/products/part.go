@@ -11,7 +11,6 @@ import (
 	"github.com/curt-labs/GoAPI/models/vehicle"
 	"github.com/curt-labs/GoAPI/models/video"
 	_ "github.com/go-sql-driver/mysql"
-	"log"
 	"sync"
 
 	"database/sql"
@@ -444,8 +443,6 @@ func GetAllPartsBasics(dtx *apicontext.DataContext) ([]Part, error) {
 		return parts, err
 	}
 	defer stmt.Close()
-	log.Println(dtx.BrandID)
-	log.Println(dtx.APIKey)
 	rows, err := stmt.Query(dtx.APIKey, dtx.BrandID)
 	if err != nil {
 		return parts, err
@@ -469,7 +466,6 @@ func GetAllPartsBasics(dtx *apicontext.DataContext) ([]Part, error) {
 			&upc,
 		)
 		if err != nil {
-			log.Println(err)
 			return parts, err
 		}
 		if short != nil {
