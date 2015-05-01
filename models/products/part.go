@@ -11,6 +11,7 @@ import (
 	"github.com/curt-labs/GoAPI/models/vehicle"
 	"github.com/curt-labs/GoAPI/models/video"
 	_ "github.com/go-sql-driver/mysql"
+	"log"
 	"sync"
 
 	"database/sql"
@@ -75,6 +76,15 @@ var (
                     limit 1`
 
 	getPartByOldpartNumber = `select partID, status, dateModified, dateAdded, shortDesc, priceCode, classID, featured, ACESPartTypeID, brandID from Part where oldPartNumber = ?`
+
+	getAllPartsBasicsStmt = `select p.status, p.dateAdded, p.dateModified, p.shortDesc, p.oldPartNumber, p.partID, p.priceCode, pc.class, pc.image, p.brandID, pa.value as upc
+								from Part as p
+								left join Class as pc on p.classID = pc.classID
+								left join PartAttribute as pa on pa.partID = p.partID
+								join ApiKeyToBrand as akb on akb.brandID = p.brandID
+								join ApiKey as ak on ak.id = akb.keyID
+								where (p.status in (800,900) && pa.field = "upc") && (ak.api_key = ? && (p.brandID = 1 or 0 = ?))
+								order by partID`
 	//create
 	createPart = `INSERT INTO Part (partID, status, dateAdded, shortDesc, oldPartNumber, priceCode, classID, featured, ACESPartTypeID,brandID)
                     VALUES(?,?,?,?,?,?,?,?,?,?)`
@@ -125,6 +135,7 @@ type Part struct {
 	Installations     Installations     `json:"installation,omitempty" xml:"installation,omitempty"`
 	Inventory         PartInventory     `json:"inventory,omitempty" xml:"inventory,omitempty"`
 	OldPartNumber     string            `json:"oldPartNumber,omitempty" xml:"oldPartNumber,omitempty"`
+	UPC               string            `json:"upc,omitempty" xml:"upc,omitempty"`
 }
 
 type CustomerPart struct {
@@ -415,6 +426,76 @@ func Featured(count int, dtx *apicontext.DataContext) ([]Part, error) {
 	}
 
 	sortutil.DescByField(parts, "DateAdded")
+
+	return parts, nil
+}
+
+func GetAllPartsBasics(dtx *apicontext.DataContext) ([]Part, error) {
+	parts := make([]Part, 0)
+
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return parts, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(getAllPartsBasicsStmt)
+	if err != nil {
+		return parts, err
+	}
+	defer stmt.Close()
+	log.Println(dtx.BrandID)
+	log.Println(dtx.APIKey)
+	rows, err := stmt.Query(dtx.APIKey, dtx.BrandID)
+	if err != nil {
+		return parts, err
+	}
+
+	for rows.Next() {
+		var p Part
+		var short, price, class, oldNum, image []byte
+		var upc *string
+		err = rows.Scan(
+			&p.Status,
+			&p.DateAdded,
+			&p.DateModified,
+			&short,
+			&oldNum,
+			&p.ID,
+			&price,
+			&class,
+			&image,
+			&p.BrandID,
+			&upc,
+		)
+		if err != nil {
+			log.Println(err)
+			return parts, err
+		}
+		if short != nil {
+			p.ShortDesc = string(short[:])
+		}
+		if upc != nil {
+			p.UPC = *upc
+		}
+		if price != nil {
+			p.PriceCode, err = strconv.Atoi(string(price[:]))
+			if err != nil {
+				return parts, err
+			}
+		}
+		if class != nil {
+			p.Class.Name = string(class[:])
+		}
+		if image != nil {
+			p.Class.Image = string(image[:])
+		}
+		if oldNum != nil {
+			p.OldPartNumber = string(oldNum[:])
+		}
+		parts = append(parts, p)
+	}
+	defer rows.Close()
 
 	return parts, nil
 }

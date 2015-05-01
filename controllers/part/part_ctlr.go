@@ -73,6 +73,18 @@ func All(w http.ResponseWriter, r *http.Request, params martini.Params, enc enco
 	return encoding.Must(enc.Encode(parts))
 }
 
+func AllBasics(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+
+	parts, err := products.GetAllPartsBasics(dtx)
+	if err != nil {
+		apierror.GenerateError("Trouble getting all basic parts", err, w, r)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(parts))
+
+}
+
 func Featured(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	count := 10
 	qs := r.URL.Query()

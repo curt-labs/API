@@ -17,6 +17,11 @@ func TestPart(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(parts, ShouldHaveSameTypeAs, []Part{})
 	})
+	Convey("Testing All Basics", t, func() {
+		parts, err := GetAllPartsBasics(MockedDTX)
+		So(err, ShouldBeNil)
+		So(parts, ShouldHaveSameTypeAs, []Part{})
+	})
 	Convey("Testing GetLatest", t, func() {
 		parts, err := Latest(10, MockedDTX)
 		So(err, ShouldBeNil)

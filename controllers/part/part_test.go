@@ -254,6 +254,15 @@ func TestParts(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(parts, ShouldHaveSameTypeAs, []products.Part{})
 
+		// test all
+		thyme = time.Now()
+		testThatHttp.Request("get", "/part/all", "", "?key="+dtx.APIKey, AllBasics, nil, "")
+		t.Log("Get all basic parts benchmark: ", time.Since(thyme))
+		So(testThatHttp.Response.Code, ShouldEqual, 200)
+		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &parts)
+		So(err, ShouldBeNil)
+		So(parts, ShouldHaveSameTypeAs, []products.Part{})
+
 		//test featured
 		thyme = time.Now()
 		testThatHttp.Request("get", "/part/featured", "", "?key="+dtx.APIKey, Featured, nil, "")
