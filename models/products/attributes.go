@@ -17,7 +17,7 @@ type Attribute struct {
 }
 
 var (
-	partAttrStmt = `select field, value from PartAttribute where partID = ?`
+	partAttrStmt = `select field, value from PartAttribute where partID = ? && public = 1`
 )
 
 func (p *Part) GetAttributes(dtx *apicontext.DataContext) error {
