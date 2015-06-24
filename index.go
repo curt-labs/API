@@ -460,6 +460,7 @@ func main() {
 	m.Post("/findVehicle", vehicle.GetVehicle)
 	m.Post("/vehicle/inquire", vehicle.Inquire)
 	m.Get("/vehicle/mongo/cols", vehicle.Collections)
+	m.Post("/vehicle/mongo/apps", vehicle.ByCategory)
 	m.Post("/vehicle/mongo", vehicle.Lookup)
 
 	m.Group("/videos", func(r martini.Router) {

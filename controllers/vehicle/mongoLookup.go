@@ -51,3 +51,15 @@ func Lookup(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *a
 
 	return encoding.Must(enc.Encode(l))
 }
+
+func ByCategory(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+	collection := r.FormValue("collection")
+
+	apps, err := products.FindApplications(collection)
+	if err != nil {
+		apierror.GenerateError("Trouble finding vehicles.", err, w, r)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(apps))
+}

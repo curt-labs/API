@@ -1,11 +1,15 @@
 package products
 
 import (
+	"database/sql"
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"sort"
 	"strings"
+	"sync"
+	"time"
 
+	_ "github.com/go-sql-driver/mysql"
 	"gopkg.in/mgo.v2"
 )
 
@@ -13,12 +17,22 @@ const (
 	AriesDb = "aries"
 )
 
+var (
+	initMap     sync.Once
+	partMap     = make(map[int]BasicPart, 0)
+	partMapStmt = `select p.status, p.dateAdded, p.dateModified, p.shortDesc, p.oldPartNumber, p.partID, p.priceCode, pc.class, p.brandID
+                from Part as p
+                left join Class as pc on p.classID = pc.classID
+                where p.brandID = 3 && p.status in (800,900)`
+)
+
 type NoSqlVehicle struct {
-	Year  string `bson:"year" json:"year,omitempty" xml:"year, omitempty"`
-	Make  string `bson:"make" json:"make,omitempty" xml:"make, omitempty"`
-	Model string `bson:"model" json:"model,omitempty" xml:"model, omitempty"`
-	Style string `bson:"style" json:"style,omitempty" xml:"style, omitempty"`
-	Parts []Part `bson:"parts" json:"parts,omitempty" xml:"parts, omitempty"`
+	Year            string      `bson:"year" json:"year,omitempty" xml:"year, omitempty"`
+	Make            string      `bson:"make" json:"make,omitempty" xml:"make, omitempty"`
+	Model           string      `bson:"model" json:"model,omitempty" xml:"model, omitempty"`
+	Style           string      `bson:"style" json:"style,omitempty" xml:"style, omitempty"`
+	Parts           []BasicPart `bson:"-" json:"parts,omitempty" xml:"parts, omitempty"`
+	PartIdentifiers []int       `bson:"parts" json:"parts_ids" xml:"-"`
 }
 
 type NoSqlApp struct {
@@ -36,6 +50,25 @@ type NoSqlLookup struct {
 	Styles []string `json:"available_styles,omitempty" xml:"available_styles, omitempty"`
 	Parts  []Part   `json:"parts,omitempty" xml:"parts, omitempty"`
 	NoSqlVehicle
+}
+
+type BasicPart struct {
+	ID             int       `json:"id" xml:"id,attr"`
+	BrandID        int       `json:"brandId" xml:"brandId,attr"`
+	Status         int       `json:"status" xml:"status,attr"`
+	PriceCode      string    `json:"price_code" xml:"price_code,attr"`
+	Class          string    `json:"class" xml:"class,attr"`
+	DateModified   time.Time `json:"date_modified" xml:"date_modified,attr"`
+	DateAdded      time.Time `json:"date_added" xml:"date_added,attr"`
+	ShortDesc      string    `json:"short_description" xml:"short_description,attr"`
+	Featured       bool      `json:"featured,omitempty" xml:"featured,omitempty"`
+	AcesPartTypeID int       `json:"acesPartTypeId,omitempty" xml:"acesPartTypeId,omitempty"`
+	OldPartNumber  string    `json:"oldPartNumber,omitempty" xml:"oldPartNumber,omitempty"`
+	UPC            string    `json:"upc,omitempty" xml:"upc,omitempty"`
+}
+
+func initMaps() {
+	buildPartMap()
 }
 
 func GetAriesVehicleCollections() ([]string, error) {
@@ -167,4 +200,84 @@ func FindVehicles(v NoSqlVehicle, collection string, dtx *apicontext.DataContext
 	}
 
 	return l, err
+}
+
+func FindApplications(collection string) ([]NoSqlVehicle, error) {
+	initMap.Do(initMaps)
+
+	var apps []NoSqlVehicle
+	var err error
+
+	session, err := mgo.DialWithInfo(database.AriesMongoConnectionString())
+	if err != nil {
+		return apps, err
+	}
+	defer session.Close()
+
+	c := session.DB(AriesDb).C(collection)
+
+	err = c.Find(nil).Sort("-year", "make", "model", "style").All(&apps)
+
+	fulfilled := make([]NoSqlVehicle, 0)
+	for _, app := range apps {
+		for _, p := range app.PartIdentifiers {
+			if part, ok := partMap[p]; ok {
+				app.Parts = append(app.Parts, part)
+			}
+		}
+		if len(app.Parts) > 0 {
+			fulfilled = append(fulfilled, app)
+		}
+	}
+
+	return fulfilled, err
+}
+
+func buildPartMap() error {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	qry, err := db.Prepare(partMapStmt)
+	if err != nil {
+		return err
+	}
+	defer qry.Close()
+
+	rows, err := qry.Query()
+	if err != nil || rows == nil {
+		return err
+	}
+
+	for rows.Next() {
+		var p BasicPart
+		var priceCode, class *string
+		err = rows.Scan(
+			&p.Status,
+			&p.DateAdded,
+			&p.DateModified,
+			&p.ShortDesc,
+			&p.OldPartNumber,
+			&p.ID,
+			&priceCode,
+			&class,
+			&p.BrandID,
+		)
+		if err != nil {
+			continue
+		}
+		if priceCode != nil {
+			p.PriceCode = *priceCode
+		}
+		if class != nil {
+			p.Class = *class
+		}
+
+		partMap[p.ID] = p
+	}
+	rows.Close()
+
+	return nil
 }
