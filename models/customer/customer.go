@@ -700,6 +700,11 @@ func (c *Customer) GetUsers(key string) (err error) {
 					}
 				}
 			}
+			user.CustomerID = c.CustomerId
+			err = user.GetBrands()
+			if err != nil {
+				return
+			}
 
 			user.GetLocation()
 
