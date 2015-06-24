@@ -216,7 +216,7 @@ func FindApplications(collection string) ([]NoSqlVehicle, error) {
 
 	c := session.DB(AriesDb).C(collection)
 
-	err = c.Find(nil).Sort("-year", "make", "model", "style").All(&apps)
+	err = c.Find(nil).Sort("make", "model", "style", "-year").All(&apps)
 
 	fulfilled := make([]NoSqlVehicle, 0)
 	for _, app := range apps {
