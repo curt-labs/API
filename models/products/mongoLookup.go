@@ -202,8 +202,12 @@ func FindVehicles(v NoSqlVehicle, collection string, dtx *apicontext.DataContext
 	return l, err
 }
 
-func FindApplications(collection string) ([]NoSqlVehicle, error) {
+func FindApplications(collection string, skip, limit int) ([]NoSqlVehicle, error) {
 	initMap.Do(initMaps)
+
+	if limit == 0 || limit > 100 {
+		limit = 100
+	}
 
 	var apps []NoSqlVehicle
 	var err error
@@ -216,7 +220,7 @@ func FindApplications(collection string) ([]NoSqlVehicle, error) {
 
 	c := session.DB(AriesDb).C(collection)
 
-	err = c.Find(nil).Sort("make", "model", "style", "-year").All(&apps)
+	err = c.Find(nil).Sort("make", "model", "style", "-year").Skip(skip).Limit(limit).All(&apps)
 
 	fulfilled := make([]NoSqlVehicle, 0)
 	for _, app := range apps {

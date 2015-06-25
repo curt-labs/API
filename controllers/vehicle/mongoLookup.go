@@ -5,6 +5,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/models/products"
+	"strconv"
 
 	"net/http"
 )
@@ -54,8 +55,14 @@ func Lookup(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *a
 
 func ByCategory(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	collection := r.FormValue("collection")
+	page, _ := strconv.Atoi(r.FormValue("page"))
+	limit, _ := strconv.Atoi(r.FormValue("limit"))
+	var offset int
+	if page > 0 {
+		offset = (page-1)*limit + 1
+	}
 
-	apps, err := products.FindApplications(collection)
+	apps, err := products.FindApplications(collection, offset, limit)
 	if err != nil {
 		apierror.GenerateError("Trouble finding vehicles.", err, w, r)
 		return ""
