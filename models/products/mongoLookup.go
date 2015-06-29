@@ -19,11 +19,29 @@ const (
 
 var (
 	initMap     sync.Once
+	finishes    = make(map[string]string, 0)
+	colors      = make(map[string]string, 0)
 	partMap     = make(map[int]BasicPart, 0)
-	partMapStmt = `select p.status, p.dateAdded, p.dateModified, p.shortDesc, p.oldPartNumber, p.partID, p.priceCode, pc.class, p.brandID
-                from Part as p
-                left join Class as pc on p.classID = pc.classID
-                where p.brandID = 3 && p.status in (800,900)`
+	partMapStmt = `select p.status, p.dateAdded, p.dateModified, p.shortDesc, p.oldPartNumber, p.partID, p.priceCode, pc.class, p.brandID, c.catTitle, (
+						select group_concat(pa.value) from PartAttribute as pa
+						where pa.partID = p.partID && pa.field = 'Finish'
+					) as finish,
+					(
+						select group_concat(pa.value) from PartAttribute as pa
+						where pa.partID = p.partID && pa.field = 'Color'
+					) as color,
+					(
+						select group_concat(pa.value) from PartAttribute as pa
+						where pa.partID = p.partID && pa.field = 'Location'
+					) as location,
+					con.text as installSheet
+					from Part as p
+					left join Class as pc on p.classID = pc.classID
+					left join CatPart as cp on p.partID = cp.partID
+					left join Categories as c on cp.catID = c.catID
+					left join ContentBridge as cb on p.partID = cb.partID
+					left join Content as con on cb.contentID = con.contentID && con.cTypeID = 5
+					where p.brandID = 3 && p.status in (800,900)`
 )
 
 type NoSqlVehicle struct {
@@ -65,6 +83,17 @@ type BasicPart struct {
 	AcesPartTypeID int       `json:"acesPartTypeId,omitempty" xml:"acesPartTypeId,omitempty"`
 	OldPartNumber  string    `json:"oldPartNumber,omitempty" xml:"oldPartNumber,omitempty"`
 	UPC            string    `json:"upc,omitempty" xml:"upc,omitempty"`
+	Finish         string    `json:"finish"`
+	Color          string    `json:"color"`
+	Category       string    `json:"category"`
+	Location       string    `json:"location"`
+	InstallSheet   string    `json:"install_sheet"`
+}
+
+type Result struct {
+	Applications []NoSqlVehicle `json:"applications"`
+	Finishes     []string       `json:"finishes"`
+	Colors       []string       `json:"colors"`
 }
 
 func initMaps() {
@@ -202,11 +231,17 @@ func FindVehicles(v NoSqlVehicle, collection string, dtx *apicontext.DataContext
 	return l, err
 }
 
-func FindApplications(collection string, skip, limit int) ([]NoSqlVehicle, error) {
+func FindApplications(collection string, skip, limit int) (Result, error) {
 	initMap.Do(initMaps)
 
 	if limit == 0 || limit > 100 {
 		limit = 100
+	}
+
+	res := Result{
+		Applications: make([]NoSqlVehicle, 0),
+		Finishes:     make([]string, 0),
+		Colors:       make([]string, 0),
 	}
 
 	var apps []NoSqlVehicle
@@ -214,7 +249,7 @@ func FindApplications(collection string, skip, limit int) ([]NoSqlVehicle, error
 
 	session, err := mgo.DialWithInfo(database.AriesMongoConnectionString())
 	if err != nil {
-		return apps, err
+		return res, err
 	}
 	defer session.Close()
 
@@ -222,19 +257,31 @@ func FindApplications(collection string, skip, limit int) ([]NoSqlVehicle, error
 
 	err = c.Find(nil).Sort("make", "model", "style", "-year").Skip(skip).Limit(limit).All(&apps)
 
-	fulfilled := make([]NoSqlVehicle, 0)
+	existingFinishes := make(map[string]string, 0)
+	existingColors := make(map[string]string, 0)
 	for _, app := range apps {
 		for _, p := range app.PartIdentifiers {
 			if part, ok := partMap[p]; ok {
 				app.Parts = append(app.Parts, part)
+
+				_, ok := existingFinishes[part.Finish]
+				if part.Finish != "" && !ok {
+					res.Finishes = append(res.Finishes, part.Finish)
+					existingFinishes[part.Finish] = part.Finish
+				}
+				_, ok = existingColors[part.Color]
+				if part.Color != "" && !ok {
+					res.Colors = append(res.Colors, part.Color)
+					existingColors[part.Color] = part.Color
+				}
 			}
 		}
 		if len(app.Parts) > 0 {
-			fulfilled = append(fulfilled, app)
+			res.Applications = append(res.Applications, app)
 		}
 	}
 
-	return fulfilled, err
+	return res, err
 }
 
 func buildPartMap() error {
@@ -254,10 +301,11 @@ func buildPartMap() error {
 	if err != nil || rows == nil {
 		return err
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		var p BasicPart
-		var priceCode, class *string
+		var priceCode, cat, class, finish, color, location, install *string
 		err = rows.Scan(
 			&p.Status,
 			&p.DateAdded,
@@ -268,9 +316,17 @@ func buildPartMap() error {
 			&priceCode,
 			&class,
 			&p.BrandID,
+			&cat,
+			&finish,
+			&color,
+			&location,
+			&install,
 		)
 		if err != nil {
 			continue
+		}
+		if install != nil {
+			p.InstallSheet = *install
 		}
 		if priceCode != nil {
 			p.PriceCode = *priceCode
@@ -278,10 +334,27 @@ func buildPartMap() error {
 		if class != nil {
 			p.Class = *class
 		}
+		if cat != nil {
+			p.Category = *cat
+		}
+		if finish != nil {
+			p.Finish = *finish
+			if _, ok := finishes[p.Finish]; !ok {
+				finishes[p.Finish] = p.Finish
+			}
+		}
+		if color != nil {
+			p.Color = *color
+			if _, ok := colors[p.Color]; !ok {
+				colors[p.Color] = p.Color
+			}
+		}
+		if location != nil {
+			p.Location = *location
+		}
 
 		partMap[p.ID] = p
 	}
-	rows.Close()
 
 	return nil
 }

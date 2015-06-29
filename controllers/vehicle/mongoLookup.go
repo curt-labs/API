@@ -58,15 +58,19 @@ func ByCategory(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dt
 	page, _ := strconv.Atoi(r.FormValue("page"))
 	limit, _ := strconv.Atoi(r.FormValue("limit"))
 	var offset int
-	if page > 0 {
-		offset = (page-1)*limit + 1
+	if page == 0 {
+		offset = 0
+	} else if page == 1 {
+		offset = 101
+	} else {
+		offset = page*limit + 1
 	}
 
-	apps, err := products.FindApplications(collection, offset, limit)
+	res, err := products.FindApplications(collection, offset, limit)
 	if err != nil {
 		apierror.GenerateError("Trouble finding vehicles.", err, w, r)
 		return ""
 	}
 
-	return encoding.Must(enc.Encode(apps))
+	return encoding.Must(enc.Encode(res))
 }
