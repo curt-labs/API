@@ -4,24 +4,62 @@
 
 *Get Years*
 
-    GET - http://goapi.curtmfg.com/vehicle?key=[public api key]
+	POST - http://goapi.curtmfg.com/vehicle?key=[public api key]
+
+	Form Post Payload:
+		No additional form data required.
+
 
 *Get Makes*
 
-    GET - http://goapi.curtmfg.com/vehicle/<year>?key=[public api key]
+	POST - http://goapi.curtmfg.com/vehicle?key=[public api key]
+
+	Form Post Payload:
+
+		"year" : <year (string)>
+
 
 *Get Models*
 
-    GET - http://goapi.curtmfg.com/vehicle/<year>/<make>?key=[public api key]
+	POST - http://goapi.curtmfg.com/vehicle?key=[public api key]
+
+	Form Post Payload:
+
+		"year" : <Vehicle Year (string)>,
+		"make"  : <Vehicle Make  (string)>
 
 *Get SubModels*
 
-    GET - http://goapi.curtmfg.com/vehicle/<year>/<make>/<model>?key=[public api key]
+	POST - http://goapi.curtmfg.com/vehicle?key=[public api key]
+
+	Form Post Payload:
+
+		"year" : <Vehicle Year (string)>,
+		"make"  : <Vehicle Make  (string)>,
+		"model"  : <Vehicle Model (string)>
+
 
 *Get Dynamic Configuration Option*
 
-    GET - http://goapi.curtmfg.com/vehicle/<year>/<make>/<model>/<submodel>?key=[public api key]
+	POST - http://goapi.curtmfg.com/vehicle?key=[public api key]
+
+	Form Post Payload:
+
+		"year" : <Vehicle Year (string)>,
+		"make"  : <Vehicle Make  (string)>,
+		"model"  : <Vehicle Model (string)>,
+		"submodel" : <Vehicle Sub Model (string)>
 
 *Get Next Dynamic Configuration Option*
 
-    GET - http://goapi.curtmfg.com/vehicle/<year>/<make>/<model>/<submodel>/<configuration>?key=[public api key]
+	POST - http://goapi.curtmfg.com/vehicle?key=[public api key]
+
+	Form Post Payload:
+
+		"year" : <Vehicle Year (string)>,
+		"make"  : <Vehicle Make  (string)>,
+		"model"  : <Vehicle Model (string)>,
+		"submodel" : <Vehicle Sub Model (string)>,
+		"[config type]" : <Vehicle Config Option (string)>
+
+	*Note: Each new selected config type is its own key/value.*
