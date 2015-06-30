@@ -11,6 +11,11 @@ import (
 	"strings"
 )
 
+type ErrorResp struct {
+	ConversionErrs []error `json:"conversion_errors" xml:"conversion_errors"`
+	InsertErrs     []error `json:"insert_errors" xml:"insert_errors"`
+}
+
 //requires the "Consolidated App Guides" that MJ produces in Excel
 //intended to be a short term solution until Aries-Curt data merge is complete
 //powers the Godzilla application
@@ -39,12 +44,16 @@ func ImportCsv(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx
 
 	collectionName := header.Filename
 
-	err = products.Import(file, collectionName)
+	conversionErrs, insertErrs, err := products.Import(file, collectionName)
 	if err != nil {
 		apierror.GenerateError("Error importing", err, w, r)
 		return ""
 	}
 
-	return encoding.Must(enc.Encode("end"))
+	errResp := ErrorResp{
+		ConversionErrs: conversionErrs,
+		InsertErrs:     insertErrs,
+	}
 
+	return encoding.Must(enc.Encode(errResp))
 }

@@ -35,31 +35,35 @@ var (
 	inf                 = database.AriesMongoConnectionString()
 )
 
-func Import(f multipart.File, collectionName string) error {
+func Import(f multipart.File, collectionName string) ([]error, []error, error) {
 	var err error
+	var conversionErrs []error
+	var insertErrs []error
 	VehicleApplications = make(map[string]Application)
 	PartConversion = make(map[string]int)
 	Session, err = mgo.DialWithInfo(inf)
 	es, err := CaptureCsv(f)
 	if err != nil {
-		return err
+		return conversionErrs, insertErrs, err
 	}
 
 	for _, e := range es {
-		if err := ConvertToApplication(e); err != nil {
-			log.Printf("Conversion Error: %s\n", err.Error())
+		if cerr := ConvertToApplication(e); cerr != nil {
+			conversionErrs = append(conversionErrs, cerr)
+			continue
 		}
 	}
 
 	_ = ClearCollection(collectionName)
 
 	for _, app := range VehicleApplications {
-		if err := IntoDB(app, collectionName); err != nil {
-			log.Println("ERR", err)
+		if ierr := IntoDB(app, collectionName); ierr != nil {
+			insertErrs = append(insertErrs, ierr)
+			continue
 		}
 	}
 
-	return err
+	return conversionErrs, insertErrs, err
 }
 
 //Csv to Struct
