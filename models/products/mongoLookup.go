@@ -11,6 +11,7 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 )
 
 const (
@@ -45,12 +46,13 @@ var (
 )
 
 type NoSqlVehicle struct {
-	Year            string      `bson:"year" json:"year,omitempty" xml:"year, omitempty"`
-	Make            string      `bson:"make" json:"make,omitempty" xml:"make, omitempty"`
-	Model           string      `bson:"model" json:"model,omitempty" xml:"model, omitempty"`
-	Style           string      `bson:"style" json:"style,omitempty" xml:"style, omitempty"`
-	Parts           []BasicPart `bson:"-" json:"parts,omitempty" xml:"parts, omitempty"`
-	PartIdentifiers []int       `bson:"parts" json:"parts_ids" xml:"-"`
+	ID              bson.ObjectId `bson:"_id" json:"_id" xml:"_id"`
+	Year            string        `bson:"year" json:"year,omitempty" xml:"year, omitempty"`
+	Make            string        `bson:"make" json:"make,omitempty" xml:"make, omitempty"`
+	Model           string        `bson:"model" json:"model,omitempty" xml:"model, omitempty"`
+	Style           string        `bson:"style" json:"style,omitempty" xml:"style, omitempty"`
+	Parts           []BasicPart   `bson:"-" json:"parts,omitempty" xml:"parts, omitempty"`
+	PartIdentifiers []int         `bson:"parts" json:"parts_ids" xml:"-"`
 }
 
 type NoSqlApp struct {

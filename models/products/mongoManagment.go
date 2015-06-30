@@ -1,23 +1,19 @@
 package products
 
-// import (
-// 	"encoding/csv"
-// 	"fmt"
-// 	"log"
-// 	"mime/multipart"
-// 	"strings"
+import (
+	"github.com/curt-labs/GoAPI/helpers/database"
+	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
+)
 
-// 	"github.com/curt-labs/GoAPI/helpers/database"
-// 	"gopkg.in/mgo.v2"
-// )
+func GetAllCollectionApplications(collection string) ([]NoSqlVehicle, error) {
+	var apps []NoSqlVehicle
+	session, err := mgo.DialWithInfo(database.AriesMongoConnectionString())
+	if err != nil {
+		return apps, err
+	}
+	defer session.Close()
 
-// func GetCollections() ([]string, error) {
-// 	session, err := mgo.DialWithInfo(database.AriesMongoConnectionString())
-// 	if err != nil {
-// 		return
-// 	}
-// 	defer session.Close()
-
-// 	return session.DB(database.AriesMongoConnectionString().Database).CollectionNames()
-
-// }
+	err = session.DB(database.AriesMongoConnectionString().Database).C(collection).Find(bson.M{}).All(&apps)
+	return apps, err
+}
