@@ -36,6 +36,7 @@ func Query(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *ap
 	qs.Del("count")
 
 	l.Vehicle = LoadVehicle(r)
+
 	l.Brands = dtx.BrandArray
 
 	if qs.Get("key") != "" {
@@ -50,14 +51,17 @@ func Query(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *ap
 	if l.Vehicle.Base.Year == 0 { // Get Years
 		if err := l.GetYears(dtx); err != nil {
 			apierror.GenerateError("Trouble getting years for vehicle lookup", err, w, r)
+			return ""
 		}
 	} else if l.Vehicle.Base.Make == "" { // Get Makes
 		if err := l.GetMakes(dtx); err != nil {
 			apierror.GenerateError("Trouble getting makes for vehicle lookup", err, w, r)
+			return ""
 		}
 	} else if l.Vehicle.Base.Model == "" { // Get Models
 		if err := l.GetModels(); err != nil {
 			apierror.GenerateError("Trouble getting models for vehicle lookup", err, w, r)
+			return ""
 		}
 	} else {
 
@@ -68,10 +72,12 @@ func Query(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *ap
 		if l.Vehicle.Submodel == "" { // Get Submodels
 			if err := l.GetSubmodels(); err != nil {
 				apierror.GenerateError("Trouble getting submodels for vehicle lookup", err, w, r)
+				return ""
 			}
 		} else { // Get configurations
 			if err := l.GetConfigurations(); err != nil {
 				apierror.GenerateError("Trouble getting configurations for vehicle lookup", err, w, r)
+				return ""
 			}
 		}
 
