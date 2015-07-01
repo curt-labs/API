@@ -107,14 +107,14 @@ func SaveLocation(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder,
 	}
 
 	if latitude != "" {
-		if cl.Latitude, err = strconv.ParseFloat(latitude, 64); err != nil {
-			cl.Latitude = 0
+		if cl.Coordinates.Latitude, err = strconv.ParseFloat(latitude, 64); err != nil {
+			cl.Coordinates.Latitude = 0
 		}
 	}
 
 	if longitude != "" {
-		if cl.Longitude, err = strconv.ParseFloat(longitude, 64); err != nil {
-			cl.Longitude = 0
+		if cl.Coordinates.Longitude, err = strconv.ParseFloat(longitude, 64); err != nil {
+			cl.Coordinates.Longitude = 0
 		}
 	}
 
