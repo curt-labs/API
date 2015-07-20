@@ -20,6 +20,11 @@ import (
 	"strings"
 )
 
+type Coordinates struct {
+	Latitude  float64 `json:"latitude" xml:"latitude"`
+	Longitude float64 `json:"longitude" xml:"longitude"`
+}
+
 type Customer struct {
 	Id                  int                 `json:"id,omitempty" xml:"id,omitempty"`
 	Name                string              `json:"name,omitempty" xml:"name,omitempty"`
@@ -32,8 +37,8 @@ type Customer struct {
 	Phone               string              `json:"phone,omitempty" xml:"phone,omitempty"`
 	Fax                 string              `json:"fax,omitempty" xml:"fax,omitempty"`
 	ContactPerson       string              `json:"contactPerson,omitempty" xml:"contactPerson,omitempty"`
-	Latitude            float64             `json:"latitude,omitempty" xml:"latitude,omitempty"`
-	Longitude           float64             `json:"longitude,omitempty" xml:"longitude,omitempty"`
+	Latitude            float64             `json:"coords,latitude,omitempty" xml:"latitude,omitempty"`
+	Longitude           float64             `json:"coords,longitude,omitempty" xml:"longitude,omitempty"`
 	Website             url.URL             `json:"website,omitempty" xml:"website,omitempty"`
 	Parent              *Customer           `json:"parent,omitempty" xml:"parent,omitempty"`
 	SearchUrl           url.URL             `json:"searchUrl,omitempty" xml:"searchUrl,omitempty"`
@@ -74,8 +79,7 @@ type CustomerLocation struct {
 	State           geography.State `json:"state,omitempty" xml:"state,omitempty"`
 	Phone           string          `json:"phone,omitempty" xml:"phone,omitempty"`
 	Fax             string          `json:"fax,omitempty" xml:"fax,omitempty"`
-	Latitude        float64         `json:"latitude,omitempty" xml:"latitude,omitempty"`
-	Longitude       float64         `json:"longitude,omitempty" xml:"longitude,omitempty"`
+	Coordinates     Coordinates     `json:"coords,omitempty" xml:"coords,omitempty"`
 	CustomerId      int             `json:"customerId,omitempty" xml:"customerId,omitempty"`
 	ContactPerson   string          `json:"contactPerson,omitempty" xml:"contactPerson,omitempty"`
 	IsPrimary       bool            `json:"isPrimary,omitempty" xml:"isPrimary,omitempty"`
@@ -127,7 +131,7 @@ type MapixCode struct {
 }
 
 type DealerLocation struct {
-	CustomerLocation    CustomerLocation    `json:"id,omitempty" xml:"id,omitempty"`
+	CustomerLocation
 	Distance            float64             `json:"distance,omitempty" xml:"distance,omitempty"`
 	Website             url.URL             `json:"website,omitempty" xml:"website,omitempty"`
 	Parent              *Customer           `json:"parent,omitempty" xml:"parent,omitempty"`
@@ -166,7 +170,7 @@ const (
 	salesRepFields         = ` IFNULL(sr.name, ""), IFNULL(sr.code, "") `
 	customerLocationFields = ` cl.locationID, cl.name, cl.address, cl.city, cl.stateID,  cl.email, cl.phone, cl.fax,
 							cl.latitude, cl.longitude, cl.cust_id, cl.contact_person, cl.isprimary, cl.postalCode, cl.ShippingDefault `
-	showSiteFields = ` c.showWebsite, c.website, c.eLocalURL `
+	showSiteFields = ` c.showWebsite, c.website, c.elocalurl `
 
 	//redis
 	custPrefix = "customer:"
@@ -234,31 +238,40 @@ var (
 				&& a.api_key = ? && (ctb.brandID = ? or 0 = ?)
 				order by c.name`
 
-	localDealers = `select ` + customerLocationFields + `, ` + stateFields + `, ` + countryFields + `, ` + dealerTypeFields + `, ` + dealerTierFields + `, ` + mapIconFields + `, ` + mapixCodeFields + `, ` + salesRepFields + ` ,` + showSiteFields + `
-						from CustomerLocations as cl
-						join Customer as c on cl.cust_id = c.cust_id
-						join DealerTypes as dt on c.dealer_type = dt.dealer_type
-						left join MapIcons as mi on dt.dealer_type = mi.dealer_type
-						join DealerTiers as dtr on c.tier = dtr.ID
-						left join States as s on cl.stateID = s.stateID
-						left join Country as cty on s.countryID = cty.countryID
-						left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
-						left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
-						where dt.online = 0 && c.isDummy = 0 && dt.show = 1 && dtr.ID = mi.tier &&
-						( ? * (
-							2 * ATAN2(
-								SQRT((SIN(((cl.latitude - ?) * (PI() / 180)) / 2) * SIN(((cl.latitude - ?) * (PI() / 180)) / 2)) + ((SIN(((cl.longitude - ?) * (PI() / 180)) / 2)) * (SIN(((cl.longitude - ?) * (PI() / 180)) / 2))) * COS(? * (PI() / 180)) * COS(cl.latitude * (PI() / 180))),
-								SQRT(1 - ((SIN(((cl.latitude - ?) * (PI() / 180)) / 2) * SIN(((cl.latitude - ?) * (PI() / 180)) / 2)) + ((SIN(((cl.longitude - ?) * (PI() / 180)) / 2)) * (SIN(((cl.longitude - ?) * (PI() / 180)) / 2))) * COS(? * (PI() / 180)) * COS(cl.latitude * (PI() / 180))))
-							)
-						) < ?)
-						&& (
-							(cl.latitude >= ? && cl.latitude <= ?)
-							&&
-							(cl.longitude >= ? && cl.longitude <= ?)
-							||
-							(cl.longitude >= ? && cl.longitude <= ?)
-						)
-						group by cl.locationID`
+	localDealers = `select 
+					` + customerLocationFields + `, 
+					` + stateFields + `, 
+					` + countryFields + `, 
+					` + dealerTypeFields + `, 
+					` + dealerTierFields + `, 
+					` + mapIconFields + `, 
+					` + mapixCodeFields + `, 
+					` + salesRepFields + ` ,
+					` + showSiteFields + `,( 
+						? * acos( 
+							cos( 
+								radians(?) ) * cos( radians( cl.latitude ) 
+							) * cos( 
+								radians( cl.longitude ) - radians(?) 
+							) + sin( 
+								radians(?) 
+							) * sin( 
+								radians( cl.latitude ) 
+							) 
+						) 
+					) as distance
+					from CustomerLocations as cl
+					join Customer as c on cl.cust_id = c.cust_id
+					join DealerTypes as dt on c.dealer_type = dt.dealer_type
+					left join MapIcons as mi on dt.dealer_type = mi.dealer_type
+					join DealerTiers as dtr on c.tier = dtr.ID
+					left join States as s on cl.stateID = s.stateID
+					left join Country as cty on s.countryID = cty.countryID
+					left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
+					left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
+					where dt.online = 0 && c.isDummy = 0 && dt.show = 1 && dtr.ID = mi.tier 
+					having distance < ?
+					limit ?,?`
 
 	polygon = `select s.stateID, s.state, s.abbr,
 					(
@@ -838,7 +851,13 @@ func GetEtailers(dtx *apicontext.DataContext) (dealers []Customer, err error) {
 	return dealers, err
 }
 
-func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, err error) {
+func GetLocalDealers(latlng string, distance int, skip int, count int) (dealers []DealerLocation, err error) {
+	if distance == 0 {
+		distance = 100
+	}
+	if count == 0 {
+		count = 100
+	}
 
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -851,92 +870,21 @@ func GetLocalDealers(center string, latlng string) (dealers []DealerLocation, er
 		return dealers, err
 	}
 
-	var latlngs []string
-	var center_latlngs []string
-
-	clat := api_helpers.CENTER_LATITUDE
-	clong := api_helpers.CENTER_LONGITUDE
-	swlat := api_helpers.SOUTWEST_LATITUDE
-	swlong := api_helpers.SOUTHWEST_LONGITUDE
-	swlong2 := api_helpers.SOUTHWEST_LONGITUDE
-	nelat := api_helpers.NORTHEAST_LATITUDE
-	nelong := api_helpers.NORTHEAST_LONGITUDE
-	nelong2 := api_helpers.NORTHEAST_LONGITUDE
-
-	// Get the center point
-	if center != "" {
-		center_latlngs = strings.Split(center, ",")
-		if len(center_latlngs) == 2 {
-			center_lat, err := strconv.ParseFloat(center_latlngs[0], 64)
-			if err == nil {
-				center_lon, err := strconv.ParseFloat(center_latlngs[1], 64)
-				if err == nil {
-					clat = center_lat
-					clong = center_lon
-				}
-			}
-		}
-	}
+	var latitude string
+	var longitude string
 
 	// Get the boundary points
 	if latlng != "" {
-		latlngs = strings.Split(latlng, ",")
-		if len(latlngs) == 4 {
-			sw_lat, err := strconv.ParseFloat(latlngs[0], 64)
-			if err == nil {
-				sw_lon, err := strconv.ParseFloat(latlngs[1], 64)
-				if err == nil {
-					ne_lat, err := strconv.ParseFloat(latlngs[2], 64)
-					if err == nil {
-						ne_lon, err := strconv.ParseFloat(latlngs[3], 64)
-						if err == nil {
-							swlat = sw_lat
-							swlong = sw_lon
-							swlong2 = sw_lon
-							nelat = ne_lat
-							nelong = ne_lon
-							nelong2 = ne_lon
-						}
-					}
-				}
-			}
+		latlngs := strings.Split(latlng, ",")
+		if len(latlngs) != 2 {
+			err = fmt.Errorf("%s", "failed to parse the latitude and longitude")
+			return
 		}
+		latitude = latlngs[0]
+		longitude = latlngs[1]
 	}
 
-	if swlong > nelong {
-		swlong = -180
-		nelong2 = 180
-	}
-
-	distance_a := getViewPortWidth(swlat, swlong, clat, clong)
-	distance_b := getViewPortWidth(nelat, nelong2, clat, clong)
-
-	view_distance := distance_b
-	if distance_a > distance_b {
-		view_distance = distance_a
-	}
-
-	params := []interface{}{ //all are float64 type
-
-		api_helpers.EARTH,
-		clat,
-		clat,
-		clong,
-		clong,
-		clat,
-		clat,
-		clat,
-		clong,
-		clong,
-		clat,
-		view_distance,
-		swlat,
-		nelat,
-		swlong,
-		nelong,
-		swlong2,
-		nelong2}
-	res, err := stmt.Query(params...)
+	res, err := stmt.Query(api_helpers.EARTH, latitude, longitude, latitude, strconv.Itoa(distance), skip, count)
 	if err != nil {
 		return dealers, err
 	}
@@ -1689,10 +1637,10 @@ func ScanLocation(res Scanner) (*CustomerLocation, error) {
 		l.Fax = *fax
 	}
 	if lat != nil {
-		l.Latitude = *lat
+		l.Coordinates.Latitude = *lat
 	}
 	if lon != nil {
-		l.Longitude = *lon
+		l.Coordinates.Longitude = *lon
 	}
 	if custId != nil {
 		l.CustomerId = *custId
@@ -1732,7 +1680,7 @@ func ScanDealerLocation(res Scanner) (*DealerLocation, error) {
 	var l DealerLocation
 	var err error
 	var name, email, address, city, phone, fax, contactPerson, state, stateAbbr, country, countryAbbr, postalCode, mapixCode, mapixDesc, rep, repCode, dtypeType, dtypeLabel, dtierTier *string
-	var lat, lon *float64
+	var lat, lon, distance *float64
 	var icon, shadow, eLocal, web *[]byte
 	var custId, stateId, countryId, dtierSort *int
 	var isPrimary, shippingDefault, dtypeOnline, dtypeShow, showWebsite *bool
@@ -1774,6 +1722,7 @@ func ScanDealerLocation(res Scanner) (*DealerLocation, error) {
 		&showWebsite,
 		&eLocal,
 		&web,
+		&distance,
 	)
 	if err != nil {
 		return &l, err
@@ -1800,10 +1749,10 @@ func ScanDealerLocation(res Scanner) (*DealerLocation, error) {
 		l.CustomerLocation.Fax = *fax
 	}
 	if lat != nil {
-		l.CustomerLocation.Latitude = *lat
+		l.CustomerLocation.Coordinates.Latitude = *lat
 	}
 	if lon != nil {
-		l.CustomerLocation.Longitude = *lon
+		l.CustomerLocation.Coordinates.Longitude = *lon
 	}
 	if custId != nil {
 		l.CustomerLocation.CustomerId = *custId
@@ -1879,6 +1828,9 @@ func ScanDealerLocation(res Scanner) (*DealerLocation, error) {
 	}
 	if web != nil {
 		l.CustomerLocation.Website, err = conversions.ByteToUrl(*web)
+	}
+	if distance != nil {
+		l.Distance = *distance
 	}
 
 	l.CustomerLocation.State.Country = &coun

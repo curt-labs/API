@@ -44,13 +44,8 @@ func GetLocalDealers(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 	if latlng == "" {
 		latlng = qs.Get("latlng")
 	}
-	// Get the center
-	center := params["center"]
-	if center == "" {
-		center = qs.Get("center")
-	}
 
-	dealerLocations, err := customer.GetLocalDealers(center, latlng)
+	dealerLocations, err := customer.GetLocalDealers(latlng, 100, 0, 50)
 	if err != nil {
 		apierror.GenerateError("Error retrieving locations.", err, w, r)
 	}
