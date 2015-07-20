@@ -7,6 +7,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
+	"github.com/curt-labs/GoAPI/models/brand"
 	"github.com/curt-labs/GoAPI/models/geography"
 	_ "github.com/go-sql-driver/mysql"
 
@@ -441,6 +442,32 @@ func (c *Customer) Basics(key string) (err error) {
 	}
 	defer stmt.Close()
 	return c.ScanCustomer(stmt.QueryRow(c.Id), key)
+}
+
+func (c *Customer) GetCustomerBrands() error {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(getCustomerUserBrands)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	res, err := stmt.Query(c.Id)
+	if err != nil {
+		return err
+	}
+	var b brand.Brand
+	for res.Next() {
+		err = res.Scan(&b.ID, &b.Name, &b.Code)
+		if err != nil {
+			return err
+		}
+		c.BrandIDs = append(c.BrandIDs, b.ID)
+	}
+	return err
 }
 
 func (c *Customer) GetLocations() (err error) {

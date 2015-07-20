@@ -514,6 +514,7 @@ func (u CustomerUser) GetCustomer(key string) (c Customer, err error) {
 	}
 
 	locChan := make(chan error)
+	brandChan := make(chan error)
 	go func() {
 		locChan <- c.GetLocations()
 	}()
@@ -524,7 +525,12 @@ func (u CustomerUser) GetCustomer(key string) (c Customer, err error) {
 		c.Users = append(c.Users, u)
 	}
 
+	go func() {
+		brandChan <- c.GetCustomerBrands()
+	}()
+
 	<-locChan
+	<-brandChan
 
 	return
 }
