@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
+
 	// "github.com/curt-labs/GoAPI/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -176,12 +177,14 @@ func (m *Menu) GetContents() (err error) {
 	if err != nil {
 		return err
 	}
+
 	defer db.Close()
 	stmt, err := db.Prepare(getMenuContents)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
+
 	res, err := stmt.Query(m.Id)
 	var cType, title, mTitle, mDesc, slug, canon, menTitle, mLink *string
 
@@ -259,6 +262,7 @@ func (m *Menu) Create() (err error) {
 	if err != nil {
 		return err
 	}
+
 	defer db.Close()
 	tx, err := db.Begin()
 	stmt, err := tx.Prepare(createMenu)

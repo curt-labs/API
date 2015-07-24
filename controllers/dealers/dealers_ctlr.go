@@ -45,7 +45,12 @@ func GetLocalDealers(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 		latlng = qs.Get("latlng")
 	}
 
-	dealerLocations, err := customer.GetLocalDealers(latlng, 100, 0, 50)
+	var distance int
+	if qs.Get("distince") != "" {
+		distance, _ = strconv.Atoi(qs.Get("distance"))
+	}
+
+	dealerLocations, err := customer.GetLocalDealers(latlng, distance, 0, 50)
 	if err != nil {
 		apierror.GenerateError("Error retrieving locations.", err, w, r)
 	}

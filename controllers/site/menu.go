@@ -55,20 +55,22 @@ func GetMenuWithContents(rw http.ResponseWriter, req *http.Request, enc encoding
 		//Thar be an Id int
 		m.Id = id
 		err = m.Get(dtx)
-		if err != nil {
-			apierror.GenerateError("Trouble getting site menu", err, rw, req)
-		}
+
 	} else {
 		//Thar be a name
 		m.Name = idStr
 		err = m.GetByName(dtx)
-		if err != nil {
-			apierror.GenerateError("Trouble getting site menu", err, rw, req)
-		}
 	}
+
+	if err != nil {
+		apierror.GenerateError("Trouble getting site menu", err, rw, req)
+		return ""
+	}
+
 	err = m.GetContents()
 	if err != nil {
 		apierror.GenerateError("Trouble getting site menu with contents", err, rw, req)
+		return ""
 	}
 
 	return encoding.Must(enc.Encode(m))
