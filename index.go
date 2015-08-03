@@ -475,6 +475,7 @@ func main() {
 		r.Post("/channel/type", videos_ctlr.SaveChannelType)
 		r.Delete("/channel/type/:id", videos_ctlr.DeleteChannelType)
 		r.Get("/channel", videos_ctlr.GetAllChannels)
+		r.Get("/channels", videos_ctlr.GetAllChannels)
 		r.Get("/channel/:id", videos_ctlr.GetChannel)
 		r.Post("/channel/:id", videos_ctlr.SaveChannel)
 		r.Post("/channel", videos_ctlr.SaveChannel)
