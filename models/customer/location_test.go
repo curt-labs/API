@@ -26,8 +26,8 @@ func TestCustomerLocations(t *testing.T) {
 			l.Email = "Tes"
 			l.Fax = "Tes"
 			l.Phone = "Tes"
-			l.Latitude = 44.913687
-			l.Longitude = -91.89981
+			l.Coordinates.Latitude = 44.913687
+			l.Coordinates.Longitude = -91.89981
 			l.CustomerId = MockedDTX.CustomerID
 			l.ContactPerson = "Tes"
 			l.IsPrimary = true

@@ -126,9 +126,8 @@ func TestCustomerModel(t *testing.T) {
 		})
 		Convey("Testing GetLocalDealers()", func() {
 			var err error
-			latlng := "43.853282,-95.571675,45.800981,-90.468526&"
 			center := "44.83536,-93.0201"
-			dealers, err := GetLocalDealers(center, latlng)
+			dealers, err := GetLocalDealers(center, 100, 0, 100)
 			So(err, ShouldBeNil)
 			So(dealers, ShouldHaveSameTypeAs, []DealerLocation{})
 		})

@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/csv"
 	"fmt"
-	"log"
 	"mime/multipart"
 	"strings"
 
@@ -80,7 +79,6 @@ func CaptureCsv(f multipart.File) ([]Input, error) {
 
 	for _, line := range lines {
 		if len(line) < 5 {
-			log.Println(line)
 			continue
 		}
 		e = Input{

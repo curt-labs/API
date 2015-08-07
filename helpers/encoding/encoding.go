@@ -16,7 +16,6 @@ type Encoder interface {
 
 func Must(data string, err error) string {
 	if err != nil {
-		// http.Error(w, err.Error(), http.StatusUnsupportedMediaType)
 		return ""
 	}
 
@@ -34,6 +33,7 @@ func (_ JsonEncoder) Encode(v ...interface{}) (string, error) {
 	} else if len(v) == 1 {
 		data = v[0]
 	}
+
 	b, err := json.Marshal(data)
 	return string(b), err
 }

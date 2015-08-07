@@ -4,6 +4,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/error"
+	"github.com/curt-labs/GoAPI/models/brand"
 	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/go-martini/martini"
 
@@ -252,7 +253,8 @@ func RegisterUser(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 	user.Sudo = isSudo
 	user.Current = notCustomer
 
-	if err = user.GetBrands(); err != nil {
+	user.Brands, err = brand.GetUserBrands(cust_ID)
+	if err != nil {
 		apierror.GenerateError("Trouble getting user brands.", err, rw, r)
 		return ""
 	}
@@ -261,7 +263,6 @@ func RegisterUser(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 		brandIds = append(brandIds, brand.ID)
 	}
 
-	// cu, err := user.Register(pass, customerID, isActive, locationID, isSudo, cust_ID, notCustomer)
 	if err = user.Create(brandIds); err != nil {
 		apierror.GenerateError("Trouble registering new customer user", err, rw, r)
 		return ""

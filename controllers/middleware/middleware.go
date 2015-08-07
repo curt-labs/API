@@ -11,7 +11,6 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/helpers/nsq"
-	"github.com/curt-labs/GoAPI/helpers/slack"
 	"github.com/curt-labs/GoAPI/models/cart"
 	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/go-martini/martini"
@@ -169,7 +168,7 @@ func processDataContext(r *http.Request, c martini.Context) (*apicontext.DataCon
 	if err != nil || user.Id == "" {
 		return nil, errors.New("No User for this API Key.")
 	}
-	go user.LogApiRequest(r)
+	// go user.LogApiRequest(r)
 
 	//handles branding
 	var brandID int
@@ -214,7 +213,6 @@ func processDataContext(r *http.Request, c martini.Context) (*apicontext.DataCon
 }
 
 func logRequest(r *http.Request, reqTime time.Duration) {
-	client := analytics.New("oactr73lbg")
 
 	key := r.Header.Get("key")
 	if key == "" {
@@ -231,33 +229,23 @@ func logRequest(r *http.Request, reqTime time.Duration) {
 	}
 
 	vals := r.URL.Query()
-	props := make(map[string]interface{}, 0)
-	for k, v := range vals {
-		props[k] = v
-	}
-
-	props["method"] = r.Method
-	props["header"] = r.Header
-	props["query"] = r.URL.Query().Encode()
-	props["referer"] = r.Referer()
-	props["userAgent"] = r.UserAgent()
-	props["form"] = r.Form
-	props["requestTime"] = int64((reqTime.Nanoseconds() * 1000) * 1000)
-
-	tracker := &analytics.Track{
+	trkr := analytics.Track{
 		Event:      r.URL.String(),
 		UserId:     key,
-		Properties: props,
+		Properties: make(map[string]interface{}, 0),
 	}
 
-	go nsq.Push("goapi_analytics", tracker)
-
-	if err := client.Track(tracker); err != nil {
-		m := slack.Message{
-			Channel:  "debugging",
-			Username: "GoAPI",
-			Text:     err.Error(),
-		}
-		m.Send()
+	for k, v := range vals {
+		trkr.Properties[k] = v
 	}
+
+	trkr.Properties["method"] = r.Method
+	trkr.Properties["header"] = r.Header
+	trkr.Properties["query"] = r.URL.Query().Encode()
+	trkr.Properties["referer"] = r.Referer()
+	trkr.Properties["userAgent"] = r.UserAgent()
+	trkr.Properties["form"] = r.Form
+	trkr.Properties["requestTime"] = int64((reqTime.Nanoseconds() * 1000) * 1000)
+
+	go nsq.Push("goapi_analytics", &trkr)
 }
