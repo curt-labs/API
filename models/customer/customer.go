@@ -10,7 +10,6 @@ import (
 	"github.com/curt-labs/GoAPI/models/brand"
 	"github.com/curt-labs/GoAPI/models/geography"
 	_ "github.com/go-sql-driver/mysql"
-	"log"
 
 	"database/sql"
 	"encoding/json"
@@ -1687,7 +1686,6 @@ func ScanDealerLocation(res *sql.Rows, count int) (*DealerLocation, error) {
 
 	err = res.Scan(scanArgs...)
 	if err != nil {
-		log.Println(err)
 		return &l, err
 	}
 
