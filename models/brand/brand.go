@@ -21,8 +21,13 @@ var (
 								join CustomerToBrand as ctb on ctb.BrandID = b.ID
 								join Customer as c on c.cust_id = ctb.cust_id
 								where c.cust_id = ?`
-	getAllWebsitesStmt   = `select ID, url, description, brandID from Website order by brandID, ID`
-	getBrandWebsitesStmt = `select ID, url, description, brandID from Website where brandID = ? order by ID`
+	getAllWebsitesStmt = `select w.ID, w.description, w.url, wb.brandID from Website as w
+							join WebsiteToBrand as wb on w.ID = wb.WebsiteID
+							order by wb.brandID, w.ID`
+	getBrandWebsitesStmt = `select w.ID, w.description, w.url, wb.brandID from Website as w
+							join WebsiteToBrand as wb on w.ID = wb.WebsiteID
+							where wb.brandID = ?
+							order by w.ID`
 )
 
 type Brands []Brand
