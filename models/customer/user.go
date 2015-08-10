@@ -34,6 +34,7 @@ type CustomerUser struct {
 	Location           CustomerLocation `json:"location" xml:"location"`
 	Sudo               bool             `json:"sudo" xml:"sudo,attr"`
 	CustomerID         int              `json:"customerId,omitempty" xml:"customerId,omitempty"`
+	CustID             int              `json:"-" xml:"-"`
 	Current            bool             `json:"current" xml:"current,attr"`
 	NotCustomer        bool             `json:"notCustomer" xml:"notCustomer,attr"`
 	PasswordConversion bool             `json:"passwordConversion,omitempty" xml:"passwordConversion,omitempty"`
@@ -69,10 +70,10 @@ var (
 								where cu.email = ? && cu.password = ?
 								limit 1`
 
-	customerUserAuth = `select cu.id, cu.name, cu.email, cu.password, cu.customerID, cu.date_added, cu.active,cu.locationID, cu.isSudo, cu.cust_ID, cu.passwordConverted from CustomerUser as cu
-							where email = ?
-							&& active = 1
-							limit 1`
+	customerUserAuth = `select cu.id, cu.name, cu.email, cu.password, cu.customerID, cu.date_added, cu.active,cu.locationID, cu.isSudo, cu.cust_ID, cu.passwordConverted 
+						from CustomerUser as cu
+						where email = ? && active = 1
+						limit 1`
 	getUserPassword        = `SELECT password, COUNT(password) AS quantity from CustomerUser where email = ?`
 	updateCustomerUserPass = `update CustomerUser set password = ?, passwordConverted = 1
 								where id = ? && active = 1`
@@ -148,11 +149,6 @@ var (
 								left join Country as cun on s.countryID = cun.countryID
 								where cu.id = ?
 								limit 1`
-	getCustomerUserBrands = `select b.ID, b.name, b.code 
-							from Brand as b
-							join CustomerToBrand as ctb on ctb.BrandID = b.ID
-							join Customer as c on c.cust_id = ctb.cust_id
-							where c.cust_id = ?`
 
 	updateCustomerUser   = `UPDATE CustomerUser SET name = ?, email = ?, active = ?, locationID = ?, isSudo = ?, NotCustomer = ? WHERE id = ?`
 	getUsersByCustomerID = `SELECT id FROM CustomerUser WHERE cust_id = ?`
@@ -336,7 +332,7 @@ func (u *CustomerUser) AuthenticateUser() error {
 		u.Email = *email
 	}
 	if oldId != nil {
-		u.OldCustomerID = *oldId
+		u.CustomerID = *oldId
 	}
 	if dateAdded != nil {
 		u.DateAdded = *dateAdded
@@ -351,7 +347,7 @@ func (u *CustomerUser) AuthenticateUser() error {
 		u.Sudo = *sudo
 	}
 	if custId != nil {
-		u.CustomerID = *custId
+		u.CustID = *custId
 	}
 	if passConversionByte != nil {
 		passConversion, err = strconv.ParseBool(string(passConversionByte))
@@ -384,24 +380,19 @@ func (u *CustomerUser) AuthenticateUser() error {
 		return errors.New("Incorrect password.")
 	}
 
-	err = u.GetBrands()
+	u.Brands, err = brand.GetUserBrands(u.CustID)
 	if err != nil {
 		return err
 	}
+
 	var brandIds []int
 	for _, brand := range u.Brands {
 		brandIds = append(brandIds, brand.ID)
 	}
+	if resetErr := u.ResetAuthentication(brandIds); resetErr != nil {
+		err = resetErr
+	}
 
-	resetChan := make(chan int)
-	go func() {
-		if resetErr := u.ResetAuthentication(brandIds); resetErr != nil {
-			err = resetErr
-		}
-		resetChan <- 1
-	}()
-
-	<-resetChan
 	u.Current = true
 
 	return nil
@@ -436,16 +427,13 @@ func GetCustomerUserFromKey(key string) (u CustomerUser, err error) {
 
 	u.GetKeys()
 
-	bChan := make(chan bool)
-	go func() {
-		err = u.GetBrands()
-		if err != nil {
-			return
-		}
-		bChan <- true
-	}()
+	u.Brands, err = brand.GetUserBrands(u.CustID)
+	if err != nil {
+		close(locChan)
+		return
+	}
+
 	<-locChan
-	<-bChan
 	return
 }
 
@@ -518,16 +506,23 @@ func (u CustomerUser) GetCustomer(key string) (c Customer, err error) {
 	go func() {
 		locChan <- c.GetLocations()
 	}()
+	go func() {
+		brands, err := brand.GetUserBrands(c.Id)
+		if err != nil {
+			brandChan <- err
+			return
+		}
+		for _, b := range brands {
+			c.BrandIDs = append(c.BrandIDs, b.ID)
+		}
+		brandChan <- nil
+	}()
 
 	if u.Sudo {
 		c.GetUsers(key)
 	} else {
 		c.Users = append(c.Users, u)
 	}
-
-	go func() {
-		brandChan <- c.GetCustomerBrands()
-	}()
 
 	<-locChan
 	<-brandChan
@@ -561,33 +556,6 @@ func (u *CustomerUser) GetKeys() error {
 	}
 	u.Keys = keys
 	return nil
-}
-
-func (u *CustomerUser) GetBrands() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	stmt, err := db.Prepare(getCustomerUserBrands)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	var b brand.Brand
-	res, err := stmt.Query(u.CustomerID)
-	if err != nil {
-		return err
-	}
-	for res.Next() {
-		err = res.Scan(&b.ID, &b.Name, &b.Code)
-		if err != nil {
-			return err
-		}
-		u.Brands = append(u.Brands, b)
-	}
-	return err
 }
 
 func (u *CustomerUser) GetLocation() error {
@@ -1109,6 +1077,10 @@ type ApiRequest struct {
 }
 
 func (u *CustomerUser) LogApiRequest(r *http.Request) {
+	if u == nil {
+		return
+	}
+
 	var ar ApiRequest
 	ar.User = *u
 	ar.RequestTime = time.Now()
@@ -1116,5 +1088,5 @@ func (u *CustomerUser) LogApiRequest(r *http.Request) {
 	ar.Query = r.URL.Query()
 	ar.Form = r.Form
 
-	redis.Lpush(fmt.Sprintf("log:%s", u.Id), ar)
+	redis.Lpush(fmt.Sprintf("log:%s", ar.User.Id), ar)
 }

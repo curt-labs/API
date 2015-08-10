@@ -1,6 +1,7 @@
 package conversions
 
 import (
+	"fmt"
 	"net/url"
 	"strconv"
 	"time"
@@ -8,54 +9,57 @@ import (
 
 //Conversion funcs
 func ByteToString(input []byte) (string, error) {
-	var err error
 	if input != nil {
-		output := string(input)
-		return output, err
+		return string(input), nil
 	}
-	return "", err
+	return "", fmt.Errorf("%s", "failed to parse")
 }
 
 func ByteToInt(input []byte) (int, error) {
-	var err error
-	if input != nil {
-		temp, err := ByteToString(input)
-		output, err := strconv.Atoi(temp)
-		return output, err
+	if input == nil {
+		return 0, fmt.Errorf("%s", "failed to parse")
 	}
-	return 0, err
+
+	temp, err := ByteToString(input)
+	if err != nil {
+		return 0, fmt.Errorf("%s", "failed to parse")
+	}
+	return strconv.Atoi(temp)
 }
 
 func ByteToFloat(input []byte) (float64, error) {
-	var err error
-	if input != nil {
-		output, err := strconv.ParseFloat(string(input), 64)
-		return output, err
+	if input == nil {
+		return 0.0, fmt.Errorf("%s", "failed to parse")
 	}
-	return 0.0, err
+
+	return strconv.ParseFloat(string(input), 64)
 }
 
 func ByteToUrl(input []byte) (url.URL, error) {
-	var err error
-	if input != nil {
-		str := string(input[:])
-		output, err := url.Parse(str)
-		output2 := *output
-		return output2, err
+	if input == nil {
+		return url.URL{}, fmt.Errorf("%s", "failed to parse")
 	}
-	output, err := url.Parse("")
-	output2 := *output
-	return output2, err
+
+	output, err := url.Parse(string(input[:]))
+	if err != nil || output == nil {
+		return url.URL{}, fmt.Errorf("%s", "failed to parse")
+	}
+
+	return *output, nil
 }
+
 func ByteToTime(input []byte, timeFormat string) (time.Time, error) {
-	var err error
-	if input != nil {
-		str := string(input[:])
-		if str != "" {
-			output, err := time.Parse(timeFormat, str)
-			return output, err
-		}
+	if input == nil || len(input) == 0 {
+		return time.Time{}, fmt.Errorf("%s", "failed to parse")
 	}
-	output, err := time.Parse(timeFormat, "")
-	return output, err
+
+	return time.Parse(timeFormat, string(input[:]))
+}
+
+func ParseBool(input []byte) (bool, error) {
+	if input == nil {
+		return false, fmt.Errorf("%s", "failed to parse")
+	}
+
+	return strconv.ParseBool(string(input))
 }
