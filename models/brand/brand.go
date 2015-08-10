@@ -21,18 +21,28 @@ var (
 								join CustomerToBrand as ctb on ctb.BrandID = b.ID
 								join Customer as c on c.cust_id = ctb.cust_id
 								where c.cust_id = ?`
+	getAllWebsitesStmt   = `select ID, url, description, brandID from Website order by brandID, ID`
+	getBrandWebsitesStmt = `select ID, url, description, brandID from Website where brandID = ? order by ID`
 )
 
 type Brands []Brand
 type Brand struct {
-	ID            int      `json:"id" xml:"id,attr"`
-	Name          string   `json:"name" xml:"name,attr"`
-	Code          string   `json:"code" xml:"code,attr"`
-	Logo          *url.URL `json:"logo" xml:"logo,attr"`
-	LogoAlternate *url.URL `json:"logo_alternate" xml:"logo_alternate,attr"`
-	FormalName    string   `json:"formal_name" xml:"formal_name,attr"`
-	LongName      string   `json:"long_name" xml:"long_name,attr"`
-	PrimaryColor  string   `json:"primary_color" xml:"primary_color,attr"`
+	ID            int       `json:"id" xml:"id,attr"`
+	Name          string    `json:"name" xml:"name,attr"`
+	Code          string    `json:"code" xml:"code,attr"`
+	Logo          *url.URL  `json:"logo" xml:"logo,attr"`
+	LogoAlternate *url.URL  `json:"logo_alternate" xml:"logo_alternate,attr"`
+	FormalName    string    `json:"formal_name" xml:"formal_name,attr"`
+	LongName      string    `json:"long_name" xml:"long_name,attr"`
+	PrimaryColor  string    `json:"primary_color" xml:"primary_color,attr"`
+	Websites      []Website `json:"websites" xml:"websites"`
+}
+
+type Website struct {
+	ID          int      `json:"id" xml:"id,attr"`
+	Description string   `json:"description" xml:"description"`
+	URL         *url.URL `json:"url" xml:"url"`
+	BrandID     int      `json:"brand_id" xml:"brand_id"`
 }
 
 func GetAllBrands() (brands Brands, err error) {
@@ -106,7 +116,6 @@ func (b *Brand) Get() error {
 	}
 
 	return nil
-
 }
 
 func (b *Brand) Create() error {
@@ -178,6 +187,59 @@ func (b *Brand) Delete() error {
 	return err
 }
 
+func getWebsites(brandID int) ([]Website, error) {
+	sites := make([]Website, 0)
+	var err error
+
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return sites, err
+	}
+	defer db.Close()
+
+	var rows *sql.Rows
+
+	if brandID > 0 {
+		stmt, err := db.Prepare(getBrandWebsitesStmt)
+		if err != nil {
+			return sites, err
+		}
+		defer stmt.Close()
+
+		rows, err = stmt.Query(brandID)
+	} else {
+		stmt, err := db.Prepare(getAllWebsitesStmt)
+		if err != nil {
+			return sites, err
+		}
+		defer stmt.Close()
+
+		rows, err = stmt.Query()
+	}
+
+	if err != nil {
+		return sites, err
+	}
+
+	for rows.Next() {
+		var s Website
+		var u *string
+		err = rows.Scan(&s.ID, &s.Description, &u, &s.BrandID)
+		if err != nil || u == nil {
+			continue
+		}
+
+		s.URL, err = url.Parse(*u)
+		if err != nil {
+			continue
+		}
+
+		sites = append(sites, s)
+	}
+
+	return sites, nil
+}
+
 func GetUserBrands(id int) ([]Brand, error) {
 	brands := make([]Brand, 0)
 	var err error
@@ -199,6 +261,20 @@ func GetUserBrands(id int) ([]Brand, error) {
 		return brands, err
 	}
 
+	sites, err := getWebsites(0)
+	if err != nil {
+		return brands, err
+	}
+
+	indexedSites := make(map[int][]Website, 0)
+	for _, site := range sites {
+		if _, ok := indexedSites[site.BrandID]; !ok {
+			indexedSites[site.BrandID] = make([]Website, 0)
+		}
+
+		indexedSites[site.BrandID] = append(indexedSites[site.BrandID], site)
+	}
+
 	for rows.Next() {
 		var b Brand
 		var logo, logoAlt *string
@@ -211,6 +287,8 @@ func GetUserBrands(id int) ([]Brand, error) {
 		if logoAlt != nil {
 			b.LogoAlternate, _ = url.Parse(*logoAlt)
 		}
+
+		b.Websites = indexedSites[b.ID]
 		brands = append(brands, b)
 	}
 
