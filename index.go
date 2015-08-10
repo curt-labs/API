@@ -171,17 +171,49 @@ func main() {
 
 	})
 
-	m.Group("/cart", func(r martini.Router) {
-		r.Get("/customer/pricing/:custID/:page/:count", cartIntegration.GetCustomerPricingPaged)
-		r.Get("/customer/pricing/:custID", cartIntegration.GetCustomerPricing)
-		r.Get("/customer/count/:custID", cartIntegration.GetCustomerPricingCount)
-		r.Get("/part/:id", cartIntegration.GetCIbyPart)
-		r.Get("/customer/:id", cartIntegration.GetCIbyCustomer) //shallower object than GetCustomerPricing
-		r.Get("/:id", cartIntegration.GetCI)
-		r.Put("/:id", cartIntegration.SaveCI)
-		r.Post("", cartIntegration.SaveCI)
-		r.Delete("/:id", cartIntegration.DeleteCI)
+	m.Group("/cartIntegration", func(r martini.Router) {
+		r.Get("/part/:part", cartIntegration.GetPartPricesByPartID)
+		r.Get("/part", cartIntegration.GetAllPartPrices)
+		r.Get("/count", cartIntegration.GetPricingCount)
+		r.Get("", cartIntegration.GetPricing)
+		r.Get("/:page/:count", cartIntegration.GetPricingPaged)
+		r.Post("/part", cartIntegration.CreatePrice)
+		r.Put("/part", cartIntegration.UpdatePrice)
+
+		r.Post("/resetToMap", cartIntegration.ResetAllToMap)
+		r.Post("/global/:type/:percentage", cartIntegration.Global)
+
+		r.Post("/upload", cartIntegration.Upload)
+		r.Post("/download", cartIntegration.Download)
+
 	})
+
+	//CART INTEG NEEDED
+	//Mass upload, download
+	// web.Get("/upload", controllers.Upload)
+	// web.Post("/upload", controllers.ProcessUpload)
+	// web.Get("/download", controllers.Download)
+
+	// //reset to map pricing
+	// web.Post("/ResetAllToMap", controllers.ResetAllToMap)
+
+	// // Global Pricing/Percentage Pricing
+	// web.Get("/global", controllers.Global)
+	// web.Get("/global/set", controllers.SetGlobalPrice)
+
+	// web.Get("/brandoptions/(.*)", controllers.Brands)
+	// web.Post("/setbrand/(.*)", controllers.SetBrand)
+
+	// //pricing
+	// //web.Get("/:page/:count")
+	// //web.Get("/:page")
+	// web.Get("/(.*)", controllers.Index)
+
+	// web.Post("/GetPartPricesByPartID/(.*)", controllers.GetPartPricesByPartID)
+	// web.Post("/SetPartPrice/(.*)", controllers.SetPartPrice)
+	// web.Post("/RemoveSale/(.*)", controllers.RemoveSale)
+	// web.Post("/SetCustomerPartID/(.*)", controllers.SetCustomerPartID)
+	// web.Post("/SetCustomerPartAndPrice/(.*)", controllers.SetCustomerPartAndPrice)
 
 	m.Group("/customer", func(r martini.Router) {
 		r.Get("", customer_ctlr.GetCustomer)
