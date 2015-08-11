@@ -77,12 +77,21 @@ func Download(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx
 		mapPrice = strconv.FormatFloat(priceMap[strconv.Itoa(price.PartID)+":Map"], 'b', 2, 64)
 		listPrice = strconv.FormatFloat(priceMap[strconv.Itoa(price.PartID)+":List"], 'b', 2, 64)
 
+		//stringify dates
+		var start, end string
+		if price.SaleStart != nil {
+			start = price.SaleStart.String()
+		}
+		if price.SaleEnd != nil {
+			end = price.SaleEnd.String()
+		}
+
 		wr.Write([]string{
 			strconv.Itoa(price.PartID),
-			strconv.Itoa(price.CustomerPartID), //TODO
+			strconv.Itoa(price.CustomerPartID), //TODO - get CartIntegration at the same time
 			strconv.FormatFloat(price.Price, 'b', 2, 64),
-			price.SaleStart.String(),
-			price.SaleEnd.String(),
+			start,
+			end,
 			mapPrice,
 			listPrice,
 		})
