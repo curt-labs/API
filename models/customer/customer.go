@@ -685,7 +685,9 @@ func (c *Customer) GetUsers(key string) (err error) {
 	defer stmt.Close()
 
 	res, err := stmt.Query(c.Id)
-	var name []byte
+	if err != nil {
+		return err
+	}
 	iter := 0
 	userChan := make(chan error)
 	lowerKey := strings.ToLower(key)
@@ -706,7 +708,6 @@ func (c *Customer) GetUsers(key string) (err error) {
 		if err != nil {
 			continue
 		}
-		u.Name, err = conversions.ByteToString(name)
 
 		go func(user CustomerUser) {
 			if err := user.GetKeys(); err == nil {
