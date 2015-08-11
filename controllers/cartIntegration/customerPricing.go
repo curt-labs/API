@@ -211,6 +211,16 @@ func Global(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, param
 	return encoding.Must(enc.Encode(custPrices))
 }
 
+//Get those price types
+func GetAllPriceTypes(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+	types, err := cartIntegration.GetAllPriceTypes()
+	if err != nil {
+		apierror.GenerateError("Trouble getting price types", err, rw, r)
+		return ""
+	}
+	return encoding.Must(enc.Encode(types))
+}
+
 //Utility
 func validatePrice(p cartIntegration.CustomerPrice) error {
 	if p.CustID < 1 {

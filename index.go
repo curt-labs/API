@@ -179,6 +179,7 @@ func main() {
 		r.Get("/:page/:count", cartIntegration.GetPricingPaged)
 		r.Post("/part", cartIntegration.CreatePrice)
 		r.Put("/part", cartIntegration.UpdatePrice)
+		r.Get("/priceTypes", cartIntegration.GetAllPriceTypes)
 
 		r.Post("/resetToMap", cartIntegration.ResetAllToMap)
 		r.Post("/global/:type/:percentage", cartIntegration.Global)

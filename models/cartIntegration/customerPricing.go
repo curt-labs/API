@@ -77,6 +77,7 @@ var (
 		order by p.partID`
 	insertCartIntegration = `INSERT INTO CartIntegration(partID, custPartID, custID) VALUES (?, ?, ?)`
 	updateCartIntegration = `UPDATE CartIntegration SET custPartID = ? WHERE partID = ? AND custID = ?`
+	getAllPriceTypes      = `SELECT DISTINCT priceType from Price`
 )
 
 //Get all of a single customer's prices
@@ -367,6 +368,33 @@ func (cp *CustomerPrice) InsertCartIntegration() error {
 	defer stmt.Close()
 	_, err = stmt.Exec(cp.CustomerPartID, cp.PartID, cp.CustID)
 	return err
+}
+
+func GetAllPriceTypes() ([]string, error) {
+	var types []string
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return types, err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(getAllPriceTypes)
+	if err != nil {
+		return types, err
+	}
+	defer stmt.Close()
+	res, err := stmt.Query()
+	if err != nil {
+		return types, err
+	}
+	var s string
+	for res.Next() {
+		err = res.Scan(&s)
+		if err != nil {
+			return types, err
+		}
+		types = append(types, s)
+	}
+	return types, err
 }
 
 //Utility
