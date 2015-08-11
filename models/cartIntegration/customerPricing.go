@@ -30,22 +30,23 @@ type Price struct {
 var (
 	getPricing = `SELECT cp.cust_price_id, cp.cust_id, cp.partID, cp.price, cp.isSale, cp.sale_start, cp.sale_end FROM CustomerPricing as cp
 		JOIN CustomerUser as cu on cu.cust_id = cp.cust_id
-		JOIN ApiKey as a on a.user_id = cu.cust_id
+		JOIN ApiKey as a on a.user_id = cu.id
 		JOIN Part as p on p.partID = cp.partID
 		WHERE p.brandID = ?
 		AND a.api_key = ?`
 
 	getPricingPaged = `SELECT cp.cust_price_id, cp.cust_id, cp.partID, cp.price, cp.isSale, cp.sale_start, cp.sale_end FROM CustomerPricing as cp
 		JOIN CustomerUser as cu on cu.cust_id = cp.cust_id
-		JOIN ApiKey as a on a.user_id = cu.cust_id
+		JOIN ApiKey as a on a.user_id = cu.id
 		JOIN Part as p on p.partID = cp.partID
 		WHERE p.brandID = ?
 		AND a.api_key = ?
+		order by cp.partID
 		LIMIT ?,?`
 
 	getPricingCount = `SELECT COUNT(cp.cust_price_id) FROM CustomerPricing as cp
 		JOIN CustomerUser as cu on cu.cust_id = cp.cust_id
-		JOIN ApiKey as a on a.user_id = cu.cust_id
+		JOIN ApiKey as a on a.user_id = cu.id
 		JOIN Part as p on p.partID = cp.partID
 		WHERE p.brandID = ?
 		AND a.api_key = ?`
@@ -68,10 +69,12 @@ var (
 	deleteCustomerPrice = `delete from CustomerPricing where cust_price_id = ?`
 
 	getCustomerCartIntegrations = `select c.referenceID, c.partID, c.custPartID, c.custID from CartIntegration as c
-		JOIN ApiKey as a on a.user_id = c.custID
+		join CustomerUser as cu on cu.cust_id = c.custID
+		join ApiKey as a on a.user_id = cu.id
 		join part as p on p.partID = c.partID
 		where a.api_key = ?
-		and p.brandID = ?`
+		and p.brandID = ?
+		order by p.partID`
 	insertCartIntegration = `INSERT INTO CartIntegration(partID, custPartID, custID) VALUES (?, ?, ?)`
 	updateCartIntegration = `UPDATE CartIntegration SET custPartID = ? WHERE partID = ? AND custID = ?`
 )
