@@ -18,7 +18,7 @@ import (
 func Upload(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	file, fileHeader, err := r.FormFile("file")
 	if err != nil {
-		apierror.GenerateError("Error uploading file", err, rw, r)
+		apierror.GenerateError("Error getting file from form", err, rw, r)
 		return ""
 	}
 
@@ -35,6 +35,10 @@ func Upload(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *
 	}
 
 	err = cartIntegration.UploadFile(file, dtx)
+	if err != nil {
+		apierror.GenerateError("Error uploading file", err, rw, r)
+		return ""
+	}
 	return ""
 }
 
@@ -74,22 +78,22 @@ func Download(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx
 		mapPrice := ""
 		listPrice := ""
 
-		mapPrice = strconv.FormatFloat(priceMap[strconv.Itoa(price.PartID)+":Map"], 'b', 2, 64)
-		listPrice = strconv.FormatFloat(priceMap[strconv.Itoa(price.PartID)+":List"], 'b', 2, 64)
+		mapPrice = strconv.FormatFloat(priceMap[strconv.Itoa(price.PartID)+":Map"], 'f', 2, 64)
+		listPrice = strconv.FormatFloat(priceMap[strconv.Itoa(price.PartID)+":List"], 'f', 2, 64)
 
 		//stringify dates
 		var start, end string
-		if price.SaleStart != nil {
-			start = price.SaleStart.String()
+		if price.SaleStart != nil && !price.SaleStart.IsZero() {
+			start = price.SaleStart.Format(cartIntegration.DATE_FORMAT)
 		}
-		if price.SaleEnd != nil {
-			end = price.SaleEnd.String()
+		if price.SaleEnd != nil && !price.SaleStart.IsZero() {
+			end = price.SaleEnd.Format(cartIntegration.DATE_FORMAT)
 		}
-
+		// log.Print(start, end)
 		wr.Write([]string{
 			strconv.Itoa(price.PartID),
 			strconv.Itoa(price.CustomerPartID), //TODO - get CartIntegration at the same time
-			strconv.FormatFloat(price.Price, 'b', 2, 64),
+			strconv.FormatFloat(price.Price, 'f', 2, 64),
 			start,
 			end,
 			mapPrice,

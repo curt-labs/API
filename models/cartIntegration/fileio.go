@@ -33,12 +33,15 @@ func UploadFile(file multipart.File, dtx *apicontext.DataContext) error {
 		return err
 	}
 
-	for _, line := range lines {
+	for i, line := range lines {
 		//Curt Part ID,	Customer Part ID, Sale Price, Sale Start Date, Sale End Date
 		var cp CustomerPrice
 		cp.CustID = dtx.CustomerID
 
 		partID, err := strconv.Atoi(line[0])
+		if err != nil && i == 0 {
+			continue //checks for line headers
+		}
 		if err != nil {
 			return err
 		}
