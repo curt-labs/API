@@ -110,6 +110,11 @@ func CreatePrice(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 		apierror.GenerateError("Trouble creating pricing", err, rw, r)
 		return ""
 	}
+	err = price.InsertCartIntegration()
+	if err != nil {
+		apierror.GenerateError("Trouble creating CartIntegration", err, rw, r)
+		return ""
+	}
 	return encoding.Must(enc.Encode(price))
 }
 
@@ -132,9 +137,16 @@ func UpdatePrice(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 	}
 	err = price.Update()
 	if err != nil {
-		apierror.GenerateError("Trouble creating pricing", err, rw, r)
+		apierror.GenerateError("Trouble updating price", err, rw, r)
 		return ""
 	}
+
+	err = price.UpdateCartIntegration()
+	if err != nil {
+		apierror.GenerateError("Trouble updating CartIntegration", err, rw, r)
+		return ""
+	}
+
 	return encoding.Must(enc.Encode(price))
 }
 

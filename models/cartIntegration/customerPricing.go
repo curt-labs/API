@@ -351,7 +351,7 @@ func (cp *CustomerPrice) UpdateCartIntegration() error {
 		return err
 	}
 	defer stmt.Close()
-	_, err = stmt.Exec(cp.PartID, cp.CustomerPartID, cp.CustID)
+	_, err = stmt.Exec(cp.CustomerPartID, cp.PartID, cp.CustID)
 	return err
 }
 
