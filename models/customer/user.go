@@ -130,12 +130,13 @@ var (
 	getCustomerUserKeysWithoutAuth = `select ak.api_key, akt.type from ApiKey as ak
 										join ApiKeyType as akt on ak.type_id = akt.id
 										where ak.user_id = ? && UPPER(akt.type) = ?`
-	getAPIKeyTypeID             = `select id from ApiKeyType where UPPER(type) = UPPER(?) limit 1`
-	setCustomerUserPassword     = `update CustomerUser set password = ?, passwordConverted = 1 WHERE email = ?`
-	deleteCustomerUser          = `DELETE FROM CustomerUser WHERE id = ?`
-	deleteAPIkey                = `DELETE FROM ApiKey WHERE user_id = ? AND type_id = ?`
-	deleteUserAPIkeys           = `DELETE FROM ApiKey WHERE user_id = ?`
-	getCustomerUserKeysWithAuth = `select ak.api_key, akt.type from ApiKey as ak
+	getAPIKeyTypeID               = `select id from ApiKeyType where UPPER(type) = UPPER(?) limit 1`
+	setCustomerUserPassword       = `update CustomerUser set password = ?, passwordConverted = 1 WHERE email = ?`
+	setCustomerUserPasswordWithID = `update CustomerUser set password = ?, passwordConverted = 1 WHERE email = ? AND cust_ID = ?`
+	deleteCustomerUser            = `DELETE FROM CustomerUser WHERE id = ?`
+	deleteAPIkey                  = `DELETE FROM ApiKey WHERE user_id = ? AND type_id = ?`
+	deleteUserAPIkeys             = `DELETE FROM ApiKey WHERE user_id = ?`
+	getCustomerUserKeysWithAuth   = `select ak.api_key, akt.type from ApiKey as ak
 										join ApiKeyType as akt on ak.type_id = akt.id
 										where ak.user_id = ? && (UPPER(akt.type) = ? || UPPER(akt.type) = ? || UPPER(akt.type) = ?)`
 	getCustomerUserLocation = `select cl.locationID, cl.name, cl.address, cl.city,
@@ -776,7 +777,7 @@ func (cu *CustomerUser) ResetPass() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	stmt, err := tx.Prepare(setCustomerUserPassword)
+	stmt, err := tx.Prepare(setCustomerUserPasswordWithID)
 	if err != nil {
 		return "", err
 	}
@@ -790,12 +791,22 @@ func (cu *CustomerUser) ResetPass() (string, error) {
 		return "", err
 	}
 
-	_, err = stmt.Exec(e, cu.Email)
+	result, err := stmt.Exec(e, cu.Email, cu.CustID)
 	if err != nil {
 		tx.Rollback()
 		return "", err
 	}
 	tx.Commit()
+
+	//Num Rows
+	numRows, err := result.RowsAffected()
+	if err != nil {
+		return "", err
+	}
+	if numRows == 0 {
+		return "", errors.New("No Users with that email/custID combination.")
+	}
+
 	return randPass, nil
 }
 
