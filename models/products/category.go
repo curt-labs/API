@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
@@ -21,7 +22,7 @@ var (
 		select c.catID, c.ParentID, c.sort, c.dateAdded,
 		c.catTitle, c.shortDesc, c.longDesc,
 		c.image, c.icon, c.isLifestyle, c.vehicleSpecific,
-		c.vehicleRequired, cc.code, cc.font 
+		c.vehicleRequired, cc.code, cc.font
 		from Categories as c
 		left join ColorCode as cc on c.codeID = cc.codeID
 		where c.BrandID = ?`
@@ -91,7 +92,7 @@ var (
 		select c.catID, c.ParentID, c.sort, c.dateAdded,
 		c.catTitle, c.shortDesc, c.longDesc,
 		c.image, c.icon, c.isLifestyle, c.vehicleSpecific,
-		c.vehicleRequired,
+		c.vehicleRequired, c.metaTitle, c.metaDesc, c.metaKeywords,
 		cc.code, cc.font from Categories as c
 		left join ColorCode as cc on c.codeID = cc.codeID
 		where c.catID = ?
@@ -196,6 +197,9 @@ func PopulateCategoryMulti(rows *sql.Rows, ch chan []Category) {
 			&initCat.IsLifestyle,
 			&initCat.VehicleSpecific,
 			&initCat.VehicleRequired,
+			&initCat.MetaTitle,
+			&initCat.MetaDescription,
+			&initCat.MetaKeywords,
 			&colorCode,
 			&fontCode)
 		if err != nil {
@@ -251,6 +255,9 @@ func PopulateCategory(row *sql.Row, ch chan Category, dtx *apicontext.DataContex
 		&initCat.IsLifestyle,
 		&initCat.VehicleSpecific,
 		&initCat.VehicleRequired,
+		&initCat.MetaTitle,
+		&initCat.MetaDescription,
+		&initCat.MetaKeywords,
 		&colorCode,
 		&fontCode)
 	if err != nil {
@@ -519,6 +526,9 @@ func (c *Category) GetCategory(key string, page int, count int, ignoreParts bool
 		c.SubCategories = cat.SubCategories
 		c.ProductListing = cat.ProductListing
 		c.Filter = cat.Filter
+		c.MetaTitle = cat.MetaTitle
+		c.MetaDescription = cat.MetaDescription
+		c.MetaKeywords = cat.MetaKeywords
 
 		go redis.Setex(redis_key, c, 86400)
 	}
