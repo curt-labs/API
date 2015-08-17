@@ -3,9 +3,10 @@ package database
 import (
 	"flag"
 	"fmt"
-	"gopkg.in/mgo.v2"
 	"os"
 	"time"
+
+	"gopkg.in/mgo.v2"
 )
 
 type Scanner interface {
