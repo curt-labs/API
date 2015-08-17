@@ -2,6 +2,7 @@ package customer_ctlr
 
 import (
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
+	emailHelper "github.com/curt-labs/GoAPI/helpers/email"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/models/brand"
@@ -105,6 +106,7 @@ func ResetPassword(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder
 
 	email := r.FormValue("email")
 	custID := r.FormValue("customerID")
+	site := r.FormValue("site")
 
 	if email == "" {
 		err = errors.New("No email address provided")
@@ -119,6 +121,11 @@ func ResetPassword(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder
 
 	var user customer.CustomerUser
 	user.Email = email
+	user.CustID, err = strconv.Atoi(custID)
+	if err != nil {
+		apierror.GenerateError("Trouble parsing cust ID", err, rw, r)
+		return ""
+	}
 
 	resp, err := user.ResetPass()
 	if err != nil || resp == "" {
@@ -126,7 +133,19 @@ func ResetPassword(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder
 		return ""
 	}
 
-	return encoding.Must(enc.Encode(resp))
+	//email
+	subject := "Your Password Has Been Reset"
+	body := `<p>Here is your new password for the ` + site + ` site.</p> 
+	<p>Password: ` + resp + `</p><p> If you did not request this password, please contact <a href="mailto:websupport@curtmfg.com">Web Support</a></p>
+	<p>Thanks, </p>
+	<p>The Ecommerce Developer Team</P>`
+	err = emailHelper.Send([]string{email}, subject, body, true)
+	if err != nil {
+		apierror.GenerateError("Trouble emailing new user password", err, rw, r)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode("success"))
 }
 
 func ChangePassword(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
