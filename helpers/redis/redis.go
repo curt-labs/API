@@ -65,7 +65,12 @@ func Get(key string) ([]byte, error) {
 	conn := pool.Get()
 	conn.Send("select", Db)
 
-	return redix.Bytes(conn.Do("GET", fmt.Sprintf("%s:%s", Prefix, key)))
+	reply, err := conn.Do("GET", fmt.Sprintf("%s:%s", Prefix, key))
+	if err != nil || reply == nil {
+		return data, err
+	}
+
+	return redix.Bytes(reply, err)
 }
 
 func Setex(key string, obj interface{}, exp int) error {
