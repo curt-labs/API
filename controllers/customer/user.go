@@ -233,7 +233,7 @@ func GenerateApiKey(rw http.ResponseWriter, r *http.Request, params martini.Para
 	return encoding.Must(enc.Encode(generated))
 }
 
-//a/k/a CreateUser
+//registers an inactive user; emails user and webdev that a new inactive user exists - used by dealers site
 func RegisterUser(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 	var err error
 
@@ -241,9 +241,9 @@ func RegisterUser(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 	email := r.FormValue("email")
 	pass := r.FormValue("pass")
 	customerID, err := strconv.Atoi(r.FormValue("customerID"))
-	isActive, err := strconv.ParseBool(r.FormValue("isActive"))
+	// isActive, err := strconv.ParseBool(r.FormValue("isActive"))
 	locationID, err := strconv.Atoi(r.FormValue("locationID"))
-	isSudo, err := strconv.ParseBool(r.FormValue("isSudo"))
+	// isSudo, err := strconv.ParseBool(r.FormValue("isSudo"))
 	cust_ID, err := strconv.Atoi(r.FormValue("cust_ID"))
 	notCustomer, err := strconv.ParseBool(r.FormValue("notCustomer"))
 
@@ -268,9 +268,17 @@ func RegisterUser(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 	if cust_ID != 0 {
 		user.CustomerID = cust_ID
 	}
-	user.Active = isActive
-	user.Sudo = isSudo
+	user.Active = false
+	user.Sudo = false
 	user.Current = notCustomer
+
+	//check for existence of user
+	err = user.FindByEmail()
+	if err == nil {
+		apierror.GenerateError("A user with that email address already exists.", err, rw, r)
+		return ""
+	}
+	err = nil
 
 	user.Brands, err = brand.GetUserBrands(cust_ID)
 	if err != nil {
@@ -284,6 +292,17 @@ func RegisterUser(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 
 	if err = user.Create(brandIds); err != nil {
 		apierror.GenerateError("Trouble registering new customer user", err, rw, r)
+		return ""
+	}
+
+	//email
+	if err = user.SendRegistrationEmail(); err != nil {
+		apierror.GenerateError("Trouble emailing new customer user", err, rw, r)
+		return ""
+	}
+
+	if err = user.SendRegistrationRequestEmail(); err != nil {
+		apierror.GenerateError("Trouble emailing webdevelopment regarding new customer user", err, rw, r)
 		return ""
 	}
 

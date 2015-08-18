@@ -16,6 +16,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/conversions"
 	"github.com/curt-labs/GoAPI/helpers/database"
+	"github.com/curt-labs/GoAPI/helpers/email"
 	"github.com/curt-labs/GoAPI/helpers/encryption"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	"github.com/curt-labs/GoAPI/models/brand"
@@ -153,6 +154,7 @@ var (
 
 	updateCustomerUser   = `UPDATE CustomerUser SET name = ?, email = ?, active = ?, locationID = ?, isSudo = ?, NotCustomer = ? WHERE id = ?`
 	getUsersByCustomerID = `SELECT id FROM CustomerUser WHERE cust_id = ?`
+	getUserByEmail       = `SELECT cust_id FROM CustomerUser WHERE email = ?`
 )
 
 var (
@@ -891,6 +893,28 @@ func (cu *CustomerUser) Get(key string) error {
 	return nil
 }
 
+func (c *CustomerUser) FindByEmail() error {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+
+	stmt, err := tx.Prepare(getUserByEmail)
+	if err != nil {
+		return err
+	}
+	var id int
+
+	err = stmt.QueryRow(c.Email).Scan(&id)
+	if err != nil {
+		return err
+	}
+	c.CustID = id
+	return nil
+}
+
 //Update customerUser
 func (cu *CustomerUser) UpdateCustomerUser() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -1034,6 +1058,37 @@ func (cu *CustomerUser) Delete() error {
 	}
 	tx.Commit()
 	return nil
+}
+
+func (cu *CustomerUser) SendRegistrationEmail() error {
+	var brandStr string
+	for i, b := range cu.Brands {
+		if i > 0 {
+			brandStr += "/"
+		}
+		brandStr += b.Name
+	}
+	tos := []string{cu.Email}
+	subject := "Thank you for registering with " + brandStr + "!"
+	body := `<p>A new account with this e-mail address has been registered.</p>
+                <hr />
+                <span>The username is: <strong>` + cu.Email + `</strong></span><br />
+                <span>The password is: <strong>` + cu.Password + `</strong></span><br />
+                <hr /><br />
+                <p>Since you did not know your CURT Customer ID number, you will not have access to the 
+                entire dealer area until we can validate who you are. You can however in the meantime add Web Properties.</p>
+                <p style='font-size:11px'>If you feel this was a mistake please contact us.</p>`
+	return email.Send(tos, subject, body, true)
+}
+
+func (cu *CustomerUser) SendRegistrationRequestEmail() error {
+	//TODO
+	tos := []string{"jshenk@curtmfg.com"}
+	subject := "A new Customer User wishes to be active"
+	body := `<p>A new account with this e-mail address has been registered.</p>
+                <hr />
+                <span>The username is: <strong>` + cu.Email + `</strong></span><br />`
+	return email.Send(tos, subject, body, true)
 }
 
 func (cu *CustomerUser) deleteApiKey(keyType string) error {
