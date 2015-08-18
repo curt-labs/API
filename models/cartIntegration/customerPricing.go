@@ -71,7 +71,7 @@ var (
 	getCustomerCartIntegrations = `select c.referenceID, c.partID, c.custPartID, c.custID from CartIntegration as c
 		join CustomerUser as cu on cu.cust_id = c.custID
 		join ApiKey as a on a.user_id = cu.id
-		join part as p on p.partID = c.partID
+		join Part as p on p.partID = c.partID
 		where a.api_key = ?
 		and p.brandID = ?
 		order by p.partID`

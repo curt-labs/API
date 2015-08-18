@@ -189,33 +189,6 @@ func main() {
 
 	})
 
-	//CART INTEG NEEDED
-	//Mass upload, download
-	// web.Get("/upload", controllers.Upload)
-	// web.Post("/upload", controllers.ProcessUpload)
-	// web.Get("/download", controllers.Download)
-
-	// //reset to map pricing
-	// web.Post("/ResetAllToMap", controllers.ResetAllToMap)
-
-	// // Global Pricing/Percentage Pricing
-	// web.Get("/global", controllers.Global)
-	// web.Get("/global/set", controllers.SetGlobalPrice)
-
-	// web.Get("/brandoptions/(.*)", controllers.Brands)
-	// web.Post("/setbrand/(.*)", controllers.SetBrand)
-
-	// //pricing
-	// //web.Get("/:page/:count")
-	// //web.Get("/:page")
-	// web.Get("/(.*)", controllers.Index)
-
-	// web.Post("/GetPartPricesByPartID/(.*)", controllers.GetPartPricesByPartID)
-	// web.Post("/SetPartPrice/(.*)", controllers.SetPartPrice)
-	// web.Post("/RemoveSale/(.*)", controllers.RemoveSale)
-	// web.Post("/SetCustomerPartID/(.*)", controllers.SetCustomerPartID)
-	// web.Post("/SetCustomerPartAndPrice/(.*)", controllers.SetCustomerPartAndPrice)
-
 	m.Group("/customer", func(r martini.Router) {
 		r.Get("", customer_ctlr.GetCustomer)
 		r.Post("", customer_ctlr.GetCustomer)
