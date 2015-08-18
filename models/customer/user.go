@@ -1083,7 +1083,7 @@ func (cu *CustomerUser) SendRegistrationEmail() error {
 
 func (cu *CustomerUser) SendRegistrationRequestEmail() error {
 	//TODO
-	tos := []string{"jshenk@curtmfg.com"}
+	tos := []string{"websupport@curtmfg.com"}
 	subject := "A new Customer User wishes to be active"
 	body := `<p>A new account with this e-mail address has been registered.</p>
                 <hr />
