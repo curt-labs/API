@@ -20,7 +20,8 @@ var (
 								from Brand as b
 								join CustomerToBrand as ctb on ctb.BrandID = b.ID
 								join Customer as c on c.cust_id = ctb.cust_id
-								where c.cust_id = ?`
+								where c.cust_id = ?
+								group by b.ID`
 	getAllWebsitesStmt = `select w.ID, w.description, w.url, wb.brandID from Website as w
 							join WebsiteToBrand as wb on w.ID = wb.WebsiteID
 							order by wb.brandID, w.ID`
