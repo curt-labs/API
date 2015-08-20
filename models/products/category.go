@@ -22,7 +22,7 @@ var (
 		select c.catID, c.ParentID, c.sort, c.dateAdded,
 		c.catTitle, c.shortDesc, c.longDesc,
 		c.image, c.icon, c.isLifestyle, c.vehicleSpecific,
-		c.vehicleRequired, cc.code, cc.font
+		c.vehicleRequired, c.metaTitle, c.metaDesc, c.metaKeywords, cc.code, cc.font
 		from Categories as c
 		left join ColorCode as cc on c.codeID = cc.codeID
 		where c.BrandID = ?`
@@ -30,7 +30,7 @@ var (
 		select c.catID, c.ParentID, c.sort, c.dateAdded,
 		c.catTitle, c.shortDesc, c.longDesc,
 		c.image, c.icon, c.isLifestyle, c.vehicleSpecific,
-		c.vehicleRequired,
+		c.vehicleRequired, c.metaTitle, c.metaDesc, c.metaKeywords,
 		cc.code, cc.font from Categories as c
 		join CatPart as cp on c.catID = cp.catID
 		left join ColorCode as cc on c.codeID = cc.codeID
@@ -41,7 +41,7 @@ var (
 		select c.catID, c.ParentID, c.sort, c.dateAdded,
 		c.catTitle, c.shortDesc, c.longDesc,
 		c.image, c.icon, c.isLifestyle, c.vehicleSpecific,
-		c.vehicleRequired,
+		c.vehicleRequired, c.metaTitle, c.metaDesc, c.metaKeywords,
 		cc.code, cc.font
 		from Categories as c
 		join CatPart as cp on c.catID = cp.catID
@@ -52,7 +52,7 @@ var (
 		select c.catID, c.ParentID, c.sort, c.dateAdded,
 		c.catTitle, c.shortDesc, c.longDesc,
 		c.image, c.icon, c.isLifestyle, c.vehicleSpecific,
-		c.vehicleRequired,
+		c.vehicleRequired, c.metaTitle, c.metaDesc, c.metaKeywords,
 		cc.code, cc.font from Categories as c
 		left join ColorCode as cc on c.codeID = cc.codeID
 		where c.catID = ?
@@ -70,7 +70,7 @@ var (
 		select c.catID, c.ParentID, c.sort, c.dateAdded,
 		c.catTitle, c.shortDesc, c.longDesc,
 		c.image, c.icon, c.isLifestyle, c.vehicleSpecific,
-		c.vehicleRequired,
+		c.vehicleRequired, c.metaTitle, c.metaDesc, c.metaKeywords,
 		cc.code, cc.font from Categories as c
 		left join ColorCode as cc on c.codeID = cc.codeID
 		where c.ParentID = ?
@@ -80,7 +80,7 @@ var (
 		select c.catID, c.ParentID, c.sort, c.dateAdded,
 		c.catTitle, c.shortDesc, c.longDesc,
 		c.image, c.icon, c.isLifestyle, c.vehicleSpecific,
-		c.vehicleRequired,
+		c.vehicleRequired, c.metaTitle, c.metaDesc, c.metaKeywords,
 		cc.code, cc.font from Categories as c
 		left join ColorCode as cc on c.codeID = cc.codeID
 		join ApiKeyToBrand as akb on akb.brandID = c.brandID
@@ -286,7 +286,8 @@ func PopulateCategory(row *sql.Row, ch chan Category, dtx *apicontext.DataContex
 		conChan <- con
 	}()
 
-	if subCats, err := initCat.GetSubCategories(dtx); err == nil {
+	subCats, err := initCat.GetSubCategories(dtx)
+	if err == nil {
 		initCat.SubCategories = subCats
 	}
 
