@@ -189,17 +189,20 @@ func main() {
 
 	})
 
+	m.Group("/cust", func(r martini.Router) { // different endpoint because partial matching matches this to another excused route
+		r.Post("/user/changePassword", customer_ctlr.ChangePassword)
+	})
+
 	m.Group("/customer", func(r martini.Router) {
 		r.Get("", customer_ctlr.GetCustomer)
 		r.Post("", customer_ctlr.GetCustomer)
 
 		r.Post("/auth", customer_ctlr.AuthenticateUser)
 		r.Get("/auth", customer_ctlr.KeyedUserAuthentication)
-
+		r.Post("/user/changePassword", customer_ctlr.ChangePassword)
 		r.Post("/user", customer_ctlr.GetUser)
 		r.Post("/user/register", customer_ctlr.RegisterUser)
 		r.Post("/user/resetPassword", customer_ctlr.ResetPassword)
-		r.Post("/user/changePassword", customer_ctlr.ChangePassword)
 		r.Post("/user/:id/key/:type", customer_ctlr.GenerateApiKey)
 		r.Get("/user/:id", customer_ctlr.GetUserById)
 		r.Post("/user/:id", customer_ctlr.UpdateCustomerUser)

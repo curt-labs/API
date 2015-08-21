@@ -71,7 +71,6 @@ func Meddler() martini.Handler {
 				apierror.GenerateError("Trouble processing the data context", err, res, r, http.StatusUnauthorized)
 				return
 			}
-
 			c.Map(dataContext)
 		}
 
