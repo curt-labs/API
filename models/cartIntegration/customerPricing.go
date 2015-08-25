@@ -6,7 +6,6 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 
 	"database/sql"
-	"strconv"
 	"time"
 )
 
@@ -28,29 +27,23 @@ type Price struct {
 }
 
 var (
-	getPricing = `SELECT cp.cust_price_id, cp.cust_id, cp.partID, cp.price, cp.isSale, cp.sale_start, cp.sale_end FROM CustomerPricing as cp
-		JOIN CustomerUser as cu on cu.cust_id = cp.cust_id
-		JOIN ApiKey as a on a.user_id = cu.id
-		JOIN Part as p on p.partID = cp.partID
-		WHERE p.brandID = ?
-		AND a.api_key = ?`
-
-	getPricingPaged = `SELECT cp.cust_price_id, cp.cust_id, cp.partID, cp.price, cp.isSale, cp.sale_start, cp.sale_end FROM CustomerPricing as cp
-		JOIN CustomerUser as cu on cu.cust_id = cp.cust_id
-		JOIN ApiKey as a on a.user_id = cu.id
-		JOIN Part as p on p.partID = cp.partID
-		WHERE p.brandID = ?
-		AND a.api_key = ?
-		order by cp.partID
-		LIMIT ?,?`
-
+	getPricing = `SELECT distinct cp.cust_price_id, cp.cust_id, p.partID, ci.custPartID, cp.price, cp.isSale, cp.sale_start, cp.sale_end FROM Part p
+		LEFT JOIN CustomerPricing cp ON cp.partID = p.partID AND cp.cust_id = ?
+		LEFT JOIN CartIntegration ci ON ci.partID = p.partID AND ci.custID = ?
+		WHERE (p.status = 800 OR p.status = 900) && p.brandID = ?
+		ORDER BY p.partID`
+	getPricingPaged = `SELECT distinct cp.cust_price_id, cp.cust_id, p.partID, ci.custPartID, cp.price, cp.isSale, cp.sale_start, cp.sale_end FROM Part p
+		LEFT JOIN CustomerPricing cp ON cp.partID = p.partID AND cp.cust_id = ?
+		LEFT JOIN CartIntegration ci ON ci.partID = p.partID AND ci.custID = ?
+		WHERE (p.status = 800 OR p.status = 900) && p.brandID = ?
+		ORDER BY p.partID
+		LIMIT ?, ?`
 	getPricingCount = `SELECT COUNT(cp.cust_price_id) FROM CustomerPricing as cp
 		JOIN CustomerUser as cu on cu.cust_id = cp.cust_id
 		JOIN ApiKey as a on a.user_id = cu.id
 		JOIN Part as p on p.partID = cp.partID
 		WHERE p.brandID = ?
 		AND a.api_key = ?`
-
 	getPricingByPart = `SELECT pr.partID, pr.priceType, pr.price FROM Price as pr
 		JOIN Part as p ON pr.partID = p.partID
 		WHERE p.status != 999 && p.brandID = ? && p.partID = ?
@@ -63,11 +56,9 @@ var (
 		JOIN Part as p ON pr.partID = p.partID
 		WHERE p.status != 999 && p.brandID = ? && pr.priceType = 'Map'
 		ORDER by p.partID, pr.priceType`
-
-	updateCustomerPrice = `UPDATE CustomerPricing SET price = ?, isSale = ?, sale_start = ?, sale_end = ? WHERE cust_id = ? AND partID = ?`
-	insertCustomerPrice = `INSERT INTO CustomerPricing(cust_id, partID, price, isSale, sale_start, sale_end) VALUES(?, ?, ?, ?, ?, ?)`
-	deleteCustomerPrice = `delete from CustomerPricing where cust_price_id = ?`
-
+	updateCustomerPrice         = `UPDATE CustomerPricing SET price = ?, isSale = ?, sale_start = ?, sale_end = ? WHERE cust_id = ? AND partID = ?`
+	insertCustomerPrice         = `INSERT INTO CustomerPricing(cust_id, partID, price, isSale, sale_start, sale_end) VALUES(?, ?, ?, ?, ?, ?)`
+	deleteCustomerPrice         = `delete from CustomerPricing where cust_price_id = ?`
 	getCustomerCartIntegrations = `select c.referenceID, c.partID, c.custPartID, c.custID from CartIntegration as c
 		join CustomerUser as cu on cu.cust_id = c.custID
 		join ApiKey as a on a.user_id = cu.id
@@ -93,19 +84,9 @@ func GetCustomerPrices(dtx *apicontext.DataContext) ([]CustomerPrice, error) {
 		return cps, err
 	}
 	defer stmt.Close()
-	res, err := stmt.Query(dtx.BrandID, dtx.APIKey)
+	res, err := stmt.Query(dtx.CustomerID, dtx.CustomerID, dtx.BrandID)
 	if err != nil {
 		return cps, err
-	}
-
-	//customer cart integration
-	cartIntegrations, err := GetCustomerCartIntegrations(dtx)
-	if err != nil {
-		return cps, err
-	}
-	cartIntegrationMap := make(map[string]int) //partID+:+custID -to- custPartID
-	for _, ci := range cartIntegrations {
-		cartIntegrationMap[strconv.Itoa(ci.PartID)+":"+strconv.Itoa(ci.CustID)] = ci.CustomerPartID
 	}
 
 	for res.Next() {
@@ -113,7 +94,6 @@ func GetCustomerPrices(dtx *apicontext.DataContext) ([]CustomerPrice, error) {
 		if err != nil {
 			return cps, err
 		}
-		c.CustomerPartID = cartIntegrationMap[strconv.Itoa(c.PartID)+":"+strconv.Itoa(c.CustID)]
 		cps = append(cps, c)
 	}
 	return cps, err
@@ -132,19 +112,10 @@ func GetPricingPaged(page int, count int, dtx *apicontext.DataContext) ([]Custom
 		return cps, err
 	}
 	defer stmt.Close()
-	res, err := stmt.Query(dtx.BrandID, dtx.APIKey, (page-1)*count, count)
+	res, err := stmt.Query(dtx.CustomerID, dtx.CustomerID, dtx.BrandID, (page-1)*count, count)
+	// res, err := stmt.Query(dtx.BrandID, dtx.APIKey, (page-1)*count, count)
 	if err != nil {
 		return cps, err
-	}
-
-	//customer cart integration
-	cartIntegrations, err := GetCustomerCartIntegrations(dtx)
-	if err != nil {
-		return cps, err
-	}
-	cartIntegrationMap := make(map[string]int) //partID+:+custID -to- custPartID
-	for _, ci := range cartIntegrations {
-		cartIntegrationMap[strconv.Itoa(ci.PartID)+":"+strconv.Itoa(ci.CustID)] = ci.CustomerPartID
 	}
 
 	for res.Next() {
@@ -152,7 +123,6 @@ func GetPricingPaged(page int, count int, dtx *apicontext.DataContext) ([]Custom
 		if err != nil {
 			return cps, err
 		}
-		c.CustomerPartID = cartIntegrationMap[strconv.Itoa(c.PartID)+":"+strconv.Itoa(c.CustID)]
 		cps = append(cps, c)
 	}
 	return cps, err
@@ -366,7 +336,7 @@ func (cp *CustomerPrice) InsertCartIntegration() error {
 		return err
 	}
 	defer stmt.Close()
-	_, err = stmt.Exec(cp.CustomerPartID, cp.PartID, cp.CustID)
+	_, err = stmt.Exec(cp.PartID, cp.CustomerPartID, cp.CustID)
 	return err
 }
 
@@ -401,20 +371,43 @@ func GetAllPriceTypes() ([]string, error) {
 func Scan(rows database.Scanner) (CustomerPrice, error) {
 	var c CustomerPrice
 	var p *float64
+	var custPartId, id, custId, isSale *int
+	var ss, se *time.Time
+
 	err := rows.Scan(
-		&c.ID,
-		&c.CustID,
+		&id,
+		&custId,
 		&c.PartID,
+		&custPartId,
 		&p,
-		&c.IsSale,
-		&c.SaleStart,
-		&c.SaleEnd,
+		&isSale,
+		&ss,
+		&se,
 	)
 	if err != nil {
 		return c, err
 	}
+
+	if id != nil {
+		c.ID = *id
+	}
+	if custId != nil {
+		c.CustID = *custId
+	}
 	if p != nil {
 		c.Price = *p
+	}
+	if custPartId != nil {
+		c.CustomerPartID = *custPartId
+	}
+	if isSale != nil {
+		c.IsSale = *isSale
+	}
+	if ss != nil {
+		c.SaleStart = ss
+	}
+	if se != nil {
+		c.SaleEnd = se
 	}
 	return c, err
 }

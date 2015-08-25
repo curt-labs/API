@@ -100,6 +100,7 @@ func CreatePrice(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 		apierror.GenerateError("Trouble creating pricing", err, rw, r)
 		return ""
 	}
+	price.CustID = dtx.CustomerID
 	err = validatePrice(price)
 	if err != nil {
 		apierror.GenerateError(err.Error(), err, rw, r)
@@ -119,6 +120,7 @@ func CreatePrice(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 }
 
 func UpdatePrice(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		apierror.GenerateError("Trouble creating pricing", err, rw, r)
@@ -130,6 +132,7 @@ func UpdatePrice(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 		apierror.GenerateError("Trouble creating pricing", err, rw, r)
 		return ""
 	}
+	price.CustID = dtx.CustomerID
 	err = validatePrice(price)
 	if err != nil {
 		apierror.GenerateError(err.Error(), err, rw, r)
@@ -173,7 +176,14 @@ func ResetAllToMap(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder
 	//set to MAP
 	for i, _ := range custPrices {
 		custPrices[i].Price = priceMap[custPrices[i].PartID].Price
-		err = custPrices[i].Update()
+		if custPrices[i].CustID == 0 {
+			custPrices[i].CustID = dtx.CustomerID
+		}
+		if custPrices[i].ID == 0 {
+			err = custPrices[i].Create()
+		} else {
+			err = custPrices[i].Update()
+		}
 		if err != nil {
 			apierror.GenerateError("Trouble updating price", err, rw, r)
 			return ""
@@ -213,8 +223,16 @@ func Global(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, param
 
 	//set to percentage
 	for i, _ := range custPrices {
+		if custPrices[i].CustID == 0 {
+			custPrices[i].CustID = dtx.CustomerID
+		}
 		custPrices[i].Price = priceMap[strconv.Itoa(custPrices[i].PartID)+priceType] * percent
-		err = custPrices[i].Update()
+		if custPrices[i].ID == 0 {
+			err = custPrices[i].Create()
+		} else {
+			err = custPrices[i].Update()
+
+		}
 		if err != nil {
 			apierror.GenerateError("Trouble updating price", err, rw, r)
 			return ""
