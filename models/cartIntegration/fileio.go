@@ -18,8 +18,8 @@ const (
 func UploadFile(file multipart.File, dtx *apicontext.DataContext) error {
 	defer file.Close()
 	csvfile := csv.NewReader(file)
-	lines, err := csvfile.ReadAll()
 
+	lines, err := csvfile.ReadAll()
 	if err != nil {
 		return err
 	}

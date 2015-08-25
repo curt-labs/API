@@ -38,12 +38,11 @@ var (
 		WHERE (p.status = 800 OR p.status = 900) && p.brandID = ?
 		ORDER BY p.partID
 		LIMIT ?, ?`
-	getPricingCount = `SELECT COUNT(cp.cust_price_id) FROM CustomerPricing as cp
-		JOIN CustomerUser as cu on cu.cust_id = cp.cust_id
-		JOIN ApiKey as a on a.user_id = cu.id
-		JOIN Part as p on p.partID = cp.partID
-		WHERE p.brandID = ?
-		AND a.api_key = ?`
+	getPricingCount = `SELECT count(distinct cp.cust_price_id) FROM Part p
+		LEFT JOIN CustomerPricing cp ON cp.partID = p.partID AND cp.cust_id = ?
+		LEFT JOIN CartIntegration ci ON ci.partID = p.partID AND ci.custID = ?
+		WHERE (p.status = 800 OR p.status = 900) && p.brandID = ?
+		ORDER BY p.partID`
 	getPricingByPart = `SELECT pr.partID, pr.priceType, pr.price FROM Price as pr
 		JOIN Part as p ON pr.partID = p.partID
 		WHERE p.status != 999 && p.brandID = ? && p.partID = ?
@@ -67,6 +66,7 @@ var (
 		and p.brandID = ?
 		order by p.partID`
 	insertCartIntegration = `INSERT INTO CartIntegration(partID, custPartID, custID) VALUES (?, ?, ?)`
+	deleteCartIntegration = `delete from CartIntegration where partID = ? and custPartID = ? and custID = ?`
 	updateCartIntegration = `UPDATE CartIntegration SET custPartID = ? WHERE partID = ? AND custID = ?`
 	getAllPriceTypes      = `SELECT DISTINCT priceType from Price`
 )
@@ -141,7 +141,7 @@ func GetPricingCount(dtx *apicontext.DataContext) (int, error) {
 		return count, err
 	}
 	defer stmt.Close()
-	err = stmt.QueryRow(dtx.BrandID, dtx.APIKey).Scan(&count)
+	err = stmt.QueryRow(dtx.CustomerID, dtx.CustomerID, dtx.BrandID).Scan(&count)
 	if err != nil {
 		return count, err
 	}
@@ -332,6 +332,21 @@ func (cp *CustomerPrice) InsertCartIntegration() error {
 	}
 	defer db.Close()
 	stmt, err := db.Prepare(insertCartIntegration)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(cp.PartID, cp.CustomerPartID, cp.CustID)
+	return err
+}
+
+func (cp *CustomerPrice) DeleteCartIntegration() error {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(deleteCartIntegration)
 	if err != nil {
 		return err
 	}
