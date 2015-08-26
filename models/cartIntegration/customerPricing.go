@@ -71,10 +71,26 @@ var (
 	getAllPriceTypes      = `SELECT DISTINCT priceType from Price`
 )
 
+var (
+	Brand_ID int
+)
+
+func initDB() (*sql.DB, error) {
+	connStr := database.ConnectionString()
+	if Brand_ID == 3 {
+		connStr = database.AriesConnectionString()
+	}
+	db, err := sql.Open("mysql", connStr)
+	if err != nil {
+		return nil, err
+	}
+	return db, err
+}
+
 //Get all of a single customer's prices
 func GetCustomerPrices(dtx *apicontext.DataContext) ([]CustomerPrice, error) {
 	var cps []CustomerPrice
-	db, err := sql.Open("mysql", database.ConnectionString())
+	db, err := initDB()
 	if err != nil {
 		return cps, err
 	}
@@ -102,18 +118,18 @@ func GetCustomerPrices(dtx *apicontext.DataContext) ([]CustomerPrice, error) {
 //Get a customers prices - paged/limited
 func GetPricingPaged(page int, count int, dtx *apicontext.DataContext) ([]CustomerPrice, error) {
 	var cps []CustomerPrice
-	db, err := sql.Open("mysql", database.ConnectionString())
+	db, err := initDB()
 	if err != nil {
 		return cps, err
 	}
 	defer db.Close()
+
 	stmt, err := db.Prepare(getPricingPaged)
 	if err != nil {
 		return cps, err
 	}
 	defer stmt.Close()
 	res, err := stmt.Query(dtx.CustomerID, dtx.CustomerID, dtx.BrandID, (page-1)*count, count)
-	// res, err := stmt.Query(dtx.BrandID, dtx.APIKey, (page-1)*count, count)
 	if err != nil {
 		return cps, err
 	}
@@ -131,7 +147,7 @@ func GetPricingPaged(page int, count int, dtx *apicontext.DataContext) ([]Custom
 //Returns the number of prices that a customer has
 func GetPricingCount(dtx *apicontext.DataContext) (int, error) {
 	var count int
-	db, err := sql.Open("mysql", database.ConnectionString())
+	db, err := initDB()
 	if err != nil {
 		return count, err
 	}
@@ -151,7 +167,7 @@ func GetPricingCount(dtx *apicontext.DataContext) (int, error) {
 //Returns Price for a part
 func GetPartPricesByPartID(partID int, dtx *apicontext.DataContext) ([]Price, error) {
 	var ps []Price
-	db, err := sql.Open("mysql", database.ConnectionString())
+	db, err := initDB()
 	if err != nil {
 		return ps, err
 	}
@@ -178,7 +194,7 @@ func GetPartPricesByPartID(partID int, dtx *apicontext.DataContext) ([]Price, er
 //Returns all Prices
 func GetPartPrices(dtx *apicontext.DataContext) ([]Price, error) {
 	var ps []Price
-	db, err := sql.Open("mysql", database.ConnectionString())
+	db, err := initDB()
 	if err != nil {
 		return ps, err
 	}
@@ -205,7 +221,7 @@ func GetPartPrices(dtx *apicontext.DataContext) ([]Price, error) {
 //Returns Map Price for every part
 func GetMAPPartPrices(dtx *apicontext.DataContext) ([]Price, error) {
 	var ps []Price
-	db, err := sql.Open("mysql", database.ConnectionString())
+	db, err := initDB()
 	if err != nil {
 		return ps, err
 	}
@@ -231,7 +247,7 @@ func GetMAPPartPrices(dtx *apicontext.DataContext) ([]Price, error) {
 
 //CRUD
 func (c *CustomerPrice) Update() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	db, err := initDB()
 	if err != nil {
 		return err
 	}
@@ -246,7 +262,7 @@ func (c *CustomerPrice) Update() error {
 }
 
 func (c *CustomerPrice) Create() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	db, err := initDB()
 	if err != nil {
 		return err
 	}
@@ -269,7 +285,7 @@ func (c *CustomerPrice) Create() error {
 }
 
 func (c *CustomerPrice) Delete() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	db, err := initDB()
 	if err != nil {
 		return err
 	}
@@ -286,7 +302,7 @@ func (c *CustomerPrice) Delete() error {
 //CartIntegration
 func GetCustomerCartIntegrations(dtx *apicontext.DataContext) ([]CustomerPrice, error) {
 	var cps []CustomerPrice
-	db, err := sql.Open("mysql", database.ConnectionString())
+	db, err := initDB()
 	if err != nil {
 		return cps, err
 	}
@@ -311,7 +327,7 @@ func GetCustomerCartIntegrations(dtx *apicontext.DataContext) ([]CustomerPrice, 
 }
 
 func (cp *CustomerPrice) UpdateCartIntegration() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	db, err := initDB()
 	if err != nil {
 		return err
 	}
@@ -326,7 +342,7 @@ func (cp *CustomerPrice) UpdateCartIntegration() error {
 }
 
 func (cp *CustomerPrice) InsertCartIntegration() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	db, err := initDB()
 	if err != nil {
 		return err
 	}
@@ -341,7 +357,7 @@ func (cp *CustomerPrice) InsertCartIntegration() error {
 }
 
 func (cp *CustomerPrice) DeleteCartIntegration() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	db, err := initDB()
 	if err != nil {
 		return err
 	}
@@ -357,7 +373,7 @@ func (cp *CustomerPrice) DeleteCartIntegration() error {
 
 func GetAllPriceTypes() ([]string, error) {
 	var types []string
-	db, err := sql.Open("mysql", database.ConnectionString())
+	db, err := initDB()
 	if err != nil {
 		return types, err
 	}

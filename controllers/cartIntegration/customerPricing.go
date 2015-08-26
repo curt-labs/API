@@ -15,9 +15,23 @@ import (
 	"github.com/go-martini/martini"
 )
 
+func setDB(r *http.Request) error {
+	brandID, err := strconv.Atoi(r.URL.Query().Get("brandID"))
+	if err != nil {
+		return err
+	}
+	cartIntegration.Brand_ID = brandID
+	return nil
+}
+
 // Requires APIKEY and brandID in header
 func GetPricing(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var err error
+	err = setDB(r)
+	if err != nil {
+		apierror.GenerateError("Trouble getting brandID from query string", err, rw, r)
+		return ""
+	}
 	prices, err := cartIntegration.GetCustomerPrices(dtx)
 	if err != nil {
 		apierror.GenerateError("Trouble getting prices by customer ID", err, rw, r)
@@ -30,6 +44,11 @@ func GetPricing(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, d
 // Requires count and page in params
 func GetPricingPaged(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var err error
+	err = setDB(r)
+	if err != nil {
+		apierror.GenerateError("Trouble getting brandID from query string", err, rw, r)
+		return ""
+	}
 
 	page, err := strconv.Atoi(params["page"])
 	if page < 1 || err != nil {
@@ -55,6 +74,11 @@ func GetPricingPaged(rw http.ResponseWriter, r *http.Request, enc encoding.Encod
 //Returns int
 func GetPricingCount(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var err error
+	err = setDB(r)
+	if err != nil {
+		apierror.GenerateError("Trouble getting brandID from query string", err, rw, r)
+		return ""
+	}
 	count, err := cartIntegration.GetPricingCount(dtx)
 	if err != nil {
 		apierror.GenerateError("Trouble getting pricing count", err, rw, r)
@@ -65,6 +89,12 @@ func GetPricingCount(rw http.ResponseWriter, r *http.Request, enc encoding.Encod
 
 //Returns Mfr Prices for a part
 func GetPartPricesByPartID(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
+	var err error
+	err = setDB(r)
+	if err != nil {
+		apierror.GenerateError("Trouble getting brandID from query string", err, rw, r)
+		return ""
+	}
 	partID, err := strconv.Atoi(params["part"])
 	if partID < 1 || err != nil {
 		apierror.GenerateError("Trouble getting part number for part pricing", err, rw, r)
@@ -80,6 +110,12 @@ func GetPartPricesByPartID(rw http.ResponseWriter, r *http.Request, enc encoding
 
 //Returns Mfr Prices
 func GetAllPartPrices(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
+	var err error
+	err = setDB(r)
+	if err != nil {
+		apierror.GenerateError("Trouble getting brandID from query string", err, rw, r)
+		return ""
+	}
 	prices, err := cartIntegration.GetPartPrices(dtx)
 	if err != nil {
 		apierror.GenerateError("Trouble getting pricing", err, rw, r)
@@ -89,6 +125,12 @@ func GetAllPartPrices(rw http.ResponseWriter, r *http.Request, enc encoding.Enco
 }
 
 func CreatePrice(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+	var err error
+	err = setDB(r)
+	if err != nil {
+		apierror.GenerateError("Trouble getting brandID from query string", err, rw, r)
+		return ""
+	}
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		apierror.GenerateError("Trouble creating pricing", err, rw, r)
@@ -120,7 +162,12 @@ func CreatePrice(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 }
 
 func UpdatePrice(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
-
+	var err error
+	err = setDB(r)
+	if err != nil {
+		apierror.GenerateError("Trouble getting brandID from query string", err, rw, r)
+		return ""
+	}
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		apierror.GenerateError("Trouble creating pricing", err, rw, r)
@@ -156,6 +203,11 @@ func UpdatePrice(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 //set all of a customer's prices to MAP
 func ResetAllToMap(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var err error
+	err = setDB(r)
+	if err != nil {
+		apierror.GenerateError("Trouble getting brandID from query string", err, rw, r)
+		return ""
+	}
 	custPrices, err := cartIntegration.GetCustomerPrices(dtx)
 	if err != nil {
 		apierror.GenerateError("Trouble getting prices by customer ID", err, rw, r)
@@ -194,6 +246,12 @@ func ResetAllToMap(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder
 
 //sets all of a customer's prices to a percentage of the price type specified in params
 func Global(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
+	var err error
+	err = setDB(r)
+	if err != nil {
+		apierror.GenerateError("Trouble getting brandID from query string", err, rw, r)
+		return ""
+	}
 	priceType := params["type"]
 	percent, err := strconv.ParseFloat(params["percentage"], 64)
 	if err != nil {
@@ -243,6 +301,12 @@ func Global(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, param
 
 //Get those price types
 func GetAllPriceTypes(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+	var err error
+	err = setDB(r)
+	if err != nil {
+		apierror.GenerateError("Trouble getting brandID from query string", err, rw, r)
+		return ""
+	}
 	types, err := cartIntegration.GetAllPriceTypes()
 	if err != nil {
 		apierror.GenerateError("Trouble getting price types", err, rw, r)
