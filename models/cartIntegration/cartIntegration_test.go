@@ -4,13 +4,9 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	. "github.com/smartystreets/goconvey/convey"
 
-	"bytes"
-	// "encoding/csv"
-	"io"
+	"encoding/csv"
 	"mime/multipart"
-	"net/http"
 	"os"
-	"path/filepath"
 	"testing"
 )
 
@@ -94,46 +90,31 @@ func TestCartIntegration(t *testing.T) {
 	})
 
 	Convey("Testing FileIO", t, func() {
-		r, err := newfileUploadRequest()
-		file, _, err := r.FormFile("file")
+		file, err := newfileUploadRequest()
 		So(err, ShouldBeNil)
+		t.Log(file.Read(nil))
 
 		err = UploadFile(file, dtx)
 		So(err, ShouldBeNil)
+
+		os.Remove("test.csv") //cleanup
 
 	})
 	apicontextmock.DeMock(dtx)
 
 }
 
-func newfileUploadRequest() (*http.Request, error) {
+func newfileUploadRequest() (multipart.File, error) {
 	file, err := os.Create("test.csv")
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
 
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("file", filepath.Base("test.csv"))
-	if err != nil {
-		return nil, err
-	}
-	_, err = io.Copy(part, file)
-
-	writer.WriteField("tes", "11000,201,100.00,2020-01-01,2021-01-01")
-	err = writer.Close()
+	writer := csv.NewWriter(file)
+	err = writer.WriteAll([][]string{{"11000", "201", "100.00", "2020-01-01", "2021-01-01"}, {"11001", "202", "100.00", "2020-01-01", "2021-01-01"}})
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", "", body)
-	if err != nil {
-		return nil, err
-	}
-
-	boundary := writer.Boundary()
-	req.Header.Add("Content-Type", "multipart/form-data; boundary="+boundary)
-	return req, nil
-
+	return file, nil
 }
