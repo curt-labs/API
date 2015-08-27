@@ -10,13 +10,13 @@ import (
 )
 
 var (
-	brandFields           = `ID, name, code, logo, logoAlt, formalName, longName, primaryColor`
+	brandFields           = `ID, name, code, logo, logoAlt, formalName, longName, primaryColor, autocareID`
 	getAllBrandsStmt      = `select ` + brandFields + ` from Brand`
 	getBrandStmt          = `select ` + brandFields + ` from Brand where ID = ?`
-	insertBrandStmt       = `insert into Brand(name, code) values (?,?)`
-	updateBrandStmt       = `update Brand set name = ?, code = ? where ID = ?`
+	insertBrandStmt       = `insert into Brand(name, code, logo, logoAlt, formalName, longName, primaryColor, autocareID) values (?,?,?,?,?,?,?,?)`
+	updateBrandStmt       = `update Brand set name = ?, code = ?, logo = ?, logoAlt = ?, formalName = ?, longName = ?, primaryColor = ?, autocareID = ? where ID = ?`
 	deleteBrandStmt       = `delete from Brand where ID = ?`
-	getCustomerUserBrands = `select b.ID, b.name, b.code, b.logo, b.logoAlt, b.formalName, b.longName, b.primaryColor
+	getCustomerUserBrands = `select b.ID, b.name, b.code, b.logo, b.logoAlt, b.formalName, b.longName, b.primaryColor, b.autocareID
 								from Brand as b
 								join CustomerToBrand as ctb on ctb.BrandID = b.ID
 								join Customer as c on c.cust_id = ctb.cust_id
@@ -41,6 +41,7 @@ type Brand struct {
 	FormalName    string    `json:"formal_name" xml:"formal_name,attr"`
 	LongName      string    `json:"long_name" xml:"long_name,attr"`
 	PrimaryColor  string    `json:"primary_color" xml:"primary_color,attr"`
+	AutocareID    string    `json:"autocareId" xml:"autocareId,attr"`
 	Websites      []Website `json:"websites" xml:"websites"`
 }
 
@@ -56,9 +57,9 @@ type Scanner interface {
 }
 
 func ScanBrand(res Scanner) (Brand, error) {
-	var logo, logoAlt, formal, long, primary *string
+	var logo, logoAlt, formal, long, primary, autocare *string
 	var b Brand
-	err := res.Scan(&b.ID, &b.Name, &b.Code, &logo, &logoAlt, &formal, &long, &primary)
+	err := res.Scan(&b.ID, &b.Name, &b.Code, &logo, &logoAlt, &formal, &long, &primary, &autocare)
 	if err != nil {
 		return b, err
 	}
@@ -82,6 +83,9 @@ func ScanBrand(res Scanner) (Brand, error) {
 	}
 	if primary != nil {
 		b.PrimaryColor = *primary
+	}
+	if autocare != nil {
+		b.AutocareID = *autocare
 	}
 	return b, err
 }
@@ -160,7 +164,7 @@ func (b *Brand) Create() error {
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Exec(b.Name, b.Code)
+	res, err := stmt.Exec(b.Name, b.Code, b.Logo, b.LogoAlternate, b.FormalName, b.LongName, b.PrimaryColor, b.AutocareID)
 	if err != nil {
 		return err
 	}
@@ -189,7 +193,7 @@ func (b *Brand) Update() error {
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(b.Name, b.Code, b.ID)
+	_, err = stmt.Exec(b.Name, b.Code, b.Logo, b.LogoAlternate, b.FormalName, b.LongName, b.PrimaryColor, b.AutocareID, b.ID)
 	return err
 }
 

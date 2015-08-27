@@ -21,24 +21,23 @@ func TestBrands(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(b.ID, ShouldNotEqual, 0)
 
-			Convey("Testing Read/Get", func() {
-				err = b.Get()
-				So(err, ShouldBeNil)
-				So(b.ID, ShouldBeGreaterThan, 0)
-				So(b.Name, ShouldEqual, "TESTER")
+			err = b.Get()
+			So(err, ShouldBeNil)
+			So(b.ID, ShouldBeGreaterThan, 0)
+			So(b.Name, ShouldEqual, "TESTER")
 
-				Convey("Testing Update", func() {
-					b.Name = "TESTING"
-					err = b.Update()
-					So(err, ShouldBeNil)
-					So(b.Name, ShouldEqual, "TESTING")
+			b.Name = "TESTING"
+			err = b.Update()
+			So(err, ShouldBeNil)
+			So(b.Name, ShouldEqual, "TESTING")
 
-					Convey("Testing Delete", func() {
-						err = b.Delete()
-						So(err, ShouldBeNil)
-					})
-				})
-			})
+			sites, err := getWebsites(b.ID)
+			So(err, ShouldBeNil)
+			So(sites, ShouldResemble, []Website{})
+
+			err = b.Delete()
+			So(err, ShouldBeNil)
+
 		})
 		Convey("Testing Get - Bad ID", func() {
 			br := Brand{}
@@ -46,6 +45,7 @@ func TestBrands(t *testing.T) {
 			So(err, ShouldNotBeNil)
 		})
 	})
+
 }
 
 func BenchmarkGetAllBrands(b *testing.B) {
