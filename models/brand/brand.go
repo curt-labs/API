@@ -11,7 +11,7 @@ import (
 
 var (
 	brandFields           = `ID, name, code, logo, logoAlt, formalName, longName, primaryColor`
-	getAllBrandsStmt      = `select ` + brandFields + ` for from Brand`
+	getAllBrandsStmt      = `select ` + brandFields + ` from Brand`
 	getBrandStmt          = `select ` + brandFields + ` from Brand where ID = ?`
 	insertBrandStmt       = `insert into Brand(name, code) values (?,?)`
 	updateBrandStmt       = `update Brand set name = ?, code = ? where ID = ?`
@@ -51,6 +51,40 @@ type Website struct {
 	BrandID     int      `json:"brand_id" xml:"brand_id"`
 }
 
+type Scanner interface {
+	Scan(...interface{}) error
+}
+
+func ScanBrand(res Scanner) (Brand, error) {
+	var logo, logoAlt, formal, long, primary *string
+	var b Brand
+	err := res.Scan(&b.ID, &b.Name, &b.Code, &logo, &logoAlt, &formal, &long, &primary)
+	if err != nil {
+		return b, err
+	}
+	if logo != nil {
+		b.Logo, err = url.Parse(*logo)
+		if err != nil {
+			return b, err
+		}
+	}
+	if logoAlt != nil {
+		b.LogoAlternate, err = url.Parse(*logoAlt)
+		if err != nil {
+			return b, err
+		}
+	}
+	if formal != nil {
+		b.FormalName = *formal
+	}
+	if long != nil {
+		b.LongName = *long
+	}
+	if primary != nil {
+		b.PrimaryColor = *primary
+	}
+	return b, err
+}
 func GetAllBrands() (brands Brands, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -71,15 +105,9 @@ func GetAllBrands() (brands Brands, err error) {
 
 	for rows.Next() {
 		var b Brand
-		var logo, logoAlt *string
-		if err = rows.Scan(&b.ID, &b.Name, &b.Code, &logo, &logoAlt, &b.FormalName, &b.LongName, &b.PrimaryColor); err != nil {
+		b, err = ScanBrand(rows)
+		if err != nil {
 			return
-		}
-		if logo != nil {
-			b.Logo, _ = url.Parse(*logo)
-		}
-		if logoAlt != nil {
-			b.LogoAlternate, _ = url.Parse(*logoAlt)
 		}
 		brands = append(brands, b)
 	}
@@ -105,22 +133,11 @@ func (b *Brand) Get() error {
 	}
 	defer stmt.Close()
 
-	var logo, logoAlt *string
-	err = stmt.QueryRow(b.ID).Scan(&b.ID, &b.Name, &b.Code, &logo, &logoAlt, &b.FormalName, &b.LongName, &b.PrimaryColor)
+	res := stmt.QueryRow(b.ID)
+	*b, err = ScanBrand(res)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return errors.New("Invalid Brand ID")
-		}
 		return err
 	}
-
-	if logo != nil {
-		b.Logo, _ = url.Parse(*logo)
-	}
-	if logoAlt != nil {
-		b.LogoAlternate, _ = url.Parse(*logoAlt)
-	}
-
 	return nil
 }
 
@@ -283,20 +300,13 @@ func GetUserBrands(id int) ([]Brand, error) {
 
 	for rows.Next() {
 		var b Brand
-		var logo, logoAlt *string
-		if err = rows.Scan(&b.ID, &b.Name, &b.Code, &logo, &logoAlt, &b.FormalName, &b.LongName, &b.PrimaryColor); err != nil {
-			continue
-		}
-		if logo != nil {
-			b.Logo, _ = url.Parse(*logo)
-		}
-		if logoAlt != nil {
-			b.LogoAlternate, _ = url.Parse(*logoAlt)
+		b, err = ScanBrand(rows)
+		if err != nil {
+			return brands, err
 		}
 
 		b.Websites = indexedSites[b.ID]
 		brands = append(brands, b)
 	}
-
 	return brands, nil
 }
