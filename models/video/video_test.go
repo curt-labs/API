@@ -91,12 +91,15 @@ func TestVideo_New(t *testing.T) {
 
 		err = v.Update(MockedDTX)
 		So(err, ShouldBeNil)
+
 		//get video
 		err = v.Get()
 		So(err, ShouldBeNil)
+
 		//get details
 		err = v.GetVideoDetails()
 		So(err, ShouldBeNil)
+		So(len(v.PartIds), ShouldBeGreaterThan, 0)
 		//get all
 		vs, err := GetAllVideos(MockedDTX)
 		So(err, ShouldBeNil)
@@ -149,11 +152,18 @@ func TestVideo_New(t *testing.T) {
 		cts, err := GetAllChannelTypes()
 		So(err, ShouldBeNil)
 		So(len(cts), ShouldBeGreaterThan, 0)
-		//delete chan type
-		err = ct.Delete()
+
+		//delete video
+		err = v.Delete(MockedDTX)
+		So(err, ShouldBeNil)
+		//delete cdn
+		err = cdn.Delete()
 		So(err, ShouldBeNil)
 		//delete chan
 		err = ch.Delete()
+		So(err, ShouldBeNil)
+		//delete chan type
+		err = ct.Delete()
 		So(err, ShouldBeNil)
 		//delete cdn type
 		err = cdnft.Delete()
@@ -161,15 +171,13 @@ func TestVideo_New(t *testing.T) {
 		//delete video type
 		err = vt.Delete()
 		So(err, ShouldBeNil)
-		//delete cdn
-		err = cdn.Delete()
-		So(err, ShouldBeNil)
+
 		//delete cat
 		// err = cat.Delete(MockedDTX)
 		// So(err, ShouldBeNil)
-		//delete video
-		err = v.Delete(MockedDTX)
-		So(err, ShouldBeNil)
+		// //delete video
+		// err = v.Delete(MockedDTX)
+		// So(err, ShouldBeNil)
 	})
 	_ = apicontextmock.DeMock(MockedDTX)
 

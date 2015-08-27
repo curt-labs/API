@@ -125,6 +125,7 @@ var (
 						LEFT JOIN CdnFileType AS cft ON cft.ID = cf.typeID 
 						LEFT JOIN VideoCdnFiles AS vcf ON vcf.cdnID = cf.ID 
 						WHERE vcf.videoID = ? `
+	getVideoParts = `select partID from VideoJoin where videoID = ?`
 
 	createVideo             = `INSERT INTO VideoNew (subjectTypeID, title, description, dateAdded, dateModified, isPrimary, thumbnail) VALUES(?, ?, ?, ?, ?, ?, ?)`
 	updateVideo             = `UPDATE VideoNew SET subjectTypeID = ?, title = ?, description = ?, isPrimary = ?, thumbnail = ? WHERE ID = ?`
@@ -207,6 +208,7 @@ func (v *Video) GetVideoDetails() error {
 	brandChan := make(chan error)
 	chanChan := make(chan error)
 	cdnChan := make(chan error)
+	partChan := make(chan error)
 
 	err = v.Get()
 	if err != nil {
@@ -240,6 +242,15 @@ func (v *Video) GetVideoDetails() error {
 
 	}()
 
+	go func() {
+		err := v.GetParts()
+		if err != nil {
+			partChan <- err
+		}
+		partChan <- nil
+
+	}()
+
 	err = <-brandChan
 	if err != nil {
 		return err
@@ -252,10 +263,15 @@ func (v *Video) GetVideoDetails() error {
 	if err != nil {
 		return err
 	}
+	err = <-partChan
+	if err != nil {
+		return err
+	}
 
 	close(brandChan)
 	close(chanChan)
 	close(cdnChan)
+	close(partChan)
 
 	if v != nil {
 		go redis.Setex(redis_key, v, redis.CacheTimeout)
@@ -407,6 +423,43 @@ func (v *Video) GetChannels() (chs Channels, err error) {
 		go redis.Setex(redis_key, chs, redis.CacheTimeout)
 	}
 
+	return
+}
+
+func (v *Video) GetParts() (err error) {
+	redis_key := "video:parts:" + strconv.Itoa(v.ID)
+	data, err := redis.Get(redis_key)
+	if err == nil && len(data) > 0 {
+		err = json.Unmarshal(data, &v.PartIds)
+		return
+	}
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(getVideoParts)
+	if err != nil {
+		return
+	}
+	defer stmt.Close()
+	rows, err := stmt.Query(v.ID)
+	if err != nil {
+		return
+	}
+	var i *int
+	for rows.Next() {
+		err = rows.Scan(&i)
+		if err != nil {
+			return err
+		}
+		if i != nil {
+			v.PartIds = append(v.PartIds, *i)
+		}
+	}
+	if len(v.PartIds) > 0 {
+		go redis.Setex(redis_key, v.PartIds, redis.CacheTimeout)
+	}
 	return
 }
 
@@ -656,29 +709,6 @@ func (v *Video) Update(dtx *apicontext.DataContext) error {
 }
 
 func (v *Video) Delete(dtx *apicontext.DataContext) error {
-	go redis.Delete(AllVideosRedisKey + dtx.BrandString)
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-
-	stmt, err := tx.Prepare(deleteVideo)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	_, err = stmt.Exec(v.ID)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	tx.Commit()
 
 	//delete and create joins
 	bChan := make(chan int)
@@ -747,6 +777,31 @@ func (v *Video) Delete(dtx *apicontext.DataContext) error {
 	<-chChan
 	<-catChan
 	<-pChan
+
+	//delete from VideoNew Table
+	go redis.Delete(AllVideosRedisKey + dtx.BrandString)
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
+	stmt, err := tx.Prepare(deleteVideo)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(v.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
 
 	return err
 }
