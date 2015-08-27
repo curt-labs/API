@@ -1,6 +1,7 @@
 package brand
 
 import (
+	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )
@@ -8,6 +9,10 @@ import (
 func TestBrands(t *testing.T) {
 	var err error
 	b := setupDummyBrand()
+	dtx, err := apicontextmock.Mock()
+	if err != nil {
+		return
+	}
 
 	Convey("Testing GetAll", t, func() {
 		brands, err := GetAllBrands()
@@ -33,7 +38,11 @@ func TestBrands(t *testing.T) {
 
 			sites, err := getWebsites(b.ID)
 			So(err, ShouldBeNil)
-			So(sites, ShouldResemble, []Website{})
+			So(sites, ShouldHaveSameTypeAs, []Website{})
+
+			brands, err := GetUserBrands(dtx.CustomerID)
+			So(err, ShouldBeNil)
+			So(brands, ShouldHaveSameTypeAs, []Brand{})
 
 			err = b.Delete()
 			So(err, ShouldBeNil)
@@ -45,6 +54,7 @@ func TestBrands(t *testing.T) {
 			So(err, ShouldNotBeNil)
 		})
 	})
+	apicontextmock.DeMock(dtx)
 
 }
 
