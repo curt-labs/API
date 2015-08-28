@@ -99,7 +99,7 @@ func AriesConnectionString() string {
 		proto := os.Getenv("DATABASE_PROTOCOL")
 		user := os.Getenv("DATABASE_USERNAME")
 		pass := os.Getenv("DATABASE_PASSWORD")
-		db := os.Getenv("CURT_DEV_NAME")
+		db := os.Getenv("CURT_ARIES_DEV_NAME")
 		return fmt.Sprintf("%s:%s@%s(%s)/%s?parseTime=true&loc=%s", user, pass, proto, addr, db, "America%2FChicago")
 	}
 
