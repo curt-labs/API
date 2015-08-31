@@ -16,10 +16,9 @@ var (
 )
 
 type ApiKeyType struct {
-	ID        string
-	Type      string
-	DateAdded time.Time
-	time.Time
+	ID        string    `json:"_id" xml:"id"`
+	Type      string    `json:"type" xml:"type"`
+	DateAdded time.Time `json:"dateAdded" xml:"dateAdded"`
 }
 
 type Scanner interface {
@@ -59,6 +58,9 @@ func GetAllApiKeyTypes() (as []ApiKeyType, err error) {
 	}
 	defer stmt.Close()
 	res, err := stmt.Query() //returns *sql.Rows
+	if err != nil {
+		return
+	}
 
 	for res.Next() {
 		a, err := ScanKey(res)

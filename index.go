@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"github.com/curt-labs/GoAPI/controllers/apiKeyType"
 	"github.com/curt-labs/GoAPI/controllers/applicationGuide"
 	"github.com/curt-labs/GoAPI/controllers/blog"
 	"github.com/curt-labs/GoAPI/controllers/brand"
@@ -66,6 +67,10 @@ func main() {
 	store := sessions.NewCookieStore([]byte("api_secret_session"))
 	m.Use(sessions.Sessions("api_sessions", store))
 	m.Use(encoding.MapEncoder)
+
+	m.Group("/apiKeyTypes", func(r martini.Router) {
+		r.Get("", apiKeyType.GetApiKeyTypes)
+	})
 
 	m.Group("/applicationGuide", func(r martini.Router) {
 		r.Get("/website/:id", applicationGuide.GetApplicationGuidesByWebsite)
