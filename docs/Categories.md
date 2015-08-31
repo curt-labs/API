@@ -24,6 +24,6 @@
 
 	GET - http://goapi.curtmfg.com/category/<parent category id>/parts?key=[public api key]
 
-	GET (paged) - http://goapi.curtmfg.com/category/<category id>/parts/<page>/<count>?key=[public api key]
+	GET (paged) - http://goapi.curtmfg.com/category/<category id>/parts?page=[page]&count=[count]&key=[public api key]
 
 	POST - http://goapi.curtmfg.com/category/<parent category id>/parts?key=[public api key]

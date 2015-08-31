@@ -108,7 +108,6 @@ func main() {
 		r.Get("/:id/subs", category_ctlr.SubCategories)
 		r.Get("/:id/parts", category_ctlr.GetParts)
 		r.Post("/:id/parts", category_ctlr.GetParts)
-		r.Get("/:id/parts/:page/:count", category_ctlr.GetParts)
 	})
 
 	m.Group("/contact", func(r martini.Router) {
