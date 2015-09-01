@@ -207,7 +207,7 @@ func main() {
 		r.Post("/user", customer_ctlr.GetUser)
 		r.Post("/user/register", customer_ctlr.RegisterUser)
 		r.Post("/user/resetPassword", customer_ctlr.ResetPassword)
-		// r.Post("/user/:id/key/:type", customer_ctlr.GenerateApiKey) //misses dtx middleware
+		r.Delete("/deleteKey", customer_ctlr.DeleteUserApiKey)
 		r.Post("/generateKey/user/:id/key/:type", customer_ctlr.GenerateApiKey)
 		r.Get("/user/:id", customer_ctlr.GetUserById)
 		r.Post("/user/:id", customer_ctlr.UpdateCustomerUser)

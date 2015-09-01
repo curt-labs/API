@@ -425,3 +425,21 @@ func UpdateCustomerUser(rw http.ResponseWriter, r *http.Request, enc encoding.En
 
 	return encoding.Must(enc.Encode(cu))
 }
+
+func DeleteUserApiKey(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
+	var err error
+	var key customer.ApiCredentials
+
+	err = json.NewDecoder(r.Body).Decode(&key)
+	if err != nil {
+		apierror.GenerateError("Trouble unmarshalling api key", err, rw, r)
+		return ""
+	}
+
+	err = key.DeleteApiKey()
+	if err != nil {
+		apierror.GenerateError("Trouble deleting key", err, rw, r)
+		return ""
+	}
+	return encoding.Must(enc.Encode(key))
+}

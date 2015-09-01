@@ -126,7 +126,8 @@ var (
 						values(?,?,UUID(),NOW())` //DB schema DOES auto increment table id
 	insertAPIKeyToBrand = `insert into ApiKeyToBrand(keyID, brandID)
 						values(?,?)`
-	deleteAPIKeyToBrand = `delete from ApiKeyToBrand where keyID in (select id from ApiKey where user_id = ? && type_id = ?)`
+	deleteAPIKeyToBrand      = `delete from ApiKeyToBrand where keyID in (select id from ApiKey where user_id = ? && type_id = ?)`
+	deleteAPIKeyToBrandByKey = `delete from ApiKeyToBrand where keyID in (select id from ApiKey where api_key = ?)`
 
 	getCustomerUserKeysWithoutAuth = `select ak.api_key, akt.type from ApiKey as ak
 										join ApiKeyType as akt on ak.type_id = akt.id
@@ -136,6 +137,7 @@ var (
 	setCustomerUserPasswordWithID = `update CustomerUser set password = ?, passwordConverted = 1 WHERE email = ? AND cust_ID = ?`
 	deleteCustomerUser            = `DELETE FROM CustomerUser WHERE id = ?`
 	deleteAPIkey                  = `DELETE FROM ApiKey WHERE user_id = ? AND type_id = ?`
+	deleteAPIkeyByKey             = `DELETE FROM ApiKey WHERE api_key = ?`
 	deleteUserAPIkeys             = `DELETE FROM ApiKey WHERE user_id = ?`
 	getCustomerUserKeysWithAuth   = `select ak.api_key, akt.type from ApiKey as ak
 										join ApiKeyType as akt on ak.type_id = akt.id
@@ -468,7 +470,7 @@ func DeleteCustomerUsersByCustomerID(customerID int) error {
 			return err
 		}
 		for _, key := range tempCustUser.Keys {
-			err = tempCustUser.deleteApiKey(key.Type)
+			err = tempCustUser.deleteApiKeyByType(key.Type)
 			if err != nil {
 				return err
 			}
@@ -1091,7 +1093,7 @@ func (cu *CustomerUser) SendRegistrationRequestEmail() error {
 	return email.Send(tos, subject, body, true)
 }
 
-func (cu *CustomerUser) deleteApiKey(keyType string) error {
+func (cu *CustomerUser) deleteApiKeyByType(keyType string) error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1132,6 +1134,42 @@ func (cu *CustomerUser) deleteApiKey(keyType string) error {
 	err = tx.Commit()
 
 	return err
+}
+
+func (key *ApiCredentials) DeleteApiKey() error {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
+	stmt, err := tx.Prepare(deleteAPIKeyToBrandByKey)
+	if err != nil {
+		return err
+	}
+	_, err = stmt.Exec(key.Key)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	stmt, err = tx.Prepare(deleteAPIkeyByKey)
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec(key.Key)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
 }
 
 type ApiRequest struct {
