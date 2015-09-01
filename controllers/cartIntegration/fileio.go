@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/csv"
 	"errors"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -52,6 +53,7 @@ func Download(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx
 		apierror.GenerateError("Error getting customer prices ", err, rw, r)
 		return ""
 	}
+	log.Print("C", customerPrices)
 
 	//Price map
 	prices, err := cartIntegration.GetPartPrices(dtx)

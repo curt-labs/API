@@ -18,6 +18,7 @@ type CustomerPrice struct {
 	IsSale         int        `json:"isSale,omitempty" xml:"isSale,omitempty"`
 	SaleStart      *time.Time `json:"saleStart,omitempty" xml:"saleStart,omitempty"`
 	SaleEnd        *time.Time `json:"saleEnd,omitempty" xml:"saleEnd,omitempty"`
+	ListPrice      Price      `json:"listPrice,omitempty" xml:"listPrice,omitempty"`
 }
 
 type Price struct {
@@ -27,14 +28,16 @@ type Price struct {
 }
 
 var (
-	getPricing = `SELECT distinct cp.cust_price_id, cp.cust_id, p.partID, ci.custPartID, cp.price, cp.isSale, cp.sale_start, cp.sale_end FROM Part p
+	getPricing = `SELECT distinct cp.cust_price_id, cp.cust_id, p.partID, ci.custPartID, cp.price, cp.isSale, cp.sale_start, cp.sale_end, pr.priceType, pr.price FROM Part p
 		LEFT JOIN CustomerPricing cp ON cp.partID = p.partID AND cp.cust_id = ?
 		LEFT JOIN CartIntegration ci ON ci.partID = p.partID AND ci.custID = ?
+		left join Price pr on pr.partID = p.partID and pr.priceType = 'list'
 		WHERE (p.status = 800 OR p.status = 900) && p.brandID = ?
 		ORDER BY p.partID`
-	getPricingPaged = `SELECT distinct cp.cust_price_id, cp.cust_id, p.partID, ci.custPartID, cp.price, cp.isSale, cp.sale_start, cp.sale_end FROM Part p
+	getPricingPaged = `SELECT distinct cp.cust_price_id, cp.cust_id, p.partID, ci.custPartID, cp.price, cp.isSale, cp.sale_start, cp.sale_end, pr.priceType, pr.price FROM Part p
 		LEFT JOIN CustomerPricing cp ON cp.partID = p.partID AND cp.cust_id = ?
 		LEFT JOIN CartIntegration ci ON ci.partID = p.partID AND ci.custID = ?
+		left join Price pr on pr.partID = p.partID and pr.priceType = 'list'
 		WHERE (p.status = 800 OR p.status = 900) && p.brandID = ?
 		ORDER BY p.partID
 		LIMIT ?, ?`
@@ -401,9 +404,10 @@ func GetAllPriceTypes() ([]string, error) {
 //Utility
 func Scan(rows database.Scanner) (CustomerPrice, error) {
 	var c CustomerPrice
-	var p *float64
+	var p, lp *float64
 	var custPartId, id, custId, isSale *int
 	var ss, se *time.Time
+	var pt *string
 
 	err := rows.Scan(
 		&id,
@@ -414,6 +418,8 @@ func Scan(rows database.Scanner) (CustomerPrice, error) {
 		&isSale,
 		&ss,
 		&se,
+		&pt,
+		&lp,
 	)
 	if err != nil {
 		return c, err
@@ -439,6 +445,12 @@ func Scan(rows database.Scanner) (CustomerPrice, error) {
 	}
 	if se != nil {
 		c.SaleEnd = se
+	}
+	if pt != nil {
+		c.ListPrice.Type = *pt
+	}
+	if lp != nil {
+		c.ListPrice.Price = *lp
 	}
 	return c, err
 }
