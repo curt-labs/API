@@ -216,7 +216,6 @@ func GenerateApiKey(rw http.ResponseWriter, r *http.Request, params martini.Para
 		apierror.GenerateError("Invalid API key type", err, rw, r)
 		return ""
 	}
-
 	user.Id = id
 	if err = user.Get(key); err != nil {
 		apierror.GenerateError("Invalid user reference", err, rw, r)
@@ -225,11 +224,9 @@ func GenerateApiKey(rw http.ResponseWriter, r *http.Request, params martini.Para
 
 	generated, err := user.GenerateAPIKey(generateType, dtx.BrandArray)
 	if err != nil {
-		err = errors.New("Failed to generate an API Key: ")
 		apierror.GenerateError("Failed to generate an API Key", err, rw, r)
 		return ""
 	}
-
 	return encoding.Must(enc.Encode(generated))
 }
 
