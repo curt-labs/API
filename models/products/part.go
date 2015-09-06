@@ -62,7 +62,7 @@ var (
 	relatedPartStmt = `select distinct relatedID from RelatedPart
                 where partID = ?
                 order by relatedID`
-	partContentStmt = `select ct.cTypeID, ct.type, con.text
+	partContentStmt = `select ct.cTypeID, ct.type, ct.allowHTML, con.text
                 from Content as con
                 join ContentBridge as cb on con.contentID = cb.contentID
                 join ContentType as ct on con.cTypeID = ct.cTypeID
@@ -738,6 +738,7 @@ func (p *Part) GetContent(dtx *apicontext.DataContext) error {
 		err = rows.Scan(
 			&con.ContentType.Id,
 			&con.ContentType.Type,
+			&con.ContentType.AllowHtml,
 			&conText,
 		)
 		if err != nil {
