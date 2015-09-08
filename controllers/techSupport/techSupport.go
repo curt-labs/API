@@ -60,7 +60,7 @@ func GetTechSupportByContact(rw http.ResponseWriter, req *http.Request, enc enco
 	return encoding.Must(enc.Encode(ts))
 }
 
-func CreateTechSupport(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+func CreateTechSupport(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	contType := req.Header.Get("Content-Type")
 
 	var t techSupport.TechSupport
@@ -110,6 +110,7 @@ func CreateTechSupport(rw http.ResponseWriter, req *http.Request, enc encoding.E
 			apierror.GenerateError("Error parsing purchase date.", err, rw, req)
 		}
 	}
+	t.BrandID = dtx.BrandID
 	err = t.Create()
 	if err != nil {
 		apierror.GenerateError("Error creating Tech Support.", err, rw, req)
