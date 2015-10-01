@@ -80,9 +80,6 @@ var (
 
 func initDB() (*sql.DB, error) {
 	connStr := database.ConnectionString()
-	if Brand_ID == 3 {
-		connStr = database.AriesConnectionString()
-	}
 	db, err := sql.Open("mysql", connStr)
 	if err != nil {
 		return nil, err
