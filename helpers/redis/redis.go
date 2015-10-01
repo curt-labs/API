@@ -41,7 +41,7 @@ func RedisPool(master bool) *redix.Pool {
 				return nil, err
 			}
 			if password != "" && master {
-				if _, err := c.Do("AUTH", password); err != nil {
+				if _, err = c.Do("AUTH", password); err != nil {
 					c.Close()
 					return nil, err
 				}
@@ -58,11 +58,17 @@ func RedisPool(master bool) *redix.Pool {
 func Get(key string) ([]byte, error) {
 	data := make([]byte, 0)
 	pool := RedisPool(false)
-	if pool == nil {
+	if pool == nil || pool.ActiveCount() == 0 {
 		return data, errors.New(PoolAllocationErr)
 	}
 
-	conn := pool.Get()
+	conn, err := pool.Dial()
+	if err != nil {
+		return data, err
+	} else if conn.Err() != nil {
+		return data, err
+	}
+
 	conn.Send("select", Db)
 
 	reply, err := conn.Do("GET", fmt.Sprintf("%s:%s", Prefix, key))
