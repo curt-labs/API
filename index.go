@@ -416,8 +416,8 @@ func main() {
 		r.Get("", showcase.GetAllShowcases)
 		r.Get("/:id", showcase.GetShowcase)
 		r.Post("", showcase.Save)
-		r.Put("/:id", showcase.Save)
-		r.Delete("/:id", showcase.Delete)
+		// r.Put("/:id", showcase.Save)
+		// r.Delete("/:id", showcase.Delete)
 	})
 
 	m.Group("/techSupport", func(r martini.Router) {
