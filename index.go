@@ -21,6 +21,7 @@ import (
 	"github.com/curt-labs/GoAPI/controllers/part"
 	"github.com/curt-labs/GoAPI/controllers/salesrep"
 	"github.com/curt-labs/GoAPI/controllers/search"
+	"github.com/curt-labs/GoAPI/controllers/showcase"
 	"github.com/curt-labs/GoAPI/controllers/site"
 	"github.com/curt-labs/GoAPI/controllers/techSupport"
 	"github.com/curt-labs/GoAPI/controllers/testimonials"
@@ -410,6 +411,13 @@ func main() {
 
 	m.Group("/lp", func(r martini.Router) {
 		r.Get("/:id", landingPage.Get)
+	})
+	m.Group("/showcase", func(r martini.Router) {
+		r.Get("", showcase.GetAllShowcases)
+		r.Get("/:id", showcase.GetShowcase)
+		r.Post("", showcase.Save)
+		r.Put("/:id", showcase.Save)
+		r.Delete("/:id", showcase.Delete)
 	})
 
 	m.Group("/techSupport", func(r martini.Router) {
