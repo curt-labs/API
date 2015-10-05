@@ -81,7 +81,7 @@ var (
 		c.catTitle, c.shortDesc, c.longDesc,
 		c.image, c.icon, c.isLifestyle, c.vehicleSpecific,
 		c.vehicleRequired, c.metaTitle, c.metaDesc, c.metaKeywords,
-		cc.code, cc.font from Categories as c
+		cc.code, cc.font, c.brandID from Categories as c
 		left join ColorCode as cc on c.codeID = cc.codeID
 		join ApiKeyToBrand as akb on akb.brandID = c.brandID
 		join ApiKey as ak on ak.id = akb.keyID
@@ -93,7 +93,7 @@ var (
 		c.catTitle, c.shortDesc, c.longDesc,
 		c.image, c.icon, c.isLifestyle, c.vehicleSpecific,
 		c.vehicleRequired, c.metaTitle, c.metaDesc, c.metaKeywords,
-		cc.code, cc.font from Categories as c
+		cc.code, cc.font, c.brandID from Categories as c
 		left join ColorCode as cc on c.codeID = cc.codeID
 		where c.catID = ?
 		order by c.sort`
@@ -259,7 +259,8 @@ func PopulateCategory(row *sql.Row, ch chan Category, dtx *apicontext.DataContex
 		&initCat.MetaDescription,
 		&initCat.MetaKeywords,
 		&colorCode,
-		&fontCode)
+		&fontCode,
+		&initCat.BrandID)
 	if err != nil {
 		ch <- Category{}
 		return
