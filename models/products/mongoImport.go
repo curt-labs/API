@@ -100,7 +100,7 @@ func ConvertToApplication(e Input) error {
 
 	if partID = PartConversion[e.Part]; partID == 0 {
 
-		db, err := sql.Open("mysql", database.AriesConnectionString())
+		db, err := sql.Open("mysql", database.ConnectionString())
 		if err != nil {
 			return err
 		}
