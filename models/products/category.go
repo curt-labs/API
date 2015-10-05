@@ -15,6 +15,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	//"log"
 )
 
 var (
@@ -360,6 +362,80 @@ func TopTierCategories(dtx *apicontext.DataContext) (cats []Category, err error)
 		go redis.Setex(redis_key, cats, 86400)
 	}
 	return
+}
+
+func CategoryTree(dtx *apicontext.DataContext) (cats []Category, err error) {
+	cats = make([]Category, 0)
+
+	redis_key := fmt.Sprintf("category:cat-tree:%s", dtx.BrandString)
+	// First lets try to access the category:top endpoint in Redis
+	data, err := redis.Get(redis_key)
+	if len(data) > 0 && err == nil {
+		err = json.Unmarshal(data, &cats)
+		if err == nil {
+			return
+		}
+	}
+
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return
+	}
+	defer db.Close()
+	// use the Top Categories Statement
+	qry, err := db.Prepare(TopCategoriesStmt)
+	if err != nil {
+		return
+	}
+	defer qry.Close()
+
+	catRows, err := qry.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
+	if err != nil || catRows == nil { // Error occurred while executing query
+		return
+	}
+
+	var iter int
+	ch := make(chan error)
+	for catRows.Next() {
+		var cat Category
+		err := catRows.Scan(&cat.ID)
+		if err == nil {
+			go func(c Category) {
+				err := c.GetCategory(dtx.APIKey, 0, 0, true, nil, nil, dtx)
+				// recursion to get all the nested categoreis
+				GetRecursiveCategory(&c, dtx)
+				if err == nil {
+					cats = append(cats, c)
+				}
+				ch <- err
+			}(cat)
+			iter++
+		}
+	}
+	defer catRows.Close()
+
+	for i := 0; i < iter; i++ {
+		<-ch
+	}
+
+	sortutil.AscByField(cats, "Sort")
+	if dtx.BrandString != "" {
+		go redis.Setex(redis_key, cats, 86400)
+	}
+	return
+}
+
+func GetRecursiveCategory(parentCat *Category, dtx *apicontext.DataContext) {
+	subcats, err := parentCat.GetSubCategories(dtx)
+	// if parentCat.ID == 3 {
+	// 	log.Println(parentCat)
+	// }
+	if err == nil && len(subcats) > 0 {
+		parentCat.SubCategories = subcats
+		for _, cat := range subcats {
+			GetRecursiveCategory(&cat, dtx)
+		}
+	}
 }
 
 func GetCategoryByTitle(cat_title string, dtx *apicontext.DataContext) (cat Category, err error) {
