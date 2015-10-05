@@ -101,6 +101,16 @@ func Parents(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx 
 	return encoding.Must(enc.Encode(c))
 }
 
+func Tree(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+	var c []products.Category
+
+	c, err := products.CategoryTree(dtx)
+	if err != nil {
+		apierror.GenerateError("Trouble getting category tree", err, rw, r)
+	}
+	return encoding.Must(enc.Encode(c))
+}
+
 func SubCategories(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	id, err := strconv.Atoi(params["id"])
 

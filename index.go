@@ -104,6 +104,7 @@ func main() {
 
 	m.Group("/category", func(r martini.Router) {
 		r.Get("", category_ctlr.Parents)
+		r.Get("/tree", category_ctlr.Tree) // work in progress - not working yet
 		r.Get("/:id", category_ctlr.GetCategory)
 		r.Post("/:id", category_ctlr.GetCategory)
 		r.Get("/:id/subs", category_ctlr.SubCategories)
