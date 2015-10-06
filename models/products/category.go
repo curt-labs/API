@@ -15,8 +15,6 @@ import (
 	"net/url"
 	"strings"
 	"time"
-
-	//"log"
 )
 
 var (
@@ -165,6 +163,7 @@ type Category struct {
 	VehicleRequired bool                     `json:"vehicle_required" xml:"vehicle_required,attr"`
 	Content         []Content                `json:"content,omitempty" xml:"content,omitempty"`
 	SubCategories   []Category               `json:"sub_categories,omitempty" xml:"sub_categories,omitempty"`
+	Subs            []*Category              `json:"subs,omitempty" xml:"subs,omitempty"`
 	ProductListing  *PaginatedProductListing `json:"product_listing,omitempty" xml:"product_listing,omitempty"`
 	Filter          interface{}              `json:"filter,omitempty" xml:"filter,omitempty"`
 	MetaTitle       string                   `json:"metaTitle,omitempty" xml:"v,omitempty"`
@@ -365,10 +364,10 @@ func TopTierCategories(dtx *apicontext.DataContext) (cats []Category, err error)
 	return
 }
 
-func CategoryTree(dtx *apicontext.DataContext) (cats []Category, err error) {
-	cats = make([]Category, 0)
+func CategoryTree(dtx *apicontext.DataContext) (cats []*Category, err error) {
+	cats = make([]*Category, 0)
 
-	redis_key := fmt.Sprintf("category:cat-tree:%s", dtx.BrandString)
+	redis_key := fmt.Sprintf("category:cattree:%s", dtx.BrandString)
 	// First lets try to access the category:top endpoint in Redis
 	data, err := redis.Get(redis_key)
 	if len(data) > 0 && err == nil {
@@ -404,9 +403,20 @@ func CategoryTree(dtx *apicontext.DataContext) (cats []Category, err error) {
 			go func(c Category) {
 				err := c.GetCategory(dtx.APIKey, 0, 0, true, nil, nil, dtx)
 				// recursion to get all the nested categoreis
-				GetRecursiveCategory(&c, dtx)
+				ca := new(Category)
+				ca.ID = c.ID
+				ca.Title = c.Title
+				ca.MetaTitle = c.MetaTitle
+				ca.SubCategories = c.SubCategories
+				ca.Content = c.Content
+				ca.MetaDescription = c.MetaDescription
+				ca.VehicleRequired = c.VehicleRequired
+				ca.VehicleSpecific = c.VehicleSpecific
+				ca.Image = c.Image
+				ca.ParentID = c.ParentID
+				GetRecursiveCategory(ca, dtx)
 				if err == nil {
-					cats = append(cats, c)
+					cats = append(cats, ca)
 				}
 				ch <- err
 			}(cat)
@@ -428,14 +438,27 @@ func CategoryTree(dtx *apicontext.DataContext) (cats []Category, err error) {
 
 func GetRecursiveCategory(parentCat *Category, dtx *apicontext.DataContext) {
 	subcats, err := parentCat.GetSubCategories(dtx)
-	// if parentCat.ID == 3 {
-	// 	log.Println(parentCat)
-	// }
+
 	if err == nil && len(subcats) > 0 {
 		parentCat.SubCategories = subcats
-		for _, cat := range subcats {
-			GetRecursiveCategory(&cat, dtx)
+		for _, c := range subcats {
+			ca := new(Category)
+			ca.ID = c.ID
+			ca.Title = c.Title
+			ca.MetaTitle = c.MetaTitle
+			ca.SubCategories = c.SubCategories
+			ca.Content = c.Content
+			ca.MetaDescription = c.MetaDescription
+			ca.VehicleRequired = c.VehicleRequired
+			ca.VehicleSpecific = c.VehicleSpecific
+			ca.Image = c.Image
+			ca.ParentID = c.ParentID
+			parentCat.Subs = append(parentCat.Subs, ca)
 		}
+		for _, cat := range parentCat.Subs {
+			GetRecursiveCategory(cat, dtx)
+		}
+
 	}
 }
 

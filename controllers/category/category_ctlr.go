@@ -102,7 +102,7 @@ func Parents(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx 
 }
 
 func Tree(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
-	var c []products.Category
+	var c []*products.Category
 
 	c, err := products.CategoryTree(dtx)
 	if err != nil {
