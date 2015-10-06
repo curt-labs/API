@@ -31,7 +31,7 @@ var (
 		c.catTitle, c.shortDesc, c.longDesc,
 		c.image, c.icon, c.isLifestyle, c.vehicleSpecific,
 		c.vehicleRequired, c.metaTitle, c.metaDesc, c.metaKeywords,
-		cc.code, cc.font from Categories as c
+		cc.code, cc.font, c.brandID from Categories as c
 		join CatPart as cp on c.catID = cp.catID
 		left join ColorCode as cc on c.codeID = cc.codeID
 		where cp.partID = ?
@@ -292,7 +292,6 @@ func PopulateCategory(row *sql.Row, ch chan Category, dtx *apicontext.DataContex
 	if err == nil {
 		initCat.SubCategories = subCats
 	}
-
 	select {
 	case con := <-conChan:
 		initCat.Content = con
