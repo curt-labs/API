@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"sync"
 
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
@@ -791,32 +792,34 @@ func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *
 			return err
 		}
 
-		ch := make(chan error)
-		count := 0
-
+		//Get Part IDs
+		var partIds []int
+		var partIdTemp, ct *int
 		for rows.Next() {
-			var ct *int
-			var id *int
-			if err := rows.Scan(&id, &ct); err == nil && id != nil {
-				go func(i int) {
-					p := Part{
-						ID: i,
-					}
-					err := p.Get(dtx)
-					if err == nil {
-						c.ProductListing.Parts = append(c.ProductListing.Parts, p)
-					}
-					ch <- err
-				}(*id)
-				count++
-
+			if err = rows.Scan(&partIdTemp, &ct); err != nil {
+				return err
+			}
+			if partIdTemp != nil {
+				partIds = append(partIds, *partIdTemp)
 			}
 		}
-		defer rows.Close()
-
-		for i := 0; i < count; i++ {
-			<-ch
+		//Get Parts
+		var wg sync.WaitGroup
+		wg.Add(len(partIds))
+		for _, partId := range partIds {
+			go func() {
+				defer wg.Done()
+				p := Part{
+					ID: partId,
+				}
+				err = p.Get(dtx)
+				if err == nil {
+					c.ProductListing.Parts = append(c.ProductListing.Parts, p)
+				}
+			}()
 		}
+		wg.Wait()
+		//end getParts
 	}
 
 	sortutil.AscByField(c.ProductListing.Parts, "ID")
