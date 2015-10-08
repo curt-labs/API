@@ -478,6 +478,7 @@ func main() {
 		r.Put("", webProperty_controller.CreateUpdateWebProperty)      //can create notes(text) and requirements (requirement, by requirement=requirementID) while creating a property
 	})
 
+	// ARIES Year/Make/Model/Style
 	m.Post("/vehicle", vehicle.Query)
 	m.Post("/findVehicle", vehicle.GetVehicle)
 	m.Post("/vehicle/inquire", vehicle.Inquire)
@@ -489,6 +490,9 @@ func main() {
 	m.Put("/vehicle/mongo/:collection", vehicle.UpdateApplication)
 	m.Delete("/vehicle/mongo/:collection", vehicle.DeleteApplication)
 	m.Post("/vehicle/mongo/:collection", vehicle.CreateApplication)
+
+	// CURT Year/Make/Model/Style
+	m.Post("/vehicle/curt", vehicle.CurtLookup)
 
 	m.Group("/videos", func(r martini.Router) {
 		r.Get("/distinct", videos_ctlr.DistinctVideos) //old "videos" table - curtmfg?
