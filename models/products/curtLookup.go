@@ -104,7 +104,7 @@ func (c *CurtLookup) GetYears() error {
 
 	}
 
-	var existing map[int]int
+	existing := make(map[int]int, 0)
 	for _, i := range ids {
 		intID, err := strconv.Atoi(i)
 		if err == nil {
@@ -155,7 +155,7 @@ func (c *CurtLookup) GetMakes() error {
 
 	}
 
-	var existing map[int]int
+	existing := make(map[int]int, 0)
 	for _, i := range ids {
 		intID, err := strconv.Atoi(i)
 		if err == nil {
@@ -206,7 +206,7 @@ func (c *CurtLookup) GetModels() error {
 
 	}
 
-	var existing map[int]int
+	existing := make(map[int]int, 0)
 	for _, i := range ids {
 		intID, err := strconv.Atoi(i)
 		if err == nil {
