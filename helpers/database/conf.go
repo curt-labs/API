@@ -15,6 +15,11 @@ type Scanner interface {
 
 var (
 	EmptyDb = flag.String("clean", "", "bind empty database with structure defined")
+
+	ProductCollectionName  = "products"
+	CategoryCollectionName = "categories"
+	ProductDatabase        = "product_data"
+	CategoryDatabase       = "cateory_data"
 )
 
 func ConnectionString() string {
@@ -71,6 +76,18 @@ func MongoConnectionString() *mgo.DialInfo {
 	info.Source = "admin"
 
 	return &info
+}
+
+func MongoPartConnectionString() *mgo.DialInfo {
+	info := MongoConnectionString()
+	info.Database = ProductDatabase
+	return info
+}
+
+func MongoCategoryConnectionString() *mgo.DialInfo {
+	info := MongoConnectionString()
+	info.Database = CategoryDatabase
+	return info
 }
 
 func AriesMongoConnectionString() *mgo.DialInfo {
