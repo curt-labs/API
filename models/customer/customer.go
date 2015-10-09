@@ -18,8 +18,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-
-	"log"
 )
 
 type Coordinates struct {
@@ -514,7 +512,6 @@ func (c *Customer) GetLocations() (err error) {
 }
 
 func (c *Customer) GetAccounts() (err error) {
-	log.Println("Get Accounts")
 	redis_key := "customerAccounts:" + strconv.Itoa(c.Id)
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
