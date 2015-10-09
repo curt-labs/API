@@ -103,6 +103,8 @@ func main() {
 	})
 
 	m.Group("/category", func(r martini.Router) {
+		r.Get("/mongo/tree", category_ctlr.GetCategoryTree)
+
 		r.Get("", category_ctlr.Parents)
 		r.Get("/tree", category_ctlr.Tree) // work in progress - not working yet
 		r.Get("/:id", category_ctlr.GetCategory)

@@ -19,7 +19,7 @@ var (
 	ProductCollectionName  = "products"
 	CategoryCollectionName = "categories"
 	ProductDatabase        = "product_data"
-	CategoryDatabase       = "cateory_data"
+	CategoryDatabase       = "category_data"
 )
 
 func ConnectionString() string {
