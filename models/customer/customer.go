@@ -18,6 +18,8 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+
+	"log"
 )
 
 type Coordinates struct {
@@ -55,12 +57,27 @@ type Customer struct {
 	ShowWebsite         bool                `json:"showWebsite,omitempty" xml:"showWebsite,omitempty"`
 	SalesRepresentative SalesRepresentative `json:"salesRepresentative,omitempty" xml:"salesRepresentative,omitempty"`
 	BrandIDs            []int               `json:"brandIds,omitempty" xml:"brandIds,omitempty"`
+	Accounts            []Account           `json:"accounts,omitempty" xml:"accounts,omitempty"`
 }
 
 type Customers []Customer
 
 type Scanner interface {
 	Scan(...interface{}) error
+}
+
+type Account struct {
+	ID            int         `json:"id,omitempty" xml:"id,omitempty"`
+	AccountNumber string      `json:"accountNumber,omitempty" xml:"accountNumber,omitempty"`
+	Cust_id       int         `json:"cust_id,omitempty" xml:"cust_id,omitempty"`
+	TypeID        int         `json:"-" xml:"-"`
+	FreightLimit  float64     `json:"freightLimit,omitempty" xml:"freightLimit,omitempty"`
+	Type          AccountType `json:"type,omitempty" xml:"type,omitempty"`
+}
+type AccountType struct {
+	ID        int     `json:"id,omitempty" xml:"id,omitempty"`
+	Title     string  `json:"title,omitempty" xml:"title,omitempty"`
+	ComnetURL url.URL `json:"comnetURL,omitempty" xml:"comnetURL,omitempty"`
 }
 
 type SalesRepresentative struct {
@@ -206,6 +223,9 @@ var (
 	 						left join States as s on cl.stateID = s.stateID
 	 						left join Country as cty on s.countryID = cty.countryID
 							where c.cust_id = ?`
+	customerAccounts = `select act.id, act.accountNumber, act.cust_id, act.type_id, act.freightLimit, acty.type, acty.comnet_url from Accounts as act
+							Join AccountTypes as acty on acty.id = act.type_id
+							where act.cust_id = ?`
 
 	customerUser = `select cu.id, cu.name, cu.email, cu.customerID, cu.date_added, cu.active,cu.locationID, cu.isSudo, cu.cust_ID from CustomerUser as cu
 						join Customer as c on cu.cust_ID = c.cust_id
@@ -412,6 +432,7 @@ func (c *Customer) GetCustomer(key string) (err error) {
 		basicsChan <- err
 	}()
 	c.GetLocations()
+	c.GetAccounts()
 	err = <-basicsChan
 
 	if err == sql.ErrNoRows {
@@ -488,6 +509,42 @@ func (c *Customer) GetLocations() (err error) {
 	defer rows.Close()
 
 	redis.Setex(redis_key, c.Locations, redis.CacheTimeout)
+
+	return err
+}
+
+func (c *Customer) GetAccounts() (err error) {
+	log.Println("Get Accounts")
+	redis_key := "customerAccounts:" + strconv.Itoa(c.Id)
+	data, err := redis.Get(redis_key)
+	if err == nil && len(data) > 0 {
+		err = json.Unmarshal(data, &c.Accounts)
+		return err
+	}
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(customerAccounts)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(c.Id)
+
+	for rows.Next() {
+		acc, err := ScanAccount(rows)
+		if err != nil {
+			return err
+		}
+		c.Accounts = append(c.Accounts, *acc)
+	}
+	defer rows.Close()
+
+	redis.Setex(redis_key, c.Accounts, redis.CacheTimeout)
 
 	return err
 }
@@ -1578,6 +1635,56 @@ func ScanCustomerTableFields(res Scanner) (*Customer, error) {
 		c.DealerTier.Id = *dtierId
 	}
 	return &c, err
+}
+
+func ScanAccount(res Scanner) (*Account, error) {
+	var a Account
+	var err error
+
+	var accID *int
+	var accountNumber *string
+	var cust_id *int
+	var typeID *int
+	var typeText *string
+	var comnetURL *[]byte
+	var freightLimit *float64
+
+	err = res.Scan(
+		&accID,
+		&accountNumber,
+		&cust_id,
+		&typeID,
+		&freightLimit,
+		&typeText,
+		&comnetURL,
+	)
+	if err != nil {
+		return &a, err
+	}
+	if accID != nil {
+		a.ID = *accID
+	}
+	if accountNumber != nil {
+		a.AccountNumber = *accountNumber
+	}
+	if cust_id != nil {
+		a.Cust_id = *cust_id
+	}
+	if typeID != nil {
+		a.TypeID = *typeID
+		a.Type.ID = a.TypeID
+	}
+	if freightLimit != nil {
+		a.FreightLimit = *freightLimit
+	}
+	if typeText != nil {
+		a.Type.Title = *typeText
+	}
+	if comnetURL != nil {
+		a.Type.ComnetURL, err = conversions.ByteToUrl(*comnetURL)
+	}
+
+	return &a, err
 }
 
 func ScanLocation(res Scanner) (*CustomerLocation, error) {
