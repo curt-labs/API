@@ -84,12 +84,6 @@ func MongoPartConnectionString() *mgo.DialInfo {
 	return info
 }
 
-func MongoCategoryConnectionString() *mgo.DialInfo {
-	info := MongoConnectionString()
-	info.Database = CategoryDatabase
-	return info
-}
-
 func AriesMongoConnectionString() *mgo.DialInfo {
 	var info mgo.DialInfo
 	addr := os.Getenv("MONGO_URL")

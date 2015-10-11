@@ -106,6 +106,7 @@ func main() {
 		//The endpoints below fetch categories/parts from a NoSQL dataset that is updated as part of our partindexing
 		r.Get("/mongo/tree", category_ctlr.GetCategoryTree)
 		r.Get("/mongo/parts/:id", category_ctlr.GetCategoryParts)
+		r.Get("/mongo/:id", category_ctlr.GetCategoryFromMongo)
 
 		r.Get("", category_ctlr.Parents)
 		r.Get("/tree", category_ctlr.Tree) // work in progress - not working yet

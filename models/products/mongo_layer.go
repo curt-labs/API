@@ -19,6 +19,17 @@ func GetCategoryTree() ([]Category, error) {
 	return cats, err
 }
 
+func (c *Category) FromMongo() error {
+
+	session, err := mgo.DialWithInfo(database.MongoPartConnectionString())
+	if err != nil {
+		return err
+	}
+	defer session.Close()
+
+	return session.DB(database.ProductDatabase).C(database.CategoryCollectionName).Find(bson.M{"id": c.ID}).One(&c)
+}
+
 func GetCategoryParts(catId int) ([]Part, error) {
 	var parts []Part
 
