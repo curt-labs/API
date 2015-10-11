@@ -4,7 +4,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/error"
-	"github.com/curt-labs/GoAPI/models/products"
+	"github.com/curt-labs/GoAPI/models/products/mongo"
 	"github.com/go-martini/martini"
 
 	"net/http"
@@ -13,16 +13,26 @@ import (
 
 // GetCategory
 func GetCategoryFromMongo(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
-	var c products.Category
+	var c mongoData.Category
 	var err error
-	c.ID, err = strconv.Atoi(params["id"])
-	if err != nil || c.ID == 0 {
+	c.CategoryID, err = strconv.Atoi(params["id"])
+	if err != nil || c.CategoryID == 0 {
 		apierror.GenerateError("Trouble getting category identifier", err, rw, r)
 		return ""
 	}
 
-	err = c.FromMongo()
-	if err != nil || c.ID == 0 {
+	qs := r.URL.Query()
+	var page int
+	var count int
+	if pg := qs.Get("page"); pg != "" {
+		page, _ = strconv.Atoi(pg)
+	}
+	if ct := qs.Get("count"); ct != "" {
+		count, _ = strconv.Atoi(ct)
+	}
+
+	err = c.FromMongo(page, count)
+	if err != nil || c.CategoryID == 0 {
 		apierror.GenerateError("Trouble getting category", err, rw, r)
 		return ""
 	}
@@ -31,7 +41,7 @@ func GetCategoryFromMongo(rw http.ResponseWriter, r *http.Request, params martin
 }
 
 func GetCategoryTree(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
-	cats, err := products.GetCategoryTree(dtx)
+	cats, err := mongoData.GetCategoryTree(dtx)
 	if err != nil {
 		apierror.GenerateError("Trouble getting categories", err, rw, r)
 		return ""
@@ -48,7 +58,7 @@ func GetCategoryParts(rw http.ResponseWriter, r *http.Request, params martini.Pa
 		return ""
 	}
 
-	parts, err := products.GetCategoryParts(catId)
+	parts, err := mongoData.GetCategoryParts(catId)
 	if err != nil {
 		apierror.GenerateError("Trouble getting parts", err, rw, r)
 		return ""

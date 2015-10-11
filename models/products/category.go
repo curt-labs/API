@@ -148,29 +148,30 @@ const (
 )
 
 type Category struct {
-	ID              int                      `json:"id" xml:"id,attr"`
-	ParentID        int                      `json:"parent_id" xml:"parent_id,attr"`
-	Sort            int                      `json:"sort" xml:"sort,attr"`
-	DateAdded       time.Time                `json:"date_added" xml:"date_added,attr"`
-	Title           string                   `json:"title" xml:"title,attr"`
-	ShortDesc       string                   `json:"short_description" xml:"short_description"`
-	LongDesc        string                   `json:"long_description" xml:"long_description"`
-	ColorCode       string                   `json:"color_code" xml:"color_code,attr"`
-	FontCode        string                   `json:"font_code" xml:"font_code,attr"`
-	Image           *url.URL                 `json:"image" xml:"image"`
-	Icon            *url.URL                 `json:"icon" xml:"icon"`
-	IsLifestyle     bool                     `json:"lifestyle" xml:"lifestyle,attr"`
-	VehicleSpecific bool                     `json:"vehicle_specific" xml:"vehicle_specific,attr"`
-	VehicleRequired bool                     `json:"vehicle_required" xml:"vehicle_required,attr"`
-	Content         []Content                `json:"content,omitempty" xml:"content,omitempty"`
-	SubCategories   []Category               `json:"sub_categories,omitempty" xml:"sub_categories,omitempty"`
-	Subs            []*Category              `json:"subs,omitempty" xml:"subs,omitempty"`
-	ProductListing  *PaginatedProductListing `json:"product_listing,omitempty" xml:"product_listing,omitempty"`
-	Filter          interface{}              `json:"filter,omitempty" xml:"filter,omitempty"`
-	MetaTitle       string                   `json:"metaTitle,omitempty" xml:"v,omitempty"`
-	MetaDescription string                   `json:"metaDescription,omitempty" xml:"metaDescription,omitempty"`
-	MetaKeywords    string                   `json:"metaKeywords,omitempty" xml:"metaKeywords,omitempty"`
-	BrandID         int                      `json:"categoryId,omitempty" xml:"categoryId,omitempty"`
+	ID                 int                      `json:"id" xml:"id,attr"`
+	ParentID           int                      `json:"parent_id" xml:"parent_id,attr"`
+	Sort               int                      `json:"sort" xml:"sort,attr"`
+	DateAdded          time.Time                `json:"date_added" xml:"date_added,attr"`
+	Title              string                   `json:"title" xml:"title,attr"`
+	ShortDesc          string                   `json:"short_description" xml:"short_description"`
+	LongDesc           string                   `json:"long_description" xml:"long_description"`
+	ColorCode          string                   `json:"color_code" xml:"color_code,attr"`
+	FontCode           string                   `json:"font_code" xml:"font_code,attr"`
+	Image              *url.URL                 `json:"image" xml:"image"`
+	Icon               *url.URL                 `json:"icon" xml:"icon"`
+	IsLifestyle        bool                     `json:"lifestyle" xml:"lifestyle,attr"`
+	VehicleSpecific    bool                     `json:"vehicle_specific" xml:"vehicle_specific,attr"`
+	VehicleRequired    bool                     `json:"vehicle_required" xml:"vehicle_required,attr"`
+	Content            []Content                `json:"content,omitempty" xml:"content,omitempty"`
+	SubCategories      []Category               `json:"sub_categories,omitempty" xml:"sub_categories,omitempty"`
+	Subs               []*Category              `json:"subs,omitempty" xml:"subs,omitempty"`
+	ProductListing     *PaginatedProductListing `json:"product_listing,omitempty" xml:"product_listing,omitempty"`
+	Filter             interface{}              `json:"filter,omitempty" xml:"filter,omitempty"`
+	MetaTitle          string                   `json:"metaTitle,omitempty" xml:"v,omitempty"`
+	MetaDescription    string                   `json:"metaDescription,omitempty" xml:"metaDescription,omitempty"`
+	MetaKeywords       string                   `json:"metaKeywords,omitempty" xml:"metaKeywords,omitempty"`
+	BrandID            int                      `json:"categoryId,omitempty" xml:"categoryId,omitempty"`
+	ProductIdentifiers []int                    `bson:"part_ids" json:"part_identifiers" xml:"part_identifiers"`
 }
 
 func PopulateCategoryMulti(rows *sql.Rows, ch chan []Category) {
