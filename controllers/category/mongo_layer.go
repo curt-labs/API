@@ -31,7 +31,7 @@ func GetCategoryFromMongo(rw http.ResponseWriter, r *http.Request, params martin
 }
 
 func GetCategoryTree(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
-	cats, err := products.GetCategoryTree()
+	cats, err := products.GetCategoryTree(dtx)
 	if err != nil {
 		apierror.GenerateError("Trouble getting categories", err, rw, r)
 		return ""
