@@ -16,7 +16,7 @@ func GetCategoryTree(dtx *apicontext.DataContext) ([]Category, error) {
 	}
 	defer session.Close()
 	query := bson.M{"parent_id": 0, "is_lifestyle": false, "brand.id": bson.M{"$in": dtx.BrandArray}}
-	err = session.DB(database.ProductDatabase).C(database.CategoryCollectionName).Find(query).Sort("title").All(&cats)
+	err = session.DB(database.ProductDatabase).C(database.CategoryCollectionName).Find(query).Sort("sort").All(&cats)
 	return cats, err
 }
 
