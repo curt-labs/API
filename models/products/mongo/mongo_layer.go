@@ -69,7 +69,7 @@ func (c *Category) FromMongo(page, count int) error {
 	return nil
 }
 
-func GetCategoryParts(catId int) ([]Product, error) {
+func GetCategoryParts(catId, page, count int) ([]Product, error) {
 	var parts []Product
 
 	session, err := mgo.DialWithInfo(database.MongoPartConnectionString())
@@ -77,7 +77,21 @@ func GetCategoryParts(catId int) ([]Product, error) {
 		return parts, err
 	}
 	defer session.Close()
-	query := bson.M{"categories": bson.M{"$elemMatch": bson.M{"id": catId}}}
-	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(query).All(&parts)
+
+	//get category's children
+	var cat Category
+	err = session.DB(database.ProductDatabase).C(database.CategoryCollectionName).Find(bson.M{"id": catId}).Select(bson.M{"children": 1}).One(&cat)
+	if err != nil {
+		return parts, err
+	}
+
+	children := []int{catId}
+	for _, child := range cat.Children {
+		children = append(children, child.CategoryID)
+	}
+	//get parts of category and its children
+	query := bson.M{"categories": bson.M{"$elemMatch": bson.M{"id": bson.M{"$in": children}}}}
+	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(query).Limit(count).Skip((page - 1) * count).All(&parts)
 	return parts, err
+
 }

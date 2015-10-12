@@ -58,7 +58,16 @@ func GetCategoryParts(rw http.ResponseWriter, r *http.Request, params martini.Pa
 		return ""
 	}
 
-	parts, err := mongoData.GetCategoryParts(catId)
+	qs := r.URL.Query()
+	var page, count int
+	if pg := qs.Get("page"); pg != "" {
+		page, _ = strconv.Atoi(pg)
+	}
+	if ct := qs.Get("count"); ct != "" {
+		count, _ = strconv.Atoi(ct)
+	}
+
+	parts, err := mongoData.GetCategoryParts(catId, page, count)
 	if err != nil {
 		apierror.GenerateError("Trouble getting parts", err, rw, r)
 		return ""
