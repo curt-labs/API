@@ -5,7 +5,15 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
+
+	"math"
 )
+
+type PartResponse struct {
+	Parts      []Product `json:"parts"`
+	Page       int       `json:"page"`
+	TotalPages int       `json:"total_pages"`
+}
 
 func GetCategoryTree(dtx *apicontext.DataContext) ([]Category, error) {
 	var cats []Category
@@ -69,8 +77,8 @@ func (c *Category) FromMongo(page, count int) error {
 	return nil
 }
 
-func GetCategoryParts(catId, page, count int) ([]Product, error) {
-	var parts []Product
+func GetCategoryParts(catId, page, count int) (PartResponse, error) {
+	var parts PartResponse
 
 	session, err := mgo.DialWithInfo(database.MongoPartConnectionString())
 	if err != nil {
@@ -89,9 +97,17 @@ func GetCategoryParts(catId, page, count int) ([]Product, error) {
 	for _, child := range cat.Children {
 		children = append(children, child.CategoryID)
 	}
+	parts.Page = page
+
 	//get parts of category and its children
 	query := bson.M{"categories": bson.M{"$elemMatch": bson.M{"id": bson.M{"$in": children}}}}
-	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(query).Limit(count).Skip((page - 1) * count).All(&parts)
-	return parts, err
+	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(query).Limit(count).Skip((page - 1) * count).All(&parts.Parts)
+	if err != nil {
+		return parts, err
+	}
 
+	//get total parts count
+	total_items, err := session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(query).Count()
+	parts.TotalPages = int(math.Ceil(float64(total_items) / float64(count)))
+	return parts, err
 }
