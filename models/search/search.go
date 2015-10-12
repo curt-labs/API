@@ -8,7 +8,7 @@ import (
 	"strconv"
 )
 
-func Dsl(query string, page int, count int, dtx *apicontext.DataContext) (*elastigo.SearchResult, error) {
+func Dsl(query string, page int, count int, brand int, dtx *apicontext.DataContext) (*elastigo.SearchResult, error) {
 
 	if page == 1 {
 		page = 0
@@ -38,11 +38,21 @@ func Dsl(query string, page int, count int, dtx *apicontext.DataContext) (*elast
 	searchAries := false
 	searchAll := false
 
-	for _, br := range dtx.BrandArray {
-		if br == 1 { // search curt
+	if brand == 0 {
+		for _, br := range dtx.BrandArray {
+			if br == 1 { // search curt
+				searchCurt = true
+			} else if br == 3 { // search aries
+				searchAries = true
+			}
+		}
+	} else {
+		if brand == 1 {
 			searchCurt = true
-		} else if br == 3 { // search aries
+			searchAries = false
+		} else if brand == 3 {
 			searchAries = true
+			searchCurt = false
 		}
 	}
 
