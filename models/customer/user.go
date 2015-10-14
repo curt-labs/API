@@ -505,18 +505,18 @@ func (u CustomerUser) GetCustomer(key string) (c Customer, err error) {
 		}
 		return c, err
 	}
+	shippingInfoChan := make(chan error)
 	accountsChan := make(chan error)
 	locChan := make(chan error)
 	brandChan := make(chan error)
-	shippingInfoChan := make(chan error)
 	go func() {
 		locChan <- c.GetLocations()
 	}()
 	go func() {
-		accountsChan <- c.GetAccounts()
+		shippingInfoChan <- c.GetShippingInfo()
 	}()
 	go func() {
-		shippingInfoChan <- c.GetShippingInfo()
+		accountsChan <- c.GetAccounts()
 	}()
 	go func() {
 		brands, err := brand.GetUserBrands(c.Id)

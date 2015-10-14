@@ -43,5 +43,9 @@ func (c *Customer) GetShippingInfo() (err error) {
 	}
 	c.ShippingInfo = s
 
+	for _, a := range c.Accounts {
+		a.FreightLimit = c.ShippingInfo.Threshold.FreeF // Overwrite db value with shipping info resp
+	}
+
 	return err
 }
