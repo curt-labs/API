@@ -56,6 +56,7 @@ type Customer struct {
 	SalesRepresentative SalesRepresentative `json:"salesRepresentative,omitempty" xml:"salesRepresentative,omitempty"`
 	BrandIDs            []int               `json:"brandIds,omitempty" xml:"brandIds,omitempty"`
 	Accounts            []Account           `json:"accounts,omitempty" xml:"accounts,omitempty"`
+	ShippingInfo        ShippingInfo        `json:"shippingInfo,omitempty" xml:"shippingInfo,omitempty"`
 }
 
 type Customers []Customer
@@ -65,12 +66,13 @@ type Scanner interface {
 }
 
 type Account struct {
-	ID            int         `json:"id,omitempty" xml:"id,omitempty"`
-	AccountNumber string      `json:"accountNumber,omitempty" xml:"accountNumber,omitempty"`
-	Cust_id       int         `json:"cust_id,omitempty" xml:"cust_id,omitempty"`
-	TypeID        int         `json:"-" xml:"-"`
-	FreightLimit  float64     `json:"freightLimit,omitempty" xml:"freightLimit,omitempty"`
-	Type          AccountType `json:"type,omitempty" xml:"type,omitempty"`
+	ID            int          `json:"id,omitempty" xml:"id,omitempty"`
+	AccountNumber string       `json:"accountNumber,omitempty" xml:"accountNumber,omitempty"`
+	Cust_id       int          `json:"cust_id,omitempty" xml:"cust_id,omitempty"`
+	TypeID        int          `json:"-" xml:"-"`
+	FreightLimit  float64      `json:"freightLimit,omitempty" xml:"freightLimit,omitempty"`
+	Type          AccountType  `json:"type,omitempty" xml:"type,omitempty"`
+	ShippingInfo  ShippingInfo `json:"shipping_info,omitempty" xml"shipping_info,omitempty"`
 }
 type AccountType struct {
 	ID        int     `json:"id,omitempty" xml:"id,omitempty"`
@@ -431,6 +433,7 @@ func (c *Customer) GetCustomer(key string) (err error) {
 	}()
 	c.GetLocations()
 	c.GetAccounts()
+	c.GetShippingInfo()
 	err = <-basicsChan
 
 	if err == sql.ErrNoRows {
@@ -512,7 +515,7 @@ func (c *Customer) GetLocations() (err error) {
 }
 
 func (c *Customer) GetAccounts() (err error) {
-	redis_key := "customerAccounts:" + strconv.Itoa(c.Id)
+	redis_key := "CustAccount:" + strconv.Itoa(c.Id)
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &c.Accounts)
@@ -537,6 +540,7 @@ func (c *Customer) GetAccounts() (err error) {
 		if err != nil {
 			return err
 		}
+
 		c.Accounts = append(c.Accounts, *acc)
 	}
 	defer rows.Close()
