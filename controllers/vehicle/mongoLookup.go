@@ -105,7 +105,7 @@ func AllCollectionsLookup(w http.ResponseWriter, r *http.Request, enc encoding.E
 	var collectionVehicleArray []products.NoSqlLookup
 
 	for _, col := range cols {
-		noSqlLookup, err := products.FindVehicles(v, col, dtx)
+		noSqlLookup, err := products.FindVehiclesWithParts(v, col, dtx)
 		if err != nil {
 			apierror.GenerateError("Trouble finding vehicles.", err, w, r)
 			return ""
@@ -122,6 +122,8 @@ func makeLookupFrommanyLookups(lookupArrays []products.NoSqlLookup) (l products.
 	makemap := make(map[string]string)
 	modelmap := make(map[string]string)
 	stylemap := make(map[string]string)
+	partmap := make(map[int]products.Part)
+
 	for _, lookup := range lookupArrays {
 		for _, year := range lookup.Years {
 			yearmap[year] = year
@@ -135,6 +137,9 @@ func makeLookupFrommanyLookups(lookupArrays []products.NoSqlLookup) (l products.
 		for _, style := range lookup.Styles {
 			stylemap[style] = style
 		}
+		for _, part := range lookup.Parts {
+			partmap[part.ID] = part
+		}
 	}
 	for year, _ := range yearmap {
 		l.Years = append(l.Years, year)
@@ -147,6 +152,9 @@ func makeLookupFrommanyLookups(lookupArrays []products.NoSqlLookup) (l products.
 	}
 	for style, _ := range stylemap {
 		l.Styles = append(l.Styles, style)
+	}
+	for _, part := range partmap {
+		l.Parts = append(l.Parts, part)
 	}
 	sort.Sort(sort.Reverse(sort.StringSlice(l.Years)))
 	sort.Strings(l.Makes)

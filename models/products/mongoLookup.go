@@ -360,3 +360,56 @@ func buildPartMap() error {
 
 	return nil
 }
+
+func FindVehiclesWithParts(v NoSqlVehicle, collection string, dtx *apicontext.DataContext) (l NoSqlLookup, err error) {
+
+	l = NoSqlLookup{}
+
+	stage, vals, err := GetApps(v, collection)
+	if err != nil {
+		return
+	}
+
+	if stage != "" {
+		switch stage {
+		case "year":
+			l.Years = vals
+		case "make":
+			l.Makes = vals
+		case "model":
+			l.Models = vals
+		case "style":
+			l.Styles = vals
+		}
+	}
+
+	session, err := mgo.DialWithInfo(database.AriesMongoConnectionString())
+	if err != nil {
+		return
+	}
+	defer session.Close()
+
+	c := session.DB(AriesDb).C(collection)
+	queryMap := make(map[string]interface{})
+
+	ids := make([]int, 0)
+	queryMap["year"] = strings.ToLower(v.Year)
+	queryMap["make"] = strings.ToLower(v.Make)
+	queryMap["model"] = strings.ToLower(v.Model)
+	if v.Style != "" {
+		queryMap["style"] = strings.ToLower(v.Style)
+	}
+
+	c.Find(queryMap).Distinct("parts", &ids)
+
+	//add parts
+	for _, id := range ids {
+		p := Part{ID: id}
+		if err := p.Get(dtx); err != nil {
+			continue
+		}
+		l.Parts = append(l.Parts, p)
+	}
+
+	return l, err
+}
