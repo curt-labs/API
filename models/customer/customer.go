@@ -433,7 +433,6 @@ func (c *Customer) GetCustomer(key string) (err error) {
 	}()
 	c.GetLocations()
 	c.GetAccounts()
-	//c.GetShippingInfo()
 	err = <-basicsChan
 
 	if err == sql.ErrNoRows {

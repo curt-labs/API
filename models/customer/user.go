@@ -505,16 +505,21 @@ func (u CustomerUser) GetCustomer(key string) (c Customer, err error) {
 		}
 		return c, err
 	}
-	//shippingInfoChan := make(chan error)
+	shippingInfoChan := make(chan error)
 	accountsChan := make(chan error)
 	locChan := make(chan error)
 	brandChan := make(chan error)
 	go func() {
 		locChan <- c.GetLocations()
 	}()
-	// go func() {
-	// 	shippingInfoChan <- c.GetShippingInfo()
-	// }()
+	timeout := make(chan bool, 1)
+	go func() {
+		time.Sleep(3 * time.Second)
+		timeout <- true
+	}()
+	go func() {
+		shippingInfoChan <- c.GetShippingInfo()
+	}()
 	go func() {
 		accountsChan <- c.GetAccounts()
 	}()
@@ -538,7 +543,11 @@ func (u CustomerUser) GetCustomer(key string) (c Customer, err error) {
 
 	<-locChan
 	<-accountsChan
-	//<-shippingInfoChan
+	select {
+	case <-shippingInfoChan:
+
+	case <-timeout:
+	}
 	<-brandChan
 
 	return
