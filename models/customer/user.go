@@ -514,7 +514,7 @@ func (u CustomerUser) GetCustomer(key string) (c Customer, err error) {
 	}()
 	timeout := make(chan bool, 1)
 	go func() {
-		time.Sleep(3 * time.Second)
+		time.Sleep(5 * time.Second)
 		timeout <- true
 	}()
 	go func() {
