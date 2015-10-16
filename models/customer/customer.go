@@ -66,13 +66,14 @@ type Scanner interface {
 }
 
 type Account struct {
-	ID            int          `json:"id,omitempty" xml:"id,omitempty"`
-	AccountNumber string       `json:"accountNumber,omitempty" xml:"accountNumber,omitempty"`
-	Cust_id       int          `json:"cust_id,omitempty" xml:"cust_id,omitempty"`
-	TypeID        int          `json:"-" xml:"-"`
-	FreightLimit  float64      `json:"freightLimit,omitempty" xml:"freightLimit,omitempty"`
-	Type          AccountType  `json:"type,omitempty" xml:"type,omitempty"`
-	ShippingInfo  ShippingInfo `json:"shipping_info,omitempty" xml"shipping_info,omitempty"`
+	ID                 int          `json:"id,omitempty" xml:"id,omitempty"`
+	AccountNumber      string       `json:"accountNumber,omitempty" xml:"accountNumber,omitempty"`
+	Cust_id            int          `json:"cust_id,omitempty" xml:"cust_id,omitempty"`
+	TypeID             int          `json:"-" xml:"-"`
+	FreightLimit       float64      `json:"freightLimit,omitempty" xml:"freightLimit,omitempty"`
+	DefaultWarehouseID int          `json:"defaultWarehouseId,omitempty" xml:"defaultWarehouseId,omitempty"`
+	Type               AccountType  `json:"type,omitempty" xml:"type,omitempty"`
+	ShippingInfo       ShippingInfo `json:"shipping_info,omitempty" xml"shipping_info,omitempty"`
 }
 type AccountType struct {
 	ID        int     `json:"id,omitempty" xml:"id,omitempty"`
@@ -223,7 +224,7 @@ var (
 	 						left join States as s on cl.stateID = s.stateID
 	 						left join Country as cty on s.countryID = cty.countryID
 							where c.cust_id = ?`
-	customerAccounts = `select act.id, act.accountNumber, act.cust_id, act.type_id, act.freightLimit, acty.type, acty.comnet_url from Accounts as act
+	customerAccounts = `select act.id, act.accountNumber, act.cust_id, act.type_id, act.freightLimit, acty.type, acty.comnet_url, act.defaultWarehouseId from Accounts as act
 							Join AccountTypes as acty on acty.id = act.type_id
 							where act.cust_id = ?`
 
@@ -1648,6 +1649,7 @@ func ScanAccount(res Scanner) (*Account, error) {
 	var typeText *string
 	var comnetURL *[]byte
 	var freightLimit *float64
+	var defaultWare *int
 
 	err = res.Scan(
 		&accID,
@@ -1657,6 +1659,7 @@ func ScanAccount(res Scanner) (*Account, error) {
 		&freightLimit,
 		&typeText,
 		&comnetURL,
+		&defaultWare,
 	)
 	if err != nil {
 		return &a, err
@@ -1682,6 +1685,9 @@ func ScanAccount(res Scanner) (*Account, error) {
 	}
 	if comnetURL != nil {
 		a.Type.ComnetURL, err = conversions.ByteToUrl(*comnetURL)
+	}
+	if defaultWare != nil {
+		a.DefaultWarehouseID = *defaultWare
 	}
 
 	return &a, err

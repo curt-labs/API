@@ -518,7 +518,7 @@ func (u CustomerUser) GetCustomer(key string) (c Customer, err error) {
 		timeout <- true
 	}()
 	go func() {
-		shippingInfoChan <- c.GetShippingInfo()
+		shippingInfoChan <- c.GetAndCompareCustomerShippingInfo()
 	}()
 	go func() {
 		accountsChan <- c.GetAccounts()
