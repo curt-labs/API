@@ -41,6 +41,43 @@ type CustomerUser struct {
 	PasswordConversion bool             `json:"passwordConversion,omitempty" xml:"passwordConversion,omitempty"`
 	Keys               []ApiCredentials `json:"keys" xml:"keys"`
 	Brands             brand.Brands     `json:"brands,omitempty" xml:"brands,omitempty"`
+	ComnetAccounts     []ComnetAccount  `json:"accounts" xml:"accounts"`
+}
+
+type ComnetAccountType struct {
+	ID        int      `json:"id,omitempty" xml:"id,omitempty"`
+	Title     string   `json:"title,omitempty" xml:"title,omitempty"`
+	ComnetURL *url.URL `json:"comnetURL,omitempty" xml:"comnetURL,omitempty"`
+}
+
+type ComnetAccount struct {
+	Credentials   ComnetCredential  `json:"credentials" xml:"credentials"`
+	AccountNumber int               `json:"account_number" xml:"account_number"`
+	FreightLimit  float64           `json:"freight_limit" xml:"freight_limit"`
+	Warehouse     Warehouse         `json:"warehouse" xml:"warehouse"`
+	Type          ComnetAccountType `json:"type" xml:"type"`
+	Status        string            `json:"status" xml:"status"`
+}
+
+type Warehouse struct {
+	ID            int             `json:"id" xml:"id"`
+	Name          string          `json:"name" xml:"name"`
+	Code          string          `json:"code" xml:"code"`
+	Address       string          `json:"address" xml:"address"`
+	City          string          `json:"city" xml:"city"`
+	State         geography.State `json:"state" xml:"state"`
+	PostaCode     string          `json:"postal_code" xml:"postal_code"`
+	TollFreePhone string          `json:"tollfree_phone" xml:"tollfree_phone"`
+	Fax           string          `json:"fax" xml:"fax"`
+	LocalPhone    string          `json:"local_phone" xml:"local_phone"`
+	Manager       string          `json:"manager" xml:"manager"`
+	Latitude      float64         `json:"latitude" xml:"latitude"`
+	Longitude     float64         `json:"longitude" xml:"longitude"`
+}
+
+type ComnetCredential struct {
+	Username string `json:"username" xml:"username"`
+	Password string `json:"password" xml:"password"`
 }
 
 type ApiCredentials struct {
@@ -51,6 +88,9 @@ type ApiCredentials struct {
 }
 
 const (
+	AUTH_KEY_TYPE      = "AUTHENTICATION"
+	PUBLIC_KEY_TYPE    = "PUBLIC"
+	PRIVATE_KEY_TYPE   = "PRIVATE"
 	customerUserFields = ` cu.id, cu.name, cu.email, cu.password, cu.customerID, cu.date_added, cu.active, cu.locationID, cu.isSudo, cu.cust_ID, cu.NotCustomer, cu.passwordConverted `
 )
 
@@ -157,16 +197,22 @@ var (
 	updateCustomerUser   = `UPDATE CustomerUser SET name = ?, email = ?, active = ?, locationID = ?, isSudo = ?, NotCustomer = ? WHERE id = ?`
 	getUsersByCustomerID = `SELECT id FROM CustomerUser WHERE cust_id = ?`
 	getUserByEmail       = `SELECT cust_id FROM CustomerUser WHERE email = ?`
-)
 
-var (
+	getUserAccounts = `select 
+						cua.username, cua.password, 
+						ac.accountNumber, ac.freightLimit, 
+						act.id, act.type, act.comnet_url,
+						w.id, w.name, w.code, w.address, w.city, w.postalCode, w.tollFreePhone, w.fax, w.localPhone, w.manager, w.longitude, w.latitude,
+						s.stateID, s.state, s.abbr, c.countryID, c.name, c.abbr from ComnetUserAccounts as cua
+						join Accounts as ac on cua.account_id = ac.id
+						join AccountTypes as act on ac.type_id = act.id
+						left join Warehouses as w on ac.defaultWarehouseID = w.id
+						left join State as s on w.stateID = s.stateID
+						left join Country as c on s.countryID = c.countryID
+						where cua.user_id = ?
+						order by act.type`
+
 	AuthError = errors.New("failed to authenticate")
-)
-
-const (
-	AUTH_KEY_TYPE    = "AUTHENTICATION"
-	PUBLIC_KEY_TYPE  = "PUBLIC"
-	PRIVATE_KEY_TYPE = "PRIVATE"
 )
 
 func ScanUser(res Scanner) (*CustomerUser, error) {
@@ -364,11 +410,12 @@ func (u *CustomerUser) AuthenticateUser() error {
 	if err != nil {
 		// Compare unsuccessful
 
-		enc_pass, err := api_helpers.Md5Encrypt(pass)
+		var encPass string
+		encPass, err = api_helpers.Md5Encrypt(pass)
 		if err != nil {
 			return err
 		}
-		if len(enc_pass) != len(dbPass) || passConversion { //bool
+		if len(encPass) != len(dbPass) || passConversion { //bool
 			return errors.New("Invalid password")
 		}
 
@@ -377,7 +424,8 @@ func (u *CustomerUser) AuthenticateUser() error {
 			return errors.New("Failed to encode the password")
 		}
 
-		stmtPass, err := db.Prepare(updateCustomerUserPass)
+		var stmtPass *sql.Stmt
+		stmtPass, err = db.Prepare(updateCustomerUserPass)
 		if err != nil {
 			return err
 		}
@@ -647,6 +695,156 @@ func (u *CustomerUser) GetLocation() error {
 	}
 	u.Location.State.Country = &coun
 	return nil
+}
+
+// GetComnetAccounts ...
+func (u *CustomerUser) GetComnetAccounts() error {
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(getUserAccounts)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	var uname, pwd *string
+	var typeID, warehouseID, acctNum *int
+	var freight, lat, long *float64
+	var actType, actURL *string
+	var wName, code, add, city, postal, toll, fax, localPh, manager *string
+	var stateID, countryID *int
+	var state, stateAbbr, country, countryAbbr *string
+
+	rows, err := stmt.Query(u.Id)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var ca ComnetAccount
+		err = rows.Scan(
+			&uname,
+			&pwd,
+			&acctNum,
+			&freight,
+			&typeID,
+			&actType,
+			&actURL,
+			&warehouseID,
+			&wName,
+			&code,
+			&add,
+			&city,
+			&postal,
+			&toll,
+			&fax,
+			&localPh,
+			&manager,
+			&long,
+			&lat,
+			&stateID,
+			&state,
+			&stateAbbr,
+			&countryID,
+			&country,
+			&countryAbbr,
+		)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return nil
+			}
+			return err
+		}
+		if uname != nil {
+			ca.Credentials.Username = *uname
+		}
+		if pwd != nil {
+			ca.Credentials.Password = *pwd
+		}
+		if acctNum != nil {
+			ca.AccountNumber = *acctNum
+		}
+		if freight != nil {
+			ca.FreightLimit = *freight
+		}
+		if typeID != nil {
+			ca.Type.ID = *typeID
+
+			if actType != nil {
+				ca.Type.Title = *actType
+			}
+			if actURL != nil {
+				ca.Type.ComnetURL, _ = url.Parse(*actURL)
+			}
+		}
+		if warehouseID != nil {
+			ca.Warehouse.ID = *warehouseID
+		}
+		if wName != nil {
+			ca.Warehouse.Name = *wName
+		}
+		if code != nil {
+			ca.Warehouse.Code = *code
+		}
+		if add != nil {
+			ca.Warehouse.Address = *add
+		}
+		if city != nil {
+			ca.Warehouse.City = *city
+		}
+		if postal != nil {
+			ca.Warehouse.PostaCode = *postal
+		}
+		if toll != nil {
+			ca.Warehouse.TollFreePhone = *toll
+		}
+		if fax != nil {
+			ca.Warehouse.Fax = *fax
+		}
+		if localPh != nil {
+			ca.Warehouse.LocalPhone = *localPh
+		}
+		if manager != nil {
+			ca.Warehouse.Manager = *manager
+		}
+		if long != nil {
+			ca.Warehouse.Longitude = *long
+		}
+		if lat != nil {
+			ca.Warehouse.Latitude = *lat
+		}
+
+		if stateID != nil {
+			ca.Warehouse.State.Id = *stateID
+		}
+		if state != nil {
+			ca.Warehouse.State.State = *state
+		}
+		if stateAbbr != nil {
+			ca.Warehouse.State.Abbreviation = *stateAbbr
+		}
+
+		var coun geography.Country
+		if countryID != nil {
+			coun.Id = *countryID
+		}
+		if country != nil {
+			coun.Country = *country
+		}
+		if countryAbbr != nil {
+			coun.Abbreviation = *countryAbbr
+		}
+		ca.Warehouse.State.Country = &coun
+
+		u.ComnetAccounts = append(u.ComnetAccounts, ca)
+	}
+
+	return rows.Err()
 }
 
 //updates auth key dateAdded to Now()

@@ -40,6 +40,8 @@ func AuthenticateUser(rw http.ResponseWriter, r *http.Request, enc encoding.Enco
 		return ""
 	}
 
+	user.GetComnetAccounts()
+
 	var key string
 	if len(user.Keys) != 0 {
 		key = user.Keys[0].Key

@@ -75,6 +75,7 @@ type Account struct {
 	Type               AccountType  `json:"type,omitempty" xml:"type,omitempty"`
 	ShippingInfo       ShippingInfo `json:"shipping_info,omitempty" xml"shipping_info,omitempty"`
 }
+
 type AccountType struct {
 	ID        int     `json:"id,omitempty" xml:"id,omitempty"`
 	Title     string  `json:"title,omitempty" xml:"title,omitempty"`
@@ -781,6 +782,7 @@ func (c *Customer) GetUsers(key string) (err error) {
 				return
 			}
 
+			user.GetComnetAccounts()
 			user.GetLocation()
 
 			c.Users = append(c.Users, user)

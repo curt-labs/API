@@ -22,6 +22,7 @@ type DefWH struct {
 type Threshold struct {
 	FreeF float64
 }
+
 type ShippingInfo struct {
 	CustomerInfo  CustomerInfo  `json:"customer_name"`
 	AccountStatus AccountStatus `json:"account_status"`
