@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/models/cartIntegration"
@@ -15,7 +14,8 @@ import (
 
 //TODO - extremely untested
 
-func Upload(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+func Upload(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+	key := r.URL.Query().Get("key")
 	file, fileHeader, err := r.FormFile("file")
 	if err != nil {
 		apierror.GenerateError("Error getting file from form", err, rw, r)
@@ -34,7 +34,7 @@ func Upload(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *
 		}
 	}
 
-	err = cartIntegration.UploadFile(file, dtx)
+	err = cartIntegration.UploadFile(file, key)
 	if err != nil {
 		apierror.GenerateError("Error uploading file", err, rw, r)
 		return ""
@@ -42,19 +42,19 @@ func Upload(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *
 	return ""
 }
 
-func Download(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+func Download(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 
 	b := &bytes.Buffer{}
 	wr := csv.NewWriter(b)
 
-	customerPrices, err := cartIntegration.GetCustomerPrices(dtx)
+	customerPrices, err := cartIntegration.GetCustomerPrices()
 	if err != nil {
 		apierror.GenerateError("Error getting customer prices ", err, rw, r)
 		return ""
 	}
 
 	//Price map
-	prices, err := cartIntegration.GetPartPrices(dtx)
+	prices, err := cartIntegration.GetPartPrices()
 	if err != nil {
 		apierror.GenerateError("Error getting part prices ", err, rw, r)
 		return ""

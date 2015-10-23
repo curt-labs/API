@@ -1,7 +1,6 @@
 package cartIntegration
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	_ "github.com/go-sql-driver/mysql"
 
 	"encoding/csv"
@@ -15,7 +14,7 @@ const (
 	DATE_FORMAT = "2006-01-02"
 )
 
-func UploadFile(file multipart.File, dtx *apicontext.DataContext) error {
+func UploadFile(file multipart.File, api_key string) error {
 	defer file.Close()
 	csvfile := csv.NewReader(file)
 
@@ -24,11 +23,11 @@ func UploadFile(file multipart.File, dtx *apicontext.DataContext) error {
 		return err
 	}
 
-	priceLookup, err := GetCustomerPrices(dtx)
+	priceLookup, err := GetCustomerPrices()
 	if err != nil {
 		return err
 	}
-	integrationLookup, err := GetCustomerCartIntegrations(dtx)
+	integrationLookup, err := GetCustomerCartIntegrations(api_key)
 	if err != nil {
 		return err
 	}
@@ -36,7 +35,7 @@ func UploadFile(file multipart.File, dtx *apicontext.DataContext) error {
 	for i, line := range lines {
 		//Curt Part ID,	Customer Part ID, Sale Price, Sale Start Date, Sale End Date
 		var cp CustomerPrice
-		cp.CustID = dtx.CustomerID
+		cp.CustID = Customer_ID
 
 		partID, err := strconv.Atoi(line[0])
 		if err != nil && i == 0 {

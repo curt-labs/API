@@ -1,7 +1,6 @@
 package cartIntegration
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	_ "github.com/go-sql-driver/mysql"
 
@@ -75,7 +74,8 @@ var (
 )
 
 var (
-	Brand_ID int
+	Brand_ID    int
+	Customer_ID int
 )
 
 func initDB() (*sql.DB, error) {
@@ -88,7 +88,7 @@ func initDB() (*sql.DB, error) {
 }
 
 //Get all of a single customer's prices
-func GetCustomerPrices(dtx *apicontext.DataContext) ([]CustomerPrice, error) {
+func GetCustomerPrices() ([]CustomerPrice, error) {
 	var cps []CustomerPrice
 	db, err := initDB()
 	if err != nil {
@@ -100,7 +100,7 @@ func GetCustomerPrices(dtx *apicontext.DataContext) ([]CustomerPrice, error) {
 		return cps, err
 	}
 	defer stmt.Close()
-	res, err := stmt.Query(dtx.CustomerID, dtx.CustomerID, dtx.BrandID)
+	res, err := stmt.Query(Customer_ID, Customer_ID, Brand_ID)
 	if err != nil {
 		return cps, err
 	}
@@ -116,7 +116,7 @@ func GetCustomerPrices(dtx *apicontext.DataContext) ([]CustomerPrice, error) {
 }
 
 //Get a customers prices - paged/limited
-func GetPricingPaged(page int, count int, dtx *apicontext.DataContext) ([]CustomerPrice, error) {
+func GetPricingPaged(page int, count int) ([]CustomerPrice, error) {
 	var cps []CustomerPrice
 	db, err := initDB()
 	if err != nil {
@@ -129,7 +129,7 @@ func GetPricingPaged(page int, count int, dtx *apicontext.DataContext) ([]Custom
 		return cps, err
 	}
 	defer stmt.Close()
-	res, err := stmt.Query(dtx.CustomerID, dtx.CustomerID, dtx.BrandID, (page-1)*count, count)
+	res, err := stmt.Query(Customer_ID, Customer_ID, Brand_ID, (page-1)*count, count)
 	if err != nil {
 		return cps, err
 	}
@@ -145,7 +145,7 @@ func GetPricingPaged(page int, count int, dtx *apicontext.DataContext) ([]Custom
 }
 
 //Returns the number of prices that a customer has
-func GetPricingCount(dtx *apicontext.DataContext) (int, error) {
+func GetPricingCount() (int, error) {
 	var count int
 	db, err := initDB()
 	if err != nil {
@@ -157,7 +157,7 @@ func GetPricingCount(dtx *apicontext.DataContext) (int, error) {
 		return count, err
 	}
 	defer stmt.Close()
-	err = stmt.QueryRow(dtx.CustomerID, dtx.CustomerID, dtx.BrandID).Scan(&count)
+	err = stmt.QueryRow(Customer_ID, Customer_ID, Brand_ID).Scan(&count)
 	if err != nil {
 		return count, err
 	}
@@ -165,7 +165,7 @@ func GetPricingCount(dtx *apicontext.DataContext) (int, error) {
 }
 
 //Returns Price for a part
-func GetPartPricesByPartID(partID int, dtx *apicontext.DataContext) ([]Price, error) {
+func GetPartPricesByPartID(partID int) ([]Price, error) {
 	var ps []Price
 	db, err := initDB()
 	if err != nil {
@@ -177,7 +177,7 @@ func GetPartPricesByPartID(partID int, dtx *apicontext.DataContext) ([]Price, er
 		return ps, err
 	}
 	defer stmt.Close()
-	res, err := stmt.Query(dtx.BrandID, partID)
+	res, err := stmt.Query(Brand_ID, partID)
 	if err != nil {
 		return ps, err
 	}
@@ -192,7 +192,7 @@ func GetPartPricesByPartID(partID int, dtx *apicontext.DataContext) ([]Price, er
 }
 
 //Returns all Prices
-func GetPartPrices(dtx *apicontext.DataContext) ([]Price, error) {
+func GetPartPrices() ([]Price, error) {
 	var ps []Price
 	db, err := initDB()
 	if err != nil {
@@ -204,7 +204,7 @@ func GetPartPrices(dtx *apicontext.DataContext) ([]Price, error) {
 		return ps, err
 	}
 	defer stmt.Close()
-	res, err := stmt.Query(dtx.BrandID)
+	res, err := stmt.Query(Brand_ID)
 	if err != nil {
 		return ps, err
 	}
@@ -219,7 +219,7 @@ func GetPartPrices(dtx *apicontext.DataContext) ([]Price, error) {
 }
 
 //Returns Map Price for every part
-func GetMAPPartPrices(dtx *apicontext.DataContext) ([]Price, error) {
+func GetMAPPartPrices() ([]Price, error) {
 	var ps []Price
 	db, err := initDB()
 	if err != nil {
@@ -231,7 +231,7 @@ func GetMAPPartPrices(dtx *apicontext.DataContext) ([]Price, error) {
 		return ps, err
 	}
 	defer stmt.Close()
-	res, err := stmt.Query(dtx.BrandID)
+	res, err := stmt.Query(Brand_ID)
 	if err != nil {
 		return ps, err
 	}
@@ -300,7 +300,7 @@ func (c *CustomerPrice) Delete() error {
 }
 
 //CartIntegration
-func GetCustomerCartIntegrations(dtx *apicontext.DataContext) ([]CustomerPrice, error) {
+func GetCustomerCartIntegrations(key string) ([]CustomerPrice, error) {
 	var cps []CustomerPrice
 	db, err := initDB()
 	if err != nil {
@@ -312,7 +312,7 @@ func GetCustomerCartIntegrations(dtx *apicontext.DataContext) ([]CustomerPrice, 
 		return cps, err
 	}
 	defer stmt.Close()
-	res, err := stmt.Query(dtx.APIKey, dtx.BrandID)
+	res, err := stmt.Query(key, Brand_ID)
 	if err != nil {
 		return cps, err
 	}

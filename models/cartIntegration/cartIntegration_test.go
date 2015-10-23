@@ -1,7 +1,10 @@
 package cartIntegration
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
+	"github.com/curt-labs/GoAPI/helpers/database"
+	_ "github.com/go-sql-driver/mysql"
+
+	"database/sql"
 	. "github.com/smartystreets/goconvey/convey"
 
 	"encoding/csv"
@@ -12,14 +15,14 @@ import (
 
 func TestCartIntegration(t *testing.T) {
 	var err error
-	dtx, err := apicontextmock.Mock()
-	if err != nil {
-		return
-	}
+	Brand_ID = 1
+	Customer_ID = 1
+
+	key, _ := getCustomerKey()
 
 	Convey("Testing CustomerPrices", t, func() {
 		cp := CustomerPrice{
-			CustID: dtx.CustomerID,
+			CustID: 1,
 			PartID: 11000,
 			Price:  123,
 			IsSale: 0,
@@ -32,29 +35,29 @@ func TestCartIntegration(t *testing.T) {
 		err = cp.Update()
 		So(err, ShouldBeNil)
 
-		custprices, err := GetCustomerPrices(dtx)
+		custprices, err := GetCustomerPrices()
 		So(err, ShouldBeNil)
 		So(len(custprices), ShouldBeGreaterThan, 0)
 
-		custprices, err = GetPricingPaged(1, 1, dtx)
+		custprices, err = GetPricingPaged(1, 1)
 		So(err, ShouldBeNil)
 		So(len(custprices), ShouldBeGreaterThan, 0)
 
-		count, err := GetPricingCount(dtx)
+		count, err := GetPricingCount()
 		So(err, ShouldBeNil)
-		So(count, ShouldBeGreaterThan, -1)
+		So(count, ShouldBeGreaterThan, 0)
 
-		prices, err := GetPartPrices(dtx)
+		prices, err := GetPartPrices()
 		So(err, ShouldBeNil)
 		So(len(prices), ShouldBeGreaterThan, 0)
 
-		prices, err = GetPartPricesByPartID(cp.PartID, dtx)
+		prices, err = GetPartPricesByPartID(cp.PartID)
 		So(err, ShouldBeNil)
-		So(len(prices), ShouldBeGreaterThan, 0)
+		So(len(prices), ShouldBeGreaterThanOrEqualTo, 1)
 
-		prices, err = GetMAPPartPrices(dtx)
+		prices, err = GetMAPPartPrices()
 		So(err, ShouldBeNil)
-		So(len(prices), ShouldBeGreaterThan, 0)
+		So(len(prices), ShouldBeGreaterThanOrEqualTo, 1)
 
 		err = cp.Delete()
 		So(err, ShouldBeNil)
@@ -62,7 +65,7 @@ func TestCartIntegration(t *testing.T) {
 
 	Convey("Testing CartIntegrations", t, func() {
 		cp := CustomerPrice{
-			CustID:         dtx.CustomerID,
+			CustID:         1,
 			PartID:         11000,
 			CustomerPartID: 200,
 			Price:          123.00,
@@ -75,9 +78,9 @@ func TestCartIntegration(t *testing.T) {
 		err = cp.UpdateCartIntegration()
 		So(err, ShouldBeNil)
 
-		custprices, err := GetCustomerCartIntegrations(dtx)
+		custprices, err := GetCustomerCartIntegrations(key)
 		So(err, ShouldBeNil)
-		So(len(custprices), ShouldBeGreaterThan, 0)
+		So(len(custprices), ShouldBeGreaterThanOrEqualTo, 0)
 
 		err = cp.DeleteCartIntegration()
 		So(err, ShouldBeNil)
@@ -94,13 +97,12 @@ func TestCartIntegration(t *testing.T) {
 		So(err, ShouldBeNil)
 		t.Log(file.Read(nil))
 
-		err = UploadFile(file, dtx)
+		err = UploadFile(file, key)
 		So(err, ShouldBeNil)
 
 		os.Remove("test.csv") //cleanup
 
 	})
-	apicontextmock.DeMock(dtx)
 
 }
 
@@ -117,4 +119,21 @@ func newfileUploadRequest() (multipart.File, error) {
 	}
 
 	return file, nil
+}
+
+func getCustomerKey() (string, error) {
+	var key string
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return key, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare("select api_key from ApiKey a join CustomerUser c on c.id = a.user_id join ApiKeyType at on at.id = a.type_id where c.cust_id = 1 and at.type = 'Public' limit 1")
+	if err != nil {
+		return key, err
+	}
+	defer stmt.Close()
+	err = stmt.QueryRow().Scan(&key)
+	return key, err
 }
