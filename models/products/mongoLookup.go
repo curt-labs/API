@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
+	"github.com/curt-labs/GoAPI/models/products/mongo"
+
 	"sort"
 	"strings"
 	"sync"
@@ -64,11 +66,12 @@ type NoSqlApp struct {
 }
 
 type NoSqlLookup struct {
-	Years  []string `json:"available_years,omitempty" xml:"available_years, omitempty"`
-	Makes  []string `json:"available_makes,omitempty" xml:"available_makes, omitempty"`
-	Models []string `json:"available_models,omitempty" xml:"available_models, omitempty"`
-	Styles []string `json:"available_styles,omitempty" xml:"available_styles, omitempty"`
-	Parts  []Part   `json:"parts,omitempty" xml:"parts, omitempty"`
+	Years      []string            `json:"available_years,omitempty" xml:"available_years, omitempty"`
+	Makes      []string            `json:"available_makes,omitempty" xml:"available_makes, omitempty"`
+	Models     []string            `json:"available_models,omitempty" xml:"available_models, omitempty"`
+	Styles     []string            `json:"available_styles,omitempty" xml:"available_styles, omitempty"`
+	Parts      []Part              `json:"parts,omitempty" xml:"parts, omitempty"`
+	MongoParts []mongoData.Product `json:"mongo_parts,omitempty" xml:"mongo_parts, omitempty"`
 	NoSqlVehicle
 }
 
@@ -412,4 +415,113 @@ func FindVehiclesWithParts(v NoSqlVehicle, collection string, dtx *apicontext.Da
 	}
 
 	return l, err
+}
+
+//from each category:
+//if no v.style:
+//query base vehicle
+//get parts & available_styles
+//else:
+//query base+style
+//get parts
+
+func FindVehiclesFromAllCategories(v NoSqlVehicle, dtx *apicontext.DataContext) (map[string]NoSqlLookup, error) {
+	var l NoSqlLookup
+	lookupMap := make(map[string]NoSqlLookup)
+
+	session, err := mgo.DialWithInfo(database.AriesMongoConnectionString())
+	if err != nil {
+		return lookupMap, err
+	}
+	defer session.Close()
+
+	//Get all collections
+	cols, err := GetAriesVehicleCollections()
+	if err != nil {
+		return lookupMap, err
+	}
+
+	//from each category
+	for _, col := range cols {
+
+		c := session.DB(AriesDb).C(col)
+		queryMap := make(map[string]interface{})
+		//query base vehicle
+		queryMap["year"] = strings.ToLower(v.Year)
+		queryMap["make"] = strings.ToLower(v.Make)
+		queryMap["model"] = strings.ToLower(v.Model)
+		if (v.Style) != "" {
+			queryMap["style"] = strings.ToLower(v.Style)
+		} else {
+			_, l.Styles, err = GetApps(v, col)
+		}
+
+		var ids []int
+		c.Find(queryMap).Distinct("parts", &ids)
+		//add parts
+		for _, id := range ids {
+			//TODO use mongoLayer
+			// p := mongoData.Product{
+			// 	ProductID: id,
+			// }
+			// if err := p.FromMongo(); err != nil {
+			// 	log.Print(err)
+			// 	continue
+			// }
+
+			// l.MongoParts = append(l.MongoParts, p)
+			p := Part{
+				ID: id,
+			}
+			err = p.Get(dtx)
+			if err != nil {
+				continue
+			}
+			l.Parts = append(l.Parts, p)
+		}
+		if len(l.Parts) > 0 {
+			lookupMap[col] = l
+		}
+	}
+	return lookupMap, err
+}
+
+func FindPartsFromOneCategory(v NoSqlVehicle, collection string, dtx *apicontext.DataContext) (map[string]NoSqlLookup, error) {
+	var l NoSqlLookup
+	lookupMap := make(map[string]NoSqlLookup)
+
+	session, err := mgo.DialWithInfo(database.AriesMongoConnectionString())
+	if err != nil {
+		return lookupMap, err
+	}
+	defer session.Close()
+
+	c := session.DB(AriesDb).C(collection)
+	queryMap := make(map[string]interface{})
+	//query base vehicle
+	queryMap["year"] = strings.ToLower(v.Year)
+	queryMap["make"] = strings.ToLower(v.Make)
+	queryMap["model"] = strings.ToLower(v.Model)
+	if (v.Style) != "" {
+		queryMap["style"] = strings.ToLower(v.Style)
+	} else {
+		_, l.Styles, err = GetApps(v, collection)
+	}
+
+	var ids []int
+	c.Find(queryMap).Distinct("parts", &ids)
+	//add parts
+	for _, id := range ids {
+		p := Part{ID: id}
+		//TODO use mongoLayer
+		if err := p.Get(dtx); err != nil {
+			continue
+		}
+		l.Parts = append(l.Parts, p)
+	}
+	if len(l.Parts) > 0 {
+		lookupMap[collection] = l
+	}
+
+	return lookupMap, err
 }

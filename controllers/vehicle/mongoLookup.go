@@ -5,6 +5,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/models/products"
+
 	"net/http"
 	"sort"
 	"strconv"
@@ -162,4 +163,43 @@ func makeLookupFrommanyLookups(lookupArrays []products.NoSqlLookup) (l products.
 	sort.Strings(l.Styles)
 
 	return l
+}
+
+//return parts for a vehicle(incl style) within a specific category
+func AllCollectionsLookupCategory(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+	var v products.NoSqlVehicle
+	noSqlLookup := make(map[string]products.NoSqlLookup)
+	var err error
+
+	// Get vehicle year
+	v.Year = r.FormValue("year")
+	delete(r.Form, "year")
+
+	// Get vehicle make
+	v.Make = r.FormValue("make")
+	delete(r.Form, "make")
+
+	// Get vehicle model
+	v.Model = r.FormValue("model")
+	delete(r.Form, "model")
+
+	// // Get vehicle submodel
+	v.Style = r.FormValue("style")
+	delete(r.Form, "style")
+
+	collection := r.FormValue("collection")
+	if collection == "" {
+		noSqlLookup, err = products.FindVehiclesFromAllCategories(v, dtx)
+
+	} else {
+		noSqlLookup, err = products.FindPartsFromOneCategory(v, collection, dtx)
+	}
+	if err != nil {
+		apierror.GenerateError("Trouble finding vehicles.", err, w, r)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(noSqlLookup))
+
+	return ""
 }
