@@ -459,6 +459,7 @@ func FindVehiclesFromAllCategories(v NoSqlVehicle, dtx *apicontext.DataContext) 
 		var ids []int
 		c.Find(queryMap).Distinct("parts", &ids)
 		//add parts
+		var partsArray []Part
 		for _, id := range ids {
 			//TODO use mongoLayer
 			// p := mongoData.Product{
@@ -478,9 +479,14 @@ func FindVehiclesFromAllCategories(v NoSqlVehicle, dtx *apicontext.DataContext) 
 				continue
 			}
 			l.Parts = append(l.Parts, p)
+			partsArray = append(partsArray, p)
 		}
-		if len(l.Parts) > 0 {
-			lookupMap[col] = l
+		if len(partsArray) > 0 {
+			var tmp = lookupMap[col]
+			tmp.Parts = partsArray
+			tmp.Styles = l.Styles
+			lookupMap[col] = tmp
+			partsArray = nil
 		}
 	}
 	return lookupMap, err
@@ -511,6 +517,7 @@ func FindPartsFromOneCategory(v NoSqlVehicle, collection string, dtx *apicontext
 	var ids []int
 	c.Find(queryMap).Distinct("parts", &ids)
 	//add parts
+	var partsArray []Part
 	for _, id := range ids {
 		p := Part{ID: id}
 		//TODO use mongoLayer
@@ -518,10 +525,15 @@ func FindPartsFromOneCategory(v NoSqlVehicle, collection string, dtx *apicontext
 			continue
 		}
 		l.Parts = append(l.Parts, p)
-	}
-	if len(l.Parts) > 0 {
-		lookupMap[collection] = l
-	}
+		partsArray = append(partsArray, p)
 
+	}
+	if len(partsArray) > 0 {
+		var tmp = lookupMap[collection]
+		tmp.Parts = partsArray
+		tmp.Styles = l.Styles
+		lookupMap[collection] = tmp
+		partsArray = nil
+	}
 	return lookupMap, err
 }
