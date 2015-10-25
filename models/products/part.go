@@ -168,8 +168,16 @@ type Installation struct { //aka VehiclePart Table
 
 type Installations []Installation
 
-func (p *Part) FromDatabase(dtx *apicontext.DataContext) error {
+func (p *Part) FromDatabase(dtx *apicontext.DataContext, omit ...string) error {
 	var errs []string
+
+	omitFromResponse := make(map[string]string)
+	for _, o := range omit {
+		omitArray := strings.Split(o, ",")
+		for _, oa := range omitArray {
+			omitFromResponse[oa] = oa
+		}
+	}
 
 	var wg sync.WaitGroup
 	var cats []Category
@@ -185,86 +193,103 @@ func (p *Part) FromDatabase(dtx *apicontext.DataContext) error {
 	wg.Add(9)
 
 	go func(tmp *Part) {
-		attrErr := p.GetAttributes(dtx)
-		if attrErr != nil {
-			errs = append(errs, attrErr.Error())
+		if _, ok := omitFromResponse["attributes"]; !ok {
+			attrErr := p.GetAttributes(dtx)
+			if attrErr != nil {
+				errs = append(errs, attrErr.Error())
+			}
+			attrs = p.Attributes
 		}
-		attrs = p.Attributes
 		wg.Done()
 	}(p)
 
 	go func() {
-		priceErr := p.GetPricing(dtx)
-		if priceErr != nil {
-			errs = append(errs, priceErr.Error())
+		if _, ok := omitFromResponse["pricing"]; !ok {
+			priceErr := p.GetPricing(dtx)
+			if priceErr != nil {
+				errs = append(errs, priceErr.Error())
+			}
+			prices = p.Pricing
 		}
-		prices = p.Pricing
 		wg.Done()
 	}()
 
 	go func() {
-		reviewErr := p.GetActiveApprovedReviews(dtx)
-		if reviewErr != nil {
-			errs = append(errs, reviewErr.Error())
+		if _, ok := omitFromResponse["reviews"]; !ok {
+			reviewErr := p.GetActiveApprovedReviews(dtx)
+			if reviewErr != nil {
+				errs = append(errs, reviewErr.Error())
+			}
+			revs = p.Reviews
+			avgRev = p.AverageReview
 		}
-		revs = p.Reviews
-		avgRev = p.AverageReview
 		wg.Done()
 	}()
 
 	go func() {
-		imgErr := p.GetImages(dtx)
-		if imgErr != nil {
-			errs = append(errs, imgErr.Error())
+		if _, ok := omitFromResponse["images"]; !ok {
+			imgErr := p.GetImages(dtx)
+			if imgErr != nil {
+				errs = append(errs, imgErr.Error())
+			}
+			imgs = p.Images
 		}
-		imgs = p.Images
 		wg.Done()
 	}()
 
 	go func() {
-		var vidErr error
-		vids, vidErr = video.GetPartVideos(p.ID)
-		if vidErr != nil {
-			errs = append(errs, vidErr.Error())
+		if _, ok := omitFromResponse["videos"]; !ok {
+			var vidErr error
+			vids, vidErr = video.GetPartVideos(p.ID)
+			if vidErr != nil {
+				errs = append(errs, vidErr.Error())
+			}
 		}
-
 		wg.Done()
 	}()
 
 	go func() {
-		relErr := p.GetRelated(dtx)
-		if relErr != nil {
-			errs = append(errs, relErr.Error())
+		if _, ok := omitFromResponse["related"]; !ok {
+			relErr := p.GetRelated(dtx)
+			if relErr != nil {
+				errs = append(errs, relErr.Error())
+			}
+			related = p.Related
 		}
-		related = p.Related
 		wg.Done()
 	}()
 
 	go func() {
-		pkgErr := p.GetPartPackaging(dtx)
-		if pkgErr != nil {
-			errs = append(errs, pkgErr.Error())
+		if _, ok := omitFromResponse["packaging"]; !ok {
+			pkgErr := p.GetPartPackaging(dtx)
+			if pkgErr != nil {
+				errs = append(errs, pkgErr.Error())
+			}
+			pkgs = p.Packages
 		}
-		pkgs = p.Packages
 		wg.Done()
 	}()
 
 	go func() {
-		p.Categories = make([]Category, 0)
-		catErr := p.PartBreadcrumbs(dtx)
-		if catErr != nil {
-			errs = append(errs, catErr.Error())
+		if _, ok := omitFromResponse["category"]; !ok {
+			p.Categories = make([]Category, 0)
+			catErr := p.PartBreadcrumbs(dtx)
+			if catErr != nil {
+				errs = append(errs, catErr.Error())
+			}
+			cats = p.Categories
 		}
-		cats = p.Categories
 		wg.Done()
 	}()
 
 	go func() {
-		conErr := p.GetContent(dtx)
-		if conErr != nil {
-			errs = append(errs, conErr.Error())
+		if _, ok := omitFromResponse["content"]; !ok {
+			conErr := p.GetContent(dtx)
+			if conErr != nil {
+				errs = append(errs, conErr.Error())
+			}
+			cons = p.Content
 		}
-		cons = p.Content
 		wg.Done()
 	}()
 	var basicErr error
@@ -300,7 +325,14 @@ func (p *Part) FromDatabase(dtx *apicontext.DataContext) error {
 	return nil
 }
 
-func (p *Part) Get(dtx *apicontext.DataContext) error {
+func (p *Part) Get(dtx *apicontext.DataContext, omit ...string) error {
+	var omitFromResponse string
+	for i, o := range omit {
+		if i != 0 {
+			omitFromResponse += ","
+		}
+		omitFromResponse += o
+	}
 	var err error
 	var custPart CustomerPart
 	var pi PartInventory
@@ -322,7 +354,7 @@ func (p *Part) Get(dtx *apicontext.DataContext) error {
 
 	p.Status = 0
 	if p.Status == 0 {
-		if err := p.FromDatabase(dtx); err != nil {
+		if err := p.FromDatabase(dtx, omitFromResponse); err != nil {
 			return err
 		}
 	}

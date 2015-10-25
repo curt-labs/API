@@ -408,7 +408,7 @@ func FindVehiclesWithParts(v NoSqlVehicle, collection string, dtx *apicontext.Da
 	//add parts
 	for _, id := range ids {
 		p := Part{ID: id}
-		if err := p.Get(dtx); err != nil {
+		if err := p.Get(dtx, "videos,content,reviews,related,packaging,categories"); err != nil {
 			continue
 		}
 		l.Parts = append(l.Parts, p)
@@ -474,7 +474,7 @@ func FindVehiclesFromAllCategories(v NoSqlVehicle, dtx *apicontext.DataContext) 
 			p := Part{
 				ID: id,
 			}
-			err = p.Get(dtx)
+			err = p.Get(dtx, "videos,content,reviews,related,packaging,categories")
 			if err != nil {
 				continue
 			}
