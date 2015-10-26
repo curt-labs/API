@@ -408,7 +408,7 @@ func FindVehiclesWithParts(v NoSqlVehicle, collection string, dtx *apicontext.Da
 	//add parts
 	for _, id := range ids {
 		p := Part{ID: id}
-		if err := p.Get(dtx, "videos,content,reviews,related,packaging,categories"); err != nil {
+		if err := p.Get(dtx); err != nil {
 			continue
 		}
 		l.Parts = append(l.Parts, p)
@@ -462,19 +462,20 @@ func FindVehiclesFromAllCategories(v NoSqlVehicle, dtx *apicontext.DataContext) 
 		var partsArray []Part
 		for _, id := range ids {
 			//TODO use mongoLayer
-			// p := mongoData.Product{
+			// pmongo := mongoData.Product{
 			// 	ProductID: id,
 			// }
-			// if err := p.FromMongo(); err != nil {
+			// if err := pmongo.FromMongo(); err != nil {
 			// 	log.Print(err)
 			// 	continue
 			// }
+			// log.Print(pmongo)
 
 			// l.MongoParts = append(l.MongoParts, p)
 			p := Part{
 				ID: id,
 			}
-			err = p.Get(dtx, "videos,content,reviews,related,packaging,categories")
+			err = p.Get(dtx)
 			if err != nil {
 				continue
 			}

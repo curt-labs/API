@@ -11,7 +11,8 @@ import (
 	"github.com/curt-labs/GoAPI/models/vehicle"
 	"github.com/curt-labs/GoAPI/models/video"
 	_ "github.com/go-sql-driver/mysql"
-	"sync"
+	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 
 	"database/sql"
 	"encoding/json"
@@ -168,204 +169,196 @@ type Installation struct { //aka VehiclePart Table
 
 type Installations []Installation
 
-func (p *Part) FromDatabase(dtx *apicontext.DataContext, omit ...string) error {
-	var errs []string
-
-	omitFromResponse := make(map[string]string)
-	for _, o := range omit {
-		omitArray := strings.Split(o, ",")
-		for _, oa := range omitArray {
-			omitFromResponse[oa] = oa
-		}
+func (p *Part) FromDatabase() error {
+	session, err := mgo.DialWithInfo(database.MongoPartConnectionString())
+	if err != nil {
+		return err
 	}
-
-	var wg sync.WaitGroup
-	var cats []Category
-	var attrs []Attribute
-	var prices []Price
-	var revs []Review
-	var avgRev float64
-	var imgs []Image
-	var vids []video.Video
-	var related []int
-	var pkgs []Package
-	var cons []Content
-	wg.Add(9)
-
-	go func(tmp *Part) {
-		if _, ok := omitFromResponse["attributes"]; !ok {
-			attrErr := p.GetAttributes(dtx)
-			if attrErr != nil {
-				errs = append(errs, attrErr.Error())
-			}
-			attrs = p.Attributes
-		}
-		wg.Done()
-	}(p)
-
-	go func() {
-		if _, ok := omitFromResponse["pricing"]; !ok {
-			priceErr := p.GetPricing(dtx)
-			if priceErr != nil {
-				errs = append(errs, priceErr.Error())
-			}
-			prices = p.Pricing
-		}
-		wg.Done()
-	}()
-
-	go func() {
-		if _, ok := omitFromResponse["reviews"]; !ok {
-			reviewErr := p.GetActiveApprovedReviews(dtx)
-			if reviewErr != nil {
-				errs = append(errs, reviewErr.Error())
-			}
-			revs = p.Reviews
-			avgRev = p.AverageReview
-		}
-		wg.Done()
-	}()
-
-	go func() {
-		if _, ok := omitFromResponse["images"]; !ok {
-			imgErr := p.GetImages(dtx)
-			if imgErr != nil {
-				errs = append(errs, imgErr.Error())
-			}
-			imgs = p.Images
-		}
-		wg.Done()
-	}()
-
-	go func() {
-		if _, ok := omitFromResponse["videos"]; !ok {
-			var vidErr error
-			vids, vidErr = video.GetPartVideos(p.ID)
-			if vidErr != nil {
-				errs = append(errs, vidErr.Error())
-			}
-		}
-		wg.Done()
-	}()
-
-	go func() {
-		if _, ok := omitFromResponse["related"]; !ok {
-			relErr := p.GetRelated(dtx)
-			if relErr != nil {
-				errs = append(errs, relErr.Error())
-			}
-			related = p.Related
-		}
-		wg.Done()
-	}()
-
-	go func() {
-		if _, ok := omitFromResponse["packaging"]; !ok {
-			pkgErr := p.GetPartPackaging(dtx)
-			if pkgErr != nil {
-				errs = append(errs, pkgErr.Error())
-			}
-			pkgs = p.Packages
-		}
-		wg.Done()
-	}()
-
-	go func() {
-		if _, ok := omitFromResponse["category"]; !ok {
-			p.Categories = make([]Category, 0)
-			catErr := p.PartBreadcrumbs(dtx)
-			if catErr != nil {
-				errs = append(errs, catErr.Error())
-			}
-			cats = p.Categories
-		}
-		wg.Done()
-	}()
-
-	go func() {
-		if _, ok := omitFromResponse["content"]; !ok {
-			conErr := p.GetContent(dtx)
-			if conErr != nil {
-				errs = append(errs, conErr.Error())
-			}
-			cons = p.Content
-		}
-		wg.Done()
-	}()
-	var basicErr error
-	if basicErr = p.Basics(dtx); basicErr != nil {
-		if basicErr == sql.ErrNoRows {
-			basicErr = errors.New("Part #" + strconv.Itoa(p.ID) + " does not exist.")
-		}
-		errs = append(errs, basicErr.Error())
-	}
-
-	wg.Wait()
-
-	p.Categories = cats
-	p.Videos = vids
-	p.Attributes = attrs
-	p.Pricing = prices
-	p.Images = imgs
-	p.Packages = pkgs
-	p.Content = cons
-	p.Related = related
-	p.RelatedCount = len(related)
-	p.Reviews = revs
-	p.AverageReview = avgRev
-
-	if basicErr != nil {
-		return errors.New("Could not find part: " + basicErr.Error())
-	}
-
-	go func(tmp Part) {
-		redis.Setex(fmt.Sprintf("part:%d:%s", tmp.ID, dtx.BrandString), tmp, redis.CacheTimeout)
-	}(*p)
-
-	return nil
+	defer session.Close()
+	return session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{"id": p.ID}).One(&p)
 }
 
-func (p *Part) Get(dtx *apicontext.DataContext, omit ...string) error {
-	var omitFromResponse string
-	for i, o := range omit {
-		if i != 0 {
-			omitFromResponse += ","
-		}
-		omitFromResponse += o
-	}
+//TODO - delete things that this was dependant on, after checking for other dependencies
+
+// func (p *Part) FromDatabaseMySQL(dtx *apicontext.DataContext, omit ...string) error {
+// 	var errs []string
+
+// 	omitFromResponse := make(map[string]string)
+// 	for _, o := range omit {
+// 		omitArray := strings.Split(o, ",")
+// 		for _, oa := range omitArray {
+// 			omitFromResponse[oa] = oa
+// 		}
+// 	}
+
+// 	var wg sync.WaitGroup
+// 	var cats []Category
+// 	var attrs []Attribute
+// 	var prices []Price
+// 	var revs []Review
+// 	var avgRev float64
+// 	var imgs []Image
+// 	var vids []video.Video
+// 	var related []int
+// 	var pkgs []Package
+// 	var cons []Content
+// 	wg.Add(9)
+
+// 	go func(tmp *Part) {
+// 		if _, ok := omitFromResponse["attributes"]; !ok {
+// 			attrErr := p.GetAttributes(dtx)
+// 			if attrErr != nil {
+// 				errs = append(errs, attrErr.Error())
+// 			}
+// 			attrs = p.Attributes
+// 		}
+// 		wg.Done()
+// 	}(p)
+
+// 	go func() {
+// 		if _, ok := omitFromResponse["pricing"]; !ok {
+// 			priceErr := p.GetPricing(dtx)
+// 			if priceErr != nil {
+// 				errs = append(errs, priceErr.Error())
+// 			}
+// 			prices = p.Pricing
+// 		}
+// 		wg.Done()
+// 	}()
+
+// 	go func() {
+// 		if _, ok := omitFromResponse["reviews"]; !ok {
+// 			reviewErr := p.GetActiveApprovedReviews(dtx)
+// 			if reviewErr != nil {
+// 				errs = append(errs, reviewErr.Error())
+// 			}
+// 			revs = p.Reviews
+// 			avgRev = p.AverageReview
+// 		}
+// 		wg.Done()
+// 	}()
+
+// 	go func() {
+// 		if _, ok := omitFromResponse["images"]; !ok {
+// 			imgErr := p.GetImages(dtx)
+// 			if imgErr != nil {
+// 				errs = append(errs, imgErr.Error())
+// 			}
+// 			imgs = p.Images
+// 		}
+// 		wg.Done()
+// 	}()
+
+// 	go func() {
+// 		if _, ok := omitFromResponse["videos"]; !ok {
+// 			var vidErr error
+// 			vids, vidErr = video.GetPartVideos(p.ID)
+// 			if vidErr != nil {
+// 				errs = append(errs, vidErr.Error())
+// 			}
+// 		}
+// 		wg.Done()
+// 	}()
+
+// 	go func() {
+// 		if _, ok := omitFromResponse["related"]; !ok {
+// 			relErr := p.GetRelated(dtx)
+// 			if relErr != nil {
+// 				errs = append(errs, relErr.Error())
+// 			}
+// 			related = p.Related
+// 		}
+// 		wg.Done()
+// 	}()
+
+// 	go func() {
+// 		if _, ok := omitFromResponse["packaging"]; !ok {
+// 			pkgErr := p.GetPartPackaging(dtx)
+// 			if pkgErr != nil {
+// 				errs = append(errs, pkgErr.Error())
+// 			}
+// 			pkgs = p.Packages
+// 		}
+// 		wg.Done()
+// 	}()
+
+// 	go func() {
+// 		if _, ok := omitFromResponse["category"]; !ok {
+// 			p.Categories = make([]Category, 0)
+// 			catErr := p.PartBreadcrumbs(dtx)
+// 			if catErr != nil {
+// 				errs = append(errs, catErr.Error())
+// 			}
+// 			cats = p.Categories
+// 		}
+// 		wg.Done()
+// 	}()
+
+// 	go func() {
+// 		if _, ok := omitFromResponse["content"]; !ok {
+// 			conErr := p.GetContent(dtx)
+// 			if conErr != nil {
+// 				errs = append(errs, conErr.Error())
+// 			}
+// 			cons = p.Content
+// 		}
+// 		wg.Done()
+// 	}()
+// 	var basicErr error
+// 	if basicErr = p.Basics(dtx); basicErr != nil {
+// 		if basicErr == sql.ErrNoRows {
+// 			basicErr = errors.New("Part #" + strconv.Itoa(p.ID) + " does not exist.")
+// 		}
+// 		errs = append(errs, basicErr.Error())
+// 	}
+
+// 	wg.Wait()
+
+// 	p.Categories = cats
+// 	p.Videos = vids
+// 	p.Attributes = attrs
+// 	p.Pricing = prices
+// 	p.Images = imgs
+// 	p.Packages = pkgs
+// 	p.Content = cons
+// 	p.Related = related
+// 	p.RelatedCount = len(related)
+// 	p.Reviews = revs
+// 	p.AverageReview = avgRev
+
+// 	if basicErr != nil {
+// 		return errors.New("Could not find part: " + basicErr.Error())
+// 	}
+
+// 	go func(tmp Part) {
+// 		redis.Setex(fmt.Sprintf("part:%d:%s", tmp.ID, dtx.BrandString), tmp, redis.CacheTimeout)
+// 	}(*p)
+
+// 	return nil
+// }
+
+func (p *Part) Get(dtx *apicontext.DataContext) error {
 	var err error
-	var custPart CustomerPart
-	var pi PartInventory
-	customerChan := make(chan int)
+	customerChan := make(chan CustomerPart)
+	databaseChan := make(chan error)
 
 	go func(api_key string) {
-		custPart = p.BindCustomer(dtx)
-		pi, _ = p.GetInventory(api_key, "", dtx)
-
-		customerChan <- 1
+		customerChan <- p.BindCustomer(dtx)
 	}(dtx.APIKey)
 
-	redis_key := fmt.Sprintf("part:%d:%s", p.ID, dtx.BrandString)
-
-	part_bytes, err := redis.Get(redis_key)
-	if len(part_bytes) > 0 && err == nil {
-		json.Unmarshal(part_bytes, &p)
-	}
-
-	p.Status = 0
-	if p.Status == 0 {
-		if err := p.FromDatabase(dtx, omitFromResponse); err != nil {
-			return err
+	go func() {
+		if err := p.FromDatabase(); err != nil {
+			databaseChan <- err
+			return
 		}
-	}
+		databaseChan <- nil
+	}()
 
-	<-customerChan
+	p.Customer = <-customerChan
+	err = <-databaseChan
 	close(customerChan)
-
-	p.Customer = custPart
-	p.Inventory = pi
-
-	return nil
+	close(databaseChan)
+	return err
 }
 
 func All(page, count int, dtx *apicontext.DataContext) ([]Part, error) {
@@ -1120,801 +1113,801 @@ func (p *Part) GetPartByOldPartNumber(key string) (err error) {
 	return nil
 }
 
-func (p *Part) Create(dtx *apicontext.DataContext) (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	tx, err := db.Begin()
-	stmt, err := tx.Prepare(createPart)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	p.DateAdded = time.Now()
-	_, err = stmt.Exec(
-		p.ID,
-		p.Status,
-		p.DateAdded,
-		p.ShortDesc,
-		p.OldPartNumber,
-		p.PriceCode,
-		p.Class.ID,
-		p.Featured,
-		p.AcesPartTypeID,
-		p.BrandID,
-	)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	err = tx.Commit()
+// func (p *Part) Create(dtx *apicontext.DataContext) (err error) {
+// 	db, err := sql.Open("mysql", database.ConnectionString())
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer db.Close()
+// 	tx, err := db.Begin()
+// 	stmt, err := tx.Prepare(createPart)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer stmt.Close()
+// 	p.DateAdded = time.Now()
+// 	_, err = stmt.Exec(
+// 		p.ID,
+// 		p.Status,
+// 		p.DateAdded,
+// 		p.ShortDesc,
+// 		p.OldPartNumber,
+// 		p.PriceCode,
+// 		p.Class.ID,
+// 		p.Featured,
+// 		p.AcesPartTypeID,
+// 		p.BrandID,
+// 	)
+// 	if err != nil {
+// 		tx.Rollback()
+// 		return err
+// 	}
+// 	err = tx.Commit()
 
-	pajChan := make(chan int)
-	diChan := make(chan int)
-	dcbChan := make(chan int)
-	priceChan := make(chan int)
-	revChan := make(chan int)
-	imageChan := make(chan int)
-	relatedChan := make(chan int)
-	pcjChan := make(chan int)
-	videoChan := make(chan int)
-	packChan := make(chan int)
+// 	pajChan := make(chan int)
+// 	diChan := make(chan int)
+// 	dcbChan := make(chan int)
+// 	priceChan := make(chan int)
+// 	revChan := make(chan int)
+// 	imageChan := make(chan int)
+// 	relatedChan := make(chan int)
+// 	pcjChan := make(chan int)
+// 	videoChan := make(chan int)
+// 	packChan := make(chan int)
 
-	go func() (err error) {
-		for _, attribute := range p.Attributes {
-			err = p.CreatePartAttributeJoin(attribute, dtx)
-			if err != nil {
-				pajChan <- 1
-				return err
-			}
-		}
-		pajChan <- 1
-		return err
-	}()
-	go func() (err error) {
-		for _, installation := range p.Installations {
-			err = p.CreateInstallation(installation, dtx)
-			if err != nil {
-				diChan <- 1
-				return err
-			}
-		}
-		diChan <- 1
-		return err
-	}()
-	go func() (err error) {
-		for _, content := range p.Content {
-			err = p.CreateContentBridge(p.Categories, content, dtx)
-			if err != nil {
-				dcbChan <- 1
-				return err
-			}
-		}
-		dcbChan <- 1
-		return err
-	}()
-	go func() (err error) {
-		for _, price := range p.Pricing {
-			price.PartId = p.ID
-			err = price.Create(dtx)
-			if err != nil {
-				priceChan <- 1
-				return err
-			}
-		}
-		priceChan <- 1
-		return err
-	}()
-	go func() (err error) {
-		for _, review := range p.Reviews {
-			review.PartID = p.ID
-			err = review.Create(dtx)
-			if err != nil {
-				revChan <- 1
-				return err
-			}
-		}
-		revChan <- 1
-		return err
-	}()
-	go func() (err error) {
-		for _, image := range p.Images {
-			image.PartID = p.ID
-			err = image.Create(dtx)
-			if err != nil {
-				imageChan <- 1
-				return err
-			}
-		}
-		imageChan <- 1
-		return err
-	}()
-	go func() (err error) {
-		for _, related := range p.Related {
-			err = p.CreateRelatedPart(related, dtx)
-			if err != nil {
-				relatedChan <- 1
-				return err
-			}
-		}
-		relatedChan <- 1
-		return err
-	}()
-	go func() (err error) {
-		for _, category := range p.Categories {
-			err = p.CreatePartCategoryJoin(category, dtx)
-			if err != nil {
-				pcjChan <- 1
-				return err
-			}
-		}
-		pcjChan <- 1
-		return err
-	}()
-	go func() (err error) {
-		for _, video := range p.Videos {
-			// video.PartID = p.ID
-			err = video.CreateJoinPart(p.ID)
-			// err = video.CreatePartVideo(dtx)
-			if err != nil {
-				videoChan <- 1
-				return err
-			}
-		}
-		videoChan <- 1
-		return err
-	}()
-	go func() (err error) {
-		for _, pack := range p.Packages {
-			pack.PartID = p.ID
-			err = pack.Create(dtx)
-			if err != nil {
-				packChan <- 1
-				return err
-			}
-		}
-		packChan <- 1
-		return err
-	}()
+// 	go func() (err error) {
+// 		for _, attribute := range p.Attributes {
+// 			err = p.CreatePartAttributeJoin(attribute, dtx)
+// 			if err != nil {
+// 				pajChan <- 1
+// 				return err
+// 			}
+// 		}
+// 		pajChan <- 1
+// 		return err
+// 	}()
+// 	go func() (err error) {
+// 		for _, installation := range p.Installations {
+// 			err = p.CreateInstallation(installation, dtx)
+// 			if err != nil {
+// 				diChan <- 1
+// 				return err
+// 			}
+// 		}
+// 		diChan <- 1
+// 		return err
+// 	}()
+// 	go func() (err error) {
+// 		for _, content := range p.Content {
+// 			err = p.CreateContentBridge(p.Categories, content, dtx)
+// 			if err != nil {
+// 				dcbChan <- 1
+// 				return err
+// 			}
+// 		}
+// 		dcbChan <- 1
+// 		return err
+// 	}()
+// 	go func() (err error) {
+// 		for _, price := range p.Pricing {
+// 			price.PartId = p.ID
+// 			err = price.Create(dtx)
+// 			if err != nil {
+// 				priceChan <- 1
+// 				return err
+// 			}
+// 		}
+// 		priceChan <- 1
+// 		return err
+// 	}()
+// 	go func() (err error) {
+// 		for _, review := range p.Reviews {
+// 			review.PartID = p.ID
+// 			err = review.Create(dtx)
+// 			if err != nil {
+// 				revChan <- 1
+// 				return err
+// 			}
+// 		}
+// 		revChan <- 1
+// 		return err
+// 	}()
+// 	go func() (err error) {
+// 		for _, image := range p.Images {
+// 			image.PartID = p.ID
+// 			err = image.Create(dtx)
+// 			if err != nil {
+// 				imageChan <- 1
+// 				return err
+// 			}
+// 		}
+// 		imageChan <- 1
+// 		return err
+// 	}()
+// 	go func() (err error) {
+// 		for _, related := range p.Related {
+// 			err = p.CreateRelatedPart(related, dtx)
+// 			if err != nil {
+// 				relatedChan <- 1
+// 				return err
+// 			}
+// 		}
+// 		relatedChan <- 1
+// 		return err
+// 	}()
+// 	go func() (err error) {
+// 		for _, category := range p.Categories {
+// 			err = p.CreatePartCategoryJoin(category, dtx)
+// 			if err != nil {
+// 				pcjChan <- 1
+// 				return err
+// 			}
+// 		}
+// 		pcjChan <- 1
+// 		return err
+// 	}()
+// 	go func() (err error) {
+// 		for _, video := range p.Videos {
+// 			// video.PartID = p.ID
+// 			err = video.CreateJoinPart(p.ID)
+// 			// err = video.CreatePartVideo(dtx)
+// 			if err != nil {
+// 				videoChan <- 1
+// 				return err
+// 			}
+// 		}
+// 		videoChan <- 1
+// 		return err
+// 	}()
+// 	go func() (err error) {
+// 		for _, pack := range p.Packages {
+// 			pack.PartID = p.ID
+// 			err = pack.Create(dtx)
+// 			if err != nil {
+// 				packChan <- 1
+// 				return err
+// 			}
+// 		}
+// 		packChan <- 1
+// 		return err
+// 	}()
 
-	<-pajChan
-	<-diChan
-	<-dcbChan
-	<-priceChan
-	<-revChan
-	<-imageChan
-	<-relatedChan
-	<-pcjChan
-	<-videoChan
-	<-packChan
+// 	<-pajChan
+// 	<-diChan
+// 	<-dcbChan
+// 	<-priceChan
+// 	<-revChan
+// 	<-imageChan
+// 	<-relatedChan
+// 	<-pcjChan
+// 	<-videoChan
+// 	<-packChan
 
-	return err
-}
+// 	return err
+// }
 
-func (p *Part) Delete(dtx *apicontext.DataContext) (err error) {
-	if p.ID == 0 {
-		return errors.New("Part ID is zero.")
-	}
-	go redis.Delete(fmt.Sprintf("part:%d:%s", p.ID, dtx.BrandString))
+// func (p *Part) Delete(dtx *apicontext.DataContext) (err error) {
+// 	if p.ID == 0 {
+// 		return errors.New("Part ID is zero.")
+// 	}
+// 	go redis.Delete(fmt.Sprintf("part:%d:%s", p.ID, dtx.BrandString))
 
-	var price Price
-	price.PartId = p.ID
-	err = price.DeleteByPart(dtx)
-	if err != nil {
-		return err
-	}
+// 	var price Price
+// 	price.PartId = p.ID
+// 	err = price.DeleteByPart(dtx)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	pajChan := make(chan int)
-	diChan := make(chan int)
-	dcbChan := make(chan int)
-	revChan := make(chan int)
-	imageChan := make(chan int)
-	relatedChan := make(chan int)
-	pcjChan := make(chan int)
-	videoChan := make(chan int)
-	packChan := make(chan int)
+// 	pajChan := make(chan int)
+// 	diChan := make(chan int)
+// 	dcbChan := make(chan int)
+// 	revChan := make(chan int)
+// 	imageChan := make(chan int)
+// 	relatedChan := make(chan int)
+// 	pcjChan := make(chan int)
+// 	videoChan := make(chan int)
+// 	packChan := make(chan int)
 
-	go func() (err error) {
-		err = p.DeletePartAttributeJoins(dtx)
-		if err != nil {
-			pajChan <- 1
-			return err
-		}
-		pajChan <- 1
-		return err
-	}()
-	go func() (err error) {
-		err = p.DeleteInstallations(dtx)
-		if err != nil {
-			diChan <- 1
-			return err
-		}
-		diChan <- 1
-		return err
-	}()
-	go func() (err error) {
-		err = p.DeleteContentBridges(dtx)
-		if err != nil {
-			dcbChan <- 1
-			return err
-		}
-		dcbChan <- 1
-		return err
-	}()
+// 	go func() (err error) {
+// 		err = p.DeletePartAttributeJoins(dtx)
+// 		if err != nil {
+// 			pajChan <- 1
+// 			return err
+// 		}
+// 		pajChan <- 1
+// 		return err
+// 	}()
+// 	go func() (err error) {
+// 		err = p.DeleteInstallations(dtx)
+// 		if err != nil {
+// 			diChan <- 1
+// 			return err
+// 		}
+// 		diChan <- 1
+// 		return err
+// 	}()
+// 	go func() (err error) {
+// 		err = p.DeleteContentBridges(dtx)
+// 		if err != nil {
+// 			dcbChan <- 1
+// 			return err
+// 		}
+// 		dcbChan <- 1
+// 		return err
+// 	}()
 
-	go func() (err error) {
-		var review Review
-		review.PartID = p.ID
-		err = review.Delete(dtx)
-		if err != nil {
-			revChan <- 1
-			return err
-		}
-		revChan <- 1
-		return err
-	}()
-	go func() (err error) {
-		var image Image
-		image.PartID = p.ID
-		err = image.DeleteByPart(dtx)
-		if err != nil {
-			imageChan <- 1
-			return err
-		}
-		imageChan <- 1
-		return err
-	}()
-	go func() (err error) {
-		err = p.DeleteRelatedParts(dtx)
-		if err != nil {
-			relatedChan <- 1
-			return err
-		}
-		relatedChan <- 1
-		return err
-	}()
-	go func() (err error) {
-		err = p.DeletePartCategoryJoins(dtx)
-		if err != nil {
-			pcjChan <- 1
-			return err
-		}
-		pcjChan <- 1
-		return err
-	}()
-	go func() (err error) {
-		var v PartVideo
-		v.PartID = p.ID
-		err = v.DeleteByPart(dtx)
-		if err != nil {
-			videoChan <- 1
-			return err
-		}
-		videoChan <- 1
-		return err
-	}()
-	go func() (err error) {
-		var pack Package
-		pack.PartID = p.ID
-		err = pack.DeleteByPart(dtx)
-		if err != nil {
-			packChan <- 1
-			return err
-		}
-		packChan <- 1
-		return err
-	}()
+// 	go func() (err error) {
+// 		var review Review
+// 		review.PartID = p.ID
+// 		err = review.Delete(dtx)
+// 		if err != nil {
+// 			revChan <- 1
+// 			return err
+// 		}
+// 		revChan <- 1
+// 		return err
+// 	}()
+// 	go func() (err error) {
+// 		var image Image
+// 		image.PartID = p.ID
+// 		err = image.DeleteByPart(dtx)
+// 		if err != nil {
+// 			imageChan <- 1
+// 			return err
+// 		}
+// 		imageChan <- 1
+// 		return err
+// 	}()
+// 	go func() (err error) {
+// 		err = p.DeleteRelatedParts(dtx)
+// 		if err != nil {
+// 			relatedChan <- 1
+// 			return err
+// 		}
+// 		relatedChan <- 1
+// 		return err
+// 	}()
+// 	go func() (err error) {
+// 		err = p.DeletePartCategoryJoins(dtx)
+// 		if err != nil {
+// 			pcjChan <- 1
+// 			return err
+// 		}
+// 		pcjChan <- 1
+// 		return err
+// 	}()
+// 	go func() (err error) {
+// 		var v PartVideo
+// 		v.PartID = p.ID
+// 		err = v.DeleteByPart(dtx)
+// 		if err != nil {
+// 			videoChan <- 1
+// 			return err
+// 		}
+// 		videoChan <- 1
+// 		return err
+// 	}()
+// 	go func() (err error) {
+// 		var pack Package
+// 		pack.PartID = p.ID
+// 		err = pack.DeleteByPart(dtx)
+// 		if err != nil {
+// 			packChan <- 1
+// 			return err
+// 		}
+// 		packChan <- 1
+// 		return err
+// 	}()
 
-	<-pajChan
-	<-diChan
-	<-dcbChan
-	<-revChan
-	<-imageChan
-	<-relatedChan
-	<-pcjChan
-	<-videoChan
-	<-packChan
+// 	<-pajChan
+// 	<-diChan
+// 	<-dcbChan
+// 	<-revChan
+// 	<-imageChan
+// 	<-relatedChan
+// 	<-pcjChan
+// 	<-videoChan
+// 	<-packChan
 
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	stmt, err := db.Prepare(deletePart)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	_, err = stmt.Exec(p.ID)
-	if err != nil {
-		return err
-	}
+// 	db, err := sql.Open("mysql", database.ConnectionString())
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer db.Close()
+// 	stmt, err := db.Prepare(deletePart)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer stmt.Close()
+// 	_, err = stmt.Exec(p.ID)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
-func (p *Part) Update(dtx *apicontext.DataContext) (err error) {
-	if p.ID == 0 {
-		return errors.New("Part ID is zero.")
-	}
-	go redis.Delete(fmt.Sprintf("part:%d:%s", p.ID, dtx.BrandString))
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	stmt, err := db.Prepare(updatePart)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	_, err = stmt.Exec(p.Status, p.ShortDesc, p.PriceCode, p.Class.ID, p.Featured, p.AcesPartTypeID, p.BrandID, p.ID)
-	if err != nil {
-		return err
-	}
-	//Refresh joins
-	pajChan := make(chan int)
-	diChan := make(chan int)
-	dcbChan := make(chan int)
-	priceChan := make(chan int)
-	revChan := make(chan int)
-	imageChan := make(chan int)
-	relatedChan := make(chan int)
-	pcjChan := make(chan int)
-	videoChan := make(chan int)
-	packChan := make(chan int)
-	pajChanC := make(chan int)
-	diChanC := make(chan int)
-	dcbChanC := make(chan int)
-	priceChanC := make(chan int)
-	revChanC := make(chan int)
-	imageChanC := make(chan int)
-	relatedChanC := make(chan int)
-	pcjChanC := make(chan int)
-	videoChanC := make(chan int)
-	packChanC := make(chan int)
+// func (p *Part) Update(dtx *apicontext.DataContext) (err error) {
+// 	if p.ID == 0 {
+// 		return errors.New("Part ID is zero.")
+// 	}
+// 	go redis.Delete(fmt.Sprintf("part:%d:%s", p.ID, dtx.BrandString))
+// 	db, err := sql.Open("mysql", database.ConnectionString())
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer db.Close()
+// 	stmt, err := db.Prepare(updatePart)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer stmt.Close()
+// 	_, err = stmt.Exec(p.Status, p.ShortDesc, p.PriceCode, p.Class.ID, p.Featured, p.AcesPartTypeID, p.BrandID, p.ID)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	//Refresh joins
+// 	pajChan := make(chan int)
+// 	diChan := make(chan int)
+// 	dcbChan := make(chan int)
+// 	priceChan := make(chan int)
+// 	revChan := make(chan int)
+// 	imageChan := make(chan int)
+// 	relatedChan := make(chan int)
+// 	pcjChan := make(chan int)
+// 	videoChan := make(chan int)
+// 	packChan := make(chan int)
+// 	pajChanC := make(chan int)
+// 	diChanC := make(chan int)
+// 	dcbChanC := make(chan int)
+// 	priceChanC := make(chan int)
+// 	revChanC := make(chan int)
+// 	imageChanC := make(chan int)
+// 	relatedChanC := make(chan int)
+// 	pcjChanC := make(chan int)
+// 	videoChanC := make(chan int)
+// 	packChanC := make(chan int)
 
-	go func() (err error) {
-		err = p.DeletePartAttributeJoins(dtx)
-		if err != nil {
-			pajChan <- 1
-			return err
-		}
-		pajChan <- 1
-		return err
-	}()
-	go func() (err error) {
-		err = p.DeleteInstallations(dtx)
-		if err != nil {
-			diChan <- 1
-			return err
-		}
-		diChan <- 1
-		return err
-	}()
-	go func() (err error) {
-		err = p.DeleteContentBridges(dtx)
-		if err != nil {
-			dcbChan <- 1
-			return err
-		}
-		dcbChan <- 1
-		return err
-	}()
-	go func() (err error) {
-		var price Price
-		price.PartId = p.ID
-		err = price.DeleteByPart(dtx)
-		if err != nil {
-			priceChan <- 1
-			return err
-		}
-		priceChan <- 1
-		return err
-	}()
-	go func() (err error) {
-		var review Review
-		review.PartID = p.ID
-		err = review.Delete(dtx)
-		if err != nil {
-			revChan <- 1
-			return err
-		}
-		revChan <- 1
-		return err
-	}()
-	go func() (err error) {
-		var image Image
-		image.PartID = p.ID
-		err = image.DeleteByPart(dtx)
-		if err != nil {
-			imageChan <- 1
-			return err
-		}
-		imageChan <- 1
-		return err
-	}()
-	go func() (err error) {
-		err = p.DeleteRelatedParts(dtx)
-		if err != nil {
-			relatedChan <- 1
-			return err
-		}
-		relatedChan <- 1
-		return err
-	}()
-	go func() (err error) {
-		err = p.DeletePartCategoryJoins(dtx)
-		if err != nil {
-			pcjChan <- 1
-			return err
-		}
-		pcjChan <- 1
-		return err
-	}()
-	go func() (err error) {
-		var v PartVideo
-		v.PartID = p.ID
-		err = v.DeleteByPart(dtx)
-		if err != nil {
-			videoChan <- 1
-			return err
-		}
-		videoChan <- 1
-		return err
-	}()
-	go func() (err error) {
-		var pack Package
-		pack.PartID = p.ID
-		err = pack.DeleteByPart(dtx)
-		if err != nil {
-			packChan <- 1
-			return err
-		}
-		packChan <- 1
-		return err
-	}()
+// 	go func() (err error) {
+// 		err = p.DeletePartAttributeJoins(dtx)
+// 		if err != nil {
+// 			pajChan <- 1
+// 			return err
+// 		}
+// 		pajChan <- 1
+// 		return err
+// 	}()
+// 	go func() (err error) {
+// 		err = p.DeleteInstallations(dtx)
+// 		if err != nil {
+// 			diChan <- 1
+// 			return err
+// 		}
+// 		diChan <- 1
+// 		return err
+// 	}()
+// 	go func() (err error) {
+// 		err = p.DeleteContentBridges(dtx)
+// 		if err != nil {
+// 			dcbChan <- 1
+// 			return err
+// 		}
+// 		dcbChan <- 1
+// 		return err
+// 	}()
+// 	go func() (err error) {
+// 		var price Price
+// 		price.PartId = p.ID
+// 		err = price.DeleteByPart(dtx)
+// 		if err != nil {
+// 			priceChan <- 1
+// 			return err
+// 		}
+// 		priceChan <- 1
+// 		return err
+// 	}()
+// 	go func() (err error) {
+// 		var review Review
+// 		review.PartID = p.ID
+// 		err = review.Delete(dtx)
+// 		if err != nil {
+// 			revChan <- 1
+// 			return err
+// 		}
+// 		revChan <- 1
+// 		return err
+// 	}()
+// 	go func() (err error) {
+// 		var image Image
+// 		image.PartID = p.ID
+// 		err = image.DeleteByPart(dtx)
+// 		if err != nil {
+// 			imageChan <- 1
+// 			return err
+// 		}
+// 		imageChan <- 1
+// 		return err
+// 	}()
+// 	go func() (err error) {
+// 		err = p.DeleteRelatedParts(dtx)
+// 		if err != nil {
+// 			relatedChan <- 1
+// 			return err
+// 		}
+// 		relatedChan <- 1
+// 		return err
+// 	}()
+// 	go func() (err error) {
+// 		err = p.DeletePartCategoryJoins(dtx)
+// 		if err != nil {
+// 			pcjChan <- 1
+// 			return err
+// 		}
+// 		pcjChan <- 1
+// 		return err
+// 	}()
+// 	go func() (err error) {
+// 		var v PartVideo
+// 		v.PartID = p.ID
+// 		err = v.DeleteByPart(dtx)
+// 		if err != nil {
+// 			videoChan <- 1
+// 			return err
+// 		}
+// 		videoChan <- 1
+// 		return err
+// 	}()
+// 	go func() (err error) {
+// 		var pack Package
+// 		pack.PartID = p.ID
+// 		err = pack.DeleteByPart(dtx)
+// 		if err != nil {
+// 			packChan <- 1
+// 			return err
+// 		}
+// 		packChan <- 1
+// 		return err
+// 	}()
 
-	go func() (err error) {
-		for _, attribute := range p.Attributes {
-			err = p.CreatePartAttributeJoin(attribute, dtx)
-			if err != nil {
-				pajChanC <- 1
-				return err
-			}
-		}
-		pajChanC <- 1
-		return err
-	}()
-	go func() (err error) {
-		for _, installation := range p.Installations {
-			err = p.CreateInstallation(installation, dtx)
-			if err != nil {
-				diChanC <- 1
-				return err
-			}
-		}
-		diChanC <- 1
-		return err
-	}()
-	go func() (err error) {
-		for _, content := range p.Content {
-			err = p.CreateContentBridge(p.Categories, content, dtx)
-			if err != nil {
-				dcbChanC <- 1
-				return err
-			}
-		}
-		dcbChanC <- 1
-		return err
-	}()
-	go func() (err error) {
-		for _, price := range p.Pricing {
-			price.PartId = p.ID
-			err = price.Create(dtx)
-			if err != nil {
-				priceChanC <- 1
-				return err
-			}
-		}
-		priceChanC <- 1
-		return err
-	}()
-	go func() (err error) {
-		for _, review := range p.Reviews {
-			review.PartID = p.ID
-			err = review.Create(dtx)
-			if err != nil {
-				revChanC <- 1
-				return err
-			}
-		}
-		revChanC <- 1
-		return err
-	}()
-	go func() (err error) {
-		for _, image := range p.Images {
-			image.PartID = p.ID
-			err = image.Create(dtx)
-			if err != nil {
-				imageChanC <- 1
-				return err
-			}
-		}
-		imageChanC <- 1
-		return err
-	}()
-	go func() (err error) {
-		for _, related := range p.Related {
-			err = p.CreateRelatedPart(related, dtx)
-			if err != nil {
-				relatedChanC <- 1
-				return err
-			}
-		}
-		relatedChanC <- 1
-		return err
-	}()
-	go func() (err error) {
-		for _, category := range p.Categories {
-			err = p.CreatePartCategoryJoin(category, dtx)
-			if err != nil {
-				pcjChanC <- 1
-				return err
-			}
-		}
-		pcjChanC <- 1
-		return err
-	}()
-	go func() (err error) {
-		for _, video := range p.Videos {
-			// video.PartID = p.ID
-			err = video.CreateJoinPart(p.ID)
-			// err = video.CreatePartVideo(dtx)
-			if err != nil {
-				videoChanC <- 1
-				return err
-			}
-		}
-		videoChanC <- 1
-		return err
-	}()
-	go func() (err error) {
-		for _, pack := range p.Packages {
-			pack.PartID = p.ID
-			err = pack.Create(dtx)
-			if err != nil {
-				packChanC <- 1
-				return err
-			}
-		}
-		packChanC <- 1
-		return err
-	}()
+// 	go func() (err error) {
+// 		for _, attribute := range p.Attributes {
+// 			err = p.CreatePartAttributeJoin(attribute, dtx)
+// 			if err != nil {
+// 				pajChanC <- 1
+// 				return err
+// 			}
+// 		}
+// 		pajChanC <- 1
+// 		return err
+// 	}()
+// 	go func() (err error) {
+// 		for _, installation := range p.Installations {
+// 			err = p.CreateInstallation(installation, dtx)
+// 			if err != nil {
+// 				diChanC <- 1
+// 				return err
+// 			}
+// 		}
+// 		diChanC <- 1
+// 		return err
+// 	}()
+// 	go func() (err error) {
+// 		for _, content := range p.Content {
+// 			err = p.CreateContentBridge(p.Categories, content, dtx)
+// 			if err != nil {
+// 				dcbChanC <- 1
+// 				return err
+// 			}
+// 		}
+// 		dcbChanC <- 1
+// 		return err
+// 	}()
+// 	go func() (err error) {
+// 		for _, price := range p.Pricing {
+// 			price.PartId = p.ID
+// 			err = price.Create(dtx)
+// 			if err != nil {
+// 				priceChanC <- 1
+// 				return err
+// 			}
+// 		}
+// 		priceChanC <- 1
+// 		return err
+// 	}()
+// 	go func() (err error) {
+// 		for _, review := range p.Reviews {
+// 			review.PartID = p.ID
+// 			err = review.Create(dtx)
+// 			if err != nil {
+// 				revChanC <- 1
+// 				return err
+// 			}
+// 		}
+// 		revChanC <- 1
+// 		return err
+// 	}()
+// 	go func() (err error) {
+// 		for _, image := range p.Images {
+// 			image.PartID = p.ID
+// 			err = image.Create(dtx)
+// 			if err != nil {
+// 				imageChanC <- 1
+// 				return err
+// 			}
+// 		}
+// 		imageChanC <- 1
+// 		return err
+// 	}()
+// 	go func() (err error) {
+// 		for _, related := range p.Related {
+// 			err = p.CreateRelatedPart(related, dtx)
+// 			if err != nil {
+// 				relatedChanC <- 1
+// 				return err
+// 			}
+// 		}
+// 		relatedChanC <- 1
+// 		return err
+// 	}()
+// 	go func() (err error) {
+// 		for _, category := range p.Categories {
+// 			err = p.CreatePartCategoryJoin(category, dtx)
+// 			if err != nil {
+// 				pcjChanC <- 1
+// 				return err
+// 			}
+// 		}
+// 		pcjChanC <- 1
+// 		return err
+// 	}()
+// 	go func() (err error) {
+// 		for _, video := range p.Videos {
+// 			// video.PartID = p.ID
+// 			err = video.CreateJoinPart(p.ID)
+// 			// err = video.CreatePartVideo(dtx)
+// 			if err != nil {
+// 				videoChanC <- 1
+// 				return err
+// 			}
+// 		}
+// 		videoChanC <- 1
+// 		return err
+// 	}()
+// 	go func() (err error) {
+// 		for _, pack := range p.Packages {
+// 			pack.PartID = p.ID
+// 			err = pack.Create(dtx)
+// 			if err != nil {
+// 				packChanC <- 1
+// 				return err
+// 			}
+// 		}
+// 		packChanC <- 1
+// 		return err
+// 	}()
 
-	<-pajChan
-	<-diChan
-	<-dcbChan
-	<-priceChan
-	<-revChan
-	<-imageChan
-	<-relatedChan
-	<-pcjChan
-	<-videoChan
-	<-packChan
-	<-pajChanC
-	<-diChanC
-	<-dcbChanC
-	<-priceChanC
-	<-revChanC
-	<-imageChanC
-	<-relatedChanC
-	<-pcjChanC
-	<-videoChanC
-	<-packChanC
+// 	<-pajChan
+// 	<-diChan
+// 	<-dcbChan
+// 	<-priceChan
+// 	<-revChan
+// 	<-imageChan
+// 	<-relatedChan
+// 	<-pcjChan
+// 	<-videoChan
+// 	<-packChan
+// 	<-pajChanC
+// 	<-diChanC
+// 	<-dcbChanC
+// 	<-priceChanC
+// 	<-revChanC
+// 	<-imageChanC
+// 	<-relatedChanC
+// 	<-pcjChanC
+// 	<-videoChanC
+// 	<-packChanC
 
-	return err
-}
+// 	return err
+// }
 
-//Join Creators
-func (p *Part) CreatePartAttributeJoin(a Attribute, dtx *apicontext.DataContext) (err error) {
-	go redis.Delete(fmt.Sprintf("part:%d:attributes:%s", p.ID, dtx.BrandString))
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	stmt, err := db.Prepare(createPartAttributeJoin)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	_, err = stmt.Exec(p.ID, a.Value, a.Key, a.Sort)
-	if err != nil {
-		return err
-	}
-	return nil
-}
+// //Join Creators
+// func (p *Part) CreatePartAttributeJoin(a Attribute, dtx *apicontext.DataContext) (err error) {
+// 	go redis.Delete(fmt.Sprintf("part:%d:attributes:%s", p.ID, dtx.BrandString))
+// 	db, err := sql.Open("mysql", database.ConnectionString())
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer db.Close()
+// 	stmt, err := db.Prepare(createPartAttributeJoin)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer stmt.Close()
+// 	_, err = stmt.Exec(p.ID, a.Value, a.Key, a.Sort)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }
 
-//Creates "VehiclePart" Join, which also contains installation fields
-func (p *Part) CreateInstallation(i Installation, dtx *apicontext.DataContext) (err error) {
-	go redis.Delete(fmt.Sprintf("part:%d:installation:%s", p.ID, dtx.BrandString))
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	stmt, err := db.Prepare(createVehiclePartJoin)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	res, err := stmt.Exec(i.Vehicle.ID, p.ID, i.Drilling, i.Exposed, i.InstallTime)
-	if err != nil {
-		return err
-	}
-	id, err := res.LastInsertId()
-	i.ID = int(id)
-	return nil
-}
+// //Creates "VehiclePart" Join, which also contains installation fields
+// func (p *Part) CreateInstallation(i Installation, dtx *apicontext.DataContext) (err error) {
+// 	go redis.Delete(fmt.Sprintf("part:%d:installation:%s", p.ID, dtx.BrandString))
+// 	db, err := sql.Open("mysql", database.ConnectionString())
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer db.Close()
+// 	stmt, err := db.Prepare(createVehiclePartJoin)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer stmt.Close()
+// 	res, err := stmt.Exec(i.Vehicle.ID, p.ID, i.Drilling, i.Exposed, i.InstallTime)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	id, err := res.LastInsertId()
+// 	i.ID = int(id)
+// 	return nil
+// }
 
-func (p *Part) CreateContentBridge(cats []Category, c Content, dtx *apicontext.DataContext) (err error) {
-	go redis.Delete(fmt.Sprintf("part:%d:content:%s", p.ID, dtx.BrandString))
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	tx, err := db.Begin()
-	stmt, err := tx.Prepare(createContentBridge)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	for _, cat := range cats {
-		_, err = stmt.Exec(cat.ID, p.ID, c.ID)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-	}
-	err = tx.Commit()
-	return err
-}
+// func (p *Part) CreateContentBridge(cats []Category, c Content, dtx *apicontext.DataContext) (err error) {
+// 	go redis.Delete(fmt.Sprintf("part:%d:content:%s", p.ID, dtx.BrandString))
+// 	db, err := sql.Open("mysql", database.ConnectionString())
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer db.Close()
+// 	tx, err := db.Begin()
+// 	stmt, err := tx.Prepare(createContentBridge)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer stmt.Close()
+// 	for _, cat := range cats {
+// 		_, err = stmt.Exec(cat.ID, p.ID, c.ID)
+// 		if err != nil {
+// 			tx.Rollback()
+// 			return err
+// 		}
+// 	}
+// 	err = tx.Commit()
+// 	return err
+// }
 
-func (p *Part) CreateRelatedPart(relatedID int, dtx *apicontext.DataContext) (err error) {
-	go redis.Delete(fmt.Sprintf("part:%d:related:%s", p.ID, dtx.BrandString))
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	stmt, err := db.Prepare(createRelatedPart)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	_, err = stmt.Exec(p.ID, relatedID)
-	if err != nil {
-		return err
-	}
-	return nil
-}
+// func (p *Part) CreateRelatedPart(relatedID int, dtx *apicontext.DataContext) (err error) {
+// 	go redis.Delete(fmt.Sprintf("part:%d:related:%s", p.ID, dtx.BrandString))
+// 	db, err := sql.Open("mysql", database.ConnectionString())
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer db.Close()
+// 	stmt, err := db.Prepare(createRelatedPart)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer stmt.Close()
+// 	_, err = stmt.Exec(p.ID, relatedID)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }
 
-func (p *Part) CreatePartCategoryJoin(c Category, dtx *apicontext.DataContext) (err error) {
-	go redis.Delete(fmt.Sprintf("part:%d:categories:%s", p.ID, dtx.BrandString))
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	stmt, err := db.Prepare(createPartCategoryJoin)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	_, err = stmt.Exec(c.ID, p.ID)
-	if err != nil {
-		return err
-	}
-	return nil
-}
+// func (p *Part) CreatePartCategoryJoin(c Category, dtx *apicontext.DataContext) (err error) {
+// 	go redis.Delete(fmt.Sprintf("part:%d:categories:%s", p.ID, dtx.BrandString))
+// 	db, err := sql.Open("mysql", database.ConnectionString())
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer db.Close()
+// 	stmt, err := db.Prepare(createPartCategoryJoin)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer stmt.Close()
+// 	_, err = stmt.Exec(c.ID, p.ID)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }
 
-//delete Joins
-func (p *Part) DeletePartAttributeJoins(dtx *apicontext.DataContext) (err error) {
-	go redis.Delete(fmt.Sprintf("part:%d:attributes:%s", p.ID, dtx.BrandString))
+// //delete Joins
+// func (p *Part) DeletePartAttributeJoins(dtx *apicontext.DataContext) (err error) {
+// 	go redis.Delete(fmt.Sprintf("part:%d:attributes:%s", p.ID, dtx.BrandString))
 
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	stmt, err := db.Prepare(deletePartAttributeJoins)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	_, err = stmt.Exec(p.ID)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-func (p *Part) DeleteInstallations(dtx *apicontext.DataContext) (err error) {
-	go redis.Delete(fmt.Sprintf("part:%d:installation:%s", p.ID, dtx.BrandString))
+// 	db, err := sql.Open("mysql", database.ConnectionString())
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer db.Close()
+// 	stmt, err := db.Prepare(deletePartAttributeJoins)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer stmt.Close()
+// 	_, err = stmt.Exec(p.ID)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }
+// func (p *Part) DeleteInstallations(dtx *apicontext.DataContext) (err error) {
+// 	go redis.Delete(fmt.Sprintf("part:%d:installation:%s", p.ID, dtx.BrandString))
 
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	stmt, err := db.Prepare(deleteVehiclePartJoins)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	_, err = stmt.Exec(p.ID)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-func (p *Part) DeleteContentBridges(dtx *apicontext.DataContext) (err error) {
-	go redis.Delete(fmt.Sprintf("part:%d:content:%s", p.ID, dtx.BrandString))
+// 	db, err := sql.Open("mysql", database.ConnectionString())
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer db.Close()
+// 	stmt, err := db.Prepare(deleteVehiclePartJoins)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer stmt.Close()
+// 	_, err = stmt.Exec(p.ID)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }
+// func (p *Part) DeleteContentBridges(dtx *apicontext.DataContext) (err error) {
+// 	go redis.Delete(fmt.Sprintf("part:%d:content:%s", p.ID, dtx.BrandString))
 
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	stmt, err := db.Prepare(deleteContentBridgeJoins)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	_, err = stmt.Exec(p.ID)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-func (p *Part) DeleteRelatedParts(dtx *apicontext.DataContext) (err error) {
-	go redis.Delete(fmt.Sprintf("part:%d:related:%s", p.ID, dtx.BrandString))
+// 	db, err := sql.Open("mysql", database.ConnectionString())
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer db.Close()
+// 	stmt, err := db.Prepare(deleteContentBridgeJoins)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer stmt.Close()
+// 	_, err = stmt.Exec(p.ID)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }
+// func (p *Part) DeleteRelatedParts(dtx *apicontext.DataContext) (err error) {
+// 	go redis.Delete(fmt.Sprintf("part:%d:related:%s", p.ID, dtx.BrandString))
 
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	stmt, err := db.Prepare(deleteRelatedParts)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	_, err = stmt.Exec(p.ID)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-func (p *Part) DeletePartCategoryJoins(dtx *apicontext.DataContext) (err error) {
-	go redis.Delete(fmt.Sprintf("part:%d:category:%s", p.ID, dtx.BrandString))
-	go redis.Delete(fmt.Sprintf("part:%d:categories:%s", p.ID, dtx.BrandString))
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	stmt, err := db.Prepare(deletePartCategoryJoins)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	_, err = stmt.Exec(p.ID)
-	if err != nil {
-		return err
-	}
-	return nil
-}
+// 	db, err := sql.Open("mysql", database.ConnectionString())
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer db.Close()
+// 	stmt, err := db.Prepare(deleteRelatedParts)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer stmt.Close()
+// 	_, err = stmt.Exec(p.ID)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }
+// func (p *Part) DeletePartCategoryJoins(dtx *apicontext.DataContext) (err error) {
+// 	go redis.Delete(fmt.Sprintf("part:%d:category:%s", p.ID, dtx.BrandString))
+// 	go redis.Delete(fmt.Sprintf("part:%d:categories:%s", p.ID, dtx.BrandString))
+// 	db, err := sql.Open("mysql", database.ConnectionString())
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer db.Close()
+// 	stmt, err := db.Prepare(deletePartCategoryJoins)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer stmt.Close()
+// 	_, err = stmt.Exec(p.ID)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }

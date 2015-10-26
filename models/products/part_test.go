@@ -11,6 +11,14 @@ func TestPart(t *testing.T) {
 	if err != nil {
 		return
 	}
+	Convey("Testing Basics", t, func() {
+		p := Part{
+			ID: 11000,
+		}
+		err := p.FromDatabase()
+		So(err, ShouldBeNil)
+		t.Log(p)
+	})
 
 	Convey("Testing All", t, func() {
 		parts, err := All(0, 1, MockedDTX)

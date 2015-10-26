@@ -564,81 +564,81 @@ func OldPartNumber(rw http.ResponseWriter, r *http.Request, params martini.Param
 	return encoding.Must(enc.Encode(p))
 }
 
-func CreatePart(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
-	var p products.Part
-	var err error
+// func CreatePart(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+// 	var p products.Part
+// 	var err error
 
-	//json
-	requestBody, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		apierror.GenerateError("Trouble reading request body while creating part", err, rw, r)
-		return encoding.Must(enc.Encode(false))
-	}
+// 	//json
+// 	requestBody, err := ioutil.ReadAll(r.Body)
+// 	if err != nil {
+// 		apierror.GenerateError("Trouble reading request body while creating part", err, rw, r)
+// 		return encoding.Must(enc.Encode(false))
+// 	}
 
-	if err = json.Unmarshal(requestBody, &p); err != nil {
-		apierror.GenerateError("Trouble unmarshalling json request body while creating part", err, rw, r)
-		return encoding.Must(enc.Encode(false))
-	}
+// 	if err = json.Unmarshal(requestBody, &p); err != nil {
+// 		apierror.GenerateError("Trouble unmarshalling json request body while creating part", err, rw, r)
+// 		return encoding.Must(enc.Encode(false))
+// 	}
 
-	if err = p.Create(dtx); err != nil {
-		apierror.GenerateError("Trouble creating part", err, rw, r)
-		return ""
-	}
-	return encoding.Must(enc.Encode(p))
-}
+// 	if err = p.Create(dtx); err != nil {
+// 		apierror.GenerateError("Trouble creating part", err, rw, r)
+// 		return ""
+// 	}
+// 	return encoding.Must(enc.Encode(p))
+// }
 
-func UpdatePart(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
-	var p products.Part
-	var err error
+// func UpdatePart(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+// 	var p products.Part
+// 	var err error
 
-	idStr := params["id"]
-	if idStr == "" {
-		apierror.GenerateError("Trouble getting part ID", err, rw, r)
-		return ""
-	}
+// 	idStr := params["id"]
+// 	if idStr == "" {
+// 		apierror.GenerateError("Trouble getting part ID", err, rw, r)
+// 		return ""
+// 	}
 
-	if p.ID, err = strconv.Atoi(idStr); err != nil {
-		apierror.GenerateError("Trouble getting part ID", err, rw, r)
-		return ""
-	}
+// 	if p.ID, err = strconv.Atoi(idStr); err != nil {
+// 		apierror.GenerateError("Trouble getting part ID", err, rw, r)
+// 		return ""
+// 	}
 
-	if err = p.Get(dtx); err != nil {
-		apierror.GenerateError("Trouble getting part", err, rw, r)
-		return ""
-	}
+// 	if err = p.Get(dtx); err != nil {
+// 		apierror.GenerateError("Trouble getting part", err, rw, r)
+// 		return ""
+// 	}
 
-	//json
-	requestBody, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		apierror.GenerateError("Trouble reading request body while updating part", err, rw, r)
-		return encoding.Must(enc.Encode(false))
-	}
+// 	//json
+// 	requestBody, err := ioutil.ReadAll(r.Body)
+// 	if err != nil {
+// 		apierror.GenerateError("Trouble reading request body while updating part", err, rw, r)
+// 		return encoding.Must(enc.Encode(false))
+// 	}
 
-	if err = json.Unmarshal(requestBody, &p); err != nil {
-		apierror.GenerateError("Trouble unmarshalling json request body while updating part", err, rw, r)
-		return encoding.Must(enc.Encode(false))
-	}
+// 	if err = json.Unmarshal(requestBody, &p); err != nil {
+// 		apierror.GenerateError("Trouble unmarshalling json request body while updating part", err, rw, r)
+// 		return encoding.Must(enc.Encode(false))
+// 	}
 
-	if err = p.Update(dtx); err != nil {
-		apierror.GenerateError("Trouble updating part", err, rw, r)
-		return ""
-	}
-	return encoding.Must(enc.Encode(p))
-}
+// 	if err = p.Update(dtx); err != nil {
+// 		apierror.GenerateError("Trouble updating part", err, rw, r)
+// 		return ""
+// 	}
+// 	return encoding.Must(enc.Encode(p))
+// }
 
-func DeletePart(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
-	var p products.Part
-	var err error
-	idStr := params["id"]
+// func DeletePart(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+// 	var p products.Part
+// 	var err error
+// 	idStr := params["id"]
 
-	if p.ID, err = strconv.Atoi(idStr); err != nil {
-		apierror.GenerateError("Trouble getting part ID", err, rw, r)
-		return ""
-	}
+// 	if p.ID, err = strconv.Atoi(idStr); err != nil {
+// 		apierror.GenerateError("Trouble getting part ID", err, rw, r)
+// 		return ""
+// 	}
 
-	if err = p.Delete(dtx); err != nil {
-		apierror.GenerateError("Trouble deleting part", err, rw, r)
-		return ""
-	}
-	return encoding.Must(enc.Encode(p))
-}
+// 	if err = p.Delete(dtx); err != nil {
+// 		apierror.GenerateError("Trouble deleting part", err, rw, r)
+// 		return ""
+// 	}
+// 	return encoding.Must(enc.Encode(p))
+// }

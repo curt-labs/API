@@ -111,14 +111,3 @@ func GetCategoryParts(catId, page, count int) (PartResponse, error) {
 	parts.TotalPages = int(math.Ceil(float64(total_items) / float64(count)))
 	return parts, err
 }
-
-func (p *Product) FromMongo() error {
-	session, err := mgo.DialWithInfo(database.MongoPartConnectionString())
-	if err != nil {
-		return err
-	}
-	defer session.Close()
-
-	return session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{"id": p.ProductID}).One(&p)
-
-}

@@ -237,7 +237,7 @@ func (v *CurtVehicle) GetPartsFromVehicleConfig(dtx *apicontext.DataContext) (ps
 			return ps, err
 		}
 		//get part -- adds some weight
-		err = p.FromDatabase(dtx)
+		err = p.FromDatabase()
 		if err != nil {
 			return ps, err
 		}
