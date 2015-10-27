@@ -55,8 +55,8 @@ func All(w http.ResponseWriter, r *http.Request, params martini.Params, enc enco
 	}
 	if qs.Get("count") != "" {
 		if ct, err := strconv.Atoi(qs.Get("count")); err == nil {
-			if ct > 50 {
-				apierror.GenerateError(fmt.Sprintf("maximum request size is 50, you requested: %d", ct), err, w, r)
+			if ct > 500 {
+				apierror.GenerateError(fmt.Sprintf("maximum request size is 500, you requested: %d", ct), err, w, r)
 				return ""
 			}
 			count = ct
