@@ -4,8 +4,6 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
-	"github.com/curt-labs/GoAPI/helpers/rest"
-	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/curt-labs/GoAPI/models/customer/content"
 	"github.com/curt-labs/GoAPI/models/vehicle"
@@ -18,124 +16,122 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 )
 
 var (
-	GetPaginatedPartNumbers = `select distinct p.partID
-                               from Part as p
-                               join ApiKeyToBrand as akb on akb.brandID = p.brandID
-							   join ApiKey as ak on ak.id = akb.keyID
-                               where (p.status = 800 || p.status = 900)
-                               && ak.api_key = ? && (p.brandID = ? or 0 = ?)
-                               order by p.partID
-                               limit ?,?`
-	GetFeaturedParts = `select distinct p.partID
-                        from Part as p
-                        join ApiKeyToBrand as akb on akb.brandID = p.brandID
-						join ApiKey as ak on ak.id = akb.keyID
-                        where (p.status = 800 || p.status = 900) && p.featured = 1
-                        && ak.api_key = ? && (p.brandID = ? or 0 = ?)
-                        order by p.dateAdded desc
-                        limit 0, ?`
-	GetLatestParts = `select distinct p.partID
-                      from Part as p
-                      join ApiKeyToBrand as akb on akb.brandID = p.brandID
-					  join ApiKey as ak on ak.id = akb.keyID
-                      where (p.status = 800 || p.status = 900)
-                      && ak.api_key = ? && (p.brandID = ? or 0 = ?)
-                      order by p.dateAdded desc
-                      limit 0,?`
-	SubCategoryIDStmt = `select distinct cp.partID
-                         from CatPart as cp
-                         join Part as p on cp.partID = p.partID
-                         where cp.catID IN(%s) and (p.status = 800 || p.status = 900)
-                         order by cp.partID
-                         limit %d, %d`
-	basicsStmt = `select p.status, p.dateAdded, p.dateModified, p.shortDesc, p.oldPartNumber, p.partID, p.priceCode, pc.class, pc.image, p.brandID
-                from Part as p
-                left join Class as pc on p.classID = pc.classID
-                where p.partID = ? && p.status in (800,900) limit 1`
-	relatedPartStmt = `select distinct relatedID from RelatedPart
-                where partID = ?
-                order by relatedID`
-	partContentStmt = `select ct.cTypeID, ct.type, ct.allowHTML, con.text
-                from Content as con
-                join ContentBridge as cb on con.contentID = cb.contentID
-                join ContentType as ct on con.cTypeID = ct.cTypeID
-                where cb.partID = ? && LOWER(ct.type) != 'appguide' && con.deleted = 0
-                order by ct.type`
-	partInstallSheetStmt = `select c.text from ContentBridge as cb
-                    join Content as c on cb.contentID = c.contentID
-                    join ContentType as ct on c.cTypeID = ct.cTypeID
-                    where partID = ? && ct.type = 'InstallationSheet'
-                    limit 1`
+// GetPaginatedPartNumbers = `select distinct p.partID
+//                               from Part as p
+//                               join ApiKeyToBrand as akb on akb.brandID = p.brandID
+// 						   join ApiKey as ak on ak.id = akb.keyID
+//                               where (p.status = 800 || p.status = 900)
+//                               && ak.api_key = ? && (p.brandID = ? or 0 = ?)
+//                               order by p.partID
+//                               limit ?,?`
+// GetFeaturedParts = `select distinct p.partID
+//                        from Part as p
+//                        join ApiKeyToBrand as akb on akb.brandID = p.brandID
+// 					join ApiKey as ak on ak.id = akb.keyID
+//                        where (p.status = 800 || p.status = 900) && p.featured = 1
+//                        && ak.api_key = ? && (p.brandID = ? or 0 = ?)
+//                        order by p.dateAdded desc
+//                        limit 0, ?`
+// GetLatestParts = `select distinct p.partID
+//                      from Part as p
+//                      join ApiKeyToBrand as akb on akb.brandID = p.brandID
+// 				  join ApiKey as ak on ak.id = akb.keyID
+//                      where (p.status = 800 || p.status = 900)
+//                      && ak.api_key = ? && (p.brandID = ? or 0 = ?)
+//                      order by p.dateAdded desc
+//                      limit 0,?`
+// SubCategoryIDStmt = `select distinct cp.partID
+//                         from CatPart as cp
+//                         join Part as p on cp.partID = p.partID
+//                         where cp.catID IN(%s) and (p.status = 800 || p.status = 900)
+//                         order by cp.partID
+//                         limit %d, %d`
+// basicsStmt = `select p.status, p.dateAdded, p.dateModified, p.shortDesc, p.oldPartNumber, p.partID, p.priceCode, pc.class, pc.image, p.brandID
+//                from Part as p
+//                left join Class as pc on p.classID = pc.classID
+//                where p.partID = ? && p.status in (800,900) limit 1`
+// relatedPartStmt = `select distinct relatedID from RelatedPart
+//                where partID = ?
+//                order by relatedID`
+// partContentStmt = `select ct.cTypeID, ct.type, ct.allowHTML, con.text
+//                from Content as con
+//                join ContentBridge as cb on con.contentID = cb.contentID
+//                join ContentType as ct on con.cTypeID = ct.cTypeID
+//                where cb.partID = ? && LOWER(ct.type) != 'appguide' && con.deleted = 0
+//                order by ct.type`
+// partInstallSheetStmt = `select c.text from ContentBridge as cb
+//                    join Content as c on cb.contentID = c.contentID
+//                    join ContentType as ct on c.cTypeID = ct.cTypeID
+//                    where partID = ? && ct.type = 'InstallationSheet'
+//                    limit 1`
 
-	getPartByOldpartNumber = `select partID, status, dateModified, dateAdded, shortDesc, priceCode, classID, featured, ACESPartTypeID, brandID from Part where oldPartNumber = ?`
+// getPartByOldpartNumber = `select partID, status, dateModified, dateAdded, shortDesc, priceCode, classID, featured, ACESPartTypeID, brandID from Part where oldPartNumber = ?`
 
-	getAllPartsBasicsStmt = `select p.status, p.dateAdded, p.dateModified, p.shortDesc, p.oldPartNumber, p.partID, p.priceCode, pc.class, pc.image, p.brandID, pa.value as upc
-								from Part as p
-								left join Class as pc on p.classID = pc.classID
-								left join PartAttribute as pa on pa.partID = p.partID
-								join ApiKeyToBrand as akb on akb.brandID = p.brandID
-								join ApiKey as ak on ak.id = akb.keyID
-								where (p.status in (800,900) && pa.field = "upc") && (ak.api_key = ? && (p.brandID = 1 or 0 = ?))
-								order by partID`
-	//create
-	createPart = `INSERT INTO Part (partID, status, dateAdded, shortDesc, oldPartNumber, priceCode, classID, featured, ACESPartTypeID,brandID)
-                    VALUES(?,?,?,?,?,?,?,?,?,?)`
-	createPartAttributeJoin = `INSERT INTO PartAttribute (partID, value, field, sort) VALUES (?,?,?,?)`
-	createVehiclePartJoin   = `INSERT INTO VehiclePart (vehicleID, partID, drilling, exposed, installTime) VALUES (?,?,?,?,?)`
-	createContentBridge     = `INSERT INTO ContentBridge (catID, partID, contentID) VALUES (?,?,?)`
-	createRelatedPart       = `INSERT INTO RelatedPart (partID, relatedID) VALUES (?,?)`
-	createPartCategoryJoin  = `INSERT INTO CatPart (catID, partID) VALUES (?,?)`
+// getAllPartsBasicsStmt = `select p.status, p.dateAdded, p.dateModified, p.shortDesc, p.oldPartNumber, p.partID, p.priceCode, pc.class, pc.image, p.brandID, pa.value as upc
+// 							from Part as p
+// 							left join Class as pc on p.classID = pc.classID
+// 							left join PartAttribute as pa on pa.partID = p.partID
+// 							join ApiKeyToBrand as akb on akb.brandID = p.brandID
+// 							join ApiKey as ak on ak.id = akb.keyID
+// 							where (p.status in (800,900) && pa.field = "upc") && (ak.api_key = ? && (p.brandID = 1 or 0 = ?))
+// 							order by partID`
+// //create
+// createPart = `INSERT INTO Part (partID, status, dateAdded, shortDesc, oldPartNumber, priceCode, classID, featured, ACESPartTypeID,brandID)
+//                    VALUES(?,?,?,?,?,?,?,?,?,?)`
+// createPartAttributeJoin = `INSERT INTO PartAttribute (partID, value, field, sort) VALUES (?,?,?,?)`
+// createVehiclePartJoin   = `INSERT INTO VehiclePart (vehicleID, partID, drilling, exposed, installTime) VALUES (?,?,?,?,?)`
+// createContentBridge     = `INSERT INTO ContentBridge (catID, partID, contentID) VALUES (?,?,?)`
+// createRelatedPart       = `INSERT INTO RelatedPart (partID, relatedID) VALUES (?,?)`
+// createPartCategoryJoin  = `INSERT INTO CatPart (catID, partID) VALUES (?,?)`
 
-	//delete
-	deletePart               = `DELETE FROM Part WHERE partID  = ?`
-	deletePartAttributeJoins = `DELETE FROM PartAttribute WHERE partID = ?`
-	deleteVehiclePartJoins   = `DELETE FROM VehiclePart WHERE partID = ?`
-	deleteContentBridgeJoins = `DELETE FROM ContentBridge WHERE partID = ?`
-	deleteRelatedParts       = `DELETE FROM RelatedPart WHERE partID = ?`
-	deletePartCategoryJoins  = `DELETE FROM CatPart WHERE partID = ?`
+// //delete
+// deletePart               = `DELETE FROM Part WHERE partID  = ?`
+// deletePartAttributeJoins = `DELETE FROM PartAttribute WHERE partID = ?`
+// deleteVehiclePartJoins   = `DELETE FROM VehiclePart WHERE partID = ?`
+// deleteContentBridgeJoins = `DELETE FROM ContentBridge WHERE partID = ?`
+// deleteRelatedParts       = `DELETE FROM RelatedPart WHERE partID = ?`
+// deletePartCategoryJoins  = `DELETE FROM CatPart WHERE partID = ?`
 
-	//update
-	updatePart = `UPDATE Part SET status = ?, shortDesc = ?, priceCode = ?, classID = ?, featured = ?, ACESPartTypeID = ?, brandID = ? WHERE partID = ?`
+// //update
+// updatePart = `UPDATE Part SET status = ?, shortDesc = ?, priceCode = ?, classID = ?, featured = ?, ACESPartTypeID = ?, brandID = ? WHERE partID = ?`
 )
 
 type Part struct {
-	ID                int               `json:"id" xml:"id,attr"`
-	BrandID           int               `json:"brandId" xml:"brandId,attr"`
-	Status            int               `json:"status" xml:"status,attr"`
-	PriceCode         int               `json:"price_code" xml:"price_code,attr"`
-	RelatedCount      int               `json:"related_count" xml:"related_count,attr"`
-	AverageReview     float64           `json:"average_review" xml:"average_review,attr"`
-	DateModified      time.Time         `json:"date_modified" xml:"date_modified,attr"`
-	DateAdded         time.Time         `json:"date_added" xml:"date_added,attr"`
-	ShortDesc         string            `json:"short_description" xml:"short_description,attr"`
-	InstallSheet      *url.URL          `json:"install_sheet" xml:"install_sheet"`
-	Attributes        []Attribute       `json:"attributes" xml:"attributes"`
-	VehicleAttributes []string          `json:"vehicle_atttributes" xml:"vehicle_attributes"`
-	Vehicles          []vehicle.Vehicle `json:"vehicles,omitempty" xml:"vehicles,omitempty"`
-	Content           []Content         `json:"content" xml:"content"`
-	Pricing           []Price           `json:"pricing" xml:"pricing"`
-	Reviews           []Review          `json:"reviews" xml:"reviews"`
-	Images            []Image           `json:"images" xml:"images"`
-	Related           []int             `json:"related" xml:"related"`
-	Categories        []Category        `json:"categories" xml:"categories"`
-	Videos            []video.Video     `json:"videos" xml:"videos"`
-	Packages          []Package         `json:"packages" xml:"packages"`
-	Customer          CustomerPart      `json:"customer,omitempty" xml:"customer,omitempty"`
-	Class             Class             `json:"class,omitempty" xml:"class,omitempty"`
-	Featured          bool              `json:"featured,omitempty" xml:"featured,omitempty"`
-	AcesPartTypeID    int               `json:"acesPartTypeId,omitempty" xml:"acesPartTypeId,omitempty"`
-	Installations     Installations     `json:"installation,omitempty" xml:"installation,omitempty"`
-	Inventory         PartInventory     `json:"inventory,omitempty" xml:"inventory,omitempty"`
-	OldPartNumber     string            `json:"oldPartNumber,omitempty" xml:"oldPartNumber,omitempty"`
-	UPC               string            `json:"upc,omitempty" xml:"upc,omitempty"`
+	ID                int               `json:"id" xml:"id,attr" bson:"id"`
+	BrandID           int               `json:"brandId" xml:"brandId,attr" bson:"brandId"`
+	Status            int               `json:"status" xml:"status,attr" bson:"status"`
+	PriceCode         int               `json:"price_code" xml:"price_code,attr" bson:"price_code"`
+	RelatedCount      int               `json:"related_count" xml:"related_count,attr" bson:"related_count"`
+	AverageReview     float64           `json:"average_review" xml:"average_review,attr" bson:"average_review"`
+	DateModified      time.Time         `json:"date_modified" xml:"date_modified,attr" bson:"date_modified"`
+	DateAdded         time.Time         `json:"date_added" xml:"date_added,attr" bson:"date_added"`
+	ShortDesc         string            `json:"short_description" xml:"short_description,attr" bson:"short_description"`
+	InstallSheet      *url.URL          `json:"install_sheet" xml:"install_sheet" bson:"install_sheet"`
+	Attributes        []Attribute       `json:"attributes" xml:"attributes" bson:"attributes"`
+	VehicleAttributes []string          `json:"vehicle_atttributes" xml:"vehicle_attributes" bson:"vehicle_attributes"`
+	Vehicles          []vehicle.Vehicle `json:"vehicles,omitempty" xml:"vehicles,omitempty" bson:"vehicles"`
+	Content           []Content         `json:"content" xml:"content" bson:"content"`
+	Pricing           []Price           `json:"pricing" xml:"pricing" bson:"pricing"`
+	Reviews           []Review          `json:"reviews" xml:"reviews" bson:"reviews"`
+	Images            []Image           `json:"images" xml:"images" bson:"images"`
+	Related           []int             `json:"related" xml:"related" bson:"related" bson:"related"`
+	Categories        []Category        `json:"categories" xml:"categories" bson:"categories"`
+	Videos            []video.Video     `json:"videos" xml:"videos" bson:"videos"`
+	Packages          []Package         `json:"packages" xml:"packages" bson:"packages"`
+	Customer          CustomerPart      `json:"customer,omitempty" xml:"customer,omitempty" bson:"v"`
+	Class             Class             `json:"class,omitempty" xml:"class,omitempty" bson:"class"`
+	Featured          bool              `json:"featured,omitempty" xml:"featured,omitempty" bson:"featured"`
+	AcesPartTypeID    int               `json:"acesPartTypeId,omitempty" xml:"acesPartTypeId,omitempty" bson:"acesPartTypeId"`
+	Installations     []Installation    `json:"installation,omitempty" xml:"installation,omitempty" bson:"installation"`
+	Inventory         PartInventory     `json:"inventory,omitempty" xml:"inventory,omitempty" bson:"inventory"`
+	OldPartNumber     string            `json:"oldPartNumber,omitempty" xml:"oldPartNumber,omitempty" bson:"oldPartNumber"`
+	UPC               string            `json:"upc,omitempty" xml:"upc,omitempty" bson:"upc"`
 }
 
 type CustomerPart struct {
@@ -153,21 +149,19 @@ type PaginatedProductListing struct {
 }
 
 type Class struct {
-	ID    int    `json:"id,omitempty" xml:"id,omitempty"`
-	Name  string `json:"name,omitempty" xml:"name,omitempty"`
-	Image string `json:"image,omitempty" xml:"image,omitempty"`
+	ID    int    `json:"id,omitempty" xml:"id,omitempty" bson:"id"`
+	Name  string `json:"name,omitempty" xml:"name,omitempty" bson:"name"`
+	Image string `json:"image,omitempty" xml:"image,omitempty" bson:"image"`
 }
 
 type Installation struct { //aka VehiclePart Table
-	ID          int             `json:"id,omitempty" xml:"id,omitempty"`
-	Vehicle     vehicle.Vehicle `json:"vehicle,omitempty" xml:"vehicle,omitempty"`
-	Part        Part            `json:"part,omitempty" xml:"part,omitempty"`
-	Drilling    string          `json:"drilling,omitempty" xml:"v,omitempty"`
-	Exposed     string          `json:"exposed,omitempty" xml:"exposed,omitempty"`
-	InstallTime int             `json:"installTime,omitempty" xml:"installTime,omitempty"`
+	ID          int             `json:"id,omitempty" xml:"id,omitempty" bson:"id"`
+	Vehicle     vehicle.Vehicle `json:"vehicle,omitempty" xml:"vehicle,omitempty" bson:"vehicle"`
+	Part        Part            `json:"part,omitempty" xml:"part,omitempty" bson:"part"`
+	Drilling    string          `json:"drilling,omitempty" xml:"v,omitempty" bson:"drilling"`
+	Exposed     string          `json:"exposed,omitempty" xml:"exposed,omitempty" bson:"exposed"`
+	InstallTime int             `json:"installTime,omitempty" xml:"installTime,omitempty" bson:"installTime"`
 }
-
-type Installations []Installation
 
 func (p *Part) FromDatabase() error {
 	session, err := mgo.DialWithInfo(database.MongoPartConnectionString())
@@ -362,211 +356,244 @@ func (p *Part) Get(dtx *apicontext.DataContext) error {
 }
 
 func All(page, count int, dtx *apicontext.DataContext) ([]Part, error) {
-	parts := make([]Part, 0)
-
-	db, err := sql.Open("mysql", database.ConnectionString())
+	var parts []Part
+	session, err := mgo.DialWithInfo(database.MongoPartConnectionString())
 	if err != nil {
 		return parts, err
 	}
-	defer db.Close()
-
-	stmt, err := db.Prepare(GetPaginatedPartNumbers)
-	if err != nil {
-		return parts, err
-	}
-	defer stmt.Close()
-
-	rows, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID, page, count)
-	if err != nil {
-		return parts, err
-	}
-
-	iter := 0
-	partChan := make(chan int)
-	for rows.Next() {
-		var partID int
-		if err = rows.Scan(&partID); err != nil {
-			return parts, err
-		}
-		go func(id int) {
-			p := Part{ID: id}
-			p.Get(dtx)
-			parts = append(parts, p)
-			partChan <- 1
-		}(partID)
-		iter++
-	}
-	defer rows.Close()
-
-	for i := 0; i < iter; i++ {
-		<-partChan
-	}
-
-	sortutil.AscByField(parts, "ID")
-
-	return parts, nil
+	defer session.Close()
+	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{}).Sort("id:1").Skip(page * count).Limit(count).All(&parts)
+	return parts, err
 }
+
+// func AllSql(page, count int, dtx *apicontext.DataContext) ([]Part, error) {
+// 	parts := make([]Part, 0)
+
+// 	db, err := sql.Open("mysql", database.ConnectionString())
+// 	if err != nil {
+// 		return parts, err
+// 	}
+// 	defer db.Close()
+
+// 	stmt, err := db.Prepare(GetPaginatedPartNumbers)
+// 	if err != nil {
+// 		return parts, err
+// 	}
+// 	defer stmt.Close()
+
+// 	rows, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID, page, count)
+// 	if err != nil {
+// 		return parts, err
+// 	}
+
+// 	iter := 0
+// 	partChan := make(chan int)
+// 	for rows.Next() {
+// 		var partID int
+// 		if err = rows.Scan(&partID); err != nil {
+// 			return parts, err
+// 		}
+// 		go func(id int) {
+// 			p := Part{ID: id}
+// 			p.Get(dtx)
+// 			parts = append(parts, p)
+// 			partChan <- 1
+// 		}(partID)
+// 		iter++
+// 	}
+// 	defer rows.Close()
+
+// 	for i := 0; i < iter; i++ {
+// 		<-partChan
+// 	}
+
+// 	sortutil.AscByField(parts, "ID")
+
+// 	return parts, nil
+// }
 
 func Featured(count int, dtx *apicontext.DataContext) ([]Part, error) {
-	parts := make([]Part, 0)
-
-	db, err := sql.Open("mysql", database.ConnectionString())
+	var parts []Part
+	session, err := mgo.DialWithInfo(database.MongoPartConnectionString())
 	if err != nil {
 		return parts, err
 	}
-	defer db.Close()
-
-	stmt, err := db.Prepare(GetFeaturedParts)
-	if err != nil {
-		return parts, err
-	}
-	defer stmt.Close()
-
-	rows, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID, count)
-	if err != nil {
-		return parts, err
-	}
-
-	iter := 0
-	partChan := make(chan int)
-	for rows.Next() {
-		var partID int
-		if err = rows.Scan(&partID); err != nil {
-			return parts, err
-		}
-
-		go func(id int) {
-			p := Part{ID: id}
-			p.Get(dtx)
-			parts = append(parts, p)
-			partChan <- 1
-		}(partID)
-		iter++
-	}
-	defer rows.Close()
-
-	for i := 0; i < iter; i++ {
-		<-partChan
-	}
-
-	sortutil.DescByField(parts, "DateAdded")
-
-	return parts, nil
+	defer session.Close()
+	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{"featured": true}).Sort("id:1").Limit(count).All(&parts)
+	return parts, err
 }
 
-func GetAllPartsBasics(dtx *apicontext.DataContext) ([]Part, error) {
-	parts := make([]Part, 0)
+// func FeaturedSql(count int, dtx *apicontext.DataContext) ([]Part, error) {
+// 	parts := make([]Part, 0)
 
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return parts, err
-	}
-	defer db.Close()
+// 	db, err := sql.Open("mysql", database.ConnectionString())
+// 	if err != nil {
+// 		return parts, err
+// 	}
+// 	defer db.Close()
 
-	stmt, err := db.Prepare(getAllPartsBasicsStmt)
-	if err != nil {
-		return parts, err
-	}
-	defer stmt.Close()
-	rows, err := stmt.Query(dtx.APIKey, dtx.BrandID)
-	if err != nil {
-		return parts, err
-	}
+// 	stmt, err := db.Prepare(GetFeaturedParts)
+// 	if err != nil {
+// 		return parts, err
+// 	}
+// 	defer stmt.Close()
 
-	for rows.Next() {
-		var p Part
-		var short, price, class, oldNum, image []byte
-		var upc *string
-		err = rows.Scan(
-			&p.Status,
-			&p.DateAdded,
-			&p.DateModified,
-			&short,
-			&oldNum,
-			&p.ID,
-			&price,
-			&class,
-			&image,
-			&p.BrandID,
-			&upc,
-		)
-		if err != nil {
-			return parts, err
-		}
-		if short != nil {
-			p.ShortDesc = string(short[:])
-		}
-		if upc != nil {
-			p.UPC = *upc
-		}
-		if price != nil {
-			p.PriceCode, err = strconv.Atoi(string(price[:]))
-			if err != nil {
-				return parts, err
-			}
-		}
-		if class != nil {
-			p.Class.Name = string(class[:])
-		}
-		if image != nil {
-			p.Class.Image = string(image[:])
-		}
-		if oldNum != nil {
-			p.OldPartNumber = string(oldNum[:])
-		}
-		parts = append(parts, p)
-	}
-	defer rows.Close()
+// 	rows, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID, count)
+// 	if err != nil {
+// 		return parts, err
+// 	}
 
-	return parts, nil
-}
+// 	iter := 0
+// 	partChan := make(chan int)
+// 	for rows.Next() {
+// 		var partID int
+// 		if err = rows.Scan(&partID); err != nil {
+// 			return parts, err
+// 		}
+
+// 		go func(id int) {
+// 			p := Part{ID: id}
+// 			p.Get(dtx)
+// 			parts = append(parts, p)
+// 			partChan <- 1
+// 		}(partID)
+// 		iter++
+// 	}
+// 	defer rows.Close()
+
+// 	for i := 0; i < iter; i++ {
+// 		<-partChan
+// 	}
+
+// 	sortutil.DescByField(parts, "DateAdded")
+
+// 	return parts, nil
+// }
+
+// func GetAllPartsBasics(dtx *apicontext.DataContext) ([]Part, error) {
+// 	parts := make([]Part, 0)
+
+// 	db, err := sql.Open("mysql", database.ConnectionString())
+// 	if err != nil {
+// 		return parts, err
+// 	}
+// 	defer db.Close()
+
+// 	stmt, err := db.Prepare(getAllPartsBasicsStmt)
+// 	if err != nil {
+// 		return parts, err
+// 	}
+// 	defer stmt.Close()
+// 	rows, err := stmt.Query(dtx.APIKey, dtx.BrandID)
+// 	if err != nil {
+// 		return parts, err
+// 	}
+
+// 	for rows.Next() {
+// 		var p Part
+// 		var short, price, class, oldNum, image []byte
+// 		var upc *string
+// 		err = rows.Scan(
+// 			&p.Status,
+// 			&p.DateAdded,
+// 			&p.DateModified,
+// 			&short,
+// 			&oldNum,
+// 			&p.ID,
+// 			&price,
+// 			&class,
+// 			&image,
+// 			&p.BrandID,
+// 			&upc,
+// 		)
+// 		if err != nil {
+// 			return parts, err
+// 		}
+// 		if short != nil {
+// 			p.ShortDesc = string(short[:])
+// 		}
+// 		if upc != nil {
+// 			p.UPC = *upc
+// 		}
+// 		if price != nil {
+// 			p.PriceCode, err = strconv.Atoi(string(price[:]))
+// 			if err != nil {
+// 				return parts, err
+// 			}
+// 		}
+// 		if class != nil {
+// 			p.Class.Name = string(class[:])
+// 		}
+// 		if image != nil {
+// 			p.Class.Image = string(image[:])
+// 		}
+// 		if oldNum != nil {
+// 			p.OldPartNumber = string(oldNum[:])
+// 		}
+// 		parts = append(parts, p)
+// 	}
+// 	defer rows.Close()
+
+// 	return parts, nil
+// }
 
 func Latest(count int, dtx *apicontext.DataContext) ([]Part, error) {
-	parts := make([]Part, 0)
-
-	db, err := sql.Open("mysql", database.ConnectionString())
+	var parts []Part
+	session, err := mgo.DialWithInfo(database.MongoPartConnectionString())
 	if err != nil {
 		return parts, err
 	}
-	defer db.Close()
-
-	stmt, err := db.Prepare(GetLatestParts)
-	if err != nil {
-		return parts, err
-	}
-	defer stmt.Close()
-
-	rows, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID, count)
-	if err != nil {
-		return parts, err
-	}
-
-	iter := 0
-	partChan := make(chan int)
-	for rows.Next() {
-		var partID int
-		if err = rows.Scan(&partID); err != nil {
-			return parts, err
-		}
-
-		go func(id int) {
-			p := Part{ID: id}
-			p.Get(dtx)
-			parts = append(parts, p)
-			partChan <- 1
-		}(partID)
-		iter++
-	}
-	defer rows.Close()
-
-	for i := 0; i < iter; i++ {
-		<-partChan
-	}
-
-	sortutil.DescByField(parts, "DateAdded")
-
-	return parts, nil
+	defer session.Close()
+	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{}).Sort("date_added:-1").Limit(count).All(&parts)
+	return parts, err
 }
+
+// func LatestSql(count int, dtx *apicontext.DataContext) ([]Part, error) {
+// 	parts := make([]Part, 0)
+
+// 	db, err := sql.Open("mysql", database.ConnectionString())
+// 	if err != nil {
+// 		return parts, err
+// 	}
+// 	defer db.Close()
+
+// 	stmt, err := db.Prepare(GetLatestParts)
+// 	if err != nil {
+// 		return parts, err
+// 	}
+// 	defer stmt.Close()
+
+// 	rows, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID, count)
+// 	if err != nil {
+// 		return parts, err
+// 	}
+
+// 	iter := 0
+// 	partChan := make(chan int)
+// 	for rows.Next() {
+// 		var partID int
+// 		if err = rows.Scan(&partID); err != nil {
+// 			return parts, err
+// 		}
+
+// 		go func(id int) {
+// 			p := Part{ID: id}
+// 			p.Get(dtx)
+// 			parts = append(parts, p)
+// 			partChan <- 1
+// 		}(partID)
+// 		iter++
+// 	}
+// 	defer rows.Close()
+
+// 	for i := 0; i < iter; i++ {
+// 		<-partChan
+// 	}
+
+// 	sortutil.DescByField(parts, "DateAdded")
+
+// 	return parts, nil
+// }
 
 func (p *Part) GetWithVehicle(vehicle *vehicle.Vehicle, api_key string, dtx *apicontext.DataContext) error {
 	var errs []string
@@ -597,201 +624,212 @@ func (p *Part) GetWithVehicle(vehicle *vehicle.Vehicle, api_key string, dtx *api
 	return nil
 }
 
-func (p *Part) GetById(id int, key string, dtx *apicontext.DataContext) {
-	p.ID = id
+// func (p *Part) GetById(id int, key string, dtx *apicontext.DataContext) {
+// 	p.ID = id
 
-	p.Get(dtx)
+// 	p.Get(dtx)
+// }
+
+// func (p *Part) Basics(dtx *apicontext.DataContext) error {
+
+// 	redis_key := fmt.Sprintf("part:%d:basics:%s", p.ID, dtx.BrandString)
+
+// 	data, err := redis.Get(redis_key)
+// 	if err == nil && len(data) > 0 {
+// 		if err = json.Unmarshal(data, &p); err == nil {
+// 			return nil
+// 		}
+// 	}
+
+// 	db, err := sql.Open("mysql", database.ConnectionString())
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer db.Close()
+
+// 	qry, err := db.Prepare(basicsStmt)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer qry.Close()
+
+// 	row := qry.QueryRow(p.ID)
+// 	if row == nil {
+// 		return errors.New("No Part Found for:" + string(p.ID))
+// 	}
+
+// 	var short, price, class, oldNum, image []byte
+// 	err = row.Scan(
+// 		&p.Status,
+// 		&p.DateAdded,
+// 		&p.DateModified,
+// 		&short,
+// 		&oldNum,
+// 		&p.ID,
+// 		&price,
+// 		&class,
+// 		&image,
+// 		&p.BrandID,
+// 	)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	if short != nil {
+// 		p.ShortDesc = string(short[:])
+// 	}
+// 	if price != nil {
+// 		p.PriceCode, err = strconv.Atoi(string(price[:]))
+// 		if err != nil {
+// 			return err
+// 		}
+// 	}
+// 	if class != nil {
+// 		p.Class.Name = string(class[:])
+// 	}
+// 	if image != nil {
+// 		p.Class.Image = string(image[:])
+// 	}
+// 	if oldNum != nil {
+// 		p.OldPartNumber = string(oldNum[:])
+// 	}
+// 	if dtx.BrandString != "" {
+// 		go func(tmp Part) {
+// 			redis.Setex(redis_key, tmp, redis.CacheTimeout)
+// 		}(*p)
+// 	}
+
+// 	return nil
+// }
+
+func (p *Part) GetRelated(dtx *apicontext.DataContext) ([]Part, error) {
+	var parts []Part
+	session, err := mgo.DialWithInfo(database.MongoPartConnectionString())
+	if err != nil {
+		return parts, err
+	}
+	defer session.Close()
+	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{"id": bson.M{"$in": p.Related}}).Sort("id:1").All(&parts)
+	return parts, err
 }
 
-func (p *Part) Basics(dtx *apicontext.DataContext) error {
+// func (p *Part) GetRelatedSql(dtx *apicontext.DataContext) error {
+// 	redis_key := fmt.Sprintf("part:%d:related:%s", p.ID, dtx.BrandString)
 
-	redis_key := fmt.Sprintf("part:%d:basics:%s", p.ID, dtx.BrandString)
+// 	data, err := redis.Get(redis_key)
+// 	if err == nil && len(data) > 0 {
+// 		if err = json.Unmarshal(data, &p.Related); err == nil {
+// 			return nil
+// 		}
+// 	}
 
-	data, err := redis.Get(redis_key)
-	if err == nil && len(data) > 0 {
-		if err = json.Unmarshal(data, &p); err == nil {
-			return nil
-		}
-	}
+// 	db, err := sql.Open("mysql", database.ConnectionString())
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer db.Close()
 
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
+// 	stmt, err := db.Prepare(relatedPartStmt)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer stmt.Close()
 
-	qry, err := db.Prepare(basicsStmt)
-	if err != nil {
-		return err
-	}
-	defer qry.Close()
+// 	rows, err := stmt.Query(p.ID)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	row := qry.QueryRow(p.ID)
-	if row == nil {
-		return errors.New("No Part Found for:" + string(p.ID))
-	}
+// 	var related []int
+// 	var relatedID int
+// 	for rows.Next() {
+// 		err = rows.Scan(&relatedID)
+// 		if err != nil {
+// 			return err
+// 		}
+// 		related = append(related, relatedID)
+// 	}
+// 	defer rows.Close()
 
-	var short, price, class, oldNum, image []byte
-	err = row.Scan(
-		&p.Status,
-		&p.DateAdded,
-		&p.DateModified,
-		&short,
-		&oldNum,
-		&p.ID,
-		&price,
-		&class,
-		&image,
-		&p.BrandID,
-	)
-	if err != nil {
-		return err
-	}
-	if short != nil {
-		p.ShortDesc = string(short[:])
-	}
-	if price != nil {
-		p.PriceCode, err = strconv.Atoi(string(price[:]))
-		if err != nil {
-			return err
-		}
-	}
-	if class != nil {
-		p.Class.Name = string(class[:])
-	}
-	if image != nil {
-		p.Class.Image = string(image[:])
-	}
-	if oldNum != nil {
-		p.OldPartNumber = string(oldNum[:])
-	}
-	if dtx.BrandString != "" {
-		go func(tmp Part) {
-			redis.Setex(redis_key, tmp, redis.CacheTimeout)
-		}(*p)
-	}
+// 	p.Related = related
+// 	p.RelatedCount = len(related)
 
-	return nil
-}
+// 	if dtx.BrandString != "" {
+// 		go func(rel []int) {
+// 			redis.Setex(redis_key, rel, redis.CacheTimeout)
+// 		}(p.Related)
+// 	}
 
-func (p *Part) GetRelated(dtx *apicontext.DataContext) error {
-	redis_key := fmt.Sprintf("part:%d:related:%s", p.ID, dtx.BrandString)
+// 	return nil
+// }
 
-	data, err := redis.Get(redis_key)
-	if err == nil && len(data) > 0 {
-		if err = json.Unmarshal(data, &p.Related); err == nil {
-			return nil
-		}
-	}
+// func (p *Part) GetContent(dtx *apicontext.DataContext) error {
+// 	redis_key_content := fmt.Sprintf("part:%d:content:%s", p.ID, dtx.BrandString)
+// 	redis_key_installSheet := fmt.Sprintf("part:%d:installSheet:%s", p.ID, dtx.BrandString)
 
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
+// 	data_content, err_content := redis.Get(redis_key_content)
+// 	data_installSheet, err_installSheet := redis.Get(redis_key_installSheet)
+// 	if err_content == nil && err_installSheet == nil && len(data_content) > 0 && len(data_installSheet) > 0 {
+// 		err_content = json.Unmarshal(data_content, &p.Content)
+// 		err_installSheet = json.Unmarshal(data_installSheet, &p.InstallSheet)
 
-	stmt, err := db.Prepare(relatedPartStmt)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
+// 		if err_content == nil && err_installSheet == nil {
+// 			return nil
+// 		}
+// 	}
 
-	rows, err := stmt.Query(p.ID)
-	if err != nil {
-		return err
-	}
+// 	db, err := sql.Open("mysql", database.ConnectionString())
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer db.Close()
 
-	var related []int
-	var relatedID int
-	for rows.Next() {
-		err = rows.Scan(&relatedID)
-		if err != nil {
-			return err
-		}
-		related = append(related, relatedID)
-	}
-	defer rows.Close()
+// 	stmt, err := db.Prepare(partContentStmt)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer stmt.Close()
 
-	p.Related = related
-	p.RelatedCount = len(related)
+// 	rows, err := stmt.Query(p.ID)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	if dtx.BrandString != "" {
-		go func(rel []int) {
-			redis.Setex(redis_key, rel, redis.CacheTimeout)
-		}(p.Related)
-	}
+// 	var content []Content
+// 	for rows.Next() {
+// 		var con Content
+// 		var conText *string
+// 		err = rows.Scan(
+// 			&con.ContentType.Id,
+// 			&con.ContentType.Type,
+// 			&con.ContentType.AllowHtml,
+// 			&conText,
+// 		)
+// 		if err != nil {
+// 			return err
+// 		}
+// 		if conText != nil {
+// 			con.Text = *conText
+// 		}
 
-	return nil
-}
+// 		if strings.Contains(strings.ToLower(con.ContentType.Type), "install") {
+// 			//sheetUrl, _ := url.Parse(con.Value)
+// 			p.InstallSheet, _ = url.Parse(con.Text)
+// 			// p.InstallSheet, _ = url.Parse(api_helpers.API_DOMAIN + "/part/" + strconv.Itoa(p.ID) + ".pdf")
+// 		} else {
+// 			content = append(content, con)
+// 		}
+// 	}
+// 	defer rows.Close()
 
-func (p *Part) GetContent(dtx *apicontext.DataContext) error {
-	redis_key_content := fmt.Sprintf("part:%d:content:%s", p.ID, dtx.BrandString)
-	redis_key_installSheet := fmt.Sprintf("part:%d:installSheet:%s", p.ID, dtx.BrandString)
-
-	data_content, err_content := redis.Get(redis_key_content)
-	data_installSheet, err_installSheet := redis.Get(redis_key_installSheet)
-	if err_content == nil && err_installSheet == nil && len(data_content) > 0 && len(data_installSheet) > 0 {
-		err_content = json.Unmarshal(data_content, &p.Content)
-		err_installSheet = json.Unmarshal(data_installSheet, &p.InstallSheet)
-
-		if err_content == nil && err_installSheet == nil {
-			return nil
-		}
-	}
-
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	stmt, err := db.Prepare(partContentStmt)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-
-	rows, err := stmt.Query(p.ID)
-	if err != nil {
-		return err
-	}
-
-	var content []Content
-	for rows.Next() {
-		var con Content
-		var conText *string
-		err = rows.Scan(
-			&con.ContentType.Id,
-			&con.ContentType.Type,
-			&con.ContentType.AllowHtml,
-			&conText,
-		)
-		if err != nil {
-			return err
-		}
-		if conText != nil {
-			con.Text = *conText
-		}
-
-		if strings.Contains(strings.ToLower(con.ContentType.Type), "install") {
-			//sheetUrl, _ := url.Parse(con.Value)
-			p.InstallSheet, _ = url.Parse(con.Text)
-			// p.InstallSheet, _ = url.Parse(api_helpers.API_DOMAIN + "/part/" + strconv.Itoa(p.ID) + ".pdf")
-		} else {
-			content = append(content, con)
-		}
-	}
-	defer rows.Close()
-
-	p.Content = content
-	if dtx.BrandString != "" && len(p.Content) > 0 {
-		go redis.Setex(redis_key_content, p.Content, redis.CacheTimeout)
-	}
-	if dtx.BrandString != "" && p.InstallSheet != nil {
-		go redis.Setex(redis_key_installSheet, p.InstallSheet, redis.CacheTimeout)
-	}
-	return nil
-}
+// 	p.Content = content
+// 	if dtx.BrandString != "" && len(p.Content) > 0 {
+// 		go redis.Setex(redis_key_content, p.Content, redis.CacheTimeout)
+// 	}
+// 	if dtx.BrandString != "" && p.InstallSheet != nil {
+// 		go redis.Setex(redis_key_installSheet, p.InstallSheet, redis.CacheTimeout)
+// 	}
+// 	return nil
+// }
 
 func (p *Part) BindCustomer(dtx *apicontext.DataContext) CustomerPart {
 	var price float64
@@ -838,46 +876,46 @@ func (p *Part) BindCustomer(dtx *apicontext.DataContext) CustomerPart {
 	}
 }
 
-func (p *Part) GetInstallSheet(r *http.Request, dtx *apicontext.DataContext) (data []byte, err error) {
-	redis_key := fmt.Sprintf("part:%d:installSheet:%s", p.ID, dtx.BrandString)
+// func (p *Part) GetInstallSheet(r *http.Request, dtx *apicontext.DataContext) (data []byte, err error) {
+// 	redis_key := fmt.Sprintf("part:%d:installSheet:%s", p.ID, dtx.BrandString)
 
-	data, err = redis.Get(redis_key)
-	if err == nil && len(data) > 0 {
-		return data, nil
-	}
+// 	data, err = redis.Get(redis_key)
+// 	if err == nil && len(data) > 0 {
+// 		return data, nil
+// 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return
-	}
-	defer db.Close()
+// 	db, err := sql.Open("mysql", database.ConnectionString())
+// 	if err != nil {
+// 		return
+// 	}
+// 	defer db.Close()
 
-	stmt, err := db.Prepare(partInstallSheetStmt)
-	if err != nil {
-		return
-	}
-	defer stmt.Close()
+// 	stmt, err := db.Prepare(partInstallSheetStmt)
+// 	if err != nil {
+// 		return
+// 	}
+// 	defer stmt.Close()
 
-	var text string
-	err = stmt.QueryRow(p.ID).Scan(
-		&text,
-	)
-	if err != nil {
-		return
-	}
+// 	var text string
+// 	err = stmt.QueryRow(p.ID).Scan(
+// 		&text,
+// 	)
+// 	if err != nil {
+// 		return
+// 	}
 
-	data, err = rest.GetPDF(text, r)
-	if err != nil {
-		return
-	}
+// 	data, err = rest.GetPDF(text, r)
+// 	if err != nil {
+// 		return
+// 	}
 
-	if dtx.BrandString != "" {
-		go func(dt []byte) {
-			redis.Setex(redis_key, dt, redis.CacheTimeout)
-		}(data)
-	}
-	return
-}
+// 	if dtx.BrandString != "" {
+// 		go func(dt []byte) {
+// 			redis.Setex(redis_key, dt, redis.CacheTimeout)
+// 		}(data)
+// 	}
+// 	return
+// }
 
 // PartBreacrumbs
 //
@@ -974,144 +1012,153 @@ func (p *Part) PartBreadcrumbs(dtx *apicontext.DataContext) error {
 	return nil
 }
 
-func (p *Part) GetPartCategories(dtx *apicontext.DataContext) (cats []Category, err error) {
-	redis_key := fmt.Sprintf("part:%d:categories:%s", p.ID, dtx.BrandString)
+// func (p *Part) GetPartCategories(dtx *apicontext.DataContext) (cats []Category, err error) {
+// 	redis_key := fmt.Sprintf("part:%d:categories:%s", p.ID, dtx.BrandString)
 
-	data, err := redis.Get(redis_key)
-	if err == nil && len(data) > 0 {
-		if err := json.Unmarshal(data, &cats); err == nil {
-			return cats, nil
-		}
-	}
+// 	data, err := redis.Get(redis_key)
+// 	if err == nil && len(data) > 0 {
+// 		if err := json.Unmarshal(data, &cats); err == nil {
+// 			return cats, nil
+// 		}
+// 	}
 
-	if p.ID == 0 {
-		return
-	}
+// 	if p.ID == 0 {
+// 		return
+// 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+// 	db, err := sql.Open("mysql", database.ConnectionString())
+// 	if err != nil {
+// 		return
+// 	}
+// 	defer db.Close()
+
+// 	qry, err := db.Prepare(PartAllCategoryStmt)
+// 	if err != nil {
+// 		return
+// 	}
+// 	defer qry.Close()
+
+// 	// Execute SQL Query against current ID
+// 	catRows, err := qry.Query(p.ID)
+// 	if err != nil || catRows == nil { // Error occurred while executing query
+// 		return
+// 	}
+
+// 	ch := make(chan []Category, 0)
+// 	go PopulateCategoryMulti(catRows, ch)
+// 	cats = <-ch
+
+// 	for _, cat := range cats {
+
+// 		contentChan := make(chan int)
+// 		subChan := make(chan int)
+// 		customerChan := make(chan int)
+
+// 		c := Category{
+// 			ID: cat.ID,
+// 		}
+
+// 		go func() {
+// 			content, contentErr := c.GetContent()
+// 			if contentErr == nil {
+// 				cat.Content = content
+// 			}
+// 			contentChan <- 1
+// 		}()
+
+// 		go func() {
+// 			subs, subErr := c.GetSubCategories(dtx)
+// 			if subErr == nil {
+// 				cat.SubCategories = subs
+// 			}
+// 			subChan <- 1
+// 		}()
+
+// 		go func() {
+// 			content, _ := custcontent.GetCategoryContent(cat.ID, dtx.APIKey)
+// 			for _, con := range content {
+// 				strArr := strings.Split(con.ContentType.Type, ":")
+// 				cType := con.ContentType.Type
+// 				if len(strArr) > 1 {
+// 					cType = strArr[1]
+// 				}
+// 				var catCon Content
+// 				catCon.ContentType.Type = cType
+// 				catCon.Text = con.Text
+// 				cat.Content = append(cat.Content, catCon)
+// 			}
+// 			customerChan <- 1
+// 		}()
+
+// 		<-contentChan
+// 		<-subChan
+// 		<-customerChan
+
+// 		cats = append(cats, cat)
+// 	}
+// 	if dtx.BrandString != "" {
+// 		go func(cts []Category) {
+// 			redis.Setex(redis_key, cts, redis.CacheTimeout)
+// 		}(cats)
+// 	}
+// 	return
+// }
+
+func (p *Part) GetPartByOldPartNumber() (err error) {
+	session, err := mgo.DialWithInfo(database.MongoPartConnectionString())
 	if err != nil {
-		return
+		return err
 	}
-	defer db.Close()
-
-	qry, err := db.Prepare(PartAllCategoryStmt)
-	if err != nil {
-		return
-	}
-	defer qry.Close()
-
-	// Execute SQL Query against current ID
-	catRows, err := qry.Query(p.ID)
-	if err != nil || catRows == nil { // Error occurred while executing query
-		return
-	}
-
-	ch := make(chan []Category, 0)
-	go PopulateCategoryMulti(catRows, ch)
-	cats = <-ch
-
-	for _, cat := range cats {
-
-		contentChan := make(chan int)
-		subChan := make(chan int)
-		customerChan := make(chan int)
-
-		c := Category{
-			ID: cat.ID,
-		}
-
-		go func() {
-			content, contentErr := c.GetContent()
-			if contentErr == nil {
-				cat.Content = content
-			}
-			contentChan <- 1
-		}()
-
-		go func() {
-			subs, subErr := c.GetSubCategories(dtx)
-			if subErr == nil {
-				cat.SubCategories = subs
-			}
-			subChan <- 1
-		}()
-
-		go func() {
-			content, _ := custcontent.GetCategoryContent(cat.ID, dtx.APIKey)
-			for _, con := range content {
-				strArr := strings.Split(con.ContentType.Type, ":")
-				cType := con.ContentType.Type
-				if len(strArr) > 1 {
-					cType = strArr[1]
-				}
-				var catCon Content
-				catCon.ContentType.Type = cType
-				catCon.Text = con.Text
-				cat.Content = append(cat.Content, catCon)
-			}
-			customerChan <- 1
-		}()
-
-		<-contentChan
-		<-subChan
-		<-customerChan
-
-		cats = append(cats, cat)
-	}
-	if dtx.BrandString != "" {
-		go func(cts []Category) {
-			redis.Setex(redis_key, cts, redis.CacheTimeout)
-		}(cats)
-	}
-	return
+	defer session.Close()
+	return session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{"oldPartNumber": p.OldPartNumber}).One(&p)
 }
 
-func (p *Part) GetPartByOldPartNumber(key string) (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	stmt, err := db.Prepare(getPartByOldpartNumber)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
+// func (p *Part) GetPartByOldPartNumberSQL(key string) (err error) {
+// 	db, err := sql.Open("mysql", database.ConnectionString())
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer db.Close()
+// 	stmt, err := db.Prepare(getPartByOldpartNumber)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer stmt.Close()
 
-	var shortDesc *string
-	var priceCode, acesPartTypeID *int
-	err = stmt.QueryRow(p.OldPartNumber).Scan(
-		&p.ID,
-		&p.Status,
-		&p.DateModified,
-		&p.DateAdded,
-		&shortDesc,
-		&priceCode,
-		&p.Class.ID,
-		&p.Featured,
-		&acesPartTypeID,
-		&p.BrandID,
-	)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			err = errors.New("Invalid Part Number")
-			return
-		}
-		return err
-	}
+// 	var shortDesc *string
+// 	var priceCode, acesPartTypeID *int
+// 	err = stmt.QueryRow(p.OldPartNumber).Scan(
+// 		&p.ID,
+// 		&p.Status,
+// 		&p.DateModified,
+// 		&p.DateAdded,
+// 		&shortDesc,
+// 		&priceCode,
+// 		&p.Class.ID,
+// 		&p.Featured,
+// 		&acesPartTypeID,
+// 		&p.BrandID,
+// 	)
+// 	if err != nil {
+// 		if err == sql.ErrNoRows {
+// 			err = errors.New("Invalid Part Number")
+// 			return
+// 		}
+// 		return err
+// 	}
 
-	if shortDesc != nil {
-		p.ShortDesc = *shortDesc
-	}
-	if priceCode != nil {
-		p.PriceCode = *priceCode
-	}
-	if acesPartTypeID != nil {
-		p.AcesPartTypeID = *acesPartTypeID
-	}
+// 	if shortDesc != nil {
+// 		p.ShortDesc = *shortDesc
+// 	}
+// 	if priceCode != nil {
+// 		p.PriceCode = *priceCode
+// 	}
+// 	if acesPartTypeID != nil {
+// 		p.AcesPartTypeID = *acesPartTypeID
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 // func (p *Part) Create(dtx *apicontext.DataContext) (err error) {
 // 	db, err := sql.Open("mysql", database.ConnectionString())

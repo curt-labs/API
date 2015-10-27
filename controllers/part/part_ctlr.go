@@ -13,11 +13,11 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/error"
+	"github.com/curt-labs/GoAPI/helpers/rest"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/curt-labs/GoAPI/models/products"
 	"github.com/curt-labs/GoAPI/models/vehicle"
-	"github.com/curt-labs/GoAPI/models/video"
 	"github.com/go-martini/martini"
 	"github.com/ninnemana/analytics-go"
 )
@@ -71,18 +71,6 @@ func All(w http.ResponseWriter, r *http.Request, params martini.Params, enc enco
 	}
 
 	return encoding.Must(enc.Encode(parts))
-}
-
-func AllBasics(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
-
-	parts, err := products.GetAllPartsBasics(dtx)
-	if err != nil {
-		apierror.GenerateError("Trouble getting all basic parts", err, w, r)
-		return ""
-	}
-
-	return encoding.Must(enc.Encode(parts))
-
 }
 
 func Featured(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
@@ -174,23 +162,11 @@ func GetRelated(w http.ResponseWriter, r *http.Request, params martini.Params, e
 		ID: id,
 	}
 
-	err := p.GetRelated(dtx)
-	var parts []products.Part
-	c := make(chan int, len(p.Related))
-	for _, rel := range p.Related {
-		go func(partId int) {
-			relPart := products.Part{ID: partId}
-			if err = relPart.Get(dtx); err == nil {
-				parts = append(parts, relPart)
-			}
-			c <- 1
-		}(rel)
+	parts, err := p.GetRelated(dtx)
+	if err != nil {
+		apierror.GenerateError("Trouble getting related parts", err, w, r)
+		return ""
 	}
-
-	for _, _ = range p.Related {
-		<-c
-	}
-
 	return encoding.Must(enc.Encode(parts))
 }
 
@@ -271,6 +247,7 @@ func Images(w http.ResponseWriter, r *http.Request, params martini.Params, enc e
 	return encoding.Must(enc.Encode(p.Images))
 }
 
+//Redundant
 func Attributes(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	id, err := strconv.Atoi(params["part"])
 	if err != nil {
@@ -281,7 +258,7 @@ func Attributes(w http.ResponseWriter, r *http.Request, params martini.Params, e
 		ID: id,
 	}
 
-	if err = p.GetAttributes(dtx); err != nil {
+	if err = p.Get(dtx); err != nil {
 		apierror.GenerateError("Trouble getting part attributes", err, w, r)
 		return ""
 	}
@@ -289,6 +266,7 @@ func Attributes(w http.ResponseWriter, r *http.Request, params martini.Params, e
 	return encoding.Must(enc.Encode(p.Attributes))
 }
 
+//Redundant
 func GetContent(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	id, err := strconv.Atoi(params["part"])
 	if err != nil {
@@ -299,14 +277,14 @@ func GetContent(w http.ResponseWriter, r *http.Request, params martini.Params, e
 		ID: id,
 	}
 
-	if err = p.GetContent(dtx); err != nil {
-		apierror.GenerateError("Trouble getting part content", err, w, r)
+	if err = p.Get(dtx); err != nil {
+		apierror.GenerateError("Trouble getting part", err, w, r)
 		return ""
 	}
-
 	return encoding.Must(enc.Encode(p.Content))
 }
 
+//Redundant
 func Packaging(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	id, err := strconv.Atoi(params["part"])
 	if err != nil {
@@ -317,14 +295,14 @@ func Packaging(w http.ResponseWriter, r *http.Request, params martini.Params, en
 		ID: id,
 	}
 
-	if err = p.GetPartPackaging(dtx); err != nil {
+	if err = p.Get(dtx); err != nil {
 		apierror.GenerateError("Trouble getting part packages", err, w, r)
 		return ""
 	}
-
 	return encoding.Must(enc.Encode(p.Packages))
 }
 
+//Redundant
 func ActiveApprovedReviews(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	id, err := strconv.Atoi(params["part"])
 	if err != nil {
@@ -335,15 +313,21 @@ func ActiveApprovedReviews(w http.ResponseWriter, r *http.Request, params martin
 		ID: id,
 	}
 
-	if err = p.GetActiveApprovedReviews(dtx); err != nil {
+	if err = p.Get(dtx); err != nil {
 		apierror.GenerateError("Trouble getting part reviews", err, w, r)
 		return ""
 	}
+	var revs []products.Review
+	for _, rev := range p.Reviews {
+		if rev.Active == true && rev.Approved == true {
+			revs = append(revs, rev)
+		}
+	}
 
-	return encoding.Must(enc.Encode(p.Reviews))
+	return encoding.Must(enc.Encode(revs))
 }
 
-func Videos(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
+func Videos(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	id, err := strconv.Atoi(params["part"])
 	if err != nil {
 		apierror.GenerateError("Trouble getting part ID", err, w, r)
@@ -354,15 +338,15 @@ func Videos(w http.ResponseWriter, r *http.Request, params martini.Params, enc e
 		ID: id,
 	}
 
-	var vs video.Videos
-	if vs, err = video.GetPartVideos(p.ID); err != nil {
+	err = p.Get(dtx)
+	if err != nil {
 		apierror.GenerateError("Trouble getting part videos", err, w, r)
 		return ""
 	}
-
-	return encoding.Must(enc.Encode(vs))
+	return encoding.Must(enc.Encode(p.Videos))
 }
 
+//Sort of Redundant
 func InstallSheet(w http.ResponseWriter, r *http.Request, params martini.Params, dtx *apicontext.DataContext) {
 	id, err := strconv.Atoi(strings.Split(params["part"], ".")[0])
 	if err != nil {
@@ -373,12 +357,25 @@ func InstallSheet(w http.ResponseWriter, r *http.Request, params martini.Params,
 		ID: id,
 	}
 
-	data, err := p.GetInstallSheet(r, dtx)
+	err = p.Get(dtx)
 	if err != nil {
-		apierror.GenerateError("Trouble getting part installsheets", err, w, r)
+		apierror.GenerateError("Trouble getting part", err, w, r)
 		return
-	} else if len(data) == 0 {
-		apierror.GenerateError("No Installation Sheet found", err, w, r)
+	}
+	var text string
+	for _, content := range p.Content {
+		if content.ContentType.Type == "installationSheet" {
+			text = content.Text
+		}
+	}
+	if text == "" {
+		apierror.GenerateError("No Installation Sheet", err, w, r)
+		return
+	}
+
+	data, err := rest.GetPDF(text, r)
+	if err != nil {
+		apierror.GenerateError("Error getting PDF", err, w, r)
 		return
 	}
 
@@ -390,6 +387,7 @@ func InstallSheet(w http.ResponseWriter, r *http.Request, params martini.Params,
 	w.Write(data)
 }
 
+//Redundant
 func Categories(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	id, err := strconv.Atoi(params["part"])
 	if err != nil {
@@ -401,13 +399,13 @@ func Categories(w http.ResponseWriter, r *http.Request, params martini.Params, e
 		ID: id,
 	}
 
-	cats, err := p.GetPartCategories(dtx)
+	err = p.Get(dtx)
 	if err != nil {
 		apierror.GenerateError("Trouble getting part categories", err, w, r)
 		return ""
 	}
 
-	return encoding.Must(enc.Encode(cats))
+	return encoding.Must(enc.Encode(p.Categories))
 }
 
 func Prices(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
@@ -523,27 +521,17 @@ func GetPrice(rw http.ResponseWriter, r *http.Request, params martini.Params, en
 }
 
 func OldPartNumber(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
-	var pa products.Part
+	var p products.Part
 	var err error
 
-	pa.OldPartNumber = params["part"]
+	p.OldPartNumber = params["part"]
 
-	if pa.OldPartNumber == "" {
+	if p.OldPartNumber == "" {
 		apierror.GenerateError("Trouble getting old part number", err, rw, r)
 		return ""
 	}
 
-	if err = pa.GetPartByOldPartNumber(dtx.APIKey); err != nil {
-		apierror.GenerateError("Trouble getting part by old part number", err, rw, r)
-		return ""
-	}
-
-	// have to create a new object otherwise the properties of the old object(status) will intefere with getting the full part
-	p := products.Part{
-		ID: pa.ID,
-	}
-
-	if err = p.Get(dtx); err != nil {
+	if err = p.GetPartByOldPartNumber(); err != nil {
 		apierror.GenerateError("Trouble getting part by old part number", err, rw, r)
 		return ""
 	}
@@ -563,82 +551,3 @@ func OldPartNumber(rw http.ResponseWriter, r *http.Request, params martini.Param
 
 	return encoding.Must(enc.Encode(p))
 }
-
-// func CreatePart(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
-// 	var p products.Part
-// 	var err error
-
-// 	//json
-// 	requestBody, err := ioutil.ReadAll(r.Body)
-// 	if err != nil {
-// 		apierror.GenerateError("Trouble reading request body while creating part", err, rw, r)
-// 		return encoding.Must(enc.Encode(false))
-// 	}
-
-// 	if err = json.Unmarshal(requestBody, &p); err != nil {
-// 		apierror.GenerateError("Trouble unmarshalling json request body while creating part", err, rw, r)
-// 		return encoding.Must(enc.Encode(false))
-// 	}
-
-// 	if err = p.Create(dtx); err != nil {
-// 		apierror.GenerateError("Trouble creating part", err, rw, r)
-// 		return ""
-// 	}
-// 	return encoding.Must(enc.Encode(p))
-// }
-
-// func UpdatePart(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
-// 	var p products.Part
-// 	var err error
-
-// 	idStr := params["id"]
-// 	if idStr == "" {
-// 		apierror.GenerateError("Trouble getting part ID", err, rw, r)
-// 		return ""
-// 	}
-
-// 	if p.ID, err = strconv.Atoi(idStr); err != nil {
-// 		apierror.GenerateError("Trouble getting part ID", err, rw, r)
-// 		return ""
-// 	}
-
-// 	if err = p.Get(dtx); err != nil {
-// 		apierror.GenerateError("Trouble getting part", err, rw, r)
-// 		return ""
-// 	}
-
-// 	//json
-// 	requestBody, err := ioutil.ReadAll(r.Body)
-// 	if err != nil {
-// 		apierror.GenerateError("Trouble reading request body while updating part", err, rw, r)
-// 		return encoding.Must(enc.Encode(false))
-// 	}
-
-// 	if err = json.Unmarshal(requestBody, &p); err != nil {
-// 		apierror.GenerateError("Trouble unmarshalling json request body while updating part", err, rw, r)
-// 		return encoding.Must(enc.Encode(false))
-// 	}
-
-// 	if err = p.Update(dtx); err != nil {
-// 		apierror.GenerateError("Trouble updating part", err, rw, r)
-// 		return ""
-// 	}
-// 	return encoding.Must(enc.Encode(p))
-// }
-
-// func DeletePart(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
-// 	var p products.Part
-// 	var err error
-// 	idStr := params["id"]
-
-// 	if p.ID, err = strconv.Atoi(idStr); err != nil {
-// 		apierror.GenerateError("Trouble getting part ID", err, rw, r)
-// 		return ""
-// 	}
-
-// 	if err = p.Delete(dtx); err != nil {
-// 		apierror.GenerateError("Trouble deleting part", err, rw, r)
-// 		return ""
-// 	}
-// 	return encoding.Must(enc.Encode(p))
-// }
