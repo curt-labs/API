@@ -228,6 +228,7 @@ func Vehicles(w http.ResponseWriter, r *http.Request, params martini.Params, enc
 	return encoding.Must(enc.Encode(vehicles))
 }
 
+//Redundant
 func Images(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	id, err := strconv.Atoi(params["part"])
 	if err != nil {
@@ -238,7 +239,7 @@ func Images(w http.ResponseWriter, r *http.Request, params martini.Params, enc e
 		ID: id,
 	}
 
-	if err = p.GetImages(dtx); err != nil {
+	if err = p.Get(dtx); err != nil {
 		apierror.GenerateError("Trouble getting part images", err, w, r)
 		return ""
 	}
