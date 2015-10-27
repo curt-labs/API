@@ -15,7 +15,7 @@ func TestPart(t *testing.T) {
 		p := Part{
 			ID: 11000,
 		}
-		err := p.FromDatabase()
+		err := p.FromDatabase([]int{1, 3})
 		So(err, ShouldBeNil)
 	})
 

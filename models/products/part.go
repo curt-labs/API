@@ -4,6 +4,7 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
+	"github.com/curt-labs/GoAPI/models/brand"
 	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/curt-labs/GoAPI/models/customer/content"
 	"github.com/curt-labs/GoAPI/models/vehicle"
@@ -16,6 +17,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"net/url"
 	"strings"
 	"time"
@@ -23,7 +25,7 @@ import (
 
 type Part struct {
 	ID                int               `json:"id" xml:"id,attr" bson:"id"`
-	BrandID           int               `json:"brandId" xml:"brandId,attr" bson:"brandId"`
+	Brand             brand.Brand       `json:"brand" xml:"brand,attr" bson:"brand"`
 	Status            int               `json:"status" xml:"status,attr" bson:"status"`
 	PriceCode         int               `json:"price_code" xml:"price_code,attr" bson:"price_code"`
 	RelatedCount      int               `json:"related_count" xml:"related_count,attr" bson:"related_count"`
@@ -84,6 +86,9 @@ type Installation struct { //aka VehiclePart Table
 
 func (p *Part) Get(dtx *apicontext.DataContext) error {
 	var err error
+	//get brands
+	brands := getBrandsFromDTX(dtx)
+
 	customerChan := make(chan CustomerPart)
 	databaseChan := make(chan error)
 
@@ -91,13 +96,13 @@ func (p *Part) Get(dtx *apicontext.DataContext) error {
 		customerChan <- p.BindCustomer(dtx)
 	}(dtx.APIKey)
 
-	go func() {
-		if err := p.FromDatabase(); err != nil {
+	go func(brands []int) {
+		if err := p.FromDatabase(brands); err != nil {
 			databaseChan <- err
 			return
 		}
 		databaseChan <- nil
-	}()
+	}(brands)
 
 	p.Customer = <-customerChan
 	err = <-databaseChan
@@ -106,45 +111,52 @@ func (p *Part) Get(dtx *apicontext.DataContext) error {
 	return err
 }
 
-func (p *Part) FromDatabase() error {
+func (p *Part) FromDatabase(brands []int) error {
 	session, err := mgo.DialWithInfo(database.MongoPartConnectionString())
 	if err != nil {
 		return err
 	}
 	defer session.Close()
-	return session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{"id": p.ID}).One(&p)
+	query := bson.M{"id": p.ID, "brand.id": bson.M{"$in": brands}}
+	return session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(query).One(&p)
 }
 
 func All(page, count int, dtx *apicontext.DataContext) ([]Part, error) {
 	var parts []Part
+	brands := getBrandsFromDTX(dtx)
+
 	session, err := mgo.DialWithInfo(database.MongoPartConnectionString())
 	if err != nil {
 		return parts, err
 	}
 	defer session.Close()
-	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{}).Sort("id:1").Skip(page * count).Limit(count).All(&parts)
+	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{"brand.id": bson.M{"$in": brands}}).Sort("id:1").Skip(page * count).Limit(count).All(&parts)
 	return parts, err
 }
 
 func Featured(count int, dtx *apicontext.DataContext) ([]Part, error) {
 	var parts []Part
+	brands := getBrandsFromDTX(dtx)
+
 	session, err := mgo.DialWithInfo(database.MongoPartConnectionString())
 	if err != nil {
 		return parts, err
 	}
 	defer session.Close()
-	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{"featured": true}).Sort("id:1").Limit(count).All(&parts)
+	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{"featured": true, "brand.id": bson.M{"$in": brands}}).Sort("id:1").Limit(count).All(&parts)
 	return parts, err
 }
 
 func Latest(count int, dtx *apicontext.DataContext) ([]Part, error) {
 	var parts []Part
+	brands := getBrandsFromDTX(dtx)
+
 	session, err := mgo.DialWithInfo(database.MongoPartConnectionString())
 	if err != nil {
 		return parts, err
 	}
 	defer session.Close()
-	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{}).Sort("date_added:-1").Limit(count).All(&parts)
+	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{"brand.id": bson.M{"$in": brands}}).Sort("-date_added").Limit(count).All(&parts)
 	return parts, err
 }
 
@@ -179,12 +191,23 @@ func (p *Part) GetWithVehicle(vehicle *vehicle.Vehicle, api_key string, dtx *api
 
 func (p *Part) GetRelated(dtx *apicontext.DataContext) ([]Part, error) {
 	var parts []Part
+	brands := getBrandsFromDTX(dtx)
+
 	session, err := mgo.DialWithInfo(database.MongoPartConnectionString())
 	if err != nil {
 		return parts, err
 	}
 	defer session.Close()
-	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{"id": bson.M{"$in": p.Related}}).Sort("id:1").All(&parts)
+
+	query := bson.M{
+		"id": bson.M{
+			"$in": p.Related,
+		},
+		"brand.id": bson.M{
+			"$in": brands,
+		},
+	}
+	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(query).Sort("id:1").All(&parts)
 	return parts, err
 }
 
@@ -335,4 +358,16 @@ func (p *Part) GetPartByOldPartNumber() (err error) {
 	}
 	defer session.Close()
 	return session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{"oldPartNumber": p.OldPartNumber}).One(&p)
+}
+
+func getBrandsFromDTX(dtx *apicontext.DataContext) []int {
+	var brands []int
+	if dtx.BrandID == 0 {
+		for _, b := range dtx.BrandArray {
+			brands = append(brands, b)
+		}
+	} else {
+		brands = append(brands, dtx.BrandID)
+	}
+	return brands
 }
