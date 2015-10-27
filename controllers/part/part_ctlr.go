@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -422,7 +421,7 @@ func Prices(w http.ResponseWriter, r *http.Request, params martini.Params, enc e
 	custChan := make(chan int)
 
 	go func() {
-		err = p.GetPricing(dtx)
+		err = p.Get(dtx)
 		priceChan <- 1
 	}()
 
@@ -444,80 +443,6 @@ func Prices(w http.ResponseWriter, r *http.Request, params martini.Params, enc e
 	}
 
 	return encoding.Must(enc.Encode(p.Pricing))
-}
-
-func SavePrice(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
-	var p products.Price
-	var err error
-	idStr := params["id"]
-	if idStr != "" {
-		p.Id, err = strconv.Atoi(idStr)
-		err = p.Get()
-		if err != nil {
-			apierror.GenerateError("Trouble getting part ID", err, rw, r)
-			return ""
-		}
-	}
-	//json
-	requestBody, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		apierror.GenerateError("Trouble reading request body while saving part price", err, rw, r)
-		return encoding.Must(enc.Encode(false))
-	}
-	err = json.Unmarshal(requestBody, &p)
-	if err != nil {
-		apierror.GenerateError("Trouble unmarshalling josn request body while saving part price", err, rw, r)
-		return encoding.Must(enc.Encode(false))
-	}
-	//create or update
-	if p.Id > 0 {
-		err = p.Update(dtx)
-	} else {
-		err = p.Create(dtx)
-	}
-	if err != nil {
-		msg := "Trouble while creating part price"
-		if p.Id > 0 {
-			msg = "Trouble while updating part price"
-		}
-		apierror.GenerateError(msg, err, rw, r)
-		return ""
-	}
-	return encoding.Must(enc.Encode(p))
-}
-
-func DeletePrice(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
-	var p products.Price
-	var err error
-	idStr := params["id"]
-
-	if p.Id, err = strconv.Atoi(idStr); err != nil {
-		apierror.GenerateError("Trouble getting price ID", err, rw, r)
-		return ""
-	}
-
-	if err = p.Delete(dtx); err != nil {
-		apierror.GenerateError("Trouble deleting price", err, rw, r)
-		return ""
-	}
-	return encoding.Must(enc.Encode(p))
-}
-
-func GetPrice(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder) string {
-	var p products.Price
-	var err error
-	idStr := params["id"]
-
-	if p.Id, err = strconv.Atoi(idStr); err != nil {
-		apierror.GenerateError("Trouble getting price ID", err, rw, r)
-		return ""
-	}
-
-	if err = p.Get(); err != nil {
-		apierror.GenerateError("Trouble getting price", err, rw, r)
-		return ""
-	}
-	return encoding.Must(enc.Encode(p))
 }
 
 func OldPartNumber(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {

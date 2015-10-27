@@ -280,56 +280,6 @@ func GetAllVideos(dtx *apicontext.DataContext) (vs Videos, err error) {
 	return
 }
 
-// // TODO - This is very slow...
-// func GetPartVideos(partId int) (vs Videos, err error) {
-// 	vs = make([]Video, 0)
-// 	redis_key := "video:part:" + strconv.Itoa(partId)
-
-// 	data, err := redis.Get(redis_key)
-// 	if err == nil && len(data) > 0 {
-// 		if err = json.Unmarshal(data, &vs); err == nil {
-// 			return
-// 		}
-// 	}
-
-// 	db, err := sql.Open("mysql", database.ConnectionString())
-// 	if err != nil {
-// 		return
-// 	}
-// 	defer db.Close()
-
-// 	stmt, err := db.Prepare(getVideoIdFromPart)
-// 	if err != nil {
-// 		return
-// 	}
-// 	defer stmt.Close()
-
-// 	res, err := stmt.Query(partId)
-// 	if err != nil {
-// 		return
-// 	}
-
-// 	var v Video
-// 	for res.Next() {
-// 		err = res.Scan(&v.ID)
-// 		if err != nil {
-// 			return
-// 		}
-// 		err = v.GetVideoDetails()
-// 		if err != nil {
-// 			return
-// 		}
-// 		vs = append(vs, v)
-// 	}
-// 	defer res.Close()
-
-// 	if vs != nil {
-// 		go redis.Setex(redis_key, vs, redis.CacheTimeout)
-// 	}
-
-// 	return vs, err
-// }
-
 func (v *Video) GetBrands() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
