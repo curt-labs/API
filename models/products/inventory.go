@@ -1,41 +1,7 @@
 package products
 
 import (
-	"encoding/json"
-	"fmt"
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
-	"github.com/curt-labs/GoAPI/helpers/redis"
-	redix "github.com/garyburd/redigo/redis"
 	"time"
-)
-
-var (
-	GetInventoryForPart = `select
-		i.partID, i.available, i.dateUpdated,
-		wh.name, wh.code, wh.address, wh.city, wh.postalCode,
-		wh.tollFreePhone, wh.fax, wh.localPhone, wh.manager,
-		wh.longitude, wh.latitude,
-		s.abbr as stateAbbr, s.state,
-		c.name as countryName, c.abbr as countryAbbr
-		from Inventory as i
-		join Warehouses as wh on i.warehouseID = wh.id
-		left join States as s on wh.stateID = s.stateID
-		left join Country as c on s.countryID = c.countryID
-		where i.partID = ?
-		order by wh.code`
-
-	GetInventoryForPartByWarehouse = `select
-		i.partID, i.available, i.dateUpdated,
-		wh.name, wh.code, wh.address, wh.city, wh.postalCode,
-		wh.tollFreePhone, wh.fax, wh.localPhone, wh.manager,
-		wh.longitude, wh.latitude,
-		s.abbr as stateAbbr, s.state,
-		c.name as countryName, c.abbr as countryAbbr
-		from Inventory as i
-		join Warehouses as wh on i.warehouseID = wh.id
-		left join States as s on wh.stateID = s.stateID
-		left join Country as c on s.countryID = c.countryID
-		where i.partID = ? && wh.code = ?`
 )
 
 type Warehouse struct {
@@ -84,41 +50,4 @@ type FeedRecord struct {
 	Part       int       `json:"part" xml:"part,attr"`
 	Quantity   int       `json:"quantity" xml:"quantity,attr"`
 	DateUpdate time.Time `json:"date_updated" xml:"date_updated`
-}
-
-func (p *Part) GetInventory(apiKey, warehouseCode string, dtx *apicontext.DataContext) (PartInventory, error) {
-	redis_key := fmt.Sprintf("part:%d:inventory:%s", p.ID, dtx.BrandString)
-
-	pi := PartInventory{}
-
-	data, err := redis.Get(redis_key)
-	if err != nil {
-		if err == redix.ErrNil {
-			return pi, nil
-		}
-		return pi, err
-	}
-
-	var recs []FeedRecord
-	if err = json.Unmarshal(data, &recs); err != nil {
-		return pi, err
-	}
-
-	for _, rec := range recs {
-		i := Inventory{
-			Part:        rec.Part,
-			Warehouse:   rec.Warehouse,
-			Quantity:    rec.Quantity,
-			DateUpdated: rec.DateUpdate,
-		}
-		if (warehouseCode != "" && warehouseCode == i.Warehouse.Code) || warehouseCode == "" {
-			pi.Warehouses = append(p.Inventory.Warehouses, i)
-		}
-	}
-
-	for _, w := range p.Inventory.Warehouses {
-		pi.TotalAvailability = pi.TotalAvailability + w.Quantity
-	}
-
-	return pi, nil
 }
