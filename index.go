@@ -344,7 +344,6 @@ func main() {
 	m.Group("/part", func(r martini.Router) {
 		r.Get("/featured", part_ctlr.Featured)
 		r.Get("/latest", part_ctlr.Latest)
-		r.Get("/old/:part", part_ctlr.OldPartNumber)
 		r.Get("/:part/vehicles", part_ctlr.Vehicles)
 		r.Get("/:part/attributes", part_ctlr.Attributes)
 		r.Get("/:part/reviews", part_ctlr.ActiveApprovedReviews)
@@ -359,7 +358,8 @@ func main() {
 		r.Get("/:part/:year/:make/:model", part_ctlr.GetWithVehicle)
 		r.Get("/:part/:year/:make/:model/:submodel", part_ctlr.GetWithVehicle)
 		r.Get("/:part/:year/:make/:model/:submodel/:config(.+)", part_ctlr.GetWithVehicle)
-		r.Get("/:part", part_ctlr.Get)
+		r.Get("/id/:part", part_ctlr.Get)
+		r.Get("/:part", part_ctlr.PartNumber)
 		r.Get("", part_ctlr.All)
 	})
 

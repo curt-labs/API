@@ -24,7 +24,9 @@ import (
 )
 
 type Part struct {
+	Identifier        bson.ObjectId     `bson:"_id" json:"-" xml:"-"`
 	ID                int               `json:"id" xml:"id,attr" bson:"id"`
+	PartNumber        string            `bson:"part_number" json:"part_number" xml:"part_number"`
 	Brand             brand.Brand       `json:"brand" xml:"brand,attr" bson:"brand"`
 	Status            int               `json:"status" xml:"status,attr" bson:"status"`
 	PriceCode         int               `json:"price_code" xml:"price_code,attr" bson:"price_code"`
@@ -51,8 +53,8 @@ type Part struct {
 	AcesPartTypeID    int               `json:"acesPartTypeId,omitempty" xml:"acesPartTypeId,omitempty" bson:"acesPartTypeId"`
 	Installations     []Installation    `json:"installation,omitempty" xml:"installation,omitempty" bson:"installation"`
 	Inventory         PartInventory     `json:"inventory,omitempty" xml:"inventory,omitempty" bson:"inventory"`
-	OldPartNumber     string            `json:"oldPartNumber,omitempty" xml:"oldPartNumber,omitempty" bson:"oldPartNumber"`
-	UPC               string            `json:"upc,omitempty" xml:"upc,omitempty" bson:"upc"`
+	// OldPartNumber     string            `json:"oldPartNumber,omitempty" xml:"oldPartNumber,omitempty" bson:"oldPartNumber"`
+	UPC string `json:"upc,omitempty" xml:"upc,omitempty" bson:"upc"`
 }
 
 type CustomerPart struct {
@@ -351,13 +353,13 @@ func (p *Part) PartBreadcrumbs(dtx *apicontext.DataContext) error {
 	return nil
 }
 
-func (p *Part) GetPartByOldPartNumber() (err error) {
+func (p *Part) GetPartByPartNumber() (err error) {
 	session, err := mgo.DialWithInfo(database.MongoPartConnectionString())
 	if err != nil {
 		return err
 	}
 	defer session.Close()
-	return session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{"oldPartNumber": p.OldPartNumber}).One(&p)
+	return session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{"part_number": p.PartNumber}).One(&p)
 }
 
 func getBrandsFromDTX(dtx *apicontext.DataContext) []int {
