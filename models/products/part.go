@@ -16,6 +16,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 
 	"net/url"
 	"strings"
@@ -23,7 +24,7 @@ import (
 )
 
 type Part struct {
-	Identifier        bson.ObjectId        `bson:"_id" json:"_id" xml:"-"`
+	Identifier        bson.ObjectId        `bson:"_id" json:"-" xml:"-"`
 	ID                int                  `json:"id" xml:"id,attr" bson:"id"`
 	PartNumber        string               `bson:"part_number" json:"part_number" xml:"part_number,attr"`
 	Brand             brand.Brand          `json:"brand" xml:"brand,attr" bson:"brand"`
@@ -120,6 +121,7 @@ func (p *Part) Get(dtx *apicontext.DataContext) error {
 	err = <-databaseChan
 	close(customerChan)
 	close(databaseChan)
+	log.Print(p.Identifier)
 	return err
 }
 
