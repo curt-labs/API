@@ -7,7 +7,6 @@ import (
 	"github.com/curt-labs/GoAPI/models/brand"
 	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/curt-labs/GoAPI/models/customer/content"
-	"github.com/curt-labs/GoAPI/models/vehicle"
 	"github.com/curt-labs/GoAPI/models/video"
 	_ "github.com/go-sql-driver/mysql"
 	"gopkg.in/mgo.v2"
@@ -24,37 +23,37 @@ import (
 )
 
 type Part struct {
-	Identifier        bson.ObjectId     `bson:"_id" json:"-" xml:"-"`
-	ID                int               `json:"id" xml:"id,attr" bson:"id"`
-	PartNumber        string            `bson:"part_number" json:"part_number" xml:"part_number"`
-	Brand             brand.Brand       `json:"brand" xml:"brand,attr" bson:"brand"`
-	Status            int               `json:"status" xml:"status,attr" bson:"status"`
-	PriceCode         int               `json:"price_code" xml:"price_code,attr" bson:"price_code"`
-	RelatedCount      int               `json:"related_count" xml:"related_count,attr" bson:"related_count"`
-	AverageReview     float64           `json:"average_review" xml:"average_review,attr" bson:"average_review"`
-	DateModified      time.Time         `json:"date_modified" xml:"date_modified,attr" bson:"date_modified"`
-	DateAdded         time.Time         `json:"date_added" xml:"date_added,attr" bson:"date_added"`
-	ShortDesc         string            `json:"short_description" xml:"short_description,attr" bson:"short_description"`
-	InstallSheet      *url.URL          `json:"install_sheet" xml:"install_sheet" bson:"install_sheet"`
-	Attributes        []Attribute       `json:"attributes" xml:"attributes" bson:"attributes"`
-	AcesVehicles      []AcesVehicle     `bson:"aces_vehicles" json:"aces_vehicles" xml:"aces_vehicles"`
-	VehicleAttributes []string          `json:"vehicle_atttributes" xml:"vehicle_attributes" bson:"vehicle_attributes"`
-	Vehicles          []vehicle.Vehicle `json:"vehicles,omitempty" xml:"vehicles,omitempty" bson:"vehicles"`
-	Content           []Content         `json:"content" xml:"content" bson:"content"`
-	Pricing           []Price           `json:"pricing" xml:"pricing" bson:"pricing"`
-	Reviews           []Review          `json:"reviews" xml:"reviews" bson:"reviews"`
-	Images            []Image           `json:"images" xml:"images" bson:"images"`
-	Related           []int             `json:"related" xml:"related" bson:"related" bson:"related"`
-	Categories        []Category        `json:"categories" xml:"categories" bson:"categories"`
-	Videos            []video.Video     `json:"videos" xml:"videos" bson:"videos"`
-	Packages          []Package         `json:"packages" xml:"packages" bson:"packages"`
-	Customer          CustomerPart      `json:"customer,omitempty" xml:"customer,omitempty" bson:"v"`
-	Class             Class             `json:"class,omitempty" xml:"class,omitempty" bson:"class"`
-	Featured          bool              `json:"featured,omitempty" xml:"featured,omitempty" bson:"featured"`
-	AcesPartTypeID    int               `json:"acesPartTypeId,omitempty" xml:"acesPartTypeId,omitempty" bson:"acesPartTypeId"`
-	Installations     []Installation    `json:"installation,omitempty" xml:"installation,omitempty" bson:"installation"`
-	Inventory         PartInventory     `json:"inventory,omitempty" xml:"inventory,omitempty" bson:"inventory"`
-	UPC               string            `json:"upc,omitempty" xml:"upc,omitempty" bson:"upc"`
+	Identifier        bson.ObjectId        `bson:"_id" json:"_id" xml:"-"`
+	ID                int                  `json:"id" xml:"id,attr" bson:"id"`
+	PartNumber        string               `bson:"part_number" json:"part_number" xml:"part_number,attr"`
+	Brand             brand.Brand          `json:"brand" xml:"brand,attr" bson:"brand"`
+	Status            int                  `json:"status" xml:"status,attr" bson:"status"`
+	PriceCode         int                  `json:"price_code" xml:"price_code,attr" bson:"price_code"`
+	RelatedCount      int                  `json:"related_count" xml:"related_count,attr" bson:"related_count"`
+	AverageReview     float64              `json:"average_review" xml:"average_review,attr" bson:"average_review"`
+	DateModified      time.Time            `json:"date_modified" xml:"date_modified,attr" bson:"date_modified"`
+	DateAdded         time.Time            `json:"date_added" xml:"date_added,attr" bson:"date_added"`
+	ShortDesc         string               `json:"short_description" xml:"short_description,attr" bson:"short_description"`
+	InstallSheet      *url.URL             `json:"install_sheet" xml:"install_sheet" bson:"install_sheet"`
+	Attributes        []Attribute          `json:"attributes" xml:"attributes" bson:"attributes"`
+	AcesVehicles      []AcesVehicle        `bson:"aces_vehicles" json:"aces_vehicles" xml:"aces_vehicles"`
+	VehicleAttributes []string             `json:"vehicle_atttributes" xml:"vehicle_attributes" bson:"vehicle_attributes"`
+	Vehicles          []VehicleApplication `json:"vehicle_applications,omitempty" xml:"vehicle_applications,omitempty" bson:"vehicle_applications"`
+	Content           []Content            `json:"content" xml:"content" bson:"content"`
+	Pricing           []Price              `json:"pricing" xml:"pricing" bson:"pricing"`
+	Reviews           []Review             `json:"reviews" xml:"reviews" bson:"reviews"`
+	Images            []Image              `json:"images" xml:"images" bson:"images"`
+	Related           []int                `json:"related" xml:"related" bson:"related" bson:"related"`
+	Categories        []Category           `json:"categories" xml:"categories" bson:"categories"`
+	Videos            []video.Video        `json:"videos" xml:"videos" bson:"videos"`
+	Packages          []Package            `json:"packages" xml:"packages" bson:"packages"`
+	Customer          CustomerPart         `json:"customer,omitempty" xml:"customer,omitempty" bson:"v"`
+	Class             Class                `json:"class,omitempty" xml:"class,omitempty" bson:"class"`
+	Featured          bool                 `json:"featured,omitempty" xml:"featured,omitempty" bson:"featured"`
+	AcesPartTypeID    int                  `json:"acesPartTypeId,omitempty" xml:"acesPartTypeId,omitempty" bson:"acesPartTypeId"`
+	// Installations     []Installation       `json:"installation,omitempty" xml:"installation,omitempty" bson:"installation"`
+	Inventory PartInventory `json:"inventory,omitempty" xml:"inventory,omitempty" bson:"inventory"`
+	UPC       string        `json:"upc,omitempty" xml:"upc,omitempty" bson:"upc"`
 }
 
 type CustomerPart struct {
@@ -77,13 +76,24 @@ type Class struct {
 	Image string `json:"image,omitempty" xml:"image,omitempty" bson:"image"`
 }
 
-type Installation struct { //aka VehiclePart Table
-	ID          int             `json:"id,omitempty" xml:"id,omitempty" bson:"id"`
-	Vehicle     vehicle.Vehicle `json:"vehicle,omitempty" xml:"vehicle,omitempty" bson:"vehicle"`
-	Part        Part            `json:"part,omitempty" xml:"part,omitempty" bson:"part"`
-	Drilling    string          `json:"drilling,omitempty" xml:"v,omitempty" bson:"drilling"`
-	Exposed     string          `json:"exposed,omitempty" xml:"exposed,omitempty" bson:"exposed"`
-	InstallTime int             `json:"installTime,omitempty" xml:"installTime,omitempty" bson:"installTime"`
+// type Installation struct { //aka VehiclePart Table
+// 	ID          int             `json:"id,omitempty" xml:"id,omitempty" bson:"id"`
+// 	Vehicle     vehicle.Vehicle `json:"vehicle,omitempty" xml:"vehicle,omitempty" bson:"vehicle"`
+// 	Part        Part            `json:"part,omitempty" xml:"part,omitempty" bson:"part"`
+// 	Drilling    string          `json:"drilling,omitempty" xml:"v,omitempty" bson:"drilling"`
+// 	Exposed     string          `json:"exposed,omitempty" xml:"exposed,omitempty" bson:"exposed"`
+// 	InstallTime int             `json:"installTime,omitempty" xml:"installTime,omitempty" bson:"installTime"`
+// }
+
+// VehicleApplication ...
+type VehicleApplication struct {
+	Year        string `bson:"year" json:"year" xml:"year,attr"`
+	Make        string `bson:"make" json:"make" xml:"make,attr"`
+	Model       string `bson:"model" json:"model" xml:"model,attr"`
+	Style       string `bson:"style" json:"style" xml:"style,attr"`
+	Exposed     string `bson:"exposed" json:"exposed" xml:"exposed"`
+	Drilling    string `bson:"drilling" json:"drilling" xml:"drilling"`
+	InstallTime string `bson:"install_time" json:"install_time" xml:"install_time"`
 }
 
 func (p *Part) Get(dtx *apicontext.DataContext) error {
@@ -160,35 +170,6 @@ func Latest(count int, dtx *apicontext.DataContext) ([]Part, error) {
 	defer session.Close()
 	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{"brand.id": bson.M{"$in": brands}}).Sort("-date_added").Limit(count).All(&parts)
 	return parts, err
-}
-
-func (p *Part) GetWithVehicle(vehicle *vehicle.Vehicle, api_key string, dtx *apicontext.DataContext) error {
-	var errs []string
-
-	superChan := make(chan int)
-	noteChan := make(chan int)
-	go func(key string) {
-		p.Get(dtx)
-		superChan <- 1
-	}(api_key)
-	go func() {
-		notes, nErr := vehicle.GetNotes(p.ID)
-		if nErr != nil && notes != nil {
-			errs = append(errs, nErr.Error())
-			p.VehicleAttributes = []string{}
-		} else {
-			p.VehicleAttributes = notes
-		}
-		noteChan <- 1
-	}()
-
-	<-superChan
-	<-noteChan
-
-	if len(errs) > 0 {
-		return errors.New("Error: " + strings.Join(errs, ", "))
-	}
-	return nil
 }
 
 func (p *Part) GetRelated(dtx *apicontext.DataContext) ([]Part, error) {

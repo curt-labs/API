@@ -1,23 +1,18 @@
 package products
 
 type Package struct {
-	ID                 int         `json:"id,omitempty" xml:"id,omitempty"`
-	PartID             int         `json:"partId,omitempty" xml:"partId,omitempty"`
-	Height             float64     `json:"height,omitempty" xml:"height,omitempty"`
-	Width              float64     `json:"width,omitempty" xml:"width,omitempty"`
-	Length             float64     `json:"length,omitempty" xml:"length,omitempty"`
-	Weight             float64     `json:"weight,omitempty" xml:"weight,omitempty"`
-	DimensionUnit      string      `json:"dimensionUnit,omitempty" xml:"dimensionUnit,omitempty"`
-	DimensionUnitLabel string      `json:"dimensionUnitLabel,omitempty" xml:"dimensionUnitLabel,omitempty"`
-	WeightUnit         string      `json:"weightUnit,omitempty" xml:"weightUnit,omitempty"`
-	WeightUnitLabel    string      `json:"weightUnitLabel,omitempty" xml:"weightUnitLabel,omitempty"`
-	PackageUnit        string      `json:"packageUnit,omitempty" xml:"packageUnit,omitempty"`
-	PackageUnitLabel   string      `json:"packageUnitLabel,omitempty" xml:"packageUnitLabel,omitempty"`
-	Quantity           int         `json:"quantity,omitempty" xml:"quantity,omitempty"`
-	PackageType        PackageType `json:"packageType,omitempty" xml:"packageType,omitempty"`
-}
-
-type PackageType struct {
-	ID   int    `json:"id,omitempty" xml:"id,omitempty"`
-	Name string `json:"name,omitempty" xml:"name,omitempty"`
+	ID                 int     `json:"id,omitempty" xml:"id,omitempty"`
+	PartID             int     `json:"partId,omitempty" xml:"partId,omitempty"`
+	Height             float64 `bson:"height" json:"height" xml:"height"`
+	Width              float64 `bson:"width" json:"width" xml:"width"`
+	Length             float64 `bson:"length" json:"length" xml:"length"`
+	Weight             float64 `bson:"weight" json:"weight" xml:"weight"`
+	DimensionUnit      string  `bson:"dimensionUnit" json:"dimensionUnit" xml:"dimensionUnit"`
+	DimensionUnitLabel string  `bson:"dimensionUnitLabel"json:"dimensionUnitLabel" xml:"dimensionUnitLabel"`
+	WeightUnit         string  `bson:"weightUnit" json:"weightUnit" xml:"weightUnit"`
+	WeightUnitLabel    string  `bson:"weightUnitLabel" json:"weightUnitLabel" xml:"weightUnitLabel"`
+	PackageUnit        string  `bson:"packageUnit" json:"packageUnit" xml:"packageUnit"`
+	PackageUnitLabel   string  `bson:"packageUnitLabel" json:"packageUnitLabel" xml:"packageUnitLabel"`
+	Quantity           int     `bson:"quantity" json:"quantity" xml:"quantity"`
+	PackageType        string  `bson:"name" json:"name" xml:"name"`
 }

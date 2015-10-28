@@ -9,13 +9,6 @@ type AcesVehicle struct {
 	AttributesByIndex map[int]Configuration `bson:"-" json:"-" xml:"-"`
 }
 
-// // BaseVehicle ...
-// type BaseVehicle struct {
-// 	Year  int    `bson:"year" json:"year" xml:"year"`
-// 	Make  string `bson:"make" json:"make" xml:"make"`
-// 	Model string `bson:"model" json:"model" xml:"model"`
-// }
-
 // Configuration ...
 type AcesConfiguration struct {
 	Options []ConfigOption `bson:"options" json:"options" xml:"options"`

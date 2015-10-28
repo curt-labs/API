@@ -13,7 +13,6 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/helpers/rest"
-	"github.com/curt-labs/GoAPI/helpers/sortutil"
 	"github.com/curt-labs/GoAPI/models/customer"
 	"github.com/curt-labs/GoAPI/models/products"
 	"github.com/curt-labs/GoAPI/models/vehicle"
@@ -128,29 +127,11 @@ func Get(w http.ResponseWriter, r *http.Request, params martini.Params, enc enco
 		ID: id,
 	}
 
-	vehicleChan := make(chan error)
-	go func() {
-		vs, err := vehicle.ReverseLookup(p.ID)
-		if err != nil {
-			vehicleChan <- err
-		} else {
-			p.Vehicles = vs
-
-			vehicleChan <- nil
-		}
-	}()
-
 	if err = p.Get(dtx); err != nil {
 
 		apierror.GenerateError("Trouble getting part", err, w, r)
 		return ""
 	}
-
-	<-vehicleChan
-
-	close(vehicleChan)
-
-	sortutil.AscByField(p.Vehicles, "ID")
 
 	return encoding.Must(enc.Encode(p))
 }
@@ -461,19 +442,6 @@ func PartNumber(rw http.ResponseWriter, r *http.Request, params martini.Params, 
 		apierror.GenerateError("Trouble getting part by old part number", err, rw, r)
 		return ""
 	}
-
-	vehicleChan := make(chan error)
-	go func() {
-		vs, err := vehicle.ReverseLookup(p.ID)
-		if err != nil {
-			vehicleChan <- err
-		} else {
-			p.Vehicles = vs
-			vehicleChan <- nil
-		}
-	}()
-
-	<-vehicleChan
 
 	return encoding.Must(enc.Encode(p))
 }

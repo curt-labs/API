@@ -22,7 +22,7 @@ type Warehouse struct {
 
 type PartInventory struct {
 	TotalAvailability int         `json:"total_availability" xml:"total_availability,attr"`
-	Warehouses        []Inventory `json:"inventory" xml:"inventory"`
+	Warehouses        []Inventory `json:"inventory,omitempty" xml:"inventory,omitempty"`
 }
 
 type Inventory struct {
