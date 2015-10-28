@@ -37,6 +37,7 @@ type Part struct {
 	ShortDesc         string            `json:"short_description" xml:"short_description,attr" bson:"short_description"`
 	InstallSheet      *url.URL          `json:"install_sheet" xml:"install_sheet" bson:"install_sheet"`
 	Attributes        []Attribute       `json:"attributes" xml:"attributes" bson:"attributes"`
+	AcesVehicles      []AcesVehicle     `bson:"aces_vehicles" json:"aces_vehicles" xml:"aces_vehicles"`
 	VehicleAttributes []string          `json:"vehicle_atttributes" xml:"vehicle_attributes" bson:"vehicle_attributes"`
 	Vehicles          []vehicle.Vehicle `json:"vehicles,omitempty" xml:"vehicles,omitempty" bson:"vehicles"`
 	Content           []Content         `json:"content" xml:"content" bson:"content"`
