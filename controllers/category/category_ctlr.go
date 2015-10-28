@@ -9,7 +9,6 @@ import (
 
 	"github.com/curt-labs/GoAPI/controllers/vehicle"
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
-	"github.com/curt-labs/GoAPI/helpers/apifilter"
 	"github.com/curt-labs/GoAPI/helpers/encoding"
 	"github.com/curt-labs/GoAPI/helpers/error"
 	"github.com/curt-labs/GoAPI/models/products"
@@ -57,7 +56,7 @@ func GetCategory(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 		}
 	} else {
 		r.ParseForm()
-		if _, ignore := NoFilterCategories[cat.ID]; !ignore {
+		if _, ignore := NoFilterCategories[cat.CategoryID]; !ignore {
 			for k, v := range r.Form {
 				if _, excluded := NoFilterKeys[strings.ToLower(k)]; !excluded {
 					if _, ok := specs[k]; !ok {
@@ -75,17 +74,17 @@ func GetCategory(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, 
 			apierror.GenerateError("Trouble getting category by title", err, rw, r)
 		}
 	} else { // get by id
-		cat.ID = id
+		cat.CategoryID = id
 		if err = cat.GetCategory(key, page, count, false, &l.Vehicle, &specs, dtx); err != nil {
 			apierror.GenerateError("Trouble getting category", err, rw, r)
 		}
 	}
 
-	if _, ignore := NoFilterCategories[cat.ID]; !ignore {
-		if filters, err := apifilter.CategoryFilter(cat, &specs); err == nil {
-			cat.Filter = filters
-		}
-	}
+	// if _, ignore := NoFilterCategories[cat.CategoryID]; !ignore {
+	// 	if filters, err := apifilter.CategoryFilter(cat, &specs); err == nil {
+	// 		cat.Filter = filters
+	// 	}
+	// }
 
 	return encoding.Must(enc.Encode(cat))
 }
@@ -121,7 +120,7 @@ func SubCategories(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder
 			apierror.GenerateError("Trouble getting category for sub categories", err, rw, r)
 		}
 	} else {
-		cat.ID = id
+		cat.CategoryID = id
 	}
 
 	subs, err := cat.GetSubCategories(dtx)
@@ -152,7 +151,7 @@ func GetParts(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, par
 			apierror.GenerateError("Trouble getting category by title for get category parts", err, rw, r)
 		}
 	} else {
-		cat.ID = catID
+		cat.CategoryID = catID
 	}
 	count, _ := strconv.Atoi(qs.Get("count"))
 	page, _ := strconv.Atoi(qs.Get("page"))
@@ -169,7 +168,7 @@ func GetParts(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, par
 		}
 	} else {
 		r.ParseForm()
-		if _, ignore := NoFilterCategories[cat.ID]; !ignore {
+		if _, ignore := NoFilterCategories[cat.CategoryID]; !ignore {
 			for k, v := range r.Form {
 				if _, excluded := NoFilterKeys[strings.ToLower(k)]; !excluded {
 					if _, ok := specs[k]; !ok {

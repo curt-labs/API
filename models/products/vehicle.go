@@ -343,7 +343,7 @@ func (i *VehicleInquiry) SendEmail(dtx *apicontext.DataContext) error {
 
 	// Get Category
 	var cat Category
-	cat.ID = i.Category
+	cat.CategoryID = i.Category
 	cat.GetCategory(dtx.APIKey, 1, 1, true, nil, nil, dtx)
 
 	// Start to build email body

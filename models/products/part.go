@@ -54,8 +54,7 @@ type Part struct {
 	AcesPartTypeID    int               `json:"acesPartTypeId,omitempty" xml:"acesPartTypeId,omitempty" bson:"acesPartTypeId"`
 	Installations     []Installation    `json:"installation,omitempty" xml:"installation,omitempty" bson:"installation"`
 	Inventory         PartInventory     `json:"inventory,omitempty" xml:"inventory,omitempty" bson:"inventory"`
-	// OldPartNumber     string            `json:"oldPartNumber,omitempty" xml:"oldPartNumber,omitempty" bson:"oldPartNumber"`
-	UPC string `json:"upc,omitempty" xml:"upc,omitempty" bson:"upc"`
+	UPC               string            `json:"upc,omitempty" xml:"upc,omitempty" bson:"upc"`
 }
 
 type CustomerPart struct {
@@ -324,7 +323,7 @@ func (p *Part) PartBreadcrumbs(dtx *apicontext.DataContext) error {
 	close(multiChan)
 
 	for _, cat := range cats {
-		catLookup[cat.ID] = cat
+		catLookup[cat.CategoryID] = cat
 	}
 
 	// Okay, let's put it together!

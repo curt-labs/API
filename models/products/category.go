@@ -1,17 +1,19 @@
 package products
 
 import (
-	"database/sql"
-	"encoding/json"
-	"fmt"
-
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	"github.com/curt-labs/GoAPI/helpers/sortutil"
+	"github.com/curt-labs/GoAPI/models/brand"
 	"github.com/curt-labs/GoAPI/models/customer/content"
+	"github.com/curt-labs/GoAPI/models/video"
 	_ "github.com/go-sql-driver/mysql"
+	"gopkg.in/mgo.v2/bson"
 
+	"database/sql"
+	"encoding/json"
+	"fmt"
 	"net/url"
 	"strings"
 	"time"
@@ -147,30 +149,33 @@ const (
 )
 
 type Category struct {
-	ID                 int                      `json:"id" xml:"id,attr"`
-	ParentID           int                      `json:"parent_id" xml:"parent_id,attr"`
-	Sort               int                      `json:"sort" xml:"sort,attr"`
-	DateAdded          time.Time                `json:"date_added" xml:"date_added,attr"`
-	Title              string                   `json:"title" xml:"title,attr"`
-	ShortDesc          string                   `json:"short_description" xml:"short_description"`
-	LongDesc           string                   `json:"long_description" xml:"long_description"`
-	ColorCode          string                   `json:"color_code" xml:"color_code,attr"`
-	FontCode           string                   `json:"font_code" xml:"font_code,attr"`
-	Image              *url.URL                 `json:"image" xml:"image"`
-	Icon               *url.URL                 `json:"icon" xml:"icon"`
-	IsLifestyle        bool                     `json:"lifestyle" xml:"lifestyle,attr"`
-	VehicleSpecific    bool                     `json:"vehicle_specific" xml:"vehicle_specific,attr"`
-	VehicleRequired    bool                     `json:"vehicle_required" xml:"vehicle_required,attr"`
-	Content            []Content                `json:"content,omitempty" xml:"content,omitempty"`
-	SubCategories      []Category               `json:"sub_categories,omitempty" xml:"sub_categories,omitempty"`
-	Subs               []*Category              `json:"subs,omitempty" xml:"subs,omitempty"`
-	ProductListing     *PaginatedProductListing `json:"product_listing,omitempty" xml:"product_listing,omitempty"`
-	Filter             interface{}              `json:"filter,omitempty" xml:"filter,omitempty"`
-	MetaTitle          string                   `json:"metaTitle,omitempty" xml:"v,omitempty"`
-	MetaDescription    string                   `json:"metaDescription,omitempty" xml:"metaDescription,omitempty"`
-	MetaKeywords       string                   `json:"metaKeywords,omitempty" xml:"metaKeywords,omitempty"`
-	BrandID            int                      `json:"categoryId,omitempty" xml:"categoryId,omitempty"`
-	ProductIdentifiers []int                    `bson:"part_ids" json:"part_identifiers" xml:"part_identifiers"`
+	Identifier       bson.ObjectId `bson:"_id" json:"-" xml:"-"`
+	CategoryID       int           `bson:"id" json:"id" xml:"id,attr"`
+	ParentIdentifier bson.ObjectId `bson:"parent_identifier,omitempty" json:"parent_identifier" xml:"parent_identifier"`
+	ParentID         int           `bson:"parent_id" json:"parent_id" xml:"parent_id,attr"`
+	Children         []Category    `bson:"children" json:"children" xml:"children"`
+
+	Sort            int           `bson:"sort" json:"sort" xml:"sort,attr"`
+	DateAdded       time.Time     `bson:"date_added" json:"date_added" xml:"date_added,attr"`
+	Title           string        `bson:"title" json:"title" xml:"title,attr"`
+	ShortDesc       string        `bson:"short_description" json:"short_description" xml:"short_description"`
+	LongDesc        string        `bson:"long_description" json:"long_description" xml:"long_description"`
+	ColorCode       string        `bson:"color_code" json:"color_code" xml:"color_code,attr"`
+	FontCode        string        `bson:"font_code" json:"font_code" xml:"font_code,attr"`
+	Image           *url.URL      `bson:"image" json:"image" xml:"image"`
+	Icon            *url.URL      `bson:"icon" json:"icon" xml:"icon"`
+	IsLifestyle     bool          `bson:"lifestyle" json:"lifestyle" xml:"lifestyle,attr"`
+	VehicleSpecific bool          `bson:"vehicle_specific" json:"vehicle_specific" xml:"vehicle_specific,attr"`
+	VehicleRequired bool          `bson:"vehicle_required" json:"vehicle_required" xml:"vehicle_required,attr"`
+	MetaTitle       string        `bson:"meta_title" json:"meta_title" xml:"meta_title"`
+	MetaDescription string        `bson:"meta_description" json:"meta_description" xml:"meta_description"`
+	MetaKeywords    string        `bson:"meta_keywords" json:"meta_keywords" xml:"meta_keywords"`
+	Content         []Content     `bson:"content" json:"content" xml:"content"`
+	Videos          []video.Video `bson:"videos" json:"videos" xml:"videos"`
+	PartIDs         []int         `bson:"part_ids" json:"part_ids" xml:"part_ids"`
+	Brand           brand.Brand   `bson:"brand" json:"brand" xml:"brand"`
+	//TODO - just make []Part
+	ProductListing *PaginatedProductListing `bson:"product_listing" json:"product_listing" xml:"product_listing"`
 }
 
 func PopulateCategoryMulti(rows *sql.Rows, ch chan []Category) {
@@ -187,7 +192,7 @@ func PopulateCategoryMulti(rows *sql.Rows, ch chan []Category) {
 		var colorCode *string
 		var fontCode *string
 		err := rows.Scan(
-			&initCat.ID,
+			&initCat.CategoryID,
 			&initCat.ParentID,
 			&initCat.Sort,
 			&initCat.DateAdded,
@@ -224,8 +229,6 @@ func PopulateCategoryMulti(rows *sql.Rows, ch chan []Category) {
 			initCat.FontCode = fmt.Sprintf("#%s", *fontCode)
 		}
 
-		initCat.ProductListing = nil
-
 		cats = append(cats, initCat)
 	}
 	defer rows.Close()
@@ -245,7 +248,7 @@ func PopulateCategory(row *sql.Row, ch chan Category, dtx *apicontext.DataContex
 	var colorCode *string
 	var fontCode *string
 	err := row.Scan(
-		&initCat.ID,
+		&initCat.CategoryID,
 		&initCat.ParentID,
 		&initCat.Sort,
 		&initCat.DateAdded,
@@ -262,7 +265,7 @@ func PopulateCategory(row *sql.Row, ch chan Category, dtx *apicontext.DataContex
 		&initCat.MetaKeywords,
 		&colorCode,
 		&fontCode,
-		&initCat.BrandID)
+		&initCat.Brand.ID)
 	if err != nil {
 		ch <- Category{}
 		return
@@ -291,7 +294,7 @@ func PopulateCategory(row *sql.Row, ch chan Category, dtx *apicontext.DataContex
 
 	subCats, err := initCat.GetSubCategories(dtx)
 	if err == nil {
-		initCat.SubCategories = subCats
+		initCat.Children = subCats
 	}
 	select {
 	case con := <-conChan:
@@ -339,7 +342,7 @@ func TopTierCategories(dtx *apicontext.DataContext) (cats []Category, err error)
 	ch := make(chan error)
 	for catRows.Next() {
 		var cat Category
-		err := catRows.Scan(&cat.ID)
+		err := catRows.Scan(&cat.CategoryID)
 		if err == nil {
 			go func(c Category) {
 				err := c.GetCategory(dtx.APIKey, 0, 0, true, nil, nil, dtx)
@@ -398,16 +401,16 @@ func CategoryTree(dtx *apicontext.DataContext) (cats []*Category, err error) {
 	ch := make(chan error)
 	for catRows.Next() {
 		var cat Category
-		err := catRows.Scan(&cat.ID)
+		err := catRows.Scan(&cat.CategoryID)
 		if err == nil {
 			go func(c Category) {
 				err := c.GetCategory(dtx.APIKey, 0, 0, true, nil, nil, dtx)
 				// recursion to get all the nested categoreis
 				ca := new(Category)
-				ca.ID = c.ID
+				ca.CategoryID = c.CategoryID
 				ca.Title = c.Title
 				ca.MetaTitle = c.MetaTitle
-				ca.SubCategories = c.SubCategories
+				ca.Children = c.Children
 				ca.Content = c.Content
 				ca.MetaDescription = c.MetaDescription
 				ca.VehicleRequired = c.VehicleRequired
@@ -440,23 +443,23 @@ func GetRecursiveCategory(parentCat *Category, dtx *apicontext.DataContext) {
 	subcats, err := parentCat.GetSubCategories(dtx)
 
 	if err == nil && len(subcats) > 0 {
-		parentCat.SubCategories = subcats
+		parentCat.Children = subcats
 		for _, c := range subcats {
 			ca := new(Category)
-			ca.ID = c.ID
+			ca.CategoryID = c.CategoryID
 			ca.Title = c.Title
 			ca.MetaTitle = c.MetaTitle
-			ca.SubCategories = c.SubCategories
+			ca.Children = c.Children
 			ca.Content = c.Content
 			ca.MetaDescription = c.MetaDescription
 			ca.VehicleRequired = c.VehicleRequired
 			ca.VehicleSpecific = c.VehicleSpecific
 			ca.Image = c.Image
 			ca.ParentID = c.ParentID
-			parentCat.Subs = append(parentCat.Subs, ca)
+			parentCat.Children = append(parentCat.Children, *ca)
 		}
-		for _, cat := range parentCat.Subs {
-			GetRecursiveCategory(cat, dtx)
+		for _, cat := range parentCat.Children {
+			GetRecursiveCategory(&cat, dtx)
 		}
 
 	}
@@ -543,11 +546,11 @@ func GetCategoryById(cat_id int, dtx *apicontext.DataContext) (cat Category, err
 func (c *Category) GetSubCategories(dtx *apicontext.DataContext) (cats []Category, err error) {
 	cats = make([]Category, 0)
 
-	if c.ID == 0 {
+	if c.CategoryID == 0 {
 		return
 	}
 
-	redis_key := fmt.Sprintf("category:%d:subs:%s", c.ID, dtx.BrandString)
+	redis_key := fmt.Sprintf("category:%d:subs:%s", c.CategoryID, dtx.BrandString)
 	// First lets try to access the category:top endpoint in Redis
 	data, err := redis.Get(redis_key)
 	if len(data) > 0 && err == nil {
@@ -570,7 +573,7 @@ func (c *Category) GetSubCategories(dtx *apicontext.DataContext) (cats []Categor
 	defer qry.Close()
 
 	// Execute SQL Query against current PartId
-	catRows, err := qry.Query(c.ID)
+	catRows, err := qry.Query(c.CategoryID)
 	if err != nil || catRows == nil { // Error occurred while executing query
 		return
 	}
@@ -586,7 +589,7 @@ func (c *Category) GetSubCategories(dtx *apicontext.DataContext) (cats []Categor
 
 func (c *Category) GetCategory(key string, page int, count int, ignoreParts bool, v *Vehicle, specs *map[string][]string, dtx *apicontext.DataContext) error {
 	var err error
-	if c.ID == 0 {
+	if c.CategoryID == 0 {
 		return fmt.Errorf("error: %s", "invalid category reference")
 	}
 
@@ -594,7 +597,7 @@ func (c *Category) GetCategory(key string, page int, count int, ignoreParts bool
 		v = nil
 	}
 
-	redis_key := fmt.Sprintf("category:%d:%d", c.BrandID, c.ID)
+	redis_key := fmt.Sprintf("category:%d:%d", c.Brand.ID, c.CategoryID)
 
 	// First lets try to access the category:top endpoint in Redis
 	cat_bytes, err := redis.Get(redis_key)
@@ -603,13 +606,13 @@ func (c *Category) GetCategory(key string, page int, count int, ignoreParts bool
 	}
 
 	if err != nil || c.ShortDesc == "" {
-		cat, catErr := GetCategoryById(c.ID, dtx)
+		cat, catErr := GetCategoryById(c.CategoryID, dtx)
 		if catErr != nil {
 			return catErr
 		}
 
-		c.ID = cat.ID
-		c.BrandID = cat.BrandID
+		c.CategoryID = cat.CategoryID
+		c.Brand.ID = cat.Brand.ID
 		c.ColorCode = cat.ColorCode
 		c.DateAdded = cat.DateAdded
 		c.FontCode = cat.FontCode
@@ -624,9 +627,7 @@ func (c *Category) GetCategory(key string, page int, count int, ignoreParts bool
 		c.VehicleSpecific = cat.VehicleSpecific
 		c.VehicleRequired = cat.VehicleRequired
 		c.Content = cat.Content
-		c.SubCategories = cat.SubCategories
-		c.ProductListing = cat.ProductListing
-		c.Filter = cat.Filter
+		c.Children = cat.Children
 		c.MetaTitle = cat.MetaTitle
 		c.MetaDescription = cat.MetaDescription
 		c.MetaKeywords = cat.MetaKeywords
@@ -644,7 +645,7 @@ func (c *Category) GetCategory(key string, page int, count int, ignoreParts bool
 		close(partChan)
 	}
 
-	content, err := custcontent.GetCategoryContent(c.ID, key)
+	content, err := custcontent.GetCategoryContent(c.CategoryID, key)
 	for _, con := range content {
 		strArr := strings.Split(con.ContentType.Type, ":")
 		cType := con.ContentType.Type
@@ -665,7 +666,7 @@ func (c *Category) GetCategory(key string, page int, count int, ignoreParts bool
 }
 
 func (c *Category) GetContent() (content []Content, err error) {
-	if c.ID == 0 {
+	if c.CategoryID == 0 {
 		return
 	}
 
@@ -682,7 +683,7 @@ func (c *Category) GetContent() (content []Content, err error) {
 	defer qry.Close()
 
 	// Execute SQL Query against current ID
-	conRows, err := qry.Query(c.ID)
+	conRows, err := qry.Query(c.CategoryID)
 	if err != nil || conRows == nil {
 		return
 	}
@@ -701,8 +702,8 @@ func (c *Category) GetContent() (content []Content, err error) {
 func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *map[string][]string, dtx *apicontext.DataContext) error {
 	var err error
 	c.ProductListing = &PaginatedProductListing{}
-	if c.ID == 0 {
-		return fmt.Errorf("error: %s %d", "invalid category reference", c.ID)
+	if c.CategoryID == 0 {
+		return fmt.Errorf("error: %s %d", "invalid category reference", c.CategoryID)
 	}
 
 	if count == 0 {
@@ -727,7 +728,7 @@ func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *
 
 		for _, p := range parts {
 			for _, partCat := range p.Categories {
-				if partCat.ID == c.ID {
+				if partCat.CategoryID == c.CategoryID {
 					c.ProductListing.Parts = append(c.ProductListing.Parts, p)
 					break
 				}
@@ -744,7 +745,7 @@ func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *
 	}
 
 	parts := make([]Part, 0)
-	redis_key := fmt.Sprintf("category:%d:%d:parts:%d:%d", c.BrandID, c.ID, queryPage, count)
+	redis_key := fmt.Sprintf("category:%d:%d:parts:%d:%d", c.Brand.ID, c.CategoryID, queryPage, count)
 
 	// First lets try to access the category:top endpoint in Redis
 	part_bytes, err := redis.Get(redis_key)
@@ -777,7 +778,7 @@ func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *
 			}
 			defer stmt.Close()
 
-			rows, err = stmt.Query(strings.Join(keys, ","), strings.Join(values, ","), c.ID, len(keys), queryPage, count)
+			rows, err = stmt.Query(strings.Join(keys, ","), strings.Join(values, ","), c.CategoryID, len(keys), queryPage, count)
 		} else {
 			stmt, err := db.Prepare(CategoryPartsStmt)
 			if err != nil {
@@ -785,7 +786,7 @@ func (c *Category) GetParts(key string, page int, count int, v *Vehicle, specs *
 			}
 			defer stmt.Close()
 
-			rows, err = stmt.Query(c.ID, queryPage, count)
+			rows, err = stmt.Query(c.CategoryID, queryPage, count)
 		}
 
 		if err != nil || rows == nil {
@@ -852,7 +853,7 @@ func (c *Category) GetPartCount(key string, v *Vehicle, specs *map[string][]stri
 		}
 		defer stmt.Close()
 
-		rows, err := stmt.Query(strings.Join(keys, ","), strings.Join(values, ","), c.ID, len(keys))
+		rows, err := stmt.Query(strings.Join(keys, ","), strings.Join(values, ","), c.CategoryID, len(keys))
 		if err != nil {
 			return err
 		}
@@ -870,7 +871,7 @@ func (c *Category) GetPartCount(key string, v *Vehicle, specs *map[string][]stri
 		}
 		defer stmt.Close()
 
-		row := stmt.QueryRow(c.ID)
+		row := stmt.QueryRow(c.CategoryID)
 		if row == nil {
 			return fmt.Errorf("error: %s", "failed to retrieve part count")
 		}
@@ -914,7 +915,7 @@ func (c *Category) Create() (err error) {
 		c.MetaKeywords,
 		c.Icon,
 		c.Image,
-		c.BrandID,
+		c.Brand.ID,
 	)
 	if err != nil {
 		return err
@@ -923,9 +924,9 @@ func (c *Category) Create() (err error) {
 	if err != nil {
 		return err
 	}
-	c.ID = int(id)
+	c.CategoryID = int(id)
 
-	redis.Setex(fmt.Sprintf("category:%d:%d", c.BrandID, c.ID), c, redis.CacheTimeout)
+	redis.Setex(fmt.Sprintf("category:%d:%d", c.Brand.ID, c.CategoryID), c, redis.CacheTimeout)
 
 	return err
 }
@@ -943,9 +944,9 @@ func (c *Category) Delete(dtx *apicontext.DataContext) (err error) {
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(c.ID)
+	_, err = stmt.Exec(c.CategoryID)
 	if err == nil {
-		go redis.Delete(fmt.Sprintf("category:%d:%d", c.BrandID, c.ID))
+		go redis.Delete(fmt.Sprintf("category:%d:%d", c.Brand.ID, c.CategoryID))
 		go redis.Delete("category:title:" + dtx.BrandString)
 		go redis.Delete("category:top:" + dtx.BrandString)
 	}

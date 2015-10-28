@@ -75,7 +75,7 @@ func CreateApplicationGuide(rw http.ResponseWriter, req *http.Request, enc encod
 			ag.Website.ID, err = strconv.Atoi(web)
 		}
 		if cat != "" {
-			ag.Category.ID, err = strconv.Atoi(cat)
+			ag.Category.CategoryID, err = strconv.Atoi(cat)
 		}
 		if err != nil {
 			apierror.GenerateError("Error parsing category ID or website ID", err, rw, req)
