@@ -1,13 +1,14 @@
 package products
 
-import (
-	"github.com/curt-labs/GoAPI/models/customer/content"
-)
-
+// Content ...
 type Content struct {
-	ID          int                     `json:"id,omitempty" xml:"id,omitempty"`
-	Text        string                  `json:"text,omitempty" xml:"text,omitempty"`
-	ContentType custcontent.ContentType `json:"contentType,omitempty" xml:"contentType,omitempty"`
-	UserID      string                  `json:"userId,omitempty" xml:"userId,omitempty"`
-	Deleted     bool                    `json:"deleted,omitempty" xml:"deleted,omitempty"`
+	Text        string      `bson:"text" json:"text" xml:"text"`
+	ContentType ContentType `json:"contentType" xml:"contentType"`
+}
+
+// ContentType ...
+type ContentType struct {
+	Id         int    `json:"id" xml:"id"`
+	Type       string `bson:"type" json:"type" xml:"type"`
+	AllowsHTML bool   `bson:"allows_html" json:"allows_html" xml:"allows_html"`
 }
