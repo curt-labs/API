@@ -8,10 +8,10 @@ import (
 	"github.com/curt-labs/GoAPI/models/video"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
+	"log"
+	"math"
 	"net/url"
 	"time"
-
-	"math"
 )
 
 type Category struct {
@@ -75,20 +75,6 @@ func (c *Category) Get(page, count int) error {
 		return err
 	}
 
-	if page < 1 {
-		page = 1
-	}
-	if count < 0 {
-		count = 1
-	} else if count > 50 {
-		count = 50
-	}
-
-	var skip int
-	if page > 1 {
-		skip = page * count
-	}
-
 	c.ProductListing = &products.PaginatedProductListing{
 		Page:    page,
 		PerPage: count,
@@ -100,7 +86,7 @@ func (c *Category) Get(page, count int) error {
 		c.ProductListing.TotalItems = 1
 	}
 
-	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{"id": bson.M{"$in": c.ProductIdentifiers}}).Sort("id").Skip(skip).Limit(count).All(&c.ProductListing.Parts)
+	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{"id": bson.M{"$in": c.ProductIdentifiers}}).Sort("id").Skip((page - 1) * count).Limit(count).All(&c.ProductListing.Parts)
 	if err != nil {
 		return err
 	}
@@ -139,7 +125,7 @@ func GetCategoryParts(catId, page, count int) (PartResponse, error) {
 	if err != nil {
 		return parts, err
 	}
-
+	log.Print(count, page, len(parts.Parts))
 	//get total parts count
 	total_items, err := session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(query).Count()
 	parts.TotalPages = int(math.Ceil(float64(total_items) / float64(count)))
