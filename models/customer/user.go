@@ -1,11 +1,11 @@
 package customer
 
 import (
-	"code.google.com/p/go-uuid/uuid"
-	"code.google.com/p/go.crypto/bcrypt"
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/pborman/uuid"
+	"golang.org/x/crypto/bcrypt"
 	"net/http"
 	"net/url"
 	"strconv"

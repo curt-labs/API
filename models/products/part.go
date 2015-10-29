@@ -81,40 +81,39 @@ type VehicleApplication struct {
 	InstallTime string `bson:"install_time" json:"install_time" xml:"install_time"`
 }
 
+// Get ...
 func (p *Part) Get(dtx *apicontext.DataContext) error {
 	var err error
 	//get brands
 	brands := getBrandsFromDTX(dtx)
 
 	customerChan := make(chan CustomerPart)
-	databaseChan := make(chan error)
 
 	go func(api_key string) {
 		customerChan <- p.BindCustomer(dtx)
 	}(dtx.APIKey)
 
-	go func(brands []int) {
-		if err := p.FromDatabase(brands); err != nil {
-			databaseChan <- err
-			return
-		}
-		databaseChan <- nil
-	}(brands)
+	// defer close(customerChan)
+
+	if err := p.FromDatabase(brands); err != nil {
+		return err
+	}
 
 	p.Customer = <-customerChan
-	err = <-databaseChan
-	close(customerChan)
-	close(databaseChan)
+
 	return err
 }
 
+// FromDatabase ...
 func (p *Part) FromDatabase(brands []int) error {
 	session, err := mgo.DialWithInfo(database.MongoPartConnectionString())
 	if err != nil {
 		return err
 	}
 	defer session.Close()
+
 	query := bson.M{"id": p.ID, "brand.id": bson.M{"$in": brands}}
+
 	return session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(query).One(&p)
 }
 

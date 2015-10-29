@@ -1,10 +1,10 @@
 package cart
 
 import (
-	"code.google.com/p/go.crypto/bcrypt"
 	"fmt"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	jwt "github.com/dgrijalva/jwt-go"
+	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"time"
