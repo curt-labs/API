@@ -103,7 +103,7 @@ func main() {
 	})
 
 	m.Group("/category", func(r martini.Router) {
-		r.Get("/parts/:id", category_ctlr.GetCategoryParts)
+		r.Get("/:id/parts", category_ctlr.GetCategoryParts)
 		r.Get("/:id", category_ctlr.GetCategory)
 		r.Get("", category_ctlr.GetCategoryTree)
 	})
