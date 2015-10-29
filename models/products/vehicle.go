@@ -78,9 +78,6 @@ type Pagination struct {
 }
 
 func (l *Lookup) LoadParts(ch chan []Part, page int, count int, dtx *apicontext.DataContext) {
-	if count == 0 {
-		count = DefaultPageCount
-	}
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		ch <- nil
@@ -342,15 +339,15 @@ func (i *VehicleInquiry) SendEmail(dtx *apicontext.DataContext) error {
 	}
 
 	// Get Category
-	var cat Category
-	cat.CategoryID = i.Category
-	cat.GetCategory(dtx.APIKey, 1, 1, true, nil, nil, dtx)
+	// var cat Category
+	// cat.CategoryID = i.Category
+	// cat.GetCategory(dtx.APIKey, 1, 1, true, nil, nil, dtx)
 
 	// Start to build email body
 	body := fmt.Sprintf("Name: %s\n", i.Name)
 	body = fmt.Sprintf("%sEmail: %s\n", body, i.Email)
 	body = fmt.Sprintf("%sPhone: %s\n", body, i.Phone)
-	body = fmt.Sprintf("%sCategory: %s\n", body, cat.Title)
+	// body = fmt.Sprintf("%sCategory: %s\n", body, cat.Title)
 
 	// Decode vehicle
 	var v Vehicle
