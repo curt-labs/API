@@ -8,7 +8,6 @@ import (
 	"github.com/curt-labs/GoAPI/models/video"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-	"log"
 	"math"
 	"net/url"
 	"time"
@@ -125,7 +124,7 @@ func GetCategoryParts(catId, page, count int) (PartResponse, error) {
 	if err != nil {
 		return parts, err
 	}
-	log.Print(count, page, len(parts.Parts))
+
 	//get total parts count
 	total_items, err := session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(query).Count()
 	parts.TotalPages = int(math.Ceil(float64(total_items) / float64(count)))
