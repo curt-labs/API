@@ -64,15 +64,15 @@ func Dsl(query string, page int, count int, brand int, dtx *apicontext.DataConte
 	size := strconv.Itoa(count)
 
 	if searchAll {
-		return elastigo.Search("all").Query(
+		return elastigo.Search("mongo_all").Query(
 			elastigo.Query().Search(query),
 		).From(from).Size(size).Result(con)
 	} else if searchCurt {
-		return elastigo.Search("curt").Query(
+		return elastigo.Search("mongo_curt").Query(
 			elastigo.Query().Search(query),
 		).From(from).Size(size).Result(con)
 	} else if searchAries {
-		return elastigo.Search("aries").Query(
+		return elastigo.Search("mongo_aries").Query(
 			elastigo.Query().Search(query),
 		).From(from).Size(size).Result(con)
 	}
