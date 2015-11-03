@@ -6,6 +6,7 @@ import (
 	"github.com/curt-labs/GoAPI/controllers/applicationGuide"
 	"github.com/curt-labs/GoAPI/controllers/blog"
 	"github.com/curt-labs/GoAPI/controllers/brand"
+	"github.com/curt-labs/GoAPI/controllers/cache"
 	"github.com/curt-labs/GoAPI/controllers/cart"
 	"github.com/curt-labs/GoAPI/controllers/cartIntegration"
 	"github.com/curt-labs/GoAPI/controllers/category"
@@ -193,6 +194,12 @@ func main() {
 
 	m.Group("/cust", func(r martini.Router) { // different endpoint because partial matching matches this to another excused route
 		r.Post("/user/changePassword", customer_ctlr.ChangePassword)
+	})
+
+	m.Group("/cache", func(r martini.Router) { // different endpoint because partial matching matches this to another excused route
+		r.Get("/key", cache.GetByKey)
+		r.Get("/keys", cache.GetKeys)
+		r.Delete("/keys", cache.DeleteKey)
 	})
 
 	m.Group("/customer", func(r martini.Router) {

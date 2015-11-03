@@ -6,6 +6,7 @@ import (
 	"fmt"
 	redix "github.com/garyburd/redigo/redis"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -150,7 +151,77 @@ func Delete(key string) error {
 	if err := conn.Send("select", Db); err != nil {
 		return err
 	}
-
 	_, err = conn.Do("DEL", fmt.Sprintf("%s:%s", Prefix, key))
 	return err
+}
+
+//Goadmin calls
+func GetNamespaces() (namespaces map[string][]string, err error) {
+	pool := RedisPool(true)
+	if pool == nil {
+		return namespaces, errors.New(PoolAllocationErr)
+	}
+
+	conn := pool.Get()
+	if err = conn.Send("select", Db); err != nil {
+		return namespaces, err
+	}
+	reply, err := redix.Strings(conn.Do("KEYS", "*"))
+
+	namespaces = make(map[string][]string, 0)
+
+	for _, key := range reply {
+		keyArr := strings.Split(key, ":")
+		if len(keyArr) > 0 {
+			idx := keyArr[0]
+			if _, ok := namespaces[idx]; !ok {
+				namespaces[idx] = make([]string, 0)
+			}
+			namespaces[idx] = append(namespaces[idx], key)
+		}
+	}
+	return
+}
+
+func DeleteFullPath(key string) error {
+	var err error
+	pool := RedisPool(true)
+	if pool == nil {
+		return errors.New(PoolAllocationErr)
+	}
+
+	conn := pool.Get()
+	if err := conn.Send("select", Db); err != nil {
+		return err
+	}
+	_, err = conn.Do("DEL", fmt.Sprintf("%s", key))
+	return err
+}
+
+func GetFullPath(key string) ([]string, error) {
+	data := make([]string, 0)
+	pool := RedisPool(false)
+	if pool == nil {
+		return data, errors.New(PoolAllocationErr)
+	}
+
+	conn, err := pool.Dial()
+	if err != nil {
+		return data, err
+	} else if conn.Err() != nil {
+		return data, err
+	}
+
+	conn.Send("select", Db)
+	reply, err := redix.Strings(conn.Do("KEYS", "*"))
+	if err != nil || reply == nil {
+		return data, err
+	}
+
+	for _, r := range reply {
+		if strings.Contains(r, key) {
+			data = append(data, r)
+		}
+	}
+	return data, err
 }
