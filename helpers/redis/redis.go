@@ -201,7 +201,7 @@ func DeleteFullPath(key string) error {
 
 func GetFullPath(key string) ([]string, error) {
 	data := make([]string, 0)
-	pool := RedisPool(false)
+	pool := RedisPool(true)
 	if pool == nil {
 		return data, errors.New(PoolAllocationErr)
 	}
