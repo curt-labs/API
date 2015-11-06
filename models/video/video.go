@@ -292,6 +292,7 @@ func (v *Video) GetVideoDetails() error {
 	return nil
 }
 
+// This grabs all the videos given a certain Brand. Videos are  Base Videos and do not have advanced information.
 func GetAllVideos(dtx *apicontext.DataContext) (vs Videos, err error) {
 	data, err := redis.Get(AllVideosRedisKey + ":" + dtx.BrandString)
 	if err == nil && len(data) > 0 {
@@ -329,7 +330,7 @@ func GetAllVideos(dtx *apicontext.DataContext) (vs Videos, err error) {
 	return
 }
 
-// TODO - This is very slow...
+// Given a Product ID, this method returns all the videos and their advanced video details for a given product.
 func GetPartVideos(partId int) (vs Videos, err error) {
 	vs = make([]Video, 0)
 	redis_key := "video:part:" + strconv.Itoa(partId)
@@ -379,6 +380,7 @@ func GetPartVideos(partId int) (vs Videos, err error) {
 	return vs, err
 }
 
+// Gets all the brands associated to a specific base video.
 func (v *Video) GetBrands() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -406,6 +408,7 @@ func (v *Video) GetBrands() error {
 	return err
 }
 
+// Gets all the Video's channels.
 func (v *Video) GetChannels() (chs Channels, err error) {
 	redis_key := "video:channels:" + strconv.Itoa(v.ID)
 	data, err := redis.Get(redis_key)
@@ -439,6 +442,7 @@ func (v *Video) GetChannels() (chs Channels, err error) {
 	return
 }
 
+// Gets all the Video's associated products.
 func (v *Video) GetParts() (err error) {
 	redis_key := "video:parts:" + strconv.Itoa(v.ID)
 	data, err := redis.Get(redis_key)
@@ -476,6 +480,7 @@ func (v *Video) GetParts() (err error) {
 	return
 }
 
+// Gets all of the CdnFiles for the specific video.
 func (v *Video) GetCdnFiles() (cdns CdnFiles, err error) {
 	redis_key := "video:cdnFiles:" + strconv.Itoa(v.ID)
 	data, err := redis.Get(redis_key)
@@ -509,6 +514,7 @@ func (v *Video) GetCdnFiles() (cdns CdnFiles, err error) {
 	return
 }
 
+// Creates a specific base video as well as any advanced details for the video
 func (v *Video) Create(dtx *apicontext.DataContext) error {
 	go redis.Delete(AllVideosRedisKey + dtx.BrandString)
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -599,6 +605,7 @@ func (v *Video) Create(dtx *apicontext.DataContext) error {
 	return err
 }
 
+// Updates any base video as well as any advance video details.
 func (v *Video) Update(dtx *apicontext.DataContext) error {
 	go redis.Delete(AllVideosRedisKey + dtx.BrandString)
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -721,6 +728,7 @@ func (v *Video) Update(dtx *apicontext.DataContext) error {
 	return err
 }
 
+// Deletes a video and any associates to it.
 func (v *Video) Delete(dtx *apicontext.DataContext) error {
 
 	//delete and create joins
@@ -819,6 +827,7 @@ func (v *Video) Delete(dtx *apicontext.DataContext) error {
 	return err
 }
 
+// Associates a video to a brand.
 func (v *Video) CreateJoinBrand(brandID int) error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -838,6 +847,7 @@ func (v *Video) CreateJoinBrand(brandID int) error {
 	return err
 }
 
+// Associates a CdnFile to a video.
 func (v *Video) CreateJoinFile(f CdnFile) error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -864,7 +874,7 @@ func (v *Video) CreateJoinFile(f CdnFile) error {
 	return err
 }
 
-//Youtube
+// This creates an associate to a video channel
 func (v *Video) CreateJoinChannel(channel Channel) error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -891,6 +901,7 @@ func (v *Video) CreateJoinChannel(channel Channel) error {
 	return err
 }
 
+// Creates an associate between a video and a product.
 func (v *Video) CreateJoinPart(partId int) error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -917,7 +928,7 @@ func (v *Video) CreateJoinPart(partId int) error {
 	return err
 }
 
-//HTML5
+// Creates an association between a video and a category
 func (v *Video) CreateJoinCategory(prodCatId int) error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -943,6 +954,8 @@ func (v *Video) CreateJoinCategory(prodCatId int) error {
 	tx.Commit()
 	return err
 }
+
+// Deletes all brands associated to a video
 func (v *Video) DeleteJoinBrand() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -962,6 +975,7 @@ func (v *Video) DeleteJoinBrand() error {
 	return err
 }
 
+// Deletes all CdnFile associations to a video.
 func (v *Video) DeleteJoinFiles() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -988,7 +1002,7 @@ func (v *Video) DeleteJoinFiles() error {
 	return err
 }
 
-//Youtube
+// Deletes all Channel associations to a video.
 func (v *Video) DeleteJoinChannels() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1014,6 +1028,7 @@ func (v *Video) DeleteJoinChannels() error {
 	return err
 }
 
+// Deletes all product associations to a video.
 func (v *Video) DeleteJoinPart(partId int) error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1039,7 +1054,7 @@ func (v *Video) DeleteJoinPart(partId int) error {
 	return err
 }
 
-//HTML5
+// Deletes a specific Category association to a video.
 func (v *Video) DeleteJoinCategory(prodCatId int) error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1066,6 +1081,7 @@ func (v *Video) DeleteJoinCategory(prodCatId int) error {
 	return err
 }
 
+// Gets a specific video channel.
 func (c *Channel) Get() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1106,6 +1122,7 @@ func (c *Channel) Get() error {
 	return err
 }
 
+// Gets all video channels. Helpful for getting a list of all online video content.
 func GetAllChannels() (cs Channels, err error) {
 	data, err := redis.Get(AllChannelsRedisKey)
 	if err == nil && len(data) > 0 {
@@ -1139,6 +1156,7 @@ func GetAllChannels() (cs Channels, err error) {
 	return
 }
 
+// Creates an online video channel
 func (c *Channel) Create() error {
 	go redis.Delete(AllChannelsRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -1167,6 +1185,7 @@ func (c *Channel) Create() error {
 	return err
 }
 
+// Updates any information associated with an online video channel
 func (c *Channel) Update() error {
 	go redis.Delete(AllChannelsRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -1192,6 +1211,8 @@ func (c *Channel) Update() error {
 	err = tx.Commit()
 	return err
 }
+
+// Deletes a specific video channel.
 func (c *Channel) Delete() error {
 	go redis.Delete(AllChannelsRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -1218,6 +1239,7 @@ func (c *Channel) Delete() error {
 	return err
 }
 
+// Gets a specific CdnFile
 func (c *CdnFile) Get() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1273,6 +1295,7 @@ func (c *CdnFile) Get() error {
 	return err
 }
 
+// gets all cdn files.
 func GetAllCdnFiles() (cs CdnFiles, err error) {
 	data, err := redis.Get(AllCdnFilesRedisKey)
 	if err == nil && len(data) > 0 {
@@ -1305,6 +1328,7 @@ func GetAllCdnFiles() (cs CdnFiles, err error) {
 	return
 }
 
+// creates a CdnFile
 func (c *CdnFile) Create() error {
 	go redis.Delete(AllCdnFilesRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -1334,6 +1358,7 @@ func (c *CdnFile) Create() error {
 	return err
 }
 
+// updates a CdnFile
 func (c *CdnFile) Update() error {
 	go redis.Delete(AllCdnFilesRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -1360,6 +1385,8 @@ func (c *CdnFile) Update() error {
 	err = tx.Commit()
 	return err
 }
+
+// deletes a CdnFile
 func (c *CdnFile) Delete() error {
 	go redis.Delete(AllCdnFilesRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -1387,6 +1414,7 @@ func (c *CdnFile) Delete() error {
 	return err
 }
 
+// Gets a specific CdnFileType, such as .ogg, .mp4
 func (c *CdnFileType) Get() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1416,6 +1444,7 @@ func (c *CdnFileType) Get() error {
 	return err
 }
 
+// gets all of the available CdnFileTypes such as ogg, mp4, avi
 func GetAllCdnFileTypes() (cts []CdnFileType, err error) {
 	data, err := redis.Get(AllCdnFileTypeRedisKey)
 	if err == nil && len(data) > 0 {
@@ -1461,6 +1490,7 @@ func GetAllCdnFileTypes() (cts []CdnFileType, err error) {
 	return
 }
 
+// Creates a new CDN File Type
 func (c *CdnFileType) Create() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1490,6 +1520,7 @@ func (c *CdnFileType) Create() error {
 	return err
 }
 
+// updates a specific CdnFileType
 func (c *CdnFileType) Update() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1517,6 +1548,8 @@ func (c *CdnFileType) Update() error {
 	go redis.Delete(AllCdnFileTypeRedisKey)
 	return err
 }
+
+// deletes a specific CdnFileType
 func (c *CdnFileType) Delete() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1545,6 +1578,7 @@ func (c *CdnFileType) Delete() error {
 	return err
 }
 
+// Gets a specific VideoType
 func (c *VideoType) Get() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1569,6 +1603,7 @@ func (c *VideoType) Get() error {
 	return err
 }
 
+// Gets all Video Types.
 func GetAllVideoTypes() (vts []VideoType, err error) {
 	data, err := redis.Get(AllVideoTypesRedisKey)
 	if err == nil && len(data) > 0 {
@@ -1609,6 +1644,7 @@ func GetAllVideoTypes() (vts []VideoType, err error) {
 	return
 }
 
+// Creates a VideoType
 func (c *VideoType) Create() error {
 	go redis.Delete(AllVideoTypesRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -1637,6 +1673,7 @@ func (c *VideoType) Create() error {
 	return err
 }
 
+// Updates a VideoType
 func (c *VideoType) Update() error {
 	go redis.Delete(AllVideoTypesRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -1663,6 +1700,8 @@ func (c *VideoType) Update() error {
 	err = tx.Commit()
 	return err
 }
+
+// Delets a specific VideoType
 func (c *VideoType) Delete() error {
 	go redis.Delete(AllVideoTypesRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -1691,6 +1730,7 @@ func (c *VideoType) Delete() error {
 	return err
 }
 
+// Gets a specific ChannelType such as youtube, vimeo, etc
 func (c *ChannelType) Get() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1715,6 +1755,7 @@ func (c *ChannelType) Get() error {
 	return err
 }
 
+// gets all available ChannelTypes
 func GetAllChannelTypes() (cts []ChannelType, err error) {
 	data, err := redis.Get(AllChannelTypesRedisKey)
 	if err == nil && len(data) > 0 {
@@ -1753,6 +1794,7 @@ func GetAllChannelTypes() (cts []ChannelType, err error) {
 	return cts, err
 }
 
+// creates a specific ChannelType
 func (c *ChannelType) Create() error {
 	go redis.Delete(AllChannelTypesRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -1782,6 +1824,7 @@ func (c *ChannelType) Create() error {
 	return err
 }
 
+// Updates a ChannelType
 func (c *ChannelType) Update() error {
 	go redis.Delete(AllChannelTypesRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -1809,6 +1852,8 @@ func (c *ChannelType) Update() error {
 	err = tx.Commit()
 	return err
 }
+
+// Delets a ChannelType
 func (c *ChannelType) Delete() error {
 	go redis.Delete(AllChannelTypesRedisKey)
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -1837,7 +1882,7 @@ func (c *ChannelType) Delete() error {
 	return err
 }
 
-//Populates a video + type
+//Populates a base video and its type
 func populateVideo(row *sql.Row, ch chan Video) {
 	var v Video
 	var tName, tIcon *string
@@ -1868,7 +1913,7 @@ func populateVideo(row *sql.Row, ch chan Video) {
 	return
 }
 
-//Populates video and video type fields
+// Populates multiple videos and their types.
 func populateVideos(rows *sql.Rows, ch chan Videos) {
 	var v Video
 	var vs Videos
@@ -1903,7 +1948,7 @@ func populateVideos(rows *sql.Rows, ch chan Videos) {
 	return
 }
 
-//Populates channels and channel type fields
+// Populates multiple CDN's and their types.
 func populateCdns(rows *sql.Rows, ch chan CdnFiles) {
 	var c CdnFile
 	var cs CdnFiles
@@ -1955,7 +2000,7 @@ func populateCdns(rows *sql.Rows, ch chan CdnFiles) {
 	return
 }
 
-//populate channels
+//populate multiple channels and their types
 func populateChannels(rows *sql.Rows, ch chan Channels) {
 	var chs Channels
 	var c Channel
