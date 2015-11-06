@@ -35,8 +35,7 @@ func GetByKey(w http.ResponseWriter, r *http.Request) {
 	}
 	redis_key := r.URL.Query().Get("redis_key")
 	redis_namespace := r.URL.Query().Get("redis_namespace")
-	key := redis_namespace + ":" + redis_key
-	res, err := redis.GetFullPath(key)
+	res, err := redis.GetFullPath(redis_namespace, redis_key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
