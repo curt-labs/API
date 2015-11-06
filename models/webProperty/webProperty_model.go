@@ -12,6 +12,7 @@ import (
 	"time"
 )
 
+// Web Property is any online site, or presence that sells or markets our products.
 type WebProperty struct {
 	ID                      int                     `json:"id,omitempty" xml:"id,omitempty"`
 	Name                    string                  `json:"name,omitempty" xml:"name,omitempty"`
@@ -30,15 +31,20 @@ type WebProperty struct {
 	AddedDate               *time.Time              `json:"addedDate,omitempty" xml:"addedDate,omitempty"`
 }
 
+// WebProperties is just an easier type to work with than using an array of WebProperty's.
 type WebProperties []WebProperty
 
+// The Type of a WebProperty. Examples are: Website, Ebay Store, Amazon Store
 type WebPropertyType struct {
 	ID     int    `json:"id,omitempty" xml:"id,omitempty"`
 	TypeID int    `json:"typeId,omitempty" xml:"typeId,omitempty"`
 	Type   string `json:"type,omitempty" xml:"type,omitempty"`
 }
+
+// WebPropertiesTypes is just an easier type to work with than using an array of WebPropertyType's.
 type WebPropertyTypes []WebPropertyType
 
+// WebPropertyNote is just notes about the web property that should be taken into consideration when marketing our products.
 type WebPropertyNote struct {
 	ID        int        `json:"id,omitempty" xml:"id,omitempty"`
 	WebPropID int        `json:"webPropId,omitempty" xml:"webPropId,omitempty"`
@@ -46,8 +52,10 @@ type WebPropertyNote struct {
 	DateAdded *time.Time `json:"dateAdded,omitempty" xml:"dateAdded,omitempty"`
 }
 
+// WebPropertiesNotes is just an easier type to work with than using an array of WebPropertyNote's.
 type WebPropertyNotes []WebPropertyNote
 
+// WebPropertyRequirement is a requirement for your web property to pass before being approved for an Authorized Dealer badge.
 type WebPropertyRequirement struct {
 	ID            int    `json:"id,omitempty" xml:"id,omitempty"`
 	ReqType       string `json:"reqType,omitempty" xml:"reqType,omitempty"`
@@ -57,6 +65,7 @@ type WebPropertyRequirement struct {
 	WebPropID     int    `json:"webPropId,omitempty" xml:"webPropId,omitempty"`
 }
 
+// WebPropertiesRequirements is just an easier type to work with than using an array of WebPropertyRequirement's.
 type WebPropertyRequirements []WebPropertyRequirement
 
 var (
@@ -120,6 +129,7 @@ const (
 	timeFormat = "2006-01-02 15:04:05"
 )
 
+// Gets a specific Web Property
 func (w *WebProperty) Get(dtx *apicontext.DataContext) error {
 	var err error
 
@@ -219,6 +229,7 @@ func (w *WebProperty) Get(dtx *apicontext.DataContext) error {
 	return err
 }
 
+// Gets all of the web properties associated to a specific customer.
 func GetByCustomer(CustID int, dtx *apicontext.DataContext) (ws WebProperties, err error) {
 	redis_key := "webpropertyByCustomer:" + strconv.Itoa(CustID)
 	data, err := redis.Get(redis_key)
@@ -318,6 +329,7 @@ func GetByCustomer(CustID int, dtx *apicontext.DataContext) (ws WebProperties, e
 	return
 }
 
+// Gets All Web Properties
 func GetAll(dtx *apicontext.DataContext) (WebProperties, error) {
 	var ws WebProperties
 	var err error
@@ -422,6 +434,8 @@ func GetAll(dtx *apicontext.DataContext) (WebProperties, error) {
 	go redis.Setex(redis_key, ws, 86400)
 	return ws, err
 }
+
+// Creates a Web Property
 func (w *WebProperty) Create(dtx *apicontext.DataContext) (err error) {
 	go redis.Delete("webproperties:" + dtx.BrandString)
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -483,6 +497,7 @@ func (w *WebProperty) Create(dtx *apicontext.DataContext) (err error) {
 	return nil
 }
 
+// Updates a Web Property
 func (w *WebProperty) Update(dtx *apicontext.DataContext) (err error) {
 	go redis.Delete("webproperties:" + dtx.BrandString)
 
@@ -533,6 +548,8 @@ func (w *WebProperty) Update(dtx *apicontext.DataContext) (err error) {
 
 	return nil
 }
+
+// Deletes a Web Property and any associations.
 func (w *WebProperty) Delete(dtx *apicontext.DataContext) error {
 	go redis.Delete("webproperties:" + dtx.BrandString)
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -571,6 +588,7 @@ func (w *WebProperty) Delete(dtx *apicontext.DataContext) error {
 	return nil
 }
 
+// Gets All the available WebPropertyTypes
 func GetAllWebPropertyTypes(dtx *apicontext.DataContext) (WebPropertyTypes, error) {
 	var ws WebPropertyTypes
 	var err error
@@ -605,6 +623,7 @@ func GetAllWebPropertyTypes(dtx *apicontext.DataContext) (WebPropertyTypes, erro
 	return ws, err
 }
 
+// gets all of the web property notes - rarely called.
 func GetAllWebPropertyNotes(dtx *apicontext.DataContext) (WebPropertyNotes, error) {
 	var ws WebPropertyNotes
 	var err error
@@ -638,6 +657,8 @@ func GetAllWebPropertyNotes(dtx *apicontext.DataContext) (WebPropertyNotes, erro
 	go redis.Setex(redis_key, ws, 86400)
 	return ws, err
 }
+
+// Gets All Web Property Requirements
 func GetAllWebPropertyRequirements(dtx *apicontext.DataContext) (WebPropertyRequirements, error) {
 	var ws WebPropertyRequirements
 	var err error
@@ -697,6 +718,7 @@ func GetAllWebPropertyRequirements(dtx *apicontext.DataContext) (WebPropertyRequ
 	return ws, err
 }
 
+// gets a specific Web Property Note
 func (n *WebPropertyNote) Get() error {
 	redis_key := "webpropertynote:" + strconv.Itoa(n.ID)
 	data, err := redis.Get(redis_key)
@@ -719,6 +741,7 @@ func (n *WebPropertyNote) Get() error {
 	return nil
 }
 
+// Creates a new note for a web property.
 func (n *WebPropertyNote) Create(dtx *apicontext.DataContext) error {
 	go redis.Delete("webpropertynotes:" + dtx.BrandString)
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -749,6 +772,7 @@ func (n *WebPropertyNote) Create(dtx *apicontext.DataContext) error {
 	return nil
 }
 
+// Updates a note on a web property
 func (n *WebPropertyNote) Update(dtx *apicontext.DataContext) error {
 	go redis.Delete("webpropertynotes:" + dtx.BrandString)
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -773,6 +797,7 @@ func (n *WebPropertyNote) Update(dtx *apicontext.DataContext) error {
 	return nil
 }
 
+// Deletes a Web Property Note
 func (n *WebPropertyNote) Delete(dtx *apicontext.DataContext) error {
 	go redis.Delete("webpropertynotes:" + dtx.BrandString)
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -795,6 +820,7 @@ func (n *WebPropertyNote) Delete(dtx *apicontext.DataContext) error {
 	return nil
 }
 
+// Deletes all of the notes of a specific Web Property
 func (n *WebProperty) DeleteNotesByPropId(dtx *apicontext.DataContext) error {
 	go redis.Delete("webpropertynotes:" + dtx.BrandString)
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -817,6 +843,7 @@ func (n *WebProperty) DeleteNotesByPropId(dtx *apicontext.DataContext) error {
 	return nil
 }
 
+// Makes an association between a Web Property and a Requirement
 func (r *WebPropertyRequirement) CreateJoin() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -839,6 +866,7 @@ func (r *WebPropertyRequirement) CreateJoin() error {
 	return nil
 }
 
+// removes an association between a Web Property and a Requirement
 func (r *WebPropertyRequirement) DeleteJoin() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -860,6 +888,7 @@ func (r *WebPropertyRequirement) DeleteJoin() error {
 	return nil
 }
 
+// removes a web property requirement association by its own requirementID
 func (r *WebPropertyRequirement) DeleteJoinByRequirementId() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -881,6 +910,7 @@ func (r *WebPropertyRequirement) DeleteJoinByRequirementId() error {
 	return nil
 }
 
+// removes all associations between a Web Property and it's Requirements
 func (r *WebProperty) DeleteJoinByPropId() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -902,6 +932,7 @@ func (r *WebProperty) DeleteJoinByPropId() error {
 	return nil
 }
 
+// Gets a specific WebPropertyRequirement
 func (r *WebPropertyRequirement) Get() error {
 	redis_key := "webpropertyrequirement:" + strconv.Itoa(r.RequirementID)
 	data, err := redis.Get(redis_key)
@@ -935,6 +966,7 @@ func (r *WebPropertyRequirement) Get() error {
 	return nil
 }
 
+// Creates a WebPropertyRequirement
 func (r *WebPropertyRequirement) Create(dtx *apicontext.DataContext) error {
 	go redis.Delete("webpropertyrequirements:" + dtx.BrandString)
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -964,6 +996,7 @@ func (r *WebPropertyRequirement) Create(dtx *apicontext.DataContext) error {
 	return nil
 }
 
+// Updates a WebPropertyRequirement
 func (r *WebPropertyRequirement) Update(dtx *apicontext.DataContext) error {
 	go redis.Delete("webpropertyrequirements:" + dtx.BrandString)
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -986,6 +1019,7 @@ func (r *WebPropertyRequirement) Update(dtx *apicontext.DataContext) error {
 	return nil
 }
 
+// Deletes a Web Property Requirement
 func (r *WebPropertyRequirement) Delete(dtx *apicontext.DataContext) error {
 	go redis.Delete("webpropertyrequirements:" + dtx.BrandString)
 	var err error
@@ -1018,6 +1052,7 @@ func (r *WebPropertyRequirement) Delete(dtx *apicontext.DataContext) error {
 	return nil
 }
 
+// Gets a WebPropertyType
 func (t *WebPropertyType) Get() error {
 	redis_key := "webpropertytype:" + strconv.Itoa(t.ID)
 	data, err := redis.Get(redis_key)
@@ -1040,6 +1075,7 @@ func (t *WebPropertyType) Get() error {
 	return nil
 }
 
+// Updates a WebPropertyType
 func (t *WebPropertyType) Update(dtx *apicontext.DataContext) error {
 	go redis.Delete("webpropertytypes:" + dtx.BrandString)
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -1062,6 +1098,7 @@ func (t *WebPropertyType) Update(dtx *apicontext.DataContext) error {
 	return nil
 }
 
+// creates a WebPropertyType
 func (t *WebPropertyType) Create(dtx *apicontext.DataContext) error {
 	go redis.Delete("webpropertytypes:" + dtx.BrandString)
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -1088,6 +1125,7 @@ func (t *WebPropertyType) Create(dtx *apicontext.DataContext) error {
 	return nil
 }
 
+// Deletes a WebPropertyType
 func (t *WebPropertyType) Delete(dtx *apicontext.DataContext) error {
 	go redis.Delete("webpropertytypes:" + dtx.BrandString)
 	db, err := sql.Open("mysql", database.ConnectionString())
@@ -1110,6 +1148,7 @@ func (t *WebPropertyType) Delete(dtx *apicontext.DataContext) error {
 	return nil
 }
 
+// Searches for a web property given all the web properties properties as search parameters.
 func Search(name, custID, badgeID, url, isEnabled, sellerID, webPropertyTypeID, isFinalApproved, isEnabledDate, isDenied, requestedDate, typeID, pageStr, resultsStr string) (pagination.Objects, error) {
 	var err error
 	var l pagination.Objects
