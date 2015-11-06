@@ -15,6 +15,7 @@ import (
 	"time"
 )
 
+// The Video struct is a reresentation of a video. It contains information about the video itself, as well as any associated files.
 type Video struct {
 	ID           int       `json:"id,omitempty" xml:"id,omitempty"`
 	Title        string    `json:"title, omitempty" xml:"title,omitempty"`
@@ -34,8 +35,11 @@ type Video struct {
 	WebsiteId int          `json:"websiteId,omitempty" xml:"websiteId,omitempty"` //TODO
 	Brands    brand.Brands `json:"brands,omitempty" xml:"brands,omitempty"`
 }
+
+// Videos is just an easier type to work with than using an array of video types.
 type Videos []Video
 
+// A Channel type is typicaly the information associated to a online video file such as youtube, vimeo, etc.
 type Channel struct {
 	ID           int         `json:"id,omitempty" xml:"id,omitempty"`
 	Type         ChannelType `json:"type,omitempty" xml:"type,omitempty"`
@@ -48,14 +52,19 @@ type Channel struct {
 	Description  string      `json:"description,omitempty" xml:"description,omitempty"`
 }
 
+// Channels is just an easier type to work with than using an array of Channel types.
 type Channels []Channel
 
+// ChannelType is a type of Channel. Channels are online videos, and they have different types such as youtube, vimeo, dailymotion, etc.
 type ChannelType struct {
 	ID          int    `json:"id,omitempty" xml:"id,omitempty"`
 	Name        string `json:"name,omitempty" xml:"name,omitempty"`
 	Description string `json:"description,omitempty" xml:"description,omitempty"`
 }
 
+// CdnFile or CDN file is a video that is hosted on a content delivery network.
+// This is reference to an actual video file rather than an online video type(Channel)
+// These CdnFiles are typically used for HTML5 Videos.
 type CdnFile struct {
 	ID           int         `json:"id,omitempty" xml:"id,omitempty"`
 	Type         CdnFileType `json:"type,omitempty" xml:"type,omitempty"`
@@ -68,8 +77,10 @@ type CdnFile struct {
 	LastUploaded string      `json:"lastUploaded,omitempty" xml:"lastUploaded,omitempty"`
 }
 
+// CdnFiles is just an easier type to work with than using an array of CdnFiles.
 type CdnFiles []CdnFile
 
+// CdnFile type specifies what file type the file is. Some examples might be .ogg, .mp4, .avi, etc.
 type CdnFileType struct {
 	ID          int    `json:"id,omitempty" xml:"id,omitempty"`
 	MimeType    string `json:"mimeType,omitempty" xml:"mimeType,omitempty"`
@@ -77,13 +88,14 @@ type CdnFileType struct {
 	Description string `json:"description,omitempty" xml:"description,omitempty"`
 }
 
+// Video Type specifies what kind of video it is. Some examples might be, Product video, Howto, or Instructional Video.
 type VideoType struct {
 	ID   int    `json:"id,omitempty" xml:"id,omitempty"`
 	Name string `json:"name,omitempty" xml:"name,omitempty"`
 	Icon string `json:"icon,omitempty" xml:"icon,omitempty"`
 }
 
-//TODO categories should be their own entity
+// Videos can be associated to categories. This is the most basic information about a category.
 type Category struct {
 	ID    int    `json:"id,omitempty" xml:"id,omitempty"`
 	Title string `json:"title,omitempty" xml:"title,omitempty"`
@@ -167,7 +179,7 @@ var (
 	deleteChannelType  = `DELETE FROM ChannelType WHERE ID = ?`
 )
 
-//Base Video
+// Retrieves a base video file. This does not grab all the associated channels or CDN files.
 func (v *Video) Get() error {
 	redis_key := "video:" + strconv.Itoa(v.ID)
 	data, err := redis.Get(redis_key)
@@ -197,6 +209,7 @@ func (v *Video) Get() error {
 	return err
 }
 
+// GetVideoDetails grabs a video's more advance information such as, Brands, CDN files, associated channels(youtube videos), and any products associated with the video.
 func (v *Video) GetVideoDetails() error {
 	redis_key := "video:details:" + strconv.Itoa(v.ID)
 	data, err := redis.Get(redis_key)
