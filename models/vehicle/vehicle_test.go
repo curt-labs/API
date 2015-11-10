@@ -21,6 +21,14 @@ func TestVehicle(t *testing.T) {
 	})
 }
 
+func TestMongoVehicle(t *testing.T) {
+	Convey("Testing Reverse Lookup", t, func() {
+		vehicles, err := ReverseMongoLookup(2011541)
+		So(len(vehicles), ShouldBeGreaterThanOrEqualTo, 0)
+		So(err, ShouldBeNil)
+	})
+}
+
 func BenchmarkGetNotes(b *testing.B) {
 	v := setupDummyVehicle()
 	for i := 0; i < b.N; i++ {

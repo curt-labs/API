@@ -443,5 +443,23 @@ func PartNumber(rw http.ResponseWriter, r *http.Request, params martini.Params, 
 		return ""
 	}
 
+	//TODO - remove when curt & aries vehicle application data are in sync
+	if p.Brand.ID == 3 {
+		mgoVehicles, err := vehicle.ReverseMongoLookup(p.ID)
+		if err != nil {
+			apierror.GenerateError("Trouble getting part by old part number", err, rw, r)
+			return ""
+		}
+		for _, v := range mgoVehicles {
+			vehicleApplication := products.VehicleApplication{
+				Year:  v.Year,
+				Make:  v.Make,
+				Model: v.Model,
+				Style: v.Style,
+			}
+			p.Vehicles = append(p.Vehicles, vehicleApplication)
+		}
+	} //END TODO
+
 	return encoding.Must(enc.Encode(p))
 }
