@@ -549,6 +549,7 @@ func OldPartNumber(rw http.ResponseWriter, r *http.Request, params martini.Param
 	}
 
 	vehicleChan := make(chan error)
+	mgoVehicleChan := make(chan error)
 	go func() {
 		vs, err := vehicle.ReverseLookup(p.ID)
 		if err != nil {
@@ -559,7 +560,18 @@ func OldPartNumber(rw http.ResponseWriter, r *http.Request, params martini.Param
 		}
 	}()
 
+	go func() {
+		vs, err := vehicle.ReverseMongoLookup(p.ID)
+		if err != nil {
+			mgoVehicleChan <- err
+		} else {
+			p.MgoVehicles = vs
+			mgoVehicleChan <- nil
+		}
+	}()
+
 	<-vehicleChan
+	<-mgoVehicleChan
 
 	return encoding.Must(enc.Encode(p))
 }

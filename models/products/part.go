@@ -106,35 +106,36 @@ var (
 )
 
 type Part struct {
-	ID                int               `json:"id" xml:"id,attr"`
-	BrandID           int               `json:"brandId" xml:"brandId,attr"`
-	Status            int               `json:"status" xml:"status,attr"`
-	PriceCode         int               `json:"price_code" xml:"price_code,attr"`
-	RelatedCount      int               `json:"related_count" xml:"related_count,attr"`
-	AverageReview     float64           `json:"average_review" xml:"average_review,attr"`
-	DateModified      time.Time         `json:"date_modified" xml:"date_modified,attr"`
-	DateAdded         time.Time         `json:"date_added" xml:"date_added,attr"`
-	ShortDesc         string            `json:"short_description" xml:"short_description,attr"`
-	InstallSheet      *url.URL          `json:"install_sheet" xml:"install_sheet"`
-	Attributes        []Attribute       `json:"attributes" xml:"attributes"`
-	VehicleAttributes []string          `json:"vehicle_atttributes" xml:"vehicle_attributes"`
-	Vehicles          []vehicle.Vehicle `json:"vehicles,omitempty" xml:"vehicles,omitempty"`
-	Content           []Content         `json:"content" xml:"content"`
-	Pricing           []Price           `json:"pricing" xml:"pricing"`
-	Reviews           []Review          `json:"reviews" xml:"reviews"`
-	Images            []Image           `json:"images" xml:"images"`
-	Related           []int             `json:"related" xml:"related"`
-	Categories        []Category        `json:"categories" xml:"categories"`
-	Videos            []video.Video     `json:"videos" xml:"videos"`
-	Packages          []Package         `json:"packages" xml:"packages"`
-	Customer          CustomerPart      `json:"customer,omitempty" xml:"customer,omitempty"`
-	Class             Class             `json:"class,omitempty" xml:"class,omitempty"`
-	Featured          bool              `json:"featured,omitempty" xml:"featured,omitempty"`
-	AcesPartTypeID    int               `json:"acesPartTypeId,omitempty" xml:"acesPartTypeId,omitempty"`
-	Installations     Installations     `json:"installation,omitempty" xml:"installation,omitempty"`
-	Inventory         PartInventory     `json:"inventory,omitempty" xml:"inventory,omitempty"`
-	OldPartNumber     string            `json:"oldPartNumber,omitempty" xml:"oldPartNumber,omitempty"`
-	UPC               string            `json:"upc,omitempty" xml:"upc,omitempty"`
+	ID                int                  `json:"id" xml:"id,attr"`
+	BrandID           int                  `json:"brandId" xml:"brandId,attr"`
+	Status            int                  `json:"status" xml:"status,attr"`
+	PriceCode         int                  `json:"price_code" xml:"price_code,attr"`
+	RelatedCount      int                  `json:"related_count" xml:"related_count,attr"`
+	AverageReview     float64              `json:"average_review" xml:"average_review,attr"`
+	DateModified      time.Time            `json:"date_modified" xml:"date_modified,attr"`
+	DateAdded         time.Time            `json:"date_added" xml:"date_added,attr"`
+	ShortDesc         string               `json:"short_description" xml:"short_description,attr"`
+	InstallSheet      *url.URL             `json:"install_sheet" xml:"install_sheet"`
+	Attributes        []Attribute          `json:"attributes" xml:"attributes"`
+	VehicleAttributes []string             `json:"vehicle_atttributes" xml:"vehicle_attributes"`
+	Vehicles          []vehicle.Vehicle    `json:"vehicles,omitempty" xml:"vehicles,omitempty"`
+	MgoVehicles       []vehicle.MgoVehicle `json:"mgo_vehicles,omitempty" xml:"mgo_vehicles,omitempty"`
+	Content           []Content            `json:"content" xml:"content"`
+	Pricing           []Price              `json:"pricing" xml:"pricing"`
+	Reviews           []Review             `json:"reviews" xml:"reviews"`
+	Images            []Image              `json:"images" xml:"images"`
+	Related           []int                `json:"related" xml:"related"`
+	Categories        []Category           `json:"categories" xml:"categories"`
+	Videos            []video.Video        `json:"videos" xml:"videos"`
+	Packages          []Package            `json:"packages" xml:"packages"`
+	Customer          CustomerPart         `json:"customer,omitempty" xml:"customer,omitempty"`
+	Class             Class                `json:"class,omitempty" xml:"class,omitempty"`
+	Featured          bool                 `json:"featured,omitempty" xml:"featured,omitempty"`
+	AcesPartTypeID    int                  `json:"acesPartTypeId,omitempty" xml:"acesPartTypeId,omitempty"`
+	Installations     Installations        `json:"installation,omitempty" xml:"installation,omitempty"`
+	Inventory         PartInventory        `json:"inventory,omitempty" xml:"inventory,omitempty"`
+	OldPartNumber     string               `json:"oldPartNumber,omitempty" xml:"oldPartNumber,omitempty"`
+	UPC               string               `json:"upc,omitempty" xml:"upc,omitempty"`
 }
 
 type CustomerPart struct {
