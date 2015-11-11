@@ -229,7 +229,11 @@ func (p *Part) GetPartByPartNumber() (err error) {
 		return err
 	}
 	defer session.Close()
-	return session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{"part_number": p.PartNumber}).One(&p)
+	pattern := bson.RegEx{
+		Pattern: p.PartNumber,
+		Options: "i",
+	}
+	return session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{"part_number": pattern}).One(&p)
 }
 
 func getBrandsFromDTX(dtx *apicontext.DataContext) []int {
