@@ -130,9 +130,12 @@ func All(page, count int, dtx *apicontext.DataContext) ([]Part, error) {
 	return parts, err
 }
 
-func Featured(count int, dtx *apicontext.DataContext) ([]Part, error) {
+func Featured(count int, dtx *apicontext.DataContext, brand int) ([]Part, error) {
 	var parts []Part
 	brands := getBrandsFromDTX(dtx)
+	if brand > 0 {
+		brands = []int{brand}
+	}
 
 	session, err := mgo.DialWithInfo(database.MongoPartConnectionString())
 	if err != nil {
@@ -143,9 +146,12 @@ func Featured(count int, dtx *apicontext.DataContext) ([]Part, error) {
 	return parts, err
 }
 
-func Latest(count int, dtx *apicontext.DataContext) ([]Part, error) {
+func Latest(count int, dtx *apicontext.DataContext, brand int) ([]Part, error) {
 	var parts []Part
 	brands := getBrandsFromDTX(dtx)
+	if brand > 0 {
+		brands = []int{brand}
+	}
 
 	session, err := mgo.DialWithInfo(database.MongoPartConnectionString())
 	if err != nil {
@@ -230,7 +236,7 @@ func (p *Part) GetPartByPartNumber() (err error) {
 	}
 	defer session.Close()
 	pattern := bson.RegEx{
-		Pattern: p.PartNumber,
+		Pattern: "^" + p.PartNumber + "$",
 		Options: "i",
 	}
 	return session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{"part_number": pattern}).One(&p)

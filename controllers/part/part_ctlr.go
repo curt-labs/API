@@ -84,8 +84,18 @@ func Featured(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx 
 			count = ct
 		}
 	}
+	var brand int
+	var err error
+	brandStr := qs.Get("brand")
+	if brandStr != "" {
+		brand, err = strconv.Atoi(brandStr)
+		if err != nil {
+			apierror.GenerateError("Trouble getting featured parts", err, w, r)
+			return ""
+		}
+	}
 
-	parts, err := products.Featured(count, dtx)
+	parts, err := products.Featured(count, dtx, brand)
 	if err != nil {
 		apierror.GenerateError("Trouble getting featured parts", err, w, r)
 		return ""
@@ -107,8 +117,18 @@ func Latest(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *a
 			count = ct
 		}
 	}
+	var brand int
+	var err error
+	brandStr := qs.Get("brand")
+	if brandStr != "" {
+		brand, err = strconv.Atoi(brandStr)
+		if err != nil {
+			apierror.GenerateError("Trouble getting featured parts", err, w, r)
+			return ""
+		}
+	}
 
-	parts, err := products.Latest(count, dtx)
+	parts, err := products.Latest(count, dtx, brand)
 	if err != nil {
 		apierror.GenerateError("Trouble getting latest parts", err, w, r)
 		return ""
