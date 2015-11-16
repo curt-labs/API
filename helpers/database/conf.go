@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"gopkg.in/mgo.v2"
@@ -63,8 +64,8 @@ func MongoConnectionString() *mgo.DialInfo {
 	if addr == "" {
 		addr = "127.0.0.1"
 	}
-
-	info.Addrs = append(info.Addrs, addr)
+	addrs := strings.Split(addr, ",")
+	info.Addrs = append(info.Addrs, addrs...)
 	info.Username = os.Getenv("MONGO_CART_USERNAME")
 	info.Password = os.Getenv("MONGO_CART_PASSWORD")
 	info.Database = os.Getenv("MONGO_CART_DATABASE")
@@ -90,8 +91,9 @@ func AriesMongoConnectionString() *mgo.DialInfo {
 	if addr == "" {
 		addr = "127.0.0.1"
 	}
+	addrs := strings.Split(addr, ",")
+	info.Addrs = append(info.Addrs, addrs...)
 
-	info.Addrs = append(info.Addrs, addr)
 	info.Username = os.Getenv("MONGO_ARIES_USERNAME")
 	info.Password = os.Getenv("MONGO_ARIES_PASSWORD")
 	info.Database = os.Getenv("MONGO_ARIES_DATABASE")
