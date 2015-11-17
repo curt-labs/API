@@ -55,7 +55,7 @@ func Send(tos []string, subject string, body string, html bool) error {
 	// Bind SMTP Settings from Environment Variables
 
 	if addr := os.Getenv("EMAIL_ADDRESS"); addr != "" {
-		creds.Server = os.Getenv("EMAIL_SERVER")
+		creds.Server = EmailServer
 		creds.Address = addr
 		creds.Username = os.Getenv("EMAIL_USERNAME")
 		creds.Password = os.Getenv("EMAIL_PASSWORD")
