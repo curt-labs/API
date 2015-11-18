@@ -357,6 +357,7 @@ func main() {
 		r.Get("/:part/:year/:make/:model/:submodel", part_ctlr.GetWithVehicle)
 		r.Get("/:part/:year/:make/:model/:submodel/:config(.+)", part_ctlr.GetWithVehicle)
 		r.Get("/id/:part", part_ctlr.Get)
+		r.Get("/identifiers", part_ctlr.Identifiers)
 		r.Get("/:part", part_ctlr.PartNumber)
 		r.Get("", part_ctlr.All)
 	})

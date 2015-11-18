@@ -39,6 +39,22 @@ func track(endpoint string, params map[string]string, r *http.Request) {
 	})
 }
 
+func Identifiers(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+
+	var b int
+	if r.URL.Query().Get("brand") != "" {
+		b, _ = strconv.Atoi(r.URL.Query().Get("brand"))
+	}
+
+	ids, err := products.Identifiers(b, dtx)
+	if err != nil {
+		apierror.GenerateError("Trouble getting all part identifiers", err, w, r)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(ids))
+}
+
 func All(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	page := 0
 	count := 10

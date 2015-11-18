@@ -10,6 +10,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
+	"sort"
 
 	"net/url"
 	"strings"
@@ -115,6 +116,40 @@ func (p *Part) FromDatabase(brands []int) error {
 	query := bson.M{"id": p.ID, "brand.id": bson.M{"$in": brands}}
 
 	return session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(query).One(&p)
+}
+
+// Identifiers ...
+func Identifiers(brand int, dtx *apicontext.DataContext) ([]string, error) {
+	var parts []string
+	brands := []int{brand}
+
+	if brand == 0 {
+		brands = getBrandsFromDTX(dtx)
+	}
+
+	session, err := mgo.DialWithInfo(database.MongoPartConnectionString())
+	if err != nil {
+		return parts, err
+	}
+	defer session.Close()
+
+	qry := bson.M{
+		"brand.id": bson.M{
+			"$in": brands,
+		},
+		"status": bson.M{
+			"$in": []int{800, 900},
+		},
+	}
+
+	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(qry).Distinct("part_number", &parts)
+	if err != nil {
+		return parts, err
+	}
+
+	sort.Strings(parts)
+
+	return parts, nil
 }
 
 func All(page, count int, dtx *apicontext.DataContext) ([]Part, error) {
