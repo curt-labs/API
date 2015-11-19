@@ -25,9 +25,9 @@ func Dsl(query string, page int, count int, brand int, dtx *apicontext.DataConte
 		con = &elastigo.Conn{
 			Protocol: elastigo.DefaultProtocol,
 			Domain:   host,
-			Port:     os.Getenv("ELASTICSEARCH_PORT"),
-			Username: os.Getenv("ELASTICSEARCH_USER"),
-			Password: os.Getenv("ELASTICSEARCH_PASS"),
+			Port:     os.Getenv("ELASTIC_PORT"),
+			Username: os.Getenv("ELASTIC_USER"),
+			Password: os.Getenv("ELASTIC_PASS"),
 		}
 	}
 	if con == nil {
