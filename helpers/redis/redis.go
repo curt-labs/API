@@ -151,7 +151,6 @@ func Delete(key string) error {
 	if err := conn.Send("select", Db); err != nil {
 		return err
 	}
-
 	_, err = conn.Do("DEL", fmt.Sprintf("%s:%s", Prefix, key))
 	return err
 }
@@ -199,15 +198,15 @@ func DeleteFullPath(key string) error {
 	return err
 }
 
-func GetFullPath(namespace, key string) ([]string, error) {
-	var err error
+func GetFullPath(key string) ([]string, error) {
 	data := make([]string, 0)
-	pool := RedisPool(true)
+	pool := RedisPool(false)
+
 	if pool == nil {
 		return data, errors.New(PoolAllocationErr)
 	}
 
-	conn := pool.Get()
+	conn, err := pool.Dial()
 	if err != nil {
 		return data, err
 	} else if conn.Err() != nil {
@@ -215,6 +214,16 @@ func GetFullPath(namespace, key string) ([]string, error) {
 	}
 
 	conn.Send("select", Db)
-	searchStr := fmt.Sprintf("%s*%s*", namespace, key)
-	return redix.Strings(conn.Do("KEYS", searchStr))
+
+	reply, err := redix.Strings(conn.Do("KEYS", "*"))
+	if err != nil || reply == nil {
+		return data, err
+	}
+
+	for _, r := range reply {
+		if strings.Contains(r, key) {
+			data = append(data, r)
+		}
+	}
+	return data, err
 }

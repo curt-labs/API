@@ -237,7 +237,7 @@ func (v *CurtVehicle) GetPartsFromVehicleConfig(dtx *apicontext.DataContext) (ps
 			return ps, err
 		}
 		//get part -- adds some weight
-		err = p.FromDatabase(dtx)
+		err = p.FromDatabase(getBrandsFromDTX(dtx))
 		if err != nil {
 			return ps, err
 		}
@@ -590,4 +590,17 @@ func getCurtConfigMapFromAcesConfigMap(acesConfigMap map[int]interface{}) (map[s
 		}
 	}
 	return curtMap, err
+}
+
+//Utility
+func getBrandsFromDTX(dtx *apicontext.DataContext) []int {
+	var brands []int
+	if dtx.BrandID == 0 {
+		for _, b := range dtx.BrandArray {
+			brands = append(brands, b)
+		}
+	} else {
+		brands = append(brands, dtx.BrandID)
+	}
+	return brands
 }

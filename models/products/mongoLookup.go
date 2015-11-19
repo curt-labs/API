@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
-	"github.com/curt-labs/GoAPI/models/products/mongo"
 
 	"sort"
 	"strings"
@@ -66,12 +65,11 @@ type NoSqlApp struct {
 }
 
 type NoSqlLookup struct {
-	Years      []string            `json:"available_years,omitempty" xml:"available_years, omitempty"`
-	Makes      []string            `json:"available_makes,omitempty" xml:"available_makes, omitempty"`
-	Models     []string            `json:"available_models,omitempty" xml:"available_models, omitempty"`
-	Styles     []string            `json:"available_styles,omitempty" xml:"available_styles, omitempty"`
-	Parts      []Part              `json:"parts,omitempty" xml:"parts, omitempty"`
-	MongoParts []mongoData.Product `json:"mongo_parts,omitempty" xml:"mongo_parts, omitempty"`
+	Years  []string `json:"available_years,omitempty" xml:"available_years, omitempty"`
+	Makes  []string `json:"available_makes,omitempty" xml:"available_makes, omitempty"`
+	Models []string `json:"available_models,omitempty" xml:"available_models, omitempty"`
+	Styles []string `json:"available_styles,omitempty" xml:"available_styles, omitempty"`
+	Parts  []Part   `json:"parts,omitempty" xml:"parts, omitempty"`
 	NoSqlVehicle
 }
 
@@ -408,7 +406,7 @@ func FindVehiclesWithParts(v NoSqlVehicle, collection string, dtx *apicontext.Da
 	//add parts
 	for _, id := range ids {
 		p := Part{ID: id}
-		if err := p.Get(dtx, "videos,content,reviews,related,packaging,categories"); err != nil {
+		if err := p.Get(dtx); err != nil {
 			continue
 		}
 		l.Parts = append(l.Parts, p)
@@ -461,20 +459,10 @@ func FindVehiclesFromAllCategories(v NoSqlVehicle, dtx *apicontext.DataContext) 
 		//add parts
 		var partsArray []Part
 		for _, id := range ids {
-			//TODO use mongoLayer
-			// p := mongoData.Product{
-			// 	ProductID: id,
-			// }
-			// if err := p.FromMongo(); err != nil {
-			// 	log.Print(err)
-			// 	continue
-			// }
-
-			// l.MongoParts = append(l.MongoParts, p)
 			p := Part{
 				ID: id,
 			}
-			err = p.Get(dtx, "videos,content,reviews,related,packaging,categories")
+			err = p.Get(dtx)
 			if err != nil {
 				continue
 			}
@@ -520,7 +508,6 @@ func FindPartsFromOneCategory(v NoSqlVehicle, collection string, dtx *apicontext
 	var partsArray []Part
 	for _, id := range ids {
 		p := Part{ID: id}
-		//TODO use mongoLayer
 		if err := p.Get(dtx); err != nil {
 			continue
 		}

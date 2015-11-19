@@ -81,7 +81,7 @@ func (filtered FilteredOptions) categoryGroupAttributes(cat products.Category, s
 	}
 	defer idQry.Close()
 
-	idRows, err := idQry.Query(cat.ID)
+	idRows, err := idQry.Query(cat.CategoryID)
 	if err != nil {
 		return FilteredOptions{}, err
 	}

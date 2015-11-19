@@ -104,18 +104,9 @@ func main() {
 	})
 
 	m.Group("/category", func(r martini.Router) {
-		//The endpoints below fetch categories/parts from a NoSQL dataset that is updated as part of our partindexing
-		r.Get("/mongo/tree", category_ctlr.GetCategoryTree)
-		r.Get("/mongo/parts/:id", category_ctlr.GetCategoryParts)
-		r.Get("/mongo/:id", category_ctlr.GetCategoryFromMongo)
-
-		r.Get("", category_ctlr.Parents)
-		r.Get("/tree", category_ctlr.Tree) // work in progress - not working yet
+		r.Get("/:id/parts", category_ctlr.GetCategoryParts)
 		r.Get("/:id", category_ctlr.GetCategory)
-		r.Post("/:id", category_ctlr.GetCategory)
-		r.Get("/:id/subs", category_ctlr.SubCategories)
-		r.Get("/:id/parts", category_ctlr.GetParts)
-		r.Post("/:id/parts", category_ctlr.GetParts)
+		r.Get("", category_ctlr.GetCategoryTree)
 	})
 
 	m.Group("/contact", func(r martini.Router) {
@@ -209,6 +200,12 @@ func main() {
 
 	m.Group("/cust", func(r martini.Router) { // different endpoint because partial matching matches this to another excused route
 		r.Post("/user/changePassword", customer_ctlr.ChangePassword)
+	})
+
+	m.Group("/cache", func(r martini.Router) { // different endpoint because partial matching matches this to another excused route
+		r.Get("/key", cache.GetByKey)
+		r.Get("/keys", cache.GetKeys)
+		r.Delete("/keys", cache.DeleteKey)
 	})
 
 	m.Group("/customer", func(r martini.Router) {
@@ -351,8 +348,6 @@ func main() {
 	m.Group("/part", func(r martini.Router) {
 		r.Get("/featured", part_ctlr.Featured)
 		r.Get("/latest", part_ctlr.Latest)
-		r.Get("/all", part_ctlr.AllBasics)
-		r.Get("/old/:part", part_ctlr.OldPartNumber)
 		r.Get("/:part/vehicles", part_ctlr.Vehicles)
 		r.Get("/:part/attributes", part_ctlr.Attributes)
 		r.Get("/:part/reviews", part_ctlr.ActiveApprovedReviews)
@@ -367,26 +362,10 @@ func main() {
 		r.Get("/:part/:year/:make/:model", part_ctlr.GetWithVehicle)
 		r.Get("/:part/:year/:make/:model/:submodel", part_ctlr.GetWithVehicle)
 		r.Get("/:part/:year/:make/:model/:submodel/:config(.+)", part_ctlr.GetWithVehicle)
-		r.Get("/:part", part_ctlr.Get)
+		r.Get("/id/:part", part_ctlr.Get)
+		r.Get("/identifiers", part_ctlr.Identifiers)
+		r.Get("/:part", part_ctlr.PartNumber)
 		r.Get("", part_ctlr.All)
-		r.Put("/:id", part_ctlr.UpdatePart)
-		r.Post("", part_ctlr.CreatePart)
-		r.Delete("/:id", part_ctlr.DeletePart)
-	})
-
-	m.Group("/price", func(r martini.Router) {
-		r.Get("/:id", part_ctlr.GetPrice)
-		r.Post("", part_ctlr.SavePrice)
-		r.Put("/:id", part_ctlr.SavePrice)
-		r.Delete("/:id", part_ctlr.DeletePrice)
-	})
-
-	m.Group("/reviews", func(r martini.Router) {
-		r.Get("", part_ctlr.GetAllReviews)
-		r.Get("/:id", part_ctlr.GetReview)
-		r.Put("", part_ctlr.SaveReview)
-		r.Post("/:id", part_ctlr.SaveReview)
-		r.Delete("/:id", part_ctlr.DeleteReview)
 	})
 
 	m.Group("/salesrep", func(r martini.Router) {
@@ -512,39 +491,18 @@ func main() {
 		r.Get("/distinct", videos_ctlr.DistinctVideos) //old "videos" table - curtmfg?
 		r.Get("/channel/type", videos_ctlr.GetAllChannelTypes)
 		r.Get("/channel/type/:id", videos_ctlr.GetChannelType)
-		r.Post("/channel/type/:id", videos_ctlr.SaveChannelType)
-		r.Post("/channel/type", videos_ctlr.SaveChannelType)
-		r.Delete("/channel/type/:id", videos_ctlr.DeleteChannelType)
 		r.Get("/channel", videos_ctlr.GetAllChannels)
 		r.Get("/channels", videos_ctlr.GetAllChannels)
 		r.Get("/channel/:id", videos_ctlr.GetChannel)
-		r.Post("/channel/:id", videos_ctlr.SaveChannel)
-		r.Post("/channel", videos_ctlr.SaveChannel)
-		r.Delete("/channel/:id", videos_ctlr.DeleteChannel)
 		r.Get("/cdn/type", videos_ctlr.GetAllCdnTypes)
 		r.Get("/cdn/type/:id", videos_ctlr.GetCdnType)
-		r.Post("/cdn/type/:id", videos_ctlr.SaveCdnType)
-		r.Post("/cdn/type", videos_ctlr.SaveCdnType)
-		r.Delete("/cdn/type/:id", videos_ctlr.DeleteCdnType)
-
 		r.Get("/cdn", videos_ctlr.GetAllCdns)
 		r.Get("/cdn/:id", videos_ctlr.GetCdn)
-		r.Post("/cdn/:id", videos_ctlr.SaveCdn)
-		r.Post("/cdn", videos_ctlr.SaveCdn)
-		r.Delete("/cdn/:id", videos_ctlr.DeleteCdn)
 		r.Get("/type", videos_ctlr.GetAllVideoTypes)
 		r.Get("/type/:id", videos_ctlr.GetVideoType)
-		r.Post("/type/:id", videos_ctlr.SaveVideoType)
-		r.Post("/type", videos_ctlr.SaveVideoType)
-		r.Delete("/type/:id", videos_ctlr.DeleteVideoType)
-
-		r.Get("/part/:id", videos_ctlr.GetPartVideos)
 		r.Get("", videos_ctlr.GetAllVideos)
 		r.Get("/details/:id", videos_ctlr.GetVideoDetails)
 		r.Get("/:id", videos_ctlr.Get)
-		r.Post("/:id", videos_ctlr.SaveVideo)
-		r.Post("", videos_ctlr.SaveVideo)
-		r.Delete("/:id", videos_ctlr.DeleteVideo)
 	})
 
 	m.Group("/vin", func(r martini.Router) {

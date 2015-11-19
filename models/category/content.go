@@ -1,4 +1,4 @@
-package products
+package category
 
 // Content ...
 type Content struct {

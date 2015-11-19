@@ -39,9 +39,12 @@ func CurtLookup(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dt
 		err = cl.GetMakes()
 	} else if v.Model == "" {
 		err = cl.GetModels()
-	} else if v.Style == "" {
-		err = cl.GetStyles()
 	} else {
+		err = cl.GetStyles()
+		if err != nil {
+			apierror.GenerateError("Trouble finding styles.", err, w, r)
+			return ""
+		}
 		err = cl.GetParts(dtx)
 	}
 

@@ -91,7 +91,7 @@ func (ag *ApplicationGuide) Create(dtx *apicontext.DataContext) (err error) {
 		return err
 	}
 	defer stmt.Close()
-	res, err := stmt.Exec(ag.Url, ag.Website.ID, ag.FileType, ag.Category.ID, ag.Icon, dtx.BrandID)
+	res, err := stmt.Exec(ag.Url, ag.Website.ID, ag.FileType, ag.Category.CategoryID, ag.Icon, dtx.BrandID)
 	if err != nil {
 		return err
 	}
@@ -139,7 +139,7 @@ func populateApplicationGuide(row *sql.Row, ch chan ApplicationGuide) {
 		ch <- ag
 	}
 	if catID != nil {
-		ag.Category.ID = *catID
+		ag.Category.CategoryID = *catID
 	}
 	if catName != nil {
 		ag.Category.Title = *catName
@@ -171,7 +171,7 @@ func populateApplicationGuides(rows *sql.Rows, ch chan []ApplicationGuide) {
 			ch <- ags
 		}
 		if catID != nil {
-			ag.Category.ID = *catID
+			ag.Category.CategoryID = *catID
 		}
 		if catName != nil {
 			ag.Category.Title = *catName

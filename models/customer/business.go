@@ -13,7 +13,9 @@ var (
 	getBusinessClassesStmt = `select b.BusinessClassID, b.name, b.sort, b.showOnWebsite from BusinessClass as b 
 		join ApiKeyToBrand as atb on atb.brandID = b.brandID
 		join ApiKey as a on a.id = atb.keyID
-		where a.api_key = ? && (atb.brandID = ? or 0 =?)`
+		where a.api_key = ? && (atb.brandID = ? or 0 = ?) && b.showOnWebsite = 1
+		group by b.name
+		order by b.sort`
 	createBusinessClass = `insert into BusinessClass (name, sort, showOnWebsite, brandID) values (?,?,?,?)`
 	deleteBusinessClass = `delete from BusinessClass where BusinessClassID = ?`
 )

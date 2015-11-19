@@ -53,14 +53,14 @@ func (a *plainAuth) Next(fromServer []byte, more bool) ([]byte, error) {
 
 func Send(tos []string, subject string, body string, html bool) error {
 	// Bind SMTP Settings from Environment Variables
-	if server := os.Getenv("EMAIL_SERVER"); server != "" {
-		creds.Server = server
-		creds.Address = os.Getenv("EMAIL_ADDRESS")
+
+	if addr := os.Getenv("EMAIL_ADDRESS"); addr != "" {
+		creds.Server = EmailServer
+		creds.Address = addr
 		creds.Username = os.Getenv("EMAIL_USERNAME")
 		creds.Password = os.Getenv("EMAIL_PASSWORD")
 		creds.SSL, _ = strconv.ParseBool(os.Getenv("EMAIL_SSL"))
 		creds.Port, _ = strconv.Atoi(os.Getenv("EMAIL_PORT"))
-
 	}
 
 	fullserver := creds.Server + ":" + strconv.Itoa(creds.Port)
@@ -71,7 +71,6 @@ func Send(tos []string, subject string, body string, html bool) error {
 	mime := "MIME-version: 1.0;\nContent-Type: " + mimetype + "; charset=\"UTF-8\";\n\n"
 	subject = "Subject: " + subject + "\n"
 	msg := []byte(subject + mime + body)
-
 	// Set up authentication information.
 	auth := PlainAuth(
 		"",
@@ -79,6 +78,7 @@ func Send(tos []string, subject string, body string, html bool) error {
 		creds.Password,
 		creds.Server,
 	)
+
 	// Connect to the server, authenticate, set the sender and recipient,
 	// and send the email all in one step.
 	return smtp.SendMail(

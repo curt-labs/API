@@ -47,6 +47,15 @@ var (
 							join Part as p on vp.partID = p.partID
 							where y.year = ? && ma.make = ? && mo.model = ? && s.style = ? && (p.status = 800 || p.status = 900)
 							order by p.partID`
+	GetPartNumbersWithoutStyleStmt = `select distinct p.partID from Style as s
+							join Vehicle as v on s.styleID = v.styleID
+							join Year as y on v.yearID = y.yearID
+							join Make as ma on v.makeID = ma.makeID
+							join Model as mo on v.modelID = mo.modelID
+							join VehiclePart as vp on v.vehicleID = vp.vehicleID
+							join Part as p on vp.partID = p.partID
+							where y.year = ? && ma.make = ? && mo.model = ? && (p.status = 800 || p.status = 900)
+							order by p.partID`
 )
 
 type CurtVehicle struct {
@@ -277,19 +286,21 @@ func (c *CurtLookup) GetParts(dtx *apicontext.DataContext) error {
 		return err
 	}
 	defer db.Close()
+	var rows *sql.Rows
 
-	stmt, err := db.Prepare(GetPartNumbersStmt)
-	if err != nil {
-		return err
+	if c.Style != "" {
+		rows, err = db.Query(GetPartNumbersStmt, c.Year, c.Make, c.Model, c.Style)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+	} else {
+		rows, err = db.Query(GetPartNumbersWithoutStyleStmt, c.Year, c.Make, c.Model)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
 	}
-	defer stmt.Close()
-
-	rows, err := stmt.Query(c.Year, c.Make, c.Model, c.Style)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
 	ch := make(chan *Part)
 	iter := 0
 	for rows.Next() {

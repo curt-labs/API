@@ -3,8 +3,9 @@ package contact
 import (
 	"bytes"
 	"errors"
-	"github.com/curt-labs/GoAPI/helpers/email"
 	"text/template"
+
+	"github.com/curt-labs/GoAPI/helpers/email"
 )
 
 type SmtpTemplateData struct {
@@ -46,6 +47,5 @@ func SendEmail(ct ContactType, subject string, body string) (err error) {
 	}
 
 	err = email.Send(tos, subject, msg.String(), false)
-
 	return err
 }

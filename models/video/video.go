@@ -5,8 +5,6 @@ import (
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/helpers/redis"
 	"github.com/curt-labs/GoAPI/models/brand"
-
-	// "github.com/curt-labs/GoAPI/models/products"
 	_ "github.com/go-sql-driver/mysql"
 
 	"database/sql"
@@ -15,25 +13,23 @@ import (
 	"time"
 )
 
-// The Video struct is a reresentation of a video. It contains information about the video itself, as well as any associated files.
+// Video is a reresentation of a video. It contains information about the video itself, as well as any associated files.
 type Video struct {
-	ID           int       `json:"id,omitempty" xml:"id,omitempty"`
-	Title        string    `json:"title, omitempty" xml:"title,omitempty"`
-	VideoType    VideoType `json:"videoType,omitempty" xml:"v,omitempty"`
-	Description  string    `json:"description,omitempty" xml:"description,omitempty"`
-	DateAdded    time.Time `json:"dateAdded,omitempty" xml:"dateAdded,omitempty"`
-	DateModified time.Time `json:"dateModified,omitempty" xml:"dateModified,omitempty"`
-	IsPrimary    bool      `json:"isPrimary,omitempty" xml:"v,omitempty"`
-	Thumbnail    string    `json:"thumbnail,omitempty" xml:"thumbnail,omitempty"`
-	Channels     Channels  `json:"channels,omitempty" xml:"channels,omitempty"`
-	Files        CdnFiles  `json:"files,omitempty" xml:"files,omitempty"`
-	// Categories   []products.Category `json:"categories,omitempty" xml:"categories,omitempty"`
-	// Parts        []products.Part     `json:"parts,omitempty" xml:"parts,omitempty"`
-	CategoryIds []int `json:"categoryIds,omitempty" xml:"categoryIds,omitempty"`
-	PartIds     []int `json:"partIds,omitempty" xml:"partIds,omitempty"`
-
-	WebsiteId int          `json:"websiteId,omitempty" xml:"websiteId,omitempty"` //TODO
-	Brands    brand.Brands `json:"brands,omitempty" xml:"brands,omitempty"`
+	ID           int          `json:"id,omitempty" xml:"id,omitempty"`
+	Title        string       `json:"title, omitempty" xml:"title,omitempty"`
+	SubjectType  string       `bson:"subject_type" json:"subject_type" xml:"subject_type"`
+	VideoType    VideoType    `json:"videoType,omitempty" xml:"videoType,omitempty"`
+	Description  string       `bson:"description" json:"description" xml:"description"`
+	DateAdded    time.Time    `bson:"date_added" json:"date_added" xml:"date_added"`
+	DateModified time.Time    `bson:"date_modified" json:"date_modified" xml:"date_modified"`
+	Thumbnail    string       `bson:"thumb_nail" json:"thumbnail" xml:"thumbnail"`
+	Channels     []Channel    `bson:"channel" json:"channel" xml:"channel"`
+	Files        []CdnFile    `bson:"cdn_file" json:"cdn_file" xml:"cdn_file"`
+	IsPrimary    bool         `json:"isPrimary,omitempty" xml:"isPrimary,omitempty"`
+	CategoryIds  []int        `json:"categoryIds,omitempty" xml:"categoryIds,omitempty"`
+	PartIds      []int        `json:"partIds,omitempty" xml:"partIds,omitempty"`
+	WebsiteId    int          `json:"websiteId,omitempty" xml:"websiteId,omitempty"`
+	Brands       brand.Brands `json:"brands,omitempty" xml:"brands,omitempty"`
 }
 
 // Videos is just an easier type to work with than using an array of video types.
@@ -43,13 +39,14 @@ type Videos []Video
 type Channel struct {
 	ID           int         `json:"id,omitempty" xml:"id,omitempty"`
 	Type         ChannelType `json:"type,omitempty" xml:"type,omitempty"`
-	Link         string      `json:"link,omitempty" xml:"link,omitempty"`
-	EmbedCode    string      `json:"embedCode,omitempty" xml:"embedCode,omitempty"`
-	ForiegnID    string      `json:"foreignId,omitempty" xml:"foreignId,omitempty"`
-	DateAdded    time.Time   `json:"dateAdded,omitempty" xml:"dateAdded,omitempty"`
-	DateModified time.Time   `json:"dateModified,omitempty" xml:"dateModified,omitempty"`
-	Title        string      `json:"title,omitempty" xml:"title,omitempty"`
-	Description  string      `json:"description,omitempty" xml:"description,omitempty"`
+	Link         string      `bson:"link" json:"link" xml:"link"`
+	EmbedCode    string      `bson:"embed_code" json:"embed_code" xml:"embed_code"`
+	ForiegnID    string      `bson:"foreign_id" json:"foreign_id" xml:"foreign_id"`
+	DateAdded    time.Time   `bson:"date_added" json:"date_added" xml:"date_added"`
+	DateModified time.Time   `bson:"date_modified" json:"date_modified" xml:"date_modified"`
+	Title        string      `bson:"title" json:"title" xml:"title,attr"`
+	Description  string      `bson:"description" json:"description" xml:"description"`
+	Duration     string      `bson:"duration" json:"duration" xml:"duration"`
 }
 
 // Channels is just an easier type to work with than using an array of Channel types.
@@ -67,14 +64,14 @@ type ChannelType struct {
 // These CdnFiles are typically used for HTML5 Videos.
 type CdnFile struct {
 	ID           int         `json:"id,omitempty" xml:"id,omitempty"`
-	Type         CdnFileType `json:"type,omitempty" xml:"type,omitempty"`
-	Path         string      `json:"path,omitempty" xml:"path,omitempty"`
-	Bucket       string      `json:"bucket,omitempty" xml:"bucket,omitempty"`
-	ObjectName   string      `json:"objectName,omitempty" xml:"objectName,omitempty"`
-	FileSize     string      `json:"fileSize,omitempty" xml:"fileSize,omitempty"`
-	DateAdded    time.Time   `json:"dateAdded,omitempty" xml:"dateAdded,omitempty"`
-	DateModified time.Time   `json:"dateModified,omitempty" xml:"dateModified,omitempty"`
-	LastUploaded string      `json:"lastUploaded,omitempty" xml:"lastUploaded,omitempty"`
+	Type         CdnFileType `bson:"type" json:"type" xml:"type"`
+	Path         string      `bson:"path" json:"path" xml:"path"`
+	Bucket       string      `bson:"bucket" json:"bucket" xml:"bucket"`
+	ObjectName   string      `bson:"object_name" json:"object_name" xml:"object_name"`
+	FileSize     string      `bson:"file_size" json:"file_size" xml:"file_size"`
+	DateAdded    time.Time   `bson:"date_added" json:"date_added" xml:"date_added"`
+	DateModified time.Time   `bson:"date_modified" json:"date_modified" xml:"date_modified"`
+	LastUploaded string      `bson:"date_uploaded" json:"date_uploaded" xml:"date_uploaded"`
 }
 
 // CdnFiles is just an easier type to work with than using an array of CdnFiles.
@@ -83,16 +80,16 @@ type CdnFiles []CdnFile
 // CdnFile type specifies what file type the file is. Some examples might be .ogg, .mp4, .avi, etc.
 type CdnFileType struct {
 	ID          int    `json:"id,omitempty" xml:"id,omitempty"`
-	MimeType    string `json:"mimeType,omitempty" xml:"mimeType,omitempty"`
-	Title       string `json:"title,omitempty" xml:"title,omitempty"`
-	Description string `json:"description,omitempty" xml:"description,omitempty"`
+	MimeType    string `bson:"mime_type" json:"mime_type" xml:"mime_type"`
+	Title       string `bson:"title" json:"title" xml:"title,attr"`
+	Description string `bson:"description" json:"description" xml:"description"`
 }
 
 // Video Type specifies what kind of video it is. Some examples might be, Product video, Howto, or Instructional Video.
 type VideoType struct {
 	ID   int    `json:"id,omitempty" xml:"id,omitempty"`
-	Name string `json:"name,omitempty" xml:"name,omitempty"`
-	Icon string `json:"icon,omitempty" xml:"icon,omitempty"`
+	Name string `bson:"name" json:"name" xml:"name"`
+	Icon string `bson:"icon" json:"icon" xml:"icon"`
 }
 
 // Videos can be associated to categories. This is the most basic information about a category.
@@ -127,8 +124,6 @@ var (
 	getAllCdnFiles   = `SELECT ` + cdnFileFields + `,` + cdnFileTypeFields + ` FROM CdnFile AS cf LEFT JOIN CdnFileType AS cft ON cft.ID = cf.typeID `
 	getAllChannels   = `SELECT ` + channelFields + `, ` + channelTypeFields + ` FROM Channel AS c LEFT JOIN ChannelType AS ct ON ct.ID = c.typeID `
 	getAllVideoTypes = `SELECT vt.vTypeID, ` + videoTypeFields + ` FROM videoType AS vt`
-	getPartVideos    = `SELECT ` + videoFields + `, ` + videoTypeFields + ` FROM VideoNew AS v LEFT JOIN videoType AS vt ON vt.vTypeID = v.subjectTypeID 
-						LEFT JOIN VideoJoin AS vj on vj.videoID = v.ID WHERE vj.partID = ? ORDER BY v.title `
 	getVideoChannels = `SELECT ` + channelFields + `, ` + channelTypeFields + ` FROM VideoChannels AS vc 
 					  JOIN Channel AS c on c.ID = vc.channelID
 					 LEFT JOIN ChannelType AS ct ON ct.ID = c.typeID
@@ -137,46 +132,15 @@ var (
 						LEFT JOIN CdnFileType AS cft ON cft.ID = cf.typeID 
 						LEFT JOIN VideoCdnFiles AS vcf ON vcf.cdnID = cf.ID 
 						WHERE vcf.videoID = ? `
-	getVideoParts = `select partID from VideoJoin where videoID = ?`
-
-	createVideo             = `INSERT INTO VideoNew (subjectTypeID, title, description, dateAdded, dateModified, isPrimary, thumbnail) VALUES(?, ?, ?, ?, ?, ?, ?)`
-	updateVideo             = `UPDATE VideoNew SET subjectTypeID = ?, title = ?, description = ?, isPrimary = ?, thumbnail = ? WHERE ID = ?`
-	deleteVideo             = `DELETE FROM VideoNew WHERE ID = ?`
-	joinVideoBrand          = `insert into VideoNewToBrand (videoID, brandID) values(?,?)`
-	joinVideoCdn            = `INSERT INTO VideoCdnFiles(cdnID, videoID) VALUES(?,?)`
-	joinVideoChannel        = `INSERT INTO VideoChannels( channelID, videoID) VALUES(?,?)`
-	joinVideoPart           = `INSERT INTO VideoJoin(videoID, partID, catID, websiteID, isPrimary) VALUES(?,?,0,?,?)`
-	joinVideoCategory       = `INSERT INTO VideoJoin(videoID, partID, catID, websiteID, isPrimary) VALUES(?,0,?,?,?)`
-	deleteVideoBrandJoin    = `delete from VideoNewToBrand where videoID = ?`
-	deleteVideoCdnJoin      = `DELETE FROM VideoCdnFiles WHERE videoID = ?`
-	deleteVideoChannelJoin  = `DELETE FROM VideoChannels WHERE videoID = ?`
-	deleteVideoPartJoin     = `DELETE FROM VideoJoin WHERE videoID = ? AND partID = ?`
-	deleteVideoCategoryJoin = `DELETE FROM VideoJoin WHERE videoID = ? AND catID = ?`
-	getVideoIdFromPart      = `select videoID from VideoJoin where partID = ?`
-
-	//crud
+	getVideoParts      = `select partID from VideoJoin where videoID = ?`
+	getVideoIdFromPart = `select videoID from VideoJoin where partID = ?`
 	getChannel         = "SELECT ID, typeID, link, embedCode, foriegnID, dateAdded, dateModified, title, `desc` FROM Channel WHERE ID = ?"
-	createChannel      = "INSERT INTO Channel (typeID, link, embedCode, foriegnID, dateAdded, title, `desc`) VALUES (?,?,?,?,?,?,?)"
-	updateChannel      = "UPDATE Channel SET typeID = ?, link = ?, embedCode = ?, foriegnID = ?, title = ?, `desc` = ? WHERE ID = ?"
-	deleteChannel      = "DELETE FROM Channel WHERE ID = ?"
 	getCdn             = `SELECT ` + cdnFileFields + `, ` + cdnFileTypeFields + `, cf.dateModified FROM CdnFile AS cf LEFT JOIN CdnFileType AS cft ON cft.ID = cf.typeID WHERE cf.ID = ?`
-	createCdn          = `INSERT INTO CdnFile (typeID, path, dateAdded, lastUploaded, bucket, objectName, fileSize) VALUES (?,?,?,?,?,?,?)`
-	updateCdn          = `UPDATE CdnFile SET typeID = ?, path = ?, lastUploaded = ?, bucket = ?, objectName = ?, fileSize = ? WHERE ID = ?`
-	deleteCdn          = `DELETE FROM CdnFile WHERE ID = ?`
 	getCdnType         = `SELECT ID, mimeType, title, description FROM CdnFileType WHERE ID = ?`
 	getAllCdnTypes     = `SELECT ID, mimeType, title, description FROM CdnFileType`
-	createCdnType      = `INSERT INTO CdnFileType (mimeType, title, description) VALUES(?,?,?)`
-	updateCdnType      = `UPDATE CdnFileType SET mimeType = ?, title = ?, description = ? WHERE ID = ?`
-	deleteCdnType      = `DELETE FROM CdnFileType WHERE ID = ?`
 	getVideoType       = `SELECT vTypeID, name, icon FROM videoType WHERE vTypeID = ?`
-	createVideoType    = `INSERT INTO videoType (name, icon) VALUES (?,?)`
-	updateVideoType    = `UPDATE videoType SET name = ?, icon = ? WHERE vTypeID = ?`
-	deleteVideoType    = `DELETE FROM videoType WHERE vTypeID = ?`
 	getChannelType     = `SELECT ID, name, description FROM ChannelType WHERE ID = ?`
 	getAllChannelTypes = `SELECT ID, name, description FROM ChannelType `
-	createChannelType  = `INSERT INTO ChannelType (name, description) VALUES (?,?)`
-	updateChannelType  = `UPDATE ChannelType SET name = ?, description = ? WHERE ID = ?`
-	deleteChannelType  = `DELETE FROM ChannelType WHERE ID = ?`
 )
 
 // Retrieves a base video file. This does not grab all the associated channels or CDN files.
@@ -292,7 +256,7 @@ func (v *Video) GetVideoDetails() error {
 	return nil
 }
 
-// This grabs all the videos given a certain Brand. Videos are  Base Videos and do not have advanced information.
+// GetAllVideos This grabs all the videos given a certain Brand. Videos are  Base Videos and do not have advanced information.
 func GetAllVideos(dtx *apicontext.DataContext) (vs Videos, err error) {
 	data, err := redis.Get(AllVideosRedisKey + ":" + dtx.BrandString)
 	if err == nil && len(data) > 0 {
@@ -330,57 +294,7 @@ func GetAllVideos(dtx *apicontext.DataContext) (vs Videos, err error) {
 	return
 }
 
-// Given a Product ID, this method returns all the videos and their advanced video details for a given product.
-func GetPartVideos(partId int) (vs Videos, err error) {
-	vs = make([]Video, 0)
-	redis_key := "video:part:" + strconv.Itoa(partId)
-
-	data, err := redis.Get(redis_key)
-	if err == nil && len(data) > 0 {
-		if err = json.Unmarshal(data, &vs); err == nil {
-			return
-		}
-	}
-
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return
-	}
-	defer db.Close()
-
-	stmt, err := db.Prepare(getVideoIdFromPart)
-	if err != nil {
-		return
-	}
-	defer stmt.Close()
-
-	res, err := stmt.Query(partId)
-	if err != nil {
-		return
-	}
-
-	var v Video
-	for res.Next() {
-		err = res.Scan(&v.ID)
-		if err != nil {
-			return
-		}
-		err = v.GetVideoDetails()
-		if err != nil {
-			return
-		}
-		vs = append(vs, v)
-	}
-	defer res.Close()
-
-	if vs != nil {
-		go redis.Setex(redis_key, vs, redis.CacheTimeout)
-	}
-
-	return vs, err
-}
-
-// Gets all the brands associated to a specific base video.
+// GetBrands Gets all the brands associated to a specific base video.
 func (v *Video) GetBrands() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -408,7 +322,7 @@ func (v *Video) GetBrands() error {
 	return err
 }
 
-// Gets all the Video's channels.
+// GetChannels Gets all the Video's channels.
 func (v *Video) GetChannels() (chs Channels, err error) {
 	redis_key := "video:channels:" + strconv.Itoa(v.ID)
 	data, err := redis.Get(redis_key)
@@ -442,7 +356,7 @@ func (v *Video) GetChannels() (chs Channels, err error) {
 	return
 }
 
-// Gets all the Video's associated products.
+// GetParts Gets all the Video's associated products.
 func (v *Video) GetParts() (err error) {
 	redis_key := "video:parts:" + strconv.Itoa(v.ID)
 	data, err := redis.Get(redis_key)
@@ -480,7 +394,7 @@ func (v *Video) GetParts() (err error) {
 	return
 }
 
-// Gets all of the CdnFiles for the specific video.
+// GetCdnFiles Gets all of the CdnFiles for the specific video.
 func (v *Video) GetCdnFiles() (cdns CdnFiles, err error) {
 	redis_key := "video:cdnFiles:" + strconv.Itoa(v.ID)
 	data, err := redis.Get(redis_key)
@@ -514,574 +428,7 @@ func (v *Video) GetCdnFiles() (cdns CdnFiles, err error) {
 	return
 }
 
-// Creates a specific base video as well as any advanced details for the video
-func (v *Video) Create(dtx *apicontext.DataContext) error {
-	go redis.Delete(AllVideosRedisKey + dtx.BrandString)
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-
-	stmt, err := tx.Prepare(createVideo)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	v.DateAdded = time.Now()
-	res, err := stmt.Exec(v.VideoType.ID, v.Title, v.Description, v.DateAdded, v.DateModified, v.IsPrimary, v.Thumbnail)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	tx.Commit()
-	id, err := res.LastInsertId()
-	v.ID = int(id)
-
-	// create joins
-	bChan := make(chan int)
-	fChan := make(chan int)
-	chChan := make(chan int)
-	catChan := make(chan int)
-	pChan := make(chan int)
-
-	go func() (err error) {
-		if len(v.Brands) > 0 {
-			for _, brand := range v.Brands {
-				err = v.CreateJoinBrand(brand.ID)
-			}
-		}
-		bChan <- 1
-		return err
-	}()
-
-	go func() (err error) {
-		if len(v.Files) > 0 {
-			for _, file := range v.Files {
-				err = v.CreateJoinFile(file)
-			}
-		}
-		fChan <- 1
-		return err
-	}()
-	go func() (err error) {
-		if len(v.Channels) > 0 {
-			for _, channel := range v.Channels {
-				err = v.CreateJoinChannel(channel)
-			}
-		}
-		chChan <- 1
-		return err
-	}()
-	go func() (err error) {
-		if len(v.CategoryIds) > 0 {
-			for _, cat := range v.CategoryIds {
-				err = v.CreateJoinCategory(cat)
-			}
-		}
-		catChan <- 1
-		return err
-	}()
-	go func() (err error) {
-		if len(v.PartIds) > 0 {
-			for _, part := range v.PartIds {
-				err = v.CreateJoinPart(part)
-			}
-		}
-		pChan <- 1
-		return err
-	}()
-	<-bChan
-	<-fChan
-	<-chChan
-	<-catChan
-	<-pChan
-
-	return err
-}
-
-// Updates any base video as well as any advance video details.
-func (v *Video) Update(dtx *apicontext.DataContext) error {
-	go redis.Delete(AllVideosRedisKey + dtx.BrandString)
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-
-	stmt, err := tx.Prepare(updateVideo)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	_, err = stmt.Exec(v.VideoType.ID, v.Title, v.Description, v.IsPrimary, v.Thumbnail, v.ID)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	tx.Commit()
-
-	// delete and create joins
-	bChan := make(chan int)
-	fChan := make(chan int)
-	chChan := make(chan int)
-	catChan := make(chan int)
-	pChan := make(chan int)
-
-	go func() (err error) {
-		err = v.DeleteJoinBrand()
-		if err != nil {
-			return err
-		}
-		if len(v.Brands) > 0 {
-			for _, brand := range v.Brands {
-				err = v.CreateJoinBrand(brand.ID)
-				if err != nil {
-					return err
-				}
-			}
-		}
-		bChan <- 1
-		return nil
-	}()
-
-	go func() (err error) {
-		err = v.DeleteJoinFiles()
-		if err != nil {
-			return err
-		}
-		if len(v.Files) > 0 {
-			for _, file := range v.Files {
-				err = v.CreateJoinFile(file)
-				if err != nil {
-					return err
-				}
-			}
-		}
-		fChan <- 1
-		return nil
-	}()
-	go func() (err error) {
-		err = v.DeleteJoinChannels()
-		if err != nil {
-			return err
-		}
-		if len(v.Channels) > 0 {
-			for _, channel := range v.Channels {
-				err = v.CreateJoinChannel(channel)
-				if err != nil {
-					return err
-				}
-			}
-
-		}
-		chChan <- 1
-		return nil
-	}()
-	go func() (err error) {
-		if len(v.CategoryIds) > 0 {
-			for _, cat := range v.CategoryIds {
-				err = v.DeleteJoinCategory(cat)
-				if err != nil {
-					return err
-				}
-				err = v.CreateJoinCategory(cat)
-				if err != nil {
-					return err
-				}
-			}
-		}
-		catChan <- 1
-		return nil
-	}()
-	go func() (err error) {
-		if len(v.PartIds) > 0 {
-			for _, part := range v.PartIds {
-				err = v.DeleteJoinPart(part)
-				if err != nil {
-					return err
-				}
-				err = v.CreateJoinPart(part)
-				if err != nil {
-					return err
-				}
-			}
-		}
-		pChan <- 1
-		return nil
-	}()
-	<-bChan
-	<-fChan
-	<-chChan
-	<-catChan
-	<-pChan
-
-	return err
-}
-
-// Deletes a video and any associates to it.
-func (v *Video) Delete(dtx *apicontext.DataContext) error {
-
-	//delete and create joins
-	bChan := make(chan int)
-	fChan := make(chan int)
-	chChan := make(chan int)
-	catChan := make(chan int)
-	pChan := make(chan int)
-
-	go func() (err error) {
-		if len(v.Brands) > 0 {
-			err = v.DeleteJoinBrand()
-			if err != nil {
-				return err
-			}
-		}
-		bChan <- 1
-		return nil
-	}()
-
-	go func() (err error) {
-		if len(v.Files) > 0 {
-			err = v.DeleteJoinFiles()
-			if err != nil {
-				return err
-			}
-		}
-		fChan <- 1
-		return nil
-	}()
-	go func() (err error) {
-		if len(v.Channels) > 0 {
-			err = v.DeleteJoinChannels()
-			if err != nil {
-				return err
-			}
-		}
-		chChan <- 1
-		return nil
-	}()
-	go func() (err error) {
-		if len(v.CategoryIds) > 0 {
-			for _, cat := range v.CategoryIds {
-				err = v.DeleteJoinCategory(cat)
-				if err != nil {
-					return err
-				}
-			}
-		}
-		catChan <- 1
-		return nil
-	}()
-	go func() (err error) {
-		if len(v.PartIds) > 0 {
-			for _, part := range v.PartIds {
-				err = v.DeleteJoinPart(part)
-				if err != nil {
-					return err
-				}
-			}
-		}
-		pChan <- 1
-		return nil
-	}()
-	<-bChan
-	<-fChan
-	<-chChan
-	<-catChan
-	<-pChan
-
-	//delete from VideoNew Table
-	go redis.Delete(AllVideosRedisKey + dtx.BrandString)
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-
-	stmt, err := tx.Prepare(deleteVideo)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	_, err = stmt.Exec(v.ID)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	tx.Commit()
-
-	return err
-}
-
-// Associates a video to a brand.
-func (v *Video) CreateJoinBrand(brandID int) error {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	stmt, err := db.Prepare(joinVideoBrand)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	_, err = stmt.Exec(v.ID, brandID)
-	if err != nil {
-		return err
-	}
-	return err
-}
-
-// Associates a CdnFile to a video.
-func (v *Video) CreateJoinFile(f CdnFile) error {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-
-	stmt, err := tx.Prepare(joinVideoCdn)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	_, err = stmt.Exec(f.ID, v.ID)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	tx.Commit()
-	return err
-}
-
-// This creates an associate to a video channel
-func (v *Video) CreateJoinChannel(channel Channel) error {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-
-	stmt, err := tx.Prepare(joinVideoChannel)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	_, err = stmt.Exec(channel.ID, v.ID)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	tx.Commit()
-	return err
-}
-
-// Creates an associate between a video and a product.
-func (v *Video) CreateJoinPart(partId int) error {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-
-	stmt, err := tx.Prepare(joinVideoPart)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	_, err = stmt.Exec(v.ID, partId, v.WebsiteId, v.IsPrimary)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	tx.Commit()
-	return err
-}
-
-// Creates an association between a video and a category
-func (v *Video) CreateJoinCategory(prodCatId int) error {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-
-	stmt, err := tx.Prepare(joinVideoCategory)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	_, err = stmt.Exec(v.ID, prodCatId, v.WebsiteId, v.IsPrimary)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	tx.Commit()
-	return err
-}
-
-// Deletes all brands associated to a video
-func (v *Video) DeleteJoinBrand() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	stmt, err := db.Prepare(deleteVideoBrandJoin)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	_, err = stmt.Exec(v.ID)
-	if err != nil {
-		return err
-	}
-	return err
-}
-
-// Deletes all CdnFile associations to a video.
-func (v *Video) DeleteJoinFiles() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-
-	stmt, err := tx.Prepare(deleteVideoCdnJoin)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	_, err = stmt.Exec(v.ID)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	tx.Commit()
-	return err
-}
-
-// Deletes all Channel associations to a video.
-func (v *Video) DeleteJoinChannels() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-	stmt, err := tx.Prepare(deleteVideoChannelJoin)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	_, err = stmt.Exec(v.ID)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	tx.Commit()
-	return err
-}
-
-// Deletes all product associations to a video.
-func (v *Video) DeleteJoinPart(partId int) error {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-	stmt, err := tx.Prepare(deleteVideoPartJoin)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	_, err = stmt.Exec(v.ID, partId)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	tx.Commit()
-	return err
-}
-
-// Deletes a specific Category association to a video.
-func (v *Video) DeleteJoinCategory(prodCatId int) error {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-
-	stmt, err := tx.Prepare(deleteVideoCategoryJoin)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	_, err = stmt.Exec(v.ID, prodCatId)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	tx.Commit()
-	return err
-}
-
-// Gets a specific video channel.
+// Get Get a gven Channel
 func (c *Channel) Get() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1122,7 +469,7 @@ func (c *Channel) Get() error {
 	return err
 }
 
-// Gets all video channels. Helpful for getting a list of all online video content.
+// GetAllChannels Retrieves all Channels from the DB
 func GetAllChannels() (cs Channels, err error) {
 	data, err := redis.Get(AllChannelsRedisKey)
 	if err == nil && len(data) > 0 {
@@ -1156,90 +503,7 @@ func GetAllChannels() (cs Channels, err error) {
 	return
 }
 
-// Creates an online video channel
-func (c *Channel) Create() error {
-	go redis.Delete(AllChannelsRedisKey)
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-	stmt, err := tx.Prepare(createChannel)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	c.DateAdded = time.Now()
-	res, err := stmt.Exec(c.Type.ID, c.Link, c.EmbedCode, c.ForiegnID, c.DateAdded, c.Title, c.Description)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	err = tx.Commit()
-	id, err := res.LastInsertId()
-	c.ID = int(id)
-	return err
-}
-
-// Updates any information associated with an online video channel
-func (c *Channel) Update() error {
-	go redis.Delete(AllChannelsRedisKey)
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-	stmt, err := tx.Prepare(updateChannel)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(c.Type.ID, c.Link, c.EmbedCode, c.ForiegnID, c.Title, c.Description, c.ID)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	err = tx.Commit()
-	return err
-}
-
-// Deletes a specific video channel.
-func (c *Channel) Delete() error {
-	go redis.Delete(AllChannelsRedisKey)
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-	stmt, err := tx.Prepare(deleteChannel)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(c.ID)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	err = tx.Commit()
-	return err
-}
-
-// Gets a specific CdnFile
+// Get Retrieves a given CdnFile
 func (c *CdnFile) Get() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1295,7 +559,7 @@ func (c *CdnFile) Get() error {
 	return err
 }
 
-// gets all cdn files.
+// GetAllCdnFiles Retrieves all CdnFiles
 func GetAllCdnFiles() (cs CdnFiles, err error) {
 	data, err := redis.Get(AllCdnFilesRedisKey)
 	if err == nil && len(data) > 0 {
@@ -1328,93 +592,7 @@ func GetAllCdnFiles() (cs CdnFiles, err error) {
 	return
 }
 
-// creates a CdnFile
-func (c *CdnFile) Create() error {
-	go redis.Delete(AllCdnFilesRedisKey)
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-
-	stmt, err := tx.Prepare(createCdn)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	c.DateAdded = time.Now()
-	res, err := stmt.Exec(c.Type.ID, c.Path, c.DateAdded, c.LastUploaded, c.Bucket, c.ObjectName, c.FileSize)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	err = tx.Commit()
-	id, err := res.LastInsertId()
-	c.ID = int(id)
-	return err
-}
-
-// updates a CdnFile
-func (c *CdnFile) Update() error {
-	go redis.Delete(AllCdnFilesRedisKey)
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-
-	stmt, err := tx.Prepare(updateCdn)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(c.Type.ID, c.Path, c.LastUploaded, c.Bucket, c.ObjectName, c.FileSize, c.ID)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	err = tx.Commit()
-	return err
-}
-
-// deletes a CdnFile
-func (c *CdnFile) Delete() error {
-	go redis.Delete(AllCdnFilesRedisKey)
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-
-	stmt, err := tx.Prepare(deleteCdn)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(c.ID)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	err = tx.Commit()
-	return err
-}
-
-// Gets a specific CdnFileType, such as .ogg, .mp4
+// Get Retrieves a given CdnFileType
 func (c *CdnFileType) Get() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1444,7 +622,7 @@ func (c *CdnFileType) Get() error {
 	return err
 }
 
-// gets all of the available CdnFileTypes such as ogg, mp4, avi
+// GetAllCdnFileTypes Retrieves all CdnFileTypes
 func GetAllCdnFileTypes() (cts []CdnFileType, err error) {
 	data, err := redis.Get(AllCdnFileTypeRedisKey)
 	if err == nil && len(data) > 0 {
@@ -1490,95 +668,7 @@ func GetAllCdnFileTypes() (cts []CdnFileType, err error) {
 	return
 }
 
-// Creates a new CDN File Type
-func (c *CdnFileType) Create() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-
-	stmt, err := tx.Prepare(createCdnType)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	res, err := stmt.Exec(c.MimeType, c.Title, c.Description)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	err = tx.Commit()
-	id, err := res.LastInsertId()
-	c.ID = int(id)
-	// delete redis key for GetAllCdnFileTypes:
-	go redis.Delete(AllCdnFileTypeRedisKey)
-	return err
-}
-
-// updates a specific CdnFileType
-func (c *CdnFileType) Update() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-
-	stmt, err := tx.Prepare(updateCdnType)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(c.MimeType, c.Title, c.Description, c.ID)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	err = tx.Commit()
-	// delete redis key for GetAllCdnFileTypes:
-	go redis.Delete(AllCdnFileTypeRedisKey)
-	return err
-}
-
-// deletes a specific CdnFileType
-func (c *CdnFileType) Delete() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-
-	stmt, err := tx.Prepare(deleteCdnType)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(c.ID)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	err = tx.Commit()
-	// delete redis key for GetAllCdnFileTypes:
-	go redis.Delete(AllCdnFileTypeRedisKey)
-	return err
-}
-
-// Gets a specific VideoType
+// Get Retrieves a given VideoType
 func (c *VideoType) Get() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1603,7 +693,7 @@ func (c *VideoType) Get() error {
 	return err
 }
 
-// Gets all Video Types.
+// GetAllVideoTypes Retrieves all VideoTypes
 func GetAllVideoTypes() (vts []VideoType, err error) {
 	data, err := redis.Get(AllVideoTypesRedisKey)
 	if err == nil && len(data) > 0 {
@@ -1644,93 +734,7 @@ func GetAllVideoTypes() (vts []VideoType, err error) {
 	return
 }
 
-// Creates a VideoType
-func (c *VideoType) Create() error {
-	go redis.Delete(AllVideoTypesRedisKey)
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-
-	stmt, err := tx.Prepare(createVideoType)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	res, err := stmt.Exec(c.Name, c.Icon)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	err = tx.Commit()
-	id, err := res.LastInsertId()
-	c.ID = int(id)
-	return err
-}
-
-// Updates a VideoType
-func (c *VideoType) Update() error {
-	go redis.Delete(AllVideoTypesRedisKey)
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-
-	stmt, err := tx.Prepare(updateVideoType)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(c.Name, c.Icon, c.ID)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	err = tx.Commit()
-	return err
-}
-
-// Delets a specific VideoType
-func (c *VideoType) Delete() error {
-	go redis.Delete(AllVideoTypesRedisKey)
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-
-	stmt, err := tx.Prepare(deleteVideoType)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(c.ID)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	err = tx.Commit()
-	return err
-}
-
-// Gets a specific ChannelType such as youtube, vimeo, etc
+// Get Retrieves a given ChannelType
 func (c *ChannelType) Get() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -1755,7 +759,7 @@ func (c *ChannelType) Get() error {
 	return err
 }
 
-// gets all available ChannelTypes
+// GetAllChannelTypes Retrieves all ChannelType
 func GetAllChannelTypes() (cts []ChannelType, err error) {
 	data, err := redis.Get(AllChannelTypesRedisKey)
 	if err == nil && len(data) > 0 {
@@ -1794,95 +798,7 @@ func GetAllChannelTypes() (cts []ChannelType, err error) {
 	return cts, err
 }
 
-// creates a specific ChannelType
-func (c *ChannelType) Create() error {
-	go redis.Delete(AllChannelTypesRedisKey)
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-
-	stmt, err := tx.Prepare(createChannelType)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	res, err := stmt.Exec(c.Name, c.Description)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	err = tx.Commit()
-	id, err := res.LastInsertId()
-	c.ID = int(id)
-	return err
-}
-
-// Updates a ChannelType
-func (c *ChannelType) Update() error {
-	go redis.Delete(AllChannelTypesRedisKey)
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-
-	stmt, err := tx.Prepare(updateChannelType)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(c.Name, c.Description, c.ID)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	err = tx.Commit()
-	return err
-}
-
-// Delets a ChannelType
-func (c *ChannelType) Delete() error {
-	go redis.Delete(AllChannelTypesRedisKey)
-	db, err := sql.Open("mysql", database.ConnectionString())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-
-	stmt, err := tx.Prepare(deleteChannelType)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(c.ID)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-	err = tx.Commit()
-	return err
-}
-
-//Populates a base video and its type
+// Populates a video + type
 func populateVideo(row *sql.Row, ch chan Video) {
 	var v Video
 	var tName, tIcon *string
@@ -1913,7 +829,7 @@ func populateVideo(row *sql.Row, ch chan Video) {
 	return
 }
 
-// Populates multiple videos and their types.
+//Populates video and video type fields
 func populateVideos(rows *sql.Rows, ch chan Videos) {
 	var v Video
 	var vs Videos
@@ -1948,7 +864,7 @@ func populateVideos(rows *sql.Rows, ch chan Videos) {
 	return
 }
 
-// Populates multiple CDN's and their types.
+//Populates channels and channel type fields
 func populateCdns(rows *sql.Rows, ch chan CdnFiles) {
 	var c CdnFile
 	var cs CdnFiles
@@ -2000,7 +916,7 @@ func populateCdns(rows *sql.Rows, ch chan CdnFiles) {
 	return
 }
 
-//populate multiple channels and their types
+//populate channels
 func populateChannels(rows *sql.Rows, ch chan Channels) {
 	var chs Channels
 	var c Channel
