@@ -13,6 +13,7 @@ import (
 	"time"
 )
 
+// Video is a reresentation of a video. It contains information about the video itself, as well as any associated files.
 type Video struct {
 	ID           int          `json:"id,omitempty" xml:"id,omitempty"`
 	Title        string       `json:"title, omitempty" xml:"title,omitempty"`
@@ -30,8 +31,11 @@ type Video struct {
 	WebsiteId    int          `json:"websiteId,omitempty" xml:"websiteId,omitempty"`
 	Brands       brand.Brands `json:"brands,omitempty" xml:"brands,omitempty"`
 }
+
+// Videos is just an easier type to work with than using an array of video types.
 type Videos []Video
 
+// A Channel type is typicaly the information associated to a online video file such as youtube, vimeo, etc.
 type Channel struct {
 	ID           int         `json:"id,omitempty" xml:"id,omitempty"`
 	Type         ChannelType `json:"type,omitempty" xml:"type,omitempty"`
@@ -45,14 +49,19 @@ type Channel struct {
 	Duration     string      `bson:"duration" json:"duration" xml:"duration"`
 }
 
+// Channels is just an easier type to work with than using an array of Channel types.
 type Channels []Channel
 
+// ChannelType is a type of Channel. Channels are online videos, and they have different types such as youtube, vimeo, dailymotion, etc.
 type ChannelType struct {
 	ID          int    `json:"id,omitempty" xml:"id,omitempty"`
 	Name        string `json:"name,omitempty" xml:"name,omitempty"`
 	Description string `json:"description,omitempty" xml:"description,omitempty"`
 }
 
+// CdnFile or CDN file is a video that is hosted on a content delivery network.
+// This is reference to an actual video file rather than an online video type(Channel)
+// These CdnFiles are typically used for HTML5 Videos.
 type CdnFile struct {
 	ID           int         `json:"id,omitempty" xml:"id,omitempty"`
 	Type         CdnFileType `bson:"type" json:"type" xml:"type"`
@@ -65,8 +74,10 @@ type CdnFile struct {
 	LastUploaded string      `bson:"date_uploaded" json:"date_uploaded" xml:"date_uploaded"`
 }
 
+// CdnFiles is just an easier type to work with than using an array of CdnFiles.
 type CdnFiles []CdnFile
 
+// CdnFile type specifies what file type the file is. Some examples might be .ogg, .mp4, .avi, etc.
 type CdnFileType struct {
 	ID          int    `json:"id,omitempty" xml:"id,omitempty"`
 	MimeType    string `bson:"mime_type" json:"mime_type" xml:"mime_type"`
@@ -74,13 +85,14 @@ type CdnFileType struct {
 	Description string `bson:"description" json:"description" xml:"description"`
 }
 
+// Video Type specifies what kind of video it is. Some examples might be, Product video, Howto, or Instructional Video.
 type VideoType struct {
 	ID   int    `json:"id,omitempty" xml:"id,omitempty"`
 	Name string `bson:"name" json:"name" xml:"name"`
 	Icon string `bson:"icon" json:"icon" xml:"icon"`
 }
 
-//TODO categories should be their own entity
+// Videos can be associated to categories. This is the most basic information about a category.
 type Category struct {
 	ID    int    `json:"id,omitempty" xml:"id,omitempty"`
 	Title string `json:"title,omitempty" xml:"title,omitempty"`
@@ -112,8 +124,6 @@ var (
 	getAllCdnFiles   = `SELECT ` + cdnFileFields + `,` + cdnFileTypeFields + ` FROM CdnFile AS cf LEFT JOIN CdnFileType AS cft ON cft.ID = cf.typeID `
 	getAllChannels   = `SELECT ` + channelFields + `, ` + channelTypeFields + ` FROM Channel AS c LEFT JOIN ChannelType AS ct ON ct.ID = c.typeID `
 	getAllVideoTypes = `SELECT vt.vTypeID, ` + videoTypeFields + ` FROM videoType AS vt`
-	getPartVideos    = `SELECT ` + videoFields + `, ` + videoTypeFields + ` FROM VideoNew AS v LEFT JOIN videoType AS vt ON vt.vTypeID = v.subjectTypeID 
-						LEFT JOIN VideoJoin AS vj on vj.videoID = v.ID WHERE vj.partID = ? ORDER BY v.title `
 	getVideoChannels = `SELECT ` + channelFields + `, ` + channelTypeFields + ` FROM VideoChannels AS vc 
 					  JOIN Channel AS c on c.ID = vc.channelID
 					 LEFT JOIN ChannelType AS ct ON ct.ID = c.typeID
@@ -133,7 +143,7 @@ var (
 	getAllChannelTypes = `SELECT ID, name, description FROM ChannelType `
 )
 
-//Base Video
+// Retrieves a base video file. This does not grab all the associated channels or CDN files.
 func (v *Video) Get() error {
 	redis_key := "video:" + strconv.Itoa(v.ID)
 	data, err := redis.Get(redis_key)
@@ -163,6 +173,7 @@ func (v *Video) Get() error {
 	return err
 }
 
+// GetVideoDetails grabs a video's more advance information such as, Brands, CDN files, associated channels(youtube videos), and any products associated with the video.
 func (v *Video) GetVideoDetails() error {
 	redis_key := "video:details:" + strconv.Itoa(v.ID)
 	data, err := redis.Get(redis_key)
@@ -245,6 +256,7 @@ func (v *Video) GetVideoDetails() error {
 	return nil
 }
 
+// GetAllVideos This grabs all the videos given a certain Brand. Videos are  Base Videos and do not have advanced information.
 func GetAllVideos(dtx *apicontext.DataContext) (vs Videos, err error) {
 	data, err := redis.Get(AllVideosRedisKey + ":" + dtx.BrandString)
 	if err == nil && len(data) > 0 {
@@ -282,6 +294,7 @@ func GetAllVideos(dtx *apicontext.DataContext) (vs Videos, err error) {
 	return
 }
 
+// GetBrands Gets all the brands associated to a specific base video.
 func (v *Video) GetBrands() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -309,6 +322,7 @@ func (v *Video) GetBrands() error {
 	return err
 }
 
+// GetChannels Gets all the Video's channels.
 func (v *Video) GetChannels() (chs Channels, err error) {
 	redis_key := "video:channels:" + strconv.Itoa(v.ID)
 	data, err := redis.Get(redis_key)
@@ -342,6 +356,7 @@ func (v *Video) GetChannels() (chs Channels, err error) {
 	return
 }
 
+// GetParts Gets all the Video's associated products.
 func (v *Video) GetParts() (err error) {
 	redis_key := "video:parts:" + strconv.Itoa(v.ID)
 	data, err := redis.Get(redis_key)
@@ -379,6 +394,7 @@ func (v *Video) GetParts() (err error) {
 	return
 }
 
+// GetCdnFiles Gets all of the CdnFiles for the specific video.
 func (v *Video) GetCdnFiles() (cdns CdnFiles, err error) {
 	redis_key := "video:cdnFiles:" + strconv.Itoa(v.ID)
 	data, err := redis.Get(redis_key)
@@ -412,6 +428,7 @@ func (v *Video) GetCdnFiles() (cdns CdnFiles, err error) {
 	return
 }
 
+// Get Get a gven Channel
 func (c *Channel) Get() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -452,6 +469,7 @@ func (c *Channel) Get() error {
 	return err
 }
 
+// GetAllChannels Retrieves all Channels from the DB
 func GetAllChannels() (cs Channels, err error) {
 	data, err := redis.Get(AllChannelsRedisKey)
 	if err == nil && len(data) > 0 {
@@ -485,6 +503,7 @@ func GetAllChannels() (cs Channels, err error) {
 	return
 }
 
+// Get Retrieves a given CdnFile
 func (c *CdnFile) Get() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -540,6 +559,7 @@ func (c *CdnFile) Get() error {
 	return err
 }
 
+// GetAllCdnFiles Retrieves all CdnFiles
 func GetAllCdnFiles() (cs CdnFiles, err error) {
 	data, err := redis.Get(AllCdnFilesRedisKey)
 	if err == nil && len(data) > 0 {
@@ -572,6 +592,7 @@ func GetAllCdnFiles() (cs CdnFiles, err error) {
 	return
 }
 
+// Get Retrieves a given CdnFileType
 func (c *CdnFileType) Get() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -601,6 +622,7 @@ func (c *CdnFileType) Get() error {
 	return err
 }
 
+// GetAllCdnFileTypes Retrieves all CdnFileTypes
 func GetAllCdnFileTypes() (cts []CdnFileType, err error) {
 	data, err := redis.Get(AllCdnFileTypeRedisKey)
 	if err == nil && len(data) > 0 {
@@ -646,6 +668,7 @@ func GetAllCdnFileTypes() (cts []CdnFileType, err error) {
 	return
 }
 
+// Get Retrieves a given VideoType
 func (c *VideoType) Get() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -670,6 +693,7 @@ func (c *VideoType) Get() error {
 	return err
 }
 
+// GetAllVideoTypes Retrieves all VideoTypes
 func GetAllVideoTypes() (vts []VideoType, err error) {
 	data, err := redis.Get(AllVideoTypesRedisKey)
 	if err == nil && len(data) > 0 {
@@ -710,6 +734,7 @@ func GetAllVideoTypes() (vts []VideoType, err error) {
 	return
 }
 
+// Get Retrieves a given ChannelType
 func (c *ChannelType) Get() error {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
@@ -734,6 +759,7 @@ func (c *ChannelType) Get() error {
 	return err
 }
 
+// GetAllChannelTypes Retrieves all ChannelType
 func GetAllChannelTypes() (cts []ChannelType, err error) {
 	data, err := redis.Get(AllChannelTypesRedisKey)
 	if err == nil && len(data) > 0 {
@@ -772,7 +798,7 @@ func GetAllChannelTypes() (cts []ChannelType, err error) {
 	return cts, err
 }
 
-//Populates a video + type
+// Populates a video + type
 func populateVideo(row *sql.Row, ch chan Video) {
 	var v Video
 	var tName, tIcon *string

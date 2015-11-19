@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-//Pulls from "video" table, as opposed to "video_new"
+//Pulls from "Video" table, as opposed to "video_new", used for legacy support.
 type Video_Old struct {
 	YouTubeId   string
 	DateAdded   time.Time
@@ -30,6 +30,7 @@ var (
         order by sort`
 )
 
+// Gets a list of all of the old videos - used for legacy support.
 func UniqueVideos(dtx *apicontext.DataContext) (videos []Video_Old, err error) {
 
 	db, err := sql.Open("mysql", database.ConnectionString())

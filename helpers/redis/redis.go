@@ -201,6 +201,7 @@ func DeleteFullPath(key string) error {
 func GetFullPath(key string) ([]string, error) {
 	data := make([]string, 0)
 	pool := RedisPool(false)
+
 	if pool == nil {
 		return data, errors.New(PoolAllocationErr)
 	}
@@ -213,6 +214,7 @@ func GetFullPath(key string) ([]string, error) {
 	}
 
 	conn.Send("select", Db)
+
 	reply, err := redix.Strings(conn.Do("KEYS", "*"))
 	if err != nil || reply == nil {
 		return data, err

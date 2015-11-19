@@ -46,9 +46,8 @@ type Part struct {
 	Class             Class                `json:"class,omitempty" xml:"class,omitempty" bson:"class"`
 	Featured          bool                 `json:"featured,omitempty" xml:"featured,omitempty" bson:"featured"`
 	AcesPartTypeID    int                  `json:"acesPartTypeId,omitempty" xml:"acesPartTypeId,omitempty" bson:"acesPartTypeId"`
-	// Installations     []Installation       `json:"installation,omitempty" xml:"installation,omitempty" bson:"installation"`
-	Inventory PartInventory `json:"inventory,omitempty" xml:"inventory,omitempty" bson:"inventory"`
-	UPC       string        `json:"upc,omitempty" xml:"upc,omitempty" bson:"upc"`
+	Inventory         PartInventory        `json:"inventory,omitempty" xml:"inventory,omitempty" bson:"inventory"`
+	UPC               string               `json:"upc,omitempty" xml:"upc,omitempty" bson:"upc"`
 }
 
 type CustomerPart struct {
