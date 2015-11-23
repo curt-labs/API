@@ -1,6 +1,8 @@
 package products
 
 import (
+	"sort"
+
 	"github.com/curt-labs/GoAPI/helpers/apicontext"
 	"github.com/curt-labs/GoAPI/helpers/database"
 	"github.com/curt-labs/GoAPI/models/brand"
@@ -10,7 +12,6 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-	"sort"
 
 	"net/url"
 	"strings"

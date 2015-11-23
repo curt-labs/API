@@ -4,6 +4,7 @@ package products
 type Content struct {
 	Text        string      `bson:"text" json:"text" xml:"text"`
 	ContentType ContentType `json:"contentType" xml:"contentType"`
+	Sort        int         `json:"sort" xml:"sort"`
 }
 
 // ContentType ...
