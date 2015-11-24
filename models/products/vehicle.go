@@ -78,6 +78,10 @@ type Pagination struct {
 }
 
 func (l *Lookup) LoadParts(ch chan []Part, page int, count int, dtx *apicontext.DataContext) {
+	if count == 0 {
+		count = 50
+	}
+
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		ch <- nil
