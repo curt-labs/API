@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/curt-labs/GoAPI/helpers/api"
-	"github.com/curt-labs/GoAPI/helpers/database"
-	"github.com/curt-labs/GoAPI/helpers/redis"
+	"github.com/curt-labs/API/helpers/api"
+	"github.com/curt-labs/API/helpers/database"
+	"github.com/curt-labs/API/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
 )
 

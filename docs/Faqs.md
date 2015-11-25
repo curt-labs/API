@@ -3,7 +3,7 @@
 ---
 *Get All Faqs*
 
-	GET - http://goapi.curtmfg.com/faqs?sort=1&direction=asc&key=[public api key]
+	GET - http://API.curtmfg.com/faqs?sort=1&direction=asc&key=[public api key]
 
 	Optional Query Parameters:
 
@@ -12,11 +12,11 @@
 
 *Get Faq*
 
-	GET - http://goapi.curtmfg.com/faqs/<faq id>?key=[public api key]
+	GET - http://API.curtmfg.com/faqs/<faq id>?key=[public api key]
 
 *Search Faq*
 
-	GET - http://goapi.curtmfg.com/faqs/search?key=[public api key]
+	GET - http://API.curtmfg.com/faqs/search?key=[public api key]
 
 	Searchable Query Parameters:
 
@@ -27,7 +27,7 @@
 
 *Create Faq (internal)*
 
-	POST - http://goapi.curtmfg.com/faqs?key=[public api key]
+	POST - http://API.curtmfg.com/faqs?key=[public api key]
 
 	Form Payload:
 
@@ -36,7 +36,7 @@
 
 *Update Faq (internal)*
 
-	PUT - http://goapi.curtmfg.com/faqs/<faq id>?key=[public api key]
+	PUT - http://API.curtmfg.com/faqs/<faq id>?key=[public api key]
 
 	Form Payload:
 
@@ -45,8 +45,8 @@
 
 *Delete Faq (internal)*
 
-	DELETE - http://goapi.curtmfg.com/faqs/<faq id>?key=[public api key]
+	DELETE - http://API.curtmfg.com/faqs/<faq id>?key=[public api key]
 
 	- or -
 
-	DELETE - http://goapi.curtmfg.com/faqs?id=<faq id>&key=[public api key]
+	DELETE - http://API.curtmfg.com/faqs?id=<faq id>&key=[public api key]

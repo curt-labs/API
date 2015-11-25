@@ -1,11 +1,11 @@
 package techSupport
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
-	"github.com/curt-labs/GoAPI/helpers/encoding"
-	"github.com/curt-labs/GoAPI/helpers/error"
-	"github.com/curt-labs/GoAPI/models/contact"
-	"github.com/curt-labs/GoAPI/models/techSupport"
+	"github.com/curt-labs/API/helpers/apicontext"
+	"github.com/curt-labs/API/helpers/encoding"
+	"github.com/curt-labs/API/helpers/error"
+	"github.com/curt-labs/API/models/contact"
+	"github.com/curt-labs/API/models/techSupport"
 	"github.com/go-martini/martini"
 
 	"encoding/json"

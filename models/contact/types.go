@@ -3,8 +3,8 @@ package contact
 import (
 	"database/sql"
 	"errors"
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
-	"github.com/curt-labs/GoAPI/helpers/database"
+	"github.com/curt-labs/API/helpers/apicontext"
+	"github.com/curt-labs/API/helpers/database"
 	_ "github.com/go-sql-driver/mysql"
 	"strings"
 )

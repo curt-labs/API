@@ -1,10 +1,10 @@
 package video
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
-	"github.com/curt-labs/GoAPI/helpers/database"
-	"github.com/curt-labs/GoAPI/helpers/redis"
-	"github.com/curt-labs/GoAPI/models/brand"
+	"github.com/curt-labs/API/helpers/apicontext"
+	"github.com/curt-labs/API/helpers/database"
+	"github.com/curt-labs/API/helpers/redis"
+	"github.com/curt-labs/API/models/brand"
 	_ "github.com/go-sql-driver/mysql"
 
 	"database/sql"

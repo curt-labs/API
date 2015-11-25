@@ -3,15 +3,15 @@
 ---
 *Get All Brands*
 	
-	GET - http://goapi.curtmfg.com/brands?key=[public api key]
+	GET - http://API.curtmfg.com/brands?key=[public api key]
 
 *Get Brand*
 
-	GET - http://goapi.curtmfg.com/brands/<brand id>?key=[public api key]
+	GET - http://API.curtmfg.com/brands/<brand id>?key=[public api key]
 
 *Create Brand (internal)*
 
-	POST - http://goapi.curtmfg.com/brands?key=[public api key]
+	POST - http://API.curtmfg.com/brands?key=[public api key]
 
 	Form Payload:
 
@@ -20,7 +20,7 @@
 
 *Update Brand (internal)*
 
-	PUT - http://goapi.curtmfg.com/brands/<brand id>?key=[public api key]
+	PUT - http://API.curtmfg.com/brands/<brand id>?key=[public api key]
 
 	Form Payload:
 
@@ -29,5 +29,5 @@
 
 *Delete Brand (internal)*
 
-	DELETE - http://goapi.curtmfg.com/brands/<brand id>?key=[public api key]
+	DELETE - http://API.curtmfg.com/brands/<brand id>?key=[public api key]
 

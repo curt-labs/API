@@ -1,9 +1,9 @@
 package apiKeyType
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/encoding"
-	"github.com/curt-labs/GoAPI/helpers/error"
-	"github.com/curt-labs/GoAPI/models/apiKeyType"
+	"github.com/curt-labs/API/helpers/encoding"
+	"github.com/curt-labs/API/helpers/error"
+	"github.com/curt-labs/API/models/apiKeyType"
 
 	"net/http"
 )

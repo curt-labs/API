@@ -1,7 +1,7 @@
 package products
 
 import (
-	// "github.com/curt-labs/GoAPI/models/customer"
+	// "github.com/curt-labs/API/models/customer"
 
 	"time"
 )

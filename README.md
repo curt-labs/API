@@ -1,5 +1,5 @@
 
-CURT Go API
+CURT API v3
 =========
 ---------
 
@@ -26,7 +26,7 @@ Endpoints
 
 ---
 
-https://github.com/curt-labs/GoAPI/blob/master/docs/Vehicle.md
+https://github.com/curt-labs/API/blob/master/docs/Vehicle.md
 
 ---
 #### Parts
@@ -35,11 +35,11 @@ https://github.com/curt-labs/GoAPI/blob/master/docs/Vehicle.md
 
 *Get Part by Part #
 
-    GET - http://goapi.curtmfg.com/part/110003?key=[public api key]
+    GET - http://API.curtmfg.com/part/110003?key=[public api key]
 
 *Reverse Lookup by Part #
 
-    GET - http://goapi.curtmfg.com/part/110003/vehicles?key=[public api key]
+    GET - http://API.curtmfg.com/part/110003/vehicles?key=[public api key]
 
 ----
 
@@ -47,7 +47,7 @@ https://github.com/curt-labs/GoAPI/blob/master/docs/Vehicle.md
 
 ---
 
-https://github.com/curt-labs/GoAPI/blob/master/docs/Categories.md
+https://github.com/curt-labs/API/blob/master/docs/Categories.md
 
 ----
 
@@ -57,7 +57,7 @@ https://github.com/curt-labs/GoAPI/blob/master/docs/Categories.md
 
 *Authentication*
 
-    POST - http://goapi.curtmfg.com/customer/auth
+    POST - http://API.curtmfg.com/customer/auth
 
     Payload
     --------------------------
@@ -66,11 +66,11 @@ https://github.com/curt-labs/GoAPI/blob/master/docs/Categories.md
 
 > The following GET route for the customer user authentication is only useful if in the last 6 hours this user has logged in through the POST directive of the /customer/auth endpoint.
 
-    GET - http://goapi.curtmfg.com/customer/auth?key=c8bd5d89-8d16-11e2-801f-00155d47bb0a
+    GET - http://API.curtmfg.com/customer/auth?key=c8bd5d89-8d16-11e2-801f-00155d47bb0a
 
 *Customer Locations*
 
-    POST - http://goapi.curtmfg.com/customer/locations
+    POST - http://API.curtmfg.com/customer/locations
 
     Payload
     --------------------------
@@ -78,7 +78,7 @@ https://github.com/curt-labs/GoAPI/blob/master/docs/Categories.md
 
 *Customer Users*
 
-    POST - http://goapi.curtmfg.com/customer/users
+    POST - http://API.curtmfg.com/customer/users
 
     Payload
     --------------------------

@@ -1,14 +1,14 @@
 package customer
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/api"
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
-	"github.com/curt-labs/GoAPI/helpers/conversions"
-	"github.com/curt-labs/GoAPI/helpers/database"
-	"github.com/curt-labs/GoAPI/helpers/redis"
-	"github.com/curt-labs/GoAPI/helpers/sortutil"
-	"github.com/curt-labs/GoAPI/models/brand"
-	"github.com/curt-labs/GoAPI/models/geography"
+	"github.com/curt-labs/API/helpers/api"
+	"github.com/curt-labs/API/helpers/apicontext"
+	"github.com/curt-labs/API/helpers/conversions"
+	"github.com/curt-labs/API/helpers/database"
+	"github.com/curt-labs/API/helpers/redis"
+	"github.com/curt-labs/API/helpers/sortutil"
+	"github.com/curt-labs/API/models/brand"
+	"github.com/curt-labs/API/models/geography"
 	_ "github.com/go-sql-driver/mysql"
 
 	"database/sql"

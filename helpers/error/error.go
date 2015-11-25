@@ -3,7 +3,7 @@ package apierror
 import (
 	"encoding/json"
 	"encoding/xml"
-	"github.com/curt-labs/GoAPI/helpers/database"
+	"github.com/curt-labs/API/helpers/database"
 	"gopkg.in/mgo.v2"
 	"io/ioutil"
 	"net/http"

@@ -5,11 +5,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
-	"github.com/curt-labs/GoAPI/helpers/encoding"
-	"github.com/curt-labs/GoAPI/helpers/error"
-	"github.com/curt-labs/GoAPI/helpers/sortutil"
-	"github.com/curt-labs/GoAPI/models/faq"
+	"github.com/curt-labs/API/helpers/apicontext"
+	"github.com/curt-labs/API/helpers/encoding"
+	"github.com/curt-labs/API/helpers/error"
+	"github.com/curt-labs/API/helpers/sortutil"
+	"github.com/curt-labs/API/models/faq"
 	"github.com/go-martini/martini"
 )
 

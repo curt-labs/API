@@ -1,10 +1,10 @@
 package dealers_ctlr
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
-	"github.com/curt-labs/GoAPI/helpers/httprunner"
-	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
-	"github.com/curt-labs/GoAPI/models/customer"
+	"github.com/curt-labs/API/helpers/apicontextmock"
+	"github.com/curt-labs/API/helpers/httprunner"
+	"github.com/curt-labs/API/helpers/testThatHttp"
+	"github.com/curt-labs/API/models/customer"
 	. "github.com/smartystreets/goconvey/convey"
 
 	"encoding/json"

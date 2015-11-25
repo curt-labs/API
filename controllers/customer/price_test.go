@@ -2,9 +2,9 @@ package customer_ctlr
 
 import (
 	"encoding/json"
-	"github.com/curt-labs/GoAPI/helpers/httprunner"
-	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
-	"github.com/curt-labs/GoAPI/models/customer"
+	"github.com/curt-labs/API/helpers/httprunner"
+	"github.com/curt-labs/API/helpers/testThatHttp"
+	"github.com/curt-labs/API/models/customer"
 	. "github.com/smartystreets/goconvey/convey"
 	"net/url"
 	"strconv"

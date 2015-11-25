@@ -2,7 +2,7 @@ package search
 
 import (
 	"errors"
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
+	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/ninnemana/elastigo/lib"
 	"os"
 	"strconv"

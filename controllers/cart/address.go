@@ -2,9 +2,9 @@ package cart_ctlr
 
 import (
 	"encoding/json"
-	"github.com/curt-labs/GoAPI/helpers/encoding"
-	"github.com/curt-labs/GoAPI/helpers/error"
-	"github.com/curt-labs/GoAPI/models/cart"
+	"github.com/curt-labs/API/helpers/encoding"
+	"github.com/curt-labs/API/helpers/error"
+	"github.com/curt-labs/API/models/cart"
 	"github.com/go-martini/martini"
 	"gopkg.in/mgo.v2/bson"
 	"io/ioutil"

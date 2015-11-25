@@ -2,7 +2,7 @@ package customer
 
 // import (
 // 	"database/sql"
-// 	"github.com/curt-labs/GoAPI/helpers/database"
+// 	"github.com/curt-labs/API/helpers/database"
 // 	_ "github.com/go-sql-driver/mysql"
 // 	. "github.com/smartystreets/goconvey/convey"
 // 	"math/rand"

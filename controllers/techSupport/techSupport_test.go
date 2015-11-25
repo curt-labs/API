@@ -1,9 +1,9 @@
 package techSupport
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
-	"github.com/curt-labs/GoAPI/helpers/httprunner"
-	"github.com/curt-labs/GoAPI/models/techSupport"
+	"github.com/curt-labs/API/helpers/apicontextmock"
+	"github.com/curt-labs/API/helpers/httprunner"
+	"github.com/curt-labs/API/models/techSupport"
 	. "github.com/smartystreets/goconvey/convey"
 
 	"encoding/json"

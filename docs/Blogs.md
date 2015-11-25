@@ -3,23 +3,23 @@
 ---
 *Get All Blog Posts*
 
-	GET - http://goapi.curtmfg.com/blogs?key=[public api key]
+	GET - http://API.curtmfg.com/blogs?key=[public api key]
 
 *Get All Blog Categories*
 	
-	GET - http://goapi.curtmfg.com/blogs/categories?key=[public api key]
+	GET - http://API.curtmfg.com/blogs/categories?key=[public api key]
 
 *Get Blog Post*
 
-	GET - http://goapi.curtmfg.com/blogs/<blog post id>?key=[public api key]
+	GET - http://API.curtmfg.com/blogs/<blog post id>?key=[public api key]
 
 *Get Blog Category*
 	
-	GET - http://goapi.curtmfg.com/blogs/category/<blog category id>?key=[public api key]
+	GET - http://API.curtmfg.com/blogs/category/<blog category id>?key=[public api key]
 
 *Create Blog Post*
 
-	POST - http://goapi.curtmfg.com/blogs?key=[public api key]
+	POST - http://API.curtmfg.com/blogs?key=[public api key]
 
 	Form Post Payload:
 
@@ -37,7 +37,7 @@
 
 *Update Blog Post*
 
-	PUT - http://goapi.curtmfg.com/blogs/<blog post id>?key=[public api key]
+	PUT - http://API.curtmfg.com/blogs/<blog post id>?key=[public api key]
 
 	Form Post Payload:
 
@@ -54,7 +54,7 @@
 
 *Create Blog Category*
 
-	POST - http://goapi.curtmfg.com/blogs/categories?key=[public api key]
+	POST - http://API.curtmfg.com/blogs/categories?key=[public api key]
 
 	Form Post Payload:
 
@@ -64,15 +64,15 @@
 
 *Delete Blog Post*
 
-	DELETE - http://goapi.curtmfg.com/blogs/<blog post id>?key=[public api key]
+	DELETE - http://API.curtmfg.com/blogs/<blog post id>?key=[public api key]
 
 *Delete Blog Category*
 
-	DELETE - http://goapi.curtmfg.com/blogs/categories/<category id>?key=[public api key]
+	DELETE - http://API.curtmfg.com/blogs/categories/<category id>?key=[public api key]
 
 *Search Blog Posts*
 
-	GET - http://goapi.curtmfg.com/blogs/search?key=[public api key]
+	GET - http://API.curtmfg.com/blogs/search?key=[public api key]
 
 	Search by any combination of fields:
 

@@ -4,7 +4,7 @@
 
 *Get All News*
 
-	GET - http://goapi.curtmfg.com/news?key=[public api key]
+	GET - http://API.curtmfg.com/news?key=[public api key]
 
 	Optional Query Parameters:
 
@@ -13,7 +13,7 @@
 
 *Get Titles*
 
-	GET - http://goapi.curtmfg.com/news/titles?key=[public api key]
+	GET - http://API.curtmfg.com/news/titles?key=[public api key]
 
 	Optional Query Parameters:
 
@@ -22,7 +22,7 @@
 
 *Get Leads*
 
-	GET - http://goapi.curtmfg.com/news/leads?key=[public api key]
+	GET - http://API.curtmfg.com/news/leads?key=[public api key]
 
 	Optional Query Parameters:
 
@@ -31,11 +31,11 @@
 
 *Get News*
 
-	GET - http://goapi.curtmfg.com/news/<news id>?key=[public api key]
+	GET - http://API.curtmfg.com/news/<news id>?key=[public api key]
 
 *Search News*
 
-	GET - http://goapi.curtmfg.com/news/search?key=[public api key]
+	GET - http://API.curtmfg.com/news/search?key=[public api key]
 
 	Optional/Searchable Query Parameters:
 
@@ -51,7 +51,7 @@
 
 *Create News (internal)*
 
-	POST - http://goapi.curtmfg.com/news?key=[public api key]
+	POST - http://API.curtmfg.com/news?key=[public api key]
 
 	Form Payload:
 
@@ -66,7 +66,7 @@
 
 *Update News (internal)*
 
-	POST - http://goapi.curtmfg.com/news/<news id>?key=[public api key]
+	POST - http://API.curtmfg.com/news/<news id>?key=[public api key]
 
 	Form Payload:
 
@@ -81,9 +81,9 @@
 
 *Delete News (internal)*
 
-	DELETE - http://goapi.curtmfg.com/news/<news id>?key=[public api key]
+	DELETE - http://API.curtmfg.com/news/<news id>?key=[public api key]
 
 	- or -
 
-	DELETE - http://goapi.curtmfg.com/news?id=<news id>&key=[public api key]
+	DELETE - http://API.curtmfg.com/news?id=<news id>&key=[public api key]
 

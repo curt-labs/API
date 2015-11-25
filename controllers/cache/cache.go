@@ -2,8 +2,8 @@ package cache
 
 import (
 	"encoding/json"
-	"github.com/curt-labs/GoAPI/helpers/redis"
-	"github.com/curt-labs/GoAPI/models/customer"
+	"github.com/curt-labs/API/helpers/redis"
+	"github.com/curt-labs/API/models/customer"
 	"net/http"
 )
 

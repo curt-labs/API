@@ -3,9 +3,9 @@ package custcontent
 import (
 	"database/sql"
 	"errors"
-	"github.com/curt-labs/GoAPI/helpers/conversions"
-	"github.com/curt-labs/GoAPI/helpers/database"
-	"github.com/curt-labs/GoAPI/models/customer"
+	"github.com/curt-labs/API/helpers/conversions"
+	"github.com/curt-labs/API/helpers/database"
+	"github.com/curt-labs/API/models/customer"
 	_ "github.com/go-sql-driver/mysql"
 	"html"
 

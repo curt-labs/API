@@ -1,9 +1,9 @@
 package webProperty_controller
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
-	"github.com/curt-labs/GoAPI/helpers/httprunner"
-	"github.com/curt-labs/GoAPI/models/webProperty"
+	"github.com/curt-labs/API/helpers/apicontextmock"
+	"github.com/curt-labs/API/helpers/httprunner"
+	"github.com/curt-labs/API/models/webProperty"
 	. "github.com/smartystreets/goconvey/convey"
 
 	"encoding/json"

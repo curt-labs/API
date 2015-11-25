@@ -1,11 +1,11 @@
 package customer_ctlr
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
-	"github.com/curt-labs/GoAPI/helpers/encoding"
-	"github.com/curt-labs/GoAPI/helpers/error"
-	"github.com/curt-labs/GoAPI/models/customer"
-	"github.com/curt-labs/GoAPI/models/products"
+	"github.com/curt-labs/API/helpers/apicontext"
+	"github.com/curt-labs/API/helpers/encoding"
+	"github.com/curt-labs/API/helpers/error"
+	"github.com/curt-labs/API/models/customer"
+	"github.com/curt-labs/API/models/products"
 	"github.com/go-martini/martini"
 
 	"encoding/json"

@@ -3,9 +3,9 @@ package apifilter
 import (
 	"database/sql"
 	"fmt"
-	"github.com/curt-labs/GoAPI/helpers/database"
-	"github.com/curt-labs/GoAPI/helpers/sortutil"
-	"github.com/curt-labs/GoAPI/models/products"
+	"github.com/curt-labs/API/helpers/database"
+	"github.com/curt-labs/API/helpers/sortutil"
+	"github.com/curt-labs/API/models/products"
 	_ "github.com/go-sql-driver/mysql"
 	"sort"
 	"strconv"

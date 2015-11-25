@@ -2,7 +2,7 @@ package contact
 
 import (
 	"database/sql"
-	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
+	"github.com/curt-labs/API/helpers/apicontextmock"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 )

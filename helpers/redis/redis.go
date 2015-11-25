@@ -13,7 +13,7 @@ import (
 const (
 	Db                = 13
 	PoolAllocationErr = "failed to allocate pool"
-	Prefix            = "goapi"
+	Prefix            = "API"
 	CacheTimeout      = 86400
 )
 

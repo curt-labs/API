@@ -4,67 +4,67 @@
 
 *Get All Videos*
 
-	GET - http://goapi.curtmfg.com/videos?key=[public api key]
+	GET - http://API.curtmfg.com/videos?key=[public api key]
 
 *Get All CDNs*
 
-	GET - http://goapi.curtmfg.com/videos/cdn?key=[public api key]
+	GET - http://API.curtmfg.com/videos/cdn?key=[public api key]
 
 *Get All CDN Types*
 
-	GET - http://goapi.curtmfg.com/videos/cdn/type?key=[public api key]
+	GET - http://API.curtmfg.com/videos/cdn/type?key=[public api key]
 
 *Get All Channels*
 
-	GET - http://goapi.curtmfg.com/videos/channel?key=[public api key]
+	GET - http://API.curtmfg.com/videos/channel?key=[public api key]
 
 *Get All Channel Types*
 
-	GET - http://goapi.curtmfg.com/videos/channel/type?key=[public api key]
+	GET - http://API.curtmfg.com/videos/channel/type?key=[public api key]
 
 *Get All Video Types*
 
-	GET - http://goapi.curtmfg.com/videos/type?key=[public api key]
+	GET - http://API.curtmfg.com/videos/type?key=[public api key]
 
 *Get Distinct Videos*
 
-	GET - http://goapi.curtmfg.com/videos/distinct?key=[public api key]
+	GET - http://API.curtmfg.com/videos/distinct?key=[public api key]
 
 *Get Part Videos*
 
-	GET - http://goapi.curtmfg.com/videos/part/<part id>?key=[public api key]
+	GET - http://API.curtmfg.com/videos/part/<part id>?key=[public api key]
 
 *Get Video Details*
 
-	GET - http://goapi.curtmfg.com/videos/details/<video id>?key=[public api key]
+	GET - http://API.curtmfg.com/videos/details/<video id>?key=[public api key]
 
 *Get Video*
 
-	GET - http://goapi.curtmfg.com/videos/<video id>?key=[public api key]
+	GET - http://API.curtmfg.com/videos/<video id>?key=[public api key]
 
 *Get CDN*
 
-	GET - http://goapi.curtmfg.com/videos/cdn/<cdn id>?key=[public api key]
+	GET - http://API.curtmfg.com/videos/cdn/<cdn id>?key=[public api key]
 
 *Get CDN Type*
 
-	GET - http://goapi.curtmfg.com/videos/cdn/type/<cdn type id>?key=[public api key]
+	GET - http://API.curtmfg.com/videos/cdn/type/<cdn type id>?key=[public api key]
 
 *Get Channel*
 
-	GET - http://goapi.curtmfg.com/videos/channel/<channel id>?key=[public api key]
+	GET - http://API.curtmfg.com/videos/channel/<channel id>?key=[public api key]
 
 *Get Channel Type*
 
-	GET - http://goapi.curtmfg.com/videos/channel/type/<channel type id>?key=[public api key]
+	GET - http://API.curtmfg.com/videos/channel/type/<channel type id>?key=[public api key]
 
 *Get Video Type*
 
-	GET - http://goapi.curtmfg.com/videos/type/<video type id>?key=[public api key]
+	GET - http://API.curtmfg.com/videos/type/<video type id>?key=[public api key]
 
 *Add Video*
 
-	POST - http://goapi.curtmfg.com/videos?key=[public api key]
+	POST - http://API.curtmfg.com/videos?key=[public api key]
 
 	JSON Payload:
 
@@ -80,7 +80,7 @@
 
 *Add CDN*
 
-	POST - http://goapi.curtmfg.com/videos/cdn?key=[public api key]
+	POST - http://API.curtmfg.com/videos/cdn?key=[public api key]
 
 	JSON Payload:
 
@@ -97,7 +97,7 @@
 
 *Add CDN Type*
 
-	POST - http://goapi.curtmfg.com/videos/cdn/type?key=[public api key]
+	POST - http://API.curtmfg.com/videos/cdn/type?key=[public api key]
 
 	JSON Payload:
 
@@ -109,7 +109,7 @@
 
 *Add Channel*
 
-	POST - http://goapi.curtmfg.com/videos/channel?key=[public api key]
+	POST - http://API.curtmfg.com/videos/channel?key=[public api key]
 
 	JSON Payload:
 
@@ -126,7 +126,7 @@
 
 *Add Channel Type*
 
-	POST - http://goapi.curtmfg.com/videos/channel/type?key=[public api key]
+	POST - http://API.curtmfg.com/videos/channel/type?key=[public api key]
 
 	JSON Payload:
 
@@ -137,7 +137,7 @@
 
 *Add Video Type*
 
-	POST - http://goapi.curtmfg.com/videos/type?key=[public api key]
+	POST - http://API.curtmfg.com/videos/type?key=[public api key]
 
 	JSON Payload:
 
@@ -148,7 +148,7 @@
 
 *Update Video*
 
-	POST - http://goapi.curtmfg.com/videos/<video id>?key=[public api key]
+	POST - http://API.curtmfg.com/videos/<video id>?key=[public api key]
 
 	JSON Payload:
 
@@ -164,7 +164,7 @@
 
 *Update CDN*
 	
-	POST - http://goapi.curtmfg.com/videos/cdn/<cdn id>?key=[public api key]
+	POST - http://API.curtmfg.com/videos/cdn/<cdn id>?key=[public api key]
 
 	JSON Payload:
 
@@ -181,7 +181,7 @@
 
 *Update CDN Type*
 
-	POST - http://goapi.curtmfg.com/videos/cdn/type/<cdn type id>?key=[public api key]
+	POST - http://API.curtmfg.com/videos/cdn/type/<cdn type id>?key=[public api key]
 
 	JSON Payload:
 
@@ -193,7 +193,7 @@
 
 *Update Channel*
 
-	POST - http://goapi.curtmfg.com/videos/channel/<channel id>?key=[public api key]
+	POST - http://API.curtmfg.com/videos/channel/<channel id>?key=[public api key]
 
 	JSON Payload:
 
@@ -210,7 +210,7 @@
 
 *Update Channel Type*
 
-	POST - http://goapi.curtmfg.com/videos/channel/type/<channel type id>?key=[public api key]
+	POST - http://API.curtmfg.com/videos/channel/type/<channel type id>?key=[public api key]
 
 	JSON Payload:
 
@@ -221,7 +221,7 @@
 
 *Update Video Type*
 	
-	POST - http://goapi.curtmfg.com/videos/type/<video type id>?key=[public api key]
+	POST - http://API.curtmfg.com/videos/type/<video type id>?key=[public api key]
 
 	JSON Payload:
 
@@ -232,25 +232,25 @@
 
 *Delete Video*
 
-	DELETE - http://goapi.curtmfg.com/videos/<video id>?key=[public api key]
+	DELETE - http://API.curtmfg.com/videos/<video id>?key=[public api key]
 
 *Delete CDN*
 
-	DELETE - http://goapi.curtmfg.com/videos/cdn/<cdn id>?key=[public api key]
+	DELETE - http://API.curtmfg.com/videos/cdn/<cdn id>?key=[public api key]
 
 *Delete CDN Type*
 
-	DELETE - http://goapi.curtmfg.com/videos/cdn/type/<cdn type id>?key=[public api key]
+	DELETE - http://API.curtmfg.com/videos/cdn/type/<cdn type id>?key=[public api key]
 
 *Delete Channel*
 
-	DELETE - http://goapi.curtmfg.com/videos/channel/<channel id>?key=[public api key]
+	DELETE - http://API.curtmfg.com/videos/channel/<channel id>?key=[public api key]
 
 *Delete Channel Type*
 
-	DELETE - http://goapi.curtmfg.com/videos/channel/type/<channel type id>?key=[public api key]
+	DELETE - http://API.curtmfg.com/videos/channel/type/<channel type id>?key=[public api key]
 
 *Delete Video Type*
 
-	DELETE - http://goapi.curtmfg.com/videos/type/<video type id>?key=[public api key]
+	DELETE - http://API.curtmfg.com/videos/type/<video type id>?key=[public api key]
 

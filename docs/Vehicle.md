@@ -4,7 +4,7 @@
 
 *Get Years*
 
-	POST - http://goapi.curtmfg.com/vehicle?key=[public api key]
+	POST - http://API.curtmfg.com/vehicle?key=[public api key]
 
 	Form Post Payload:
 		No additional form data required.
@@ -12,7 +12,7 @@
 
 *Get Makes*
 
-	POST - http://goapi.curtmfg.com/vehicle?key=[public api key]
+	POST - http://API.curtmfg.com/vehicle?key=[public api key]
 
 	Form Post Payload:
 
@@ -21,7 +21,7 @@
 
 *Get Models*
 
-	POST - http://goapi.curtmfg.com/vehicle?key=[public api key]
+	POST - http://API.curtmfg.com/vehicle?key=[public api key]
 
 	Form Post Payload:
 
@@ -30,7 +30,7 @@
 
 *Get SubModels*
 
-	POST - http://goapi.curtmfg.com/vehicle?key=[public api key]
+	POST - http://API.curtmfg.com/vehicle?key=[public api key]
 
 	Form Post Payload:
 
@@ -41,7 +41,7 @@
 
 *Get Dynamic Configuration Option*
 
-	POST - http://goapi.curtmfg.com/vehicle?key=[public api key]
+	POST - http://API.curtmfg.com/vehicle?key=[public api key]
 
 	Form Post Payload:
 
@@ -52,7 +52,7 @@
 
 *Get Next Dynamic Configuration Option*
 
-	POST - http://goapi.curtmfg.com/vehicle?key=[public api key]
+	POST - http://API.curtmfg.com/vehicle?key=[public api key]
 
 	Form Post Payload:
 
