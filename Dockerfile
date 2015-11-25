@@ -1,4 +1,4 @@
-FROM golang:1.4
+FROM golang:1.5
 
 RUN mkdir -p /home/deployer/gosrc/src/github.com/curt-labs/API
 ADD . /home/deployer/gosrc/src/github.com/curt-labs/API
