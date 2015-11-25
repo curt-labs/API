@@ -3,12 +3,12 @@ package products
 import (
 	"sort"
 
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
-	"github.com/curt-labs/GoAPI/helpers/database"
-	"github.com/curt-labs/GoAPI/models/brand"
-	"github.com/curt-labs/GoAPI/models/customer"
-	"github.com/curt-labs/GoAPI/models/customer/content"
-	"github.com/curt-labs/GoAPI/models/video"
+	"github.com/curt-labs/API/helpers/apicontext"
+	"github.com/curt-labs/API/helpers/database"
+	"github.com/curt-labs/API/models/brand"
+	"github.com/curt-labs/API/models/customer"
+	"github.com/curt-labs/API/models/customer/content"
+	"github.com/curt-labs/API/models/video"
 	_ "github.com/go-sql-driver/mysql"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"

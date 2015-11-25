@@ -2,9 +2,9 @@ package cart_ctlr
 
 import (
 	"encoding/json"
-	"github.com/curt-labs/GoAPI/helpers/error"
-	"github.com/curt-labs/GoAPI/helpers/httprunner"
-	"github.com/curt-labs/GoAPI/models/cart"
+	"github.com/curt-labs/API/helpers/error"
+	"github.com/curt-labs/API/helpers/httprunner"
+	"github.com/curt-labs/API/models/cart"
 	. "github.com/smartystreets/goconvey/convey"
 	"net/http/httptest"
 	"net/url"

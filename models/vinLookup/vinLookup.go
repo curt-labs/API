@@ -11,9 +11,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
-	"github.com/curt-labs/GoAPI/helpers/database"
-	"github.com/curt-labs/GoAPI/models/products"
+	"github.com/curt-labs/API/helpers/apicontext"
+	"github.com/curt-labs/API/helpers/database"
+	"github.com/curt-labs/API/models/products"
 )
 
 type AcesVehicle struct {

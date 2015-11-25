@@ -2,8 +2,8 @@ package warranty
 
 import (
 	"database/sql"
-	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
-	"github.com/curt-labs/GoAPI/models/contact"
+	"github.com/curt-labs/API/helpers/apicontextmock"
+	"github.com/curt-labs/API/models/contact"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
 	"time"

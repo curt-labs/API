@@ -3,39 +3,39 @@
 ---
 *Get All Groups*
 
-	GET - http://goapi.curtmfg.com/forum/groups?key=[public api key]
+	GET - http://API.curtmfg.com/forum/groups?key=[public api key]
 
 *Get All Topics*
 
-	GET - http://goapi.curtmfg.com/forum/topics?key=[public api key]
+	GET - http://API.curtmfg.com/forum/topics?key=[public api key]
 
 *Get All Threads*
 
-	GET - http://goapi.curtmfg.com/forum/threads?key=[public api key]
+	GET - http://API.curtmfg.com/forum/threads?key=[public api key]
 
 *Get All Posts*
 
-	GET - http://goapi.curtmfg.com/forum/posts?key=[public api key]
+	GET - http://API.curtmfg.com/forum/posts?key=[public api key]
 
 *Get Group*
 
-	GET - http://goapi.curtmfg.com/forum/groups/<group id>?key=[public api key]
+	GET - http://API.curtmfg.com/forum/groups/<group id>?key=[public api key]
 
 *Get Topic*
 
-	GET - http://goapi.curtmfg.com/forum/topics/<topic id>?key=[public api key]
+	GET - http://API.curtmfg.com/forum/topics/<topic id>?key=[public api key]
 
 *Get Thread*
 	
-	GET - http://goapi.curtmfg.com/forum/threads/<thread id>?key=[public api key]
+	GET - http://API.curtmfg.com/forum/threads/<thread id>?key=[public api key]
 
 *Get Post*
 
-	GET - http://goapi.curtmfg.com/forum/posts/<post id>?key=[public api key]
+	GET - http://API.curtmfg.com/forum/posts/<post id>?key=[public api key]
 
 *Add Group*
 
-	POST - http://goapi.curtmfg.com/forum/groups?key=[public api key]
+	POST - http://API.curtmfg.com/forum/groups?key=[public api key]
 
 	Form Payload:
 
@@ -44,7 +44,7 @@
 
 *Add Topic*
 
-	POST - http://goapi.curtmfg.com/forum/topics?key=[public api key]
+	POST - http://API.curtmfg.com/forum/topics?key=[public api key]
 
 	Form Payload:
 
@@ -56,7 +56,7 @@
 
 *Add Post*
 
-	POST - http://goapi.curtmfg.com/forum/posts?key=[public api key]
+	POST - http://API.curtmfg.com/forum/posts?key=[public api key]
 
 	Form Payload:
 
@@ -74,7 +74,7 @@
 
 *Update Group*
 
-	PUT - http://goapi.curtmfg.com/forum/groups/<group id>?key=[public api key]
+	PUT - http://API.curtmfg.com/forum/groups/<group id>?key=[public api key]
 
 	Form Payload:
 
@@ -83,7 +83,7 @@
 
 *Update Topic*
 
-	PUT - http://goapi.curtmfg.com/forum/topics/<topic id>?key=[public api key]
+	PUT - http://API.curtmfg.com/forum/topics/<topic id>?key=[public api key]
 
 	Form Payload:
 
@@ -96,7 +96,7 @@
 
 *Update Post*
 
-	PUT - http://goapi.curtmfg.com/forum/posts/<post id>?key=[public api key]
+	PUT - http://API.curtmfg.com/forum/posts/<post id>?key=[public api key]
 
 	Form Payload:
 
@@ -115,24 +115,24 @@
 
 *Delete Group*
 
-	DELETE - http://goapi.curtmfg.com/forum/groups/<group id>?key=[public api key]
+	DELETE - http://API.curtmfg.com/forum/groups/<group id>?key=[public api key]
 
 >> Note: Deleting a group will delete the group itself and all tied topics, threads, and posts.
 
 *Delete Topic*
 
-	DELETE - http://goapi.curtmfg.com/forum/topics/<topic id>?key=[public api key]
+	DELETE - http://API.curtmfg.com/forum/topics/<topic id>?key=[public api key]
 
 >> Note: Deleting a topic will delete the topic itself and all tied threads and posts.
 
 *Delete Thread*
 
-	DELETE - http://goapi.curtmfg.com/forum/threads/<thread id>?key=[public api key]
+	DELETE - http://API.curtmfg.com/forum/threads/<thread id>?key=[public api key]
 
 >> Note: Deleting a thread will delete the thread itself and all posts tied to it.
 
 *Delete Post*
 
-	DELETE - http://goapi.curtmfg.com/forum/posts/<post id>?key=[public api key]
+	DELETE - http://API.curtmfg.com/forum/posts/<post id>?key=[public api key]
 
 

@@ -1,10 +1,10 @@
 package testThatHttp
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
-	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
-	"github.com/curt-labs/GoAPI/helpers/encoding"
-	"github.com/curt-labs/GoAPI/helpers/httprunner"
+	"github.com/curt-labs/API/helpers/apicontext"
+	"github.com/curt-labs/API/helpers/apicontextmock"
+	"github.com/curt-labs/API/helpers/encoding"
+	"github.com/curt-labs/API/helpers/httprunner"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/render"
 	"io"

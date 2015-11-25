@@ -2,7 +2,7 @@ package cart
 
 import (
 	"fmt"
-	"github.com/curt-labs/GoAPI/helpers/database"
+	"github.com/curt-labs/API/helpers/database"
 	jwt "github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/mgo.v2"
@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	jwtSigningKey = "goapi_curt"
+	jwtSigningKey = "API_curt"
 )
 
 type Customer struct {

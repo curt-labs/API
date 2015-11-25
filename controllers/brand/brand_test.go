@@ -3,8 +3,8 @@ package brand_ctlr
 import (
 	// "bytes"
 	"encoding/json"
-	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
-	"github.com/curt-labs/GoAPI/models/brand"
+	"github.com/curt-labs/API/helpers/testThatHttp"
+	"github.com/curt-labs/API/models/brand"
 	. "github.com/smartystreets/goconvey/convey"
 	"net/url"
 	"strconv"

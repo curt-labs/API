@@ -3,9 +3,9 @@ package geography
 import (
 	"net/http"
 
-	"github.com/curt-labs/GoAPI/helpers/encoding"
-	"github.com/curt-labs/GoAPI/helpers/error"
-	"github.com/curt-labs/GoAPI/models/geography"
+	"github.com/curt-labs/API/helpers/encoding"
+	"github.com/curt-labs/API/helpers/error"
+	"github.com/curt-labs/API/models/geography"
 )
 
 func GetAllCountriesAndStates(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder) string {

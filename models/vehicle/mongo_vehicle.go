@@ -1,7 +1,7 @@
 package vehicle
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/database"
+	"github.com/curt-labs/API/helpers/database"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )

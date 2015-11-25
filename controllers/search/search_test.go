@@ -2,9 +2,9 @@ package search_ctlr
 
 import (
 	"encoding/json"
-	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
-	"github.com/curt-labs/GoAPI/helpers/error"
-	"github.com/curt-labs/GoAPI/helpers/httprunner"
+	"github.com/curt-labs/API/helpers/apicontextmock"
+	"github.com/curt-labs/API/helpers/error"
+	"github.com/curt-labs/API/helpers/httprunner"
 	. "github.com/smartystreets/goconvey/convey"
 	"net/http/httptest"
 	"net/url"

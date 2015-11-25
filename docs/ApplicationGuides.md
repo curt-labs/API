@@ -3,15 +3,15 @@
 ---
 *Get Application Guide by ID*
 
-		GET - http://goapi.curtmfg.com/applicationGuide/<application guide id>?key=[public api key]
+		GET - http://API.curtmfg.com/applicationGuide/<application guide id>?key=[public api key]
 
 *Get Application Guides By Website*
 
-		GET - http://goapi.curtmfg.com/applicationGuide/website/<website id>?key=[public api key]
+		GET - http://API.curtmfg.com/applicationGuide/website/<website id>?key=[public api key]
 
 *Create Application Guide*
 
-		POST - http://goapi.curtmfg.com/applicationGuide?key=[public api key]
+		POST - http://API.curtmfg.com/applicationGuide?key=[public api key]
 
 			JSON Payload:
 			{
@@ -36,4 +36,4 @@
 
 *Delete Application Guide (internal)*
 
-		DELETE - http://goapi.curtmfg.com/applicationGuide/<app guide id (int)>?key=[public api key]
+		DELETE - http://API.curtmfg.com/applicationGuide/<app guide id (int)>?key=[public api key]

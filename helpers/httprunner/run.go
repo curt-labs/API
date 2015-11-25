@@ -1,7 +1,7 @@
 package httprunner
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/encoding"
+	"github.com/curt-labs/API/helpers/encoding"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/render"
 	"net/http"

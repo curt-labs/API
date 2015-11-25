@@ -4,35 +4,35 @@
 
 *Get All Menus*
 
-	GET - http://goapi.curtmfg.com/site/menu/all?key=[public api key]
+	GET - http://API.curtmfg.com/site/menu/all?key=[public api key]
 
 *Get All Contents*
 
-	GET - http://goapi.curtmfg.com/site/content/all?key=[public api key]
+	GET - http://API.curtmfg.com/site/content/all?key=[public api key]
 
 *Get Menu*
 
-	GET - http://goapi.curtmfg.com/site/menu/<menu id>?key=[public api key]
+	GET - http://API.curtmfg.com/site/menu/<menu id>?key=[public api key]
 
 *Get Content*
 
-	GET - http://goapi.curtmfg.com/site/content/<content id>?key=[public api key]
+	GET - http://API.curtmfg.com/site/content/<content id>?key=[public api key]
 
 *Get Content Revisions*
 
-	GET - http://goapi.curtmfg.com/site/content/<content id>/revisions?key=[public api key]
+	GET - http://API.curtmfg.com/site/content/<content id>/revisions?key=[public api key]
 
 *Get Menu With Contents*
 
-	GET - http://goapi.curtmfg.com/site/menu/contents/<content id or name>?key=[public api key]
+	GET - http://API.curtmfg.com/site/menu/contents/<content id or name>?key=[public api key]
 
 *Get Website Details*
 
-	GET - http://goapi.curtmfg.com/site/details/<website id>?key=[public api key]
+	GET - http://API.curtmfg.com/site/details/<website id>?key=[public api key]
 
 *Create Website*
 
-	PUT - http://goapi.curtmfg.com/site?key=[public api key]
+	PUT - http://API.curtmfg.com/site?key=[public api key]
 
 	JSON Payload:
 
@@ -43,7 +43,7 @@
 
 *Create Menu*
 
-	PUT - http://goapi.curtmfg.com/site/menu?key=[public api key]
+	PUT - http://API.curtmfg.com/site/menu?key=[public api key]
 
 	JSON Payload:
 
@@ -60,7 +60,7 @@
 
 *Create Content*
 
-	PUT - http://goapi.curtmfg.com/site/content?key=[public api key]
+	PUT - http://API.curtmfg.com/site/content?key=[public api key]
 
 	JSON Payload:
 
@@ -82,7 +82,7 @@
 
 *Update Website*
 
-	POST - http://goapi.curtmfg.com/site/<website id>?key=[public api key]
+	POST - http://API.curtmfg.com/site/<website id>?key=[public api key]
 
 	JSON Payload:
 
@@ -93,7 +93,7 @@
 
 *Update Menu*
 
-	POST - http://goapi.curtmfg.com/site/menu/<menu id>?key=[public api key]
+	POST - http://API.curtmfg.com/site/menu/<menu id>?key=[public api key]
 
 	JSON Payload:
 
@@ -110,7 +110,7 @@
 
 *Update Content*
 
-	POST - http://goapi.curtmfg.com/site/content/<content id>?key=[public api key]
+	POST - http://API.curtmfg.com/site/content/<content id>?key=[public api key]
 
 	JSON Payload:
 
@@ -132,12 +132,12 @@
 
 *Delete Website*
 
-	DELETE - http://goapi.curtmfg.com/site/<website id>?key=[public api key]
+	DELETE - http://API.curtmfg.com/site/<website id>?key=[public api key]
 
 *Delete Menu*
 
-	DELETE - http://goapi.curtmfg.com/site/menu/<menu id>?key=[public api key]
+	DELETE - http://API.curtmfg.com/site/menu/<menu id>?key=[public api key]
 
 *Delete Content*
 
-	DELETE - http://goapi.curtmfg.com/site/content/<content id>?key=[public api key]
+	DELETE - http://API.curtmfg.com/site/content/<content id>?key=[public api key]

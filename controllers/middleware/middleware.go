@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
-	"github.com/curt-labs/GoAPI/helpers/error"
-	"github.com/curt-labs/GoAPI/helpers/nsq"
-	"github.com/curt-labs/GoAPI/models/cart"
-	"github.com/curt-labs/GoAPI/models/customer"
+	"github.com/curt-labs/API/helpers/apicontext"
+	"github.com/curt-labs/API/helpers/error"
+	"github.com/curt-labs/API/helpers/nsq"
+	"github.com/curt-labs/API/models/cart"
+	"github.com/curt-labs/API/models/customer"
 	"github.com/go-martini/martini"
 	"github.com/segmentio/analytics-go"
 	"gopkg.in/mgo.v2/bson"
@@ -246,5 +246,5 @@ func logRequest(r *http.Request, reqTime time.Duration) {
 	trkr.Properties["form"] = r.Form
 	trkr.Properties["requestTime"] = int64((reqTime.Nanoseconds() * 1000) * 1000)
 
-	go nsq.Push("goapi_analytics", &trkr)
+	go nsq.Push("API_analytics", &trkr)
 }

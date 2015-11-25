@@ -1,8 +1,8 @@
 package products
 
 import (
-	"github.com/curt-labs/GoAPI/models/brand"
-	"github.com/curt-labs/GoAPI/models/video"
+	"github.com/curt-labs/API/models/brand"
+	"github.com/curt-labs/API/models/video"
 	"gopkg.in/mgo.v2/bson"
 
 	"net/url"

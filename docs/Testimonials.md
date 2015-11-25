@@ -4,7 +4,7 @@
 
 *Get All Testimonials*
 
-	GET - http://goapi.curtmfg.com/testimonials?key=[public api key]
+	GET - http://API.curtmfg.com/testimonials?key=[public api key]
 
 	Optional Query Parameters:
 
@@ -16,11 +16,11 @@
 
 *Get Testimonial*
 
-	GET - http://goapi.curtmfg.com/testimonials/<testimonial id>?key=[public api key]
+	GET - http://API.curtmfg.com/testimonials/<testimonial id>?key=[public api key]
 
 *Create Testimonial*
 
-	POST - http://goapi.curtmfg.com/testimonials?key=[public api key]
+	POST - http://API.curtmfg.com/testimonials?key=[public api key]
 
 	JSON Payload:
 	{
@@ -38,7 +38,7 @@
 
 *Update Testimonial*
 
-	PUT - http://goapi.curtmfg.com/testimonials/<testimonial id>?key=[public api key]
+	PUT - http://API.curtmfg.com/testimonials/<testimonial id>?key=[public api key]
 
 	JSON Payload:
 	{
@@ -56,5 +56,5 @@
 
 *Delete Testimonial*
 
-	DELETE - http://goapi.curtmfg.com/testimonials/<testimonial id>?key=[public api key]
+	DELETE - http://API.curtmfg.com/testimonials/<testimonial id>?key=[public api key]
 

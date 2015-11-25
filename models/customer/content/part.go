@@ -2,8 +2,8 @@ package custcontent
 
 import (
 	"database/sql"
-	"github.com/curt-labs/GoAPI/helpers/api"
-	"github.com/curt-labs/GoAPI/helpers/database"
+	"github.com/curt-labs/API/helpers/api"
+	"github.com/curt-labs/API/helpers/database"
 	_ "github.com/go-sql-driver/mysql"
 	"strconv"
 	"strings"

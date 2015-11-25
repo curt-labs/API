@@ -3,7 +3,7 @@
 ---
 *Get All Contacts*
 
-	GET - http://goapi.curtmfg.com/contact?key=[public api key]
+	GET - http://API.curtmfg.com/contact?key=[public api key]
 
 	Optional Query Parameters:
 
@@ -12,31 +12,31 @@
 
 *Get All Contact Types*
 
-	GET - http://goapi.curtmfg.com/contact/types?key=[public api key]
+	GET - http://API.curtmfg.com/contact/types?key=[public api key]
 
 *Get All Contact Receivers*
 
-	GET - http://goapi.curtmfg.com/contact/receivers?key=[public api key]
+	GET - http://API.curtmfg.com/contact/receivers?key=[public api key]
 
 *Get Contact*
 
-	GET - http://goapi.curtmfg.com/contact/<contact id>?key=[public api key]
+	GET - http://API.curtmfg.com/contact/<contact id>?key=[public api key]
 
 *Get Contact Type*
 
-	GET - http://goapi.curtmfg.com/contact/types/<contact type id>?key=[public api key]
+	GET - http://API.curtmfg.com/contact/types/<contact type id>?key=[public api key]
 
 *Get Contact Receiver*
 
-	GET - http://goapi.curtmfg.com/contact/receivers/<contact receiver id>?key=[public api key]
+	GET - http://API.curtmfg.com/contact/receivers/<contact receiver id>?key=[public api key]
 
 *Get Contact Receivers By Contact Type*
 
-	GET - http://goapi.curtmfg.com/contact/types/receivers/<contact type id>?key=[public api key]
+	GET - http://API.curtmfg.com/contact/types/receivers/<contact type id>?key=[public api key]
 
 *Add Contact*
 
-	POST - http://goapi.curtmfg.com/contact/<contact type id>?key=[public api key]
+	POST - http://API.curtmfg.com/contact/<contact type id>?key=[public api key]
 
 	JSON Payload:
 
@@ -59,7 +59,7 @@
 
 *Add Contact Type*
 
-	POST - http://goapi.curtmfg.com/contact/types?key=[public api key]
+	POST - http://API.curtmfg.com/contact/types?key=[public api key]
 
 	Form Payload:
 
@@ -67,7 +67,7 @@
 
 *Add Contact Receiver*
 	
-	POST - http://goapi.curtmfg.com/contact/receivers?key=[public api key]
+	POST - http://API.curtmfg.com/contact/receivers?key=[public api key]
 
 	Form Payload:
 
@@ -80,7 +80,7 @@
 
 *Update Contact*
 
-	PUT - http://goapi.curtmfg.com/contact/<contact id>?key=[public api key]
+	PUT - http://API.curtmfg.com/contact/<contact id>?key=[public api key]
 
 	JSON Payload:
 
@@ -119,7 +119,7 @@
 
 *Update Contact Type*
 
-	PUT - http://goapi.curtmfg.com/contact/types/<contact type id>?key=[public api key]
+	PUT - http://API.curtmfg.com/contact/types/<contact type id>?key=[public api key]
 
 	Form Payload:
 
@@ -128,7 +128,7 @@
 
 *Update Contact Receiver*
 
-	PUT - http://goapi.curtmfg.com/contact/receivers/<contact receiver id>?key=[public api key]
+	PUT - http://API.curtmfg.com/contact/receivers/<contact receiver id>?key=[public api key]
 
 	Form Payload:
 
@@ -139,12 +139,12 @@
 
 *Delete Contact*
 
-	DELETE - http://goapi.curtmfg.com/contact/<contact id>?key=[public api key]
+	DELETE - http://API.curtmfg.com/contact/<contact id>?key=[public api key]
 
 *Delete Contact Type*
 
-	DELETE - http://goapi.curtmfg.com/contact/types/<contact type id>?key=[public api key]
+	DELETE - http://API.curtmfg.com/contact/types/<contact type id>?key=[public api key]
 
 *Delete Contact Receiver*
 
-	DELETE - http://goapi.curtmfg.com/contact/receivers/<contact receiver id>?key=[public api key]
+	DELETE - http://API.curtmfg.com/contact/receivers/<contact receiver id>?key=[public api key]

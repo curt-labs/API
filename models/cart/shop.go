@@ -2,8 +2,8 @@ package cart
 
 import (
 	"fmt"
-	"github.com/curt-labs/GoAPI/helpers/database"
-	"github.com/curt-labs/GoAPI/helpers/geocoding"
+	"github.com/curt-labs/API/helpers/database"
+	"github.com/curt-labs/API/helpers/geocoding"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"net/url"

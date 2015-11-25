@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/curt-labs/GoAPI/helpers/encoding"
-	"github.com/curt-labs/GoAPI/helpers/error"
-	"github.com/curt-labs/GoAPI/helpers/sortutil"
-	"github.com/curt-labs/GoAPI/models/customer"
+	"github.com/curt-labs/API/helpers/encoding"
+	"github.com/curt-labs/API/helpers/error"
+	"github.com/curt-labs/API/helpers/sortutil"
+	"github.com/curt-labs/API/models/customer"
 	"github.com/go-martini/martini"
 )
 

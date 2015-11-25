@@ -3,9 +3,9 @@ package category_ctlr
 // import (
 // 	"bytes"
 // 	"encoding/json"
-// 	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
-// 	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
-// 	"github.com/curt-labs/GoAPI/models/products"
+// 	"github.com/curt-labs/API/helpers/apicontextmock"
+// 	"github.com/curt-labs/API/helpers/testThatHttp"
+// 	"github.com/curt-labs/API/models/products"
 // 	. "github.com/smartystreets/goconvey/convey"
 // 	// "net/url"
 // 	"strconv"

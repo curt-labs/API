@@ -2,7 +2,7 @@ package custcontent
 
 import (
 	"database/sql"
-	"github.com/curt-labs/GoAPI/helpers/database"
+	"github.com/curt-labs/API/helpers/database"
 	"time"
 )
 

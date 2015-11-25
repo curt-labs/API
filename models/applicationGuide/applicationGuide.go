@@ -2,10 +2,10 @@ package applicationGuide
 
 import (
 	"database/sql"
-	"github.com/curt-labs/GoAPI/helpers/apicontext"
-	"github.com/curt-labs/GoAPI/helpers/database"
-	"github.com/curt-labs/GoAPI/models/products"
-	"github.com/curt-labs/GoAPI/models/site"
+	"github.com/curt-labs/API/helpers/apicontext"
+	"github.com/curt-labs/API/helpers/database"
+	"github.com/curt-labs/API/models/products"
+	"github.com/curt-labs/API/models/site"
 	_ "github.com/go-sql-driver/mysql"
 )
 

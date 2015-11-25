@@ -21,7 +21,7 @@ const (
 	CENTER_LATITUDE     = 44.79300
 	CENTER_LONGITUDE    = -91.41048
 
-	API_DOMAIN       = "https://goapi.curtmfg.com"
+	API_DOMAIN       = "https://API.curtmfg.com"
 	AUTH_KEY_TYPE    = "AUTHENTICATION"
 	PUBLIC_KEY_TYPE  = "PUBLIC"
 	PRIVATE_KEY_TYPE = "PRIVATE"

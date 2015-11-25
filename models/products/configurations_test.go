@@ -1,8 +1,8 @@
 package products
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/api"
-	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
+	"github.com/curt-labs/API/helpers/api"
+	"github.com/curt-labs/API/helpers/apicontextmock"
 	. "github.com/smartystreets/goconvey/convey"
 	"math/rand"
 	"testing"

@@ -3,8 +3,8 @@ package applicationGuide
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/curt-labs/GoAPI/helpers/testThatHttp"
-	"github.com/curt-labs/GoAPI/models/applicationGuide"
+	"github.com/curt-labs/API/helpers/testThatHttp"
+	"github.com/curt-labs/API/models/applicationGuide"
 	. "github.com/smartystreets/goconvey/convey"
 	"net/url"
 	"strconv"

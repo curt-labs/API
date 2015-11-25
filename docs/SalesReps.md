@@ -4,15 +4,15 @@
 
 *Get All Sales Reps*
 
-	GET - http://goapi.curtmfg.com/salesrep?key=[public api key]
+	GET - http://API.curtmfg.com/salesrep?key=[public api key]
 
 *Get Sales Rep*
 
-	GET - http://goapi.curtmfg.com/salesrep/<sales rep id>?key=[public api key]
+	GET - http://API.curtmfg.com/salesrep/<sales rep id>?key=[public api key]
 
 *Add Sales Rep (internal)*
 
-	POST - http://goapi.curtmfg.com/salesrep?key=[public api key]
+	POST - http://API.curtmfg.com/salesrep?key=[public api key]
 
 	Form Payload:
 
@@ -21,7 +21,7 @@
 
 *Update Sales Rep (internal)*
 
-	PUT - http://goapi.curtmfg.com/salesrep/<sales rep id>?key=[public api key]
+	PUT - http://API.curtmfg.com/salesrep/<sales rep id>?key=[public api key]
 
 	Form Payload:
 
@@ -30,5 +30,5 @@
 
 *Delete Sales Rep (internal)*
 
-	DELETE - http://goapi.curtmfg.com/salesrep/<sales rep id>?key=[public api key]
+	DELETE - http://API.curtmfg.com/salesrep/<sales rep id>?key=[public api key]
 

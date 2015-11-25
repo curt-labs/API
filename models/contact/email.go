@@ -5,7 +5,7 @@ import (
 	"errors"
 	"text/template"
 
-	"github.com/curt-labs/GoAPI/helpers/email"
+	"github.com/curt-labs/API/helpers/email"
 )
 
 type SmtpTemplateData struct {

@@ -1,11 +1,11 @@
 package videos_ctlr
 
 import (
-	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
-	"github.com/curt-labs/GoAPI/helpers/httprunner"
-	"github.com/curt-labs/GoAPI/models/brand"
-	"github.com/curt-labs/GoAPI/models/products"
-	"github.com/curt-labs/GoAPI/models/video"
+	"github.com/curt-labs/API/helpers/apicontextmock"
+	"github.com/curt-labs/API/helpers/httprunner"
+	"github.com/curt-labs/API/models/brand"
+	"github.com/curt-labs/API/models/products"
+	"github.com/curt-labs/API/models/video"
 	. "github.com/smartystreets/goconvey/convey"
 
 	"encoding/json"

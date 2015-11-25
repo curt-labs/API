@@ -2,7 +2,7 @@ package customer
 
 import (
 	//"database/sql"
-	"github.com/curt-labs/GoAPI/helpers/apicontextmock"
+	"github.com/curt-labs/API/helpers/apicontextmock"
 	_ "github.com/go-sql-driver/mysql"
 	. "github.com/smartystreets/goconvey/convey"
 	"testing"
