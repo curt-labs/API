@@ -102,7 +102,6 @@ Contributors
 -
 * Alex Ninneman
     * [Github](http://github.com/ninnemana)
-    * [Twitter](https://twitter.com/ninnemana)
 * David Vaini
     * [Github](https://github.com/DavidVaini)
 * John Shenk
@@ -117,5 +116,4 @@ License
 
 MIT
 
-*Free Software, Fuck Yeah!*
-
+*Free-ish software? Open, we'll call it open software. Oh and :beers:*
