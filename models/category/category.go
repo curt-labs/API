@@ -25,6 +25,7 @@ type Category struct {
 	Title              string                            `bson:"title" json:"title" xml:"title,attr"`
 	ShortDesc          string                            `bson:"short_description" json:"short_description" xml:"short_description"`
 	LongDesc           string                            `bson:"long_description" json:"long_description" xml:"long_description"`
+	CodeID             int                               `bson:"code_id" json:"code_id" xml:"code_id, attr"`
 	ColorCode          string                            `bson:"color_code" json:"color_code" xml:"color_code,attr"`
 	FontCode           string                            `bson:"font_code" json:"font_code" xml:"font_code,attr"`
 	Image              *url.URL                          `bson:"image" json:"image" xml:"image"`
