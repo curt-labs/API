@@ -40,6 +40,7 @@ type Category struct {
 	Content            []Content                         `bson:"content" json:"content" xml:"content"`
 	Videos             []video.Video                     `bson:"videos" json:"videos" xml:"videos"`
 	Brand              brand.Brand                       `bson:"brand" json:"brand" xml:"brand"`
+	IsDeleted          bool                              `bson:"isdeleted" json:"isdeleted" xml:"isdeleted"`
 	ProductIdentifiers []int                             `bson:"part_ids" json:"part_identifiers" xml:"part_identifiers"`
 }
 
@@ -57,9 +58,30 @@ func GetCategoryTree(dtx *apicontext.DataContext) ([]Category, error) {
 		return cats, err
 	}
 	defer session.Close()
-	query := bson.M{"parent_id": 0, "is_lifestyle": false, "brand.id": bson.M{"$in": dtx.BrandArray}}
+	query := bson.M{"parent_id": 0, "is_lifestyle": false, "brand.id": bson.M{"$in": dtx.BrandArray}, "isdeleted": bson.M{"$ne": true}}
 	err = session.DB(database.ProductDatabase).C(database.CategoryCollectionName).Find(query).Sort("sort").All(&cats)
+	//remove isDeleted children
+	for i, _ := range cats {
+		cats[i].removeDeletedChildren()
+	}
+
 	return cats, err
+}
+
+func (c *Category) removeDeletedChildren() {
+	var newKids []Category
+	for i := range c.Children {
+		if c.Children[i].IsDeleted == false {
+			newKids = append(newKids, c.Children[i])
+		}
+	}
+	c.Children = newKids
+	for i := range c.Children {
+		if len(c.Children[i].Children) > 0 {
+			c.Children[i].removeDeletedChildren()
+		}
+	}
+	return
 }
 
 func (c *Category) Get(page, count int) error {
