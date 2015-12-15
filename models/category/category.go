@@ -40,6 +40,7 @@ type Category struct {
 	Videos             []video.Video                     `bson:"videos" json:"videos" xml:"videos"`
 	Brand              brand.Brand                       `bson:"brand" json:"brand" xml:"brand"`
 	ProductIdentifiers []int                             `bson:"part_ids" json:"part_identifiers" xml:"part_identifiers"`
+	IsDeleted          bool                              `bson:"isdeleted" json:"-" xml:"-"`
 }
 
 type PartResponse struct {
@@ -58,6 +59,9 @@ func GetCategoryTree(dtx *apicontext.DataContext) ([]Category, error) {
 	defer session.Close()
 	query := bson.M{"parent_id": 0, "is_lifestyle": false, "brand.id": bson.M{"$in": dtx.BrandArray}}
 	err = session.DB(database.ProductDatabase).C(database.CategoryCollectionName).Find(query).Sort("sort").All(&cats)
+	for i, _ := range cats {
+		cats[i].removeDeletedChildren()
+	}
 	return cats, err
 }
 
@@ -69,7 +73,7 @@ func (c *Category) Get(page, count int) error {
 	}
 	defer session.Close()
 
-	err = session.DB(database.ProductDatabase).C(database.CategoryCollectionName).Find(bson.M{"id": c.CategoryID}).One(&c)
+	err = session.DB(database.ProductDatabase).C(database.CategoryCollectionName).Find(bson.M{"id": c.CategoryID, "isdeleted": false}).One(&c)
 	if err != nil {
 		return err
 	}
@@ -129,4 +133,13 @@ func GetCategoryParts(catId, page, count int) (PartResponse, error) {
 	total_items, err := session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(query).Count()
 	parts.TotalPages = int(math.Ceil(float64(total_items) / float64(count)))
 	return parts, err
+}
+
+func (c *Category) removeDeletedChildren() {
+	for i, _ := range c.Children {
+		if c.Children[i].IsDeleted {
+			copy(c.Children[i:], c.Children[i+1:])
+			c.Children = c.Children[:len(c.Children)-1]
+		}
+	}
 }
