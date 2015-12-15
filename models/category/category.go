@@ -136,10 +136,11 @@ func GetCategoryParts(catId, page, count int) (PartResponse, error) {
 }
 
 func (c *Category) removeDeletedChildren() {
+	var newChildren []Category
 	for i, _ := range c.Children {
-		if c.Children[i].IsDeleted {
-			copy(c.Children[i:], c.Children[i+1:])
-			c.Children = c.Children[:len(c.Children)-1]
+		if !c.Children[i].IsDeleted {
+			newChildren = append(newChildren, c.Children[i])
 		}
 	}
+	c.Children = newChildren
 }
