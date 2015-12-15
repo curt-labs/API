@@ -115,5 +115,5 @@ License
 
 MIT
 
-*Free Software, Fuck Yeah!*
+*Free-ish software? Open, we'll call it open software. Oh and :beers:*
 

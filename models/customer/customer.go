@@ -233,8 +233,8 @@ var (
 						join Customer as c on cu.cust_ID = c.cust_id
 						where c.cust_id = ?
 						&& cu.active = 1`
-	customerPrice = `select distinct cp.price from 
-						 CustomerPricing cp						
+	customerPrice = `select distinct cp.price from
+						 CustomerPricing cp
 						 where cp.cust_ID =  ?
 						 and cp.partID = ?`
 
@@ -256,31 +256,31 @@ var (
 				join CustomerToBrand as ctb on ctb.cust_id = c.cust_id
 				join ApiKeyToBrand as atb on atb.brandID = ctb.brandID
 				join ApiKey as a on a.id = atb.keyID
-				where dt.online = 1 && c.isDummy = 0 
+				where dt.online = 1 && c.isDummy = 0
 				&& a.api_key = ? && (ctb.brandID = ? or 0 = ?)
 				order by c.name`
 
-	localDealers = `select 
-					` + customerLocationFields + `, 
-					` + stateFields + `, 
-					` + countryFields + `, 
-					` + dealerTypeFields + `, 
-					` + dealerTierFields + `, 
-					` + mapIconFields + `, 
-					` + mapixCodeFields + `, 
+	localDealers = `select
+					` + customerLocationFields + `,
+					` + stateFields + `,
+					` + countryFields + `,
+					` + dealerTypeFields + `,
+					` + dealerTierFields + `,
+					` + mapIconFields + `,
+					` + mapixCodeFields + `,
 					` + salesRepFields + ` ,
-					` + showSiteFields + `,( 
-						? * acos( 
-							cos( 
-								radians(?) ) * cos( radians( cl.latitude ) 
-							) * cos( 
-								radians( cl.longitude ) - radians(?) 
-							) + sin( 
-								radians(?) 
-							) * sin( 
-								radians( cl.latitude ) 
-							) 
-						) 
+					` + showSiteFields + `,(
+						? * acos(
+							cos(
+								radians(?) ) * cos( radians( cl.latitude )
+							) * cos(
+								radians( cl.longitude ) - radians(?)
+							) + sin(
+								radians(?)
+							) * sin(
+								radians( cl.latitude )
+							)
+						)
 					) as distance
 					from CustomerLocations as cl
 					join Customer as c on cl.cust_id = c.cust_id
@@ -291,7 +291,7 @@ var (
 					left join Country as cty on s.countryID = cty.countryID
 					left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
 					left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
-					where dt.online = 0 && c.isDummy = 0 && dt.show = 1 && dtr.ID = mi.tier 
+					where dt.online = 0 && c.isDummy = 0 && dt.show = 1 && dtr.ID = mi.tier
 					having (distance < ?) || (? = 0)
 					limit ?,?`
 
