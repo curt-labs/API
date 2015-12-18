@@ -1,6 +1,10 @@
 package category
 
 import (
+	"math"
+	"net/url"
+	"time"
+
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/database"
 	"github.com/curt-labs/API/models/brand"
@@ -8,9 +12,6 @@ import (
 	"github.com/curt-labs/API/models/video"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-	"math"
-	"net/url"
-	"time"
 )
 
 type Category struct {
@@ -77,6 +78,7 @@ func (c *Category) Get(page, count int) error {
 	if err != nil {
 		return err
 	}
+	c.removeDeletedChildren()
 
 	c.ProductListing = &products.PaginatedProductListing{
 		Page:    page,
