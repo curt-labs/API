@@ -205,6 +205,9 @@ var (
 	getCustIdFromKeyStmt = `select cu.cust_ID from CustomerUser as cu
                                 join ApiKey as ak on cu.id = ak.user_id
                                 where ak.api_key = ? limit 1`
+    getCustIdsFromAccountNumStmt = `select c.cust_id, c.customerID from Customer as c
+										Join Accounts as a on a.cust_id = c.cust_id
+										where a.accountNumber = ? limit 1`
 	//Old
 	findCustomerIdFromCustId = `select customerID from Customer where cust_id = ? limit 1`
 	findCustIdFromCustomerId = `select cust_id from Customer where customerID = ? limit 1`
@@ -444,6 +447,8 @@ func (c *Customer) GetCustomer(key string) (err error) {
 	return err
 }
 
+
+
 //gets cust_id, not customerId
 func (c *Customer) GetCustomerIdFromKey(key string) error {
 	var err error
@@ -460,6 +465,32 @@ func (c *Customer) GetCustomerIdFromKey(key string) error {
 	err = stmt.QueryRow(key).Scan(&c.Id)
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func (c *Customer) GetCustomerIdsFromAccountNumber(accountNum string) error {
+	var err error
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(getCustIdsFromAccountNumStmt)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	var cust_id, customerID *int
+	err = stmt.QueryRow(accountNum).Scan(&cust_id, &customerID)
+	if err != nil {
+		return err
+	}
+	if cust_id != nil{
+		c.Id = *cust_id
+	}
+	if customerID != nil{
+		c.CustomerId = *customerID
 	}
 	return nil
 }

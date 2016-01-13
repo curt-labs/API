@@ -239,6 +239,7 @@ func RegisterUser(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 	name := r.FormValue("name")
 	email := r.FormValue("email")
 	pass := r.FormValue("pass")
+	accountNumber := r.FormValue("account_ID")
 	customerID, err := strconv.Atoi(r.FormValue("customerID"))
 	// isActive, err := strconv.ParseBool(r.FormValue("isActive"))
 	locationID, err := strconv.Atoi(r.FormValue("locationID"))
@@ -255,6 +256,7 @@ func RegisterUser(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 	var user customer.CustomerUser
 	user.Email = email
 	user.Password = pass
+
 	if name != "" {
 		user.Name = name
 	}
@@ -266,6 +268,21 @@ func RegisterUser(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 	}
 	if cust_ID != 0 {
 		user.CustomerID = cust_ID
+	}
+	if accountNumber != ""{ // Account Number is optional
+		// fetch the customerID from the account number
+		var cust customer.Customer
+		err = cust.GetCustomerIdsFromAccountNumber(accountNumber)
+		if cust.Id == 0 || err != nil{
+			if err == nil{
+				err = errors.New("Account Number is not associated to any customer")
+			}
+			apierror.GenerateError("Invalid Account Number:", err, rw, r)
+			return ""
+		}
+		user.OldCustomerID = cust.CustomerId
+		user.CustomerID = cust.Id
+		cust_ID = cust.Id
 	}
 	user.Active = false
 	user.Sudo = false
