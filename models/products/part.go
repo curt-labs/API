@@ -105,12 +105,22 @@ func (p *Part) Get(dtx *apicontext.DataContext) error {
 	return err
 }
 
-// FromDatabase ...
-func (p *Part) FromDatabase(brands []int) error {
-	session, err := mgo.DialWithInfo(database.MongoPartConnectionString())
-	if err != nil {
+func (p *Part) GetNoCust(dtx *apicontext.DataContext) error {
+	var err error
+	//get brands
+	brands := getBrandsFromDTX(dtx)
+	if err := p.FromDatabase(brands); err != nil {
 		return err
 	}
+	return err
+}
+
+// FromDatabase ...
+func (p *Part) FromDatabase(brands []int) error {
+	if err := database.Init(); err != nil {
+		return err
+	}
+	session := database.ProductMongoSession.Copy()
 	defer session.Close()
 
 	query := bson.M{"id": p.ID, "brand.id": bson.M{"$in": brands}}

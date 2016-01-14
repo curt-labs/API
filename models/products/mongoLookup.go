@@ -132,10 +132,11 @@ func GetApps(v NoSqlVehicle, collection string) (stage string, vals []string, er
 		return
 	}
 
-	session, err := mgo.DialWithInfo(database.AriesMongoConnectionString())
-	if err != nil {
+	if err = database.Init(); err != nil {
 		return
 	}
+
+	session := database.AriesMongoSession.Copy()
 	defer session.Close()
 
 	c := session.DB(AriesDb).C(collection)
@@ -405,7 +406,7 @@ func FindVehiclesWithParts(v NoSqlVehicle, collection string, dtx *apicontext.Da
 	//add parts
 	for _, id := range ids {
 		p := Part{ID: id}
-		if err := p.Get(dtx); err != nil {
+		if err := p.GetNoCust(dtx); err != nil {
 			continue
 		}
 		l.Parts = append(l.Parts, p)
