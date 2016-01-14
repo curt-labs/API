@@ -2,6 +2,7 @@ package products
 
 import (
 	"database/sql"
+
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/database"
 
@@ -103,13 +104,7 @@ func initMaps() {
 	buildPartMap()
 }
 
-func GetAriesVehicleCollections() ([]string, error) {
-	if err := database.Init(); err != nil {
-		return []string{},err
-	}
-
-	session := database.AriesMongoSession.Copy()
-	defer session.Close()
+func GetAriesVehicleCollections(session *mgo.Session) ([]string, error) {
 
 	cols, err := session.DB(AriesDb).CollectionNames()
 	if err != nil {
@@ -364,12 +359,8 @@ func buildPartMap() error {
 	return nil
 }
 
-func FindVehiclesWithParts(v NoSqlVehicle, collection string, dtx *apicontext.DataContext) (l NoSqlLookup, err error) {
-	if err = database.Init(); err != nil {
-		return
-	}
-	session := database.ProductMongoSession.Copy()
-	defer session.Close()
+func FindVehiclesWithParts(v NoSqlVehicle, collection string, dtx *apicontext.DataContext, sess *mgo.Session) (l NoSqlLookup, err error) {
+
 	l = NoSqlLookup{}
 
 	stage, vals, err := GetApps(v, collection)
@@ -390,7 +381,7 @@ func FindVehiclesWithParts(v NoSqlVehicle, collection string, dtx *apicontext.Da
 		}
 	}
 	//
-	c := session.DB(AriesDb).C(collection)
+	c := sess.DB(AriesDb).C(collection)
 	queryMap := make(map[string]interface{})
 
 	ids := make([]int, 0)
@@ -434,7 +425,7 @@ func FindVehiclesFromAllCategories(v NoSqlVehicle, dtx *apicontext.DataContext) 
 	defer session.Close()
 
 	//Get all collections
-	cols, err := GetAriesVehicleCollections()
+	cols, err := GetAriesVehicleCollections(session)
 	if err != nil {
 		return lookupMap, err
 	}

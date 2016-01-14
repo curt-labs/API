@@ -2,6 +2,7 @@ package vehicle
 
 import (
 	"github.com/curt-labs/API/helpers/apicontext"
+	"github.com/curt-labs/API/helpers/database"
 	"github.com/curt-labs/API/helpers/encoding"
 	"github.com/curt-labs/API/helpers/error"
 	"github.com/curt-labs/API/models/products"
@@ -12,7 +13,12 @@ import (
 )
 
 func Collections(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
-	cols, err := products.GetAriesVehicleCollections()
+	if err := database.Init(); err != nil {
+		apierror.GenerateError(err.Error(), err, w, r)
+		return ""
+	}
+
+	cols, err := products.GetAriesVehicleCollections(database.ProductMongoSession)
 	if err != nil {
 		apierror.GenerateError(err.Error(), err, w, r)
 		return ""
@@ -78,15 +84,22 @@ func ByCategory(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dt
 
 //Hack version that slowly traverses all the collection and aggregates results
 func AllCollectionsLookup(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
-	var v products.NoSqlVehicle
+	if err := database.Init(); err != nil {
+		apierror.GenerateError(err.Error(), err, w, r)
+		return ""
+	}
 
+	sess := database.ProductMongoSession.Copy()
+	defer sess.Close()
 
 	//Get all collections
-	cols, err := products.GetAriesVehicleCollections()
+	cols, err := products.GetAriesVehicleCollections(sess)
 	if err != nil {
 		apierror.GenerateError(err.Error(), err, w, r)
 		return ""
 	}
+
+	var v products.NoSqlVehicle
 
 	// Get vehicle year
 	v.Year = r.FormValue("year")
@@ -107,11 +120,12 @@ func AllCollectionsLookup(w http.ResponseWriter, r *http.Request, enc encoding.E
 	var collectionVehicleArray []products.NoSqlLookup
 
 	for _, col := range cols {
-		noSqlLookup, err := products.FindVehiclesWithParts(v, col, dtx)
+		noSqlLookup, err := products.FindVehiclesWithParts(v, col, dtx, sess)
 		if err != nil {
 			apierror.GenerateError("Trouble finding vehicles.", err, w, r)
 			return ""
 		}
+
 		collectionVehicleArray = append(collectionVehicleArray, noSqlLookup)
 	}
 	l := makeLookupFrommanyLookups(collectionVehicleArray)
