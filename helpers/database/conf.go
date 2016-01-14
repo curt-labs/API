@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"gopkg.in/mgo.v2"
+	_ "github.com/go-sql-driver/mysql"
+	"database/sql"
 )
 
 type Scanner interface {
@@ -21,7 +23,39 @@ var (
 	CategoryCollectionName = "categories"
 	ProductDatabase        = "product_data"
 	CategoryDatabase       = "category_data"
+
+	MongoDatabase           string
+	ProductMongoDatabase    string
+	AriesMongoDatabase      string
+
+	MongoSession            *mgo.Session
+	ProductMongoSession     *mgo.Session
+	CategoryMongoSession    *mgo.Session
+	AriesMongoSession       *mgo.Session
+
+	DB                      *sql.DB
+	VcdbDB                  *sql.DB
+	Driver                  = "mysql"
 )
+
+
+func Init() error {
+	var err error
+	if DB == nil {
+		DB, err = sql.Open(Driver, ConnectionString())
+		if err != nil {
+			return err
+		}
+	}
+	if VcdbDB == nil {
+		VcdbDB, err = sql.Open(Driver, VcdbConnectionString())
+		if err != nil {
+			return err
+		}
+	}
+
+	return InitMongo()
+}
 
 func ConnectionString() string {
 	if addr := os.Getenv("DATABASE_HOST"); addr != "" {
@@ -114,3 +148,40 @@ func AriesConnectionString() string {
 func GetCleanDBFlag() string {
 	return *EmptyDb
 }
+
+func InitMongo() error {
+	var err error
+	if MongoSession == nil {
+		connectionString := MongoConnectionString()
+		MongoSession, err = mgo.DialWithInfo(connectionString)
+		if err != nil {
+			return err
+		}
+		MongoDatabase = connectionString.Database
+	}
+	if ProductMongoSession == nil {
+		connectionString := MongoPartConnectionString()
+		ProductMongoSession, err = mgo.DialWithInfo(connectionString)
+		if err != nil {
+			return err
+		}
+		ProductMongoDatabase = connectionString.Database
+	}
+	if CategoryMongoSession == nil {
+		connectionString := MongoPartConnectionString()
+		CategoryMongoSession, err = mgo.DialWithInfo(connectionString)
+		if err != nil {
+			return err
+		}
+		ProductMongoDatabase = connectionString.Database
+	}
+	if AriesMongoSession == nil {
+		connectionString := AriesMongoConnectionString()
+		AriesMongoSession, err = mgo.DialWithInfo(connectionString)
+		if err == nil {
+			AriesMongoDatabase = connectionString.Database
+		}
+	}
+	return err
+}
+

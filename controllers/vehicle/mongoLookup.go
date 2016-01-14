@@ -80,6 +80,7 @@ func ByCategory(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dt
 func AllCollectionsLookup(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	var v products.NoSqlVehicle
 
+
 	//Get all collections
 	cols, err := products.GetAriesVehicleCollections()
 	if err != nil {

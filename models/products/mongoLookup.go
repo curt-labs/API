@@ -104,10 +104,11 @@ func initMaps() {
 }
 
 func GetAriesVehicleCollections() ([]string, error) {
-	session, err := mgo.DialWithInfo(database.AriesMongoConnectionString())
-	if err != nil {
-		return []string{}, err
+	if err := database.Init(); err != nil {
+		return []string{},err
 	}
+
+	session := database.AriesMongoSession.Copy()
 	defer session.Close()
 
 	cols, err := session.DB(AriesDb).CollectionNames()
@@ -363,7 +364,11 @@ func buildPartMap() error {
 }
 
 func FindVehiclesWithParts(v NoSqlVehicle, collection string, dtx *apicontext.DataContext) (l NoSqlLookup, err error) {
-
+	if err = database.Init(); err != nil {
+		return
+	}
+	session := database.ProductMongoSession.Copy()
+	defer session.Close()
 	l = NoSqlLookup{}
 
 	stage, vals, err := GetApps(v, collection)
@@ -383,13 +388,7 @@ func FindVehiclesWithParts(v NoSqlVehicle, collection string, dtx *apicontext.Da
 			l.Styles = vals
 		}
 	}
-
-	session, err := mgo.DialWithInfo(database.AriesMongoConnectionString())
-	if err != nil {
-		return
-	}
-	defer session.Close()
-
+	//
 	c := session.DB(AriesDb).C(collection)
 	queryMap := make(map[string]interface{})
 
