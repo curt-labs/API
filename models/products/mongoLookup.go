@@ -437,26 +437,24 @@ func FindVehiclesFromAllCategories(v NoSqlVehicle, dtx *apicontext.DataContext, 
 
 		var ids []int
 		err = c.Find(queryMap).Distinct("parts", &ids)
-		if err != nil {
+		if err != nil || len(ids) == 0 {
 			continue
 		}
 		//add parts
-		var partsArray []Part
 		l.Parts, err = GetMany(ids, getBrandsFromDTX(dtx), sess)
 		if err != nil {
 			continue
 		}
 
-		partsArray = append(partsArray, l.Parts...)
-		if len(partsArray) > 0 {
+		if len(l.Parts) > 0 {
 			var tmp = lookupMap[col]
-			tmp.Parts = partsArray
+			tmp.Parts = l.Parts
 			tmp.Styles = l.Styles
 			lookupMap[col] = tmp
-			partsArray = nil
 		}
 	}
-	return lookupMap, err
+
+	return lookupMap, nil
 }
 
 func FindPartsFromOneCategory(v NoSqlVehicle, collection string, dtx *apicontext.DataContext, sess *mgo.Session) (map[string]NoSqlLookup, error) {

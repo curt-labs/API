@@ -7,9 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"gopkg.in/mgo.v2"
-	_ "github.com/go-sql-driver/mysql"
 	"database/sql"
+
+	_ "github.com/go-sql-driver/mysql"
+	"gopkg.in/mgo.v2"
 )
 
 type Scanner interface {
@@ -23,21 +24,21 @@ var (
 	CategoryCollectionName = "categories"
 	ProductDatabase        = "product_data"
 	CategoryDatabase       = "category_data"
+	AriesDatabase          = "aries"
 
-	MongoDatabase           string
-	ProductMongoDatabase    string
-	AriesMongoDatabase      string
+	MongoDatabase        string
+	ProductMongoDatabase string
+	AriesMongoDatabase   string
 
-	MongoSession            *mgo.Session
-	ProductMongoSession     *mgo.Session
-	CategoryMongoSession    *mgo.Session
-	AriesMongoSession       *mgo.Session
+	MongoSession         *mgo.Session
+	ProductMongoSession  *mgo.Session
+	CategoryMongoSession *mgo.Session
+	AriesMongoSession    *mgo.Session
 
-	DB                      *sql.DB
-	VcdbDB                  *sql.DB
-	Driver                  = "mysql"
+	DB     *sql.DB
+	VcdbDB *sql.DB
+	Driver = "mysql"
 )
-
 
 func Init() error {
 	var err error
@@ -184,4 +185,3 @@ func InitMongo() error {
 	}
 	return err
 }
-
