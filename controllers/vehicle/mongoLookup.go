@@ -186,6 +186,14 @@ func AllCollectionsLookupCategory(w http.ResponseWriter, r *http.Request, enc en
 	noSqlLookup := make(map[string]products.NoSqlLookup)
 	var err error
 
+	if err := database.Init(); err != nil {
+		apierror.GenerateError(err.Error(), err, w, r)
+		return ""
+	}
+
+	sess := database.ProductMongoSession.Copy()
+	defer sess.Close()
+
 	// Get vehicle year
 	v.Year = r.FormValue("year")
 	delete(r.Form, "year")
@@ -204,10 +212,9 @@ func AllCollectionsLookupCategory(w http.ResponseWriter, r *http.Request, enc en
 
 	collection := r.FormValue("collection")
 	if collection == "" {
-		noSqlLookup, err = products.FindVehiclesFromAllCategories(v, dtx)
-
+		noSqlLookup, err = products.FindVehiclesFromAllCategories(v, dtx, sess)
 	} else {
-		noSqlLookup, err = products.FindPartsFromOneCategory(v, collection, dtx)
+		noSqlLookup, err = products.FindPartsFromOneCategory(v, collection, dtx, sess)
 	}
 	if err != nil {
 		apierror.GenerateError("Trouble finding vehicles.", err, w, r)
@@ -215,6 +222,4 @@ func AllCollectionsLookupCategory(w http.ResponseWriter, r *http.Request, enc en
 	}
 
 	return encoding.Must(enc.Encode(noSqlLookup))
-
-	return ""
 }

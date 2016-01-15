@@ -396,15 +396,6 @@ func FindVehiclesWithParts(v NoSqlVehicle, collection string, dtx *apicontext.Da
 
 	l.Parts, err = GetMany(ids, getBrandsFromDTX(dtx), sess)
 
-	//add parts
-	// for _, id := range ids {
-	// 	p := Part{ID: id}
-	// 	if err := p.GetNoCust(dtx, sess); err != nil {
-	// 		continue
-	// 	}
-	// 	l.Parts = append(l.Parts, p)
-	// }
-
 	return l, err
 }
 
@@ -416,18 +407,12 @@ func FindVehiclesWithParts(v NoSqlVehicle, collection string, dtx *apicontext.Da
 //query base+style
 //get parts
 
-func FindVehiclesFromAllCategories(v NoSqlVehicle, dtx *apicontext.DataContext) (map[string]NoSqlLookup, error) {
+func FindVehiclesFromAllCategories(v NoSqlVehicle, dtx *apicontext.DataContext, sess *mgo.Session) (map[string]NoSqlLookup, error) {
 	var l NoSqlLookup
 	lookupMap := make(map[string]NoSqlLookup)
 
-	session, err := mgo.DialWithInfo(database.AriesMongoConnectionString())
-	if err != nil {
-		return lookupMap, err
-	}
-	defer session.Close()
-
 	//Get all collections
-	cols, err := GetAriesVehicleCollections(session)
+	cols, err := GetAriesVehicleCollections(sess)
 	if err != nil {
 		return lookupMap, err
 	}
@@ -435,7 +420,7 @@ func FindVehiclesFromAllCategories(v NoSqlVehicle, dtx *apicontext.DataContext) 
 	//from each category
 	for _, col := range cols {
 
-		c := session.DB(AriesDb).C(col)
+		c := sess.DB(AriesDb).C(col)
 		queryMap := make(map[string]interface{})
 		//query base vehicle
 		queryMap["year"] = strings.ToLower(v.Year)
@@ -445,23 +430,24 @@ func FindVehiclesFromAllCategories(v NoSqlVehicle, dtx *apicontext.DataContext) 
 			queryMap["style"] = strings.ToLower(v.Style)
 		} else {
 			_, l.Styles, err = GetApps(v, col)
-		}
-
-		var ids []int
-		c.Find(queryMap).Distinct("parts", &ids)
-		//add parts
-		var partsArray []Part
-		for _, id := range ids {
-			p := Part{
-				ID: id,
-			}
-			err = p.Get(dtx)
 			if err != nil {
 				continue
 			}
-			l.Parts = append(l.Parts, p)
-			partsArray = append(partsArray, p)
 		}
+
+		var ids []int
+		err = c.Find(queryMap).Distinct("parts", &ids)
+		if err != nil {
+			continue
+		}
+		//add parts
+		var partsArray []Part
+		l.Parts, err = GetMany(ids, getBrandsFromDTX(dtx), sess)
+		if err != nil {
+			continue
+		}
+
+		partsArray = append(partsArray, l.Parts...)
 		if len(partsArray) > 0 {
 			var tmp = lookupMap[col]
 			tmp.Parts = partsArray
@@ -473,17 +459,12 @@ func FindVehiclesFromAllCategories(v NoSqlVehicle, dtx *apicontext.DataContext) 
 	return lookupMap, err
 }
 
-func FindPartsFromOneCategory(v NoSqlVehicle, collection string, dtx *apicontext.DataContext) (map[string]NoSqlLookup, error) {
+func FindPartsFromOneCategory(v NoSqlVehicle, collection string, dtx *apicontext.DataContext, sess *mgo.Session) (map[string]NoSqlLookup, error) {
 	var l NoSqlLookup
+	var err error
 	lookupMap := make(map[string]NoSqlLookup)
 
-	session, err := mgo.DialWithInfo(database.AriesMongoConnectionString())
-	if err != nil {
-		return lookupMap, err
-	}
-	defer session.Close()
-
-	c := session.DB(AriesDb).C(collection)
+	c := sess.DB(AriesDb).C(collection)
 	queryMap := make(map[string]interface{})
 	//query base vehicle
 	queryMap["year"] = strings.ToLower(v.Year)
@@ -493,27 +474,25 @@ func FindPartsFromOneCategory(v NoSqlVehicle, collection string, dtx *apicontext
 		queryMap["style"] = strings.ToLower(v.Style)
 	} else {
 		_, l.Styles, err = GetApps(v, collection)
+		if err != nil {
+			return lookupMap, err
+		}
 	}
 
 	var ids []int
 	c.Find(queryMap).Distinct("parts", &ids)
 	//add parts
-	var partsArray []Part
-	for _, id := range ids {
-		p := Part{ID: id}
-		if err := p.Get(dtx); err != nil {
-			continue
-		}
-		l.Parts = append(l.Parts, p)
-		partsArray = append(partsArray, p)
 
+	l.Parts, err = GetMany(ids, getBrandsFromDTX(dtx), sess)
+	if err != nil {
+		return lookupMap, err
 	}
-	if len(partsArray) > 0 {
+
+	if len(l.Parts) > 0 {
 		var tmp = lookupMap[collection]
-		tmp.Parts = partsArray
+		tmp.Parts = l.Parts
 		tmp.Styles = l.Styles
 		lookupMap[collection] = tmp
-		partsArray = nil
 	}
 	return lookupMap, err
 }
