@@ -399,7 +399,7 @@ func FindVehiclesWithParts(v NoSqlVehicle, collection string, dtx *apicontext.Da
 	//add parts
 	// for _, id := range ids {
 	// 	p := Part{ID: id}
-	// 	if err := p.GetNoCust(dtx); err != nil {
+	// 	if err := p.GetNoCust(dtx, sess); err != nil {
 	// 		continue
 	// 	}
 	// 	l.Parts = append(l.Parts, p)
