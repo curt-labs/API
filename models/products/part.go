@@ -82,6 +82,16 @@ type VehicleApplication struct {
 	InstallTime string `bson:"install_time" json:"install_time" xml:"install_time"`
 }
 
+func GetMany(ids, brands []int, sess *mgo.Session) ([]Part, error) {
+
+	c := sess.DB(database.AriesMongoDatabase).C(database.ProductCollectionName)
+
+	var parts []Part
+	err := c.Find(bson.M{"id": bson.M{"$in": ids}, "brand.id": bson.M{"$in": brands}}).All(&parts)
+
+	return parts, err
+}
+
 // Get ...
 func (p *Part) Get(dtx *apicontext.DataContext) error {
 	var err error

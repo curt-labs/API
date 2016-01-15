@@ -394,14 +394,16 @@ func FindVehiclesWithParts(v NoSqlVehicle, collection string, dtx *apicontext.Da
 
 	c.Find(queryMap).Distinct("parts", &ids)
 
+	l.Parts, err = GetMany(ids, getBrandsFromDTX(dtx), sess)
+
 	//add parts
-	for _, id := range ids {
-		p := Part{ID: id}
-		if err := p.GetNoCust(dtx); err != nil {
-			continue
-		}
-		l.Parts = append(l.Parts, p)
-	}
+	// for _, id := range ids {
+	// 	p := Part{ID: id}
+	// 	if err := p.GetNoCust(dtx); err != nil {
+	// 		continue
+	// 	}
+	// 	l.Parts = append(l.Parts, p)
+	// }
 
 	return l, err
 }
