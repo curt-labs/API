@@ -105,14 +105,19 @@ func (p *Part) Get(dtx *apicontext.DataContext) error {
 	return err
 }
 
-func (p *Part) GetNoCust(dtx *apicontext.DataContext) error {
+func (p *Part) GetNoCust(dtx *apicontext.DataContext, sess *mgo.Session) error {
 	var err error
 	//get brands
 	brands := getBrandsFromDTX(dtx)
-	if err := p.FromDatabase(brands); err != nil {
+	if err := p.FromMongoDatabase(brands, sess); err != nil {
 		return err
 	}
 	return err
+}
+
+func (p *Part) FromMongoDatabase(brands []int, session *mgo.Session) error {
+	query := bson.M{"id": p.ID, "brand.id": bson.M{"$in": brands}}
+	return session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(query).One(&p)
 }
 
 // FromDatabase ...
