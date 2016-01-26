@@ -85,8 +85,8 @@ type VehicleApplication struct {
 func GetMany(ids, brands []int, sess *mgo.Session) ([]Part, error) {
 
 	c := sess.DB(database.ProductMongoDatabase).C(database.ProductCollectionName)
-
-	qry := bson.M{"id": bson.M{"$in": ids}, "brand.id": bson.M{"$in": brands}}
+	var statuses = []int{800, 900}
+	qry := bson.M{"id": bson.M{"$in": ids}, "status": bson.M{"$in": statuses}, "brand.id": bson.M{"$in": brands}}
 
 	var parts []Part
 	err := c.Find(qry).All(&parts)
