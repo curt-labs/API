@@ -38,16 +38,17 @@ var (
 						where pa.partID = p.partID && pa.field = 'Location'
 					) as location,
 					(
-						select con.text from Content con
+						select distinct con.text from Content con
 						join ContentBridge cb on con.contentID = cb.contentID
 						where cb.partID = p.partID && con.cTypeID = 5
+						limit 1
 					) as installSheet
 					from Part as p
 					left join Class as pc on p.classID = pc.classID
 					left join CatPart as cp on p.partID = cp.partID
 					left join Categories as c on cp.catID = c.catID
 					where p.brandID = 3 && p.status in (800,900)
-					group by partID`
+					group by p.oldPartNumber`
 )
 
 type NoSqlVehicle struct {
@@ -307,6 +308,7 @@ func buildPartMap() error {
 	defer rows.Close()
 
 	for rows.Next() {
+
 		var p BasicPart
 		var priceCode, cat, class, finish, color, location, install *string
 		err = rows.Scan(
@@ -325,6 +327,7 @@ func buildPartMap() error {
 			&location,
 			&install,
 		)
+
 		if err != nil {
 			continue
 		}
