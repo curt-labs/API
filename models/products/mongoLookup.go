@@ -37,14 +37,17 @@ var (
 						select group_concat(pa.value) from PartAttribute as pa
 						where pa.partID = p.partID && pa.field = 'Location'
 					) as location,
-					con.text as installSheet
+					(
+						select con.text from Content con
+						join ContentBridge cb on con.contentID = cb.contentID
+						where cb.partID = p.partID && con.cTypeID = 5
+					) as installSheet
 					from Part as p
 					left join Class as pc on p.classID = pc.classID
 					left join CatPart as cp on p.partID = cp.partID
 					left join Categories as c on cp.catID = c.catID
-					left join ContentBridge as cb on p.partID = cb.partID
-					left join Content as con on cb.contentID = con.contentID && con.cTypeID = 5
-					where p.brandID = 3 && p.status in (800,900)`
+					where p.brandID = 3 && p.status in (800,900)
+					group by partID`
 )
 
 type NoSqlVehicle struct {
