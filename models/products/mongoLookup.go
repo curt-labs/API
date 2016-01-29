@@ -38,9 +38,9 @@ var (
 						where pa.partID = p.partID && pa.field = 'Location'
 					) as location,
 					(
-						select distinct con.text from Content con
+						select con.text from Content con
 						join ContentBridge cb on con.contentID = cb.contentID
-						where cb.partID = p.partID && con.cTypeID = 5
+						where cb.partID = p.partID && con.cTypeID = 5 && con.deleted = 0
 						limit 1
 					) as installSheet
 					from Part as p
