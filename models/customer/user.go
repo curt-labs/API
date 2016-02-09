@@ -4,13 +4,14 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/pborman/uuid"
-	"golang.org/x/crypto/bcrypt"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/pborman/uuid"
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/curt-labs/API/helpers/api"
 	"github.com/curt-labs/API/helpers/apicontext"
@@ -111,7 +112,7 @@ var (
 								where cu.email = ? && cu.password = ?
 								limit 1`
 
-	customerUserAuth = `select cu.id, cu.name, cu.email, cu.password, cu.customerID, cu.date_added, cu.active,cu.locationID, cu.isSudo, cu.cust_ID, cu.passwordConverted 
+	customerUserAuth = `select cu.id, cu.name, cu.email, cu.password, cu.customerID, cu.date_added, cu.active,cu.locationID, cu.isSudo, cu.cust_ID, cu.passwordConverted
 						from CustomerUser as cu
 						where email = ? && active = 1
 						limit 1`
@@ -198,9 +199,9 @@ var (
 	getUsersByCustomerID = `SELECT id FROM CustomerUser WHERE cust_id = ?`
 	getUserByEmail       = `SELECT cust_id FROM CustomerUser WHERE email = ?`
 
-	getUserAccounts = `select 
-						cua.username, cua.password, 
-						ac.accountNumber, ac.freightLimit, 
+	getUserAccounts = `select
+						cua.username, cua.password,
+						ac.accountNumber, ac.freightLimit,
 						act.id, act.type, act.comnet_url,
 						w.id, w.name, w.code, w.address, w.city, w.postalCode, w.tollFreePhone, w.fax, w.localPhone, w.manager, w.longitude, w.latitude,
 						s.stateID, s.state, s.abbr, c.countryID, c.name, c.abbr from ComnetUserAccounts as cua
@@ -699,6 +700,7 @@ func (u *CustomerUser) GetLocation() error {
 
 // GetComnetAccounts ...
 func (u *CustomerUser) GetComnetAccounts() error {
+	u.ComnetAccounts = make([]ComnetAccount, 0)
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -1293,7 +1295,7 @@ func (cu *CustomerUser) SendRegistrationEmail() error {
                 <span>The username is: <strong>` + cu.Email + `</strong></span><br />
                 <span>The password is: <strong>` + cu.Password + `</strong></span><br />
                 <hr /><br />
-                <p>Since you did not know your CURT Customer ID number, you will not have access to the 
+                <p>Since you did not know your CURT Customer ID number, you will not have access to the
                 entire dealer area until we can validate who you are. You can however in the meantime add Web Properties.</p>
                 <p style='font-size:11px'>If you feel this was a mistake please contact us.</p>`
 	return email.Send(tos, subject, body, true)

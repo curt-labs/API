@@ -205,7 +205,7 @@ var (
 	getCustIdFromKeyStmt = `select cu.cust_ID from CustomerUser as cu
                                 join ApiKey as ak on cu.id = ak.user_id
                                 where ak.api_key = ? limit 1`
-    getCustIdsFromAccountNumStmt = `select c.cust_id, c.customerID from Customer as c
+	getCustIdsFromAccountNumStmt = `select c.cust_id, c.customerID from Customer as c
 										Join Accounts as a on a.cust_id = c.cust_id
 										where a.accountNumber = ? limit 1`
 	//Old
@@ -447,8 +447,6 @@ func (c *Customer) GetCustomer(key string) (err error) {
 	return err
 }
 
-
-
 //gets cust_id, not customerId
 func (c *Customer) GetCustomerIdFromKey(key string) error {
 	var err error
@@ -486,10 +484,10 @@ func (c *Customer) GetCustomerIdsFromAccountNumber(accountNum string) error {
 	if err != nil {
 		return err
 	}
-	if cust_id != nil{
+	if cust_id != nil {
 		c.Id = *cust_id
 	}
-	if customerID != nil{
+	if customerID != nil {
 		c.CustomerId = *customerID
 	}
 	return nil
@@ -547,6 +545,7 @@ func (c *Customer) GetLocations() (err error) {
 }
 
 func (c *Customer) GetAccounts() (err error) {
+
 	redis_key := "CustAccount:" + strconv.Itoa(c.Id)
 	data, err := redis.Get(redis_key)
 	if err == nil && len(data) > 0 {
@@ -567,15 +566,18 @@ func (c *Customer) GetAccounts() (err error) {
 
 	rows, err := stmt.Query(c.Id)
 
+	var accts []Account
 	for rows.Next() {
 		acc, err := ScanAccount(rows)
 		if err != nil {
 			return err
 		}
 
-		c.Accounts = append(c.Accounts, *acc)
+		accts = append(accts, *acc)
 	}
 	defer rows.Close()
+
+	c.Accounts = accts
 
 	redis.Setex(redis_key, c.Accounts, redis.CacheTimeout)
 
@@ -808,6 +810,7 @@ func (c *Customer) GetUsers(key string) (err error) {
 					}
 				}
 			}
+
 			user.Brands, err = brand.GetUserBrands(c.Id)
 			if err != nil {
 				return

@@ -137,7 +137,7 @@ func ResetPassword(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder
 
 	//email
 	subject := "Your Password Has Been Reset"
-	body := `<p>Here is your new password for the ` + site + ` site.</p> 
+	body := `<p>Here is your new password for the ` + site + ` site.</p>
 	<p>Password: ` + resp + `</p><p> If you did not request this password, please contact <a href="mailto:websupport@curtmfg.com">Web Support</a></p>
 	<p>Thanks, </p>
 	<p>The Ecommerce Developer Team</P>`
@@ -269,12 +269,12 @@ func RegisterUser(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 	if cust_ID != 0 {
 		user.CustomerID = cust_ID
 	}
-	if accountNumber != ""{ // Account Number is optional
+	if accountNumber != "" { // Account Number is optional
 		// fetch the customerID from the account number
 		var cust customer.Customer
 		err = cust.GetCustomerIdsFromAccountNumber(accountNumber)
-		if cust.Id == 0 || err != nil{
-			if err == nil{
+		if cust.Id == 0 || err != nil {
+			if err == nil {
 				err = errors.New("Account Number is not associated to any customer")
 			}
 			apierror.GenerateError("Invalid Account Number:", err, rw, r)
