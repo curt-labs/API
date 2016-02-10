@@ -23,8 +23,8 @@ type Video struct {
 	DateAdded    time.Time    `bson:"date_added" json:"date_added" xml:"date_added"`
 	DateModified time.Time    `bson:"date_modified" json:"date_modified" xml:"date_modified"`
 	Thumbnail    string       `bson:"thumb_nail" json:"thumbnail" xml:"thumbnail"`
-	Channels     []Channel    `bson:"channel" json:"channel" xml:"channel"`
-	Files        []CdnFile    `bson:"cdn_file" json:"cdn_file" xml:"cdn_file"`
+	Channels     []Channel    `bson:"channels" json:"channel" xml:"channel"`
+	Files        []CdnFile    `bson:"files" json:"cdn_file" xml:"cdn_file"`
 	IsPrimary    bool         `json:"isPrimary,omitempty" xml:"isPrimary,omitempty"`
 	CategoryIds  []int        `json:"categoryIds,omitempty" xml:"categoryIds,omitempty"`
 	PartIds      []int        `json:"partIds,omitempty" xml:"partIds,omitempty"`
@@ -124,13 +124,13 @@ var (
 	getAllCdnFiles   = `SELECT ` + cdnFileFields + `,` + cdnFileTypeFields + ` FROM CdnFile AS cf LEFT JOIN CdnFileType AS cft ON cft.ID = cf.typeID `
 	getAllChannels   = `SELECT ` + channelFields + `, ` + channelTypeFields + ` FROM Channel AS c LEFT JOIN ChannelType AS ct ON ct.ID = c.typeID `
 	getAllVideoTypes = `SELECT vt.vTypeID, ` + videoTypeFields + ` FROM videoType AS vt`
-	getVideoChannels = `SELECT ` + channelFields + `, ` + channelTypeFields + ` FROM VideoChannels AS vc 
+	getVideoChannels = `SELECT ` + channelFields + `, ` + channelTypeFields + ` FROM VideoChannels AS vc
 					  JOIN Channel AS c on c.ID = vc.channelID
 					 LEFT JOIN ChannelType AS ct ON ct.ID = c.typeID
 					WHERE vc.videoID = ?`
-	getVideoCdns = `SELECT ` + cdnFileFields + `, ` + cdnFileTypeFields + ` FROM CdnFile AS cf 
-						LEFT JOIN CdnFileType AS cft ON cft.ID = cf.typeID 
-						LEFT JOIN VideoCdnFiles AS vcf ON vcf.cdnID = cf.ID 
+	getVideoCdns = `SELECT ` + cdnFileFields + `, ` + cdnFileTypeFields + ` FROM CdnFile AS cf
+						LEFT JOIN CdnFileType AS cft ON cft.ID = cf.typeID
+						LEFT JOIN VideoCdnFiles AS vcf ON vcf.cdnID = cf.ID
 						WHERE vcf.videoID = ? `
 	getVideoParts      = `select partID from VideoJoin where videoID = ?`
 	getVideoIdFromPart = `select videoID from VideoJoin where partID = ?`
