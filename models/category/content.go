@@ -9,8 +9,9 @@ type Content struct {
 
 // ContentType ...
 type ContentType struct {
-	Id         int    `bson:"contenttypeid" json:"id" xml:"id"`
-	Type       string `bson:"type" json:"type" xml:"type"`
-	AllowsHTML bool   `bson:"allows_html" json:"allows_html" xml:"allows_html"`
-	IsPrivate  bool   `bson:"isprivate" json:"isprivate" xml:"isprivate"`
+	Id              int    `bson:"contenttypeid" json:"id" xml:"id"`
+	Type            string `bson:"type" json:"type" xml:"type"`
+	AllowsHTML      bool   `bson:"allows_html" json:"allows_html" xml:"allows_html"`
+	IsPrivate       bool   `bson:"isprivate" json:"isprivate" xml:"isprivate"`
+	IsDealerContent bool   `bson:"isdealercontent" json"isdealercontent" xml:"isdealercontent`
 }
