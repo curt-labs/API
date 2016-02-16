@@ -82,7 +82,6 @@ func AddDealerContact(rw http.ResponseWriter, req *http.Request, enc encoding.En
 		apierror.GenerateError("Trouble getting contact type ID", err, rw, req)
 		return ""
 	}
-	d.Type = ct.Name
 
 	contType := req.Header.Get("Content-Type")
 
@@ -98,12 +97,6 @@ func AddDealerContact(rw http.ResponseWriter, req *http.Request, enc encoding.En
 			apierror.GenerateError("Trouble unmarshalling JSON request body into contact", err, rw, req)
 			return ""
 		}
-	}
-
-	ct.ID, err = strconv.Atoi(d.Type)
-	if err != nil {
-		apierror.GenerateError("Trouble parsing contact type Id.", err, rw, req)
-		return ""
 	}
 
 	d.Type, err = contact.GetContactTypeNameFromId(ct.ID)
@@ -137,7 +130,6 @@ func AddDealerContact(rw http.ResponseWriter, req *http.Request, enc encoding.En
 			}
 		}
 	}
-
 	if err := d.Add(dtx); err != nil {
 		apierror.GenerateError("Trouble adding contact", err, rw, req)
 		return ""
