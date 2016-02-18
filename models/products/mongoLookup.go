@@ -58,7 +58,10 @@ type NoSqlVehicle struct {
 	Model           string        `bson:"model" json:"model,omitempty" xml:"model, omitempty"`
 	Style           string        `bson:"style" json:"style,omitempty" xml:"style, omitempty"`
 	Parts           []BasicPart   `bson:"-" json:"parts,omitempty" xml:"parts, omitempty"`
-	PartIdentifiers []int         `bson:"parts" json:"parts_ids" xml:"-"`
+	MinYear         string        `bson:"min_year" json:"min_year" xml:"minYear"`
+	MaxYear         string        `bson:"max_year" json:"max_year" xml:"maxYear"`
+	PartIdentifiers []int         `bson:"-" json:"parts_ids" xml:"-"`
+	PartArrays      [][]int       `bson:"parts" json:"-" xml:"-"`
 }
 
 type NoSqlApp struct {
@@ -259,25 +262,90 @@ func FindApplications(collection string, skip, limit int) (Result, error) {
 
 	c := session.DB(AriesDb).C(collection)
 
-	err = c.Find(nil).Sort("make", "model", "style", "-year").Skip(skip).Limit(limit).All(&apps)
+	pipe := c.Pipe([]bson.M{
+		bson.M{"$unwind": "$parts"},
+		bson.M{
+			"$group": bson.M{
+				"_id": bson.M{
+					"part":  "$parts",
+					"make":  "$make",
+					"model": "$model",
+					"style": "$style",
+				},
+				"min_year": bson.M{"$min": "$year"},
+				"max_year": bson.M{"$max": "$year"},
+				"parts":    bson.M{"$addToSet": "$parts"},
+			},
+		},
+		bson.M{
+			"$project": bson.M{
+				"make":     bson.M{"$toUpper": "$_id.make"},
+				"model":    bson.M{"$toUpper": "$_id.model"},
+				"style":    bson.M{"$toUpper": "$_id.style"},
+				"parts":    1,
+				"min_year": 1,
+				"max_year": 1,
+				"_id":      0,
+			},
+		},
+		bson.M{
+			"$group": bson.M{
+				"_id": bson.M{
+					"min_year": "$min_year",
+					"max_year": "$max_year",
+					"make":     "$make",
+					"model":    "$model",
+					"style":    "$style",
+				},
+				"parts":    bson.M{"$push": "$parts"},
+				"make":     bson.M{"$first": "$make"},
+				"model":    bson.M{"$first": "$model"},
+				"style":    bson.M{"$first": "$style"},
+				"min_year": bson.M{"$min": "$min_year"},
+				"max_year": bson.M{"$max": "$max_year"},
+			},
+		},
+		bson.M{
+			"$sort": bson.M{
+				"make":  1,
+				"model": 1,
+				"style": 1,
+			},
+		},
+		bson.M{
+			"$skip": skip,
+		},
+		bson.M{
+			"$limit": limit,
+		},
+	})
+	err = pipe.All(&apps)
+	if err != nil {
+		return res, err
+	}
 
 	existingFinishes := make(map[string]string, 0)
 	existingColors := make(map[string]string, 0)
 	for _, app := range apps {
+		for _, arr := range app.PartArrays {
+			app.PartIdentifiers = append(app.PartIdentifiers, arr...)
+		}
 		for _, p := range app.PartIdentifiers {
-			if part, ok := partMap[p]; ok {
-				app.Parts = append(app.Parts, part)
+			part, ok := partMap[p]
+			if !ok {
+				continue
+			}
+			app.Parts = append(app.Parts, part)
 
-				_, ok := existingFinishes[part.Finish]
-				if part.Finish != "" && !ok {
-					res.Finishes = append(res.Finishes, part.Finish)
-					existingFinishes[part.Finish] = part.Finish
-				}
-				_, ok = existingColors[part.Color]
-				if part.Color != "" && !ok {
-					res.Colors = append(res.Colors, part.Color)
-					existingColors[part.Color] = part.Color
-				}
+			_, ok = existingFinishes[part.Finish]
+			if part.Finish != "" && !ok {
+				res.Finishes = append(res.Finishes, part.Finish)
+				existingFinishes[part.Finish] = part.Finish
+			}
+			_, ok = existingColors[part.Color]
+			if part.Color != "" && !ok {
+				res.Colors = append(res.Colors, part.Color)
+				existingColors[part.Color] = part.Color
 			}
 		}
 		if len(app.Parts) > 0 {
