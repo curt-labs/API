@@ -1,7 +1,6 @@
 package category
 
 import (
-	"log"
 	"math"
 	"net/url"
 	"time"
@@ -145,7 +144,7 @@ func GetCategoryParts(catId, page, count int) (PartResponse, error) {
 			"$in": statuses,
 		},
 	}
-	log.Println(query)
+
 	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(query).Limit(count).Skip((page - 1) * count).All(&parts.Parts)
 	if err != nil {
 		return parts, err
