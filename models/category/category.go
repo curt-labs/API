@@ -1,6 +1,7 @@
 package category
 
 import (
+	"log"
 	"math"
 	"net/url"
 	"time"
@@ -12,6 +13,13 @@ import (
 	"github.com/curt-labs/API/models/video"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
+)
+
+var (
+	statuses = []int{
+		800,
+		900,
+	}
 )
 
 type Category struct {
@@ -125,7 +133,19 @@ func GetCategoryParts(catId, page, count int) (PartResponse, error) {
 	parts.Page = page
 
 	//get parts of category and its children
-	query := bson.M{"categories": bson.M{"$elemMatch": bson.M{"id": bson.M{"$in": children}}}}
+	query := bson.M{
+		"categories": bson.M{
+			"$elemMatch": bson.M{
+				"id": bson.M{
+					"$in": children,
+				},
+			},
+		},
+		"status": bson.M{
+			"$in": statuses,
+		},
+	}
+	log.Println(query)
 	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(query).Limit(count).Skip((page - 1) * count).All(&parts.Parts)
 	if err != nil {
 		return parts, err
