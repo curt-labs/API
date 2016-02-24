@@ -2,11 +2,24 @@ package search
 
 import (
 	"errors"
+	"os"
+
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/ninnemana/elastigo/lib"
-	"os"
-	"strconv"
 )
+
+type SearchRequest struct {
+	Query Query `json:"query"`
+}
+
+type Query struct {
+	MultiMatch MultiMatch `json:"multi_match"`
+}
+
+type MultiMatch struct {
+	Query  string   `json:"query"`
+	Fields []string `json:"fields"`
+}
 
 func Dsl(query string, page int, count int, brand int, dtx *apicontext.DataContext) (*elastigo.SearchResult, error) {
 
@@ -34,9 +47,17 @@ func Dsl(query string, page int, count int, brand int, dtx *apicontext.DataConte
 		return nil, errors.New("failed to connect to elasticsearch")
 	}
 
+	qry := SearchRequest{
+		Query: Query{
+			MultiMatch: MultiMatch{
+				Query:  query,
+				Fields: []string{"part_number^1", "_all"},
+			},
+		},
+	}
+
 	searchCurt := false
 	searchAries := false
-	searchAll := false
 
 	if brand == 0 {
 		for _, br := range dtx.BrandArray {
@@ -56,26 +77,24 @@ func Dsl(query string, page int, count int, brand int, dtx *apicontext.DataConte
 		}
 	}
 
+	var index string
 	if searchAries && searchCurt {
-		searchAll = true
-	}
-
-	from := strconv.Itoa(page * count)
-	size := strconv.Itoa(count)
-
-	if searchAll {
-		return elastigo.Search("mongo_all").Query(
-			elastigo.Query().Search(query),
-		).From(from).Size(size).Result(con)
-	} else if searchCurt {
-		return elastigo.Search("mongo_curt").Query(
-			elastigo.Query().Search(query),
-		).From(from).Size(size).Result(con)
+		index = "mongo_all"
 	} else if searchAries {
-		return elastigo.Search("mongo_aries").Query(
-			elastigo.Query().Search(query),
-		).From(from).Size(size).Result(con)
+		index = "mongo_aries"
+	} else if searchCurt {
+		index = "mongo_curt"
 	}
 
-	return nil, errors.New("no index for determined brands")
+	args := map[string]interface{}{
+		"from": page * count,
+		"size": count,
+	}
+
+	out, err := con.Search(index, "", args, qry)
+	if err != nil {
+		return nil, err
+	}
+
+	return &out, nil
 }
