@@ -20,6 +20,11 @@ func Upload(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) strin
 		apierror.GenerateError("Trouble getting customer from api key", err, rw, r)
 		return ""
 	}
+	err = setDB(r)
+	if err != nil {
+		apierror.GenerateError("Trouble getting brandID from query string", err, rw, r)
+		return ""
+	}
 	key := r.URL.Query().Get("key")
 	file, fileHeader, err := r.FormFile("file")
 	if err != nil {
@@ -51,6 +56,11 @@ func Download(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) str
 	err := setCustomerId(r)
 	if err != nil {
 		apierror.GenerateError("Trouble getting customer from api key", err, rw, r)
+		return ""
+	}
+	err = setDB(r)
+	if err != nil {
+		apierror.GenerateError("Trouble getting brandID from query string", err, rw, r)
 		return ""
 	}
 
