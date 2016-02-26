@@ -262,61 +262,74 @@ func FindApplications(collection string, skip, limit int) (Result, error) {
 
 	c := session.DB(AriesDb).C(collection)
 
-	pipe := c.Pipe([]bson.M{
-		bson.M{"$unwind": "$parts"},
-		bson.M{
-			"$group": bson.M{
-				"_id": bson.M{
-					"part":  "$parts",
-					"make":  "$make",
-					"model": "$model",
-					"style": "$style",
+	pipe := c.Pipe([]bson.D{
+		bson.D{{"$skip", skip}},
+		bson.D{{"$limit", limit}},
+		bson.D{{"$unwind", "$parts"}},
+		bson.D{
+			{
+				"$sort", bson.D{
+					{"make", 1},
+					{"model", 1},
+					{"style", 1},
 				},
-				"min_year": bson.M{"$min": "$year"},
-				"max_year": bson.M{"$max": "$year"},
-				"parts":    bson.M{"$addToSet": "$parts"},
 			},
 		},
-		bson.M{
-			"$project": bson.M{
-				"make":     bson.M{"$toUpper": "$_id.make"},
-				"model":    bson.M{"$toUpper": "$_id.model"},
-				"style":    bson.M{"$toUpper": "$_id.style"},
-				"parts":    1,
-				"min_year": 1,
-				"max_year": 1,
-				"_id":      0,
-			},
-		},
-		bson.M{
-			"$group": bson.M{
-				"_id": bson.M{
-					"min_year": "$min_year",
-					"max_year": "$max_year",
-					"make":     "$make",
-					"model":    "$model",
-					"style":    "$style",
+		bson.D{
+			{
+				"$group", bson.M{
+					"_id": bson.M{
+						"part":  "$parts",
+						"make":  "$make",
+						"model": "$model",
+						"style": "$style",
+					},
+					"min_year": bson.M{"$min": "$year"},
+					"max_year": bson.M{"$max": "$year"},
+					"parts":    bson.M{"$addToSet": "$parts"},
 				},
-				"parts":    bson.M{"$push": "$parts"},
-				"make":     bson.M{"$first": "$make"},
-				"model":    bson.M{"$first": "$model"},
-				"style":    bson.M{"$first": "$style"},
-				"min_year": bson.M{"$min": "$min_year"},
-				"max_year": bson.M{"$max": "$max_year"},
 			},
 		},
-		bson.M{
-			"$sort": bson.M{
-				"make":  1,
-				"model": 1,
-				"style": 1,
+		bson.D{
+			{
+				"$project", bson.M{
+					"make":     bson.M{"$toUpper": "$_id.make"},
+					"model":    bson.M{"$toUpper": "$_id.model"},
+					"style":    bson.M{"$toUpper": "$_id.style"},
+					"parts":    1,
+					"min_year": 1,
+					"max_year": 1,
+					"_id":      0,
+				},
 			},
 		},
-		bson.M{
-			"$skip": skip,
+		bson.D{
+			{
+				"$group", bson.M{
+					"_id": bson.M{
+						"min_year": "$min_year",
+						"max_year": "$max_year",
+						"make":     "$make",
+						"model":    "$model",
+						"style":    "$style",
+					},
+					"parts":    bson.M{"$push": "$parts"},
+					"make":     bson.M{"$first": "$make"},
+					"model":    bson.M{"$first": "$model"},
+					"style":    bson.M{"$first": "$style"},
+					"min_year": bson.M{"$min": "$min_year"},
+					"max_year": bson.M{"$max": "$max_year"},
+				},
+			},
 		},
-		bson.M{
-			"$limit": limit,
+		bson.D{
+			{
+				"$sort", bson.D{
+					{"make", 1},
+					{"model", 1},
+					{"style", 1},
+				},
+			},
 		},
 	})
 	err = pipe.All(&apps)
