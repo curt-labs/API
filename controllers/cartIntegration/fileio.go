@@ -15,6 +15,11 @@ import (
 //TODO - extremely untested
 
 func Upload(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+	err := setCustomerId(r)
+	if err != nil {
+		apierror.GenerateError("Trouble getting customer from api key", err, rw, r)
+		return ""
+	}
 	key := r.URL.Query().Get("key")
 	file, fileHeader, err := r.FormFile("file")
 	if err != nil {
@@ -43,6 +48,11 @@ func Upload(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) strin
 }
 
 func Download(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
+	err := setCustomerId(r)
+	if err != nil {
+		apierror.GenerateError("Trouble getting customer from api key", err, rw, r)
+		return ""
+	}
 
 	b := &bytes.Buffer{}
 	wr := csv.NewWriter(b)
@@ -89,7 +99,6 @@ func Download(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) str
 		if price.SaleEnd != nil && !price.SaleStart.IsZero() {
 			end = price.SaleEnd.Format(cartIntegration.DATE_FORMAT)
 		}
-		// log.Print(start, end)
 		wr.Write([]string{
 			strconv.Itoa(price.PartID),
 			strconv.Itoa(price.CustomerPartID), //TODO - get CartIntegration at the same time
