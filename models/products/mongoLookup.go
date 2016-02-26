@@ -263,18 +263,7 @@ func FindApplications(collection string, skip, limit int) (Result, error) {
 	c := session.DB(AriesDb).C(collection)
 
 	pipe := c.Pipe([]bson.D{
-		bson.D{{"$skip", skip}},
-		bson.D{{"$limit", limit}},
 		bson.D{{"$unwind", "$parts"}},
-		bson.D{
-			{
-				"$sort", bson.D{
-					{"make", 1},
-					{"model", 1},
-					{"style", 1},
-				},
-			},
-		},
 		bson.D{
 			{
 				"$group", bson.M{
@@ -325,12 +314,14 @@ func FindApplications(collection string, skip, limit int) (Result, error) {
 		bson.D{
 			{
 				"$sort", bson.D{
-					{"make", 1},
-					{"model", 1},
-					{"style", 1},
+					{"_id.make", 1},
+					{"_id.model", 1},
+					{"_id.style", 1},
 				},
 			},
 		},
+		bson.D{{"$skip", skip}},
+		bson.D{{"$limit", limit}},
 	})
 	err = pipe.All(&apps)
 	if err != nil {
