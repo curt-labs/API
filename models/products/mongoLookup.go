@@ -449,7 +449,7 @@ func FindVehiclesFromAllCategories(v NoSqlVehicle, dtx *apicontext.DataContext) 
 		queryMap["make"] = strings.ToLower(v.Make)
 		queryMap["model"] = strings.ToLower(v.Model)
 		if (v.Style) != "" {
-			queryMap["style"] = strings.ToLower(v.Style)
+			queryMap["style"] = strings.TrimSpace(strings.ToLower(v.Style))
 		} else {
 			_, l.Styles, err = GetApps(v, col)
 		}
@@ -497,7 +497,7 @@ func FindPartsFromOneCategory(v NoSqlVehicle, collection string, dtx *apicontext
 	queryMap["make"] = strings.ToLower(v.Make)
 	queryMap["model"] = strings.ToLower(v.Model)
 	if (v.Style) != "" {
-		queryMap["style"] = strings.ToLower(v.Style)
+		queryMap["style"] = strings.TrimSpace(strings.ToLower(v.Style))
 	} else {
 		_, l.Styles, err = GetApps(v, collection)
 	}
