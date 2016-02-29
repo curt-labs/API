@@ -8,7 +8,7 @@ import (
 	"strconv"
 )
 
-func Dsl(query string, page int, count int, brand int, dtx *apicontext.DataContext) (*elastigo.SearchResult, error) {
+func Dsl(query string, page int, count int, brand int, dtx *apicontext.DataContext, rawPartNumber string) (*elastigo.SearchResult, error) {
 
 	if page == 1 {
 		page = 0
@@ -63,18 +63,23 @@ func Dsl(query string, page int, count int, brand int, dtx *apicontext.DataConte
 	from := strconv.Itoa(page * count)
 	size := strconv.Itoa(count)
 
+	filter := elastigo.Filter()
+	if rawPartNumber != "" {
+		filter.Terms("raw_part_number", rawPartNumber)
+	}
+
 	if searchAll {
 		return elastigo.Search("mongo_all").Query(
 			elastigo.Query().Search(query),
-		).From(from).Size(size).Result(con)
+		).Filter(filter).From(from).Size(size).Result(con)
 	} else if searchCurt {
 		return elastigo.Search("mongo_curt").Query(
 			elastigo.Query().Search(query),
-		).From(from).Size(size).Result(con)
+		).Filter(filter).From(from).Size(size).Result(con)
 	} else if searchAries {
 		return elastigo.Search("mongo_aries").Query(
 			elastigo.Query().Search(query),
-		).From(from).Size(size).Result(con)
+		).Filter(filter).From(from).Size(size).Result(con)
 	}
 
 	return nil, errors.New("no index for determined brands")
