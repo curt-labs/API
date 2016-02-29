@@ -16,7 +16,7 @@ var (
 						join Year as y on v.yearID = y.yearID
 						join VehiclePart as vp on v.vehicleID = vp.vehicleID
 						join Part as p on vp.partID = p.partID
-						where y.year = ? && (p.status = 800 || p.status = 900)
+						where y.year = ? && (p.status = 800 || p.status = 900) && p.classID > 0
 						group by ma.make
 						order by ma.make`
 	GetModelsStmt = `select distinct mo.model, group_concat(p.partID) from Model as mo
@@ -25,7 +25,7 @@ var (
 						join Make as ma on v.makeID = ma.makeID
 						join VehiclePart as vp on v.vehicleID = vp.vehicleID
 						join Part as p on vp.partID = p.partID
-						where y.year = ? && ma.make = ? && (p.status = 800 || p.status = 900)
+						where y.year = ? && ma.make = ? && (p.status = 800 || p.status = 900) && p.classID > 0
 						group by mo.model
 						order by mo.model`
 	GetStylesStmt = `select distinct s.style, group_concat(p.partID) from Style as s
@@ -35,7 +35,7 @@ var (
 						join Model as mo on v.modelID = mo.modelID
 						join VehiclePart as vp on v.vehicleID = vp.vehicleID
 						join Part as p on vp.partID = p.partID
-						where y.year = ? && ma.make = ? && mo.model = ? && (p.status = 800 || p.status = 900)
+						where y.year = ? && ma.make = ? && mo.model = ? && (p.status = 800 || p.status = 900) && p.classID > 0
 						group by s.style
 						order by s.style`
 	GetPartNumbersStmt = `select distinct p.partID from Style as s
@@ -45,7 +45,7 @@ var (
 							join Model as mo on v.modelID = mo.modelID
 							join VehiclePart as vp on v.vehicleID = vp.vehicleID
 							join Part as p on vp.partID = p.partID
-							where y.year = ? && ma.make = ? && mo.model = ? && s.style = ? && (p.status = 800 || p.status = 900)
+							where y.year = ? && ma.make = ? && mo.model = ? && s.style = ? && (p.status = 800 || p.status = 900) && p.classID > 0
 							order by p.partID`
 	GetPartNumbersWithoutStyleStmt = `select distinct p.partID from Style as s
 							join Vehicle as v on s.styleID = v.styleID
@@ -54,7 +54,7 @@ var (
 							join Model as mo on v.modelID = mo.modelID
 							join VehiclePart as vp on v.vehicleID = vp.vehicleID
 							join Part as p on vp.partID = p.partID
-							where y.year = ? && ma.make = ? && mo.model = ? && (p.status = 800 || p.status = 900)
+							where y.year = ? && ma.make = ? && mo.model = ? && (p.status = 800 || p.status = 900) && p.classID > 0
 							order by p.partID`
 )
 

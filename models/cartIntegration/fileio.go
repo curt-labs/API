@@ -31,20 +31,24 @@ func UploadFile(file multipart.File, api_key string) error {
 	if err != nil {
 		return err
 	}
+	partmap, err := getPartMap()
+	if err != nil {
+		return err
+	}
 
-	for i, line := range lines {
+	for _, line := range lines {
 		//Curt Part ID,	Customer Part ID, Sale Price, Sale Start Date, Sale End Date
 		var cp CustomerPrice
 		cp.CustID = Customer_ID
 
-		partID, err := strconv.Atoi(line[0])
-		if err != nil && i == 0 {
-			continue //checks for line headers
+		//partnumber to id
+		partNumber := strings.TrimSpace(line[0])
+		var id int
+		var ok bool
+		if id, ok = partmap[partNumber]; !ok {
+			continue
 		}
-		if err != nil {
-			return err
-		}
-		cp.PartID = partID
+		cp.PartID = id
 
 		customerPartID, err := strconv.Atoi(line[1])
 		if err != nil {
@@ -120,4 +124,36 @@ func (c *CustomerPrice) integrationExists(integrationLookup []CustomerPrice) int
 		}
 	}
 	return 0
+}
+
+//getPartMap returns a map of partnumbers to partIds
+func getPartMap() (map[string]int, error) {
+	partmap := make(map[string]int)
+	db, err := initDB()
+	if err != nil {
+		return partmap, err
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare(`select partId, oldPartNumber from Part`)
+	if err != nil {
+		return partmap, err
+	}
+	defer stmt.Close()
+	rows, err := stmt.Query()
+	if err != nil {
+		return partmap, err
+	}
+	for rows.Next() {
+		var num *string
+		var id *int
+		err = rows.Scan(&id, &num)
+		if err != nil {
+			return partmap, err
+		}
+		if id != nil && num != nil {
+			partmap[*num] = *id
+		}
+	}
+	return partmap, nil
 }

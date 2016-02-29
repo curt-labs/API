@@ -17,8 +17,9 @@ func Search(rw http.ResponseWriter, r *http.Request, params martini.Params, enc 
 	page, _ := strconv.Atoi(qs.Get("page"))
 	count, _ := strconv.Atoi(qs.Get("count"))
 	brand, _ := strconv.Atoi(qs.Get("brand"))
+	rawPartNumber := qs.Get("raw")
 
-	res, err := search.Dsl(terms, page, count, brand, dtx)
+	res, err := search.Dsl(terms, page, count, brand, dtx, rawPartNumber)
 	if err != nil {
 		apierror.GenerateError("Trouble searching", err, rw, r)
 		return ""
