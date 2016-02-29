@@ -474,6 +474,11 @@ func FindVehiclesWithParts(v NoSqlVehicle, collection string, dtx *apicontext.Da
 
 	l.Parts, err = GetMany(ids, getBrandsFromDTX(dtx), sess)
 
+	for i, lp := range l.Parts {
+		lp.Customer = lp.BindCustomer(dtx)
+		l.Parts[i] = lp
+	}
+
 	return l, err
 }
 
