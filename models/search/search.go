@@ -36,7 +36,6 @@ func Dsl(query string, page int, count int, brand int, dtx *apicontext.DataConte
 
 	searchCurt := false
 	searchAries := false
-	searchAll := false
 
 	if brand == 0 {
 		for _, br := range dtx.BrandArray {
@@ -56,10 +55,6 @@ func Dsl(query string, page int, count int, brand int, dtx *apicontext.DataConte
 		}
 	}
 
-	if searchAries && searchCurt {
-		searchAll = true
-	}
-
 	from := strconv.Itoa(page * count)
 	size := strconv.Itoa(count)
 
@@ -67,20 +62,17 @@ func Dsl(query string, page int, count int, brand int, dtx *apicontext.DataConte
 	if rawPartNumber != "" {
 		filter.Terms("raw_part_number", rawPartNumber)
 	}
-
-	if searchAll {
-		return elastigo.Search("mongo_all").Query(
-			elastigo.Query().Search(query),
-		).Filter(filter).From(from).Size(size).Result(con)
-	} else if searchCurt {
-		return elastigo.Search("mongo_curt").Query(
-			elastigo.Query().Search(query),
-		).Filter(filter).From(from).Size(size).Result(con)
-	} else if searchAries {
-		return elastigo.Search("mongo_aries").Query(
-			elastigo.Query().Search(query),
-		).Filter(filter).From(from).Size(size).Result(con)
+	index := "all"
+	if searchCurt && !searchAries {
+		index = "curt"
+	}
+	if !searchCurt && searchAries {
+		index = "aries"
 	}
 
-	return nil, errors.New("no index for determined brands")
+	res, err := elastigo.Search(index).Query(
+		elastigo.Query().Search(query),
+	).Filter(filter).From(from).Size(size).Result(con)
+
+	return res, err
 }
