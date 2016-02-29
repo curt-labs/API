@@ -1,6 +1,8 @@
 package vehicle
 
 import (
+	"strings"
+
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/database"
 	"github.com/curt-labs/API/helpers/encoding"
@@ -116,6 +118,17 @@ func AllCollectionsLookup(w http.ResponseWriter, r *http.Request, enc encoding.E
 	// Get vehicle submodel
 	v.Style = r.FormValue("style")
 	delete(r.Form, "style")
+
+	if r.FormValue("collection") != "" {
+		tmpCols := cols
+		cols = []string{}
+		for _, tc := range tmpCols {
+			if strings.ToLower(tc) == strings.ToLower(r.FormValue("collection")) {
+				cols = []string{tc}
+				break
+			}
+		}
+	}
 
 	var collectionVehicleArray []products.NoSqlLookup
 
