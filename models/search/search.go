@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/ninnemana/elastigo/lib"
+	"log"
 	"os"
 	"strconv"
 )
@@ -60,7 +61,7 @@ func Dsl(query string, page int, count int, brand int, dtx *apicontext.DataConte
 
 	filter := elastigo.Filter()
 	if rawPartNumber != "" {
-		filter.Terms("raw_part_number", rawPartNumber)
+		filter.Terms("raw_part", rawPartNumber)
 	}
 	index := "all"
 	if searchCurt && !searchAries {
@@ -73,6 +74,7 @@ func Dsl(query string, page int, count int, brand int, dtx *apicontext.DataConte
 	res, err := elastigo.Search(index).Query(
 		elastigo.Query().Search(query),
 	).Filter(filter).From(from).Size(size).Result(con)
+	log.Print(res.Hits.Total)
 
 	return res, err
 }
