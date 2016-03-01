@@ -377,6 +377,7 @@ func main() {
 	})
 
 	m.Get("/search/:term", search_ctlr.Search)
+	m.Get("/searchExactAndClose/:term", search_ctlr.SearchExactAndClose)
 
 	m.Group("/site", func(r martini.Router) {
 		m.Group("/menu", func(r martini.Router) {
