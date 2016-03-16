@@ -544,7 +544,10 @@ func FindPartsFromOneCategory(v NoSqlVehicle, collection string, dtx *apicontext
 	var l NoSqlLookup
 	var err error
 	lookupMap := make(map[string]NoSqlLookup)
-
+	collection, err = getCapitalizedCollection(collection, sess)
+	if err != nil {
+		return lookupMap, err
+	}
 	c := sess.DB(AriesDb).C(collection)
 	queryMap := make(map[string]interface{})
 	//query base vehicle
@@ -576,4 +579,18 @@ func FindPartsFromOneCategory(v NoSqlVehicle, collection string, dtx *apicontext
 		lookupMap[collection] = tmp
 	}
 	return lookupMap, err
+}
+
+//getCapitalizedCollection return the capitalized version of collection name
+func getCapitalizedCollection(c string, sess *mgo.Session) (string, error) {
+	names, err := sess.DB(AriesDb).CollectionNames()
+	if err != nil {
+		return "", err
+	}
+	for _, n := range names {
+		if strings.ToLower(n) == strings.ToLower(c) {
+			return n, nil
+		}
+	}
+	return c, nil
 }
