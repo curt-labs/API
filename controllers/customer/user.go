@@ -322,7 +322,7 @@ func RegisterUser(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 		return ""
 	}
 
-	email
+	//email
 	if err = user.SendRegistrationEmail(); err != nil {
 		apierror.GenerateError("Trouble emailing new customer user", err, rw, r)
 		return ""
