@@ -4,6 +4,7 @@ import (
 	"github.com/curt-labs/API/helpers/apicontext"
 	emailHelper "github.com/curt-labs/API/helpers/email"
 	"github.com/curt-labs/API/helpers/encoding"
+	"github.com/curt-labs/API/helpers/encryption"
 	"github.com/curt-labs/API/helpers/error"
 	"github.com/curt-labs/API/models/brand"
 	"github.com/curt-labs/API/models/customer"
@@ -246,8 +247,13 @@ func RegisterUser(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 	// isSudo, err := strconv.ParseBool(r.FormValue("isSudo"))
 	cust_ID, err := strconv.Atoi(r.FormValue("cust_ID"))
 	notCustomer, err := strconv.ParseBool(r.FormValue("notCustomer"))
+	genPass := r.FormValue("generatePass")
+	blnGenPass := false
+	if genPass == "true" {
+		blnGenPass = true
+	}
 
-	if email == "" || pass == "" {
+	if email == "" || (pass == "" && blnGenPass) {
 		err = errors.New("Email and password are required.")
 		apierror.GenerateError("Email and password are required", err, rw, r)
 		return ""
@@ -255,7 +261,12 @@ func RegisterUser(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 
 	var user customer.CustomerUser
 	user.Email = email
-	user.Password = pass
+
+	if blnGenPass {
+		user.Password = encryption.GeneratePassword()
+	} else {
+		user.Password = pass
+	}
 
 	if name != "" {
 		user.Name = name
@@ -311,7 +322,7 @@ func RegisterUser(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 		return ""
 	}
 
-	//email
+	email
 	if err = user.SendRegistrationEmail(); err != nil {
 		apierror.GenerateError("Trouble emailing new customer user", err, rw, r)
 		return ""
