@@ -234,8 +234,7 @@ var (
 
 	customerUser = `select cu.id, cu.name, cu.email, cu.customerID, cu.date_added, cu.active,cu.locationID, cu.isSudo, cu.cust_ID from CustomerUser as cu
 						join Customer as c on cu.cust_ID = c.cust_id
-						where c.cust_id = ?
-						&& cu.active = 1`
+						where c.cust_id = ?`
 	customerPrice = `select distinct cp.price from
 						 CustomerPricing cp
 						 where cp.cust_ID =  ?
@@ -800,7 +799,6 @@ func (c *Customer) GetUsers(key string) (err error) {
 		if err != nil {
 			continue
 		}
-
 		go func(user CustomerUser) {
 			if err := user.GetKeys(); err == nil {
 				for _, k := range user.Keys {

@@ -295,7 +295,7 @@ func RegisterUser(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 		user.CustomerID = cust.Id
 		cust_ID = cust.Id
 	}
-	user.Active = false
+	user.Active = true
 	user.Sudo = false
 	user.Current = notCustomer
 
@@ -322,7 +322,7 @@ func RegisterUser(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 		return ""
 	}
 
-	//email
+	// email
 	if err = user.SendRegistrationEmail(); err != nil {
 		apierror.GenerateError("Trouble emailing new customer user", err, rw, r)
 		return ""
