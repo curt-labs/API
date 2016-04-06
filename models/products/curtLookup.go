@@ -2,10 +2,11 @@ package products
 
 import (
 	"database/sql"
-	"github.com/curt-labs/API/helpers/apicontext"
-	"github.com/curt-labs/API/helpers/database"
 	"strconv"
 	"strings"
+
+	"github.com/curt-labs/API/helpers/apicontext"
+	"github.com/curt-labs/API/helpers/database"
 )
 
 var (
@@ -96,7 +97,7 @@ func (c *CurtLookup) GetYears(heavyduty bool) error {
 	if heavyduty {
 		class = -1
 	}
-	rows, err := stmt.Query(class)
+	rows, err := stmt.Query()
 	if err != nil {
 		return err
 	}
