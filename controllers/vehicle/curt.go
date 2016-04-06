@@ -32,20 +32,27 @@ func CurtLookup(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dt
 		CurtVehicle: v,
 	}
 
+	// heavyduty
+	var heavyduty bool
+	hdstr := r.URL.Query().Get("heavyduty")
+	if hdstr == "true" {
+		heavyduty = true
+	}
+
 	var err error
 	if v.Year == "" {
-		err = cl.GetYears()
+		err = cl.GetYears(heavyduty)
 	} else if v.Make == "" {
-		err = cl.GetMakes()
+		err = cl.GetMakes(heavyduty)
 	} else if v.Model == "" {
-		err = cl.GetModels()
+		err = cl.GetModels(heavyduty)
 	} else {
-		err = cl.GetStyles()
+		err = cl.GetStyles(heavyduty)
 		if err != nil {
 			apierror.GenerateError("Trouble finding styles.", err, w, r)
 			return ""
 		}
-		err = cl.GetParts(dtx)
+		err = cl.GetParts(dtx, heavyduty)
 	}
 
 	if err != nil {
