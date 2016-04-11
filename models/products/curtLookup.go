@@ -59,10 +59,6 @@ var (
 							order by p.partID`
 )
 
-var (
-	class = 0
-)
-
 type CurtVehicle struct {
 	Year            string      `json:"year,omitempty" xml:"year, omitempty"`
 	Make            string      `json:"make,omitempty" xml:"make, omitempty"`
@@ -94,9 +90,6 @@ func (c *CurtLookup) GetYears(heavyduty bool) error {
 		return err
 	}
 	defer stmt.Close()
-	if heavyduty {
-		class = -1
-	}
 	rows, err := stmt.Query()
 	if err != nil {
 		return err
@@ -147,6 +140,7 @@ func (c *CurtLookup) GetMakes(heavyduty bool) error {
 		return err
 	}
 	defer stmt.Close()
+	class := 0
 	if heavyduty {
 		class = -1
 	}
@@ -200,6 +194,7 @@ func (c *CurtLookup) GetModels(heavyduty bool) error {
 		return err
 	}
 	defer stmt.Close()
+	class := 0
 	if heavyduty {
 		class = -1
 	}
@@ -253,6 +248,7 @@ func (c *CurtLookup) GetStyles(heavyduty bool) error {
 		return err
 	}
 	defer stmt.Close()
+	class := 0
 	if heavyduty {
 		class = -1
 	}
@@ -300,6 +296,7 @@ func (c *CurtLookup) GetParts(dtx *apicontext.DataContext, heavyduty bool) error
 	}
 	defer db.Close()
 	var rows *sql.Rows
+	class := 0
 	if heavyduty {
 		class = -1
 	}
@@ -326,7 +323,6 @@ func (c *CurtLookup) GetParts(dtx *apicontext.DataContext, heavyduty bool) error
 			ch <- nil
 			continue
 		}
-
 		go func(prt Part) {
 			er := prt.Get(dtx)
 			if er != nil {
@@ -345,6 +341,5 @@ func (c *CurtLookup) GetParts(dtx *apicontext.DataContext, heavyduty bool) error
 			c.Parts = append(c.Parts, *tmp)
 		}
 	}
-
 	return rows.Err()
 }
