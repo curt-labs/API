@@ -1081,7 +1081,7 @@ func (cu *CustomerUser) Get(key string) error {
 		&cu.Active,
 		&cu.Location.Id,
 		&cu.Sudo,
-		&cu.CustomerID,
+		&cu.CustID,
 		&cu.Current,
 		&passConversion, //Not Used
 	)
@@ -1091,6 +1091,7 @@ func (cu *CustomerUser) Get(key string) error {
 		}
 		return err
 	}
+	cu.CustomerID = cu.OldCustomerID
 
 	keyChan := make(chan error)
 	go func() {
@@ -1106,6 +1107,7 @@ func (cu *CustomerUser) Get(key string) error {
 		keyChan <- err
 	}()
 
+	cu.Brands, _ = brand.GetUserBrands(cu.CustID)
 	cu.GetLocation()
 
 	<-keyChan
@@ -1148,6 +1150,7 @@ func (cu *CustomerUser) UpdateCustomerUser() error {
 	if err != nil {
 		return err
 	}
+
 	_, err = stmt.Exec(
 		cu.Name,
 		cu.Email,
