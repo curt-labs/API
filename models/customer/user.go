@@ -1032,7 +1032,7 @@ func (cu *CustomerUser) ResetPass() (string, error) {
 	return randPass, nil
 }
 
-func (cu *CustomerUser) ChangePass(oldPass, newPass string, dtx *apicontext.DataContext) error {
+func (cu *CustomerUser) ChangePass(oldPass, newPass string) error {
 	cu.Password = oldPass
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {

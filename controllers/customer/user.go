@@ -151,7 +151,7 @@ func ResetPassword(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder
 	return encoding.Must(enc.Encode("success"))
 }
 
-func ChangePassword(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+func ChangePassword(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 	user := customer.CustomerUser{
 		Email: r.FormValue("email"),
 	}
@@ -159,7 +159,7 @@ func ChangePassword(rw http.ResponseWriter, r *http.Request, enc encoding.Encode
 	oldPass := r.FormValue("oldPass")
 	newPass := r.FormValue("newPass")
 
-	if err := user.ChangePass(oldPass, newPass, dtx); err != nil {
+	if err := user.ChangePass(oldPass, newPass); err != nil {
 		apierror.GenerateError("Could not change password: "+err.Error(), err, rw, r)
 		return ""
 	}
