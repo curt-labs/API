@@ -235,7 +235,7 @@ var (
 	customerUser = `select cu.id, cu.name, cu.email, cu.customerID, cu.date_added, cu.active,cu.locationID, cu.isSudo, cu.cust_ID from CustomerUser as cu
 						join Customer as c on cu.cust_ID = c.cust_id
 						where c.cust_id = ?
-						&& cu.active = 1`
+						order by cu.name`
 	customerPrice = `select distinct cp.price from
 						 CustomerPricing cp
 						 where cp.cust_ID =  ?

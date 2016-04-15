@@ -236,31 +236,30 @@ func GenerateApiKey(rw http.ResponseWriter, r *http.Request, params martini.Para
 //registers an inactive user; emails user and webdev that a new inactive user exists - used by dealers site
 func RegisterUser(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
 	var err error
+	var user customer.CustomerUser
+	user.Name = r.FormValue("name")
+	user.Email = r.FormValue("email")
+	user.CustomerID, _ = strconv.Atoi(r.FormValue("customerID"))
+	user.Active, _ = strconv.ParseBool(r.FormValue("isActive"))
+	user.Location.Id, _ = strconv.Atoi(r.FormValue("locationID"))
+	user.Sudo, _ = strconv.ParseBool(r.FormValue("isSudo"))
+	user.CustID, _ = strconv.Atoi(r.FormValue("cust_ID"))
+	user.NotCustomer, _ = strconv.ParseBool(r.FormValue("notCustomer"))
+	user.Current = user.NotCustomer
 
-	name := r.FormValue("name")
-	email := r.FormValue("email")
+	genPass := r.FormValue("generatePass")
 	pass := r.FormValue("pass")
 	accountNumber := r.FormValue("account_ID")
-	customerID, err := strconv.Atoi(r.FormValue("customerID"))
-	// isActive, err := strconv.ParseBool(r.FormValue("isActive"))
-	locationID, err := strconv.Atoi(r.FormValue("locationID"))
-	// isSudo, err := strconv.ParseBool(r.FormValue("isSudo"))
-	cust_ID, err := strconv.Atoi(r.FormValue("cust_ID"))
-	notCustomer, err := strconv.ParseBool(r.FormValue("notCustomer"))
-	genPass := r.FormValue("generatePass")
 	blnGenPass := false
 	if genPass == "true" {
 		blnGenPass = true
 	}
 
-	if email == "" || (pass == "" && blnGenPass) {
+	if user.Email == "" || (pass == "" && !blnGenPass) {
 		err = errors.New("Email and password are required.")
 		apierror.GenerateError("Email and password are required", err, rw, r)
 		return ""
 	}
-
-	var user customer.CustomerUser
-	user.Email = email
 
 	if blnGenPass {
 		user.Password = encryption.GeneratePassword()
@@ -268,18 +267,7 @@ func RegisterUser(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 		user.Password = pass
 	}
 
-	if name != "" {
-		user.Name = name
-	}
-	if customerID != 0 {
-		user.OldCustomerID = customerID
-	}
-	if locationID != 0 {
-		user.Location.Id = locationID
-	}
-	if cust_ID != 0 {
-		user.CustomerID = cust_ID
-	}
+	user.OldCustomerID = user.CustomerID
 	if accountNumber != "" { // Account Number is optional
 		// fetch the customerID from the account number
 		var cust customer.Customer
@@ -293,11 +281,8 @@ func RegisterUser(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 		}
 		user.OldCustomerID = cust.CustomerId
 		user.CustomerID = cust.Id
-		cust_ID = cust.Id
+		user.CustID = cust.Id
 	}
-	user.Active = false
-	user.Sudo = false
-	user.Current = notCustomer
 
 	//check for existence of user
 	err = user.FindByEmail()
@@ -307,7 +292,7 @@ func RegisterUser(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 	}
 	err = nil
 
-	user.Brands, err = brand.GetUserBrands(cust_ID)
+	user.Brands, err = brand.GetUserBrands(user.CustID)
 	if err != nil {
 		apierror.GenerateError("Trouble getting user brands.", err, rw, r)
 		return ""
