@@ -10,8 +10,12 @@ import (
 )
 
 var (
-	GetYearsStmt = `select distinct year, '' from Year
-						order by year desc`
+	GetYearsStmt = `select distinct year, '' from Vehicle v
+					join Year as y on v.yearID = y.yearID
+					join VehiclePart vp on v.vehicleID = vp.vehicleID
+					join Part as p on vp.partID = p.partID
+					where p.status = 800 || p.status = 900
+					order by year desc`
 	GetMakesStmt = `select distinct ma.make, group_concat(p.partID) from Make as ma
 						join Vehicle as v on ma.makeID = v.makeID
 						join Year as y on v.yearID = y.yearID
