@@ -18,6 +18,7 @@ type CustomerPrice struct {
 	SaleStart      *time.Time `json:"saleStart,omitempty" xml:"saleStart,omitempty"`
 	SaleEnd        *time.Time `json:"saleEnd,omitempty" xml:"saleEnd,omitempty"`
 	ListPrice      Price      `json:"listPrice,omitempty" xml:"listPrice,omitempty"`
+	ReferenceID    int        `json:"referenceId,omitempty" xml:"referenceId,omitempty"`
 }
 
 type Price struct {
@@ -27,13 +28,13 @@ type Price struct {
 }
 
 var (
-	getPricing = `SELECT distinct cp.cust_price_id, cp.cust_id, p.partID, ci.custPartID, cp.price, cp.isSale, cp.sale_start, cp.sale_end, pr.priceType, pr.price FROM Part p
+	getPricing = `SELECT distinct cp.cust_price_id, cp.cust_id, p.partID, ci.referenceID, ci.custPartID, cp.price, cp.isSale, cp.sale_start, cp.sale_end, pr.priceType, pr.price FROM Part p
 		LEFT JOIN CustomerPricing cp ON cp.partID = p.partID AND cp.cust_id = ?
 		LEFT JOIN CartIntegration ci ON ci.partID = p.partID AND ci.custID = ?
 		left join Price pr on pr.partID = p.partID and pr.priceType = 'list'
 		WHERE (p.status = 800 OR p.status = 900) && p.brandID = ?
 		ORDER BY p.partID`
-	getPricingPaged = `SELECT distinct cp.cust_price_id, cp.cust_id, p.partID, ci.custPartID, cp.price, cp.isSale, cp.sale_start, cp.sale_end, pr.priceType, pr.price FROM Part p
+	getPricingPaged = `SELECT distinct cp.cust_price_id, cp.cust_id, p.partID, ci.referenceID, ci.custPartID, cp.price, cp.isSale, cp.sale_start, cp.sale_end, pr.priceType, pr.price FROM Part p
 		LEFT JOIN CustomerPricing cp ON cp.partID = p.partID AND cp.cust_id = ?
 		LEFT JOIN CartIntegration ci ON ci.partID = p.partID AND ci.custID = ?
 		left join Price pr on pr.partID = p.partID and pr.priceType = 'list'
@@ -402,7 +403,7 @@ func GetAllPriceTypes() ([]string, error) {
 func Scan(rows database.Scanner) (CustomerPrice, error) {
 	var c CustomerPrice
 	var p, lp *float64
-	var custPartId, id, custId, isSale *int
+	var custPartId, id, custId, isSale, reference *int
 	var ss, se *time.Time
 	var pt *string
 
@@ -410,6 +411,7 @@ func Scan(rows database.Scanner) (CustomerPrice, error) {
 		&id,
 		&custId,
 		&c.PartID,
+		&reference,
 		&custPartId,
 		&p,
 		&isSale,
@@ -430,6 +432,9 @@ func Scan(rows database.Scanner) (CustomerPrice, error) {
 	}
 	if p != nil {
 		c.Price = *p
+	}
+	if reference != nil {
+		c.ReferenceID = *reference
 	}
 	if custPartId != nil {
 		c.CustomerPartID = *custPartId
@@ -464,9 +469,8 @@ func ScanPrice(rows database.Scanner) (Price, error) {
 
 func ScanCartIntegration(rows database.Scanner) (CustomerPrice, error) {
 	var c CustomerPrice
-	var throwaway int
 	err := rows.Scan(
-		&throwaway,
+		&c.ReferenceID,
 		&c.PartID,
 		&c.CustomerPartID,
 		&c.CustID,

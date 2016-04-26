@@ -88,7 +88,6 @@ func GetPricingPaged(rw http.ResponseWriter, r *http.Request, enc encoding.Encod
 		apierror.GenerateError("Trouble getting prices for paged customer pricing", err, rw, r)
 		return ""
 	}
-
 	return encoding.Must(enc.Encode(prices))
 }
 
@@ -226,8 +225,11 @@ func UpdatePrice(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) 
 		apierror.GenerateError("Trouble updating price", err, rw, r)
 		return ""
 	}
-
-	err = price.UpdateCartIntegration()
+	if price.ReferenceID > 0 {
+		err = price.UpdateCartIntegration()
+	} else {
+		err = price.InsertCartIntegration()
+	}
 	if err != nil {
 		apierror.GenerateError("Trouble updating CartIntegration", err, rw, r)
 		return ""
