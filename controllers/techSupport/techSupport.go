@@ -25,6 +25,7 @@ func GetAllTechSupport(rw http.ResponseWriter, req *http.Request, enc encoding.E
 	ts, err := techSupport.GetAllTechSupport(dtx)
 	if err != nil {
 		apierror.GenerateError("Error getting Tech Support.", err, rw, req)
+		return ""
 	}
 	return encoding.Must(enc.Encode(ts))
 }
@@ -36,11 +37,13 @@ func GetTechSupport(rw http.ResponseWriter, req *http.Request, enc encoding.Enco
 	t.ID, err = strconv.Atoi(id)
 	if err != nil {
 		apierror.GenerateError("Error parsing Id.", err, rw, req)
+		return ""
 	}
 
 	err = t.Get()
 	if err != nil {
 		apierror.GenerateError("Error getting Tech Support.", err, rw, req)
+		return ""
 	}
 	return encoding.Must(enc.Encode(t))
 }
@@ -51,11 +54,13 @@ func GetTechSupportByContact(rw http.ResponseWriter, req *http.Request, enc enco
 	t.Contact.ID, err = strconv.Atoi(id)
 	if err != nil {
 		apierror.GenerateError("Error parsing contact Id.", err, rw, req)
+		return ""
 	}
 
 	ts, err := t.GetByContact(dtx)
 	if err != nil {
 		apierror.GenerateError("Error getting Tech Support by Contact Id.", err, rw, req)
+		return ""
 	}
 	return encoding.Must(enc.Encode(ts))
 }
@@ -74,11 +79,12 @@ func CreateTechSupport(rw http.ResponseWriter, req *http.Request, enc encoding.E
 		requestBody, err := ioutil.ReadAll(req.Body)
 		if err != nil {
 			apierror.GenerateError("Error parsing JSON.", err, rw, req)
+			return ""
 		}
-
 		err = json.Unmarshal(requestBody, &t)
 		if err != nil {
 			apierror.GenerateError("Error unmarshalling request body.", err, rw, req)
+			return ""
 		}
 	} else {
 		//else, form
@@ -108,12 +114,14 @@ func CreateTechSupport(rw http.ResponseWriter, req *http.Request, enc encoding.E
 		t.Contact.Country = req.FormValue("country")
 		if err != nil {
 			apierror.GenerateError("Error parsing purchase date.", err, rw, req)
+			return ""
 		}
 	}
 	t.BrandID = dtx.BrandID
 	err = t.Create()
 	if err != nil {
 		apierror.GenerateError("Error creating Tech Support.", err, rw, req)
+		return ""
 	}
 
 	if sendEmail == true {
@@ -138,6 +146,7 @@ func CreateTechSupport(rw http.ResponseWriter, req *http.Request, enc encoding.E
 		err = contact.SendEmail(ct, subject, body) //contact type id, subject, techSupport
 		if err != nil {
 			apierror.GenerateError("Error sending email to Tech Support.", err, rw, req)
+			return ""
 		}
 	}
 	//Return JSON
@@ -150,10 +159,12 @@ func DeleteTechSupport(rw http.ResponseWriter, req *http.Request, enc encoding.E
 	t.ID, err = strconv.Atoi(params["id"])
 	if err != nil {
 		apierror.GenerateError("Error parsing Id.", err, rw, req)
+		return ""
 	}
 	err = t.Delete()
 	if err != nil {
 		apierror.GenerateError("Error deleting Tech Support.", err, rw, req)
+		return ""
 	}
 	//Return JSON
 	return encoding.Must(enc.Encode(t))
