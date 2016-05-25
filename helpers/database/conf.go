@@ -3,6 +3,7 @@ package database
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"time"
@@ -104,12 +105,13 @@ func MongoConnectionString() *mgo.DialInfo {
 	info.Username = os.Getenv("MONGO_CART_USERNAME")
 	info.Password = os.Getenv("MONGO_CART_PASSWORD")
 	info.Database = os.Getenv("MONGO_CART_DATABASE")
-	info.Timeout = time.Hour * 1
+	info.Timeout = time.Second * 2
 	info.FailFast = true
 	if info.Database == "" {
 		info.Database = "CurtCart"
 	}
 	info.Source = "admin"
+	log.Println(info)
 
 	return &info
 }
@@ -132,7 +134,7 @@ func AriesMongoConnectionString() *mgo.DialInfo {
 	info.Username = os.Getenv("MONGO_ARIES_USERNAME")
 	info.Password = os.Getenv("MONGO_ARIES_PASSWORD")
 	info.Database = os.Getenv("MONGO_ARIES_DATABASE")
-	info.Timeout = time.Hour * 1
+	info.Timeout = time.Second * 2
 	info.FailFast = true
 	if info.Database == "" {
 		info.Database = "aries"
