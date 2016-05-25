@@ -479,20 +479,5 @@ func PartNumber(rw http.ResponseWriter, r *http.Request, params martini.Params, 
 		return ""
 	}
 
-	mgoVehicles, err := vehicle.ReverseMongoLookup(p.ID)
-	if err != nil {
-		apierror.GenerateError("Trouble getting part by old part number", err, rw, r)
-		return ""
-	}
-	for _, v := range mgoVehicles {
-		vehicleApplication := products.VehicleApplication{
-			Year:  v.Year,
-			Make:  v.Make,
-			Model: v.Model,
-			Style: v.Style,
-		}
-		p.Vehicles = append(p.Vehicles, vehicleApplication)
-	}
-
 	return encoding.Must(enc.Encode(p))
 }
