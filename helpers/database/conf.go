@@ -3,7 +3,6 @@ package database
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"time"
@@ -111,7 +110,6 @@ func MongoConnectionString() *mgo.DialInfo {
 		info.Database = "CurtCart"
 	}
 	info.Source = "admin"
-	log.Println(info)
 
 	return &info
 }
