@@ -59,7 +59,7 @@ var (
 								Join WebsiteToBrand as wub on wub.WebsiteID = s.websiteID
 								Join ApiKeyToBrand as akb on akb.brandID = wub.brandID
 								Join ApiKey as ak on akb.keyID = ak.id
-								where (ak.api_key = ? && (wub.brandID = ? OR 0=?))`
+								where (ak.api_key = ? && (wub.brandID = ? OR 0=?)  && (wub.WebsiteID = ? OR 0=?))`
 	getContentRevisions    = `SELECT revisionID, content_text, createdOn, active FROM SiteContentRevision AS scr WHERE scr.contentID = ? `
 	getAllContentRevisions = `SELECT revisionID, content_text, createdOn, active FROM SiteContentRevision AS scr `
 	getContentRevision     = `SELECT revisionID, content_text, createdOn, active FROM SiteContentRevision AS scr WHERE revisionID = ?`
@@ -204,7 +204,7 @@ func (c *Content) GetBySlug(dtx *apicontext.DataContext) (err error) {
 }
 
 //Fetch a great many contents
-func GetAllContents(dtx *apicontext.DataContext) (cs Contents, err error) {
+func GetAllContents(dtx *apicontext.DataContext, siteID int) (cs Contents, err error) {
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return cs, err
@@ -218,7 +218,7 @@ func GetAllContents(dtx *apicontext.DataContext) (cs Contents, err error) {
 
 	var cType, title, mTitle, mDesc, slug, canon, keywords *string
 	var c Content
-	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
+	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID, siteID, siteID)
 	for res.Next() {
 		err = res.Scan(
 			&c.Id,
@@ -262,6 +262,11 @@ func GetAllContents(dtx *apicontext.DataContext) (cs Contents, err error) {
 		if canon != nil {
 			c.Canonical = *canon
 		}
+		err = c.GetLatestRevision()
+		if err != nil {
+			return cs, err
+		}
+
 		cs = append(cs, c)
 	}
 	defer res.Close()

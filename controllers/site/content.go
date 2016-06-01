@@ -41,9 +41,21 @@ func GetContent(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder,
 }
 
 func GetAllContents(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
-	m, err := site.GetAllContents(dtx)
+	var siteID int
+	var err error
+	siteID_str := req.URL.Query().Get("siteID")
+	if siteID_str != "" {
+		siteID, err = strconv.Atoi(siteID_str)
+		if err != nil {
+			apierror.GenerateError("Trouble getting all site contents", err, rw, req)
+			return ""
+		}
+
+	}
+	m, err := site.GetAllContents(dtx, siteID)
 	if err != nil {
 		apierror.GenerateError("Trouble getting all site contents", err, rw, req)
+		return ""
 	}
 	return encoding.Must(enc.Encode(m))
 }
