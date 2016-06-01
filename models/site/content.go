@@ -59,7 +59,7 @@ var (
 								Join WebsiteToBrand as wub on wub.WebsiteID = s.websiteID
 								Join ApiKeyToBrand as akb on akb.brandID = wub.brandID
 								Join ApiKey as ak on akb.keyID = ak.id
-								where (ak.api_key = ? && (wub.brandID = ? OR 0=?)  && (wub.WebsiteID = ? OR 0=?))`
+								where s.active = true && s.published = true && (ak.api_key = ? && (wub.brandID = ? OR 0=?)  && (wub.WebsiteID = ? OR 0=?))`
 	getContentRevisions    = `SELECT revisionID, content_text, createdOn, active FROM SiteContentRevision AS scr WHERE scr.contentID = ? `
 	getAllContentRevisions = `SELECT revisionID, content_text, createdOn, active FROM SiteContentRevision AS scr `
 	getContentRevision     = `SELECT revisionID, content_text, createdOn, active FROM SiteContentRevision AS scr WHERE revisionID = ?`
