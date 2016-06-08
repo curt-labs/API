@@ -27,7 +27,7 @@ func TestPart(t *testing.T) {
 	})
 
 	Convey("Testing GetLatest", t, func() {
-		parts, err := Latest(10, MockedDTX)
+		parts, err := Latest(10, MockedDTX, 1)
 		So(err, ShouldBeNil)
 		So(len(parts), ShouldEqual, 10)
 		So(parts, ShouldHaveSameTypeAs, []Part{})
@@ -35,7 +35,7 @@ func TestPart(t *testing.T) {
 	})
 
 	Convey("Testing Featured", t, func() {
-		parts, err := Featured(3, MockedDTX)
+		parts, err := Featured(3, MockedDTX, 1)
 		So(err, ShouldBeNil)
 		So(len(parts), ShouldEqual, 3)
 		So(parts, ShouldHaveSameTypeAs, []Part{})
@@ -49,14 +49,6 @@ func TestPart(t *testing.T) {
 		parts, err := p.GetRelated(MockedDTX)
 		So(err, ShouldBeNil)
 		So(parts, ShouldHaveSameTypeAs, []Part{})
-	})
-
-	Convey("Get BY Old Part Number", t, func() {
-		p := Part{
-			OldPartNumber: "BM01821501",
-		}
-		err = p.GetPartByOldPartNumber()
-		So(err, ShouldBeNil)
 	})
 	_ = apicontextmock.DeMock(MockedDTX)
 }
