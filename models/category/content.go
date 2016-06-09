@@ -10,5 +10,5 @@ type Content struct {
 type ContentType struct {
 	Id         int    `json:"id" xml:"id"`
 	Type       string `bson:"type" json:"type" xml:"type"`
-	AllowsHTML bool   `bson:"allows_html" json:"allows_html" xml:"allows_html"`
+	AllowsHTML bool   `bson:"allowhtml" json:"allows_html" xml:"allows_html"`
 }
