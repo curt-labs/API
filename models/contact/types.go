@@ -3,23 +3,25 @@ package contact
 import (
 	"database/sql"
 	"errors"
+	"strings"
+
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/database"
 	_ "github.com/go-sql-driver/mysql"
-	"strings"
 )
 
 var (
 	getAllContactTypesStmt = `select ct.contactTypeID, ct.name, ct.showOnWebsite, ct.brandID from ContactType as ct
 		join ApiKeyToBrand as akb on akb.brandID = ct.brandID
 		join ApiKey as ak on ak.id = akb.keyID
-		where ak.api_key = ? && (ct.brandID = ? or 0 = ?)`
+		where ak.api_key = ? && (ct.brandID = ? or 0 = ?)
+		&& ct.showOnWebsite = 1`
 	getContactTypeStmt    = `select contactTypeID, name, showOnWebsite from ContactType where contactTypeID = ?`
 	addContactTypeStmt    = `insert into ContactType(name,showOnWebsite, brandID) values (?,?,?)`
 	updateContactTypeStmt = `update ContactType set name = ?, showOnWebsite = ?, brandID = ? where contactTypeID = ?`
 	deleteContactTypeStmt = `delete from ContactType where contactTypeID = ?`
-	getReceiverByType     = `select cr.contactReceiverID, cr.first_name, cr.last_name, cr.email from ContactReceiver_ContactType as crct 
-								left join ContactReceiver as cr on crct.contactReceiverID = cr.contactReceiverID 
+	getReceiverByType     = `select cr.contactReceiverID, cr.first_name, cr.last_name, cr.email from ContactReceiver_ContactType as crct
+								left join ContactReceiver as cr on crct.contactReceiverID = cr.contactReceiverID
 								where crct.contactTypeID = ?`
 	getTypeNameFromId = `select name from ContactType where contactTypeID = ?`
 )
@@ -27,7 +29,7 @@ var (
 type ContactTypes []ContactType
 type ContactType struct {
 	ID            int    `json:"id" xml:"id"`
-	Name          string `json:"name" xml: "name"`
+	Name          string `json:"name" xml:"name"`
 	ShowOnWebsite bool   `json:"show" xml:"show"`
 	BrandID       int    `json:"brandId" xml:"brandId"`
 }
