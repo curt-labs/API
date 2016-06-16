@@ -49,6 +49,7 @@ type Part struct {
 	AcesPartTypeID    int                  `json:"acesPartTypeId,omitempty" xml:"acesPartTypeId,omitempty" bson:"acesPartTypeId"`
 	Inventory         PartInventory        `json:"inventory,omitempty" xml:"inventory,omitempty" bson:"inventory"`
 	UPC               string               `json:"upc,omitempty" xml:"upc,omitempty" bson:"upc"`
+	Layer             string               `json:"iconLayer" xml:"iconLayer" bson:"iconLayer"`
 }
 
 type CustomerPart struct {

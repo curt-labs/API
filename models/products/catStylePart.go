@@ -1,7 +1,10 @@
 package products
 
 import (
+	"errors"
+	"github.com/aries-auto/envision-api"
 	"gopkg.in/mgo.v2"
+	"os"
 	"sort"
 	"strings"
 )
@@ -28,6 +31,18 @@ func (a ByName) Less(i, j int) bool { return a[i].Name < a[j].Name }
 // for each map key (category), break part array into style structs w/ arrays of parts matching that style
 func CategoryStyleParts(v NoSqlVehicle, brands []int, sess *mgo.Session) ([]CatStylePart, error) {
 	var csps []CatStylePart
+
+	layerChan := make(chan error)
+	layerMap := make(map[string]string)
+	var err error
+	go func() {
+		layerMap, err = getIconMediaLayers()
+		if err != nil {
+			layerChan <- err
+			return
+		}
+		layerChan <- nil
+	}()
 
 	cols, err := GetAriesVehicleCollections(sess)
 	if err != nil {
@@ -81,6 +96,10 @@ func CategoryStyleParts(v NoSqlVehicle, brands []int, sess *mgo.Session) ([]CatS
 		}
 
 	}
+	err = <-layerChan
+	if err != nil {
+		return csps, err
+	}
 
 	styleChan := make(chan []Style, len(collectionToPartsMap))
 
@@ -88,6 +107,7 @@ func CategoryStyleParts(v NoSqlVehicle, brands []int, sess *mgo.Session) ([]CatS
 		go func() {
 			styleMap := make(map[string][]Part)
 			for _, part := range parts {
+				part.Layer = layerMap[part.PartNumber]
 				for _, pv := range part.Vehicles {
 					if strings.ToLower(strings.TrimSpace(pv.Year)) == strings.ToLower(strings.TrimSpace(v.Year)) && strings.ToLower(strings.TrimSpace(pv.Make)) == strings.ToLower(strings.TrimSpace(v.Make)) && strings.ToLower(strings.TrimSpace(pv.Model)) == strings.ToLower(strings.TrimSpace(v.Model)) {
 						styleMap[pv.Style] = append(styleMap[pv.Style], part)
@@ -110,4 +130,28 @@ func CategoryStyleParts(v NoSqlVehicle, brands []int, sess *mgo.Session) ([]CatS
 	}
 	sort.Sort(ByName(csps))
 	return csps, nil
+}
+
+func getIconMediaLayers() (map[string]string, error) {
+	layerMap := make(map[string]string)
+
+	iconUser := os.Getenv("ICON_USER")
+	iconPass := os.Getenv("ICON_PASS")
+	iconDomain := os.Getenv("ICON_DOMAIN")
+	if iconDomain == "" || iconPass == "" || iconUser == "" {
+		return layerMap, errors.New("Missing iCon Credentials")
+	}
+	conf, err := envisionAPI.NewConfig(iconUser, iconPass, iconDomain)
+	if err != nil {
+		return layerMap, err
+	}
+
+	resp, err := envisionAPI.GetLayers(*conf, "", "")
+	if err != nil {
+		return layerMap, err
+	}
+	for _, layer := range resp.Layers {
+		layerMap[layer.ProductNumber] = layer.LayerID
+	}
+	return layerMap, err
 }
