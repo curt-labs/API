@@ -1,8 +1,6 @@
 package vehicle
 
 import (
-	"strings"
-
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/database"
 	"github.com/curt-labs/API/helpers/encoding"
@@ -12,6 +10,7 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
+	"strings"
 )
 
 func Collections(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
@@ -242,10 +241,16 @@ func CategoryStyleParts(w http.ResponseWriter, r *http.Request, enc encoding.Enc
 	var v products.NoSqlVehicle
 	var catStyleParts []products.CatStylePart
 	var err error
+	var envision bool
 
 	if err := database.Init(); err != nil {
 		apierror.GenerateError(err.Error(), err, w, r)
 		return ""
+	}
+	// envision query param determines if this call uses the iConMedia vehicle applications
+	envisionStr := r.URL.Query().Get("envision")
+	if envisionStr == "true" {
+		envision = true
 	}
 
 	sess := database.ProductMongoSession.Copy()
@@ -263,7 +268,7 @@ func CategoryStyleParts(w http.ResponseWriter, r *http.Request, enc encoding.Enc
 	v.Model = r.FormValue("model")
 	delete(r.Form, "model")
 
-	catStyleParts, err = products.CategoryStyleParts(v, dtx.BrandArray, sess)
+	catStyleParts, err = products.CategoryStyleParts(v, dtx.BrandArray, sess, envision)
 	if err != nil {
 		apierror.GenerateError("Trouble finding vehicles.", err, w, r)
 		return ""

@@ -29,17 +29,20 @@ func (a ByName) Less(i, j int) bool { return a[i].Name < a[j].Name }
 // get parts from several collections
 // for each collection, assign to map[collection name] => []Part
 // for each map key (category), break part array into style structs w/ arrays of parts matching that style
-func CategoryStyleParts(v NoSqlVehicle, brands []int, sess *mgo.Session) ([]CatStylePart, error) {
+func CategoryStyleParts(v NoSqlVehicle, brands []int, sess *mgo.Session, envision bool) ([]CatStylePart, error) {
 	var csps []CatStylePart
 
 	layerChan := make(chan error)
 	layerMap := make(map[string]string)
 	var err error
+
 	go func() {
-		layerMap, err = getIconMediaLayers()
-		if err != nil {
-			layerChan <- err
-			return
+		if envision {
+			layerMap, err = getIconMediaLayers()
+			if err != nil {
+				layerChan <- err
+				return
+			}
 		}
 		layerChan <- nil
 	}()
