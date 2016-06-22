@@ -129,6 +129,9 @@ func CategoryStyleParts(v NoSqlVehicle, brands []int, sess *mgo.Session, envisio
 			Name:   col,
 			Styles: <-styleChan,
 		}
+		if len(csp.Styles) == 0 {
+			continue
+		}
 		csps = append(csps, csp)
 	}
 	sort.Sort(ByName(csps))
