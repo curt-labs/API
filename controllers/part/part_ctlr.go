@@ -474,7 +474,7 @@ func PartNumber(rw http.ResponseWriter, r *http.Request, params martini.Params, 
 		return ""
 	}
 
-	if err = p.GetPartByPartNumber(); err != nil {
+	if err = p.GetPartByPartNumber(dtx); err != nil {
 		apierror.GenerateError("Trouble getting part by old part number", err, rw, r)
 		return ""
 	}

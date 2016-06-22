@@ -292,7 +292,7 @@ func (p *Part) BindCustomer(dtx *apicontext.DataContext) CustomerPart {
 	}
 }
 
-func (p *Part) GetPartByPartNumber() (err error) {
+func (p *Part) GetPartByPartNumber(dtx *apicontext.DataContext) (err error) {
 	session, err := mgo.DialWithInfo(database.MongoPartConnectionString())
 	if err != nil {
 		return err
@@ -302,7 +302,12 @@ func (p *Part) GetPartByPartNumber() (err error) {
 		Pattern: "^" + p.PartNumber + "$",
 		Options: "i",
 	}
-	return session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{"part_number": pattern}).One(&p)
+	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{"part_number": pattern}).One(&p)
+	if err != nil {
+		return err
+	}
+	p.Customer = p.BindCustomer(dtx)
+	return err
 }
 
 func getBrandsFromDTX(dtx *apicontext.DataContext) []int {
