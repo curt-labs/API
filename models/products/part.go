@@ -101,19 +101,18 @@ func (p *Part) Get(dtx *apicontext.DataContext) error {
 	//get brands
 	brands := getBrandsFromDTX(dtx)
 
-	customerChan := make(chan CustomerPart)
+	customerChan := make(chan bool)
 
 	go func(api_key string) {
-		customerChan <- p.BindCustomer(dtx)
+		p.BindCustomer(dtx)
+		customerChan <- true
 	}(dtx.APIKey)
-
-	// defer close(customerChan)
 
 	if err := p.FromDatabase(brands); err != nil {
 		return err
 	}
 
-	p.Customer = <-customerChan
+	<-customerChan
 
 	return err
 }
@@ -247,7 +246,7 @@ func (p *Part) GetRelated(dtx *apicontext.DataContext) ([]Part, error) {
 	return parts, err
 }
 
-func (p *Part) BindCustomer(dtx *apicontext.DataContext) CustomerPart {
+func (p *Part) BindCustomer(dtx *apicontext.DataContext) {
 	var price float64
 	var ref int
 
@@ -286,10 +285,9 @@ func (p *Part) BindCustomer(dtx *apicontext.DataContext) CustomerPart {
 	<-refChan
 	<-contentChan
 
-	return CustomerPart{
-		Price:         price,
-		CartReference: ref,
-	}
+	p.Customer.Price = price
+	p.Customer.CartReference = ref
+	return
 }
 
 func (p *Part) GetPartByPartNumber(dtx *apicontext.DataContext) (err error) {
@@ -306,7 +304,7 @@ func (p *Part) GetPartByPartNumber(dtx *apicontext.DataContext) (err error) {
 	if err != nil {
 		return err
 	}
-	p.Customer = p.BindCustomer(dtx)
+	p.BindCustomer(dtx)
 	return err
 }
 
