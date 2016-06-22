@@ -17,7 +17,7 @@ import (
 	"github.com/curt-labs/API/models/products"
 	"github.com/curt-labs/API/models/vehicle"
 	"github.com/go-martini/martini"
-	"github.com/ninnemana/analytics-go"
+	"github.com/stinkyfingers/analytics-go"
 )
 
 func track(endpoint string, params map[string]string, r *http.Request) {
