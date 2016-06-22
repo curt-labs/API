@@ -17,7 +17,7 @@ import (
 	"github.com/curt-labs/API/models/products"
 	"github.com/curt-labs/API/models/vehicle"
 	"github.com/go-martini/martini"
-	"github.com/ninnemana/analytics-go"
+	"github.com/stinkyfingers/analytics-go"
 )
 
 func track(endpoint string, params map[string]string, r *http.Request) {
@@ -474,7 +474,7 @@ func PartNumber(rw http.ResponseWriter, r *http.Request, params martini.Params, 
 		return ""
 	}
 
-	if err = p.GetPartByPartNumber(); err != nil {
+	if err = p.GetPartByPartNumber(dtx); err != nil {
 		apierror.GenerateError("Trouble getting part by old part number", err, rw, r)
 		return ""
 	}

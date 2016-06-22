@@ -496,10 +496,12 @@ func (c *Customer) generateToken(referer string) error {
 	token := jwt.New(jwt.SigningMethodHS256)
 
 	// assign claims
-	token.Claims["iss"] = "carter.curtmfg.com"
-	token.Claims["sub"] = referer
-	token.Claims["exp"] = time.Now().Add(time.Hour * 1).Unix()
-	token.Claims["iat"] = time.Now().Unix()
+	token.Claims = jwt.MapClaims{
+		"iss": "carter.curtmfg.com",
+		"sub": referer,
+		"exp": time.Now().Add(time.Hour * 1).Unix(),
+		"iat": time.Now().Unix(),
+	}
 
 	c.Token, err = token.SignedString([]byte(jwtSigningKey))
 	if err != nil {
