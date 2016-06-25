@@ -478,6 +478,7 @@ func main() {
 	m.Post("/vehicle/mongo/apps", vehicle.ByCategory)
 	m.Post("/vehicle/mongo/allCollections/category", vehicle.AllCollectionsLookupCategory)
 	m.Post("/vehicle/mongo/categoryStyleParts", vehicle.CategoryStyleParts)
+	m.Post("/vehicle/mongo/iconMediaVehicle", vehicle.GetIconMediaVehicle)
 	m.Post("/vehicle/mongo/allCollections", vehicle.AllCollectionsLookup)
 	m.Post("/vehicle/mongo", vehicle.Lookup)
 	m.Post("/vehicle/mongo/import", vehicle.ImportCsv)
