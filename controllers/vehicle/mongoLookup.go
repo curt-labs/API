@@ -276,3 +276,29 @@ func CategoryStyleParts(w http.ResponseWriter, r *http.Request, enc encoding.Enc
 
 	return encoding.Must(enc.Encode(catStyleParts))
 }
+
+// CategoryStyleParts returns the Category->Style->Parts structure needed for our lookup
+func GetIconMediaVehicle(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+	var v products.NoSqlVehicle
+	var err error
+
+	// Get vehicle year
+	v.Year = r.FormValue("year")
+	delete(r.Form, "year")
+
+	// Get vehicle make
+	v.Make = r.FormValue("make")
+	delete(r.Form, "make")
+
+	// Get vehicle model
+	v.Model = r.FormValue("model")
+	delete(r.Form, "model")
+
+	vehicles, err := v.GetIconMediaVehicles()
+	if err != nil || len(vehicles) == 0 {
+		apierror.GenerateError("Trouble finding vehicles.", err, w, r)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(vehicles[0])) //FIRST vehicle
+}

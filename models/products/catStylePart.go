@@ -161,3 +161,23 @@ func getIconMediaLayers() (map[string]string, error) {
 	}
 	return layerMap, err
 }
+
+func (v *NoSqlVehicle) GetIconMediaVehicles() ([]envisionAPI.Vehicle, error) {
+	var iconMediaVehicles []envisionAPI.Vehicle
+	iconUser := os.Getenv("ICON_USER")
+	iconPass := os.Getenv("ICON_PASS")
+	iconDomain := os.Getenv("ICON_DOMAIN")
+	if iconDomain == "" || iconPass == "" || iconUser == "" {
+		return iconMediaVehicles, errors.New("Missing iCon Credentials")
+	}
+	conf, err := envisionAPI.NewConfig(iconUser, iconPass, iconDomain)
+	if err != nil {
+		return iconMediaVehicles, err
+	}
+
+	resp, err := envisionAPI.GetVehicleByYearMakeModel(*conf, v.Year, v.Make, v.Model)
+	if err != nil {
+		return iconMediaVehicles, err
+	}
+	return resp.Vehicles, err
+}
