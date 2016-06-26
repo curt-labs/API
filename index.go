@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+
 	"github.com/curt-labs/API/controllers/apiKeyType"
 	"github.com/curt-labs/API/controllers/applicationGuide"
 	"github.com/curt-labs/API/controllers/blog"
@@ -35,10 +36,11 @@ import (
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/cors"
 	// "github.com/martini-contrib/gzip"
-	"github.com/martini-contrib/sessions"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/martini-contrib/sessions"
 )
 
 var (
@@ -485,6 +487,12 @@ func main() {
 	m.Put("/vehicle/mongo/:collection", vehicle.UpdateApplication)
 	m.Delete("/vehicle/mongo/:collection", vehicle.DeleteApplication)
 	m.Post("/vehicle/mongo/:collection", vehicle.CreateApplication)
+
+	m.Get("/vehicle/category", vehicle.QueryCategoryStyle)
+	m.Get("/vehicle/category/:year", vehicle.QueryCategoryStyle)
+	m.Get("/vehicle/category/:year/:make", vehicle.QueryCategoryStyle)
+	m.Get("/vehicle/category/:year/:make/:model", vehicle.QueryCategoryStyle)
+	m.Get("/vehicle/category/:year/:make/:model/:category", vehicle.QueryCategoryStyle)
 
 	// CURT Year/Make/Model/Style
 	m.Post("/vehicle/curt", vehicle.CurtLookup)

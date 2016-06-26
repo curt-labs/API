@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	redix "github.com/garyburd/redigo/redis"
 	"os"
 	"strings"
 	"time"
+
+	redix "github.com/garyburd/redigo/redis"
 )
 
 const (
@@ -59,7 +60,7 @@ func RedisPool(master bool) *redix.Pool {
 func Get(key string) ([]byte, error) {
 	data := make([]byte, 0)
 	pool := RedisPool(false)
-	if pool == nil || pool.ActiveCount() == 0 {
+	if pool == nil {
 		return data, errors.New(PoolAllocationErr)
 	}
 
