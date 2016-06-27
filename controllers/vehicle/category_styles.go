@@ -1,6 +1,8 @@
 package vehicle
 
 import (
+	"bytes"
+	"compress/gzip"
 	"net/http"
 	"strconv"
 	"strings"
@@ -58,5 +60,26 @@ func QueryCategoryStyle(w http.ResponseWriter, r *http.Request, params martini.P
 		return ""
 	}
 
-	return encoding.Must(enc.Encode(cats))
+	if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+		return encoding.Must(enc.Encode(cats))
+	}
+
+	var buf bytes.Buffer
+	gz := gzip.NewWriter(&buf)
+	resp, err := enc.Encode(cats)
+	if err != nil {
+		apierror.GenerateError("Failed to encode", err, w, r)
+		return ""
+	}
+
+	respBytes := []byte(resp)
+	w.Header().Set("Content-Encoding", "gzip")
+	if w.Header().Get("Content-Type") == "" {
+		w.Header().Set("Content-Type", http.DetectContentType(respBytes))
+	}
+
+	gz.Write(respBytes)
+	gz.Close()
+
+	return buf.String()
 }

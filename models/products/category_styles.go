@@ -120,6 +120,7 @@ func Query(ctx *LookupContext, args ...string) (*CategoryVehicle, error) {
 		vehicle.Categories, err = getStyles(ctx, vehicle.Base.Year, vehicle.Base.Make, vehicle.Base.Model, category)
 	}
 
+	log.Printf("SETTING_CATEGORY_STYLES :: %s\n", redisKey)
 	redis.Setex(redisKey, vehicle, 60*60*24)
 
 	return &vehicle, err
