@@ -85,6 +85,7 @@ func Query(ctx *LookupContext, args ...string) (*CategoryVehicle, error) {
 		}
 	}
 	data, err := redis.Get(redisKey)
+	log.Printf("REDIS_GET_ERROR: %+v\n", err)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &vehicle)
 		if err == nil {

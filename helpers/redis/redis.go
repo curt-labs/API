@@ -21,24 +21,24 @@ const (
 func RedisPool(master bool) *redix.Pool {
 	addr := "127.0.0.1:6379"
 	password := os.Getenv("REDIS_PASSWORD")
-	if master {
-		if ad := os.Getenv("REDIS_MASTER_ADDRESS"); ad != "" {
-			addr = ad
-		}
-	} else {
-		if ad := os.Getenv("REDIS_CLIENT_ADDRESS"); ad != "" {
-			addr = ad
-		}
-		if ad := os.Getenv("REDIS_SLAVE_SERVICE_HOST"); ad != "" {
-			addr = fmt.Sprintf("%s:%s", ad, os.Getenv("REDIS_SLAVE_SERVICE_PORT"))
-		}
+
+	if master && os.Getenv("REDIS_MASTER_ADDRESS") != "" {
+		addr = os.Getenv("REDIS_MASTER_ADDRESS")
+	} else if os.Getenv("REDIS_MASTER_ADDRESS") != "" {
+		addr = os.Getenv("REDIS_SLAVE_ADDRESS")
+	}
+
+	if master && os.Getenv("REDIS_MASTER_SERVICE_HOST") != "" {
+		addr = fmt.Sprintf("%s", os.Getenv("REDIS_MASTER_SERVICE_HOST"))
+	} else if os.Getenv("REDIS_SLAVE_SERVICE_HOST") != "" {
+		addr = fmt.Sprintf("%s", os.Getenv("REDIS_SLAVE_SERVICE_HOST"))
 	}
 
 	return &redix.Pool{
 		MaxIdle:     2,
 		IdleTimeout: 240 * time.Second,
 		Dial: func() (redix.Conn, error) {
-			c, err := redix.Dial("tcp", addr)
+			c, err := redix.Dial("tcp", fmt.Sprintf("%s:6379", addr))
 			if err != nil {
 				return nil, err
 			}
