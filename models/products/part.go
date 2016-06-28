@@ -162,7 +162,17 @@ func All(page, count int, dtx *apicontext.DataContext) ([]Part, error) {
 		return parts, err
 	}
 	defer session.Close()
-	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{"brand.id": bson.M{"$in": brands}}).Sort("id:1").Skip(page * count).Limit(count).All(&parts)
+
+	index := mgo.Index{
+		Key:        []string{"part_number"},
+		Unique:     true,
+		DropDups:   true,
+		Background: true,
+		Sparse:     true,
+	}
+
+	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).EnsureIndex(index)
+	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{"brand.id": bson.M{"$in": brands}}).Skip(page * count).Limit(count).All(&parts)
 	return parts, err
 }
 
