@@ -474,19 +474,14 @@ func GetCustomerUserFromKey(key string) (u CustomerUser, err error) {
 	}
 
 	u = *user
-	// locChan := make(chan error)
-	// go func() {
-	// 	locChan <- u.GetLocation()
-	// }()
 
 	u.GetKeys()
-
+	u.GetLocation()
 	u.Brands, err = brand.GetUserBrands(u.CustID)
 	if err != nil {
 		return
 	}
 
-	// <-locChan
 	return
 }
 
