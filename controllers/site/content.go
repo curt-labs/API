@@ -31,12 +31,13 @@ func GetContent(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder,
 
 	//Thar be a slug
 	c.Slug = idStr
-	err = c.GetBySlug(dtx)
-	if err != nil {
-		apierror.GenerateError("Trouble getting site content by slug.", err, rw, req)
-		return ""
+	if c.Slug != "_ah/health" {
+		err = c.GetBySlug(dtx)
+		if err != nil {
+			apierror.GenerateError("Trouble getting site content by slug.", err, rw, req)
+			return ""
+		}
 	}
-
 	return encoding.Must(enc.Encode(c))
 }
 
