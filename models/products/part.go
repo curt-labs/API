@@ -104,18 +104,20 @@ func (p *Part) Get(dtx *apicontext.DataContext) error {
 	//get brands
 	brands := getBrandsFromDTX(dtx)
 
-	customerChan := make(chan bool)
-
+	customerChan := make(chan error)
 	go func(api_key string) {
-		// p.BindCustomer(dtx)
-		customerChan <- true
+		parts, err := BindCustomerToSeveralParts([]Part{*p}, dtx)
+		if len(parts) > 0 {
+			*p = parts[0]
+		}
+		customerChan <- err
 	}(dtx.APIKey)
 
 	if err := p.FromDatabase(brands); err != nil {
 		return err
 	}
 
-	<-customerChan
+	err = <-customerChan
 
 	return err
 }
@@ -310,10 +312,11 @@ func BindCustomerToSeveralParts(parts []Part, dtx *apicontext.DataContext) ([]Pa
 	statement := fmt.Sprintf(`select distinct ci.custPartID, cp.price, cp.partID from ApiKey as ak
 						join CustomerUser cu on ak.user_id = cu.id
 						join Customer c on cu.cust_ID = c.cust_id
-						join CustomerPricing cp on cp.cust_ID = cu.cust_ID 
-						join CartIntegration ci on c.cust_ID = ci.custID && cp.partID = ci.partID
+						left join CustomerPricing cp on cp.cust_ID = cu.cust_ID 
+						left join CartIntegration ci on c.cust_ID = ci.custID && cp.partID = ci.partID
 						where ak.api_key = '%s'
 						and cp.partID in (%s)`, dtx.APIKey, partIDs)
+
 	stmt, err := db.Prepare(statement)
 	if err != nil {
 		return parts, err
@@ -385,7 +388,11 @@ func (p *Part) GetPartByPartNumber(dtx *apicontext.DataContext) (err error) {
 	if err != nil {
 		return err
 	}
-	// p.BindCustomer(dtx)
+
+	parts, err := BindCustomerToSeveralParts([]Part{*p}, dtx)
+	if len(parts) > 0 {
+		*p = parts[0]
+	}
 	return err
 }
 
