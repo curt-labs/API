@@ -103,21 +103,13 @@ func (p *Part) Get(dtx *apicontext.DataContext) error {
 	var err error
 	//get brands
 	brands := getBrandsFromDTX(dtx)
-
-	customerChan := make(chan error)
-	go func(api_key string) {
-		parts, err := BindCustomerToSeveralParts([]Part{*p}, dtx)
-		if len(parts) > 0 {
-			*p = parts[0]
-		}
-		customerChan <- err
-	}(dtx.APIKey)
-
+	parts, err := BindCustomerToSeveralParts([]Part{*p}, dtx)
+	if len(parts) > 0 {
+		*p = parts[0]
+	}
 	if err := p.FromDatabase(brands); err != nil {
 		return err
 	}
-
-	err = <-customerChan
 
 	return err
 }
