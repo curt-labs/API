@@ -295,8 +295,8 @@ func BindCustomerToSeveralParts(parts []Part, dtx *apicontext.DataContext) ([]Pa
 	statement := fmt.Sprintf(`select distinct ci.custPartID, cp.price, cp.partID from ApiKey as ak
 						join CustomerUser cu on ak.user_id = cu.id
 						join Customer c on cu.cust_ID = c.cust_id
-						join CustomerPricing cp on cp.cust_ID = cu.cust_ID 
-						join CartIntegration ci on c.cust_ID = ci.custID && cp.partID = ci.partID
+						left join CustomerPricing cp on cp.cust_ID = cu.cust_ID 
+						left join CartIntegration ci on c.cust_ID = ci.custID && cp.partID = ci.partID
 						where ak.api_key = '%s'
 						and cp.partID in (%s)`, dtx.APIKey, partIDs)
 	stmt, err := db.Prepare(statement)
