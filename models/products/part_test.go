@@ -50,5 +50,20 @@ func TestPart(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(parts, ShouldHaveSameTypeAs, []Part{})
 	})
+
+	Convey("Testing BindCustomerToSeveralParts", t, func() {
+		p := Part{
+			ID: 11000,
+		}
+		p1 := Part{
+			ID: 110003,
+		}
+		p2 := Part{
+			ID: 110013,
+		}
+		_, err := BindCustomerToSeveralParts([]Part{p, p1, p2}, MockedDTX)
+		So(err, ShouldBeNil)
+
+	})
 	_ = apicontextmock.DeMock(MockedDTX)
 }

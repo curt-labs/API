@@ -1,7 +1,10 @@
 package products
 
 import (
+	"database/sql"
+	"fmt"
 	"sort"
+	"strconv"
 
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/database"
@@ -284,6 +287,88 @@ func (p *Part) BindCustomer(dtx *apicontext.DataContext) {
 	p.Customer.Price = price
 	p.Customer.CartReference = ref
 	return
+}
+
+func BindCustomerToSeveralParts(parts []Part, dtx *apicontext.DataContext) ([]Part, error) {
+	if len(parts) < 1 {
+		return parts, nil
+	}
+	var partIDs string
+	var err error
+	for i, p := range parts {
+		if i > 0 {
+			partIDs += ","
+		}
+		partIDs += strconv.Itoa(p.ID)
+	}
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return parts, err
+	}
+	defer db.Close()
+
+	statement := fmt.Sprintf(`select distinct ci.custPartID, cp.price, cp.partID from ApiKey as ak
+						join CustomerUser cu on ak.user_id = cu.id
+						join Customer c on cu.cust_ID = c.cust_id
+						join CustomerPricing cp on cp.cust_ID = cu.cust_ID 
+						join CartIntegration ci on c.cust_ID = ci.custID && cp.partID = ci.partID
+						where ak.api_key = '%s'
+						and cp.partID in (%s)`, dtx.APIKey, partIDs)
+	stmt, err := db.Prepare(statement)
+	if err != nil {
+		return parts, err
+	}
+
+	res, err := stmt.Query()
+	if err != nil {
+		return parts, err
+	}
+	var custPartID, partID *int
+	var price *float64
+	custPartMap := make(map[int]int)
+	custPriceMap := make(map[int]float64)
+
+	for res.Next() {
+		err = res.Scan(
+			&custPartID,
+			&price,
+			&partID,
+		)
+		if err != nil {
+			return parts, err
+		}
+		if custPartID != nil && partID != nil {
+			custPartMap[*partID] = *custPartID
+		}
+		if price != nil && partID != nil {
+			custPriceMap[*partID] = *price
+		}
+	}
+
+	custContentMap := make(map[int][]Content)
+	allPartContent, err := custcontent.GetAllPartContent(dtx.APIKey)
+	if err != nil {
+		return parts, err
+	}
+	for _, c := range allPartContent {
+		for _, content := range c.Content {
+			custContentMap[c.PartId] = append(custContentMap[c.PartId], Content{Text: content.Text, ContentType: ContentType{Type: content.ContentType.Type, AllowsHTML: content.ContentType.AllowHtml}})
+		}
+	}
+
+	for i, part := range parts {
+		var ok bool
+		if _, ok = custPriceMap[part.ID]; ok {
+			parts[i].Customer.Price = custPriceMap[part.ID]
+		}
+		if _, ok = custPartMap[part.ID]; ok {
+			parts[i].Customer.CartReference = custPartMap[part.ID]
+		}
+		if _, ok = custContentMap[part.ID]; ok {
+			parts[i].Content = custContentMap[part.ID]
+		}
+	}
+	return parts, err
 }
 
 func (p *Part) GetPartByPartNumber(dtx *apicontext.DataContext) (err error) {

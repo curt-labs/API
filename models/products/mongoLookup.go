@@ -2,7 +2,6 @@ package products
 
 import (
 	"database/sql"
-
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/database"
 
@@ -458,7 +457,7 @@ func FindVehiclesWithParts(v NoSqlVehicle, collection string, dtx *apicontext.Da
 			l.Styles = vals
 		}
 	}
-	//
+
 	c := sess.DB(AriesDb).C(collection)
 	queryMap := make(map[string]interface{})
 
@@ -473,9 +472,15 @@ func FindVehiclesWithParts(v NoSqlVehicle, collection string, dtx *apicontext.Da
 	c.Find(queryMap).Distinct("parts", &ids)
 
 	l.Parts, err = GetMany(ids, getBrandsFromDTX(dtx), sess)
+	if err != nil {
+		return l, err
+	}
+	l.Parts, err = BindCustomerToSeveralParts(l.Parts, dtx)
+	if err != nil {
+		return l, err
+	}
 
 	for i, lp := range l.Parts {
-		// lp.BindCustomer(dtx)
 		l.Parts[i] = lp
 	}
 
