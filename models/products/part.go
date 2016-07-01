@@ -104,7 +104,7 @@ func (p *Part) Get(dtx *apicontext.DataContext) error {
 	customerChan := make(chan bool)
 
 	go func(api_key string) {
-		p.BindCustomer(dtx)
+		// p.BindCustomer(dtx)
 		customerChan <- true
 	}(dtx.APIKey)
 
@@ -304,7 +304,7 @@ func (p *Part) GetPartByPartNumber(dtx *apicontext.DataContext) (err error) {
 	if err != nil {
 		return err
 	}
-	p.BindCustomer(dtx)
+	// p.BindCustomer(dtx)
 	return err
 }
 
