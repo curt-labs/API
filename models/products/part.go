@@ -249,15 +249,12 @@ func (p *Part) GetRelated(dtx *apicontext.DataContext) ([]Part, error) {
 func (p *Part) BindCustomer(dtx *apicontext.DataContext) {
 	var price float64
 	var ref int
+	var content []Content
 
-	priceChan := make(chan int)
 	refChan := make(chan int)
 	contentChan := make(chan int)
 
-	go func() {
-		price, _ = customer.GetCustomerPrice(dtx, p.ID)
-		priceChan <- 1
-	}()
+	price, _ = customer.GetCustomerPrice(dtx, p.ID)
 
 	go func() {
 		ref, _ = customer.GetCustomerCartReference(dtx.APIKey, p.ID)
@@ -281,10 +278,9 @@ func (p *Part) BindCustomer(dtx *apicontext.DataContext) {
 		contentChan <- 1
 	}()
 
-	<-priceChan
 	<-refChan
 	<-contentChan
-
+	p.Content = append(p.Content, content...)
 	p.Customer.Price = price
 	p.Customer.CartReference = ref
 	return

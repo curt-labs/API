@@ -1,11 +1,9 @@
 package products
 
 import (
-	"os"
 	"testing"
 
 	"github.com/curt-labs/API/helpers/database"
-	"gopkg.in/mgo.v2"
 )
 
 func TestCategoryStyleParts(t *testing.T) {
