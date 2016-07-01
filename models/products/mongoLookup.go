@@ -411,6 +411,10 @@ func FindVehiclesWithParts(v NoSqlVehicle, collection string, dtx *apicontext.Da
 		}
 		l.Parts = append(l.Parts, p)
 	}
+	l.Parts, err = BindCustomerToSeveralParts(l.Parts, dtx)
+	if err != nil {
+		return l, err
+	}
 
 	return l, err
 }
