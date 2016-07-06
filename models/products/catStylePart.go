@@ -179,5 +179,12 @@ func (v *NoSqlVehicle) GetIconMediaVehicles() ([]envisionAPI.Vehicle, error) {
 	if err != nil {
 		return iconMediaVehicles, err
 	}
+	sort.Sort(ByBody(resp.Vehicles))
 	return resp.Vehicles, err
 }
+
+type ByBody []envisionAPI.Vehicle
+
+func (a ByBody) Len() int           { return len(a) }
+func (a ByBody) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByBody) Less(i, j int) bool { return a[i].BodyType < a[j].BodyType }

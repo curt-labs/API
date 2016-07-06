@@ -300,5 +300,13 @@ func GetIconMediaVehicle(w http.ResponseWriter, r *http.Request, enc encoding.En
 		return ""
 	}
 
-	return encoding.Must(enc.Encode(vehicles[0])) //FIRST vehicle
+	vehicle := vehicles[0] //FIRST vehicle
+	for _, veh := range vehicles {
+		if strings.ToLower(veh.BodyType) == "base" {
+			vehicle = veh
+			break
+		}
+	}
+
+	return encoding.Must(enc.Encode(vehicle))
 }
