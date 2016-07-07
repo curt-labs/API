@@ -294,18 +294,10 @@ func GetIconMediaVehicle(w http.ResponseWriter, r *http.Request, enc encoding.En
 	v.Model = r.FormValue("model")
 	delete(r.Form, "model")
 
-	vehicles, err := v.GetIconMediaVehicles()
-	if err != nil || len(vehicles) == 0 {
-		apierror.GenerateError("Trouble finding vehicles.", err, w, r)
+	vehicle, err := v.GetIconMediaVehicle()
+	if err != nil {
+		apierror.GenerateError("Trouble finding vehicle.", err, w, r)
 		return ""
-	}
-
-	vehicle := vehicles[0] //FIRST vehicle
-	for _, veh := range vehicles {
-		if strings.ToLower(veh.BodyType) == "base" {
-			vehicle = veh
-			break
-		}
 	}
 
 	return encoding.Must(enc.Encode(vehicle))

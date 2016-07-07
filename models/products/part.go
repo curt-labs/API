@@ -53,6 +53,7 @@ type Part struct {
 	Inventory         PartInventory        `json:"inventory,omitempty" xml:"inventory,omitempty" bson:"inventory"`
 	UPC               string               `json:"upc,omitempty" xml:"upc,omitempty" bson:"upc"`
 	Layer             string               `json:"iconLayer" xml:"iconLayer" bson:"iconLayer"`
+	MappedToVehicle   bool                 `json:"mappedToVehicle" xml:"mappedToVehicle" bson:"mappedToVehicle,omitempty"`
 }
 
 type CustomerPart struct {

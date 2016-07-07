@@ -6,6 +6,7 @@ import (
 	"gopkg.in/mgo.v2"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -104,13 +105,28 @@ func CategoryStyleParts(v NoSqlVehicle, brands []int, sess *mgo.Session, envisio
 		return csps, err
 	}
 
+	// is part(s) mapped to vehicle? Adds a buttload of time to this call
+	var fitmentMap map[string]bool
+	if envision {
+		fitments, err := v.getIconMediaFitments(collectionToPartsMap)
+		if err != nil {
+			return csps, err
+		}
+		fitmentMap, err = mapFitments(fitments)
+		if err != nil {
+			return csps, err
+		}
+	}
+
 	styleChan := make(chan []Style, len(collectionToPartsMap))
 
 	for col, parts := range collectionToPartsMap {
+
 		go func() {
 			styleMap := make(map[string][]Part)
 			for _, part := range parts {
 				part.Layer = layerMap[part.PartNumber]
+				part.MappedToVehicle = fitmentMap[part.PartNumber]
 				for _, pv := range part.Vehicles {
 					if strings.ToLower(strings.TrimSpace(pv.Year)) == strings.ToLower(strings.TrimSpace(v.Year)) && strings.ToLower(strings.TrimSpace(pv.Make)) == strings.ToLower(strings.TrimSpace(v.Make)) && strings.ToLower(strings.TrimSpace(pv.Model)) == strings.ToLower(strings.TrimSpace(v.Model)) {
 						styleMap[pv.Style] = append(styleMap[pv.Style], part)
@@ -162,25 +178,86 @@ func getIconMediaLayers() (map[string]string, error) {
 	return layerMap, err
 }
 
-func (v *NoSqlVehicle) GetIconMediaVehicles() ([]envisionAPI.Vehicle, error) {
-	var iconMediaVehicles []envisionAPI.Vehicle
+func (v *NoSqlVehicle) GetIconMediaVehicle() (envisionAPI.Vehicle, error) {
+	var iconMediaVehicle envisionAPI.Vehicle
 	iconUser := os.Getenv("ICON_USER")
 	iconPass := os.Getenv("ICON_PASS")
 	iconDomain := os.Getenv("ICON_DOMAIN")
 	if iconDomain == "" || iconPass == "" || iconUser == "" {
-		return iconMediaVehicles, errors.New("Missing iCon Credentials")
+		return iconMediaVehicle, errors.New("Missing iCon Credentials")
 	}
 	conf, err := envisionAPI.NewConfig(iconUser, iconPass, iconDomain)
 	if err != nil {
-		return iconMediaVehicles, err
+		return iconMediaVehicle, err
 	}
 
 	resp, err := envisionAPI.GetVehicleByYearMakeModel(*conf, v.Year, v.Make, v.Model)
 	if err != nil {
-		return iconMediaVehicles, err
+		return iconMediaVehicle, err
 	}
 	sort.Sort(ByBody(resp.Vehicles))
-	return resp.Vehicles, err
+
+	iconMediaVehicle = resp.Vehicles[0] //FIRST vehicle
+	for _, veh := range resp.Vehicles {
+		if strings.ToLower(veh.BodyType) == "base" {
+			iconMediaVehicle = veh
+			break
+		}
+	}
+	return iconMediaVehicle, err
+}
+
+func (v *NoSqlVehicle) getIconMediaFitments(partsMap map[string][]Part) ([]envisionAPI.Fitment, error) {
+	var parts []Part
+	for _, p := range partsMap {
+		parts = append(parts, p...)
+	}
+	var fitments []envisionAPI.Fitment
+	iconUser := os.Getenv("ICON_USER")
+	iconPass := os.Getenv("ICON_PASS")
+	iconDomain := os.Getenv("ICON_DOMAIN")
+	if iconDomain == "" || iconPass == "" || iconUser == "" {
+		return fitments, errors.New("Missing iCon Credentials")
+	}
+	conf, err := envisionAPI.NewConfig(iconUser, iconPass, iconDomain)
+	if err != nil {
+		return fitments, err
+	}
+
+	iconMediaVehicle, err := v.GetIconMediaVehicle() //Currently uses first vehicle (or base) returned by iCon API; styles don't match our styles
+	if err != nil {
+		return fitments, err
+	}
+	vehicleID, err := strconv.Atoi(iconMediaVehicle.ID)
+	if err != nil {
+		return fitments, err
+	}
+
+	var partNumbers []string
+	for _, p := range parts {
+		partNumbers = append(partNumbers, p.PartNumber)
+	}
+	resp, err := envisionAPI.MatchFitment(*conf, vehicleID, partNumbers...)
+	if err != nil {
+		if err.Error() == "invalid character ',' looking for beginning of value" { // No matches for vehicle; envision returns invalid json
+			return nil, nil
+		}
+		return fitments, err
+	}
+	return resp.Fitments, err
+}
+
+func mapFitments(fitments []envisionAPI.Fitment) (map[string]bool, error) {
+	fitmentMap := make(map[string]bool)
+	var err error
+	for _, fitment := range fitments {
+		fitmentMap[fitment.Number], err = strconv.ParseBool(fitment.Mapped)
+		if err != nil {
+			return fitmentMap, err
+		}
+
+	}
+	return fitmentMap, nil
 }
 
 type ByBody []envisionAPI.Vehicle
