@@ -125,10 +125,21 @@ func (v *NoSqlVehicle) mapCollectionToParts(sess *mgo.Session) (map[string][]Par
 	}
 	for _, part := range result {
 		for _, cat := range part.Categories {
-			categoryToPartMap[cat.Title] = append(categoryToPartMap[cat.Title], part)
+			if !inCategoryMap(categoryToPartMap[cat.Title], part) {
+				categoryToPartMap[cat.Title] = append(categoryToPartMap[cat.Title], part)
+			}
 		}
 	}
 	return categoryToPartMap, nil
+}
+
+func inCategoryMap(parts []Part, part Part) bool {
+	for _, p := range parts {
+		if part.PartNumber == p.PartNumber {
+			return true
+		}
+	}
+	return false
 }
 
 // getIconMediaLayers returns a map of product_number:iconMediaLayerID
