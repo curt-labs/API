@@ -17,7 +17,9 @@ func (l *Lookup) GetMakes(dtx *apicontext.DataContext) error {
 	data, err := redis.Get(redis_key)
 	if err == nil {
 		err = json.Unmarshal(data, &l.Makes)
-		return nil
+		if len(l.Makes) > 0 {
+			return nil
+		}
 	}
 
 	stmtBeginning := `

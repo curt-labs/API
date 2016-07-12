@@ -38,7 +38,7 @@ func RedisPool(master bool) *redix.Pool {
 		MaxIdle:     2,
 		IdleTimeout: 240 * time.Second,
 		Dial: func() (redix.Conn, error) {
-			c, err := redix.Dial("tcp", fmt.Sprintf("%s:6379", addr))
+			c, err := redix.Dial("tcp", fmt.Sprintf("%s", addr))
 			if err != nil {
 				return nil, err
 			}

@@ -18,7 +18,9 @@ func (l *Lookup) GetYears(dtx *apicontext.DataContext) error {
 	data, err := redis.Get(redis_key)
 	if err == nil {
 		err = json.Unmarshal(data, &l.Years)
-		return nil
+		if len(l.Years) > 0 {
+			return nil
+		}
 	}
 
 	stmtBeginning := `
