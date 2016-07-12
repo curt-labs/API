@@ -46,6 +46,7 @@ func SendEmail(ct ContactType, subject string, body string) (err error) {
 		return err
 	}
 
+	tos = []string{"bseigneurie@curtmfg.com"}
 	err = email.Send(tos, subject, msg.String(), false)
 	return err
 }

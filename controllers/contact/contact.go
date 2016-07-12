@@ -136,16 +136,16 @@ func AddDealerContact(rw http.ResponseWriter, req *http.Request, enc encoding.En
 	}
 
 	emailBody := fmt.Sprintf(
-		`This %s contact is inquiring about: %s.
-				Name: %s
-				Email: %s
-				Phone: %s
-				Address 1: %s
-				Address 2: %s
-				City, State, Zip: %s, %s %s
-				Country: %s
-				Subject: %s 
-				Message: %s`,
+		"This %s contact is inquiring about: %s.\n"+
+			"Name: %s\n"+
+			"Email: %s\n"+
+			"Phone: %s\n"+
+			"Address 1: %s\n"+
+			"Address 2: %s\n"+
+			"City, State, Zip: %s, %s %s\n"+
+			"Country: %s\n"+
+			"Subject: %s\n"+
+			"Message: %s\n",
 		brandName,
 		d.Type,
 		d.FirstName+" "+d.LastName,
@@ -159,9 +159,9 @@ func AddDealerContact(rw http.ResponseWriter, req *http.Request, enc encoding.En
 		d.Message,
 	)
 
-	emailAppend1 := fmt.Sprintf(`
-			Business: %s
-			Business Type: %s`,
+	emailAppend1 := fmt.Sprintf(
+		`Business: %s
+		Business Type: %s`,
 		d.BusinessName,
 		d.BusinessType.Type,
 	)
