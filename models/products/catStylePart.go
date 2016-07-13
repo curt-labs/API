@@ -57,10 +57,8 @@ func CategoryStyleParts(v NoSqlVehicle, brands []int, sess *mgo.Session, envisio
 
 	var fitmentMap map[string]bool
 	if envision {
-		fitments, err := v.getIconMediaFitments(collectionToPartsMap)
-		if err != nil {
-			return csps, err
-		}
+		fitments, _ := v.getIconMediaFitments(collectionToPartsMap)
+
 		fitmentMap, err = mapFitments(fitments)
 		if err != nil {
 			return csps, err
