@@ -111,6 +111,7 @@ func AddDealerContact(rw http.ResponseWriter, req *http.Request, enc encoding.En
 		subject = d.Subject
 	} else {
 		d.Subject = "Contact Submission regarding " + d.Type + ", from " + d.FirstName + " " + d.LastName + "."
+		subject = d.Subject
 	}
 
 	//state/country
