@@ -3,7 +3,6 @@ package products
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"sort"
 	"strings"
 
@@ -41,6 +40,7 @@ type CategoryVehicle struct {
 	Makes      []string         `json:"availableMakes,omitempty" xml:"availableMakes,omitempty"`
 	Models     []string         `json:"availableModels,omitempty" xml:"availableModels,omitempty"`
 	Categories []LookupCategory `json:"lookup_category" xml:"StyleOptions"`
+	Products   []Part           `json:"products" xml:"products"`
 }
 
 // LookupCategory Represents a specific category of `StyleOption` fitments.
@@ -52,15 +52,15 @@ type LookupCategory struct {
 // StyleOption Matches a slice of `Part` that have equal fitments to the matched
 // `Style`.
 type StyleOption struct {
-	Style    string           `json:"style" xml:"Style"`
-	Fitments []FitmentProduct `json:"products" xml:"Products"`
+	Style          string           `json:"style" xml:"Style"`
+	FitmentNumbers []FitmentMapping `json:"fitments" xml:"fitments"`
 }
 
-// FitmentProduct Defines the matching product along with any application specific
-// attributes.
-type FitmentProduct struct {
+// FitmentMapping defines the product and any associated attributes that
+// relevant to the fitment on a specific application (install time, drilling, etc)
+type FitmentMapping struct {
 	Attributes []FitmentAttribute `json:"attributes" xml:"Attributes"`
-	Product    Part               `json:"product" xml:"Product"`
+	Number     string             `json:"product_identifier" xml:"product_identifier"`
 }
 
 // FitmentAttribute A name value for a note of a fitment application.
@@ -85,11 +85,9 @@ func Query(ctx *LookupContext, args ...string) (*CategoryVehicle, error) {
 		}
 	}
 	data, err := redis.Get(redisKey)
-	log.Printf("REDIS_GET_ERROR: %+v\n", err)
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &vehicle)
 		if err == nil {
-			log.Printf("CATEGORY_STYLES :: %s\n", redisKey)
 			return &vehicle, nil
 		}
 	}
@@ -118,10 +116,9 @@ func Query(ctx *LookupContext, args ...string) (*CategoryVehicle, error) {
 	} else if vehicle.Base.Year != "" && vehicle.Base.Make != "" && vehicle.Base.Model == "" {
 		vehicle.Models, err = getModels(ctx, vehicle.Base.Year, vehicle.Base.Make)
 	} else if vehicle.Base.Year != "" && vehicle.Base.Make != "" && vehicle.Base.Model != "" {
-		vehicle.Categories, err = getStyles(ctx, vehicle.Base.Year, vehicle.Base.Make, vehicle.Base.Model, category)
+		vehicle.Products, vehicle.Categories, err = getStyles(ctx, vehicle.Base.Year, vehicle.Base.Make, vehicle.Base.Model, category)
 	}
 
-	log.Printf("SETTING_CATEGORY_STYLES :: %s\n", redisKey)
 	redis.Setex(redisKey, vehicle, 60*60*24)
 
 	return &vehicle, err
@@ -263,11 +260,11 @@ func getModels(ctx *LookupContext, year, vehicleMake string) ([]string, error) {
 	return models, err
 }
 
-func getStyles(ctx *LookupContext, year, vehicleMake, model, category string) ([]LookupCategory, error) {
+func getStyles(ctx *LookupContext, year, vehicleMake, model, category string) ([]Part, []LookupCategory, error) {
 	if ctx == nil {
-		return nil, fmt.Errorf("missing context")
+		return nil, nil, fmt.Errorf("missing context")
 	} else if ctx.Session == nil {
-		return nil, fmt.Errorf("invalid mongodb connection")
+		return nil, nil, fmt.Errorf("invalid mongodb connection")
 	}
 
 	c := ctx.Session.DB(database.ProductMongoDatabase).C(database.ProductCollectionName)
@@ -305,17 +302,20 @@ func getStyles(ctx *LookupContext, year, vehicleMake, model, category string) ([
 	}
 	err := c.Find(qry).All(&parts)
 	if err != nil || len(parts) == 0 {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return generateCategoryStyles(parts, year, vehicleMake, model), nil
+	cleanedParts, cats := generateCategoryStyles(parts, year, vehicleMake, model)
+
+	return cleanedParts, cats, nil
 }
 
-func generateCategoryStyles(parts []Part, year, vehicleMake, model string) []LookupCategory {
+func generateCategoryStyles(parts []Part, year, vehicleMake, model string) ([]Part, []LookupCategory) {
 	lc := make(map[string]LookupCategory, 0)
 	y := year
 	ma := strings.ToLower(vehicleMake)
 	mod := strings.ToLower(model)
+	var cleanParts []Part
 	for _, p := range parts {
 		if len(p.Categories) == 0 {
 			continue
@@ -328,6 +328,10 @@ func generateCategoryStyles(parts []Part, year, vehicleMake, model string) []Loo
 
 			lc = mapPartToCategoryStyles(p, lc, va.Style)
 		}
+
+		p.Categories = nil
+
+		cleanParts = append(cleanParts, p)
 	}
 
 	var cats []LookupCategory
@@ -335,7 +339,7 @@ func generateCategoryStyles(parts []Part, year, vehicleMake, model string) []Loo
 		cats = append(cats, l)
 	}
 
-	return cats
+	return cleanParts, cats
 }
 
 // AddPart Creates a record of the provided part under the referenced style.
@@ -353,9 +357,10 @@ func (lc *LookupCategory) AddPart(style string, p Part) {
 			strings.ToLower(options.Style),
 			strings.ToLower(style),
 		) == 0 {
-			lc.StyleOptions[i].Fitments = append(lc.StyleOptions[i].Fitments,
-				FitmentProduct{
-					Product: p,
+			lc.StyleOptions[i].FitmentNumbers = append(lc.StyleOptions[i].FitmentNumbers,
+				FitmentMapping{
+					Number:     p.PartNumber,
+					Attributes: []FitmentAttribute{},
 				},
 			)
 			return
@@ -364,9 +369,10 @@ func (lc *LookupCategory) AddPart(style string, p Part) {
 
 	lc.StyleOptions = append(lc.StyleOptions, StyleOption{
 		Style: style,
-		Fitments: []FitmentProduct{
-			FitmentProduct{
-				Product: p,
+		FitmentNumbers: []FitmentMapping{
+			FitmentMapping{
+				Number:     p.PartNumber,
+				Attributes: []FitmentAttribute{},
 			},
 		},
 	})
@@ -396,16 +402,6 @@ func mapPartToCategoryStyles(p Part, lookupCats map[string]LookupCategory, style
 	// add the part to the appropriate style
 	lc.AddPart(style, p)
 
-	// currentStyle := StyleOption{
-	// 	Style: strings.Title(style),
-	// 	Fitments: []FitmentProduct{
-	// 		FitmentProduct{
-	// 			Product: p,
-	// 		},
-	// 	},
-	// }
-	//
-	// lc.StyleOptions = append(lc.StyleOptions, currentStyle)
 	lookupCats[childCat.Identifier.String()] = lc
 
 	return lookupCats

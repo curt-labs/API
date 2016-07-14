@@ -20,6 +20,10 @@ var (
 	DefaultStatuses = []int{800, 900}
 )
 
+// QueryCategoryStyle will take in a year, make, model and return all fitment
+// information for the vehicle broken into a hierachy of Category -> style -> products.
+// Product information is not included unless `withParts=true` is available
+// in the query string.
 func QueryCategoryStyle(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	if err := database.Init(); err != nil {
 		apierror.GenerateError("Trouble generating database connection", err, w, r)
@@ -58,6 +62,10 @@ func QueryCategoryStyle(w http.ResponseWriter, r *http.Request, params martini.P
 	if err != nil {
 		apierror.GenerateError("Trouble getting part", err, w, r)
 		return ""
+	}
+
+	if strings.ToLower(r.URL.Query().Get("withParts")) != "true" {
+		cats.Products = nil
 	}
 
 	if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {

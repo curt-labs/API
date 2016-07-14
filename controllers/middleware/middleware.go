@@ -25,6 +25,7 @@ var (
 func Meddler() martini.Handler {
 	return func(res http.ResponseWriter, r *http.Request, c martini.Context) {
 		res.Header().Add("Access-Control-Allow-Origin", "*")
+		res.Header().Add("Cache-Control", "max-age=86400")
 		if strings.ToLower(r.Method) == "options" {
 			return
 		}
@@ -75,6 +76,7 @@ func Meddler() martini.Handler {
 		}
 
 		c.Next()
+
 		go logRequest(r, time.Since(start))
 	}
 }
