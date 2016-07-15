@@ -34,8 +34,8 @@ func QueryCategoryStyle(w http.ResponseWriter, r *http.Request, params martini.P
 	defer session.Close()
 
 	statuses := DefaultStatuses
-	if r.URL.Query().Get("brands") != "" {
-		segs := strings.Split(r.URL.Query().Get("brands"), ",")
+	if r.URL.Query().Get("statuses") != "" {
+		segs := strings.Split(r.URL.Query().Get("statuses"), ",")
 		var ids []int
 		for _, seg := range segs {
 			id, err := strconv.Atoi(seg)
@@ -44,6 +44,19 @@ func QueryCategoryStyle(w http.ResponseWriter, r *http.Request, params martini.P
 			}
 		}
 		statuses = ids
+	}
+	if r.URL.Query().Get("brands") != "" {
+		segs := strings.Split(r.URL.Query().Get("brands"), ",")
+		var ids []int
+
+		for _, seg := range segs {
+			for _, dtxBrand := range dtx.BrandArray {
+				if seg == strconv.Itoa(dtxBrand) {
+					ids = append(ids, dtxBrand)
+				}
+			}
+		}
+		dtx.BrandArray = ids
 	}
 
 	ctx := &products.LookupContext{
