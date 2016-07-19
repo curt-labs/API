@@ -57,9 +57,7 @@ func CategoryStyleParts(v NoSqlVehicle, brands []int, sess *mgo.Session, envisio
 
 	var fitmentMap map[string]bool
 	if envision {
-		fitments, _ := v.getIconMediaFitments(collectionToPartsMap)
-
-		fitmentMap, err = mapFitments(fitments)
+		fitmentMap, err = v.getIconMediaFitmentMap(collectionToPartsMap)
 		if err != nil {
 			return csps, err
 		}
@@ -167,88 +165,99 @@ func getIconMediaLayers() (map[string]string, error) {
 
 // GetIconMediaVehicle returns an iconMedia Vehicle for the provided Vehicle v
 // looks for a match on style "base"; otherwise, it returns alphabetically the first vehicle style
-func (v *NoSqlVehicle) GetIconMediaVehicle() (envisionAPI.Vehicle, error) {
+func (v *NoSqlVehicle) GetIconMediaVehicle() (envisionAPI.Vehicle, []string, error) {
 	var iconMediaVehicle envisionAPI.Vehicle
 	iconUser := os.Getenv("ICON_USER")
 	iconPass := os.Getenv("ICON_PASS")
 	iconDomain := os.Getenv("ICON_DOMAIN")
 	if iconDomain == "" || iconPass == "" || iconUser == "" {
-		return iconMediaVehicle, errors.New("Missing iCon Credentials")
+		return iconMediaVehicle, []string{}, errors.New("Missing iCon Credentials")
 	}
 	conf, err := envisionAPI.NewConfig(iconUser, iconPass, iconDomain)
 	if err != nil {
-		return iconMediaVehicle, err
+		return iconMediaVehicle, []string{}, err
 	}
 
 	resp, err := envisionAPI.GetVehicleByYearMakeModel(*conf, v.Year, v.Make, v.Model)
 	if err != nil {
-		return iconMediaVehicle, err
+		return iconMediaVehicle, []string{}, err
 	}
-	sort.Sort(ByBody(resp.Vehicles))
 
-	iconMediaVehicle = resp.Vehicles[0] //FIRST vehicle
-	for _, veh := range resp.Vehicles {
-		if strings.ToLower(veh.BodyType) == "base" {
-			iconMediaVehicle = veh
-			break
+	// VEHICLE PREFERENCE find vehicle with the MOST parts
+	var mostParts []string
+	var vehicleWithMostParts envisionAPI.Vehicle
+	for _, iconVehicle := range resp.Vehicles {
+		vehicleID, err := strconv.Atoi(iconVehicle.ID)
+		if err != nil {
+			return iconMediaVehicle, []string{}, err
+		}
+
+		partNumbers, err := getPartsAttachedToVehicleImages(vehicleID)
+		if err != nil {
+			return iconMediaVehicle, partNumbers, err
+		}
+		if len(partNumbers) > len(mostParts) {
+			mostParts = partNumbers
+			vehicleWithMostParts = iconVehicle
 		}
 	}
-	return iconMediaVehicle, err
+	return vehicleWithMostParts, mostParts, err
 }
 
-// returns an array of fitments (iconMedia object PartNumber, Fitment) for the Vehicle v
-func (v *NoSqlVehicle) getIconMediaFitments(partsMap map[string][]Part) ([]envisionAPI.Fitment, error) {
-	var parts []Part
-	for _, p := range partsMap {
-		parts = append(parts, p...)
-	}
-	var fitments []envisionAPI.Fitment
+// returns an array of partNumbers for the Vehicle v
+func getPartsAttachedToVehicleImages(vehicleID int) ([]string, error) {
+	var partNumbers []string
 	iconUser := os.Getenv("ICON_USER")
 	iconPass := os.Getenv("ICON_PASS")
 	iconDomain := os.Getenv("ICON_DOMAIN")
 	if iconDomain == "" || iconPass == "" || iconUser == "" {
-		return fitments, errors.New("Missing iCon Credentials")
+		return partNumbers, errors.New("Missing iCon Credentials")
 	}
 	conf, err := envisionAPI.NewConfig(iconUser, iconPass, iconDomain)
 	if err != nil {
-		return fitments, err
+		return partNumbers, err
 	}
 
-	iconMediaVehicle, err := v.GetIconMediaVehicle() //Currently uses first vehicle (or base) returned by iCon API; styles don't match our styles
+	vehicleProductResponse, err := envisionAPI.GetVehicleProducts(*conf, vehicleID)
 	if err != nil {
-		return fitments, err
+		return partNumbers, err
 	}
-	vehicleID, err := strconv.Atoi(iconMediaVehicle.ID)
-	if err != nil {
-		return fitments, err
+	for _, partNumber := range vehicleProductResponse.Numbers {
+		partNumbers = append(partNumbers, partNumber.Number)
 	}
-
-	var partNumbers []string
-	for _, p := range parts {
-		partNumbers = append(partNumbers, p.PartNumber)
-	}
-	resp, err := envisionAPI.MatchFitment(*conf, vehicleID, partNumbers...)
-	if err != nil {
-		if err.Error() == "invalid character ',' looking for beginning of value" { // No matches for vehicle; envision returns invalid json
-			return nil, nil
-		}
-		return fitments, err
-	}
-	return resp.Fitments, err
+	return partNumbers, err
 }
 
-// mapFitments accepts an array of fitments and returns a map product_number:bool(fitment)
-func mapFitments(fitments []envisionAPI.Fitment) (map[string]bool, error) {
-	fitmentMap := make(map[string]bool)
-	var err error
-	for _, fitment := range fitments {
-		fitmentMap[fitment.Number], err = strconv.ParseBool(fitment.Mapped)
-		if err != nil {
-			return fitmentMap, err
-		}
-
+// returns an array of fitments (iconMedia object PartNumber, Fitment) for the Vehicle v
+func (v *NoSqlVehicle) getIconMediaFitmentMap(partsMap map[string][]Part) (map[string]bool, error) {
+	var parts []Part
+	fitments := make(map[string]bool)
+	for _, p := range partsMap {
+		parts = append(parts, p...)
 	}
-	return fitmentMap, nil
+
+	_, partNumbers, err := v.GetIconMediaVehicle() //Currently vehicle with the MOST MAPPED PARTS returned by iCon API; styles don't match our styles
+	if err != nil {
+		return fitments, err
+	}
+
+	for _, p := range parts {
+		if inArray(partNumbers, p.PartNumber) {
+			fitments[p.PartNumber] = true
+		} else {
+			fitments[p.PartNumber] = false
+		}
+	}
+	return fitments, err
+}
+
+func inArray(arr []string, a string) bool {
+	for _, ar := range arr {
+		if ar == a {
+			return true
+		}
+	}
+	return false
 }
 
 // Sort Utils

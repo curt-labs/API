@@ -294,7 +294,7 @@ func GetIconMediaVehicle(w http.ResponseWriter, r *http.Request, enc encoding.En
 	v.Model = r.FormValue("model")
 	delete(r.Form, "model")
 
-	vehicle, err := v.GetIconMediaVehicle()
+	vehicle, _, err := v.GetIconMediaVehicle()
 	if err != nil {
 		apierror.GenerateError("Trouble finding vehicle.", err, w, r)
 		return ""
