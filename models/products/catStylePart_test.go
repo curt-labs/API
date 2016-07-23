@@ -19,7 +19,7 @@ func TestCategoryStyleParts(t *testing.T) {
 
 	session := database.ProductMongoSession
 
-	csp, err := CategoryStyleParts(v, []int{3}, session, true)
+	csp, err := CategoryStyleParts(v, []int{3}, session)
 	if err != nil {
 		t.Error(err)
 	}

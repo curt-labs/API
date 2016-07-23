@@ -241,16 +241,10 @@ func CategoryStyleParts(w http.ResponseWriter, r *http.Request, enc encoding.Enc
 	var v products.NoSqlVehicle
 	var catStyleParts []products.CatStylePart
 	var err error
-	var envision bool
 
 	if err := database.Init(); err != nil {
 		apierror.GenerateError(err.Error(), err, w, r)
 		return ""
-	}
-	// envision query param determines if this call uses the iConMedia vehicle applications
-	envisionStr := r.URL.Query().Get("envision")
-	if envisionStr == "true" {
-		envision = true
 	}
 
 	sess := database.ProductMongoSession.Copy()
@@ -268,37 +262,11 @@ func CategoryStyleParts(w http.ResponseWriter, r *http.Request, enc encoding.Enc
 	v.Model = r.FormValue("model")
 	delete(r.Form, "model")
 
-	catStyleParts, err = products.CategoryStyleParts(v, dtx.BrandArray, sess, envision)
+	catStyleParts, err = products.CategoryStyleParts(v, dtx.BrandArray, sess)
 	if err != nil {
 		apierror.GenerateError("Trouble finding vehicles.", err, w, r)
 		return ""
 	}
 
 	return encoding.Must(enc.Encode(catStyleParts))
-}
-
-// CategoryStyleParts returns the Category->Style->Parts structure needed for our lookup
-func GetIconMediaVehicle(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
-	var v products.NoSqlVehicle
-	var err error
-
-	// Get vehicle year
-	v.Year = r.FormValue("year")
-	delete(r.Form, "year")
-
-	// Get vehicle make
-	v.Make = r.FormValue("make")
-	delete(r.Form, "make")
-
-	// Get vehicle model
-	v.Model = r.FormValue("model")
-	delete(r.Form, "model")
-
-	vehicle, _, err := v.GetIconMediaVehicle()
-	if err != nil {
-		apierror.GenerateError("Trouble finding vehicle.", err, w, r)
-		return ""
-	}
-
-	return encoding.Must(enc.Encode(vehicle))
 }

@@ -96,7 +96,7 @@ func TestGetStyles(t *testing.T) {
 			ctx.Session, err = mgo.DialWithInfo(database.MongoPartConnectionString())
 			So(err, ShouldBeNil)
 
-			_, err = getStyles(ctx, "2015", "jeep", "wrangler", "")
+			_, _, err = getStyles(ctx, "2015", "jeep", "wrangler", "")
 			So(err, ShouldBeNil)
 		})
 	})

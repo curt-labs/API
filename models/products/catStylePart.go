@@ -1,14 +1,13 @@
 package products
 
 import (
-	"errors"
-	"github.com/aries-auto/envision-api"
+	"encoding/json"
+	"fmt"
 	"github.com/curt-labs/API/helpers/database"
+	"github.com/curt-labs/API/helpers/redis"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-	"os"
 	"sort"
-	"strconv"
 	"strings"
 )
 
@@ -23,51 +22,30 @@ type Style struct {
 }
 
 // CategoryStyleParts queries mongo and returns []CatStylePart
-// get IconMediaLayer map (part_number:layerID)
 // get parts from product_data, mapped (category name:[]Part)
-// get Fitment map (part_number:bool)
 // for each map key (category), break part array into style structs w/ arrays of parts matching that style
-func CategoryStyleParts(v NoSqlVehicle, brands []int, sess *mgo.Session, envision bool) ([]CatStylePart, error) {
+func CategoryStyleParts(v NoSqlVehicle, brandArray []int, sess *mgo.Session) ([]CatStylePart, error) {
 	var csps []CatStylePart
 
-	layerChan := make(chan error)
-	layerMap := make(map[string]string)
-	var err error
-
-	go func() {
-		if envision {
-			layerMap, err = getIconMediaLayers()
-			if err != nil {
-				layerChan <- err
-				return
-			}
+	redisKey := fmt.Sprintf("%s:%s:%s", v.Year, v.Make, v.Model)
+	data, err := redis.Get(redisKey)
+	if err == nil && len(data) > 0 {
+		err = json.Unmarshal(data, &csps)
+		if err == nil {
+			return csps, nil
 		}
-		layerChan <- nil
-	}()
-
-	collectionToPartsMap, err := v.mapCollectionToParts(sess)
-	if err != nil {
-		return csps, err
 	}
 
-	err = <-layerChan
+	collectionToPartsMap, err := v.mapCollectionToParts(sess, brandArray)
 	if err != nil {
 		return csps, err
-	}
-
-	var fitmentMap map[string]bool
-	if envision {
-		fitmentMap, err = v.getIconMediaFitmentMap(collectionToPartsMap)
-		if err != nil {
-			return csps, err
-		}
 	}
 
 	styleChan := make(chan []Style, len(collectionToPartsMap))
 
 	for col, parts := range collectionToPartsMap {
 		go func() {
-			styleChan <- v.parseCollectionStyles(parts, layerMap, fitmentMap)
+			styleChan <- v.parseCollectionStyles(parts)
 		}()
 
 		csp := CatStylePart{
@@ -80,16 +58,15 @@ func CategoryStyleParts(v NoSqlVehicle, brands []int, sess *mgo.Session, envisio
 		csps = append(csps, csp)
 	}
 	sort.Sort(ByName(csps))
+	redis.Setex(redisKey, csps, 60*60*24)
 	return csps, nil
 }
 
 // parseCollectionStyles takes an array of parts, iconMedia layer map, iconMedia fitment map
 // and returns an []Style for a Vehicle
-func (v *NoSqlVehicle) parseCollectionStyles(parts []Part, layerMap map[string]string, fitmentMap map[string]bool) []Style {
+func (v *NoSqlVehicle) parseCollectionStyles(parts []Part) []Style {
 	styleMap := make(map[string][]Part)
 	for _, part := range parts {
-		part.Layer = layerMap[part.PartNumber]
-		part.MappedToVehicle = fitmentMap[part.PartNumber]
 		for _, pv := range part.Vehicles {
 			if strings.ToLower(strings.TrimSpace(pv.Year)) == strings.ToLower(strings.TrimSpace(v.Year)) && strings.ToLower(strings.TrimSpace(pv.Make)) == strings.ToLower(strings.TrimSpace(v.Make)) && strings.ToLower(strings.TrimSpace(pv.Model)) == strings.ToLower(strings.TrimSpace(v.Model)) {
 				styleMap[pv.Style] = append(styleMap[pv.Style], part)
@@ -106,13 +83,13 @@ func (v *NoSqlVehicle) parseCollectionStyles(parts []Part, layerMap map[string]s
 
 // mapCollectionToParts queries mongo product database for Vehicle v and
 // returns a map of categoryname: []Part for that vehicle
-func (v *NoSqlVehicle) mapCollectionToParts(sess *mgo.Session) (map[string][]Part, error) {
+func (v *NoSqlVehicle) mapCollectionToParts(sess *mgo.Session, brands []int) (map[string][]Part, error) {
 	categoryToPartMap := make(map[string][]Part)
 	query := bson.M{
 		"vehicle_applications.year":  strings.ToLower(v.Year),
 		"vehicle_applications.make":  strings.ToLower(v.Make),
 		"vehicle_applications.model": strings.ToLower(v.Model),
-		"brand.id":                   3,
+		"brand.id":                   bson.M{"$in": brands},
 	}
 	var result []Part
 	err := sess.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(query).All(&result)
@@ -137,135 +114,6 @@ func inCategoryMap(parts []Part, part Part) bool {
 	}
 	return false
 }
-
-// getIconMediaLayers returns a map of product_number:iconMediaLayerID
-func getIconMediaLayers() (map[string]string, error) {
-	layerMap := make(map[string]string)
-
-	iconUser := os.Getenv("ICON_USER")
-	iconPass := os.Getenv("ICON_PASS")
-	iconDomain := os.Getenv("ICON_DOMAIN")
-	if iconDomain == "" || iconPass == "" || iconUser == "" {
-		return layerMap, errors.New("Missing iCon Credentials")
-	}
-	conf, err := envisionAPI.NewConfig(iconUser, iconPass, iconDomain)
-	if err != nil {
-		return layerMap, err
-	}
-
-	resp, err := envisionAPI.GetLayers(*conf, "", "")
-	if err != nil {
-		return layerMap, err
-	}
-	for _, layer := range resp.Layers {
-		layerMap[layer.ProductNumber] = layer.LayerID
-	}
-	return layerMap, err
-}
-
-// GetIconMediaVehicle returns an iconMedia Vehicle for the provided Vehicle v
-// looks for a match on style "base"; otherwise, it returns alphabetically the first vehicle style
-func (v *NoSqlVehicle) GetIconMediaVehicle() (envisionAPI.Vehicle, []string, error) {
-	var iconMediaVehicle envisionAPI.Vehicle
-	iconUser := os.Getenv("ICON_USER")
-	iconPass := os.Getenv("ICON_PASS")
-	iconDomain := os.Getenv("ICON_DOMAIN")
-	if iconDomain == "" || iconPass == "" || iconUser == "" {
-		return iconMediaVehicle, []string{}, errors.New("Missing iCon Credentials")
-	}
-	conf, err := envisionAPI.NewConfig(iconUser, iconPass, iconDomain)
-	if err != nil {
-		return iconMediaVehicle, []string{}, err
-	}
-
-	resp, err := envisionAPI.GetVehicleByYearMakeModel(*conf, v.Year, v.Make, v.Model)
-	if err != nil {
-		return iconMediaVehicle, []string{}, err
-	}
-
-	// VEHICLE PREFERENCE find vehicle with the MOST parts
-	var mostParts []string
-	var vehicleWithMostParts envisionAPI.Vehicle
-	for _, iconVehicle := range resp.Vehicles {
-		vehicleID, err := strconv.Atoi(iconVehicle.ID)
-		if err != nil {
-			return iconMediaVehicle, []string{}, err
-		}
-
-		partNumbers, err := getPartsAttachedToVehicleImages(vehicleID)
-		if err != nil {
-			return iconMediaVehicle, partNumbers, err
-		}
-		if len(partNumbers) > len(mostParts) {
-			mostParts = partNumbers
-			vehicleWithMostParts = iconVehicle
-		}
-	}
-	return vehicleWithMostParts, mostParts, err
-}
-
-// returns an array of partNumbers for the Vehicle v
-func getPartsAttachedToVehicleImages(vehicleID int) ([]string, error) {
-	var partNumbers []string
-	iconUser := os.Getenv("ICON_USER")
-	iconPass := os.Getenv("ICON_PASS")
-	iconDomain := os.Getenv("ICON_DOMAIN")
-	if iconDomain == "" || iconPass == "" || iconUser == "" {
-		return partNumbers, errors.New("Missing iCon Credentials")
-	}
-	conf, err := envisionAPI.NewConfig(iconUser, iconPass, iconDomain)
-	if err != nil {
-		return partNumbers, err
-	}
-
-	vehicleProductResponse, err := envisionAPI.GetVehicleProducts(*conf, vehicleID)
-	if err != nil {
-		return partNumbers, err
-	}
-	for _, partNumber := range vehicleProductResponse.Numbers {
-		partNumbers = append(partNumbers, partNumber.Number)
-	}
-	return partNumbers, err
-}
-
-// returns an array of fitments (iconMedia object PartNumber, Fitment) for the Vehicle v
-func (v *NoSqlVehicle) getIconMediaFitmentMap(partsMap map[string][]Part) (map[string]bool, error) {
-	var parts []Part
-	fitments := make(map[string]bool)
-	for _, p := range partsMap {
-		parts = append(parts, p...)
-	}
-
-	_, partNumbers, err := v.GetIconMediaVehicle() //Currently vehicle with the MOST MAPPED PARTS returned by iCon API; styles don't match our styles
-	if err != nil {
-		return fitments, err
-	}
-
-	for _, p := range parts {
-		if inArray(partNumbers, p.PartNumber) {
-			fitments[p.PartNumber] = true
-		} else {
-			fitments[p.PartNumber] = false
-		}
-	}
-	return fitments, err
-}
-
-func inArray(arr []string, a string) bool {
-	for _, ar := range arr {
-		if ar == a {
-			return true
-		}
-	}
-	return false
-}
-
-// Sort Utils
-type ByBody []envisionAPI.Vehicle
-
-func (a ByBody) Len() int           { return len(a) }
-func (a ByBody) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a ByBody) Less(i, j int) bool { return a[i].BodyType < a[j].BodyType }
 
 type ByName []CatStylePart
 
