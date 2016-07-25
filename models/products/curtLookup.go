@@ -122,7 +122,7 @@ type VehicleApp struct {
 
 func CurtVehicleApps(date string) (vehicleApps []VehicleApp, err error) {
 	vehicleApps = make([]VehicleApp, 0)
-	redis_key := fmt.Sprintf("CurtVehicleApps:v2:%s", date)
+	redis_key := fmt.Sprintf("CurtVehicleApps:v3:%s", date)
 	data, err := redis.Get(redis_key)
 	if err == nil {
 		err = json.Unmarshal(data, &vehicleApps)
