@@ -11,7 +11,7 @@ import (
 
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/database"
-	"github.com/curt-labs/API/helpers/redis"
+	"github.com/curt-labs/API/helpers/redisNew"
 )
 
 var (
@@ -122,8 +122,9 @@ type VehicleApp struct {
 
 func CurtVehicleApps(date string) (vehicleApps []VehicleApp, err error) {
 	vehicleApps = make([]VehicleApp, 0)
-	redis_key := fmt.Sprintf("CurtVehicleApps:v3:%s", date)
-	data, err := redis.Get(redis_key)
+	redis_key := fmt.Sprintf("CurtVehicleApps:v4:%s", date)
+	data, err := redis.RedisMaster.Get(redis_key)
+	log.Println()
 	if err == nil {
 		err = json.Unmarshal(data, &vehicleApps)
 
@@ -219,7 +220,10 @@ func CurtVehicleApps(date string) (vehicleApps []VehicleApp, err error) {
 	}
 	log.Println("setting vehicle apps in redis")
 	log.Println(len(vehicleApps))
-	redis.Setex(redis_key, vehicleApps, 86400)
+	if data_bytes, err := json.Marshal(&vehicleApps); err == nil {
+		err = redis.RedisMaster.Setex(redis_key, 86400, data_bytes)
+		log.Println(err)
+	}
 
 	return vehicleApps, err
 }
