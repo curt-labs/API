@@ -2,10 +2,16 @@ package products
 
 import (
 	"database/sql"
-	"github.com/curt-labs/API/helpers/apicontext"
-	"github.com/curt-labs/API/helpers/database"
+	"encoding/json"
+	"fmt"
+	"log"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/curt-labs/API/helpers/apicontext"
+	"github.com/curt-labs/API/helpers/database"
+	"github.com/curt-labs/API/helpers/redis"
 )
 
 var (
@@ -56,6 +62,26 @@ var (
 							join Part as p on vp.partID = p.partID
 							where y.year = ? && ma.make = ? && mo.model = ? && (p.status = 800 || p.status = 900)
 							order by p.partID`
+	VehicleAppsStmt = `select v.vehicleID, y.year, ma.make, mo.model, s.style, p.partID, p.shortDesc, p.dateModified
+									from Part as p
+									join VehiclePart as vp on p.partID = vp.partID
+									join Vehicle as v on vp.vehicleID =  v.vehicleID
+									join Year as y on v.yearID = y.yearID
+									join Make as ma on v.makeID = ma.makeID
+									join Model as mo on v.modelID = mo.modelID
+									join Style as s on v.styleID = s.styleID
+									where p.status != 999 && p.brandID = 1
+									order by p.partID, ma.make, mo.model, s.style, y.year`
+	VehicleAppsWithDate = `select v.vehicleID, y.year, ma.make, mo.model, s.style, p.partID, p.shortDesc, p.dateModified
+										from Part as p
+										join VehiclePart as vp on p.partID = vp.partID
+										join Vehicle as v on vp.vehicleID =  v.vehicleID
+										join Year as y on v.yearID = y.yearID
+										join Make as ma on v.makeID = ma.makeID
+										join Model as mo on v.modelID = mo.modelID
+										join Style as s on v.styleID = s.styleID
+										where p.status != 999 && p.brandID = 1 && p.dateModified >= ?
+										order by p.partID, ma.make, mo.model, s.style, y.year`
 )
 
 type CurtVehicle struct {
@@ -74,6 +100,122 @@ type CurtLookup struct {
 	Styles []string `json:"available_styles,omitempty" xml:"available_styles, omitempty"`
 	Parts  []Part   `json:"parts,omitempty" xml:"parts, omitempty"`
 	CurtVehicle
+}
+
+type VehicleApp struct {
+	Category      string
+	VehicleID     int
+	Year          float64
+	Make          string
+	Model         string
+	Style         string
+	PartID        int
+	PartShortDesc string
+	DateModified  time.Time
+	GroupID       string
+	Drilling      string
+	Exposed       string
+	InstallTime   int
+	ClassID       int
+	PartNumber    string
+}
+
+func CurtVehicleApps(date string) (vehicleApps []VehicleApp, err error) {
+	vehicleApps = make([]VehicleApp, 0)
+	redis_key := fmt.Sprintf("CurtVehicleApps:v2:%s", date)
+	data, err := redis.Get(redis_key)
+	if err == nil {
+		err = json.Unmarshal(data, &vehicleApps)
+		if err != nil {
+
+		}
+		return vehicleApps, err
+	} else {
+		log.Println("REDIS ERROR:", err)
+	}
+
+	var stmt *sql.Stmt
+	var res *sql.Rows
+
+	db, err := sql.Open("mysql", database.ConnectionString())
+	if err != nil {
+		return vehicleApps, err
+	}
+	defer db.Close()
+
+	if date == "" {
+		stmt, err = db.Prepare(VehicleAppsStmt)
+		if err != nil {
+			return vehicleApps, err
+		}
+		defer stmt.Close()
+		res, err = stmt.Query()
+		if err != nil {
+			return vehicleApps, err
+		}
+	} else {
+		stmt, err = db.Prepare(VehicleAppsWithDate)
+		if err != nil {
+			return vehicleApps, err
+		}
+		defer stmt.Close()
+		res, err = stmt.Query(date)
+		if err != nil {
+			return vehicleApps, err
+		}
+	}
+	defer res.Close()
+
+	for res.Next() {
+		var v VehicleApp
+		var dateMod *time.Time
+		var year, ma, mo, st, desc *string
+		var vID, partID *int
+		err = res.Scan(
+			&vID,
+			&year,
+			&ma,
+			&mo,
+			&st,
+			&partID,
+			&desc,
+			&dateMod,
+		)
+
+		if err != nil {
+			return vehicleApps, err
+		}
+
+		if vID != nil {
+			v.VehicleID = *vID
+		}
+		if year != nil {
+			v.Year, _ = strconv.ParseFloat(*year, 64)
+		}
+		if ma != nil {
+			v.Make = *ma
+		}
+		if mo != nil {
+			v.Model = *mo
+		}
+		if st != nil {
+			v.Style = *st
+		}
+		if partID != nil {
+			v.PartID = *partID
+		}
+		if desc != nil {
+			v.PartShortDesc = *desc
+		}
+		if dateMod != nil {
+			v.DateModified = *dateMod
+		}
+
+		vehicleApps = append(vehicleApps, v)
+	}
+	redis.Setex(redis_key, vehicleApps, 86400)
+
+	return vehicleApps, err
 }
 
 func (c *CurtLookup) GetYears() error {

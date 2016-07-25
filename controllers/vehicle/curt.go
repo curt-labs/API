@@ -55,3 +55,18 @@ func CurtLookup(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dt
 
 	return encoding.Must(enc.Encode(cl))
 }
+
+func CURTApps(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+	var vr []products.VehicleApp
+	var err error
+	// get datestr from url
+	var dateStr = ""
+	vr, err = products.CurtVehicleApps(dateStr)
+
+	if err != nil {
+		apierror.GenerateError("Trouble finding vehicles.", err, w, r)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(vr))
+}

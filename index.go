@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+
 	"github.com/curt-labs/API/controllers/apiKeyType"
 	"github.com/curt-labs/API/controllers/applicationGuide"
 	"github.com/curt-labs/API/controllers/blog"
@@ -35,10 +36,11 @@ import (
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/cors"
 	// "github.com/martini-contrib/gzip"
-	"github.com/martini-contrib/sessions"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/martini-contrib/sessions"
 )
 
 var (
@@ -486,6 +488,7 @@ func main() {
 
 	// CURT Year/Make/Model/Style
 	m.Post("/vehicle/curt", vehicle.CurtLookup)
+	m.Get("/vehicle/curt/report", vehicle.CURTApps)
 
 	m.Group("/videos", func(r martini.Router) {
 		r.Get("/distinct", videos_ctlr.DistinctVideos) //old "videos" table - curtmfg?
