@@ -126,9 +126,9 @@ func CurtVehicleApps(date string) (vehicleApps []VehicleApp, err error) {
 	data, err := redis.Get(redis_key)
 	if err == nil {
 		err = json.Unmarshal(data, &vehicleApps)
-		if err != nil {
+		log.Print("returning from redis")
+		log.Println(len(vehicleApps))
 
-		}
 		return vehicleApps, err
 	} else {
 		log.Println("REDIS ERROR:", err)

@@ -4,14 +4,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	redix "github.com/garyburd/redigo/redis"
 	"os"
 	"strings"
 	"time"
+
+	redix "github.com/garyburd/redigo/redis"
 )
 
 const (
-	Db                = 13
+	Db                = 12
 	PoolAllocationErr = "failed to allocate pool"
 	Prefix            = "API"
 	CacheTimeout      = 86400
@@ -32,9 +33,8 @@ func RedisPool(master bool) *redix.Pool {
 			addr = fmt.Sprintf("%s:%s", ad, os.Getenv("REDIS_SLAVE_SERVICE_PORT"))
 		}
 	}
-
 	return &redix.Pool{
-		MaxIdle:     2,
+		MaxIdle:     5,
 		IdleTimeout: 240 * time.Second,
 		Dial: func() (redix.Conn, error) {
 			c, err := redix.Dial("tcp", addr)
@@ -59,7 +59,7 @@ func RedisPool(master bool) *redix.Pool {
 func Get(key string) ([]byte, error) {
 	data := make([]byte, 0)
 	pool := RedisPool(false)
-	if pool == nil || pool.ActiveCount() == 0 {
+	if pool == nil {
 		return data, errors.New(PoolAllocationErr)
 	}
 
