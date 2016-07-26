@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -124,19 +123,9 @@ func CurtVehicleApps(date string) (vehicleApps []VehicleApp, err error) {
 	vehicleApps = make([]VehicleApp, 0)
 	redis_key := fmt.Sprintf("CurtVehicleApps:v4:%s", date)
 	data, err := redis.RedisMaster.Get(redis_key)
-	log.Println()
 	if err == nil {
 		err = json.Unmarshal(data, &vehicleApps)
-
-		if err != nil {
-			log.Println("error unmarshaling", err)
-			log.Println(len(data))
-		}
-		log.Print("returning from redis")
-		log.Println(len(vehicleApps))
 		return vehicleApps, err
-	} else {
-		log.Println("REDIS ERROR Getting Vehicle apps:", err)
 	}
 
 	var stmt *sql.Stmt
@@ -218,11 +207,8 @@ func CurtVehicleApps(date string) (vehicleApps []VehicleApp, err error) {
 
 		vehicleApps = append(vehicleApps, v)
 	}
-	log.Println("setting vehicle apps in redis")
-	log.Println(len(vehicleApps))
 	if data_bytes, err := json.Marshal(&vehicleApps); err == nil {
 		err = redis.RedisMaster.Setex(redis_key, 86400, data_bytes)
-		log.Println(err)
 	}
 
 	return vehicleApps, err

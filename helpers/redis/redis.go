@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"time"
@@ -61,8 +60,6 @@ func Get(key string) ([]byte, error) {
 	data := make([]byte, 0)
 	pool := RedisPool(false)
 	if pool == nil {
-		log.Println("pool is nil")
-		log.Println(pool)
 		return data, errors.New(PoolAllocationErr)
 	}
 
