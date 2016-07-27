@@ -66,8 +66,11 @@ func AddDealerContact(rw http.ResponseWriter, req *http.Request, enc encoding.En
 	var err error
 	var brandName string
 
-	var brandStr = params["brandID"]
+	qs := req.URL.Query()
+
+	var brandStr = qs.Get("brandID")
 	var brandID = 0
+
 	if brandStr != "" {
 		brandID, err = strconv.Atoi(brandStr)
 		if err != nil {
