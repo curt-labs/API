@@ -66,15 +66,30 @@ func AddDealerContact(rw http.ResponseWriter, req *http.Request, enc encoding.En
 	var err error
 	var brandName string
 
+	qs := req.URL.Query()
+
+	var brandStr = qs.Get("brandID")
+	var brandID = 0
+
+	if brandStr != "" {
+		brandID, err = strconv.Atoi(brandStr)
+		if err != nil {
+			apierror.GenerateError("Trouble getting brandID", err, rw, req)
+			return ""
+		}
+	}
+
 	brandIDs, err := dtx.GetBrandsFromKey()
 	if err != nil {
 		brandName = "Unknown Brand"
 	}
+	var brand brand.Brand
 	for _, bID := range brandIDs {
-		var brand brand.Brand
-		brand.ID = bID
-		brand.Get()
-		brandName = brand.Name
+		if bID == brandID {
+			brand.ID = bID
+			brand.Get()
+			brandName = brand.Name
+		}
 	}
 
 	ct.ID, err = strconv.Atoi(params["contactTypeID"]) //determines to whom emails go
