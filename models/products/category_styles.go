@@ -88,7 +88,7 @@ func Query(ctx *LookupContext, args ...string) (*CategoryVehicle, error) {
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &vehicle)
 		if err == nil {
-			return &vehicle, nil
+			// return &vehicle, nil
 		}
 	}
 
@@ -306,7 +306,7 @@ func getStyles(ctx *LookupContext, year, vehicleMake, model, category string) ([
 	}
 
 	cleanedParts, cats := generateCategoryStyles(parts, year, vehicleMake, model)
-
+	sort.Sort(ByCategoryTitle(cats))
 	return cleanedParts, cats, nil
 }
 
@@ -416,3 +416,9 @@ func getChildCategory(cats []Category) (Category, error) {
 
 	return Category{}, fmt.Errorf("failed to locate child")
 }
+
+type ByCategoryTitle []LookupCategory
+
+func (a ByCategoryTitle) Len() int           { return len(a) }
+func (a ByCategoryTitle) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByCategoryTitle) Less(i, j int) bool { return a[i].Category.Title < a[j].Category.Title }
