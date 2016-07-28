@@ -34,7 +34,7 @@ func GetContent(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder,
 	if c.Slug != "_ah/health" {
 		err = c.GetBySlug(dtx)
 		if err != nil {
-			apierror.GenerateError("Trouble getting site content by slug.", err, rw, req)
+			apierror.GenerateError("Trouble getting site content by slug.", err, rw, req, 204)
 			return ""
 		}
 	}
