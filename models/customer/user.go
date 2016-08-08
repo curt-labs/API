@@ -175,12 +175,14 @@ var (
 										where ak.user_id = ? && UPPER(akt.type) = ?`
 	getAPIKeyTypeID               = `select id from ApiKeyType where UPPER(type) = UPPER(?) limit 1`
 	setCustomerUserPassword       = `update CustomerUser set password = ?, passwordConverted = 1 WHERE email = ?`
-	setCustomerUserPasswordWithID = `update CustomerUser set password = ?, passwordConverted = 1 WHERE email = ? AND cust_ID = ?`
-	deleteCustomerUser            = `DELETE FROM CustomerUser WHERE id = ?`
-	deleteAPIkey                  = `DELETE FROM ApiKey WHERE user_id = ? AND type_id = ?`
-	deleteAPIkeyByKey             = `DELETE FROM ApiKey WHERE api_key = ?`
-	deleteUserAPIkeys             = `DELETE FROM ApiKey WHERE user_id = ?`
-	getCustomerUserKeysWithAuth   = `select ak.api_key, akt.type from ApiKey as ak
+	setCustomerUserPasswordWithID = `update CustomerUser cu
+										join Customer c on cu.cust_ID = c.cust_id
+										set cu.password = ?, cu.passwordConverted = 1 WHERE cu.email = ? AND c.customerID = ?`
+	deleteCustomerUser          = `DELETE FROM CustomerUser WHERE id = ?`
+	deleteAPIkey                = `DELETE FROM ApiKey WHERE user_id = ? AND type_id = ?`
+	deleteAPIkeyByKey           = `DELETE FROM ApiKey WHERE api_key = ?`
+	deleteUserAPIkeys           = `DELETE FROM ApiKey WHERE user_id = ?`
+	getCustomerUserKeysWithAuth = `select ak.api_key, akt.type from ApiKey as ak
 										join ApiKeyType as akt on ak.type_id = akt.id
 										where ak.user_id = ? && (UPPER(akt.type) = ? || UPPER(akt.type) = ? || UPPER(akt.type) = ?)`
 	getCustomerUserLocation = `select cl.locationID, cl.name, cl.address, cl.city,
