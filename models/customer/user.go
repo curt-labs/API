@@ -300,7 +300,6 @@ func AuthenticateUserByKey(key string, dtx *apicontext.DataContext) (u CustomerU
 		}
 		resetChan <- 1
 	}()
-
 	<-resetChan
 	return
 }
@@ -407,7 +406,6 @@ func (u *CustomerUser) AuthenticateUser() error {
 		passConversion, err = strconv.ParseBool(string(passConversionByte))
 	}
 	pass := u.Password
-
 	// Attempt to compare bcrypt strings
 	err = bcrypt.CompareHashAndPassword([]byte(dbPass), []byte(pass))
 	if err != nil {
@@ -418,6 +416,7 @@ func (u *CustomerUser) AuthenticateUser() error {
 		if err != nil {
 			return err
 		}
+
 		if len(encPass) != len(dbPass) || passConversion { //bool
 			return errors.New("Invalid password")
 		}
@@ -450,7 +449,6 @@ func (u *CustomerUser) AuthenticateUser() error {
 	}
 
 	u.Current = true
-
 	return nil
 }
 
