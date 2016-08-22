@@ -10,7 +10,7 @@ import (
 )
 
 func GeneratePassword() string {
-	charlist := "ABCDEFGHJKMNOPQRSTUVWXYZabcdefghjkmnopqrstuvwxyz23456789!@#$^&*?"
+	charlist := "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$^*?"
 	charslice := strings.Split(charlist, "")
 	targetlength := 8
 	newpw := ""
