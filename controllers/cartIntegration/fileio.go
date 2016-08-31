@@ -44,7 +44,7 @@ func Upload(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) strin
 		}
 	}
 
-	err = cartIntegration.UploadFile(file, key)
+	go cartIntegration.UploadFile(file, key)
 	if err != nil {
 		apierror.GenerateError("Error uploading file", err, rw, r)
 		return ""

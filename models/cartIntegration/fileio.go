@@ -35,7 +35,6 @@ func UploadFile(file multipart.File, api_key string) error {
 	if err != nil {
 		return err
 	}
-
 	for _, line := range lines {
 		//Curt Part ID,	Customer Part ID, Sale Price, Sale Start Date, Sale End Date
 		var cp CustomerPrice
@@ -62,21 +61,20 @@ func UploadFile(file multipart.File, api_key string) error {
 			return err
 		}
 		cp.Price = price
-
 		if len(line) > 3 {
 			if line[3] != "" {
 				startd, err := time.Parse(DATE_FORMAT, line[3])
 				if err != nil {
 					return err
 				}
-				*cp.SaleStart = startd
+				cp.SaleStart = &startd
 			}
 			if line[4] != "" {
 				endd, err := time.Parse(DATE_FORMAT, line[4])
 				if err != nil {
 					return err
 				}
-				*cp.SaleEnd = endd
+				cp.SaleEnd = &endd
 			}
 		}
 
