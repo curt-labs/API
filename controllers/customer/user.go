@@ -240,12 +240,13 @@ func RegisterUser(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 	user.Name = r.FormValue("name")
 	user.Email = r.FormValue("email")
 	user.CustomerID, _ = strconv.Atoi(r.FormValue("customerID"))
-	user.Active, _ = strconv.ParseBool(r.FormValue("isActive"))
+	// user.Active, _ = strconv.ParseBool(r.FormValue("isActive"))
 	user.Location.Id, _ = strconv.Atoi(r.FormValue("locationID"))
 	user.Sudo, _ = strconv.ParseBool(r.FormValue("isSudo"))
 	user.CustID, _ = strconv.Atoi(r.FormValue("cust_ID"))
 	user.NotCustomer, _ = strconv.ParseBool(r.FormValue("notCustomer"))
 	user.Current = user.NotCustomer
+	user.Active = true // forcing active status
 
 	genPass := r.FormValue("generatePass")
 	pass := r.FormValue("pass")

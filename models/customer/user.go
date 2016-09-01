@@ -1292,8 +1292,6 @@ func (cu *CustomerUser) SendRegistrationEmail() error {
                 <span>The username is: <strong>` + cu.Email + `</strong></span><br />
                 <span>The password is: <strong>` + cu.Password + `</strong></span><br />
                 <hr /><br />
-                <p>Since you did not know your CURT Customer ID number, you will not have access to the
-                entire dealer area until we can validate who you are. You can however in the meantime add Web Properties.</p>
                 <p style='font-size:11px'>If you feel this was a mistake please contact us.</p>`
 	return email.Send(tos, subject, body, true)
 }
@@ -1301,7 +1299,7 @@ func (cu *CustomerUser) SendRegistrationEmail() error {
 func (cu *CustomerUser) SendRegistrationRequestEmail() error {
 	//TODO
 	tos := []string{"websupport@curtmfg.com"}
-	subject := "A new Customer User wishes to be active"
+	subject := "A new Customer User has been created."
 	body := `<p>A new account with this e-mail address has been registered.</p>
                 <hr />
                 <span>The username is: <strong>` + cu.Email + `</strong></span><br />`
