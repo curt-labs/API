@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/curt-labs/API/helpers/apicontext"
+	"github.com/curt-labs/API/helpers/database"
 	"github.com/curt-labs/API/helpers/error"
 	"github.com/curt-labs/API/helpers/nsq"
 	"github.com/curt-labs/API/models/cart"
@@ -165,7 +166,7 @@ func processDataContext(r *http.Request, c martini.Context) (*apicontext.DataCon
 	}
 
 	//gets customer user from api key
-	user, err := customer.GetCustomerUserFromKey(apiKey)
+	user, err := getCustomerID(apiKey)
 	if err != nil || user.Id == "" {
 		return nil, errors.New("No User for this API Key.")
 	}
@@ -211,6 +212,27 @@ func processDataContext(r *http.Request, c martini.Context) (*apicontext.DataCon
 		return nil, err
 	}
 	return dtx, nil
+}
+
+func getCustomerID(apiKey string) (*customer.CustomerUser, error) {
+	err := database.Init()
+	if err != nil {
+		return nil, err
+	}
+	session := database.ProductMongoSession.Copy()
+	defer session.Close()
+
+	query := bson.M{"users.keys.key": apiKey}
+
+	var resp = struct {
+		Users []customer.CustomerUser `bson:"users"`
+	}{}
+	err = session.DB(database.ProductDatabase).C(database.CustomerCollectionName).Find(query).Select(bson.M{"users.$": 1, "_id": 0}).One(&resp)
+	if len(resp.Users) == 0 {
+		return nil, fmt.Errorf("failed to find user for that API key")
+	}
+
+	return &resp.Users[0], err
 }
 
 func logRequest(r *http.Request, reqTime time.Duration) {

@@ -22,6 +22,7 @@ var (
 
 	ProductCollectionName  = "products"
 	CategoryCollectionName = "categories"
+	CustomerCollectionName = "customer"
 	ProductDatabase        = "product_data"
 	CategoryDatabase       = "category_data"
 	AriesDatabase          = "aries"
