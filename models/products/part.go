@@ -115,6 +115,30 @@ func (p *Part) Get(dtx *apicontext.DataContext) error {
 	return err
 }
 
+// GetMulti ...
+func GetMulti(dtx *apicontext.DataContext, ids []string) ([]Part, error) {
+	var err error
+	//get brands
+	brands := getBrandsFromDTX(dtx)
+
+	if err := database.Init(); err != nil {
+		return nil, err
+	}
+
+	session := database.ProductMongoSession.Copy()
+	defer session.Close()
+
+	query := bson.M{"part_number": bson.M{"$in": ids}, "brand.id": bson.M{"$in": brands}}
+
+	var parts []Part
+	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(query).All(&parts)
+	if err != nil {
+		return nil, err
+	}
+
+	return BindCustomerToSeveralParts(parts, dtx)
+}
+
 func (p *Part) GetNoCust(dtx *apicontext.DataContext, sess *mgo.Session) error {
 	var err error
 	//get brands

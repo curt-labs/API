@@ -172,6 +172,24 @@ func Get(w http.ResponseWriter, r *http.Request, params martini.Params, enc enco
 	return encoding.Must(enc.Encode(p))
 }
 
+func GetMulti(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+	var ids []string
+	err := json.NewDecoder(r.Body).Decode(&ids)
+	if err != nil {
+		apierror.GenerateError("Trouble getting part", err, w, r)
+		return ""
+	}
+
+	var parts []products.Part
+	parts, err = products.GetMulti(dtx, ids)
+	if err != nil {
+		apierror.GenerateError("Trouble getting part", err, w, r)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(parts))
+}
+
 func GetRelated(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	id, _ := strconv.Atoi(params["part"])
 	p := products.Part{
