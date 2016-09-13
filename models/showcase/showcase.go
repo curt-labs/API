@@ -17,11 +17,11 @@ const (
 )
 
 var (
-	getAllShowcasesStmt = `select ` + showcaseFields + ` from Showcase as s 
+	getAllShowcasesStmt = `select ` + showcaseFields + ` from Showcase as s
 																	Join ApiKeyToBrand as akb on akb.brandID = s.brandID
 																	Join ApiKey as ak on akb.keyID = ak.id
 																	where (ak.api_key = ? && (s.brandID = ? OR 0=?)) && s.active = 1 && s.approved = 1 order by s.dateAdded desc`
-	getShowcaseByPageStmt = `select ` + showcaseFields + ` from Showcase as s 
+	getShowcaseByPageStmt = `select ` + showcaseFields + ` from Showcase as s
 																	Join ApiKeyToBrand as akb on akb.brandID = s.brandID
 																	Join ApiKey as ak on akb.keyID = ak.id
 																	where (ak.api_key = ? && (s.brandID = ? OR 0=?)) && s.active = 1 && s.approved = 1 order by s.dateAdded desc limit ?,?`
@@ -29,11 +29,11 @@ var (
 																	Join ApiKeyToBrand as akb on akb.brandID = s.brandID
 																	Join ApiKey as ak on akb.keyID = ak.id
 																	where (ak.api_key = ? && (s.brandID = ? OR 0=?)) && s.active = 1 && s.approved = 1 order by Rand() limit ?`
-	getShowcaseStmt = `select ` + showcaseFields + ` from Showcase as s 
+	getShowcaseStmt = `select ` + showcaseFields + ` from Showcase as s
 																	Join ApiKeyToBrand as akb on akb.brandID = s.brandID
 																	Join ApiKey as ak on akb.keyID = ak.id
 																	where (ak.api_key = ? && (s.brandID = ? OR 0=?)) && s.showcaseID = ?`
-	getShowcaseImages = `select ` + showcaseImageFields + ` from ShowcaseImage si 
+	getShowcaseImages = `select ` + showcaseImageFields + ` from ShowcaseImage si
 		join ShowcaseToShowcaseImage sti on sti.showcaseImageID = si.showcaseImageID
 		where sti.showcaseID = ?`
 	createShowcase = `insert into Showcase (rating, title, text, dateAdded, approved, active, first_name, last_name, location, brandID) values (?,?,?,?,?,?,?,?,?,?)`
@@ -253,6 +253,7 @@ func (s *Showcase) Create() (err error) {
 		tx.Rollback()
 		return err
 	}
+	defer stmt.Close()
 	joinStmt, err := tx.Prepare(createImageJoin)
 	if err != nil {
 		tx.Rollback()
@@ -329,6 +330,7 @@ func (s *Showcase) Delete() (err error) {
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
 	_, err = stmt.Exec(s.ID)
 	return err
 }
@@ -364,6 +366,7 @@ func (i *Image) Create(showcaseID int) error {
 		tx.Rollback()
 		return err
 	}
+	defer stmt.Close()
 
 	_, err = stmt.Exec(showcaseID, i.ID)
 	if err != nil {
@@ -400,6 +403,7 @@ func (i *Image) Delete() (err error) {
 		tx.Rollback()
 		return err
 	}
+	defer stmt.Close()
 
 	_, err = stmt.Exec(i.ID)
 	if err != nil {

@@ -2,6 +2,7 @@ package site
 
 import (
 	"database/sql"
+
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/database"
 	// "github.com/curt-labs/API/helpers/redis"
@@ -108,6 +109,9 @@ func GetAllWebsites() (ws Websites, err error) {
 	}
 	defer stmt.Close()
 	res, err := stmt.Query()
+	if err != nil {
+		return ws, err
+	}
 	var w Website
 	var url, desc *string
 	for res.Next() {

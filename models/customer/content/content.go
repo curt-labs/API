@@ -3,11 +3,12 @@ package custcontent
 import (
 	"database/sql"
 	"errors"
+	"html"
+
 	"github.com/curt-labs/API/helpers/conversions"
 	"github.com/curt-labs/API/helpers/database"
 	"github.com/curt-labs/API/models/customer"
 	_ "github.com/go-sql-driver/mysql"
-	"html"
 
 	"strings"
 	"time"
@@ -194,6 +195,7 @@ func AllCustomerContent(key string) (content []CustomerContent, err error) {
 	if err != nil {
 		return content, err
 	}
+	defer stmt.Close()
 	var pId, cId []byte
 	var deleted *bool
 	var added, modified *time.Time
@@ -269,7 +271,7 @@ func GetCustomerContent(id int, key string) (c CustomerContent, err error) {
 	if err != nil {
 		return c, err
 	}
-
+	defer stmt.Close()
 	rows, err := stmt.Query(key, id)
 	if err != nil {
 		return c, err
@@ -401,6 +403,7 @@ func GetCustomerContentRevisions(id int, key string) (revs []CustomerContentRevi
 	if err != nil {
 		return revs, err
 	}
+	defer stmt.Close()
 	res, err := stmt.Query(key, id)
 
 	users := make(map[string]customer.CustomerUser, 0)
@@ -484,6 +487,7 @@ func (content *CustomerContent) Save(partID, catID int, key string) error { //TO
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
 	hidden := 0
 	if content.Hidden {
 		hidden = 1
@@ -515,6 +519,7 @@ func (content *CustomerContent) Delete(partID, catID int, key string) error {
 	if err != nil {
 		return errors.New("Content Bridge already deleted.")
 	}
+	defer stmt.Close()
 	_, err = stmt.Exec(key, content.Id, partID, catID)
 	if err != nil {
 		tx.Rollback()
@@ -525,6 +530,7 @@ func (content *CustomerContent) Delete(partID, catID int, key string) error {
 	if err != nil {
 		return errors.New("Content already deleted.")
 	}
+	defer stmt.Close()
 	_, err = stmt.Exec(key, content.Id)
 	if err != nil {
 		tx.Rollback()
@@ -548,6 +554,7 @@ func (content *CustomerContent) insert(partID, catID int, key string) error {
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
 
 	err = content.GetContentType()
 	if err != nil {
@@ -582,7 +589,7 @@ func (content *CustomerContent) bridge(partID, catID int) error {
 	if err != nil {
 		return err
 	}
-
+	defer stmt.Close()
 	var count int
 	err = stmt.QueryRow(partID, catID, content.Id).Scan(&count)
 	if count != 0 {
@@ -592,6 +599,7 @@ func (content *CustomerContent) bridge(partID, catID int) error {
 	tx, err := db.Begin()
 
 	stmt, err = tx.Prepare(createCustomerContentBridge)
+	defer stmt.Close()
 	_, err = stmt.Exec(partID, catID, content.Id)
 
 	if err != nil {
@@ -614,6 +622,7 @@ func (content *CustomerContent) GetContentType() (err error) {
 	if err != nil {
 		return
 	}
+	defer stmt.Close()
 	cType := content.ContentType.Type
 
 	typeArr := strings.Split(content.ContentType.Type, ":")

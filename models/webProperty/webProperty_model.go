@@ -3,13 +3,14 @@ package webProperty_model
 import (
 	"database/sql"
 	"encoding/json"
+	"strconv"
+	"time"
+
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/database"
 	"github.com/curt-labs/API/helpers/pagination"
 	"github.com/curt-labs/API/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
-	"strconv"
-	"time"
 )
 
 // Web Property is any online site, or presence that sells or markets our products.
@@ -77,14 +78,14 @@ var (
 				where a.api_key = ? && (ctb.brandID = ? or 0 = ?)`
 	getWebProperty             = "SELECT id, name, cust_ID, badgeID, url, isEnabled,sellerID, typeID , isFinalApproved, isEnabledDate, isDenied, requestedDate, addedDate FROM WebProperties WHERE id = ?"
 	getWebPropertiesByCustomer = "SELECT id, name, cust_ID, badgeID, url, isEnabled,sellerID, typeID , isFinalApproved, isEnabledDate, isDenied, requestedDate, addedDate FROM WebProperties WHERE cust_ID = ?"
-	getAllWebPropertyTypes     = `SELECT DISTINCT wt.id, wt.typeID, wt.type 
+	getAllWebPropertyTypes     = `SELECT DISTINCT wt.id, wt.typeID, wt.type
 		FROM WebPropertyTypes as wt
 		join WebProperties as w on w.typeID = wt.id
 		join CustomerToBrand as ctb on ctb.cust_id = w.cust_id
 		join ApiKeyToBrand as atb on atb.brandID = ctb.brandID
 		join ApiKey as a on a.id = atb.keyID
 		where a.api_key = ? && (ctb.brandID = ? or 0 = ?)`
-	getAllWebPropertyNotes = `SELECT wn.id, wn.webPropID, wn.text, wn.dateAdded 
+	getAllWebPropertyNotes = `SELECT wn.id, wn.webPropID, wn.text, wn.dateAdded
 		FROM WebPropNotes as wn
 		join WebProperties as w on w.id = wn.webPropID
 		join CustomerToBrand as ctb on ctb.cust_id = w.cust_id
@@ -92,8 +93,8 @@ var (
 		join ApiKey as a on a.id = atb.keyID
 		where a.api_key =? && (ctb.brandID = ? or 0 = ?)
 		group by wn.id`
-	getAllWebPropertyRequirements = `SELECT DISTINCT wprc.ID, wpr.ID, wpr.ReqType, wpr.Requirement, wprc.Compliance, wprc.WebPropertiesID 
-		FROM WebPropRequirementCheck AS wprc 
+	getAllWebPropertyRequirements = `SELECT DISTINCT wprc.ID, wpr.ID, wpr.ReqType, wpr.Requirement, wprc.Compliance, wprc.WebPropertiesID
+		FROM WebPropRequirementCheck AS wprc
 		LEFT JOIN WebPropRequirements AS wpr ON wpr.ID = wprc.WebPropRequirementsID
 		join WebProperties as w on w.ID = wprc.WebPropertiesID
 		join CustomerToBrand as ctb on ctb.cust_id = w.cust_id
@@ -448,6 +449,11 @@ func (w *WebProperty) Create(dtx *apicontext.DataContext) (err error) {
 		return err
 	}
 	stmt, err := tx.Prepare(create)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
 	add := time.Now()
 	w.AddedDate = &add
 	res, err := stmt.Exec(
@@ -511,6 +517,10 @@ func (w *WebProperty) Update(dtx *apicontext.DataContext) (err error) {
 		return err
 	}
 	stmt, err := tx.Prepare(update)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 	_, err = stmt.Exec(w.Name, w.CustID, w.Url, w.IsEnabled, w.SellerID, w.WebPropertyType.ID, w.IsFinalApproved, w.IsEnabledDate, w.IsDenied, w.RequestedDate, w.ID)
 	if err != nil {
 		tx.Rollback()
@@ -578,6 +588,10 @@ func (w *WebProperty) Delete(dtx *apicontext.DataContext) error {
 	}
 
 	stmt, err := tx.Prepare(deleteWebProp)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 	_, err = stmt.Exec(w.ID)
 	if err != nil {
 		tx.Rollback()
@@ -733,6 +747,10 @@ func (n *WebPropertyNote) Get() error {
 	defer db.Close()
 
 	stmt, err := db.Prepare(getNote)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 	err = stmt.QueryRow(n.ID).Scan(&n.ID, &n.WebPropID, &n.Text, &n.DateAdded)
 	if err != nil {
 		return err
@@ -754,6 +772,10 @@ func (n *WebPropertyNote) Create(dtx *apicontext.DataContext) error {
 		return err
 	}
 	stmt, err := tx.Prepare(createNote)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 	da := time.Now()
 	n.DateAdded = &da
 	res, err := stmt.Exec(n.WebPropID, n.Text, n.DateAdded)
@@ -785,6 +807,10 @@ func (n *WebPropertyNote) Update(dtx *apicontext.DataContext) error {
 		return err
 	}
 	stmt, err := tx.Prepare(updateNote)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 	da := time.Now()
 	n.DateAdded = &da
 	_, err = stmt.Exec(n.WebPropID, n.Text, n.DateAdded, n.ID)
@@ -810,6 +836,10 @@ func (n *WebPropertyNote) Delete(dtx *apicontext.DataContext) error {
 		return err
 	}
 	stmt, err := tx.Prepare(deleteNote)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 	_, err = stmt.Exec(n.ID)
 	if err != nil {
 		tx.Rollback()
@@ -833,6 +863,10 @@ func (n *WebProperty) DeleteNotesByPropId(dtx *apicontext.DataContext) error {
 		return err
 	}
 	stmt, err := tx.Prepare(deletePropertyNotes)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 	_, err = stmt.Exec(n.ID)
 	if err != nil {
 		tx.Rollback()
@@ -855,6 +889,10 @@ func (r *WebPropertyRequirement) CreateJoin() error {
 		return err
 	}
 	stmt, err := tx.Prepare(createRequirementsBridge)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 	res, err := stmt.Exec(r.WebPropID, r.Compliance, r.RequirementID)
 	if err != nil {
 		tx.Rollback()
@@ -878,6 +916,10 @@ func (r *WebPropertyRequirement) DeleteJoin() error {
 		return err
 	}
 	stmt, err := tx.Prepare(deleteRequirementsBridge)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 	_, err = stmt.Exec(r.ID)
 	if err != nil {
 		tx.Rollback()
@@ -900,6 +942,10 @@ func (r *WebPropertyRequirement) DeleteJoinByRequirementId() error {
 		return err
 	}
 	stmt, err := tx.Prepare(deleteRequirementsBridgeByRequirementId)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 	_, err = stmt.Exec(r.RequirementID)
 	if err != nil {
 		tx.Rollback()
@@ -922,6 +968,10 @@ func (r *WebProperty) DeleteJoinByPropId() error {
 		return err
 	}
 	stmt, err := tx.Prepare(deletePropertyRequirementsBridges)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 	_, err = stmt.Exec(r.ID)
 	if err != nil {
 		tx.Rollback()
@@ -947,6 +997,10 @@ func (r *WebPropertyRequirement) Get() error {
 	defer db.Close()
 
 	stmt, err := db.Prepare(getRequirement)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 	var req, reqType *string
 	err = stmt.QueryRow(r.RequirementID).Scan(
 		&r.ID,
@@ -979,6 +1033,10 @@ func (r *WebPropertyRequirement) Create(dtx *apicontext.DataContext) error {
 		return err
 	}
 	stmt, err := tx.Prepare(createRequirement)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 	res, err := stmt.Exec(r.ReqType, r.Requirement)
 	if err != nil {
 		tx.Rollback()
@@ -1009,6 +1067,10 @@ func (r *WebPropertyRequirement) Update(dtx *apicontext.DataContext) error {
 		return err
 	}
 	stmt, err := tx.Prepare(updateRequirement)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 	_, err = stmt.Exec(r.ReqType, r.Requirement, r.RequirementID)
 	if err != nil {
 		tx.Rollback()
@@ -1041,6 +1103,10 @@ func (r *WebPropertyRequirement) Delete(dtx *apicontext.DataContext) error {
 		return err
 	}
 	stmt, err := tx.Prepare(deleteRequirement)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 	_, err = stmt.Exec(r.RequirementID)
 	if err != nil {
 		tx.Rollback()
@@ -1067,6 +1133,10 @@ func (t *WebPropertyType) Get() error {
 	defer db.Close()
 
 	stmt, err := db.Prepare(getType)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 	err = stmt.QueryRow(t.ID).Scan(&t.ID, &t.TypeID, &t.Type)
 	if err != nil {
 		return err
@@ -1088,6 +1158,10 @@ func (t *WebPropertyType) Update(dtx *apicontext.DataContext) error {
 		return err
 	}
 	stmt, err := tx.Prepare(updateType)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 	_, err = stmt.Exec(t.TypeID, t.Type, t.ID)
 	if err != nil {
 		tx.Rollback()
@@ -1111,6 +1185,10 @@ func (t *WebPropertyType) Create(dtx *apicontext.DataContext) error {
 		return err
 	}
 	stmt, err := tx.Prepare(createType)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 	res, err := stmt.Exec(t.TypeID, t.Type)
 	if err != nil {
 		tx.Rollback()
@@ -1138,6 +1216,10 @@ func (t *WebPropertyType) Delete(dtx *apicontext.DataContext) error {
 		return err
 	}
 	stmt, err := tx.Prepare(deleteType)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 	_, err = stmt.Exec(t.ID)
 	if err != nil {
 		tx.Rollback()

@@ -2,10 +2,11 @@ package custcontent
 
 import (
 	"database/sql"
-	"github.com/curt-labs/API/helpers/database"
-	. "github.com/smartystreets/goconvey/convey"
 	"math/rand"
 	"testing"
+
+	"github.com/curt-labs/API/helpers/database"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 const (
@@ -41,7 +42,7 @@ func getApiKey(query string) (int, string) {
 	if err != nil {
 		return 0, ""
 	}
-
+	defer stmt.Close()
 	var outputs []Output
 
 	res, err := stmt.Query()
@@ -72,6 +73,7 @@ func getRandType() (t string) {
 	if err != nil {
 		return ""
 	}
+	defer stmt.Close()
 	err = stmt.QueryRow().Scan(&t)
 	return
 }
@@ -87,6 +89,7 @@ func easyCatPart() (partID, catID int) {
 	if err != nil {
 		return
 	}
+	defer stmt.Close()
 	err = stmt.QueryRow().Scan(&partID, &catID)
 	return
 }

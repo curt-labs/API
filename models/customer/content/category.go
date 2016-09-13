@@ -2,8 +2,9 @@ package custcontent
 
 import (
 	"database/sql"
-	"github.com/curt-labs/API/helpers/database"
 	"time"
+
+	"github.com/curt-labs/API/helpers/database"
 )
 
 type CategoryContent struct {
@@ -47,6 +48,7 @@ func GetAllCategoryContent(key string) (content []CategoryContent, err error) {
 	if err != nil {
 		return content, err
 	}
+	defer stmt.Close()
 	res, err := stmt.Query(key)
 	var catID int
 	var added, modified *time.Time
@@ -106,6 +108,7 @@ func GetCategoryContent(catID int, key string) (content []CustomerContent, err e
 	if err != nil {
 		return content, err
 	}
+	defer stmt.Close()
 	res, err := stmt.Query(key, catID)
 	var deleted *bool
 	var added, modified *time.Time

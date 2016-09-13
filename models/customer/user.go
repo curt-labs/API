@@ -431,6 +431,7 @@ func (u *CustomerUser) AuthenticateUser() error {
 		if err != nil {
 			return err
 		}
+		defer stmtPass.Close()
 		_, err = stmtPass.Exec(hashedPass, u.Id)
 		return errors.New("Incorrect password.")
 	}
@@ -497,6 +498,7 @@ func DeleteCustomerUsersByCustomerID(customerID int) error {
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
 	res, err := stmt.Query(customerID)
 	if err != nil {
 		return err
@@ -886,6 +888,11 @@ func (u *CustomerUser) ResetAuthentication(brandIds []int) error {
 		}
 
 		stmtNew, err := db.Prepare(resetUserAuthentication)
+		if err != nil {
+			return err
+		}
+		defer stmt.Close()
+
 		_, err = stmtNew.Exec(paramsNew...)
 		if err != nil {
 			return err
@@ -912,6 +919,7 @@ func (cu *CustomerUser) GenerateAPIKey(keyType string, brandIds []int) (*ApiCred
 	if err != nil {
 		return nil, err
 	}
+	defer stmt.Close()
 	res, err := stmt.Exec(cu.Id, typeID)
 	if err != nil {
 		tx.Rollback()
@@ -926,6 +934,7 @@ func (cu *CustomerUser) GenerateAPIKey(keyType string, brandIds []int) (*ApiCred
 	if err != nil {
 		return nil, err
 	}
+	defer stmt.Close()
 	for _, brandID := range brandIds {
 		_, err = stmt.Exec(keyID, brandID)
 		if err != nil {
@@ -940,6 +949,7 @@ func (cu *CustomerUser) GenerateAPIKey(keyType string, brandIds []int) (*ApiCred
 	if err != nil {
 		return nil, err
 	}
+	defer stmt.Close()
 
 	rows, err := stmt.Query(cu.Id, keyType)
 	if err != nil {
@@ -975,6 +985,10 @@ func getAPIKeyTypeReference(keyType string) (string, error) {
 	}
 	defer db.Close()
 	stmt, err := db.Prepare(getAPIKeyTypeID)
+	if err != nil {
+		return "", err
+	}
+	defer stmt.Close()
 	var apiKeyTypeId string
 	err = stmt.QueryRow(keyType).Scan(&apiKeyTypeId)
 	if err != nil {
@@ -997,6 +1011,7 @@ func (cu *CustomerUser) ResetPass() (string, error) {
 	if err != nil {
 		return "", err
 	}
+	defer stmt.Close()
 
 	randPass := encryption.GeneratePassword()
 
@@ -1035,6 +1050,10 @@ func (cu *CustomerUser) ChangePass(oldPass, newPass string) error {
 	defer db.Close()
 	tx, err := db.Begin()
 	stmt, err := tx.Prepare(setCustomerUserPassword)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 	encryptNewPass, err := bcrypt.GenerateFromPassword([]byte(newPass), bcrypt.DefaultCost)
 
 	err = cu.AuthenticateUser()
@@ -1121,6 +1140,7 @@ func (c *CustomerUser) FindByEmail() error {
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
 	var id int
 
 	err = stmt.QueryRow(c.Email).Scan(&id)
@@ -1144,6 +1164,7 @@ func (cu *CustomerUser) UpdateCustomerUser() error {
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
 
 	_, err = stmt.Exec(
 		cu.Name,
@@ -1181,6 +1202,7 @@ func (cu *CustomerUser) Create(brandIds []int) error {
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
 	_, err = stmt.Exec(cu.Name, cu.Email, encryptPass, cu.OldCustomerID, cu.Active, cu.Location.Id, cu.Sudo, cu.CustomerID, cu.Current)
 	if err != nil {
 		tx.Rollback()
@@ -1260,6 +1282,7 @@ func (cu *CustomerUser) Delete() error {
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
 	_, err = stmt.Exec(cu.Id)
 	if err != nil {
 		return err
@@ -1268,6 +1291,7 @@ func (cu *CustomerUser) Delete() error {
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
 	_, err = stmt.Exec(cu.Id)
 	if err != nil {
 		tx.Rollback()
@@ -1327,6 +1351,7 @@ func (cu *CustomerUser) deleteApiKeyByType(keyType string) error {
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
 	_, err = stmt.Exec(cu.Id, typeID)
 	if err != nil {
 		tx.Rollback()
@@ -1337,7 +1362,7 @@ func (cu *CustomerUser) deleteApiKeyByType(keyType string) error {
 	if err != nil {
 		return err
 	}
-
+	defer stmt.Close()
 	_, err = stmt.Exec(cu.Id, typeID)
 	if err != nil {
 		tx.Rollback()
@@ -1365,6 +1390,7 @@ func (key *ApiCredentials) DeleteApiKey() error {
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
 	_, err = stmt.Exec(key.Key)
 	if err != nil {
 		tx.Rollback()
@@ -1375,7 +1401,7 @@ func (key *ApiCredentials) DeleteApiKey() error {
 	if err != nil {
 		return err
 	}
-
+	defer stmt.Close()
 	_, err = stmt.Exec(key.Key)
 	if err != nil {
 		tx.Rollback()
