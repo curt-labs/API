@@ -55,7 +55,7 @@ var (
 								Join ApiKeyToBrand as akb on akb.brandID = wub.brandID
 								Join ApiKey as ak on akb.keyID = ak.id
 								where s.contentID = ? && (ak.api_key = ? && (wub.brandID = ? OR 0=?))`
-	getAllContent = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s  
+	getAllContent = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s
 								Join WebsiteToBrand as wub on wub.WebsiteID = s.websiteID
 								Join ApiKeyToBrand as akb on akb.brandID = wub.brandID
 								Join ApiKey as ak on akb.keyID = ak.id
@@ -63,7 +63,7 @@ var (
 	getContentRevisions    = `SELECT revisionID, content_text, createdOn, active FROM SiteContentRevision AS scr WHERE scr.contentID = ? `
 	getAllContentRevisions = `SELECT revisionID, content_text, createdOn, active FROM SiteContentRevision AS scr `
 	getContentRevision     = `SELECT revisionID, content_text, createdOn, active FROM SiteContentRevision AS scr WHERE revisionID = ?`
-	getContentBySlug       = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s 
+	getContentBySlug       = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s
 								Join WebsiteToBrand as wub on wub.WebsiteID = s.websiteID
 								Join ApiKeyToBrand as akb on akb.brandID = wub.brandID
 								Join ApiKey as ak on akb.keyID = ak.id
@@ -398,7 +398,6 @@ func (c *Content) Create() (err error) {
 	if err != nil {
 		return err
 	}
-
 	defer stmt.Close()
 	c.CreatedDate = time.Now()
 	res, err := stmt.Exec(

@@ -2,6 +2,7 @@ package site
 
 import (
 	"database/sql"
+
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/database"
 
@@ -42,7 +43,7 @@ var (
 								Join ApiKey as ak on akb.keyID = ak.id
 	 							WHERE (ak.api_key = ? && (wub.brandID = ? OR 0=?))`
 	getMenuContents = `SELECT ` + siteContentFields + `, ` + menuSiteContentFields + `  from Menu_SiteContent as msc JOIN SiteContent AS s ON s.contentID = msc.ContentID  WHERE msc.menuID = ?`
-	getMenuByName   = ` SELECT ` + menuFields + ` FROM Menu AS m 
+	getMenuByName   = ` SELECT ` + menuFields + ` FROM Menu AS m
 								Join WebsiteToBrand as wub on wub.WebsiteID = m.websiteID
 								Join ApiKeyToBrand as akb on akb.brandID = wub.brandID
 								Join ApiKey as ak on akb.keyID = ak.id
@@ -380,6 +381,10 @@ func (m *Menu) JoinToContent(c Content) (err error) {
 	tx, err := db.Begin()
 
 	stmt, err := tx.Prepare(createMenuContentJoin)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 	_, err = stmt.Exec(m.Id, c.Id, c.MenuSort, c.MenuTitle, c.MenuLink, c.ParentId, c.LinkTarget)
 	if err != nil {
 		tx.Rollback()
@@ -399,6 +404,10 @@ func (m *Menu) DeleteMenuContentJoin(c Content) (err error) {
 	tx, err := db.Begin()
 
 	stmt, err := tx.Prepare(deleteMenuSiteContentJoin)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 	_, err = stmt.Exec(m.Id, c.Id)
 	if err != nil {
 		tx.Rollback()

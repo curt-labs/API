@@ -880,6 +880,7 @@ func GetCustomerCartReference(api_key string, part_id int) (ref int, err error) 
 	if err != nil {
 		return ref, err
 	}
+	defer stmt.Close()
 
 	err = stmt.QueryRow(api_key, part_id).Scan(&ref)
 	return ref, err
@@ -906,6 +907,7 @@ func GetEtailers(dtx *apicontext.DataContext) (dealers []Customer, err error) {
 	if err != nil {
 		return dealers, err
 	}
+	defer stmt.Close()
 	rows, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	if err != nil {
 		return dealers, err
@@ -940,6 +942,7 @@ func GetLocalDealers(latlng string, distance int, skip int, count int) (dealers 
 	if err != nil {
 		return dealers, err
 	}
+	defer stmt.Close()
 
 	var latitude string
 	var longitude string
@@ -996,11 +999,12 @@ func GetLocalRegions() (regions []StateRegion, err error) {
 	if err != nil {
 		return regions, err
 	}
+	defer stmtPolygon.Close()
 	stmtCoordinates, err := db.Prepare(MapPolygonCoordinatesForState)
 	if err != nil {
 		return regions, err
 	}
-
+	defer stmtCoordinates.Close()
 	_, err = db.Exec("SET SESSION group_concat_max_len = 100024")
 	res, err := stmtPolygon.Query()
 	_, err = db.Exec("SET SESSION group_concat_max_len = 1024")
@@ -1080,6 +1084,7 @@ func GetLocalDealerTiers(dtx *apicontext.DataContext) (tiers []DealerTier, err e
 	if err != nil {
 		return tiers, err
 	}
+	defer stmt.Close()
 	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	var brandID *int
 	for res.Next() {
@@ -1114,6 +1119,7 @@ func GetLocalDealerTypes(dtx *apicontext.DataContext) (graphics []MapGraphics, e
 	if err != nil {
 		return graphics, err
 	}
+	defer stmt.Close()
 	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	var icon, shadow []byte
 	for res.Next() {
@@ -1163,6 +1169,7 @@ func GetWhereToBuyDealers(dtx *apicontext.DataContext) (customers []Customer, er
 	if err != nil {
 		return customers, err
 	}
+	defer stmt.Close()
 	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	if err != nil {
 		return customers, err
@@ -1192,6 +1199,7 @@ func SearchLocations(term string) (locations []DealerLocation, err error) {
 	if err != nil {
 		return locations, err
 	}
+	defer stmt.Close()
 	term = "%" + term + "%"
 
 	res, err := stmt.Query(term, term)
@@ -1227,6 +1235,7 @@ func SearchLocationsByType(term string) (locations DealerLocations, err error) {
 	if err != nil {
 		return locations, err
 	}
+	defer stmt.Close()
 	term = "%" + term + "%"
 
 	res, err := stmt.Query(term, term)
@@ -1263,6 +1272,7 @@ func SearchLocationsByLatLng(loc GeoLocation) (locations []DealerLocation, err e
 	if err != nil {
 		return locations, err
 	}
+	defer stmt.Close()
 	params := []interface{}{ //all are float64
 		api_helpers.EARTH,
 		loc.Latitude,

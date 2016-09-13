@@ -2,6 +2,7 @@ package faq_model
 
 import (
 	"database/sql"
+
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/database"
 	"github.com/curt-labs/API/helpers/pagination"
@@ -9,7 +10,7 @@ import (
 )
 
 var (
-	getAllStmt = `select F.faqID, F.question, F.answer, F.brandID 
+	getAllStmt = `select F.faqID, F.question, F.answer, F.brandID
                   from FAQ F
                   join ApiKeyToBrand as AKB on AKB.brandID = F.brandID
                   join ApiKey AK on AK.id = AKB.keyID
@@ -19,7 +20,7 @@ var (
                   join ApiKeyToBrand as AKB on AKB.brandID = F.brandID
                   join ApiKey AK on AK.id = AKB.keyID
                   where AK.api_key = ? && F.brandID = ? && F.faqID = ?`
-	searchFaqStmt = `select F.faqID, F.question, F.answer, F.brandID 
+	searchFaqStmt = `select F.faqID, F.question, F.answer, F.brandID
                      from FAQ F
                      join ApiKeyToBrand as AKB on AKB.brandID = F.brandID
                      join ApiKey AK on AK.id = AKB.keyID
@@ -137,6 +138,10 @@ func (f *Faq) Create(dtx *apicontext.DataContext) error {
 		return err
 	}
 	stmt, err := tx.Prepare(createFaqStmt)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 	res, err := stmt.Exec(f.Question, f.Answer, dtx.BrandID)
 	if err != nil {
 		tx.Rollback()
@@ -163,6 +168,10 @@ func (f *Faq) Update(dtx *apicontext.DataContext) error {
 		return err
 	}
 	stmt, err := tx.Prepare(updateFaqStmt)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 	_, err = stmt.Exec(f.Question, f.Answer, dtx.BrandID, f.ID)
 	if err != nil {
 		tx.Rollback()
@@ -183,6 +192,10 @@ func (f *Faq) Delete() error {
 		return err
 	}
 	stmt, err := tx.Prepare(deleteFaqStmt)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 	_, err = stmt.Exec(f.ID)
 	if err != nil {
 		tx.Rollback()

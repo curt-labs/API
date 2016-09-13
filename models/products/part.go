@@ -338,6 +338,7 @@ func BindCustomerToSeveralParts(parts []Part, dtx *apicontext.DataContext) ([]Pa
 	if err != nil {
 		return parts, err
 	}
+	defer stmt.Close()
 
 	res, err := stmt.Query()
 	if err != nil {

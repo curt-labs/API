@@ -2,10 +2,11 @@ package products
 
 import (
 	"database/sql"
-	"github.com/curt-labs/API/helpers/database"
-	_ "github.com/go-sql-driver/mysql"
 	"strconv"
 	"strings"
+
+	"github.com/curt-labs/API/helpers/database"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 func (l *Lookup) GetSubmodels() error {

@@ -16,7 +16,7 @@ type CustomerLocations []CustomerLocation
 
 var (
 	getLocation  = "SELECT locationID, name, address, city, stateID, email, phone, fax, latitude, longitude, cust_id, contact_person, isprimary, postalCode, ShippingDefault FROM CustomerLocations WHERE locationID= ? "
-	getLocations = `SELECT cl.locationID, cl.name, cl.address, cl.city, cl.stateID, cl.email,cl.phone, cl.fax, cl.latitude, cl.longitude, cl.cust_id, cl.contact_person, cl.isprimary, cl.postalCode, cl.ShippingDefault 
+	getLocations = `SELECT cl.locationID, cl.name, cl.address, cl.city, cl.stateID, cl.email,cl.phone, cl.fax, cl.latitude, cl.longitude, cl.cust_id, cl.contact_person, cl.isprimary, cl.postalCode, cl.ShippingDefault
 			FROM CustomerLocations as cl
 			join CustomerToBrand as ctb on ctb.cust_id = cl.cust_id
 			join ApiKeyToBrand as akb on akb.brandID = ctb.brandID
@@ -154,6 +154,7 @@ func (l *CustomerLocation) Create(dtx *apicontext.DataContext) error {
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
 
 	res, err := stmt.Exec(
 		l.Name,
@@ -199,7 +200,7 @@ func (l *CustomerLocation) Update(dtx *apicontext.DataContext) error {
 	if err != nil {
 		return err
 	}
-
+	defer stmt.Close()
 	_, err = stmt.Exec(
 		l.Name,
 		l.Address,
@@ -241,6 +242,7 @@ func (l *CustomerLocation) Delete(dtx *apicontext.DataContext) error {
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
 	_, err = stmt.Exec(l.Id)
 	if err != nil {
 		tx.Rollback()

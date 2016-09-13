@@ -116,6 +116,10 @@ func (p *Price) Create() error {
 	}
 
 	stmt, err := tx.Prepare(createPrice)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 	res, err := stmt.Exec(p.CustID, p.PartID, p.Price, p.IsSale, p.SaleStart, p.SaleEnd)
 	if err != nil {
 		tx.Rollback()
@@ -146,7 +150,10 @@ func (p *Price) Update() error {
 		return err
 	}
 	stmt, err := tx.Prepare(updatePrice)
-
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 	_, err = stmt.Exec(p.CustID, p.PartID, p.Price, p.IsSale, p.SaleStart, p.SaleEnd, p.ID)
 	if err != nil {
 		tx.Rollback()
@@ -173,6 +180,10 @@ func (p *Price) Delete() error {
 		return err
 	}
 	stmt, err := tx.Prepare(deletePrice)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 	_, err = stmt.Exec(p.ID)
 	if err != nil {
 		tx.Rollback()

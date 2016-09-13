@@ -2,12 +2,13 @@ package custcontent
 
 import (
 	"database/sql"
-	"github.com/curt-labs/API/helpers/api"
-	"github.com/curt-labs/API/helpers/database"
-	_ "github.com/go-sql-driver/mysql"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/curt-labs/API/helpers/api"
+	"github.com/curt-labs/API/helpers/database"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 var (
@@ -64,7 +65,7 @@ func GetAllPartContent(key string) (content []PartContent, err error) {
 	if err != nil {
 		return content, err
 	}
-
+	defer stmt.Close()
 	res, err := stmt.Query(key)
 
 	rawContent := make(map[int][]CustomerContent, 0)
@@ -130,6 +131,7 @@ func GetPartContent(partID int, key string) (content []CustomerContent, err erro
 	if err != nil {
 		return content, err
 	}
+	defer stmt.Close()
 
 	res, err := stmt.Query(key, partID)
 	var partId int
@@ -188,6 +190,7 @@ func GetGroupedPartContent(ids []string, key string) (content map[int][]Customer
 	if err != nil {
 		return content, err
 	}
+	defer stmt.Close()
 	var partId int
 	var deleted *bool
 	var added, modified *time.Time

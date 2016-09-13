@@ -3,13 +3,14 @@ package news_model
 import (
 	"database/sql"
 	"encoding/json"
+	"strconv"
+	"time"
+
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/database"
 	"github.com/curt-labs/API/helpers/pagination"
 	"github.com/curt-labs/API/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
-	"strconv"
-	"time"
 )
 
 type News struct {
@@ -30,7 +31,7 @@ type Scanner interface {
 }
 
 var (
-	getNews = `SELECT ni.newsItemID, ni.title, ni.lead, ni.content, ni.publishStart, ni.publishEnd, ni.active, ni.slug FROM NewsItem as ni 
+	getNews = `SELECT ni.newsItemID, ni.title, ni.lead, ni.content, ni.publishStart, ni.publishEnd, ni.active, ni.slug FROM NewsItem as ni
 									Join NewsItemToBrand as nib on nib.newsItemID = ni.newsItemID
 									Join ApiKeyToBrand as akb on akb.brandID = nib.brandID
 									Join ApiKey as ak on akb.keyID = ak.id
@@ -46,7 +47,7 @@ var (
 	update        = `UPDATE NewsItem SET title = ?, lead = ?, content = ?, publishStart = ?, publishEnd = ?, active = ?, slug = ? WHERE newsItemID = ?`
 	deleteNews    = `DELETE FROM NewsItem WHERE newsItemID = ?`
 	deleteToBrand = `DELETE FROM NewsItemToBrand WHERE newsItemID = ?`
-	getTitles     = `SELECT ni.title FROM NewsItem as ni 
+	getTitles     = `SELECT ni.title FROM NewsItem as ni
 					Join NewsItemToBrand as nib on nib.newsItemID = ni.newsItemID
 					Join ApiKeyToBrand as akb on akb.brandID = nib.brandID
 					Join ApiKey as ak on akb.keyID = ak.id
@@ -251,6 +252,10 @@ func (n *News) Create(dtx *apicontext.DataContext) error {
 		return err
 	}
 	stmt, err := tx.Prepare(create)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 	res, err := stmt.Exec(n.Title, n.Lead, n.Content, n.PublishStart, n.PublishEnd, n.Active, n.Slug)
 	if err != nil {
 		tx.Rollback()
@@ -296,6 +301,10 @@ func (n *News) CreateJoinBrand(brand int) error {
 		return err
 	}
 	stmt, err := tx.Prepare(createToBrand)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 	_, err = stmt.Exec(n.ID, brand)
 	if err != nil {
 		tx.Rollback()
@@ -316,6 +325,10 @@ func (n *News) Update(dtx *apicontext.DataContext) error {
 		return err
 	}
 	stmt, err := tx.Prepare(update)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 	_, err = stmt.Exec(n.Title, n.Lead, n.Content, n.PublishStart, n.PublishEnd, n.Active, n.Slug, n.ID)
 	if err != nil {
 		tx.Rollback()
@@ -336,6 +349,10 @@ func (n *News) Delete(dtx *apicontext.DataContext) error {
 		return err
 	}
 	stmt, err := tx.Prepare(deleteNews)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 	_, err = stmt.Exec(n.ID)
 	if err != nil {
 		tx.Rollback()
@@ -362,6 +379,10 @@ func (n *News) DeleteJoinBrand() error {
 		return err
 	}
 	stmt, err := tx.Prepare(deleteToBrand)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 	_, err = stmt.Exec(n.ID)
 	if err != nil {
 		tx.Rollback()

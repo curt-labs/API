@@ -3,13 +3,14 @@ package blog_model
 import (
 	"database/sql"
 	"encoding/json"
+	"strconv"
+	"time"
+
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/database"
 	"github.com/curt-labs/API/helpers/pagination"
 	"github.com/curt-labs/API/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
-	"strconv"
-	"time"
 )
 
 type Blog struct {
@@ -48,7 +49,7 @@ type BlogCategory struct {
 type BlogCategories []BlogCategory
 
 var (
-	getAllBlogs = `SELECT b.blogPostID, b.post_title ,b.slug ,b.post_text ,b.publishedDate, b.createdDate, b.lastModified, b.userID, b.meta_title, b.meta_description, b.keywords, b.active FROM  BlogPosts AS b 
+	getAllBlogs = `SELECT b.blogPostID, b.post_title ,b.slug ,b.post_text ,b.publishedDate, b.createdDate, b.lastModified, b.userID, b.meta_title, b.meta_description, b.keywords, b.active FROM  BlogPosts AS b
 									Join BlogPost_BlogCategory as bpbc on bpbc.blogPostID = b.blogPostID
 									Join BlogCategories as bc on bc.blogCategoryID = bpbc.blogCategoryID
 									Join ApiKeyToBrand as akb on akb.brandID = bc.brandID
@@ -59,21 +60,21 @@ var (
 									Join ApiKey as ak on akb.keyID = ak.id
 									where (ak.api_key = ? && (bc.brandID = ? OR 0=?))`
 
-	stmtGetAllBlogCategories = `SELECT bpbc.postCategoryID, bpbc.blogPostID, bpbc.blogCategoryID, bc.blogCategoryID, bc.name, bc.slug, bc.active FROM BlogPost_BlogCategory AS bpbc 
+	stmtGetAllBlogCategories = `SELECT bpbc.postCategoryID, bpbc.blogPostID, bpbc.blogCategoryID, bc.blogCategoryID, bc.name, bc.slug, bc.active FROM BlogPost_BlogCategory AS bpbc
 									LEFT JOIN blogCategories AS bc ON bc.blogCategoryID = bpbc.blogCategoryID
 									Join ApiKeyToBrand as akb on akb.brandID = bc.brandID
 									Join ApiKey as ak on akb.keyID = ak.id
 									where (ak.api_key = ? && (bc.brandID = ? OR 0=?))`
 
-	getBlog = `SELECT b.blogPostID, b.post_title ,b.slug, COALESCE(b.post_text,'') ,COALESCE(b.publishedDate,''), COALESCE(b.createdDate,''), COALESCE(b.lastModified,''), b.userID, COALESCE(b.meta_title,''), COALESCE(b.meta_description,''), COALESCE(b.keywords,''), b.active 
-					FROM BlogPosts AS b 
+	getBlog = `SELECT b.blogPostID, b.post_title ,b.slug, COALESCE(b.post_text,'') ,COALESCE(b.publishedDate,''), COALESCE(b.createdDate,''), COALESCE(b.lastModified,''), b.userID, COALESCE(b.meta_title,''), COALESCE(b.meta_description,''), COALESCE(b.keywords,''), b.active
+					FROM BlogPosts AS b
 						Join BlogPost_BlogCategory as bpbc on bpbc.blogPostID = b.blogPostID
 						Join BlogCategories as bc on bc.blogCategoryID = bpbc.blogCategoryID
 						Join ApiKeyToBrand as akb on akb.brandID = bc.brandID
 						Join ApiKey as ak on akb.keyID = ak.id
 						where (ak.api_key = ? && (bc.brandID = ? OR 0=?)) && b.blogPostID = ?`
 	create      = `INSERT INTO BlogPosts (post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active, thumbnail) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`
-	getCategory = `SELECT bc.blogCategoryID, bc.name, bc.slug,bc.active FROM BlogCategories as bc 
+	getCategory = `SELECT bc.blogCategoryID, bc.name, bc.slug,bc.active FROM BlogCategories as bc
 									Join ApiKeyToBrand as akb on akb.brandID = bc.brandID
 									Join ApiKey as ak on akb.keyID = ak.id
 									where (ak.api_key = ? && (bc.brandID = ? OR 0=?)) && bc.blogCategoryID = ?`
@@ -280,6 +281,7 @@ func (b *Blog) Create(dtx *apicontext.DataContext) error {
 		return err
 	}
 	stmt, err := tx.Prepare(create)
+	defer stmt.Close()
 	b.LastModified = time.Now()
 	b.CreatedDate = time.Now()
 	res, err := stmt.Exec(b.Title, b.Slug, b.Text, b.CreatedDate, b.PublishedDate, b.LastModified, b.UserID, b.MetaTitle, b.MetaDescription, b.Keywords, b.Active, "")
@@ -341,6 +343,7 @@ func (b *Blog) createCatBridge() error {
 		}
 
 		stmt, err := tx.Prepare(createCatBridge)
+		defer stmt.Close()
 		_, err = stmt.Exec(b.ID, v.Category.ID)
 		if err != nil {
 			tx.Rollback()
@@ -366,6 +369,7 @@ func (b *Blog) Update(dtx *apicontext.DataContext) error {
 		return err
 	}
 	stmt, err := tx.Prepare(update)
+	defer stmt.Close()
 	b.LastModified = time.Now()
 	_, err = stmt.Exec(b.Title, b.Slug, b.Text, b.PublishedDate, b.LastModified, b.UserID, b.MetaTitle, b.MetaDescription, b.Keywords, b.Active, b.ID)
 	if err != nil {
@@ -401,6 +405,7 @@ func (b *Blog) deleteCatBridge() error {
 		return err
 	}
 	stmt, err := tx.Prepare(deleteCatBridge)
+	defer stmt.Close()
 	_, err = stmt.Exec(b.ID)
 	if err != nil {
 		tx.Rollback()
@@ -452,7 +457,7 @@ func (c *Category) Create(dtx *apicontext.DataContext) error {
 		return err
 	}
 	stmt, err := tx.Prepare(createCategory)
-
+	defer stmt.Close()
 	res, err := stmt.Exec(c.Name, c.Slug, c.Active, dtx.BrandID)
 	if err != nil {
 		tx.Rollback()
@@ -491,7 +496,7 @@ func (c *Category) Delete(dtx *apicontext.DataContext) error {
 		return err
 	}
 	stmt, err := tx.Prepare(deleteCategory)
-
+	defer stmt.Close()
 	_, err = stmt.Exec(c.ID)
 	if err != nil {
 		tx.Rollback()
@@ -517,6 +522,7 @@ func (c *Category) deleteCatBridgeByCategory() error {
 		return err
 	}
 	stmt, err := tx.Prepare(deleteCatBridgeByCatID)
+	defer stmt.Close()
 	_, err = stmt.Exec(c.ID)
 	if err != nil {
 		tx.Rollback()
