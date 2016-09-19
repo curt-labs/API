@@ -18,6 +18,7 @@ import (
 	"github.com/curt-labs/API/controllers/forum"
 	"github.com/curt-labs/API/controllers/geography"
 	"github.com/curt-labs/API/controllers/landingPages"
+	"github.com/curt-labs/API/controllers/luverne"
 	"github.com/curt-labs/API/controllers/middleware"
 	"github.com/curt-labs/API/controllers/news"
 	"github.com/curt-labs/API/controllers/part"
@@ -494,6 +495,12 @@ func main() {
 	m.Get("/vehicle/category/:year/:make", vehicle.QueryCategoryStyle)
 	m.Get("/vehicle/category/:year/:make/:model", vehicle.QueryCategoryStyle)
 	m.Get("/vehicle/category/:year/:make/:model/:category", vehicle.QueryCategoryStyle)
+
+	m.Get("/luverne/vehicle", luverne.QueryCategoryStyle)
+	m.Get("/luverne/vehicle/:year", luverne.QueryCategoryStyle)
+	m.Get("/luverne/vehicle/:year/:make", luverne.QueryCategoryStyle)
+	m.Get("/luverne/vehicle/:year/:make/:model", luverne.QueryCategoryStyle)
+	m.Get("/luverne/vehicle/:year/:make/:model/:category", luverne.QueryCategoryStyle)
 
 	// CURT Year/Make/Model/Style
 	m.Post("/vehicle/curt", vehicle.CurtLookup)
