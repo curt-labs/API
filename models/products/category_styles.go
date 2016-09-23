@@ -379,30 +379,20 @@ func (lc *LookupCategory) AddPart(style string, p Part) {
 }
 
 func mapPartToCategoryStyles(p Part, lookupCats map[string]LookupCategory, style string) map[string]LookupCategory {
-	childCat, err := getChildCategory(p.Categories)
-	if err != nil || childCat.Identifier.String() == "" {
-		return lookupCats
-	}
-
-	lc, ok := lookupCats[childCat.Identifier.String()]
-	if !ok {
-		childCat.PartIDs = nil
-		childCat.Children = nil
-		childCat.ProductListing = nil
-		lc = LookupCategory{
-			Category: childCat,
+	for _, cat := range p.Categories {
+		lc, ok := lookupCats[cat.Identifier.String()]
+		if !ok {
+			cat.PartIDs = nil
+			cat.Children = nil
+			cat.ProductListing = nil
+			lc = LookupCategory{
+				Category: cat,
+			}
 		}
+		lc.AddPart(style, p)
+
+		lookupCats[cat.Identifier.String()] = lc
 	}
-
-	// we're going to clear out the category information here, since
-	// the products are already being grouped into their respective
-	// categories at the higher level. (saves on da bits)
-	p.Categories = nil
-
-	// add the part to the appropriate style
-	lc.AddPart(style, p)
-
-	lookupCats[childCat.Identifier.String()] = lc
 
 	return lookupCats
 }
