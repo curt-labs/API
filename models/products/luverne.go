@@ -32,22 +32,23 @@ type LuverneVehicleBase struct {
 type LuverneCategoryVehicle struct {
 	Base CategoryVehicleBase `json:"base" xml:"BaseVehicle"`
 
-	Years      []string         `json:"availableYears,omitempty" xml:"availableYears,omitempty"`
-	Makes      []string         `json:"availableMakes,omitempty" xml:"availableMakes,omitempty"`
-	Models     []string         `json:"availableModels,omitempty" xml:"availableModels,omitempty"`
-	Categories []LookupCategory `json:"lookup_category" xml:"StyleOptions"`
-	Products   []Part           `json:"products" xml:"products"`
+	Years      []string                `json:"availableYears,omitempty" xml:"availableYears,omitempty"`
+	Makes      []string                `json:"availableMakes,omitempty" xml:"availableMakes,omitempty"`
+	Models     []string                `json:"availableModels,omitempty" xml:"availableModels,omitempty"`
+	Categories []LuverneLookupCategory `json:"lookup_category" xml:"StyleOptions"`
+	Products   []Part                  `json:"products" xml:"products"`
 }
 
 // LuverneLookupCategory Represents a specific category of `StyleOption` fitments.
 type LuverneLookupCategory struct {
-	Category   Category         `json:"category" xml:"category"`
-	Bodies     []string         `bson:"availableBodies" json:"availableBodies" xml:"availableBodies"`
-	Boxes      []string         `bson:"availableBoxes" json:"availableBoxes" xml:"availableBoxes"`
-	Cabs       []string         `bson:"availableCabs" json:"availableCabs" xml:"availableCabs"`
-	FuelTypes  []string         `bson:"availableFuelTypes" json:"availableFuelTypes" xml:"favailableFuelTypes"`
-	WheelTypes []string         `bson:"availableWheelTypes" json:"availableWheelTypes" xml:"availableWheelTypes"`
-	Fitments   []LuverneFitment `bson:"fitments" json:"fitments" xml:"fitments"`
+	Category   Category                `json:"category" xml:"category"`
+	Bodies     []string                `bson:"availableBodies" json:"availableBodies" xml:"availableBodies"`
+	Boxes      []string                `bson:"availableBoxes" json:"availableBoxes" xml:"availableBoxes"`
+	Cabs       []string                `bson:"availableCabs" json:"availableCabs" xml:"availableCabs"`
+	FuelTypes  []string                `bson:"availableFuelTypes" json:"availableFuelTypes" xml:"favailableFuelTypes"`
+	WheelTypes []string                `bson:"availableWheelTypes" json:"availableWheelTypes" xml:"availableWheelTypes"`
+	Fitments   []LuverneFitment        `bson:"fitments" json:"fitments" xml:"fitments"`
+	Products   []LuverneFitmentMapping `bson:"products" json:"products" xml:"products"`
 }
 
 type LuverneFitment struct {
@@ -68,24 +69,25 @@ type LuverneFitment struct {
 //
 // // FitmentMapping defines the product and any associated attributes that
 // // relevant to the fitment on a specific application (install time, drilling, etc)
-// type FitmentMapping struct {
-// 	Attributes []FitmentAttribute `json:"attributes" xml:"Attributes"`
-// 	Number     string             `json:"product_identifier" xml:"product_identifier"`
-// }
+type LuverneFitmentMapping struct {
+	Attributes []LuverneFitmentAttribute `json:"attributes" xml:"Attributes"`
+	Number     string                    `json:"product_identifier" xml:"product_identifier"`
+}
+
 //
 // // FitmentAttribute A name value for a note of a fitment application.
-// type FitmentAttribute struct {
-// 	Key   string `json:"key" xml:"Key"`
-// 	Value string `json:"value" xml:"Value"`
-// }
+type LuverneFitmentAttribute struct {
+	Key   string `json:"key" xml:"Key"`
+	Value string `json:"value" xml:"Value"`
+}
 
 // Query Returns a `CategoryVehicle` that holds matching information for the
 // queried `CategoryVehicleBase` attributes.
-func LuverneQuery(ctx *LuverneLookupContext, args ...string) (*CategoryVehicle, error) {
+func LuverneQuery(ctx *LuverneLookupContext, args ...string) (*LuverneCategoryVehicle, error) {
 
 	var redisKey string
-	// var category string
-	var vehicle CategoryVehicle
+	var category string
+	var vehicle LuverneCategoryVehicle
 
 	for i, arg := range args {
 		if i == 0 {
@@ -116,7 +118,7 @@ func LuverneQuery(ctx *LuverneLookupContext, args ...string) (*CategoryVehicle, 
 		vehicle.Base.Year = args[0]
 		vehicle.Base.Make = args[1]
 		vehicle.Base.Model = args[2]
-		// category = args[3]
+		category = args[3]
 	}
 
 	if vehicle.Base.Year == "" {
@@ -125,6 +127,8 @@ func LuverneQuery(ctx *LuverneLookupContext, args ...string) (*CategoryVehicle, 
 		vehicle.Makes, err = getLuverneMakes(ctx, vehicle.Base.Year)
 	} else if vehicle.Base.Year != "" && vehicle.Base.Make != "" && vehicle.Base.Model == "" {
 		vehicle.Models, err = getLuverneModels(ctx, vehicle.Base.Year, vehicle.Base.Make)
+	} else if vehicle.Base.Year != "" && vehicle.Base.Make != "" && vehicle.Base.Model != "" {
+		vehicle.Products, vehicle.Categories, err = getLuverneStyles(ctx, vehicle.Base.Year, vehicle.Base.Make, vehicle.Base.Model, category)
 	}
 
 	redis.Setex(redisKey, vehicle, 60*60*24)
@@ -262,55 +266,55 @@ func getLuverneModels(ctx *LuverneLookupContext, year, vehicleMake string) ([]st
 	return models, err
 }
 
-// func getStyles(ctx *LookupContext, year, vehicleMake, model, category string) ([]Part, []LookupCategory, error) {
-// 	if ctx == nil {
-// 		return nil, nil, fmt.Errorf("missing context")
-// 	} else if ctx.Session == nil {
-// 		return nil, nil, fmt.Errorf("invalid mongodb connection")
-// 	}
-//
-// 	c := ctx.Session.DB(database.ProductMongoDatabase).C(database.ProductCollectionName)
-//
-// 	type Apps struct {
-// 		Apps    []VehicleApplication `bson:"vehicle_applications"`
-// 		PartNum string               `bson:"part_number"`
-// 	}
-//
-// 	var parts []Part
-// 	qry := bson.M{
-// 		"vehicle_applications": bson.M{
-// 			"$elemMatch": bson.M{
-// 				"year": year,
-// 				"make": bson.RegEx{
-// 					Pattern: "^" + vehicleMake + "$",
-// 					Options: "i",
-// 				},
-// 				"model": bson.RegEx{
-// 					Pattern: "^" + model + "$",
-// 					Options: "i",
-// 				},
-// 			},
-// 		},
-// 		"status": bson.M{
-// 			"$in": []int{800, 900},
-// 		},
-// 		"brand.id": bson.M{
-// 			"$in": ctx.Brands,
-// 		},
-// 	}
-//
-// 	if category != "" {
-// 		qry["categories.title"] = category
-// 	}
-// 	err := c.Find(qry).All(&parts)
-// 	if err != nil || len(parts) == 0 {
-// 		return nil, nil, err
-// 	}
-//
-// 	cleanedParts, cats := generateCategoryStyles(parts, year, vehicleMake, model)
-// 	sort.Sort(ByCategoryTitle(cats))
-// 	return cleanedParts, cats, nil
-// }
+func getLuverneStyles(ctx *LuverneLookupContext, year, vehicleMake, model, category string) ([]Part, []LuverneLookupCategory, error) {
+	if ctx == nil {
+		return nil, nil, fmt.Errorf("missing context")
+	} else if ctx.Session == nil {
+		return nil, nil, fmt.Errorf("invalid mongodb connection")
+	}
+
+	c := ctx.Session.DB(database.ProductMongoDatabase).C(database.ProductCollectionName)
+
+	type Apps struct {
+		Apps    []VehicleApplication `bson:"vehicle_applications"`
+		PartNum string               `bson:"part_number"`
+	}
+
+	var parts []Part
+	qry := bson.M{
+		"luverne_applications": bson.M{
+			"$elemMatch": bson.M{
+				"year": year,
+				"make": bson.RegEx{
+					Pattern: "^" + vehicleMake + "$",
+					Options: "i",
+				},
+				"model": bson.RegEx{
+					Pattern: "^" + model + "$",
+					Options: "i",
+				},
+			},
+		},
+		"status": bson.M{
+			"$in": []int{800, 900},
+		},
+		"brand.id": 4,
+	}
+
+	if category != "" {
+		qry["categories.title"] = category
+	}
+	err := c.Find(qry).All(&parts)
+	if err != nil || len(parts) == 0 {
+		return nil, nil, err
+	}
+	var cleanedParts []Part
+	var cats []LuverneLookupCategory
+	// cleanedParts, cats := generateCategoryStyles(parts, year, vehicleMake, model)
+	// sort.Sort(ByCategoryTitle(cats))
+	return cleanedParts, cats, nil
+}
+
 //
 // func generateCategoryStyles(parts []Part, year, vehicleMake, model string) ([]Part, []LookupCategory) {
 // 	lc := make(map[string]LookupCategory, 0)
