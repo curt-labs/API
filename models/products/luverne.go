@@ -41,8 +41,22 @@ type LuverneCategoryVehicle struct {
 
 // LuverneLookupCategory Represents a specific category of `StyleOption` fitments.
 type LuverneLookupCategory struct {
-	Category     Category      `json:"category" xml:"category"`
-	StyleOptions []StyleOption `json:"style_options" xml:"StyleOptions"`
+	Category   Category         `json:"category" xml:"category"`
+	Bodies     []string         `bson:"availableBodies" json:"availableBodies" xml:"availableBodies"`
+	Boxes      []string         `bson:"availableBoxes" json:"availableBoxes" xml:"availableBoxes"`
+	Cabs       []string         `bson:"availableCabs" json:"availableCabs" xml:"availableCabs"`
+	FuelTypes  []string         `bson:"availableFuelTypes" json:"availableFuelTypes" xml:"favailableFuelTypes"`
+	WheelTypes []string         `bson:"availableWheelTypes" json:"availableWheelTypes" xml:"availableWheelTypes"`
+	Fitments   []LuverneFitment `bson:"fitments" json:"fitments" xml:"fitments"`
+}
+
+type LuverneFitment struct {
+	Body      string   `bson:"body" json:"body" xml:"body"`
+	BoxLength string   `bson:"box" json:"box" xml:"box"`
+	CabLength string   `bson:"cab" json:"cab" xml:"cab"`
+	Fuel      string   `bson:"fuel" json:"fuel" xml:"fuel"`
+	Wheel     string   `bson:"wheel" json:"wheel" xml:"wheel"`
+	SKUs      []string `bson:"skus" json:"skus" xml:"skus"`
 }
 
 // // LuverneStyleOption Matches a slice of `Part` that have equal fitments to the matched
@@ -246,4 +260,151 @@ func getLuverneModels(ctx *LuverneLookupContext, year, vehicleMake string) ([]st
 	sort.Strings(models)
 
 	return models, err
+}
+
+// func getStyles(ctx *LookupContext, year, vehicleMake, model, category string) ([]Part, []LookupCategory, error) {
+// 	if ctx == nil {
+// 		return nil, nil, fmt.Errorf("missing context")
+// 	} else if ctx.Session == nil {
+// 		return nil, nil, fmt.Errorf("invalid mongodb connection")
+// 	}
+//
+// 	c := ctx.Session.DB(database.ProductMongoDatabase).C(database.ProductCollectionName)
+//
+// 	type Apps struct {
+// 		Apps    []VehicleApplication `bson:"vehicle_applications"`
+// 		PartNum string               `bson:"part_number"`
+// 	}
+//
+// 	var parts []Part
+// 	qry := bson.M{
+// 		"vehicle_applications": bson.M{
+// 			"$elemMatch": bson.M{
+// 				"year": year,
+// 				"make": bson.RegEx{
+// 					Pattern: "^" + vehicleMake + "$",
+// 					Options: "i",
+// 				},
+// 				"model": bson.RegEx{
+// 					Pattern: "^" + model + "$",
+// 					Options: "i",
+// 				},
+// 			},
+// 		},
+// 		"status": bson.M{
+// 			"$in": []int{800, 900},
+// 		},
+// 		"brand.id": bson.M{
+// 			"$in": ctx.Brands,
+// 		},
+// 	}
+//
+// 	if category != "" {
+// 		qry["categories.title"] = category
+// 	}
+// 	err := c.Find(qry).All(&parts)
+// 	if err != nil || len(parts) == 0 {
+// 		return nil, nil, err
+// 	}
+//
+// 	cleanedParts, cats := generateCategoryStyles(parts, year, vehicleMake, model)
+// 	sort.Sort(ByCategoryTitle(cats))
+// 	return cleanedParts, cats, nil
+// }
+//
+// func generateCategoryStyles(parts []Part, year, vehicleMake, model string) ([]Part, []LookupCategory) {
+// 	lc := make(map[string]LookupCategory, 0)
+// 	y := year
+// 	ma := strings.ToLower(vehicleMake)
+// 	mod := strings.ToLower(model)
+// 	var cleanParts []Part
+// 	for _, p := range parts {
+// 		if len(p.Categories) == 0 {
+// 			continue
+// 		}
+//
+// 		for _, va := range p.LuverneVehicles {
+// 			if va.Year != y || strings.ToLower(va.Make) != ma || strings.ToLower(va.Model) != mod {
+// 				continue
+// 			}
+//
+// 			lc = mapPartToCategoryFitments(p, lc, va.Body, va.BoxLength, va.CabLength, va.FuelType, va.WheelType)
+// 		}
+//
+// 		p.Categories = nil
+//
+// 		cleanParts = append(cleanParts, p)
+// 	}
+//
+// 	var cats []LookupCategory
+// 	for _, l := range lc {
+// 		cats = append(cats, l)
+// 	}
+//
+// 	return cleanParts, cats
+// }
+//
+// // AddPart Creates a record of the provided part under the referenced style.
+// func (lc *LuverneLookupCategory) AddPart(body, box, cab, fuel, wheel string, p Part) {
+// 	if strings.TrimSpace(body) == "" && strings.TrimSpace(box) == "" && strings.TrimSpace(cab) == "" && strings.TrimSpace(fuel) == "" && strings.TrimSpace(wheel) == "" {
+// 		style = AllPlaceholder
+// 	}
+//
+// 	for i, options := range lc.StyleOptions {
+// 		if strings.TrimSpace(options.Style) == "" {
+// 			options.Style = AllPlaceholder
+// 			lc.StyleOptions[i].Style = AllPlaceholder
+// 		}
+// 		if strings.Compare(
+// 			strings.ToLower(options.Style),
+// 			strings.ToLower(style),
+// 		) == 0 {
+// 			lc.StyleOptions[i].FitmentNumbers = append(lc.StyleOptions[i].FitmentNumbers,
+// 				FitmentMapping{
+// 					Number:     p.PartNumber,
+// 					Attributes: []FitmentAttribute{},
+// 				},
+// 			)
+// 			return
+// 		}
+// 	}
+//
+// 	lc.StyleOptions = append(lc.StyleOptions, StyleOption{
+// 		Style: style,
+// 		FitmentNumbers: []FitmentMapping{
+// 			FitmentMapping{
+// 				Number:     p.PartNumber,
+// 				Attributes: []FitmentAttribute{},
+// 			},
+// 		},
+// 	})
+// }
+
+func mapPartToCategoryFitments(p Part, lookupCats map[string]LuverneLookupCategory, body, box, cab, fuel, wheel string) map[string]LuverneLookupCategory {
+	childCat, err := getChildCategory(p.Categories)
+	if err != nil || childCat.Identifier.String() == "" {
+		return lookupCats
+	}
+
+	lc, ok := lookupCats[childCat.Identifier.String()]
+	if !ok {
+		childCat.PartIDs = nil
+		childCat.Children = nil
+		childCat.ProductListing = nil
+		lc = LuverneLookupCategory{
+			Category: childCat,
+		}
+	}
+
+	// we're going to clear out the category information here, since
+	// the products are already being grouped into their respective
+	// categories at the higher level. (saves on da bits)
+	p.Categories = nil
+
+	// add the part to the appropriate style
+	// lc.AddPart(body, box, cab, fuel, wheel, p)
+
+	lookupCats[childCat.Identifier.String()] = lc
+
+	return lookupCats
 }
