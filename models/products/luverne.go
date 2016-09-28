@@ -365,46 +365,91 @@ func mapPartToCategoryFitments(p Part, lookupCats map[string]LuverneLookupCatego
 				Category: cat,
 			}
 		}
-		//lc.AddPart(body, box, cab, fuel, wheel, p)
 		log.Println(cat.Title)
+
+		lc.AddPart(body, box, cab, fuel, wheel, p)
 		lookupCats[cat.Identifier.String()] = lc
 	}
 	return lookupCats
 }
 
+// type LuverneFitmentMapping struct {
+// 	Attributes []LuverneFitmentAttribute `json:"attributes" xml:"Attributes"`
+// 	Number     string                    `json:"product_identifier" xml:"product_identifier"`
+// }
+//
+// //
+// // // FitmentAttribute A name value for a note of a fitment application.
+// type LuverneFitmentAttribute struct {
+// 	Key   string `json:"key" xml:"Key"`
+// 	Value string `json:"value" xml:"Value"`
+// }
+
+// LuverneLookupCategory Represents a specific category of `StyleOption` fitments.
+// type LuverneLookupCategory struct {
+// 	Category   Category                `json:"category" xml:"category"`
+// 	Bodies     []string                `bson:"availableBodies" json:"availableBodies" xml:"availableBodies"`
+// 	Boxes      []string                `bson:"availableBoxes" json:"availableBoxes" xml:"availableBoxes"`
+// 	Cabs       []string                `bson:"availableCabs" json:"availableCabs" xml:"availableCabs"`
+// 	FuelTypes  []string                `bson:"availableFuelTypes" json:"availableFuelTypes" xml:"favailableFuelTypes"`
+// 	WheelTypes []string                `bson:"availableWheelTypes" json:"availableWheelTypes" xml:"availableWheelTypes"`
+// 	Fitments   []LuverneFitment        `bson:"fitments" json:"fitments" xml:"fitments"`
+// 	Products   []LuverneFitmentMapping `bson:"products" json:"products" xml:"products"`
+// }
+
 //
 // // AddPart Creates a record of the provided part under the referenced style.
-// func (lc *LuverneLookupCategory) AddPart(body, box, cab, fuel, wheel string, p Part) {
-// 	if strings.TrimSpace(body) == "" && strings.TrimSpace(box) == "" && strings.TrimSpace(cab) == "" && strings.TrimSpace(fuel) == "" && strings.TrimSpace(wheel) == "" {
-// 		style = AllPlaceholder
-// 	}
-//
-// 	for i, options := range lc.StyleOptions {
-// 		if strings.TrimSpace(options.Style) == "" {
-// 			options.Style = AllPlaceholder
-// 			lc.StyleOptions[i].Style = AllPlaceholder
-// 		}
-// 		if strings.Compare(
-// 			strings.ToLower(options.Style),
-// 			strings.ToLower(style),
-// 		) == 0 {
-// 			lc.StyleOptions[i].FitmentNumbers = append(lc.StyleOptions[i].FitmentNumbers,
-// 				FitmentMapping{
-// 					Number:     p.PartNumber,
-// 					Attributes: []FitmentAttribute{},
-// 				},
-// 			)
-// 			return
-// 		}
-// 	}
-//
-// 	lc.StyleOptions = append(lc.StyleOptions, StyleOption{
-// 		Style: style,
-// 		FitmentNumbers: []FitmentMapping{
-// 			FitmentMapping{
-// 				Number:     p.PartNumber,
-// 				Attributes: []FitmentAttribute{},
-// 			},
-// 		},
-// 	})
-// }
+func (lc *LuverneLookupCategory) AddPart(body, box, cab, fuel, wheel string, p Part) {
+	var newP LuverneFitmentMapping
+	newP.Number = p.PartNumber
+	if body != "" {
+		newP.Attributes = append(newP.Attributes, LuverneFitmentAttribute{"Body", body})
+	}
+	if box != "" {
+		newP.Attributes = append(newP.Attributes, LuverneFitmentAttribute{"Box", box})
+	}
+	if cab != "" {
+		newP.Attributes = append(newP.Attributes, LuverneFitmentAttribute{"Cab", cab})
+	}
+	if fuel != "" {
+		newP.Attributes = append(newP.Attributes, LuverneFitmentAttribute{"Fuel", fuel})
+	}
+	if wheel != "" {
+		newP.Attributes = append(newP.Attributes, LuverneFitmentAttribute{"Wheel", wheel})
+	}
+	lc.Products = append(lc.Products, newP)
+	// available fitments:
+
+	// if strings.TrimSpace(body) == "" && strings.TrimSpace(box) == "" && strings.TrimSpace(cab) == "" && strings.TrimSpace(fuel) == "" && strings.TrimSpace(wheel) == "" {
+	// 	style = AllPlaceholder
+	// }
+	//
+	// for i, options := range lc.StyleOptions {
+	// 	if strings.TrimSpace(options.Style) == "" {
+	// 		options.Style = AllPlaceholder
+	// 		lc.StyleOptions[i].Style = AllPlaceholder
+	// 	}
+	// 	if strings.Compare(
+	// 		strings.ToLower(options.Style),
+	// 		strings.ToLower(style),
+	// 	) == 0 {
+	// 		lc.StyleOptions[i].FitmentNumbers = append(lc.StyleOptions[i].FitmentNumbers,
+	// 			FitmentMapping{
+	// 				Number:     p.PartNumber,
+	// 				Attributes: []FitmentAttribute{},
+	// 			},
+	// 		)
+	// 		return
+	// 	}
+	// }
+	//
+	// lc.StyleOptions = append(lc.StyleOptions, StyleOption{
+	// 	Style: style,
+	// 	FitmentNumbers: []FitmentMapping{
+	// 		FitmentMapping{
+	// 			Number:     p.PartNumber,
+	// 			Attributes: []FitmentAttribute{},
+	// 		},
+	// 	},
+	// })
+}
