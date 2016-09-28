@@ -3,7 +3,6 @@ package products
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"sort"
 	"strings"
 
@@ -48,7 +47,7 @@ type LuverneLookupCategory struct {
 	Cabs       []string                `bson:"availableCabs" json:"availableCabs" xml:"availableCabs"`
 	FuelTypes  []string                `bson:"availableFuelTypes" json:"availableFuelTypes" xml:"favailableFuelTypes"`
 	WheelTypes []string                `bson:"availableWheelTypes" json:"availableWheelTypes" xml:"availableWheelTypes"`
-	Fitments   []LuverneFitment        `bson:"fitments" json:"fitments" xml:"fitments"`
+	Fitments   []*LuverneFitment       `bson:"fitments" json:"fitments" xml:"fitments"`
 	Products   []LuverneFitmentMapping `bson:"products" json:"products" xml:"products"`
 }
 
@@ -369,37 +368,17 @@ func mapPartToCategoryFitments(p Part, lookupCats map[string]LuverneLookupCatego
 				Category: cat,
 			}
 		}
-		log.Println(cat.Title)
 
-		lc.AddPart(body, box, cab, fuel, wheel, p)
+		lc.ProcessPart(body, box, cab, fuel, wheel, p)
+		lc.GenerateFitmentsOfPart(body, box, cab, fuel, wheel, p)
 		lookupCats[cat.Identifier.String()] = lc
 	}
 	return lookupCats
 }
 
-//
-// //
-// // // FitmentAttribute A name value for a note of a fitment application.
-// type LuverneFitmentAttribute struct {
-// 	Key   string `json:"key" xml:"Key"`
-// 	Value string `json:"value" xml:"Value"`
-// }
-
-// LuverneLookupCategory Represents a specific category of `StyleOption` fitments.
-// type LuverneLookupCategory struct {
-// 	Category   Category                `json:"category" xml:"category"`
-// 	Bodies     []string                `bson:"availableBodies" json:"availableBodies" xml:"availableBodies"`
-// 	Boxes      []string                `bson:"availableBoxes" json:"availableBoxes" xml:"availableBoxes"`
-// 	Cabs       []string                `bson:"availableCabs" json:"availableCabs" xml:"availableCabs"`
-// 	FuelTypes  []string                `bson:"availableFuelTypes" json:"availableFuelTypes" xml:"favailableFuelTypes"`
-// 	WheelTypes []string                `bson:"availableWheelTypes" json:"availableWheelTypes" xml:"availableWheelTypes"`
-// 	Fitments   []LuverneFitment        `bson:"fitments" json:"fitments" xml:"fitments"`
-// 	Products   []LuverneFitmentMapping `bson:"products" json:"products" xml:"products"`
-// }
-
-//
-// // AddPart Creates a record of the provided part under the referenced style.
-func (lc *LuverneLookupCategory) AddPart(body, box, cab, fuel, wheel string, p Part) {
+// Process Part creates the individual record for the part for the lc.Products and lc.Fitments
+func (lc *LuverneLookupCategory) ProcessPart(body, box, cab, fuel, wheel string, p Part) {
+	// map the Part and fitments to the category to create a LuverneLookUpCategory
 	var newP LuverneFitmentMapping
 	newP.Number = p.PartNumber
 	if body != "" {
@@ -418,38 +397,37 @@ func (lc *LuverneLookupCategory) AddPart(body, box, cab, fuel, wheel string, p P
 		newP.Attributes = append(newP.Attributes, LuverneFitmentAttribute{"Wheel", wheel})
 	}
 	lc.Products = append(lc.Products, newP)
-	// available fitments:
-	// type LuverneFitment struct {
-	// 	Title string
-	// 	Options []string
-	// }
+}
+
+func (lc *LuverneLookupCategory) GenerateFitmentsOfPart(body, box, cab, fuel, wheel string, p Part) {
+	// if fitments are empty (first time trying to generate fitments)
 	if len(lc.Fitments) == 0 {
 		if body != "" {
-			newFitment := LuverneFitment{Title: "Body"}
+			newFitment := &LuverneFitment{Title: "Body"}
 			newFitment.Options = append(newFitment.Options, body)
 			lc.Fitments = append(lc.Fitments, newFitment)
 		}
 		if box != "" {
-			newFitment := LuverneFitment{Title: "Box"}
+			newFitment := &LuverneFitment{Title: "Box"}
 			newFitment.Options = append(newFitment.Options, box)
 			lc.Fitments = append(lc.Fitments, newFitment)
 		}
 		if cab != "" {
-			newFitment := LuverneFitment{Title: "Cab"}
+			newFitment := &LuverneFitment{Title: "Cab"}
 			newFitment.Options = append(newFitment.Options, cab)
 			lc.Fitments = append(lc.Fitments, newFitment)
 		}
 		if fuel != "" {
-			newFitment := LuverneFitment{Title: "Fuel"}
+			newFitment := &LuverneFitment{Title: "Fuel"}
 			newFitment.Options = append(newFitment.Options, fuel)
 			lc.Fitments = append(lc.Fitments, newFitment)
 		}
 		if wheel != "" {
-			newFitment := LuverneFitment{Title: "Wheel"}
+			newFitment := &LuverneFitment{Title: "Wheel"}
 			newFitment.Options = append(newFitment.Options, wheel)
 			lc.Fitments = append(lc.Fitments, newFitment)
 		}
-	} else {
+	} else { // beginging fitments have been generated, now add additional non-duplicate fitment options
 		for _, fit := range lc.Fitments {
 			// BODY - Check for duplicates, if not a duplicate, add it to the fitment options
 			if fit.Title == "Body" && body != "" && !CheckDuplicateOptions(fit.Options, body) {
@@ -470,42 +448,9 @@ func (lc *LuverneLookupCategory) AddPart(body, box, cab, fuel, wheel string, p P
 			// Wheel
 			if fit.Title == "Wheel" && wheel != "" && !CheckDuplicateOptions(fit.Options, wheel) {
 				fit.Options = append(fit.Options, wheel)
-			}
-		}
-	}
-
-	// if strings.TrimSpace(body) == "" && strings.TrimSpace(box) == "" && strings.TrimSpace(cab) == "" && strings.TrimSpace(fuel) == "" && strings.TrimSpace(wheel) == "" {
-	// 	style = AllPlaceholder
-	// }
-	//
-	// for i, options := range lc.StyleOptions {
-	// 	if strings.TrimSpace(options.Style) == "" {
-	// 		options.Style = AllPlaceholder
-	// 		lc.StyleOptions[i].Style = AllPlaceholder
-	// 	}
-	// 	if strings.Compare(
-	// 		strings.ToLower(options.Style),
-	// 		strings.ToLower(style),
-	// 	) == 0 {
-	// 		lc.StyleOptions[i].FitmentNumbers = append(lc.StyleOptions[i].FitmentNumbers,
-	// 			FitmentMapping{
-	// 				Number:     p.PartNumber,
-	// 				Attributes: []FitmentAttribute{},
-	// 			},
-	// 		)
-	// 		return
-	// 	}
-	// }
-	//
-	// lc.StyleOptions = append(lc.StyleOptions, StyleOption{
-	// 	Style: style,
-	// 	FitmentNumbers: []FitmentMapping{
-	// 		FitmentMapping{
-	// 			Number:     p.PartNumber,
-	// 			Attributes: []FitmentAttribute{},
-	// 		},
-	// 	},
-	// })
+			} // end wheel
+		} // end each fitment
+	} // end if len(fitments) !== 0
 }
 
 func CheckDuplicateOptions(options []string, option string) bool {
