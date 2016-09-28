@@ -52,13 +52,17 @@ type LuverneLookupCategory struct {
 	Products   []LuverneFitmentMapping `bson:"products" json:"products" xml:"products"`
 }
 
+// type LuverneFitment struct {
+// 	Body      string   `bson:"body" json:"body" xml:"body"`
+// 	BoxLength string   `bson:"box" json:"box" xml:"box"`
+// 	CabLength string   `bson:"cab" json:"cab" xml:"cab"`
+// 	Fuel      string   `bson:"fuel" json:"fuel" xml:"fuel"`
+// 	Wheel     string   `bson:"wheel" json:"wheel" xml:"wheel"`
+// 	SKUs      []string `bson:"skus" json:"skus" xml:"skus"`
+// }
 type LuverneFitment struct {
-	Body      string   `bson:"body" json:"body" xml:"body"`
-	BoxLength string   `bson:"box" json:"box" xml:"box"`
-	CabLength string   `bson:"cab" json:"cab" xml:"cab"`
-	Fuel      string   `bson:"fuel" json:"fuel" xml:"fuel"`
-	Wheel     string   `bson:"wheel" json:"wheel" xml:"wheel"`
-	SKUs      []string `bson:"skus" json:"skus" xml:"skus"`
+	Title   string
+	Options []string
 }
 
 type ByLuverneCategoryTitle []LuverneLookupCategory
@@ -373,10 +377,6 @@ func mapPartToCategoryFitments(p Part, lookupCats map[string]LuverneLookupCatego
 	return lookupCats
 }
 
-// type LuverneFitmentMapping struct {
-// 	Attributes []LuverneFitmentAttribute `json:"attributes" xml:"Attributes"`
-// 	Number     string                    `json:"product_identifier" xml:"product_identifier"`
-// }
 //
 // //
 // // // FitmentAttribute A name value for a note of a fitment application.
@@ -419,6 +419,60 @@ func (lc *LuverneLookupCategory) AddPart(body, box, cab, fuel, wheel string, p P
 	}
 	lc.Products = append(lc.Products, newP)
 	// available fitments:
+	// type LuverneFitment struct {
+	// 	Title string
+	// 	Options []string
+	// }
+	if len(lc.Fitments) == 0 {
+		if body != "" {
+			newFitment := LuverneFitment{Title: "Body"}
+			newFitment.Options = append(newFitment.Options, body)
+			lc.Fitments = append(lc.Fitments, newFitment)
+		}
+		if box != "" {
+			newFitment := LuverneFitment{Title: "Box"}
+			newFitment.Options = append(newFitment.Options, box)
+			lc.Fitments = append(lc.Fitments, newFitment)
+		}
+		if cab != "" {
+			newFitment := LuverneFitment{Title: "Cab"}
+			newFitment.Options = append(newFitment.Options, cab)
+			lc.Fitments = append(lc.Fitments, newFitment)
+		}
+		if fuel != "" {
+			newFitment := LuverneFitment{Title: "Fuel"}
+			newFitment.Options = append(newFitment.Options, fuel)
+			lc.Fitments = append(lc.Fitments, newFitment)
+		}
+		if wheel != "" {
+			newFitment := LuverneFitment{Title: "Wheel"}
+			newFitment.Options = append(newFitment.Options, wheel)
+			lc.Fitments = append(lc.Fitments, newFitment)
+		}
+	} else {
+		for _, fit := range lc.Fitments {
+			// BODY - Check for duplicates, if not a duplicate, add it to the fitment options
+			if fit.Title == "Body" && body != "" && !CheckDuplicateOptions(fit.Options, body) {
+				fit.Options = append(fit.Options, body)
+			}
+			// Box
+			if fit.Title == "Box" && box != "" && !CheckDuplicateOptions(fit.Options, box) {
+				fit.Options = append(fit.Options, box)
+			}
+			// Cab
+			if fit.Title == "Cab" && cab != "" && !CheckDuplicateOptions(fit.Options, cab) {
+				fit.Options = append(fit.Options, cab)
+			}
+			// Fuel
+			if fit.Title == "Fuel" && fuel != "" && !CheckDuplicateOptions(fit.Options, fuel) {
+				fit.Options = append(fit.Options, fuel)
+			}
+			// Wheel
+			if fit.Title == "Wheel" && wheel != "" && !CheckDuplicateOptions(fit.Options, wheel) {
+				fit.Options = append(fit.Options, wheel)
+			}
+		}
+	}
 
 	// if strings.TrimSpace(body) == "" && strings.TrimSpace(box) == "" && strings.TrimSpace(cab) == "" && strings.TrimSpace(fuel) == "" && strings.TrimSpace(wheel) == "" {
 	// 	style = AllPlaceholder
@@ -452,4 +506,13 @@ func (lc *LuverneLookupCategory) AddPart(body, box, cab, fuel, wheel string, p P
 	// 		},
 	// 	},
 	// })
+}
+
+func CheckDuplicateOptions(options []string, option string) bool {
+	for _, opt := range options {
+		if opt == option {
+			return true
+		}
+	}
+	return false
 }
