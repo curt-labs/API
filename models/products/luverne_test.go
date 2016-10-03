@@ -233,3 +233,156 @@ func TestGetLuverneModels(t *testing.T) {
 		})
 	})
 }
+
+func TestLuverneQuery(t *testing.T) {
+	Convey("LuverneQuery(ctx *LuverneLookupContext, args ...string)", t, func() {
+		Convey("success", func() {
+			ctx := &LuverneLookupContext{
+				Statuses: []int{800, 900},
+			}
+			var err error
+
+			ctx.Session, err = mgo.DialWithInfo(database.MongoPartConnectionString())
+			So(err, ShouldBeNil)
+
+			val, err := LuverneQuery(ctx, "2016", "Ram", "Ram 1500", "Aluminum Oval Bed Rails")
+			So(err, ShouldBeNil)
+			So(val, ShouldHaveSameTypeAs, &LuverneCategoryVehicle{})
+		})
+	})
+}
+
+func TestGetLuverneStyles(t *testing.T) {
+	Convey("Test getLuverneStyles(ctx *LuverneLookupContext, year, vehicleMake, model, category string)", t, func() {
+		Convey("with no context", func() {
+			vals1, vals2, err := getLuverneStyles(nil, "", "", "", "")
+			So(err, ShouldNotBeNil)
+			So(vals1, ShouldHaveSameTypeAs, []Part{})
+			So(vals2, ShouldHaveSameTypeAs, []LuverneLookupCategory{})
+		})
+
+		Convey("with no mongo session", func() {
+			vals1, vals2, err := getLuverneStyles(&LuverneLookupContext{}, "", "", "", "")
+			So(err, ShouldNotBeNil)
+			So(vals1, ShouldHaveSameTypeAs, []Part{})
+			So(vals2, ShouldHaveSameTypeAs, []LuverneLookupCategory{})
+		})
+
+		Convey("with a bad collection name", func() {
+			ctx := &LuverneLookupContext{}
+			var err error
+			tmp := database.ProductCollectionName
+			database.ProductCollectionName = ""
+
+			ctx.Session, err = mgo.DialWithInfo(database.MongoPartConnectionString())
+			So(err, ShouldBeNil)
+
+			vals1, vals2, err := getLuverneStyles(&LuverneLookupContext{}, "", "", "", "")
+			So(err, ShouldNotBeNil)
+			So(vals1, ShouldHaveSameTypeAs, []Part{})
+			So(vals2, ShouldHaveSameTypeAs, []LuverneLookupCategory{})
+
+			database.ProductCollectionName = tmp
+		})
+
+		Convey("with no status", func() {
+			ctx := &LuverneLookupContext{}
+			var err error
+
+			ctx.Session, err = mgo.DialWithInfo(database.MongoPartConnectionString())
+			So(err, ShouldBeNil)
+
+			vals1, vals2, err := getLuverneStyles(&LuverneLookupContext{}, "", "", "", "")
+			So(err, ShouldNotBeNil)
+			So(vals1, ShouldHaveSameTypeAs, []Part{})
+			So(vals2, ShouldHaveSameTypeAs, []LuverneLookupCategory{})
+			So(len(vals1), ShouldEqual, 0)
+			So(len(vals2), ShouldEqual, 0)
+		})
+
+		Convey("with no vehicle info", func() {
+			ctx := &LuverneLookupContext{
+				Statuses: []int{800, 900},
+			}
+			var err error
+
+			ctx.Session, err = mgo.DialWithInfo(database.MongoPartConnectionString())
+			So(err, ShouldBeNil)
+
+			vals1, vals2, err := getLuverneStyles(ctx, "", "", "", "")
+			So(err, ShouldBeNil)
+			So(vals1, ShouldHaveSameTypeAs, []Part{})
+			So(vals2, ShouldHaveSameTypeAs, []LuverneLookupCategory{})
+			So(len(vals1), ShouldEqual, 0)
+			So(len(vals2), ShouldEqual, 0)
+		})
+
+		Convey("with no make, model or category", func() {
+			ctx := &LuverneLookupContext{
+				Statuses: []int{800, 900},
+			}
+			var err error
+
+			ctx.Session, err = mgo.DialWithInfo(database.MongoPartConnectionString())
+			So(err, ShouldBeNil)
+
+			vals1, vals2, err := getLuverneStyles(ctx, "2016", "", "", "")
+			So(err, ShouldBeNil)
+			So(vals1, ShouldHaveSameTypeAs, []Part{})
+			So(vals2, ShouldHaveSameTypeAs, []LuverneLookupCategory{})
+			So(len(vals1), ShouldEqual, 0)
+			So(len(vals2), ShouldEqual, 0)
+		})
+
+		Convey("with no model or category", func() {
+			ctx := &LuverneLookupContext{
+				Statuses: []int{800, 900},
+			}
+			var err error
+
+			ctx.Session, err = mgo.DialWithInfo(database.MongoPartConnectionString())
+			So(err, ShouldBeNil)
+
+			vals1, vals2, err := getLuverneStyles(ctx, "2016", "Ram", "", "")
+			So(err, ShouldBeNil)
+			So(vals1, ShouldHaveSameTypeAs, []Part{})
+			So(vals2, ShouldHaveSameTypeAs, []LuverneLookupCategory{})
+			So(len(vals1), ShouldEqual, 0)
+			So(len(vals2), ShouldEqual, 0)
+		})
+
+		Convey("with no category", func() {
+			ctx := &LuverneLookupContext{
+				Statuses: []int{800, 900},
+			}
+			var err error
+
+			ctx.Session, err = mgo.DialWithInfo(database.MongoPartConnectionString())
+			So(err, ShouldBeNil)
+
+			vals1, vals2, err := getLuverneStyles(ctx, "2016", "Ram", "Ram 1500", "")
+			So(err, ShouldBeNil)
+			So(vals1, ShouldHaveSameTypeAs, []Part{})
+			So(vals2, ShouldHaveSameTypeAs, []LuverneLookupCategory{})
+			So(len(vals1), ShouldNotEqual, 0)
+			So(len(vals2), ShouldNotEqual, 0)
+		})
+
+		Convey("success", func() {
+			ctx := &LuverneLookupContext{
+				Statuses: []int{800, 900},
+			}
+			var err error
+
+			ctx.Session, err = mgo.DialWithInfo(database.MongoPartConnectionString())
+			So(err, ShouldBeNil)
+
+			vals1, vals2, err := getLuverneStyles(ctx, "2016", "Ram", "Ram 1500", "Aluminum Oval Bed Rails")
+			So(err, ShouldBeNil)
+			So(vals1, ShouldHaveSameTypeAs, []Part{})
+			So(vals2, ShouldHaveSameTypeAs, []LuverneLookupCategory{})
+			So(len(vals1), ShouldNotEqual, 0)
+			So(len(vals2), ShouldNotEqual, 0)
+		})
+	})
+}
