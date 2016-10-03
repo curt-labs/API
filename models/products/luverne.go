@@ -30,11 +30,11 @@ type LuverneVehicleBase struct {
 // LuverneCategoryVehicle Represents the requested `Base` vehicle and all matching
 // LookupCategory types that are fitments of the `Base`.
 type LuverneCategoryVehicle struct {
-	Base       CategoryVehicleBase     `json:"base" xml:"BaseVehicle"`
-	Years      []string                `json:"availableYears,omitempty" xml:"availableYears,omitempty"`
-	Makes      []string                `json:"availableMakes,omitempty" xml:"availableMakes,omitempty"`
-	Models     []string                `json:"availableModels,omitempty" xml:"availableModels,omitempty"`
-	Categories []LuverneLookupCategory `json:"lookup_category" xml:"StyleOptions"`
+	Base       CategoryVehicleBase     `json:"base_vehicle" xml:"base_vehicle"`
+	Years      []string                `json:"available_years,omitempty" xml:"available_years,omitempty"`
+	Makes      []string                `json:"available_makes,omitempty" xml:"available_makes,omitempty"`
+	Models     []string                `json:"available_models,omitempty" xml:"available_models,omitempty"`
+	Categories []LuverneLookupCategory `json:"lookup_category" xml:"lookup_category"`
 	Products   []Part                  `json:"products" xml:"products"`
 }
 
@@ -46,8 +46,8 @@ type LuverneLookupCategory struct {
 }
 
 type LuverneFitment struct {
-	Title   string
-	Options []string
+	Title   string   `json:"title" xml:"title"`
+	Options []string `json:"options" xml:"options"`
 }
 
 type ByLuverneCategoryTitle []LuverneLookupCategory
@@ -66,8 +66,8 @@ type LuverneFitmentMapping struct {
 
 // FitmentAttribute A name value for a note of a fitment application.
 type LuverneFitmentAttribute struct {
-	Key   string `json:"key" xml:"Key"`
-	Value string `json:"value" xml:"Value"`
+	Key   string `json:"key" xml:"key"`
+	Value string `json:"value" xml:"value"`
 }
 
 // Query Returns a `CategoryVehicle` that holds matching information for the
