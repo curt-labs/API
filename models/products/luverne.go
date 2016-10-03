@@ -30,8 +30,7 @@ type LuverneVehicleBase struct {
 // LuverneCategoryVehicle Represents the requested `Base` vehicle and all matching
 // LookupCategory types that are fitments of the `Base`.
 type LuverneCategoryVehicle struct {
-	Base CategoryVehicleBase `json:"base" xml:"BaseVehicle"`
-
+	Base       CategoryVehicleBase     `json:"base" xml:"BaseVehicle"`
 	Years      []string                `json:"availableYears,omitempty" xml:"availableYears,omitempty"`
 	Makes      []string                `json:"availableMakes,omitempty" xml:"availableMakes,omitempty"`
 	Models     []string                `json:"availableModels,omitempty" xml:"availableModels,omitempty"`
@@ -41,24 +40,11 @@ type LuverneCategoryVehicle struct {
 
 // LuverneLookupCategory Represents a specific category of `StyleOption` fitments.
 type LuverneLookupCategory struct {
-	Category   Category                `json:"category" xml:"category"`
-	Bodies     []string                `bson:"availableBodies" json:"availableBodies" xml:"availableBodies"`
-	Boxes      []string                `bson:"availableBoxes" json:"availableBoxes" xml:"availableBoxes"`
-	Cabs       []string                `bson:"availableCabs" json:"availableCabs" xml:"availableCabs"`
-	FuelTypes  []string                `bson:"availableFuelTypes" json:"availableFuelTypes" xml:"favailableFuelTypes"`
-	WheelTypes []string                `bson:"availableWheelTypes" json:"availableWheelTypes" xml:"availableWheelTypes"`
-	Fitments   []*LuverneFitment       `bson:"fitments" json:"fitments" xml:"fitments"`
-	Products   []LuverneFitmentMapping `bson:"products" json:"products" xml:"products"`
+	Category Category                `json:"category" xml:"category"`
+	Fitments []*LuverneFitment       `bson:"fitments" json:"fitments" xml:"fitments"`
+	Products []LuverneFitmentMapping `bson:"products" json:"products" xml:"products"`
 }
 
-// type LuverneFitment struct {
-// 	Body      string   `bson:"body" json:"body" xml:"body"`
-// 	BoxLength string   `bson:"box" json:"box" xml:"box"`
-// 	CabLength string   `bson:"cab" json:"cab" xml:"cab"`
-// 	Fuel      string   `bson:"fuel" json:"fuel" xml:"fuel"`
-// 	Wheel     string   `bson:"wheel" json:"wheel" xml:"wheel"`
-// 	SKUs      []string `bson:"skus" json:"skus" xml:"skus"`
-// }
 type LuverneFitment struct {
 	Title   string
 	Options []string
@@ -71,22 +57,14 @@ func (a ByLuverneCategoryTitle) Len() int           { return len(a) }
 func (a ByLuverneCategoryTitle) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByLuverneCategoryTitle) Less(i, j int) bool { return a[i].Category.Title < a[j].Category.Title }
 
-// // LuverneStyleOption Matches a slice of `Part` that have equal fitments to the matched
-// // `Style`.
-// type LuverneStyleOption struct {
-// 	Style          string           `json:"style" xml:"Style"`
-// 	FitmentNumbers []FitmentMapping `json:"fitments" xml:"fitments"`
-// }
-//
-// // FitmentMapping defines the product and any associated attributes that
-// // relevant to the fitment on a specific application (install time, drilling, etc)
+// FitmentMapping defines the product and any associated attributes that
+// relevant to the fitment on a specific application (install time, drilling, etc)
 type LuverneFitmentMapping struct {
-	Attributes []LuverneFitmentAttribute `json:"attributes" xml:"Attributes"`
+	Attributes []LuverneFitmentAttribute `json:"fitment_attributes" xml:"fitment_attributes"`
 	Number     string                    `json:"product_identifier" xml:"product_identifier"`
 }
 
-//
-// // FitmentAttribute A name value for a note of a fitment application.
+// FitmentAttribute A name value for a note of a fitment application.
 type LuverneFitmentAttribute struct {
 	Key   string `json:"key" xml:"Key"`
 	Value string `json:"value" xml:"Value"`
