@@ -236,6 +236,119 @@ func TestGetLuverneModels(t *testing.T) {
 
 func TestLuverneQuery(t *testing.T) {
 	Convey("LuverneQuery(ctx *LuverneLookupContext, args ...string)", t, func() {
+
+		Convey("with no params", func() {
+			ctx := &LuverneLookupContext{
+				Statuses: []int{800, 900},
+			}
+			var err error
+
+			ctx.Session, err = mgo.DialWithInfo(database.MongoPartConnectionString())
+			So(err, ShouldBeNil)
+
+			val, err := LuverneQuery(ctx)
+			So(err, ShouldBeNil)
+			So(val, ShouldHaveSameTypeAs, &LuverneCategoryVehicle{})
+		})
+
+		Convey("with one empty param", func() {
+			ctx := &LuverneLookupContext{
+				Statuses: []int{800, 900},
+			}
+			var err error
+
+			ctx.Session, err = mgo.DialWithInfo(database.MongoPartConnectionString())
+			So(err, ShouldBeNil)
+
+			val, err := LuverneQuery(ctx, "")
+			So(err, ShouldBeNil)
+			So(val, ShouldHaveSameTypeAs, &LuverneCategoryVehicle{})
+		})
+
+		Convey("with two empty params", func() {
+			ctx := &LuverneLookupContext{
+				Statuses: []int{800, 900},
+			}
+			var err error
+
+			ctx.Session, err = mgo.DialWithInfo(database.MongoPartConnectionString())
+			So(err, ShouldBeNil)
+
+			val, err := LuverneQuery(ctx, "", "")
+			So(err, ShouldBeNil)
+			So(val, ShouldHaveSameTypeAs, &LuverneCategoryVehicle{})
+		})
+
+		Convey("with three empty params", func() {
+			ctx := &LuverneLookupContext{
+				Statuses: []int{800, 900},
+			}
+			var err error
+
+			ctx.Session, err = mgo.DialWithInfo(database.MongoPartConnectionString())
+			So(err, ShouldBeNil)
+
+			val, err := LuverneQuery(ctx, "", "", "")
+			So(err, ShouldBeNil)
+			So(val, ShouldHaveSameTypeAs, &LuverneCategoryVehicle{})
+		})
+
+		Convey("with empty vehicle", func() {
+			ctx := &LuverneLookupContext{
+				Statuses: []int{800, 900},
+			}
+			var err error
+
+			ctx.Session, err = mgo.DialWithInfo(database.MongoPartConnectionString())
+			So(err, ShouldBeNil)
+
+			val, err := LuverneQuery(ctx, "", "", "", "")
+			So(err, ShouldBeNil)
+			So(val, ShouldHaveSameTypeAs, &LuverneCategoryVehicle{})
+		})
+
+		Convey("with no make, model or category", func() {
+			ctx := &LuverneLookupContext{
+				Statuses: []int{800, 900},
+			}
+			var err error
+
+			ctx.Session, err = mgo.DialWithInfo(database.MongoPartConnectionString())
+			So(err, ShouldBeNil)
+
+			val, err := LuverneQuery(ctx, "2016", "", "", "")
+			So(err, ShouldBeNil)
+			So(val, ShouldHaveSameTypeAs, &LuverneCategoryVehicle{})
+		})
+
+		Convey("with no model or category", func() {
+			ctx := &LuverneLookupContext{
+				Statuses: []int{800, 900},
+			}
+			var err error
+
+			ctx.Session, err = mgo.DialWithInfo(database.MongoPartConnectionString())
+			So(err, ShouldBeNil)
+
+			val, err := LuverneQuery(ctx, "2016", "Ram", "", "")
+			So(err, ShouldBeNil)
+			So(val, ShouldHaveSameTypeAs, &LuverneCategoryVehicle{})
+		})
+
+		Convey("with no category", func() {
+			ctx := &LuverneLookupContext{
+				Statuses: []int{800, 900},
+			}
+			var err error
+
+			ctx.Session, err = mgo.DialWithInfo(database.MongoPartConnectionString())
+			So(err, ShouldBeNil)
+
+			val, err := LuverneQuery(ctx, "2016", "Ram", "Ram 1500", "")
+			So(err, ShouldBeNil)
+			So(val, ShouldHaveSameTypeAs, &LuverneCategoryVehicle{})
+		})
+
 		Convey("success", func() {
 			ctx := &LuverneLookupContext{
 				Statuses: []int{800, 900},
@@ -246,6 +359,34 @@ func TestLuverneQuery(t *testing.T) {
 			So(err, ShouldBeNil)
 
 			val, err := LuverneQuery(ctx, "2016", "Ram", "Ram 1500", "Aluminum Oval Bed Rails")
+			So(err, ShouldBeNil)
+			So(val, ShouldHaveSameTypeAs, &LuverneCategoryVehicle{})
+		})
+
+		Convey("success different vehicle, no category", func() {
+			ctx := &LuverneLookupContext{
+				Statuses: []int{800, 900},
+			}
+			var err error
+
+			ctx.Session, err = mgo.DialWithInfo(database.MongoPartConnectionString())
+			So(err, ShouldBeNil)
+
+			val, err := LuverneQuery(ctx, "2014", "Chevrolet", "Silverado 2500HD", "")
+			So(err, ShouldBeNil)
+			So(val, ShouldHaveSameTypeAs, &LuverneCategoryVehicle{})
+		})
+
+		Convey("success vehicle with body types", func() {
+			ctx := &LuverneLookupContext{
+				Statuses: []int{800, 900},
+			}
+			var err error
+
+			ctx.Session, err = mgo.DialWithInfo(database.MongoPartConnectionString())
+			So(err, ShouldBeNil)
+
+			val, err := LuverneQuery(ctx, "2015", "Ram", "Ram 3500", "")
 			So(err, ShouldBeNil)
 			So(val, ShouldHaveSameTypeAs, &LuverneCategoryVehicle{})
 		})
