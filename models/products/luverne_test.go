@@ -1,11 +1,13 @@
 package products
 
 import (
+	"fmt"
 	"testing"
 
 	mgo "gopkg.in/mgo.v2"
 
 	"github.com/curt-labs/API/helpers/database"
+	"github.com/curt-labs/API/helpers/redis"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -263,6 +265,8 @@ func TestLuverneQuery(t *testing.T) {
 			val, err := LuverneQuery(ctx, "")
 			So(err, ShouldBeNil)
 			So(val, ShouldHaveSameTypeAs, &LuverneCategoryVehicle{})
+			err = CleanLookupRedis("")
+			So(err, ShouldBeNil)
 		})
 
 		Convey("with two empty params", func() {
@@ -277,6 +281,8 @@ func TestLuverneQuery(t *testing.T) {
 			val, err := LuverneQuery(ctx, "", "")
 			So(err, ShouldBeNil)
 			So(val, ShouldHaveSameTypeAs, &LuverneCategoryVehicle{})
+			err = CleanLookupRedis("", "")
+			So(err, ShouldBeNil)
 		})
 
 		Convey("with three empty params", func() {
@@ -291,6 +297,8 @@ func TestLuverneQuery(t *testing.T) {
 			val, err := LuverneQuery(ctx, "", "", "")
 			So(err, ShouldBeNil)
 			So(val, ShouldHaveSameTypeAs, &LuverneCategoryVehicle{})
+			err = CleanLookupRedis("", "", "")
+			So(err, ShouldBeNil)
 		})
 
 		Convey("with empty vehicle", func() {
@@ -305,6 +313,8 @@ func TestLuverneQuery(t *testing.T) {
 			val, err := LuverneQuery(ctx, "", "", "", "")
 			So(err, ShouldBeNil)
 			So(val, ShouldHaveSameTypeAs, &LuverneCategoryVehicle{})
+			err = CleanLookupRedis("", "", "", "")
+			So(err, ShouldBeNil)
 		})
 
 		Convey("with no make, model or category", func() {
@@ -312,13 +322,16 @@ func TestLuverneQuery(t *testing.T) {
 				Statuses: []int{800, 900},
 			}
 			var err error
+			var vehicleArgs = []string{"2016", "", "", ""}
 
 			ctx.Session, err = mgo.DialWithInfo(database.MongoPartConnectionString())
 			So(err, ShouldBeNil)
 
-			val, err := LuverneQuery(ctx, "2016", "", "", "")
+			val, err := LuverneQuery(ctx, vehicleArgs...)
 			So(err, ShouldBeNil)
 			So(val, ShouldHaveSameTypeAs, &LuverneCategoryVehicle{})
+			err = CleanLookupRedis(vehicleArgs...)
+			So(err, ShouldBeNil)
 		})
 
 		Convey("with no model or category", func() {
@@ -326,13 +339,15 @@ func TestLuverneQuery(t *testing.T) {
 				Statuses: []int{800, 900},
 			}
 			var err error
-
+			var vehicleArgs = []string{"2016", "Ram", "", ""}
 			ctx.Session, err = mgo.DialWithInfo(database.MongoPartConnectionString())
 			So(err, ShouldBeNil)
 
-			val, err := LuverneQuery(ctx, "2016", "Ram", "", "")
+			val, err := LuverneQuery(ctx, vehicleArgs...)
 			So(err, ShouldBeNil)
 			So(val, ShouldHaveSameTypeAs, &LuverneCategoryVehicle{})
+			err = CleanLookupRedis(vehicleArgs...)
+			So(err, ShouldBeNil)
 		})
 
 		Convey("with no category", func() {
@@ -340,27 +355,32 @@ func TestLuverneQuery(t *testing.T) {
 				Statuses: []int{800, 900},
 			}
 			var err error
-
+			var vehicleArgs = []string{"2016", "Ram", "Ram 1500", ""}
 			ctx.Session, err = mgo.DialWithInfo(database.MongoPartConnectionString())
 			So(err, ShouldBeNil)
 
-			val, err := LuverneQuery(ctx, "2016", "Ram", "Ram 1500", "")
+			val, err := LuverneQuery(ctx, vehicleArgs...)
 			So(err, ShouldBeNil)
 			So(val, ShouldHaveSameTypeAs, &LuverneCategoryVehicle{})
+			err = CleanLookupRedis(vehicleArgs...)
+			So(err, ShouldBeNil)
 		})
 
 		Convey("success", func() {
 			ctx := &LuverneLookupContext{
 				Statuses: []int{800, 900},
 			}
+			var vehicleArgs = []string{"2016", "Ram", "Ram 1500", "Aluminum Oval Bed Rails"}
 			var err error
 
 			ctx.Session, err = mgo.DialWithInfo(database.MongoPartConnectionString())
 			So(err, ShouldBeNil)
 
-			val, err := LuverneQuery(ctx, "2016", "Ram", "Ram 1500", "Aluminum Oval Bed Rails")
+			val, err := LuverneQuery(ctx, vehicleArgs...)
 			So(err, ShouldBeNil)
 			So(val, ShouldHaveSameTypeAs, &LuverneCategoryVehicle{})
+			err = CleanLookupRedis(vehicleArgs...)
+			So(err, ShouldBeNil)
 		})
 
 		Convey("success different vehicle, no category", func() {
@@ -368,13 +388,15 @@ func TestLuverneQuery(t *testing.T) {
 				Statuses: []int{800, 900},
 			}
 			var err error
-
+			var vehicleArgs = []string{"2014", "Chevrolet", "Silverado 2500HD", ""}
 			ctx.Session, err = mgo.DialWithInfo(database.MongoPartConnectionString())
 			So(err, ShouldBeNil)
 
-			val, err := LuverneQuery(ctx, "2014", "Chevrolet", "Silverado 2500HD", "")
+			val, err := LuverneQuery(ctx, vehicleArgs...)
 			So(err, ShouldBeNil)
 			So(val, ShouldHaveSameTypeAs, &LuverneCategoryVehicle{})
+			err = CleanLookupRedis(vehicleArgs...)
+			So(err, ShouldBeNil)
 		})
 
 		Convey("success vehicle with body types", func() {
@@ -382,13 +404,16 @@ func TestLuverneQuery(t *testing.T) {
 				Statuses: []int{800, 900},
 			}
 			var err error
+			var vehicleArgs = []string{"2015", "Ram", "Ram 3500", ""}
 
 			ctx.Session, err = mgo.DialWithInfo(database.MongoPartConnectionString())
 			So(err, ShouldBeNil)
 
-			val, err := LuverneQuery(ctx, "2015", "Ram", "Ram 3500", "")
+			val, err := LuverneQuery(ctx, vehicleArgs...)
 			So(err, ShouldBeNil)
 			So(val, ShouldHaveSameTypeAs, &LuverneCategoryVehicle{})
+			err = CleanLookupRedis(vehicleArgs...)
+			So(err, ShouldBeNil)
 		})
 	})
 }
@@ -526,4 +551,17 @@ func TestGetLuverneStyles(t *testing.T) {
 			So(len(vals2), ShouldNotEqual, 0)
 		})
 	})
+}
+
+func CleanLookupRedis(args ...string) error {
+	var redisKey string
+	for i, arg := range args {
+		if i == 0 {
+			redisKey = fmt.Sprintf("luverne:%s", arg)
+		} else {
+			redisKey = fmt.Sprintf("%s:%s", redisKey, arg)
+		}
+	}
+	// clear redis key
+	return redis.Delete(redisKey)
 }
