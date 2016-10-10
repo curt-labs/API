@@ -2,10 +2,11 @@ package search
 
 import (
 	"errors"
-	"github.com/curt-labs/API/helpers/apicontext"
-	"github.com/ninnemana/elastigo/lib"
 	"os"
 	"strconv"
+
+	"github.com/curt-labs/API/helpers/apicontext"
+	"github.com/ninnemana/elastigo/lib"
 )
 
 func Dsl(query string, page int, count int, brand int, dtx *apicontext.DataContext, rawPartNumber string) (*elastigo.SearchResult, error) {
@@ -34,27 +35,6 @@ func Dsl(query string, page int, count int, brand int, dtx *apicontext.DataConte
 		return nil, errors.New("failed to connect to elasticsearch")
 	}
 
-	searchCurt := false
-	searchAries := false
-
-	if brand == 0 {
-		for _, br := range dtx.BrandArray {
-			if br == 1 { // search curt
-				searchCurt = true
-			} else if br == 3 { // search aries
-				searchAries = true
-			}
-		}
-	} else {
-		if brand == 1 {
-			searchCurt = true
-			searchAries = false
-		} else if brand == 3 {
-			searchAries = true
-			searchCurt = false
-		}
-	}
-
 	from := strconv.Itoa(page * count)
 	size := strconv.Itoa(count)
 
@@ -62,13 +42,7 @@ func Dsl(query string, page int, count int, brand int, dtx *apicontext.DataConte
 	if rawPartNumber != "" {
 		filter.Terms("raw_part", rawPartNumber)
 	}
-	index := "all"
-	if searchCurt && !searchAries {
-		index = "curt"
-	}
-	if !searchCurt && searchAries {
-		index = "aries"
-	}
+	index := findIndex(brand, dtx)
 
 	res, err := elastigo.Search(index).Query(
 		elastigo.Query().Search(query),
@@ -102,37 +76,10 @@ func ExactAndCloseDsl(query string, page int, count int, brand int, dtx *apicont
 		return nil, errors.New("failed to connect to elasticsearch")
 	}
 
-	searchCurt := false
-	searchAries := false
-
-	if brand == 0 {
-		for _, br := range dtx.BrandArray {
-			if br == 1 { // search curt
-				searchCurt = true
-			} else if br == 3 { // search aries
-				searchAries = true
-			}
-		}
-	} else {
-		if brand == 1 {
-			searchCurt = true
-			searchAries = false
-		} else if brand == 3 {
-			searchAries = true
-			searchCurt = false
-		}
-	}
-
 	from := strconv.Itoa(page * count)
 	size := strconv.Itoa(count)
 
-	index := "all"
-	if searchCurt && !searchAries {
-		index = "curt"
-	}
-	if !searchCurt && searchAries {
-		index = "aries"
-	}
+	index := findIndex(brand, dtx)
 
 	args := map[string]interface{}{
 		"from": from,
@@ -157,4 +104,42 @@ func ExactAndCloseDsl(query string, page int, count int, brand int, dtx *apicont
 	}
 	res, err := con.Search(index, "", nil, args)
 	return &res, err
+}
+
+func findIndex(brand int, dtx *apicontext.DataContext) string {
+	searchCurt := false
+	searchAries := false
+	searchLuverne := false
+
+	if brand == 0 {
+		for _, br := range dtx.BrandArray {
+			if br == 1 { // search curt
+				searchCurt = true
+			} else if br == 3 { // search aries
+				searchAries = true
+			} else if br == 4 { // search luverne
+				searchLuverne = true
+			}
+		}
+	} else {
+		if brand == 1 {
+			searchCurt = true
+		} else if brand == 3 {
+			searchAries = true
+		} else if brand == 4 {
+			searchLuverne = true
+		}
+	}
+
+	index := "all"
+	if searchCurt && !searchAries && !searchLuverne {
+		index = "curt"
+	}
+	if searchAries && !searchCurt && !searchLuverne {
+		index = "aries"
+	}
+	if searchLuverne && !searchCurt && !searchAries {
+		index = "luverne"
+	}
+	return index
 }
