@@ -312,5 +312,6 @@ func GetUserBrands(id int) ([]Brand, error) {
 		b.Websites = indexedSites[b.ID]
 		brands = append(brands, b)
 	}
+
 	return brands, nil
 }

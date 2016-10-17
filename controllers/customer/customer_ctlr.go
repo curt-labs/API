@@ -20,7 +20,6 @@ import (
 func GetCustomer(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
 	var err error
 	var c customer.Customer
-
 	if err = c.GetCustomerIdFromKey(dtx.APIKey); err != nil {
 		apierror.GenerateError("Trouble getting customer ID", err, rw, r)
 		return ""

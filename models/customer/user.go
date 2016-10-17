@@ -351,7 +351,6 @@ func (u *CustomerUser) AuthenticateUser() error {
 		return AuthError
 	}
 	defer stmt.Close()
-
 	var dbPass string
 	var passConversionByte []byte
 	var passConversion bool
@@ -406,6 +405,7 @@ func (u *CustomerUser) AuthenticateUser() error {
 		passConversion, err = strconv.ParseBool(string(passConversionByte))
 	}
 	pass := u.Password
+
 	// Attempt to compare bcrypt strings
 	err = bcrypt.CompareHashAndPassword([]byte(dbPass), []byte(pass))
 	if err != nil {
@@ -448,7 +448,6 @@ func (u *CustomerUser) AuthenticateUser() error {
 	if resetErr := u.ResetAuthentication(brandIds); resetErr != nil {
 		err = resetErr
 	}
-
 	u.Current = true
 	return nil
 }
@@ -543,8 +542,8 @@ func (u CustomerUser) GetCustomer(key string) (c Customer, err error) {
 	defer stmt.Close()
 
 	res := stmt.QueryRow(u.Id)
-	if err := c.ScanCustomer(res, key); err != nil {
 
+	if err := c.ScanCustomer(res, key); err != nil {
 		if err == sql.ErrNoRows {
 			err = fmt.Errorf("error: %s", "user not bound to customer")
 		}
@@ -568,6 +567,7 @@ func (u CustomerUser) GetCustomer(key string) (c Customer, err error) {
 	go func() {
 		accountsChan <- c.GetAccounts()
 	}()
+
 	go func() {
 		brands, err := brand.GetUserBrands(c.Id)
 		if err != nil {
@@ -594,7 +594,6 @@ func (u CustomerUser) GetCustomer(key string) (c Customer, err error) {
 	case <-timeout:
 	}
 	<-brandChan
-
 	return
 }
 
@@ -641,8 +640,11 @@ func (u *CustomerUser) GetLocation() error {
 
 	var stateId, countryId *int
 	var state, stateAbbr, country, countryAbbr *string
-
-	err = stmt.QueryRow(u.Id).Scan(
+	rw := stmt.QueryRow(u.Id)
+	if rw == nil {
+		return nil
+	}
+	err = rw.Scan(
 		&u.Location.Id,
 		&u.Location.Name,
 		&u.Location.Email,
