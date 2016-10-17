@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -627,7 +626,6 @@ func (u *CustomerUser) GetKeys() error {
 		res.Scan(&a.Key, &a.Type, &a.DateAdded)
 		keys = append(keys, a)
 	}
-	log.Println(keys)
 	u.Keys = keys
 	return nil
 }
