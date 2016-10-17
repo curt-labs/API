@@ -1,6 +1,8 @@
 package customer_ctlr
 
 import (
+	"log"
+
 	"github.com/curt-labs/API/helpers/apicontext"
 	emailHelper "github.com/curt-labs/API/helpers/email"
 	"github.com/curt-labs/API/helpers/encoding"
@@ -40,7 +42,7 @@ func AuthenticateUser(rw http.ResponseWriter, r *http.Request, enc encoding.Enco
 		apierror.GenerateError("Trouble getting customer user API keys", err, rw, r)
 		return ""
 	}
-
+	log.Println(user.Keys)
 	user.GetComnetAccounts()
 
 	var key string
@@ -300,7 +302,9 @@ func RegisterUser(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 	}
 	var brandIds []int
 	for _, brand := range user.Brands {
-		brandIds = append(brandIds, brand.ID)
+		if brand.ID == 1 || brand.ID == 3 || brand.ID == 4 {
+			brandIds = append(brandIds, brand.ID)
+		}
 	}
 
 	if err = user.Create(brandIds); err != nil {

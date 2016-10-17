@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -615,12 +616,18 @@ func (u *CustomerUser) GetKeys() error {
 		u.Id,
 		strings.Join([]string{api_helpers.AUTH_KEY_TYPE}, ","),
 	}
+
 	res, err := stmt.Query(params...)
+	if res == nil {
+		return nil
+	}
+
 	for res.Next() {
 		var a ApiCredentials
 		res.Scan(&a.Key, &a.Type, &a.DateAdded)
 		keys = append(keys, a)
 	}
+	log.Println(keys)
 	u.Keys = keys
 	return nil
 }

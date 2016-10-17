@@ -277,13 +277,15 @@ func GetUserBrands(id int) ([]Brand, error) {
 	}
 	defer db.Close()
 
-	stmt, err := db.Prepare(getCustomerUserBrands)
+	// Temporarily give new users all brands. OK'd by Alex
+	// stmt, err := db.Prepare(getCustomerUserBrands)
+	stmt, err := db.Prepare(getAllBrandsStmt)
 	if err != nil {
 		return brands, err
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query(id)
+	rows, err := stmt.Query()
 	if err != nil {
 		return brands, err
 	}
