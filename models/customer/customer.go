@@ -763,7 +763,6 @@ func (c *Customer) Delete() (err error) {
 }
 
 func (c *Customer) GetUsers(key string) (err error) {
-
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
 		return err
@@ -775,7 +774,6 @@ func (c *Customer) GetUsers(key string) (err error) {
 		return err
 	}
 	defer stmt.Close()
-
 	res, err := stmt.Query(c.Id)
 	if err != nil {
 		return err
@@ -800,7 +798,6 @@ func (c *Customer) GetUsers(key string) (err error) {
 		if err != nil {
 			continue
 		}
-
 		go func(user CustomerUser) {
 			if err := user.GetKeys(); err == nil {
 				for _, k := range user.Keys {
@@ -813,6 +810,7 @@ func (c *Customer) GetUsers(key string) (err error) {
 
 			user.Brands, err = brand.GetUserBrands(c.Id)
 			if err != nil {
+				userChan <- nil
 				return
 			}
 
@@ -821,7 +819,6 @@ func (c *Customer) GetUsers(key string) (err error) {
 
 			c.Users = append(c.Users, user)
 			userChan <- nil
-
 		}(u)
 		iter++
 	}

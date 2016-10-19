@@ -211,6 +211,7 @@ func processDataContext(r *http.Request, c martini.Context) (*apicontext.DataCon
 	if err != nil {
 		return nil, err
 	}
+
 	return dtx, nil
 }
 
@@ -231,7 +232,6 @@ func getCustomerID(apiKey string) (*customer.CustomerUser, error) {
 	if len(resp.Users) == 0 {
 		return nil, fmt.Errorf("failed to find user for that API key")
 	}
-
 	return &resp.Users[0], err
 }
 
