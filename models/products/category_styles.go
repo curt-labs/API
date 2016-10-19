@@ -237,7 +237,7 @@ func getModels(ctx *LookupContext, year, vehicleMake string) ([]string, error) {
 		"brand.id": bson.M{
 			"$in": ctx.Brands,
 		},
-	}).Select(bson.M{"vehicle_applications.$.model": 1, "_id": 0}).All(&apps)
+	}).Select(bson.M{"vehicle_applications.model": 1, "_id": 0}).All(&apps)
 	if err != nil {
 		return nil, err
 	}
