@@ -237,7 +237,7 @@ func getModels(ctx *LookupContext, year, vehicleMake string) ([]string, error) {
 		"brand.id": bson.M{
 			"$in": ctx.Brands,
 		},
-	}).Select(bson.M{"vehicle_applications.model": 1, "_id": 0}).All(&apps)
+	}).Select(bson.M{"vehicle_applications": 1, "_id": 0}).All(&apps)
 	if err != nil {
 		return nil, err
 	}
@@ -248,7 +248,7 @@ func getModels(ctx *LookupContext, year, vehicleMake string) ([]string, error) {
 	for _, app := range apps {
 		for _, a := range app.Apps {
 			a.Model = strings.Title(a.Model)
-			if _, ok := existing[a.Model]; !ok {
+			if _, ok := existing[a.Model]; !ok && strings.Compare(strings.ToLower(a.Make), strings.ToLower(vehicleMake)) == 0 {
 				models = append(models, a.Model)
 				existing[a.Model] = a.Model
 			}
