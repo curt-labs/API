@@ -31,7 +31,7 @@ deployment:
     branch: goapi
     commands:
       - sudo docker build -t us.gcr.io/${PROD_PROJECT_NAME}/go-api:$CIRCLE_SHA1 .
-      - sudo docker tag us.gcr.io/${PROD_PROJECT_NAME}/iapi:$CIRCLE_SHA1 us.gcr.io/${PROD_PROJECT_NAME}/go-api:latest
+      - sudo docker tag us.gcr.io/${PROD_PROJECT_NAME}/go-api:$CIRCLE_SHA1 us.gcr.io/${PROD_PROJECT_NAME}/go-api:latest
       - sudo /opt/google-cloud-sdk/bin/gcloud config set container/use_client_certificate True
       - sudo /opt/google-cloud-sdk/bin/gcloud auth activate-service-account --key-file ${HOME}/prod-client-secret.json
       - sudo /opt/google-cloud-sdk/bin/gcloud config set project $PROD_PROJECT_NAME
@@ -40,18 +40,18 @@ deployment:
       - sudo /opt/google-cloud-sdk/bin/gcloud --quiet container clusters get-credentials $PROD_CLUSTER_NAME
       - sudo /opt/google-cloud-sdk/bin/gcloud docker push us.gcr.io/${PROD_PROJECT_NAME}/go-api
       - sudo chown -R ubuntu:ubuntu /home/ubuntu/.kube
-      - kubectl rolling-update --image=us.gc.io/${PROD_PROJECT_NAME}/iapi:${CIRCLE_SHA1} go-api
+      - kubectl rolling-update --image=us.gc.io/${PROD_PROJECT_NAME}/go-api:${CIRCLE_SHA1} go-api
   staging:
     branch: staging
     commands:
       - sudo docker build -t us.gcr.io/${STAGE_PROJECT_NAME}/go-api:$CIRCLE_SHA1 .
-      - sudo docker tag us.gcr.io/${STAGE_PROJECT_NAME}/iapi:$CIRCLE_SHA1 us.gcr.io/${STAGE_PROJECT_NAME}/go-api:latest
+      - sudo docker tag us.gcr.io/${STAGE_PROJECT_NAME}/go-api:$CIRCLE_SHA1 us.gcr.io/${STAGE_PROJECT_NAME}/go-api:latest
       - sudo /opt/google-cloud-sdk/bin/gcloud config set container/use_client_certificate True
       - sudo /opt/google-cloud-sdk/bin/gcloud auth activate-service-account --key-file ${HOME}/stage-client-secret.json
       - sudo /opt/google-cloud-sdk/bin/gcloud config set project $STAGE_PROJECT_NAME
       - sudo /opt/google-cloud-sdk/bin/gcloud --quiet config set container/cluster $STAGE_CLUSTER_NAME
       - sudo /opt/google-cloud-sdk/bin/gcloud config set compute/zone $STAGE_ZONE
       - sudo /opt/google-cloud-sdk/bin/gcloud --quiet container clusters get-credentials $STAGE_CLUSTER_NAME
-      - sudo /opt/google-cloud-sdk/bin/gcloud docker push us.gcr.io/${STAGE_PROJECT_NAME}/go-iapi
+      - sudo /opt/google-cloud-sdk/bin/gcloud docker push us.gcr.io/${STAGE_PROJECT_NAME}/go-api
       - sudo chown -R ubuntu:ubuntu /home/ubuntu/.kube
-      - kubectl set image deployment/iapi iapi=us.gcr.io/${STAGE_PROJECT_NAME}/go-iapi:$CIRCLE_SHA1
+      - kubectl set image deployment/goapi goapi=us.gcr.io/${STAGE_PROJECT_NAME}/go-api:$CIRCLE_SHA1
