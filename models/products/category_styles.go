@@ -3,6 +3,7 @@ package products
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"sort"
 	"strings"
 
@@ -88,7 +89,7 @@ func Query(ctx *LookupContext, args ...string) (*CategoryVehicle, error) {
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &vehicle)
 		if err == nil {
-			// return &vehicle, nil
+			return &vehicle, nil
 		}
 	}
 
@@ -248,9 +249,11 @@ func getModels(ctx *LookupContext, year, vehicleMake string) ([]string, error) {
 	for _, app := range apps {
 		for _, a := range app.Apps {
 			a.Model = strings.Title(a.Model)
-			if _, ok := existing[a.Model]; !ok && strings.Compare(strings.ToLower(a.Make), strings.ToLower(vehicleMake)) == 0 {
-				models = append(models, a.Model)
-				existing[a.Model] = a.Model
+			if _, ok := existing[a.Model]; !ok {
+				if strings.Compare(strings.ToLower(a.Make), strings.ToLower(vehicleMake)) == 0 && strings.Compare(a.Year, year) == 0 {
+					models = append(models, a.Model)
+					existing[a.Model] = a.Model
+				}
 			}
 		}
 	}
@@ -304,6 +307,7 @@ func getStyles(ctx *LookupContext, year, vehicleMake, model, category string) ([
 	if err != nil || len(parts) == 0 {
 		return nil, nil, err
 	}
+	log.Println(parts)
 
 	cleanedParts, cats := generateCategoryStyles(parts, year, vehicleMake, model)
 	sort.Sort(ByCategoryTitle(cats))
