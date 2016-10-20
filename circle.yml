@@ -40,7 +40,7 @@ deployment:
       - sudo /opt/google-cloud-sdk/bin/gcloud --quiet container clusters get-credentials $PROD_CLUSTER_NAME
       - sudo /opt/google-cloud-sdk/bin/gcloud docker push us.gcr.io/${PROD_PROJECT_NAME}/go-api
       - sudo chown -R ubuntu:ubuntu /home/ubuntu/.kube
-      - kubectl rolling-update --image=us.gc.io/${PROD_PROJECT_NAME}/go-api:${CIRCLE_SHA1} go-api
+      - kubectl rolling-update --update-period=0m10s --image=us.gc.io/${PROD_PROJECT_NAME}/go-api:${CIRCLE_SHA1} go-api
   staging:
     branch: staging
     commands:
