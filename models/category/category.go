@@ -65,7 +65,7 @@ func GetCategoryTree(dtx *apicontext.DataContext) ([]Category, error) {
 		return cats, err
 	}
 	defer session.Close()
-	query := bson.M{"parent_id": 0, "is_lifestyle": false, "brand.id": bson.M{"$in": dtx.BrandArray}}
+	query := bson.M{"parent_id": 0, "isdeleted": false, "is_lifestyle": false, "brand.id": bson.M{"$in": dtx.BrandArray}}
 	err = session.DB(database.ProductDatabase).C(database.CategoryCollectionName).Find(query).Sort("sort").All(&cats)
 	for i, _ := range cats {
 		cats[i].removeDeletedChildren()
@@ -159,6 +159,7 @@ func GetCategoryParts(catId, page, count int) (PartResponse, error) {
 func (c *Category) removeDeletedChildren() {
 	var newChildren []Category
 	for i, _ := range c.Children {
+		c.Children[i].removeDeletedChildren()
 		if !c.Children[i].IsDeleted {
 			newChildren = append(newChildren, c.Children[i])
 		}
