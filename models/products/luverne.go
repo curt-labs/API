@@ -379,56 +379,68 @@ func (lc *LuverneLookupCategory) ProcessPart(body, box, cab, fuel, wheel string,
 
 func (lc *LuverneLookupCategory) GenerateFitmentsOfPart(body, box, cab, fuel, wheel string, p Part) {
 	// if fitments are empty (first time trying to generate fitments)
-	if len(lc.Fitments) == 0 {
-		if body != "" {
-			newFitment := &LuverneFitment{Title: "Body"}
-			newFitment.Options = append(newFitment.Options, body)
+	if body != "" {
+		newFitment := &LuverneFitment{Title: "Body"}
+		if !checkDuplicateFitments(lc.Fitments, newFitment.Title) {
 			lc.Fitments = append(lc.Fitments, newFitment)
 		}
-		if box != "" {
-			newFitment := &LuverneFitment{Title: "Box"}
-			newFitment.Options = append(newFitment.Options, box)
+	}
+	if box != "" {
+		newFitment := &LuverneFitment{Title: "Box"}
+		if !checkDuplicateFitments(lc.Fitments, newFitment.Title) {
 			lc.Fitments = append(lc.Fitments, newFitment)
 		}
-		if cab != "" {
-			newFitment := &LuverneFitment{Title: "Cab"}
-			newFitment.Options = append(newFitment.Options, cab)
+	}
+	if cab != "" {
+		newFitment := &LuverneFitment{Title: "Cab"}
+		if !checkDuplicateFitments(lc.Fitments, newFitment.Title) {
 			lc.Fitments = append(lc.Fitments, newFitment)
 		}
-		if fuel != "" {
-			newFitment := &LuverneFitment{Title: "Fuel"}
-			newFitment.Options = append(newFitment.Options, fuel)
+	}
+	if fuel != "" {
+		newFitment := &LuverneFitment{Title: "Fuel"}
+		if !checkDuplicateFitments(lc.Fitments, newFitment.Title) {
 			lc.Fitments = append(lc.Fitments, newFitment)
 		}
-		if wheel != "" {
-			newFitment := &LuverneFitment{Title: "Wheel"}
-			newFitment.Options = append(newFitment.Options, wheel)
+	}
+	if wheel != "" {
+		newFitment := &LuverneFitment{Title: "Wheel"}
+		if !checkDuplicateFitments(lc.Fitments, newFitment.Title) {
 			lc.Fitments = append(lc.Fitments, newFitment)
 		}
-	} else { // beginging fitments have been generated, now add additional non-duplicate fitment options
-		for _, fit := range lc.Fitments {
-			// BODY - Check for duplicates, if not a duplicate, add it to the fitment options
-			if fit.Title == "Body" && body != "" && !CheckDuplicateOptions(fit.Options, body) {
-				fit.Options = append(fit.Options, body)
-			}
-			// Box
-			if fit.Title == "Box" && box != "" && !CheckDuplicateOptions(fit.Options, box) {
-				fit.Options = append(fit.Options, box)
-			}
-			// Cab
-			if fit.Title == "Cab" && cab != "" && !CheckDuplicateOptions(fit.Options, cab) {
-				fit.Options = append(fit.Options, cab)
-			}
-			// Fuel
-			if fit.Title == "Fuel" && fuel != "" && !CheckDuplicateOptions(fit.Options, fuel) {
-				fit.Options = append(fit.Options, fuel)
-			}
-			// Wheel
-			if fit.Title == "Wheel" && wheel != "" && !CheckDuplicateOptions(fit.Options, wheel) {
-				fit.Options = append(fit.Options, wheel)
-			} // end wheel
-		} // end each fitment
-	} // end if len(fitments) !== 0
+	}
+
+	for _, fit := range lc.Fitments {
+		// BODY - Check for duplicates, if not a duplicate, add it to the fitment options
+		if fit.Title == "Body" && body != "" && !CheckDuplicateOptions(fit.Options, body) {
+			fit.Options = append(fit.Options, body)
+		}
+		// Box
+		if fit.Title == "Box" && box != "" && !CheckDuplicateOptions(fit.Options, box) {
+			fit.Options = append(fit.Options, box)
+		}
+		// Cab
+		if fit.Title == "Cab" && cab != "" && !CheckDuplicateOptions(fit.Options, cab) {
+			fit.Options = append(fit.Options, cab)
+		}
+		// Fuel
+		if fit.Title == "Fuel" && fuel != "" && !CheckDuplicateOptions(fit.Options, fuel) {
+			fit.Options = append(fit.Options, fuel)
+		}
+		// Wheel
+		if fit.Title == "Wheel" && wheel != "" && !CheckDuplicateOptions(fit.Options, wheel) {
+			fit.Options = append(fit.Options, wheel)
+		} // end wheel
+	} // end each fitment
+}
+
+func checkDuplicateFitments(fitments []*LuverneFitment, fitmentTitle string) bool {
+	for _, fitment := range fitments {
+		if fitment.Title == fitmentTitle {
+			return true
+		}
+	}
+	return false
 }
 
 func CheckDuplicateOptions(options []string, option string) bool {
