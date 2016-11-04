@@ -2,14 +2,47 @@ package search
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"strconv"
+	"strings"
+
+	elastic "gopkg.in/olivere/elastic.v2"
 
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/ninnemana/elastigo/lib"
 )
 
-func Dsl(query string, page int, count int, brand int, dtx *apicontext.DataContext, rawPartNumber string) (*elastigo.SearchResult, error) {
+func newConn() (*elastic.Client, error) {
+	hosts := []string{"http://127.0.0.1:9200"}
+
+	if d := os.Getenv("ELASTICSEARCH_IP"); d != "" {
+		hosts = []string{}
+		urls := strings.Split(d, ",")
+		for _, u := range urls {
+			hosts = append(
+				hosts,
+				fmt.Sprintf("http://%s:9200", u),
+			)
+		}
+	}
+
+	user := os.Getenv("ELASTIC_USER")
+	pass := os.Getenv("ELASTIC_PASS")
+
+	funcs := []elastic.ClientOptionFunc{
+		elastic.SetURL(hosts...),
+		elastic.SetMaxRetries(10),
+	}
+
+	if user != "" && pass != "" {
+		funcs = append(funcs, elastic.SetBasicAuth(user, pass))
+	}
+
+	return elastic.NewSimpleClient(funcs...)
+}
+
+func Dsl(query string, page int, count int, brand int, dtx *apicontext.DataContext, rawPartNumber string) (*elastic.SearchResult, error) {
 
 	if page == 1 {
 		page = 0
@@ -21,33 +54,43 @@ func Dsl(query string, page int, count int, brand int, dtx *apicontext.DataConte
 		return nil, errors.New("cannot execute a search on an empty query")
 	}
 
-	var con *elastigo.Conn
-	if host := os.Getenv("ELASTICSEARCH_IP"); host != "" {
-		con = &elastigo.Conn{
-			Protocol: elastigo.DefaultProtocol,
-			Domain:   host,
-			Port:     os.Getenv("ELASTIC_PORT"),
-			Username: os.Getenv("ELASTIC_USER"),
-			Password: os.Getenv("ELASTIC_PASS"),
-		}
-	}
-	if con == nil {
-		return nil, errors.New("failed to connect to elasticsearch")
+	c, err := newConn()
+	if err != nil {
+		return nil, err
 	}
 
-	from := strconv.Itoa(page * count)
-	size := strconv.Itoa(count)
+	// from := strconv.Itoa(page * count)
+	// size := strconv.Itoa(count)
 
-	filter := elastigo.Filter()
-	if rawPartNumber != "" {
-		filter.Terms("raw_part", rawPartNumber)
-	}
-	index := findIndex(brand, dtx)
+	return c.Search(findIndex(brand, dtx)).From(page * count).Size(count).Query(elastic.NewQueryStringQuery(query)).Do()
 
-	res, err := elastigo.Search(index).Query(
-		elastigo.Query().Search(query),
-	).Filter(filter).From(from).Size(size).Result(con)
-	return res, err
+	// var con *elastigo.Conn
+	// if host := os.Getenv("ELASTICSEARCH_IP"); host != "" {
+	// 	con = &elastigo.Conn{
+	// 		Protocol: elastigo.DefaultProtocol,
+	// 		Domain:   host,
+	// 		Port:     os.Getenv("ELASTIC_PORT"),
+	// 		Username: os.Getenv("ELASTIC_USER"),
+	// 		Password: os.Getenv("ELASTIC_PASS"),
+	// 	}
+	// }
+	// if con == nil {
+	// 	return nil, errors.New("failed to connect to elasticsearch")
+	// }
+	//
+	// from := strconv.Itoa(page * count)
+	// size := strconv.Itoa(count)
+	//
+	// filter := elastigo.Filter()
+	// if rawPartNumber != "" {
+	// 	filter.Terms("raw_part", rawPartNumber)
+	// }
+	// index := findIndex(brand, dtx)
+	//
+	// res, err := elastigo.Search(index).Query(
+	// 	elastigo.Query().Search(query),
+	// ).Filter(filter).From(from).Size(size).Result(con)
+	// return res, err
 }
 
 func ExactAndCloseDsl(query string, page int, count int, brand int, dtx *apicontext.DataContext) (*elastigo.SearchResult, error) {
