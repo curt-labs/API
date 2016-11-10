@@ -12,6 +12,7 @@ type CustomerPrice struct {
 	ID             int        `json:"id,omitempty" xml:"id,omitempty"`
 	CustID         int        `json:"custId,omitempty" xml:"custId,omitempty"`
 	PartID         int        `json:"partId,omitempty" xml:"partId,omitempty"`
+	PartNumber     string     `json:"partNumber,omitempty" xml:"partNumber,omitempty"`
 	CustomerPartID int        `json:"customerPartId,omitempty" xml:"customerPartId,omitempty"`
 	Price          float64    `json:"price,omitempty" xml:"price,omitempty"`
 	IsSale         int        `json:"isSale,omitempty" xml:"isSale,omitempty"`
@@ -22,56 +23,60 @@ type CustomerPrice struct {
 }
 
 type Price struct {
-	PartID int     `json:"partId,omitempty" xml:"partId,omitempty"`
-	Type   string  `json:"type,omitempty" xml:"type,omitempty"`
-	Price  float64 `json:"price,omitempty" xml:"price,omitempty"`
+	PartID     int     `json:"partId,omitempty" xml:"partId,omitempty"`
+	PartNumber string  `json:"partNumber,omitempty" xml:"partNumber,omitempty"`
+	Type       string  `json:"type,omitempty" xml:"type,omitempty"`
+	Price      float64 `json:"price,omitempty" xml:"price,omitempty"`
 }
 
 var (
-	getPricing = `SELECT distinct cp.cust_price_id, cp.cust_id, p.partID, ci.referenceID, ci.custPartID, cp.price, cp.isSale, cp.sale_start, cp.sale_end, pr.priceType, pr.price FROM Part p
+	getPricing = `SELECT distinct cp.cust_price_id, cp.cust_id, p.partID, p.oldPartNumber, ci.referenceID, ci.custPartID, cp.price, cp.isSale, cp.sale_start, cp.sale_end, pr.priceType, pr.price FROM Part p
 		LEFT JOIN CustomerPricing cp ON cp.partID = p.partID AND cp.cust_id = ?
 		LEFT JOIN CartIntegration ci ON ci.partID = p.partID AND ci.custID = ?
 		left join Price pr on pr.partID = p.partID and pr.priceType = 'list'
 		WHERE (p.status = 800 OR p.status = 900) && p.brandID = ?
-		ORDER BY p.partID`
-	getPricingPaged = `SELECT distinct cp.cust_price_id, cp.cust_id, p.partID, ci.referenceID, ci.custPartID, cp.price, cp.isSale, cp.sale_start, cp.sale_end, pr.priceType, pr.price FROM Part p
+		ORDER BY p.oldPartNumber`
+	getPricingPaged = `SELECT distinct cp.cust_price_id, cp.cust_id, p.partID, oldPartNumber, ci.referenceID, ci.custPartID, cp.price, cp.isSale, cp.sale_start, cp.sale_end, pr.priceType, pr.price FROM Part p
 		LEFT JOIN CustomerPricing cp ON cp.partID = p.partID AND cp.cust_id = ?
 		LEFT JOIN CartIntegration ci ON ci.partID = p.partID AND ci.custID = ?
 		left join Price pr on pr.partID = p.partID and pr.priceType = 'list'
 		WHERE (p.status = 800 OR p.status = 900) && p.brandID = ?
-		ORDER BY p.partID
+		ORDER BY p.oldPartNumber
 		LIMIT ?, ?`
 	getPricingCount = `SELECT count(distinct cp.cust_price_id) FROM Part p
 		LEFT JOIN CustomerPricing cp ON cp.partID = p.partID AND cp.cust_id = ?
 		LEFT JOIN CartIntegration ci ON ci.partID = p.partID AND ci.custID = ?
 		WHERE (p.status = 800 OR p.status = 900) && p.brandID = ?
-		ORDER BY p.partID`
-	getPricingByPart = `SELECT pr.partID, pr.priceType, pr.price FROM Price as pr
+		ORDER BY p.oldPartNumber`
+	getPricingByPart = `SELECT pr.partID, p.oldPartNumber, pr.priceType, pr.price FROM Price as pr
 		JOIN Part as p ON pr.partID = p.partID
-		WHERE p.status != 999 && p.brandID = ? && p.partID = ?
+		WHERE p.status != 999 && p.brandID = ? && p.oldPartNumber = ?
 		ORDER BY pr.priceType`
-	getAllPricing = `SELECT pr.partID, pr.priceType, pr.price FROM Price as pr
+	getAllPricing = `SELECT pr.partID, p.oldPartNumber, pr.priceType, pr.price FROM Price as pr
 		JOIN Part as p ON pr.partID = p.partID
 		WHERE p.status != 999 && p.brandID = ?
-		ORDER by p.partID, pr.priceType`
-	getAllMAPPricing = `SELECT pr.partID, pr.priceType, pr.price FROM Price as pr
+		ORDER by p.oldPartNumber, pr.priceType`
+	getAllMAPPricing = `SELECT pr.partID, p.oldPartNumber, pr.priceType, pr.price FROM Price as pr
 		JOIN Part as p ON pr.partID = p.partID
 		WHERE p.status != 999 && p.brandID = ? && pr.priceType = 'Map'
-		ORDER by p.partID, pr.priceType`
-	updateCustomerPrice         = `UPDATE CustomerPricing SET price = ?, isSale = ?, sale_start = ?, sale_end = ? WHERE cust_id = ? AND partID = ?`
-	insertCustomerPrice         = `INSERT INTO CustomerPricing(cust_id, partID, price, isSale, sale_start, sale_end) VALUES(?, ?, ?, ?, ?, ?)`
-	deleteCustomerPrice         = `delete from CustomerPricing where cust_price_id = ?`
-	getCustomerCartIntegrations = `select c.referenceID, c.partID, c.custPartID, c.custID from CartIntegration as c
+		ORDER by p.oldPartNumber, pr.priceType`
+	updateCustomerPrice = `UPDATE CustomerPricing SET price = ?, isSale = ?, sale_start = ?, sale_end = ? WHERE cust_id = ? AND partID = ?`
+	insertCustomerPrice = `INSERT INTO CustomerPricing(cust_id, partID, price, isSale, sale_start, sale_end) VALUES(?, ?, ?, ?, ?, ?)`
+	deleteCustomerPrice = `delete from CustomerPricing where cust_price_id = ?`
+	// Cart Integrations
+	getCustomerCartIntegrations = `select c.referenceID, c.partID, p.oldPartNumber, c.custPartID, c.custID from CartIntegration as c
 		join CustomerUser as cu on cu.cust_id = c.custID
 		join ApiKey as a on a.user_id = cu.id
 		join Part as p on p.partID = c.partID
 		where a.api_key = ?
 		and p.brandID = ?
-		order by p.partID`
+		order by p.oldPartNumber`
 	insertCartIntegration = `INSERT INTO CartIntegration(partID, custPartID, custID) VALUES (?, ?, ?)`
 	deleteCartIntegration = `delete from CartIntegration where partID = ? and custPartID = ? and custID = ?`
 	updateCartIntegration = `UPDATE CartIntegration SET custPartID = ? WHERE partID = ? AND custID = ?`
 	getAllPriceTypes      = `SELECT DISTINCT priceType from Price`
+	// MISC
+	getPartIDfromPartNumber = `select p.partID from Part as p where p.oldPartNumber = ?`
 )
 
 var (
@@ -166,7 +171,7 @@ func GetPricingCount() (int, error) {
 }
 
 //Returns Price for a part
-func GetPartPricesByPartID(partID int) ([]Price, error) {
+func GetPartPricesByPartID(partNumber string) ([]Price, error) {
 	var ps []Price
 	db, err := initDB()
 	if err != nil {
@@ -178,7 +183,7 @@ func GetPartPricesByPartID(partID int) ([]Price, error) {
 		return ps, err
 	}
 	defer stmt.Close()
-	res, err := stmt.Query(Brand_ID, partID)
+	res, err := stmt.Query(Brand_ID, partNumber)
 	if err != nil {
 		return ps, err
 	}
@@ -258,6 +263,10 @@ func (c *CustomerPrice) Update() error {
 		return err
 	}
 	defer stmt.Close()
+	c.PartID, err = GetPartIDfromOldPartNumber(c.PartNumber)
+	if c.PartID == 0 || err != nil {
+		return err
+	}
 	_, err = stmt.Exec(c.Price, c.IsSale, c.SaleStart, c.SaleEnd, c.CustID, c.PartID)
 	return err
 }
@@ -273,6 +282,10 @@ func (c *CustomerPrice) Create() error {
 		return err
 	}
 	defer stmt.Close()
+	c.PartID, err = GetPartIDfromOldPartNumber(c.PartNumber)
+	if c.PartID == 0 || err != nil {
+		return err
+	}
 	res, err := stmt.Exec(c.CustID, c.PartID, c.Price, c.IsSale, c.SaleStart, c.SaleEnd)
 	if err != nil {
 		return err
@@ -338,6 +351,10 @@ func (cp *CustomerPrice) UpdateCartIntegration() error {
 		return err
 	}
 	defer stmt.Close()
+	cp.PartID, err = GetPartIDfromOldPartNumber(cp.PartNumber)
+	if cp.PartID == 0 || err != nil {
+		return err
+	}
 	_, err = stmt.Exec(cp.CustomerPartID, cp.PartID, cp.CustID)
 	return err
 }
@@ -353,6 +370,10 @@ func (cp *CustomerPrice) InsertCartIntegration() error {
 		return err
 	}
 	defer stmt.Close()
+	cp.PartID, err = GetPartIDfromOldPartNumber(cp.PartNumber)
+	if cp.PartID == 0 || err != nil {
+		return err
+	}
 	_, err = stmt.Exec(cp.PartID, cp.CustomerPartID, cp.CustID)
 	return err
 }
@@ -368,6 +389,10 @@ func (cp *CustomerPrice) DeleteCartIntegration() error {
 		return err
 	}
 	defer stmt.Close()
+	cp.PartID, err = GetPartIDfromOldPartNumber(cp.PartNumber)
+	if cp.PartID == 0 || err != nil {
+		return err
+	}
 	_, err = stmt.Exec(cp.PartID, cp.CustomerPartID, cp.CustID)
 	return err
 }
@@ -406,11 +431,13 @@ func Scan(rows database.Scanner) (CustomerPrice, error) {
 	var custPartId, id, custId, isSale, reference *int
 	var ss, se *time.Time
 	var pt *string
+	var oldPartNumber *string
 
 	err := rows.Scan(
 		&id,
 		&custId,
 		&c.PartID,
+		&oldPartNumber,
 		&reference,
 		&custPartId,
 		&p,
@@ -432,6 +459,9 @@ func Scan(rows database.Scanner) (CustomerPrice, error) {
 	}
 	if p != nil {
 		c.Price = *p
+	}
+	if oldPartNumber != nil {
+		c.PartNumber = *oldPartNumber
 	}
 	if reference != nil {
 		c.ReferenceID = *reference
@@ -461,6 +491,7 @@ func ScanPrice(rows database.Scanner) (Price, error) {
 	var p Price
 	err := rows.Scan(
 		&p.PartID,
+		&p.PartNumber,
 		&p.Type,
 		&p.Price,
 	)
@@ -472,8 +503,33 @@ func ScanCartIntegration(rows database.Scanner) (CustomerPrice, error) {
 	err := rows.Scan(
 		&c.ReferenceID,
 		&c.PartID,
+		&c.PartNumber,
 		&c.CustomerPartID,
 		&c.CustID,
 	)
 	return c, err
+}
+
+func GetPartIDfromOldPartNumber(oldPartNumber string) (int, error) {
+	var partID int
+	db, err := initDB()
+	if err != nil {
+		return partID, err
+	}
+	defer db.Close()
+	stmt, err := db.Prepare(getPartIDfromPartNumber)
+	if err != nil {
+		return partID, err
+	}
+	defer stmt.Close()
+	var id *int
+	err = stmt.QueryRow(oldPartNumber).Scan(&id)
+	if err != nil {
+		return partID, err
+	}
+	if id != nil {
+		partID = *id
+	}
+
+	return partID, err
 }

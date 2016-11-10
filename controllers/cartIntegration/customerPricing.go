@@ -120,12 +120,12 @@ func GetPartPricesByPartID(rw http.ResponseWriter, r *http.Request, enc encoding
 		apierror.GenerateError("Trouble getting brandID from query string", err, rw, r)
 		return ""
 	}
-	partID, err := strconv.Atoi(params["part"])
-	if partID < 1 || err != nil {
+	partNumber := params["part"]
+	if partNumber == "" {
 		apierror.GenerateError("Trouble getting part number for part pricing", err, rw, r)
 		return ""
 	}
-	prices, err := cartIntegration.GetPartPricesByPartID(partID)
+	prices, err := cartIntegration.GetPartPricesByPartID(partNumber)
 	if err != nil {
 		apierror.GenerateError("Trouble getting pricing", err, rw, r)
 		return ""
