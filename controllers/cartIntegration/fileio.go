@@ -86,7 +86,7 @@ func Download(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) str
 
 	//Write
 	wr.Write([]string{
-		"CURT Part ID",
+		"CURT Part Number",
 		"Customer Part ID",
 		"Sale Price",
 		"Sale Start Date",
@@ -110,7 +110,7 @@ func Download(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) str
 			end = price.SaleEnd.Format(cartIntegration.DATE_FORMAT)
 		}
 		wr.Write([]string{
-			strconv.Itoa(price.PartID),
+			price.PartNumber,
 			strconv.Itoa(price.CustomerPartID), //TODO - get CartIntegration at the same time
 			strconv.FormatFloat(price.Price, 'f', 2, 64),
 			start,

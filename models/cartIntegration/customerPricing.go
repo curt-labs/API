@@ -263,9 +263,11 @@ func (c *CustomerPrice) Update() error {
 		return err
 	}
 	defer stmt.Close()
-	c.PartID, err = GetPartIDfromOldPartNumber(c.PartNumber)
-	if c.PartID == 0 || err != nil {
-		return err
+	if c.PartID == 0 {
+		c.PartID, err = GetPartIDfromOldPartNumber(c.PartNumber)
+		if c.PartID == 0 || err != nil {
+			return err
+		}
 	}
 	_, err = stmt.Exec(c.Price, c.IsSale, c.SaleStart, c.SaleEnd, c.CustID, c.PartID)
 	return err
@@ -282,9 +284,11 @@ func (c *CustomerPrice) Create() error {
 		return err
 	}
 	defer stmt.Close()
-	c.PartID, err = GetPartIDfromOldPartNumber(c.PartNumber)
-	if c.PartID == 0 || err != nil {
-		return err
+	if c.PartID == 0 {
+		c.PartID, err = GetPartIDfromOldPartNumber(c.PartNumber)
+		if c.PartID == 0 || err != nil {
+			return err
+		}
 	}
 	res, err := stmt.Exec(c.CustID, c.PartID, c.Price, c.IsSale, c.SaleStart, c.SaleEnd)
 	if err != nil {
@@ -351,9 +355,11 @@ func (cp *CustomerPrice) UpdateCartIntegration() error {
 		return err
 	}
 	defer stmt.Close()
-	cp.PartID, err = GetPartIDfromOldPartNumber(cp.PartNumber)
-	if cp.PartID == 0 || err != nil {
-		return err
+	if cp.PartID == 0 {
+		cp.PartID, err = GetPartIDfromOldPartNumber(cp.PartNumber)
+		if cp.PartID == 0 || err != nil {
+			return err
+		}
 	}
 	_, err = stmt.Exec(cp.CustomerPartID, cp.PartID, cp.CustID)
 	return err
@@ -370,9 +376,11 @@ func (cp *CustomerPrice) InsertCartIntegration() error {
 		return err
 	}
 	defer stmt.Close()
-	cp.PartID, err = GetPartIDfromOldPartNumber(cp.PartNumber)
-	if cp.PartID == 0 || err != nil {
-		return err
+	if cp.PartID == 0 {
+		cp.PartID, err = GetPartIDfromOldPartNumber(cp.PartNumber)
+		if cp.PartID == 0 || err != nil {
+			return err
+		}
 	}
 	_, err = stmt.Exec(cp.PartID, cp.CustomerPartID, cp.CustID)
 	return err
@@ -389,9 +397,11 @@ func (cp *CustomerPrice) DeleteCartIntegration() error {
 		return err
 	}
 	defer stmt.Close()
-	cp.PartID, err = GetPartIDfromOldPartNumber(cp.PartNumber)
-	if cp.PartID == 0 || err != nil {
-		return err
+	if cp.PartID == 0 {
+		cp.PartID, err = GetPartIDfromOldPartNumber(cp.PartNumber)
+		if cp.PartID == 0 || err != nil {
+			return err
+		}
 	}
 	_, err = stmt.Exec(cp.PartID, cp.CustomerPartID, cp.CustID)
 	return err
