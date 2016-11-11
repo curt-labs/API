@@ -43,10 +43,11 @@ var (
 		WHERE (p.status = 800 OR p.status = 900) && p.brandID = ?
 		ORDER BY p.oldPartNumber
 		LIMIT ?, ?`
-	getPricingCount = `SELECT count(distinct cp.cust_price_id) FROM Part p
-		LEFT JOIN CustomerPricing cp ON cp.partID = p.partID AND cp.cust_id = ?
-		LEFT JOIN CartIntegration ci ON ci.partID = p.partID AND ci.custID = ?
-		WHERE (p.status = 800 OR p.status = 900) && p.brandID = ?
+	getPricingCount = `SELECT count(*) FROM Part p
+		LEFT JOIN CustomerPricing cp ON cp.partID = p.partID AND cp.cust_id = 1
+		LEFT JOIN CartIntegration ci ON ci.partID = p.partID AND ci.custID = 1
+		left join Price pr on pr.partID = p.partID and pr.priceType = 'list'
+		WHERE (p.status = 800 OR p.status = 900) && p.brandID = 1
 		ORDER BY p.oldPartNumber`
 	getPricingByPart = `SELECT pr.partID, p.oldPartNumber, pr.priceType, pr.price FROM Price as pr
 		JOIN Part as p ON pr.partID = p.partID
