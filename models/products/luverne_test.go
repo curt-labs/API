@@ -56,7 +56,7 @@ func TestGetLuverneYears(t *testing.T) {
 
 		Convey("success", func() {
 			ctx := &LuverneLookupContext{
-				Statuses: []int{800, 900},
+				Statuses: []int{700, 800, 810, 815, 850, 870, 888, 900, 910, 950},
 			}
 			var err error
 
@@ -116,7 +116,7 @@ func TestGetLuverneMakes(t *testing.T) {
 
 		Convey("with no year", func() {
 			ctx := &LuverneLookupContext{
-				Statuses: []int{800, 900},
+				Statuses: []int{700, 800, 810, 815, 850, 870, 888, 900, 910, 950},
 			}
 			var err error
 
@@ -131,7 +131,7 @@ func TestGetLuverneMakes(t *testing.T) {
 
 		Convey("success", func() {
 			ctx := &LuverneLookupContext{
-				Statuses: []int{800, 900},
+				Statuses: []int{700, 800, 810, 815, 850, 870, 888, 900, 910, 950},
 			}
 			var err error
 
@@ -191,7 +191,7 @@ func TestGetLuverneModels(t *testing.T) {
 
 		Convey("with no year", func() {
 			ctx := &LuverneLookupContext{
-				Statuses: []int{800, 900},
+				Statuses: []int{700, 800, 810, 815, 850, 870, 888, 900, 910, 950},
 			}
 			var err error
 
@@ -206,7 +206,7 @@ func TestGetLuverneModels(t *testing.T) {
 
 		Convey("with no model", func() {
 			ctx := &LuverneLookupContext{
-				Statuses: []int{800, 900},
+				Statuses: []int{700, 800, 810, 815, 850, 870, 888, 900, 910, 950},
 			}
 			var err error
 
@@ -221,7 +221,7 @@ func TestGetLuverneModels(t *testing.T) {
 
 		Convey("success", func() {
 			ctx := &LuverneLookupContext{
-				Statuses: []int{800, 900},
+				Statuses: []int{700, 800, 810, 815, 850, 870, 888, 900, 910, 950},
 			}
 			var err error
 
@@ -241,7 +241,7 @@ func TestLuverneQuery(t *testing.T) {
 
 		Convey("with no params", func() {
 			ctx := &LuverneLookupContext{
-				Statuses: []int{800, 900},
+				Statuses: []int{700, 800, 810, 815, 850, 870, 888, 900, 910, 950},
 			}
 			var err error
 
@@ -255,7 +255,7 @@ func TestLuverneQuery(t *testing.T) {
 
 		Convey("with one empty param", func() {
 			ctx := &LuverneLookupContext{
-				Statuses: []int{800, 900},
+				Statuses: []int{700, 800, 810, 815, 850, 870, 888, 900, 910, 950},
 			}
 			var err error
 
@@ -271,7 +271,7 @@ func TestLuverneQuery(t *testing.T) {
 
 		Convey("with two empty params", func() {
 			ctx := &LuverneLookupContext{
-				Statuses: []int{800, 900},
+				Statuses: []int{700, 800, 810, 815, 850, 870, 888, 900, 910, 950},
 			}
 			var err error
 
@@ -287,7 +287,7 @@ func TestLuverneQuery(t *testing.T) {
 
 		Convey("with three empty params", func() {
 			ctx := &LuverneLookupContext{
-				Statuses: []int{800, 900},
+				Statuses: []int{700, 800, 810, 815, 850, 870, 888, 900, 910, 950},
 			}
 			var err error
 
@@ -303,7 +303,7 @@ func TestLuverneQuery(t *testing.T) {
 
 		Convey("with empty vehicle", func() {
 			ctx := &LuverneLookupContext{
-				Statuses: []int{800, 900},
+				Statuses: []int{700, 800, 810, 815, 850, 870, 888, 900, 910, 950},
 			}
 			var err error
 
@@ -319,7 +319,7 @@ func TestLuverneQuery(t *testing.T) {
 
 		Convey("with no make, model or category", func() {
 			ctx := &LuverneLookupContext{
-				Statuses: []int{800, 900},
+				Statuses: []int{700, 800, 810, 815, 850, 870, 888, 900, 910, 950},
 			}
 			var err error
 			var vehicleArgs = []string{"2016", "", "", ""}
@@ -336,7 +336,7 @@ func TestLuverneQuery(t *testing.T) {
 
 		Convey("with no model or category", func() {
 			ctx := &LuverneLookupContext{
-				Statuses: []int{800, 900},
+				Statuses: []int{700, 800, 810, 815, 850, 870, 888, 900, 910, 950},
 			}
 			var err error
 			var vehicleArgs = []string{"2016", "Ram", "", ""}
@@ -352,7 +352,7 @@ func TestLuverneQuery(t *testing.T) {
 
 		Convey("with no category", func() {
 			ctx := &LuverneLookupContext{
-				Statuses: []int{800, 900},
+				Statuses: []int{700, 800, 810, 815, 850, 870, 888, 900, 910, 950},
 			}
 			var err error
 			var vehicleArgs = []string{"2016", "Ram", "Ram 1500", ""}
@@ -368,7 +368,7 @@ func TestLuverneQuery(t *testing.T) {
 
 		Convey("success", func() {
 			ctx := &LuverneLookupContext{
-				Statuses: []int{800, 900},
+				Statuses: []int{700, 800, 810, 815, 850, 870, 888, 900, 910, 950},
 			}
 			var vehicleArgs = []string{"2016", "Ram", "Ram 1500", "Aluminum Oval Bed Rails"}
 			var err error
@@ -385,7 +385,7 @@ func TestLuverneQuery(t *testing.T) {
 
 		Convey("success different vehicle, no category", func() {
 			ctx := &LuverneLookupContext{
-				Statuses: []int{800, 900},
+				Statuses: []int{700, 800, 810, 815, 850, 870, 888, 900, 910, 950},
 			}
 			var err error
 			var vehicleArgs = []string{"2014", "Chevrolet", "Silverado 2500HD", ""}
@@ -401,7 +401,7 @@ func TestLuverneQuery(t *testing.T) {
 
 		Convey("success vehicle with body types", func() {
 			ctx := &LuverneLookupContext{
-				Statuses: []int{800, 900},
+				Statuses: []int{700, 800, 810, 815, 850, 870, 888, 900, 910, 950},
 			}
 			var err error
 			var vehicleArgs = []string{"2015", "Ram", "Ram 3500", ""}
@@ -468,7 +468,7 @@ func TestGetLuverneStyles(t *testing.T) {
 
 		Convey("with no vehicle info", func() {
 			ctx := &LuverneLookupContext{
-				Statuses: []int{800, 900},
+				Statuses: []int{700, 800, 810, 815, 850, 870, 888, 900, 910, 950},
 			}
 			var err error
 
@@ -485,7 +485,7 @@ func TestGetLuverneStyles(t *testing.T) {
 
 		Convey("with no make, model or category", func() {
 			ctx := &LuverneLookupContext{
-				Statuses: []int{800, 900},
+				Statuses: []int{700, 800, 810, 815, 850, 870, 888, 900, 910, 950},
 			}
 			var err error
 
@@ -502,7 +502,7 @@ func TestGetLuverneStyles(t *testing.T) {
 
 		Convey("with no model or category", func() {
 			ctx := &LuverneLookupContext{
-				Statuses: []int{800, 900},
+				Statuses: []int{700, 800, 810, 815, 850, 870, 888, 900, 910, 950},
 			}
 			var err error
 
@@ -519,7 +519,7 @@ func TestGetLuverneStyles(t *testing.T) {
 
 		Convey("with no category", func() {
 			ctx := &LuverneLookupContext{
-				Statuses: []int{800, 900},
+				Statuses: []int{700, 800, 810, 815, 850, 870, 888, 900, 910, 950},
 			}
 			var err error
 
@@ -536,7 +536,7 @@ func TestGetLuverneStyles(t *testing.T) {
 
 		Convey("success", func() {
 			ctx := &LuverneLookupContext{
-				Statuses: []int{800, 900},
+				Statuses: []int{700, 800, 810, 815, 850, 870, 888, 900, 910, 950},
 			}
 			var err error
 

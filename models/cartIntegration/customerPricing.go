@@ -34,20 +34,20 @@ var (
 		LEFT JOIN CustomerPricing cp ON cp.partID = p.partID AND cp.cust_id = ?
 		LEFT JOIN CartIntegration ci ON ci.partID = p.partID AND ci.custID = ?
 		left join Price pr on pr.partID = p.partID and pr.priceType = 'list'
-		WHERE (p.status = 800 OR p.status = 900) && p.brandID = ?
+		WHERE p.status in (700, 800, 810, 815, 850, 870, 888, 900, 910, 950)  && p.brandID = ?
 		ORDER BY p.oldPartNumber`
 	getPricingPaged = `SELECT distinct cp.cust_price_id, cp.cust_id, p.partID, oldPartNumber, ci.referenceID, ci.custPartID, cp.price, cp.isSale, cp.sale_start, cp.sale_end, pr.priceType, pr.price FROM Part p
 		LEFT JOIN CustomerPricing cp ON cp.partID = p.partID AND cp.cust_id = ?
 		LEFT JOIN CartIntegration ci ON ci.partID = p.partID AND ci.custID = ?
 		left join Price pr on pr.partID = p.partID and pr.priceType = 'list'
-		WHERE (p.status = 800 OR p.status = 900) && p.brandID = ?
+		WHERE p.status in (700, 800, 810, 815, 850, 870, 888, 900, 910, 950)  && p.brandID = ?
 		ORDER BY p.oldPartNumber
 		LIMIT ?, ?`
 	getPricingCount = `SELECT count(*) FROM Part p
 		LEFT JOIN CustomerPricing cp ON cp.partID = p.partID AND cp.cust_id = ?
 		LEFT JOIN CartIntegration ci ON ci.partID = p.partID AND ci.custID = ?
 		left join Price pr on pr.partID = p.partID and pr.priceType = 'list'
-		WHERE (p.status = 800 OR p.status = 900) && p.brandID = ?
+		WHERE p.status in (700, 800, 810, 815, 850, 870, 888, 900, 910, 950) && p.brandID = ?
 		ORDER BY p.oldPartNumber`
 	getPricingByPart = `SELECT pr.partID, p.oldPartNumber, pr.priceType, pr.price FROM Price as pr
 		JOIN Part as p ON pr.partID = p.partID

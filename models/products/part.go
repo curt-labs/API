@@ -104,7 +104,7 @@ type LuverneApplication struct {
 func GetMany(ids, brands []int, sess *mgo.Session) ([]Part, error) {
 
 	c := sess.DB(database.ProductMongoDatabase).C(database.ProductCollectionName)
-	var statuses = []int{800, 900}
+	var statuses = []int{700, 800, 810, 815, 850, 870, 888, 900, 910, 950}
 	qry := bson.M{"id": bson.M{"$in": ids}, "status": bson.M{"$in": statuses}, "brand.id": bson.M{"$in": brands}}
 
 	var parts []Part
@@ -201,7 +201,7 @@ func Identifiers(brand int, dtx *apicontext.DataContext) ([]string, error) {
 			"$in": brands,
 		},
 		"status": bson.M{
-			"$in": []int{800, 900},
+			"$in": []int{700, 800, 810, 815, 850, 870, 888, 900, 910, 950},
 		},
 	}
 

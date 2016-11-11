@@ -4,12 +4,13 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
+
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/database"
 	"github.com/curt-labs/API/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
-	"strconv"
-	"strings"
 )
 
 func (l *Lookup) GetYears(dtx *apicontext.DataContext) error {
@@ -29,7 +30,7 @@ func (l *Lookup) GetYears(dtx *apicontext.DataContext) error {
 		join vcdb_Vehicle as v on bv.ID = v.BaseVehicleID
 		join vcdb_VehiclePart as vp on v.ID = vp.VehicleID
 		join Part as p on vp.PartNumber = p.partID
-		where (p.status = 800 || p.status = 900) `
+		where p.status in (700, 800, 810, 815, 850, 870, 888, 900, 910, 950) `
 	stmtEnd := ` order by y.YearID desc`
 	brandStmt := " && p.brandID in ("
 

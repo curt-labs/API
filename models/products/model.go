@@ -2,10 +2,11 @@ package products
 
 import (
 	"database/sql"
-	"github.com/curt-labs/API/helpers/database"
-	_ "github.com/go-sql-driver/mysql"
 	"strconv"
 	"strings"
+
+	"github.com/curt-labs/API/helpers/database"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 func (l *Lookup) GetModels() error {
@@ -15,7 +16,7 @@ func (l *Lookup) GetModels() error {
 		join vcdb_Vehicle as v on bv.ID = v.BaseVehicleID
 		join vcdb_VehiclePart as vp on v.ID = vp.VehicleID
 		join Part as p on vp.PartNumber = p.partID
-		where (p.status = 800 || p.status = 900) && bv.YearID = ? && ma.MakeName = ? `
+		where p.status in (700, 800, 810, 815, 850, 870, 888, 900, 910, 950) && bv.YearID = ? && ma.MakeName = ? `
 
 	stmtEnd := ` order by mo.ModelName`
 	brandStmt := " && p.brandID in ("

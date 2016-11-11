@@ -3,15 +3,16 @@ package apifilter
 import (
 	"database/sql"
 	"fmt"
-	"github.com/curt-labs/API/helpers/database"
-	"github.com/curt-labs/API/helpers/sortutil"
-	"github.com/curt-labs/API/models/products"
-	_ "github.com/go-sql-driver/mysql"
 	"net/http"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/curt-labs/API/helpers/database"
+	"github.com/curt-labs/API/helpers/sortutil"
+	"github.com/curt-labs/API/models/products"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 var (
@@ -20,7 +21,7 @@ var (
 		join Part as p on pa.partID = p.partID
 		join CatPart as cp on p.partID = cp.partID
 		where
-		(p.status = 800 || p.status = 900) &&
+		p.status in (700, 800, 810, 815, 850, 870, 888, 900, 910, 950) &&
 		cp.catID = ? && !FIND_IN_SET(pa.field, ?) && pa.canFilter = 1
 		group by pa.field, pa.value
 		order by pa.field, pa.value`
@@ -29,7 +30,7 @@ var (
 		join Part as p on pr.partID = p.partID
 		join CatPart as cp on p.partID = cp.partID
 		where cp.catID = ? && lower(pr.priceType) = 'list' &&
-		(p.status = 800 || p.status = 900)
+		p.status in (700, 800, 810, 815, 850, 870, 888, 900, 910, 950) 
 		group by pr.price`
 	GetCategoryGroup = `select distinct cp.catID as cats
 											from CatPart as cp

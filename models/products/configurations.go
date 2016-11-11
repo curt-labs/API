@@ -2,10 +2,11 @@ package products
 
 import (
 	"database/sql"
-	"github.com/curt-labs/API/helpers/database"
-	_ "github.com/go-sql-driver/mysql"
 	"strconv"
 	"strings"
+
+	"github.com/curt-labs/API/helpers/database"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 var (
@@ -15,7 +16,7 @@ var (
 			select GROUP_CONCAT(vp1.PartNumber order by vp1.PartNumber)
 			from vcdb_VehiclePart as vp1
 			join Part as p1 on vp1.PartNumber = p1.partID
-			where vp1.VehicleID = v.ID && (p1.status = 800 || p1.status = 900)
+			where vp1.VehicleID = v.ID && p1.status in (700, 800, 810, 815, 850, 870, 888, 900, 910, 950)
 		) as parts, vca.VehicleConfigID
 		from vcdb_Vehicle as v
 		join VehicleConfigAttribute as vca on v.ConfigID = vca.VehicleConfigID
@@ -29,7 +30,7 @@ var (
 		join Part as p on vp.PartNumber = p.partID
 		join ApiKeyToBrand as atb on atb.brandID = p.brandID
 		join ApiKey as ak on ak.id = atb.keyID
-		where (p.status = 800 || p.status = 900) &&
+		where p.status in (700, 800, 810, 815, 850, 870, 888, 900, 910, 950) &&
 		ak.api_key = ? &&
 		bv.YearID = ? && ma.MakeName = ? &&
 		mo.ModelName = ? && s.SubmodelName = ?
@@ -45,7 +46,7 @@ var (
 		join vcdb_Make as ma on bv.MakeID = ma.ID
 		join vcdb_VehiclePart as vp on v.ID = vp.VehicleID
 		join Part as p on vp.PartNumber = p.partID
-		where (p.status = 800 || p.status = 900) &&
+		where p.status in (700, 800, 810, 815, 850, 870, 888, 900, 910, 950) &&
 		bv.YearID = ? && ma.MakeName = ? &&
 		mo.ModelName = ? && s.SubmodelName = ? && cat.name = ?
 		order by ca.value`
@@ -307,7 +308,7 @@ func (l *Lookup) GetConfigurations() error {
 		join vcdb_Make as ma on bv.MakeID = ma.ID
 		join vcdb_VehiclePart as vp on v.ID = vp.VehicleID
 		join Part as p on vp.PartNumber = p.partID
-		where (p.status = 800 || p.status = 900) &&
+		where p.status in (700, 800, 810, 815, 850, 870, 888, 900, 910, 950) &&
 		bv.YearID = ? && ma.MakeName = ? &&
 		mo.ModelName = ? && s.SubmodelName = ?`
 	stmtEnd := ` order by cat.sort`

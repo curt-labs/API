@@ -293,7 +293,7 @@ func getStyles(ctx *LookupContext, year, vehicleMake, model, category string) ([
 			},
 		},
 		"status": bson.M{
-			"$in": []int{800, 900},
+			"$in": []int{700, 800, 810, 815, 850, 870, 888, 900, 910, 950},
 		},
 		"brand.id": bson.M{
 			"$in": ctx.Brands,

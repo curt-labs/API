@@ -15,10 +15,7 @@ import (
 )
 
 var (
-	statuses = []int{
-		800,
-		900,
-	}
+	statuses = []int{700, 800, 810, 815, 850, 870, 888, 900, 910, 950}
 )
 
 type Category struct {

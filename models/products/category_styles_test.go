@@ -54,7 +54,7 @@ func TestGetYears(t *testing.T) {
 
 		Convey("with no brand", func() {
 			ctx := &LookupContext{
-				Statuses: []int{800, 900},
+				Statuses: []int{700, 800, 810, 815, 850, 870, 888, 900, 910, 950},
 			}
 			var err error
 
@@ -69,7 +69,7 @@ func TestGetYears(t *testing.T) {
 
 		Convey("success", func() {
 			ctx := &LookupContext{
-				Statuses: []int{800, 900},
+				Statuses: []int{700, 800, 810, 815, 850, 870, 888, 900, 910, 950},
 				Brands:   []int{1},
 			}
 			var err error
@@ -88,7 +88,7 @@ func TestGetStyles(t *testing.T) {
 	Convey("Test getStyles(ctx *LookupContext)", t, func() {
 		Convey("success", func() {
 			ctx := &LookupContext{
-				Statuses: []int{800, 900},
+				Statuses: []int{700, 800, 810, 815, 850, 870, 888, 900, 910, 950},
 				Brands:   []int{3},
 			}
 			var err error

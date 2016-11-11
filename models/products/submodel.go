@@ -18,7 +18,7 @@ func (l *Lookup) GetSubmodels() error {
 		join vcdb_Make as ma on bv.MakeID = ma.ID
 		join vcdb_VehiclePart as vp on v.ID = vp.VehicleID
 		join Part as p on vp.PartNumber = p.partID
-		where (p.status = 800 || p.status = 900) && bv.YearID = ? && ma.MakeName = ? && mo.ModelName = ? `
+		where p.status in (700, 800, 810, 815, 850, 870, 888, 900, 910, 950) && bv.YearID = ? && ma.MakeName = ? && mo.ModelName = ? `
 	stmtEnd := ` order by s.SubmodelName`
 	brandStmt := " && p.brandID in ("
 

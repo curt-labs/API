@@ -17,7 +17,7 @@ import (
 
 var (
 	// DefaultStatuses Normal statuses used to query products
-	DefaultStatuses = []int{800, 900}
+	DefaultStatuses = []int{700, 800, 810, 815, 850, 870, 888, 900, 910, 950}
 )
 
 // QueryCategoryStyle will take in a year, make, model and return all fitment

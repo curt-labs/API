@@ -89,7 +89,7 @@ var (
 					left join Submodel sm on v.SubModelID = sm.ID
 					join vcdb_Make ma on bv.MakeID = ma.ID
 					join vcdb_Model mo on bv.ModelID = mo.ID
-					where p.status in (800,900)
+					where p.status in (700, 800, 810, 815, 850, 870, 888, 900, 910, 950)
 					and (
 						(bv.YearID = ? and ma.MakeName = ?
 						and mo.ModelName = ? and vca.ID is null)
@@ -113,7 +113,7 @@ var (
 					left join Submodel sm on v.SubModelID = sm.ID
 					join vcdb_Make ma on bv.MakeID = ma.ID
 					join vcdb_Model mo on bv.ModelID = mo.ID
-					where p.status in (800,900) and UPPER(pc.class) = 'WIRING' `
+					where p.status in (700, 800, 810, 815, 850, 870, 888, 900, 910, 950) and UPPER(pc.class) = 'WIRING' `
 	vehicleConnectorStmtWithConfig = `and (
 						(bv.YearID = ? and ma.MakeName = ?
 						and mo.ModelName = ? and vca.ID is null)
@@ -200,15 +200,15 @@ var (
 			where ca.ID = ?`
 
 	getVehicleConfigs = `select cat.name , ca.value
-		from VehicleConfigAttribute as vca 
+		from VehicleConfigAttribute as vca
 		left join ConfigAttribute as ca on ca.ID = vca.AttributeID
-		left join ConfigAttributeType as cat on cat.ID = ca.ConfigAttributeTypeID 
+		left join ConfigAttributeType as cat on cat.ID = ca.ConfigAttributeTypeID
 		left join vcdb_Vehicle as v on v.ConfigID = vca.VehicleConfigID
 		left join BaseVehicle as bv on bv.ID = v.BaseVehicleID
 		left join Submodel as sm on sm.ID = v.SubmodelID
-		where bv.AAIABaseVehicleID = ?  
+		where bv.AAIABaseVehicleID = ?
 		and sm.AAIASubmodelID = ?`
-	getVehicleByBaseStmt = `select v.ID, bv.AAIABaseVehicleID, bv.YearID, ma.ID, ma.MakeName, mo.ID, mo.ModelName 
+	getVehicleByBaseStmt = `select v.ID, bv.AAIABaseVehicleID, bv.YearID, ma.ID, ma.MakeName, mo.ID, mo.ModelName
 	 	from vcdb_Vehicle as v
 	 	join BaseVehicle as bv on bv.ID = v.BaseVehicleID
 	 	left join vcdb_Model as mo on mo.ID = bv.ModelID

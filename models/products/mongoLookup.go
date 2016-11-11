@@ -2,6 +2,7 @@ package products
 
 import (
 	"database/sql"
+
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/database"
 
@@ -46,7 +47,7 @@ var (
 					left join Class as pc on p.classID = pc.classID
 					left join CatPart as cp on p.partID = cp.partID
 					left join Categories as c on cp.catID = c.catID
-					where p.brandID = 3 && p.status in (800,900)
+					where p.brandID = 3 && p.status in (700, 800, 810, 815, 850, 870, 888, 900, 910, 950)
 					group by p.oldPartNumber`
 )
 
