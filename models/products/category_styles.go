@@ -3,7 +3,6 @@ package products
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"sort"
 	"strings"
 
@@ -307,7 +306,6 @@ func getStyles(ctx *LookupContext, year, vehicleMake, model, category string) ([
 	if err != nil || len(parts) == 0 {
 		return nil, nil, err
 	}
-	log.Println(parts)
 
 	cleanedParts, cats := generateCategoryStyles(parts, year, vehicleMake, model)
 	sort.Sort(ByCategoryTitle(cats))
