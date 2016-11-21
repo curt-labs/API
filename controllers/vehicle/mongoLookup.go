@@ -83,6 +83,28 @@ func ByCategory(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dt
 	return encoding.Must(enc.Encode(res))
 }
 
+func ByCategoryLuverne(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+	catID, err := strconv.Atoi(r.FormValue("catID"))
+	page, _ := strconv.Atoi(r.FormValue("page"))
+	limit, _ := strconv.Atoi(r.FormValue("limit"))
+	var offset int
+	if page == 0 {
+		offset = 0
+	} else if page == 1 {
+		offset = 101
+	} else {
+		offset = page*limit + 1
+	}
+
+	res, err := products.FindAppsLuverne(catID, offset, limit)
+	if err != nil {
+		apierror.GenerateError("Trouble finding vehicles.", err, w, r)
+		return ""
+	}
+
+	return encoding.Must(enc.Encode(res))
+}
+
 //Hack version that slowly traverses all the collection and aggregates results
 func AllCollectionsLookup(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	if err := database.Init(); err != nil {
