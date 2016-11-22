@@ -1,7 +1,7 @@
 package products
 
 import (
-	"log"
+	"strings"
 
 	"github.com/curt-labs/API/helpers/database"
 	"gopkg.in/mgo.v2"
@@ -14,21 +14,31 @@ type LuverneResult struct {
 }
 
 type NoSqlLuverneVehicle struct {
-	ID              bson.ObjectId `bson:"_id" json:"_id" xml:"_id"`
-	Year            string        `bson:"year" json:"year,omitempty" xml:"year, omitempty"`
-	Make            string        `bson:"make" json:"make,omitempty" xml:"make, omitempty"`
-	Model           string        `bson:"model" json:"model,omitempty" xml:"model, omitempty"`
-	Body            string        `bson:"body" json:"body,omitempty" xml:"body, omitempty"`
-	Box             string        `bson:"boxLength" json:"boxLength,omitempty" xml:"boxLength, omitempty"`
-	Cab             string        `bson:"cabLength" json:"cabLength,omitempty" xml:"cabLength, omitempty"`
-	Fuel            string        `bson:"fuelType" json:"fuelType,omitempty" xml:"fuelType, omitempty"`
-	Wheel           string        `bson:"wheelType" json:"wheelType,omitempty" xml:"wheelType, omitempty"`
-	Parts           []BasicPart   `bson:"-" json:"parts,omitempty" xml:"parts, omitempty"`
-	MinYear         string        `bson:"min_year" json:"min_year" xml:"minYear"`
-	MaxYear         string        `bson:"max_year" json:"max_year" xml:"maxYear"`
-	PartIdentifiers []int         `bson:"-" json:"parts_ids" xml:"-"`
-	PartArrays      [][]int       `bson:"parts" json:"-" xml:"-"`
-	PartNumbers     [][]string    `bson:"partnumbers" json:"partnumbers" xml:"partnumbers"`
+	ID      bson.ObjectId  `bson:"_id" json:"_id" xml:"_id"`
+	Year    string         `bson:"year" json:"year,omitempty" xml:"year, omitempty"`
+	Make    string         `bson:"make" json:"make,omitempty" xml:"make, omitempty"`
+	Model   string         `bson:"model" json:"model,omitempty" xml:"model, omitempty"`
+	Body    string         `bson:"body" json:"body,omitempty" xml:"body, omitempty"`
+	Box     string         `bson:"boxLength" json:"boxLength,omitempty" xml:"boxLength, omitempty"`
+	Cab     string         `bson:"cabLength" json:"cabLength,omitempty" xml:"cabLength, omitempty"`
+	Fuel    string         `bson:"fuelType" json:"fuelType,omitempty" xml:"fuelType, omitempty"`
+	Wheel   string         `bson:"wheelType" json:"wheelType,omitempty" xml:"wheelType, omitempty"`
+	Parts   []*CompactPart `bson:"products" json:"parts,omitempty" xml:"parts, omitempty"`
+	MinYear string         `bson:"min_year" json:"min_year" xml:"minYear"`
+	MaxYear string         `bson:"max_year" json:"max_year" xml:"maxYear"`
+}
+
+type CompactPart struct {
+	PartNumber   string `bson:"part_number" json:"part_number" xml:"part_number"`
+	InstallSheet string `bson:"install_sheet" json:"install_sheet" xml:"install_sheet"`
+	ShortDesc    string `bson:"short_description" json:"short_description" xml:"short_description"`
+	Finish       string `bson:"finish" json:"finish" xml:"finish"`
+	Attributes   []Atr  `bson:"attributes" json:"attributes" xml:"attributes"`
+}
+
+type Atr struct {
+	Name  string `bson:"name" json:"name" xml:"name"`
+	Value string `bson:"value" json:"value" xml:"value"`
 }
 
 func FindAppsLuverne(catID, skip, limit int) (LuverneResult, error) {
@@ -36,13 +46,6 @@ func FindAppsLuverne(catID, skip, limit int) (LuverneResult, error) {
 		Applications: make([]NoSqlLuverneVehicle, 0),
 		Finishes:     make([]string, 0),
 	}
-
-	// // get all the parts inside the respective category
-	// partSkus =
-	// 	// find all applications that contain those parts
-	// 	// { "skus": { $elemMatch: { $in: ["TRX571601","477125-401037"] } } }
-	//
-	// 	initMap.Do(initMaps)
 
 	if limit == 0 || limit > 100 {
 		limit = 100
@@ -74,26 +77,33 @@ func FindAppsLuverne(catID, skip, limit int) (LuverneResult, error) {
 						"fuelType":  "$luverne_applications.fuelType",
 						"wheelType": "$luverne_applications.wheelType",
 					},
-					"min_year":    bson.M{"$min": "$luverne_applications.year"},
-					"max_year":    bson.M{"$max": "$luverne_applications.year"},
-					"partnumbers": bson.M{"$addToSet": "$part_number"},
+					"min_year": bson.M{"$min": "$luverne_applications.year"},
+					"max_year": bson.M{"$max": "$luverne_applications.year"},
+					"products": bson.M{
+						"$addToSet": bson.M{
+							"part_number":       "$part_number",
+							"install_sheet":     "$install_sheet",
+							"short_description": "$short_description",
+							"attributes":        "$attributes",
+						},
+					},
 				},
 			},
 		},
 		bson.D{
 			{
 				"$project", bson.M{
-					"make":        bson.M{"$toUpper": "$_id.make"},
-					"model":       bson.M{"$toUpper": "$_id.model"},
-					"body":        bson.M{"$toUpper": "$_id.body"},
-					"boxLength":   bson.M{"$toUpper": "$_id.boxLength"},
-					"cabLength":   bson.M{"$toUpper": "$_id.cabLength"},
-					"fuelType":    bson.M{"$toUpper": "$_id.fuelType"},
-					"wheelType":   bson.M{"$toUpper": "$_id.wheelType"},
-					"partnumbers": 1,
-					"min_year":    1,
-					"max_year":    1,
-					"_id":         0,
+					"make":      bson.M{"$toUpper": "$_id.make"},
+					"model":     bson.M{"$toUpper": "$_id.model"},
+					"body":      bson.M{"$toUpper": "$_id.body"},
+					"boxLength": bson.M{"$toUpper": "$_id.boxLength"},
+					"cabLength": bson.M{"$toUpper": "$_id.cabLength"},
+					"fuelType":  bson.M{"$toUpper": "$_id.fuelType"},
+					"wheelType": bson.M{"$toUpper": "$_id.wheelType"},
+					"products":  1,
+					"min_year":  1,
+					"max_year":  1,
+					"_id":       0,
 				},
 			},
 		},
@@ -111,16 +121,16 @@ func FindAppsLuverne(catID, skip, limit int) (LuverneResult, error) {
 						"fuelType":  "$fuelType",
 						"wheelType": "$wheelType",
 					},
-					"partnumbers": bson.M{"$push": "$partnumbers"},
-					"make":        bson.M{"$first": "$make"},
-					"model":       bson.M{"$first": "$model"},
-					"body":        bson.M{"$first": "$body"},
-					"boxLength":   bson.M{"$first": "$boxLength"},
-					"cabLength":   bson.M{"$first": "$cabLength"},
-					"fuelType":    bson.M{"$first": "$fuelType"},
-					"wheelType":   bson.M{"$first": "$wheelType"},
-					"min_year":    bson.M{"$min": "$min_year"},
-					"max_year":    bson.M{"$max": "$max_year"},
+					"products":  bson.M{"$first": "$products"},
+					"make":      bson.M{"$first": "$make"},
+					"model":     bson.M{"$first": "$model"},
+					"body":      bson.M{"$first": "$body"},
+					"boxLength": bson.M{"$first": "$boxLength"},
+					"cabLength": bson.M{"$first": "$cabLength"},
+					"fuelType":  bson.M{"$first": "$fuelType"},
+					"wheelType": bson.M{"$first": "$wheelType"},
+					"min_year":  bson.M{"$min": "$min_year"},
+					"max_year":  bson.M{"$max": "$max_year"},
 				},
 			},
 		},
@@ -144,11 +154,24 @@ func FindAppsLuverne(catID, skip, limit int) (LuverneResult, error) {
 	if err != nil {
 		return res, err
 	}
-	log.Println(apps)
-
 	res.Applications = apps
 
-	// find finishes?
+	// find all available finishes
+	var finishesMap = make(map[string]bool, 0)
+	for _, app := range apps {
+		for _, p := range app.Parts {
+			for _, atr := range p.Attributes {
+				if strings.ToLower(atr.Name) == "finish" {
+					finishesMap[atr.Value] = true
+					p.Finish = atr.Value
+				}
+			}
+		}
+	}
+	// loop over the keys of the map and assign them as the values for the res.finishes array
+	for k, _ := range finishesMap {
+		res.Finishes = append(res.Finishes, k)
+	}
 
 	return res, nil
 }
