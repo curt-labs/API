@@ -1,9 +1,10 @@
 package products
 
 import (
+	"testing"
+
 	"github.com/curt-labs/API/helpers/apicontextmock"
 	. "github.com/smartystreets/goconvey/convey"
-	"testing"
 )
 
 func TestPart(t *testing.T) {
