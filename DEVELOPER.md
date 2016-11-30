@@ -7,7 +7,7 @@ This document explains the steps to setup a developer environment for the Go API
 Required Access:
 -
 - GitHub Access
-- Dealer Account API Key ([http://dealers.curtmfg.com/Index](http://dealers.curtmfg.com/Index))
+- Dealer Account API Key ([http://dealers.curtmfg.com/](http://dealers.curtmfg.com/))
 
 Required Software:
 -
