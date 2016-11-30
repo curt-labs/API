@@ -91,6 +91,10 @@ Philoshopy
 
 > This version if the API is meant to focus on data quantity while maintaining, if not improving performance, by leveraging concurrency. We would like the client to have the ability to make fewer requests to the API Server and be provided with a larger amount of data in the response.
 
+Local Development
+-
+Directions for setting up a local development environment can be found in [DEVELOPER.md](https://github.com/curt-labs/API/blob/master/DEVELOPER.md).
+
 Deployment
 -
 
