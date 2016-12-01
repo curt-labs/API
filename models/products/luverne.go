@@ -232,7 +232,7 @@ func getLuverneModels(ctx *LuverneLookupContext, year, vehicleMake string) ([]st
 			"$in": ctx.Statuses,
 		},
 		"brand.id": 4,
-	}).Select(bson.M{"luverne_applications.$.model": 1, "_id": 0}).All(&apps)
+	}).Select(bson.M{"luverne_applications": 1, "_id": 0}).All(&apps)
 	if err != nil {
 		return nil, err
 	}
@@ -242,10 +242,13 @@ func getLuverneModels(ctx *LuverneLookupContext, year, vehicleMake string) ([]st
 	existing := make(map[string]string, 0)
 	for _, app := range apps {
 		for _, a := range app.Apps {
-			a.Model = strings.Title(a.Model)
-			if _, ok := existing[a.Model]; !ok {
-				models = append(models, a.Model)
-				existing[a.Model] = a.Model
+			// Some parts support multi-year and different makes, so we have to filter the year and make back out
+			if(strings.EqualFold(a.Year,year) && strings.EqualFold(a.Make,vehicleMake)) {
+				a.Model = strings.Title(a.Model)
+				if _, ok := existing[a.Model]; !ok {
+					models = append(models, a.Model)
+					existing[a.Model] = a.Model
+				}
 			}
 		}
 	}
@@ -308,6 +311,7 @@ func generateLuverneCategoryStyles(parts []Part, year, vehicleMake, model string
 	y := year
 	ma := strings.ToLower(vehicleMake)
 	mod := strings.ToLower(model)
+	
 	var cleanParts []Part
 	for _, p := range parts {
 		if len(p.Categories) == 0 {

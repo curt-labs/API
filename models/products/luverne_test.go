@@ -526,7 +526,7 @@ func TestGetLuverneStyles(t *testing.T) {
 			ctx.Session, err = mgo.DialWithInfo(database.MongoPartConnectionString())
 			So(err, ShouldBeNil)
 
-			vals1, vals2, err := getLuverneStyles(ctx, "2016", "Ram", "Ram 1500", "")
+			vals1, vals2, err := getLuverneStyles(ctx, "2016", "Ram", "1500", "")
 			So(err, ShouldBeNil)
 			So(vals1, ShouldHaveSameTypeAs, []Part{})
 			So(vals2, ShouldHaveSameTypeAs, []LuverneLookupCategory{})
@@ -543,7 +543,7 @@ func TestGetLuverneStyles(t *testing.T) {
 			ctx.Session, err = mgo.DialWithInfo(database.MongoPartConnectionString())
 			So(err, ShouldBeNil)
 
-			vals1, vals2, err := getLuverneStyles(ctx, "2016", "Ram", "Ram 1500", "Aluminum Oval Bed Rails")
+			vals1, vals2, err := getLuverneStyles(ctx, "2016", "Ram", "1500", "Aluminum Oval Bed Rails")
 			So(err, ShouldBeNil)
 			So(vals1, ShouldHaveSameTypeAs, []Part{})
 			So(vals2, ShouldHaveSameTypeAs, []LuverneLookupCategory{})

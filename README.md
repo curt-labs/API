@@ -93,7 +93,18 @@ Philoshopy
 
 Local Development
 -
-Directions for setting up a local development environment can be found in [DEVELOPER.md](https://github.com/curt-labs/API/blob/master/DEVELOPER.md).
+Directions for setting up a local development environment can be found in [DEVELOPER.md](https://github.com/curt-labs/API/blob/goapi/DEVELOPER.md).
+
+Testing
+-
+The project uses [GoConvey](https://github.com/smartystreets/goconvey) as a testing framework. Follow the install directions from the GitHub repo and make sure you have`$GOPATH/bin` in your `$PATH`. Then go to the directory you want to test and run `goconvey`
+
+*Example*
+
+```
+~/workspace/gocode/src/github.com/curt-labs/API $ cd models/products/
+~/workspace/gocode/src/github.com/curt-labs/API/models/products $ goconvey
+```
 
 Deployment
 -
