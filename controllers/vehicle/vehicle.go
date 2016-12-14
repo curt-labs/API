@@ -3,6 +3,7 @@ package vehicle
 import (
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -27,6 +28,8 @@ func Query(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *ap
 	var l products.Lookup
 	var page int
 	var count int
+
+	log.Printf("[API::ACES::REQUEST]:%+v", r)
 
 	qs := r.URL.Query()
 
