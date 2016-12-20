@@ -19,7 +19,7 @@ Endpoints
 ---------
 
 ###[API Reference](https://github.com/curt-labs/API/tree/master/docs) 
-Our API Reference can be fouund in the Docs folder. Below you can see a summary of our most commonly used APIs.
+Our API Reference can be found in the Docs folder. Below you can see a summary of our most commonly used APIs.
 
 
 
