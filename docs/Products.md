@@ -1,11 +1,18 @@
 Parts
 ===
-##`GET  - http://goapi.curtmfg.com/v3/part/:partId`
-Information about the part
+List of endpoints
+ 
+ - [Get All Parts](#all-parts)
+ 
+ - [Get Single Part](#single-part)
+
+
+##<a name="all-parts"></a>Get All Parts `GET  - http://goapi.curtmfg.com/part`
+Information about the part.
 
 *Example:*
 
-	http://goapi.curtmfg.com/v3/part/110003?key=[public api key]
+	http://goapi.curtmfg.com/part?key=[public api key]&count=20&page=2
 	
 	
 ####Parameters
@@ -13,7 +20,33 @@ Information about the part
 
 | Paramter  |  Description | 
 |---|---|
-| key  | Provide your API key  |
+| key **(required)** | Provide your API key  |
+| count *(optional)* | The number of parts you want returned |
+| page *(optional)* | An offset multiplier based off the count |
+
+####Response 
+Returns an unnamed array of part objets. A part object is described in the Get Single Part response.
+
+| Property Name  |  Value |  Description |
+|---|---|---|
+|  | []object  | Array of part Objects  |
+
+
+##<a name="single-part"></a>Get Single Part `GET  - http://goapi.curtmfg.com/part/:partId`
+Information about the part.
+
+*Example:*
+
+	http://goapi.curtmfg.com/part/110003?key=[public api key]
+	
+	
+####Parameters
+
+
+| Paramter  |  Description | 
+|---|---|
+| key **(required)** | Provide your API key  |
+| brand **(required)** | Brand your querying that part number for (1=CURT, 3=ARIES, 4=Luverne)  |
 
 
 
@@ -22,28 +55,28 @@ Information about the part
 | Property Name  |  Value |  Description |
 |---|---|---|
 | id   				| int  |  Unique Part Identifier |
-| part_number   		| string  |  Part ID used for look-up |
+| part_number   		| string  |  Part ID (SKU) used for look-up |
 | **[brand](https://github.com/curt-labs/API/tree/master/controllers/brand)**   	| object  |  Object describing brand e.g. CURT, ARIES, Luverne |
 | **[status]()** 	| int  	|  Implementation Status Code describes "state" of product i.e. numerical representations for "Discontinued", "While Supplies Last" |
 | price_code 			| int  |  ??? |
-| related_count 		| int  |  Number of parts related to this part |
+| related_count 		| int  |  Number of parts related to this part, size of array `related`  |
 | average_review 	| float64  |  Average value of all reviews |
 | date_modified 		| object  |  Date modified |
 | date_added 			| object  |  Date created |
 | short_description | string  |  Part title |
 | **[install_sheet](https://golang.org/pkg/net/url/#URL)**   	| object  |  URL object with path to Install Sheet |
-| **[attributes]()**   		| []object  |  List of key-value attributes |
-| **[aces_vehicles](#aces-vehicle)**   		| []object  |  Array of vehicles the part fits in ACES format |
+| **[attributes]()**   		| []object  | Unsorted list of key-value technical specifications |
+| **[aces_vehicles](#aces-vehicle)**   		| []object  |  Array of vehicles that fit the part in ACES fitment format |
 | vehicle_atttributes 	| []string  |  ??? |
-| **[vehicle_applications]()** *(optional)* | []object  |  ??? |
-| **[luverne_applications]()** *(optional)* | []object  |  Array of vehicles the part fits in Luverne format |
-| **[content]()**  		| []object 	|  Array of product descriptions objects |
-| **[pricing]()**   	| []object 	|  ??? |
+| **[vehicle_applications]()** *(optional)* | []object  |  Array of vehicles that fit the part in ARIES fitment format |
+| **[luverne_applications]()** *(optional)* | []object  |  Array of vehicles that fit the part in Luverne fitment format |
+| **[content](#content)**  		| []object 	|  Array of product descriptions objects |
+| **[pricing](#price)**   	| []object 	|  Array of pricing levels |
 | **[reviews](#reviews)**   	| []object 	|  Array of product reviews |
-| **[images]()**   		| []object 	|  ??? |
-| **[related]()**   	| []int 		|  ??? |
+| **[images](#image)**   		| []object 	|  An arry of object with the Image URL and meta-data |
+| related   	| []int 		|  Array of Part Numbers of related projects |
 | **[categories]()**   	| []object 	|  ??? |
-| **[videos]()**   		| []object 	|  ??? |
+| **[videos](#video)**   		| []object 	|  An array of Video objects. They have the path to the video and a lot of meta-data |
 | **[packages]()**   	| []object 	|  ??? |
 | **[customer]()** *(optional)*	| object |  ??? |
 | **[class]()** *(optional)*		| object |  ??? |
@@ -476,7 +509,44 @@ A list of Product Object definitions
 | submodel  | string  | Vehicle submodel |
 | [configurations]()  | []object  | ACES Configurations |
 
+#### <a name="content"></a> content ####
 
+| Property Name  | Value | Description | 
+|---|---|---|
+| text  | string  | Content string |
+| [contentType](#contentType)  | object  | ContentType object that describes the content |
+| sort  | int  | The order to sort this content |
+
+#### <a name="contentType"></a> contentType ####
+
+| Property Name  | Value | Description | 
+|---|---|---|
+| id  | string  | Internal Id |
+| type  | string  | Describes what the conten is i.e. "Description", "Bullet, "Content Brief" |
+| allows_html  | bool  | Does the content include html |
+
+#### <a name="image"></a> image ####
+
+| Property Name  | Value | Description | 
+|---|---|---|
+| id *(optional)* 	| int  | Internal Id |
+| size *(optional)*	| string | Describes what the conten is i.e. "Description", "Bullet, "Content Brief" |
+| sort *(optional)*		| string  | Sort Order |
+| height *(optional)* 	| int  | Height in pixels |
+| width *(optional)* 	| int  | Width in pixels |
+| path *(optional)*		| object  | URL object with path to image |
+| partId *(optional)* 	| int  | Part Id reference |
+
+#### <a name="price"></a> price ####
+
+| Property Name  | Value | Description | 
+|---|---|---|
+| id *(optional)* | int  | Internal Id |
+| partId *(optional)* | int  | Part Id reference |
+| type *(optional)* | string  | Pricing type i.e. "Jobber", "List" |
+| price | float64  | Price of product |
+| enforced *(optional)* | bool  | ??? |
+| DateModified *(optional)* | object  | Date Modified |
 
 #### <a name="reviews"></a> reviews ####
 
@@ -490,4 +560,25 @@ A list of Product Object definitions
 | created_date  | object  | Time/Date created |
 | active *(optional)*  | bool  | Review visible on product page |
 | approved *(optional)*  | bool  | Review approved by moderator |
+
+#### <a name="video"></a> video ####
+A reresentation of a video. It contains information about the video itself, as well as any associated files.
+
+| Property Name  | Value | Description | 
+|---|---|---|
+| id *(optional)* 		| int  | Internal Id |
+| title *(optional)* 	| string  | Video Title |
+| subject_type  			| string  |  |
+| videoType *(optional)* | object  | Reviewer's Name |
+| description  		| string  | Email address of reviewer |
+| date_added  		| object  | Date created |
+| date_modified   	| object  | Date modified |
+| thumbnail   		| string  | Thumbnail image URL |
+| channel   			| []object  | Information related to where the file is uploaded to |
+| cdn_file  			| []object  | Array of objects with CDN locations of video |
+| isPrimary *(optional)* 	| bool  | Main video |
+| categoryIds *(optional)* | []int  | Related Categories |
+| partIds *(optional)* 		| []int  | Related part numbers |
+| websiteId *(optional)* 	| int  | ??? |
+| brands *(optional)* 		| object  | Brand this video was created for |
 
