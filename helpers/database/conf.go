@@ -105,12 +105,15 @@ func MongoConnectionString() *mgo.DialInfo {
 	info.Username = os.Getenv("MONGO_CART_USERNAME")
 	info.Password = os.Getenv("MONGO_CART_PASSWORD")
 	info.Database = os.Getenv("MONGO_CART_DATABASE")
+	info.Source = os.Getenv("MONGO_AUTH_DATABASE")
 	info.Timeout = time.Second * 2
 	info.FailFast = true
 	if info.Database == "" {
 		info.Database = "CurtCart"
 	}
-	info.Source = "admin"
+	if info.Source == "" {
+		info.Source = "admin"
+	}
 
 	return &info
 }
@@ -133,12 +136,15 @@ func AriesMongoConnectionString() *mgo.DialInfo {
 	info.Username = os.Getenv("MONGO_ARIES_USERNAME")
 	info.Password = os.Getenv("MONGO_ARIES_PASSWORD")
 	info.Database = os.Getenv("MONGO_ARIES_DATABASE")
+	info.Source = os.Getenv("MONGO_AUTH_DATABASE")
 	info.Timeout = time.Second * 2
 	info.FailFast = true
 	if info.Database == "" {
 		info.Database = "aries"
 	}
-	info.Source = "admin"
+	if info.Source == "" {
+		info.Source = "admin"
+	}
 
 	return &info
 }
