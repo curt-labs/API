@@ -7,10 +7,12 @@ import (
 	"strings"
 	"time"
 
+	"crypto/tls"
 	"database/sql"
 
 	_ "github.com/go-sql-driver/mysql"
 	"gopkg.in/mgo.v2"
+	"net"
 )
 
 type Scanner interface {
@@ -115,6 +117,13 @@ func MongoConnectionString() *mgo.DialInfo {
 		info.Source = "admin"
 	}
 
+	tlsConfig := &tls.Config{}
+	tlsConfig.InsecureSkipVerify = true
+
+	info.DialServer = func(addr *mgo.ServerAddr) (net.Conn, error) {
+		conn, err := tls.Dial("tcp", addr.String(), tlsConfig)
+		return conn, err
+	}
 	return &info
 }
 
@@ -146,6 +155,13 @@ func AriesMongoConnectionString() *mgo.DialInfo {
 		info.Source = "admin"
 	}
 
+	tlsConfig := &tls.Config{}
+	tlsConfig.InsecureSkipVerify = true
+
+	info.DialServer = func(addr *mgo.ServerAddr) (net.Conn, error) {
+		conn, err := tls.Dial("tcp", addr.String(), tlsConfig)
+		return conn, err
+	}
 	return &info
 }
 
