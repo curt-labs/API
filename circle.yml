@@ -1,6 +1,6 @@
 machine:
   environment:
-    CONTAINER_NAME: goapi
+    CONTAINER_NAME: api-goapi
     PROD_IMAGE: gcr.io/curt-services/goapi
     STAGE_IMAGE: gcr.io/unicorn-attack/goapi
     PROD_PROJECT_NAME: curt-services
