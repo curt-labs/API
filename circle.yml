@@ -1,6 +1,7 @@
 machine:
   environment:
-    CONTAINER_NAME: api-goapi
+    CONTAINER_NAME: goapi
+    DEPLOYMENT: api-goapi
     PROD_IMAGE: gcr.io/curt-services/goapi
     STAGE_IMAGE: gcr.io/unicorn-attack/goapi
     PROD_PROJECT_NAME: curt-services
@@ -43,7 +44,7 @@ deployment:
       - sudo /opt/google-cloud-sdk/bin/gcloud --quiet container clusters get-credentials $PROD_CLUSTER_NAME
       - sudo /opt/google-cloud-sdk/bin/gcloud docker push ${PROD_IMAGE}
       - sudo chown -R ubuntu:ubuntu /home/ubuntu/.kube
-      - kubectl set image deployment/${CONTAINER_NAME} ${CONTAINER_NAME}=${PROD_IMAGE}:$CIRCLE_SHA1
+      - kubectl set image deployment/${DEPLOYMENT} ${CONTAINER_NAME}=${PROD_IMAGE}:$CIRCLE_SHA1
   staging:
     branch: staging
     commands:
