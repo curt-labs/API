@@ -12,7 +12,6 @@ import (
 )
 
 const (
-	Db                = 13
 	PoolAllocationErr = "failed to allocate pool"
 	Prefix            = "API"
 	CacheTimeout      = 86400
@@ -71,8 +70,6 @@ func Get(key string) ([]byte, error) {
 		return data, err
 	}
 
-	conn.Send("select", Db)
-
 	reply, err := conn.Do("GET", fmt.Sprintf("%s:%s", Prefix, key))
 	if err != nil || reply == nil {
 		return data, err
@@ -95,7 +92,7 @@ func Setex(key string, obj interface{}, exp int) error {
 		return errors.New(PoolAllocationErr)
 	}
 	conn := pool.Get()
-	if err := conn.Send("select", Db); err != nil {
+	if conn.Err() != nil {
 		return err
 	}
 
@@ -114,7 +111,7 @@ func Set(key string, obj interface{}) error {
 	}
 
 	conn := pool.Get()
-	if err := conn.Send("select", Db); err != nil {
+	if conn.Err() != nil {
 		return err
 	}
 
@@ -133,7 +130,7 @@ func Lpush(key string, obj interface{}) error {
 	}
 
 	conn := pool.Get()
-	if err := conn.Send("select", Db); err != nil {
+	if conn.Err() != nil {
 		return err
 	}
 
@@ -149,9 +146,10 @@ func Delete(key string) error {
 	}
 
 	conn := pool.Get()
-	if err := conn.Send("select", Db); err != nil {
+	if conn.Err() != nil {
 		return err
 	}
+
 	_, err = conn.Do("DEL", fmt.Sprintf("%s:%s", Prefix, key))
 	return err
 }
@@ -164,7 +162,7 @@ func GetNamespaces() (namespaces map[string][]string, err error) {
 	}
 
 	conn := pool.Get()
-	if err = conn.Send("select", Db); err != nil {
+	if conn.Err() != nil {
 		return namespaces, err
 	}
 	reply, err := redix.Strings(conn.Do("KEYS", "*"))
@@ -192,9 +190,10 @@ func DeleteFullPath(key string) error {
 	}
 
 	conn := pool.Get()
-	if err := conn.Send("select", Db); err != nil {
+	if conn.Err() != nil {
 		return err
 	}
+
 	_, err = conn.Do("DEL", fmt.Sprintf("%s", key))
 	return err
 }
@@ -213,8 +212,6 @@ func GetFullPath(key string) ([]string, error) {
 	} else if conn.Err() != nil {
 		return data, err
 	}
-
-	conn.Send("select", Db)
 
 	reply, err := redix.Strings(conn.Do("KEYS", "*"))
 	if err != nil || reply == nil {
