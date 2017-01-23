@@ -32,7 +32,7 @@ test:
 
 deployment:
   production:
-    branch: feature/consolidation
+    branch: goapi
     commands:
       - sudo docker build -t ${PROD_IMAGE}:$CIRCLE_SHA1 .
       - sudo docker tag ${PROD_IMAGE}:$CIRCLE_SHA1 ${PROD_IMAGE}:latest
