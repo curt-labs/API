@@ -478,25 +478,22 @@ func main() {
 	m.Post("/vehicle", vehicle.Query)
 	m.Post("/findVehicle", vehicle.GetVehicle)
 	m.Post("/vehicle/inquire", vehicle.Inquire)
-	m.Get("/vehicle/mongo/cols", vehicle.Collections)
-	m.Post("/vehicle/mongo/apps", vehicle.ByCategory)
-	m.Post("/vehicle/luverne/mongo/apps", vehicle.ByCategoryLuverne)
-	m.Post("/vehicle/mongo/allCollections/category", vehicle.AllCollectionsLookupCategory)
-	m.Post("/vehicle/mongo/categoryStyleParts", vehicle.CategoryStyleParts)
-	m.Post("/vehicle/mongo/allCollections", vehicle.AllCollectionsLookup)
-	m.Post("/vehicle/mongo", vehicle.Lookup)
-	m.Post("/vehicle/mongo/import", vehicle.ImportCsv)
-	m.Get("/vehicle/mongo/all/:collection", vehicle.GetAllCollectionApplications)
-	m.Put("/vehicle/mongo/:collection", vehicle.UpdateApplication)
-	m.Delete("/vehicle/mongo/:collection", vehicle.DeleteApplication)
-	m.Post("/vehicle/mongo/:collection", vehicle.CreateApplication)
 
+	// Used by ARIES ProductWidget
+	m.Get("/vehicle/mongo/cols", vehicle.Collections)
+
+	// Used for ARIES Application Guides page
+	m.Post("/vehicle/mongo/apps", vehicle.ByCategory)
+	m.Post("/vehicle/mongo/allCollections", vehicle.AllCollectionsLookup)
+
+	// Used by the ARIES website
 	m.Get("/vehicle/category", vehicle.QueryCategoryStyle)
 	m.Get("/vehicle/category/:year", vehicle.QueryCategoryStyle)
 	m.Get("/vehicle/category/:year/:make", vehicle.QueryCategoryStyle)
 	m.Get("/vehicle/category/:year/:make/:model", vehicle.QueryCategoryStyle)
 	m.Get("/vehicle/category/:year/:make/:model/:category", vehicle.QueryCategoryStyle)
 
+	// Used by the Luverne website
 	m.Get("/luverne/vehicle", luverne.QueryCategoryStyle)
 	m.Get("/luverne/vehicle/:year", luverne.QueryCategoryStyle)
 	m.Get("/luverne/vehicle/:year/:make", luverne.QueryCategoryStyle)

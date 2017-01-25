@@ -11,58 +11,6 @@ import (
 )
 
 var (
-	GetYearsStmt = `select distinct year, '' from Vehicle v
-					join Year as y on v.yearID = y.yearID
-					join VehiclePart vp on v.vehicleID = vp.vehicleID
-					join Part as p on vp.partID = p.partID
-					where p.status in (700, 800, 810, 815, 850, 870, 888, 900, 910, 950)
-					order by year desc`
-	GetMakesStmt = `select distinct ma.make, group_concat(p.partID) from Make as ma
-						join Vehicle as v on ma.makeID = v.makeID
-						join Year as y on v.yearID = y.yearID
-						join VehiclePart as vp on v.vehicleID = vp.vehicleID
-						join Part as p on vp.partID = p.partID
-						where y.year = ? && p.status in (700, 800, 810, 815, 850, 870, 888, 900, 910, 950) && p.classID > ?
-						group by ma.make
-						order by ma.make`
-	GetModelsStmt = `select distinct mo.model, group_concat(p.partID) from Model as mo
-						join Vehicle as v on mo.modelID = v.modelID
-						join Year as y on v.yearID = y.yearID
-						join Make as ma on v.makeID = ma.makeID
-						join VehiclePart as vp on v.vehicleID = vp.vehicleID
-						join Part as p on vp.partID = p.partID
-						where y.year = ? && ma.make = ? && p.status in (700, 800, 810, 815, 850, 870, 888, 900, 910, 950) && p.classID > ?
-						group by mo.model
-						order by mo.model`
-	GetStylesStmt = `select distinct s.style, group_concat(p.partID) from Style as s
-						join Vehicle as v on s.styleID = v.styleID
-						join Year as y on v.yearID = y.yearID
-						join Make as ma on v.makeID = ma.makeID
-						join Model as mo on v.modelID = mo.modelID
-						join VehiclePart as vp on v.vehicleID = vp.vehicleID
-						join Part as p on vp.partID = p.partID
-						where y.year = ? && ma.make = ? && mo.model = ? && p.status in (700, 800, 810, 815, 850, 870, 888, 900, 910, 950) && p.classID > ?
-						group by s.style
-						order by s.style`
-	GetPartNumbersStmt = `select distinct p.partID from Style as s
-							join Vehicle as v on s.styleID = v.styleID
-							join Year as y on v.yearID = y.yearID
-							join Make as ma on v.makeID = ma.makeID
-							join Model as mo on v.modelID = mo.modelID
-							join VehiclePart as vp on v.vehicleID = vp.vehicleID
-							join Part as p on vp.partID = p.partID
-							where y.year = ? && ma.make = ? && mo.model = ? && s.style = ? && p.status in (700, 800, 810, 815, 850, 870, 888, 900, 910, 950) && p.classID > ?
-							order by p.partID`
-	GetPartNumbersWithoutStyleStmt = `select distinct p.partID from Style as s
-							join Vehicle as v on s.styleID = v.styleID
-							join Year as y on v.yearID = y.yearID
-							join Make as ma on v.makeID = ma.makeID
-							join Model as mo on v.modelID = mo.modelID
-							join VehiclePart as vp on v.vehicleID = vp.vehicleID
-							join Part as p on vp.partID = p.partID
-							where y.year = ? && ma.make = ? && mo.model = ? && p.status in (700, 800, 810, 815, 850, 870, 888, 900, 910, 950) && p.classID > ?
-							order by p.partID`
-
 	statuses = []int{700, 800, 810, 815, 850, 870, 888, 900, 910, 950}
 )
 
