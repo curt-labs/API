@@ -1,9 +1,10 @@
 package products
 
 import (
-	"database/sql"
-	"strconv"
+	"sort"
 	"strings"
+
+	"gopkg.in/mgo.v2/bson"
 
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/database"
@@ -61,6 +62,8 @@ var (
 							join Part as p on vp.partID = p.partID
 							where y.year = ? && ma.make = ? && mo.model = ? && p.status in (700, 800, 810, 815, 850, 870, 888, 900, 910, 950) && p.classID > ?
 							order by p.partID`
+
+	statuses = []int{700, 800, 810, 815, 850, 870, 888, 900, 910, 950}
 )
 
 type CurtVehicle struct {
@@ -82,268 +85,318 @@ type CurtLookup struct {
 }
 
 func (c *CurtLookup) GetYears(heavyduty bool) error {
-
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+	session := database.ProductMongoSession.Copy()
+	defer session.Close()
 
-	stmt, err := db.Prepare(GetYearsStmt)
+	col := session.DB(database.ProductDatabase).C(database.ProductCollectionName)
+
+	qry := bson.M{
+		"status": bson.M{
+			"$in": statuses,
+		},
+		"vehicle_applications.0": bson.M{
+			"$exists": true,
+		},
+		"brand.id": 1,
+	}
+
+	type YearResp struct {
+		Apps []VehicleApplication `bson:"vehicle_applications"`
+		ID   int                  `bson:"id"`
+	}
+	var resp []YearResp
+	err = col.Find(qry).Select(bson.M{
+		"vehicle_applications.year": 1,
+		"id":  1,
+		"_id": -1,
+	}).All(&resp)
 	if err != nil {
 		return err
 	}
-	defer stmt.Close()
-	rows, err := stmt.Query()
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
 
-	var ids []string
-	for rows.Next() {
-		var val string
-		var idStr string
-		if err = rows.Scan(&val, &idStr); err != nil {
-			continue
+	var years []string
+
+	existing := make(map[string]string, 0)
+	existingIDS := make(map[int]int, 0)
+	for _, app := range resp {
+		if _, ok := existingIDS[app.ID]; !ok {
+			c.PartIdentifiers = append(c.PartIdentifiers, app.ID)
+			existingIDS[app.ID] = app.ID
 		}
-
-		arr := strings.Split(idStr, ",")
-		if err == nil && len(arr) > 0 {
-			ids = append(ids, arr...)
-		}
-
-		c.Years = append(c.Years, val)
-
-	}
-
-	existing := make(map[int]int, 0)
-	for _, i := range ids {
-		intID, err := strconv.Atoi(i)
-		if err == nil {
-			if _, ok := existing[intID]; !ok {
-				c.PartIdentifiers = append(c.PartIdentifiers, intID)
-				existing[intID] = intID
+		for _, a := range app.Apps {
+			if _, ok := existing[a.Year]; !ok {
+				years = append(years, a.Year)
+				existing[a.Year] = a.Year
 			}
 		}
 	}
+	c.Years = years
 
-	return rows.Err()
+	sort.Sort(sort.Reverse(sort.StringSlice(c.Years)))
+
+	return nil
 }
 
 func (c *CurtLookup) GetMakes(heavyduty bool) error {
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+	session := database.ProductMongoSession.Copy()
+	defer session.Close()
 
-	stmt, err := db.Prepare(GetMakesStmt)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	class := 0
-	if heavyduty {
-		class = -1
-	}
-	rows, err := stmt.Query(c.Year, class)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
+	col := session.DB(database.ProductDatabase).C(database.ProductCollectionName)
 
-	var ids []string
-	for rows.Next() {
-		var val string
-		var idStr string
-		if err = rows.Scan(&val, &idStr); err != nil {
-			continue
+	qry := bson.M{
+		"status": bson.M{
+			"$in": statuses,
+		},
+		"vehicle_applications": bson.M{
+			"$elemMatch": bson.M{
+				"year": c.Year,
+			},
+		},
+		"vehicle_applications.0": bson.M{
+			"$exists": true,
+		},
+		"brand.id": 1,
+	}
+
+	type YearResp struct {
+		Apps []VehicleApplication `bson:"vehicle_applications"`
+		ID   int                  `bson:"id"`
+	}
+	var resp []YearResp
+	err = col.Find(qry).Select(bson.M{
+		"vehicle_applications": 1,
+		"id":  1,
+		"_id": -1,
+	}).All(&resp)
+	if err != nil {
+		return err
+	}
+
+	var makes []string
+
+	existing := make(map[string]string, 0)
+	existingIDS := make(map[int]int, 0)
+	for _, app := range resp {
+		if _, ok := existingIDS[app.ID]; !ok {
+			c.PartIdentifiers = append(c.PartIdentifiers, app.ID)
+			existingIDS[app.ID] = app.ID
 		}
-
-		arr := strings.Split(idStr, ",")
-		if err == nil && len(arr) > 0 {
-			ids = append(ids, arr...)
-		}
-
-		c.Makes = append(c.Makes, val)
-
-	}
-
-	existing := make(map[int]int, 0)
-	for _, i := range ids {
-		intID, err := strconv.Atoi(i)
-		if err == nil {
-			if _, ok := existing[intID]; !ok {
-				c.PartIdentifiers = append(c.PartIdentifiers, intID)
-				existing[intID] = intID
+		for _, a := range app.Apps {
+			if a.Year != c.Year {
+				continue
+			}
+			a.Make = strings.Title(a.Make)
+			if _, ok := existing[a.Make]; !ok {
+				makes = append(makes, a.Make)
+				existing[a.Make] = a.Make
 			}
 		}
 	}
+	c.Makes = makes
 
-	return rows.Err()
+	sort.Strings(c.Makes)
+
+	return nil
 }
 
 func (c *CurtLookup) GetModels(heavyduty bool) error {
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+	session := database.ProductMongoSession.Copy()
+	defer session.Close()
 
-	stmt, err := db.Prepare(GetModelsStmt)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	class := 0
-	if heavyduty {
-		class = -1
-	}
-	rows, err := stmt.Query(c.Year, c.Make, class)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
+	col := session.DB(database.ProductDatabase).C(database.ProductCollectionName)
 
-	var ids []string
-	for rows.Next() {
-		var val string
-		var idStr string
-		if err = rows.Scan(&val, &idStr); err != nil {
-			continue
+	qry := bson.M{
+		"status": bson.M{
+			"$in": statuses,
+		},
+		"vehicle_applications": bson.M{
+			"$elemMatch": bson.M{
+				"year": c.Year,
+				"make": bson.RegEx{
+					Pattern: "^" + c.Make + "$",
+					Options: "i",
+				},
+			},
+		},
+		"vehicle_applications.0": bson.M{
+			"$exists": true,
+		},
+		"brand.id": 1,
+	}
+
+	type YearResp struct {
+		Apps []VehicleApplication `bson:"vehicle_applications"`
+		ID   int                  `bson:"id"`
+	}
+	var resp []YearResp
+	err = col.Find(qry).Select(bson.M{
+		"vehicle_applications": 1,
+		"id":  1,
+		"_id": -1,
+	}).All(&resp)
+	if err != nil {
+		return err
+	}
+
+	var models []string
+
+	existing := make(map[string]string, 0)
+	existingIDS := make(map[int]int, 0)
+	for _, app := range resp {
+		if _, ok := existingIDS[app.ID]; !ok {
+			c.PartIdentifiers = append(c.PartIdentifiers, app.ID)
+			existingIDS[app.ID] = app.ID
 		}
-
-		arr := strings.Split(idStr, ",")
-		if err == nil && len(arr) > 0 {
-			ids = append(ids, arr...)
-		}
-
-		c.Models = append(c.Models, val)
-
-	}
-
-	existing := make(map[int]int, 0)
-	for _, i := range ids {
-		intID, err := strconv.Atoi(i)
-		if err == nil {
-			if _, ok := existing[intID]; !ok {
-				c.PartIdentifiers = append(c.PartIdentifiers, intID)
-				existing[intID] = intID
+		for _, a := range app.Apps {
+			if a.Year != c.Year || strings.ToUpper(a.Make) != strings.ToUpper(c.Make) {
+				continue
+			}
+			a.Model = strings.Title(a.Model)
+			if _, ok := existing[a.Model]; !ok {
+				models = append(models, a.Model)
+				existing[a.Model] = a.Model
 			}
 		}
 	}
+	c.Models = models
 
-	return rows.Err()
+	sort.Strings(c.Models)
+
+	return nil
 }
 
 func (c *CurtLookup) GetStyles(heavyduty bool) error {
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+	session := database.ProductMongoSession.Copy()
+	defer session.Close()
 
-	stmt, err := db.Prepare(GetStylesStmt)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	class := 0
-	if heavyduty {
-		class = -1
-	}
-	rows, err := stmt.Query(c.Year, c.Make, c.Model, class)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
+	col := session.DB(database.ProductDatabase).C(database.ProductCollectionName)
 
-	var ids []string
-	for rows.Next() {
-		var val string
-		var idStr string
-		if err = rows.Scan(&val, &idStr); err != nil {
-			continue
+	qry := bson.M{
+		"status": bson.M{
+			"$in": statuses,
+		},
+		"vehicle_applications": bson.M{
+			"$elemMatch": bson.M{
+				"year": c.Year,
+				"make": bson.RegEx{
+					Pattern: "^" + c.Make + "$",
+					Options: "i",
+				},
+				"model": bson.RegEx{
+					Pattern: "^" + c.Model + "$",
+					Options: "i",
+				},
+			},
+		},
+		"vehicle_applications.0": bson.M{
+			"$exists": true,
+		},
+		"brand.id": 1,
+	}
+
+	type YearResp struct {
+		Apps []VehicleApplication `bson:"vehicle_applications"`
+		ID   int                  `bson:"id"`
+	}
+	var resp []YearResp
+	err = col.Find(qry).Select(bson.M{
+		"vehicle_applications": 1,
+		"id":  1,
+		"_id": -1,
+	}).All(&resp)
+	if err != nil {
+		return err
+	}
+
+	var styles []string
+
+	existing := make(map[string]string, 0)
+	existingIDS := make(map[int]int, 0)
+	for _, app := range resp {
+		if _, ok := existingIDS[app.ID]; !ok {
+			c.PartIdentifiers = append(c.PartIdentifiers, app.ID)
+			existingIDS[app.ID] = app.ID
 		}
+		for _, a := range app.Apps {
+			if a.Year != c.Year || strings.ToUpper(a.Make) != strings.ToUpper(c.Make) || strings.ToUpper(a.Model) != strings.ToUpper(c.Model) {
+				continue
+			}
 
-		arr := strings.Split(idStr, ",")
-		if err == nil && len(arr) > 0 {
-			ids = append(ids, arr...)
-		}
-
-		c.Styles = append(c.Styles, val)
-
-	}
-
-	existing := make(map[int]int, 0)
-	for _, i := range ids {
-		intID, err := strconv.Atoi(i)
-		if err == nil {
-			if _, ok := existing[intID]; !ok {
-				c.PartIdentifiers = append(c.PartIdentifiers, intID)
-				existing[intID] = intID
+			a.Style = strings.Title(a.Style)
+			if _, ok := existing[a.Style]; !ok {
+				styles = append(styles, a.Style)
+				existing[a.Style] = a.Style
 			}
 		}
 	}
+	c.Styles = styles
 
-	return rows.Err()
+	sort.Strings(c.Styles)
+
+	return nil
 }
 
 func (c *CurtLookup) GetParts(dtx *apicontext.DataContext, heavyduty bool) error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	var rows *sql.Rows
-	class := 0
-	if heavyduty {
-		class = -1
+	session := database.ProductMongoSession.Copy()
+	defer session.Close()
+
+	col := session.DB(database.ProductDatabase).C(database.ProductCollectionName)
+
+	qry := bson.M{
+		"status": bson.M{
+			"$in": statuses,
+		},
+		"vehicle_applications": bson.M{
+			"$elemMatch": bson.M{
+				"year": c.Year,
+				"make": bson.RegEx{
+					Pattern: "^" + c.Make + "$",
+					Options: "i",
+				},
+				"model": bson.RegEx{
+					Pattern: "^" + c.Model + "$",
+					Options: "i",
+				},
+				"style": bson.RegEx{
+					Pattern: "^" + c.Style + "$",
+					Options: "i",
+				},
+			},
+		},
+		"vehicle_applications.0": bson.M{
+			"$exists": true,
+		},
+		"brand.id": 1,
 	}
 
-	if c.Style != "" {
-		rows, err = db.Query(GetPartNumbersStmt, c.Year, c.Make, c.Model, c.Style, class)
-		if err != nil {
-			return err
-		}
-		defer rows.Close()
-	} else {
-		rows, err = db.Query(GetPartNumbersWithoutStyleStmt, c.Year, c.Make, c.Model, class)
-		if err != nil {
-			return err
-		}
-		defer rows.Close()
-	}
-	ch := make(chan *Part)
-	iter := 0
-	for rows.Next() {
-		iter++
-		var p Part
-		if err = rows.Scan(&p.ID); err != nil {
-			ch <- nil
-			continue
-		}
-		go func(prt Part) {
-			er := prt.Get(dtx)
-			if er != nil {
-				ch <- nil
-			} else {
-				ch <- &prt
-			}
+	err = col.Find(qry).Select(bson.M{
+		"vehicle_applications": 1,
+		"id":  1,
+		"_id": -1,
+	}).All(&c.Parts)
 
-		}(p)
-
-	}
-
-	for i := 0; i < iter; i++ {
-		tmp := <-ch
-		if tmp != nil {
-			c.Parts = append(c.Parts, *tmp)
-		}
-	}
-	return rows.Err()
+	return err
 }
