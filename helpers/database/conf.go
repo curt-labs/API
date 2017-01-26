@@ -10,9 +10,10 @@ import (
 	"crypto/tls"
 	"database/sql"
 
+	"net"
+
 	_ "github.com/go-sql-driver/mysql"
 	"gopkg.in/mgo.v2"
-	"net"
 )
 
 type Scanner interface {
@@ -97,33 +98,33 @@ func VintelligencePass() string {
 }
 
 func MongoConnectionString() *mgo.DialInfo {
-	var info mgo.DialInfo
-	addr := os.Getenv("MONGO_URL")
-	if addr == "" {
-		addr = "127.0.0.1"
-	}
-	addrs := strings.Split(addr, ",")
-	info.Addrs = append(info.Addrs, addrs...)
-	info.Username = os.Getenv("MONGO_CART_USERNAME")
-	info.Password = os.Getenv("MONGO_CART_PASSWORD")
-	info.Database = os.Getenv("MONGO_CART_DATABASE")
-	info.Source = os.Getenv("MONGO_AUTH_DATABASE")
-	info.Timeout = time.Second * 2
-	info.FailFast = true
-	if info.Database == "" {
-		info.Database = "CurtCart"
-	}
-	if info.Source == "" {
-		info.Source = "admin"
+	info := mgo.DialInfo{
+		Addrs:    []string{"127.0.0.1:27017"},
+		Database: "CurtCart",
+		Source:   "admin",
+		Timeout:  time.Second * 10,
+		FailFast: true,
 	}
 
-	tlsConfig := &tls.Config{}
-	tlsConfig.InsecureSkipVerify = true
-
-	info.DialServer = func(addr *mgo.ServerAddr) (net.Conn, error) {
-		conn, err := tls.Dial("tcp", addr.String(), tlsConfig)
-		return conn, err
+	if addr := os.Getenv("MONGO_URL"); addr != "" {
+		info.Addrs = strings.Split(addr, ",")
+		info.Username = os.Getenv("MONGO_CART_USERNAME")
+		info.Password = os.Getenv("MONGO_CART_PASSWORD")
+		info.DialServer = func(addr *mgo.ServerAddr) (net.Conn, error) {
+			return tls.Dial("tcp", addr.String(), &tls.Config{
+				InsecureSkipVerify: true,
+			})
+		}
+		db := os.Getenv("MONGO_CART_DATABASE")
+		if db != "" {
+			info.Database = db
+		}
+		source := os.Getenv("MONGO_AUTH_DATABASE")
+		if source != "" {
+			info.Source = source
+		}
 	}
+
 	return &info
 }
 
@@ -134,34 +135,33 @@ func MongoPartConnectionString() *mgo.DialInfo {
 }
 
 func AriesMongoConnectionString() *mgo.DialInfo {
-	var info mgo.DialInfo
-	addr := os.Getenv("MONGO_URL")
-	if addr == "" {
-		addr = "127.0.0.1"
-	}
-	addrs := strings.Split(addr, ",")
-	info.Addrs = append(info.Addrs, addrs...)
-
-	info.Username = os.Getenv("MONGO_ARIES_USERNAME")
-	info.Password = os.Getenv("MONGO_ARIES_PASSWORD")
-	info.Database = os.Getenv("MONGO_ARIES_DATABASE")
-	info.Source = os.Getenv("MONGO_AUTH_DATABASE")
-	info.Timeout = time.Second * 2
-	info.FailFast = true
-	if info.Database == "" {
-		info.Database = "aries"
-	}
-	if info.Source == "" {
-		info.Source = "admin"
+	info := mgo.DialInfo{
+		Addrs:    []string{"127.0.0.1:27017"},
+		Database: "aries",
+		Source:   "admin",
+		Timeout:  time.Second * 10,
+		FailFast: true,
 	}
 
-	tlsConfig := &tls.Config{}
-	tlsConfig.InsecureSkipVerify = true
-
-	info.DialServer = func(addr *mgo.ServerAddr) (net.Conn, error) {
-		conn, err := tls.Dial("tcp", addr.String(), tlsConfig)
-		return conn, err
+	if addr := os.Getenv("MONGO_URL"); addr != "" {
+		info.Addrs = strings.Split(addr, ",")
+		info.Username = os.Getenv("MONGO_ARIES_USERNAME")
+		info.Password = os.Getenv("MONGO_ARIES_PASSWORD")
+		info.DialServer = func(addr *mgo.ServerAddr) (net.Conn, error) {
+			return tls.Dial("tcp", addr.String(), &tls.Config{
+				InsecureSkipVerify: true,
+			})
+		}
+		db := os.Getenv("MONGO_ARIES_DATABASE")
+		if db != "" {
+			info.Database = db
+		}
+		source := os.Getenv("MONGO_AUTH_DATABASE")
+		if source != "" {
+			info.Source = source
+		}
 	}
+
 	return &info
 }
 

@@ -257,38 +257,3 @@ func AllCollectionsLookupCategory(w http.ResponseWriter, r *http.Request, enc en
 
 	return encoding.Must(enc.Encode(noSqlLookup))
 }
-
-// CategoryStyleParts returns the Category->Style->Parts structure needed for our lookup
-func CategoryStyleParts(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *apicontext.DataContext) string {
-	var v products.NoSqlVehicle
-	var catStyleParts []products.CatStylePart
-	var err error
-
-	if err := database.Init(); err != nil {
-		apierror.GenerateError(err.Error(), err, w, r)
-		return ""
-	}
-
-	sess := database.ProductMongoSession.Copy()
-	defer sess.Close()
-
-	// Get vehicle year
-	v.Year = r.FormValue("year")
-	delete(r.Form, "year")
-
-	// Get vehicle make
-	v.Make = r.FormValue("make")
-	delete(r.Form, "make")
-
-	// Get vehicle model
-	v.Model = r.FormValue("model")
-	delete(r.Form, "model")
-
-	catStyleParts, err = products.CategoryStyleParts(v, dtx.BrandArray, sess)
-	if err != nil {
-		apierror.GenerateError("Trouble finding vehicles.", err, w, r)
-		return ""
-	}
-
-	return encoding.Must(enc.Encode(catStyleParts))
-}
