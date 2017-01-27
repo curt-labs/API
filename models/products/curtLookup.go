@@ -313,11 +313,21 @@ func (c *CurtLookup) GetParts(dtx *apicontext.DataContext, heavyduty bool) error
 
 	col := session.DB(database.ProductDatabase).C(database.ProductCollectionName)
 
-	qry := bson.M{
-		"status": bson.M{
-			"$in": statuses,
+	appQuery := bson.M{
+		"$elemMatch": bson.M{
+			"year": c.Year,
+			"make": bson.RegEx{
+				Pattern: "^" + c.Make + "$",
+				Options: "i",
+			},
+			"model": bson.RegEx{
+				Pattern: "^" + c.Model + "$",
+			},
 		},
-		"vehicle_applications": bson.M{
+	}
+
+	if c.Style != "" {
+		appQuery = bson.M{
 			"$elemMatch": bson.M{
 				"year": c.Year,
 				"make": bson.RegEx{
@@ -326,14 +336,19 @@ func (c *CurtLookup) GetParts(dtx *apicontext.DataContext, heavyduty bool) error
 				},
 				"model": bson.RegEx{
 					Pattern: "^" + c.Model + "$",
-					Options: "i",
 				},
 				"style": bson.RegEx{
 					Pattern: "^" + c.Style + "$",
-					Options: "i",
 				},
 			},
+		}
+	}
+
+	qry := bson.M{
+		"status": bson.M{
+			"$in": statuses,
 		},
+		"vehicle_applications": appQuery,
 		"vehicle_applications.0": bson.M{
 			"$exists": true,
 		},
