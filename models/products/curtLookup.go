@@ -355,11 +355,7 @@ func (c *CurtLookup) GetParts(dtx *apicontext.DataContext, heavyduty bool) error
 		"brand.id": 1,
 	}
 
-	err = col.Find(qry).Select(bson.M{
-		"vehicle_applications": 1,
-		"id":  1,
-		"_id": -1,
-	}).All(&c.Parts)
+	err = col.Find(qry).All(&c.Parts)
 
 	return err
 }
