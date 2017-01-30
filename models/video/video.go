@@ -378,6 +378,8 @@ func (v *Video) GetParts() (err error) {
 	if err != nil {
 		return
 	}
+	defer rows.Close()
+
 	var i *int
 	for rows.Next() {
 		err = rows.Scan(&i)

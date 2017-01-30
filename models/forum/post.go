@@ -153,6 +153,11 @@ func (t *Thread) GetPosts(dtx *apicontext.DataContext) error {
 	defer stmt.Close()
 
 	rows, err := stmt.Query(dtx.APIKey, dtx.WebsiteID, dtx.WebsiteID, t.ID)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
 	for rows.Next() {
 		var post Post
 		if err = rows.Scan(&post.ID, &post.ParentID, &post.ThreadID, &post.Created, &post.Title, &post.Post, &post.Name, &post.Email, &post.Company, &post.Notify, &post.Approved, &post.Active, &post.IPAddress, &post.Flag, &post.Sticky); err == nil {

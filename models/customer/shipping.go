@@ -154,6 +154,8 @@ func getWarehouseCodes() (map[string]int, error) {
 	if err != nil {
 		return warehouses, err
 	}
+	defer rows.Close()
+
 	var id *int
 	var code *string
 	for rows.Next() {
