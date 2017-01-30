@@ -142,6 +142,8 @@ func getPartMap() (map[string]int, error) {
 	if err != nil {
 		return partmap, err
 	}
+	defer rows.Close()
+
 	for rows.Next() {
 		var num *string
 		var id *int

@@ -243,6 +243,7 @@ func getWebsites(brandID int) ([]Website, error) {
 
 		rows, err = stmt.Query()
 	}
+	defer rows.Close()
 
 	if err != nil {
 		return sites, err
@@ -289,6 +290,7 @@ func GetUserBrands(id int) ([]Brand, error) {
 	if err != nil {
 		return brands, err
 	}
+	defer rows.Close()
 
 	sites, err := getWebsites(0)
 	if err != nil {

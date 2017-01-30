@@ -181,6 +181,8 @@ func populateApplicationGuides(rows *sql.Rows, ch chan []ApplicationGuide) {
 		}
 		ags = append(ags, ag)
 	}
+	defer rows.Close()
+
 	ch <- ags
 	return
 }

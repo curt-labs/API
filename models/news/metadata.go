@@ -38,6 +38,7 @@ func GetMetadata(newsID int) ([]Metadata, error) {
 	if err != nil {
 		return data, err
 	}
+	defer rows.Close()
 
 	var t, v *string
 	var id *int
