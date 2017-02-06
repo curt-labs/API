@@ -196,7 +196,7 @@ func getMakes(ctx *LookupContext, year string) ([]string, error) {
 		for _, a := range app.Apps {
 			// a.Make = strings.Title(a.Make)
 			if _, ok := existing[strings.ToLower(a.Make)]; !ok {
-				makes = append(makes, a.Make)
+				makes = append(makes, strings.Title(a.Make))
 				existing[strings.ToLower(a.Make)] = strings.Title(a.Make)
 			}
 		}
@@ -249,7 +249,7 @@ func getModels(ctx *LookupContext, year, vehicleMake string) ([]string, error) {
 			// a.Model = strings.Title(a.Model)
 			if _, ok := existing[strings.ToLower(a.Model)]; !ok {
 				if strings.Compare(strings.ToLower(a.Make), strings.ToLower(vehicleMake)) == 0 && strings.Compare(a.Year, year) == 0 {
-					models = append(models, a.Model)
+					models = append(models, strings.Title(a.Model))
 					existing[strings.ToLower(a.Model)] = strings.Title(a.Model)
 				}
 			}
