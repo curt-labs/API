@@ -81,7 +81,7 @@ func Query(ctx *LookupContext, args ...string) (*CategoryVehicle, error) {
 		if i == 0 {
 			redisKey = arg
 		} else {
-			redisKey = fmt.Sprintf("%s:%s", redisKey, arg)
+			redisKey = fmt.Sprintf("%s:%s:new", redisKey, arg)
 		}
 	}
 	data, err := redis.Get(redisKey)
