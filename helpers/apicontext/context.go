@@ -20,7 +20,7 @@ type DataContext struct {
 }
 
 var (
-	apiToBrandStmt = `select brandID from ApiKeyToBrand as aktb 
+	apiToBrandStmt = `select brandID from ApiKeyToBrand as aktb
 		join ApiKey as ak on ak.id = aktb.keyID
 		where ak.api_key = ?`
 )

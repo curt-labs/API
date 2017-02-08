@@ -78,10 +78,28 @@ func All(w http.ResponseWriter, r *http.Request, params martini.Params, enc enco
 		}
 	}
 
-	parts, err := products.All(page, count, dtx)
+	parts, total, err := products.All(page, count, dtx)
 	if err != nil {
 		apierror.GenerateError("Trouble getting all parts", err, w, r)
 		return ""
+	}
+
+	//Format the response in JSON format if so desired, includes the
+	//total number of elements that results from the query
+	if qs.Get("format") == "json-obj" {
+		type JSONFormat struct {
+			Items []products.Part `json:"items"`
+			Count int             `json:"count"`
+		}
+
+		jsonObj, err := json.Marshal(JSONFormat{Items: parts, Count: total})
+
+		if err != nil {
+			apierror.GenerateError("Issues converting parts information to JSON format", err, w, r)
+			return ""
+		}
+
+		return string(jsonObj)
 	}
 
 	return encoding.Must(enc.Encode(parts))
