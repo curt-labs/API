@@ -230,6 +230,7 @@ func All(page, count int, dtx *apicontext.DataContext) ([]Part, int, error) {
 		return parts, total, err
 	}
 	//A Mongo index is needed to ensure that the sort doesn't consumer too much memory
+	//See INDEX.md in root directory
 	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{"brand.id": bson.M{"$in": brands}}).Sort("id").Skip(page * count).Limit(count).All(&parts)
 	return parts, total, err
 }
