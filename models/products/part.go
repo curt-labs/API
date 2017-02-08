@@ -215,17 +215,23 @@ func Identifiers(brand int, dtx *apicontext.DataContext) ([]string, error) {
 	return parts, nil
 }
 
-func All(page, count int, dtx *apicontext.DataContext) ([]Part, error) {
+func All(page, count int, dtx *apicontext.DataContext) ([]Part, int, error) {
 	var parts []Part
+	var total int
 	brands := getBrandsFromDTX(dtx)
 
 	session, err := mgo.DialWithInfo(database.MongoPartConnectionString())
 	if err != nil {
-		return parts, err
+		return parts, total, err
 	}
 	defer session.Close()
-	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{"brand.id": bson.M{"$in": brands}}).Sort("id:1").Skip(page * count).Limit(count).All(&parts)
-	return parts, err
+	total, err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{"brand.id": bson.M{"$in": brands}}).Count()
+	if err != nil {
+		return parts, total, err
+	}
+	//A Mongo index is needed to ensure that the sort doesn't consumer too much memory
+	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{"brand.id": bson.M{"$in": brands}}).Sort("id").Skip(page * count).Limit(count).All(&parts)
+	return parts, total, err
 }
 
 func Featured(count int, dtx *apicontext.DataContext, brand int) ([]Part, error) {
