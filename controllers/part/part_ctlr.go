@@ -59,6 +59,8 @@ func All(w http.ResponseWriter, r *http.Request, params martini.Params, enc enco
 	page := 0
 	count := 10
 	qs := r.URL.Query()
+	var from string
+	var to string
 
 	if qs.Get("page") != "" {
 		if pg, err := strconv.Atoi(qs.Get("page")); err == nil {
@@ -77,8 +79,45 @@ func All(w http.ResponseWriter, r *http.Request, params martini.Params, enc enco
 			count = ct
 		}
 	}
+	//Convert given dates to ISO8601 format.
+	if qs.Get("modified-from") != "" {
+		from = qs.Get("modified-from")
+		_, err := time.Parse(time.RFC3339, from)
+		if err != nil {
+			_, err := time.Parse(time.RFC3339, from+"-06:00")
+			if err != nil {
+				_, err := time.Parse(time.RFC3339, from+"T00:00:00-06:00")
+				if err != nil {
+					apierror.GenerateError(fmt.Sprintf("Error converting 'modified-from' date. Please use ISO8601 format."), err, w, r)
+					return ""
+				} else {
+					from = from + "T00:00:00-06:00"
+				}
+			} else {
+				from = from + "-06:00"
+			}
+		}
+	}
+	if qs.Get("modified-to") != "" {
+		to = qs.Get("modified-to")
+		_, err := time.Parse(time.RFC3339, to)
+		if err != nil {
+			_, err := time.Parse(time.RFC3339, to+"-06:00")
+			if err != nil {
+				_, err := time.Parse(time.RFC3339, to+"T00:00:00-06:00")
+				if err != nil {
+					apierror.GenerateError(fmt.Sprintf("Error converting 'modified-to' date. Please use ISO8601 format."), err, w, r)
+					return ""
+				} else {
+					to = to + "T00:00:00-06:00"
+				}
+			} else {
+				to = to + "-06:00"
+			}
+		}
+	}
 
-	parts, total, err := products.All(page, count, dtx)
+	parts, total, err := products.All(page, count, dtx, from, to)
 	if err != nil {
 		apierror.GenerateError("Trouble getting all parts", err, w, r)
 		return ""

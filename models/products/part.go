@@ -215,23 +215,54 @@ func Identifiers(brand int, dtx *apicontext.DataContext) ([]string, error) {
 	return parts, nil
 }
 
-func All(page, count int, dtx *apicontext.DataContext) ([]Part, int, error) {
-	var parts []Part
+func All(page, count int, dtx *apicontext.DataContext, from string, to string) ([]Part, int, error) {
 	var total int
+	var query bson.M
 	brands := getBrandsFromDTX(dtx)
+	parts := make([]Part, 0)
 
 	session, err := mgo.DialWithInfo(database.MongoPartConnectionString())
 	if err != nil {
 		return parts, total, err
 	}
 	defer session.Close()
-	total, err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{"brand.id": bson.M{"$in": brands}}).Count()
+
+	if from != "" || to != "" {
+		//In the case that "from" is specified
+		if from != "" {
+			fromTime, err := time.Parse(time.RFC3339, from)
+			if err != nil {
+				return parts, total, err
+			}
+			//In the case both "to" and "from" are specified
+			if to != "" {
+				toTime, err := time.Parse(time.RFC3339, to)
+				if err != nil {
+					return parts, total, err
+				}
+				query = bson.M{"brand.id": bson.M{"$in": brands}, "date_modified": bson.M{"$lte": toTime, "$gte": fromTime}}
+			} else { //In the case only "from" is specified
+				query = bson.M{"brand.id": bson.M{"$in": brands}, "date_modified": bson.M{"$gte": fromTime}}
+			}
+		} else if to != "" { //In the case only "to" is specified
+			toTime, err := time.Parse(time.RFC3339, to)
+			if err != nil {
+				return parts, total, err
+			}
+			query = bson.M{"brand.id": bson.M{"$in": brands}, "date_modified": bson.M{"$lte": toTime}}
+		}
+
+	} else { //In the case neither "to" or "from" are specified
+		query = bson.M{"brand.id": bson.M{"$in": brands}}
+	}
+	total, err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(query).Count()
 	if err != nil {
 		return parts, total, err
 	}
-	//A Mongo index is needed to ensure that the sort doesn't consumer too much memory
+
+	//A Mongo index is needed to ensure that the sort doesn't consume too much memory
 	//See INDEX.md in root directory
-	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{"brand.id": bson.M{"$in": brands}}).Sort("id").Skip(page * count).Limit(count).All(&parts)
+	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(query).Sort("id").Skip(page * count).Limit(count).All(&parts)
 	return parts, total, err
 }
 

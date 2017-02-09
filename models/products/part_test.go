@@ -21,7 +21,7 @@ func TestPart(t *testing.T) {
 	})
 
 	Convey("Testing All", t, func() {
-		parts, err := All(0, 1, MockedDTX)
+		parts, err := All(0, 1, MockedDTX, "", "")
 		So(err, ShouldBeNil)
 		So(len(parts), ShouldEqual, 1)
 		So(parts, ShouldHaveSameTypeAs, []Part{})
