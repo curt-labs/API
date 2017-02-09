@@ -78,7 +78,7 @@ func All(w http.ResponseWriter, r *http.Request, params martini.Params, enc enco
 		}
 	}
 
-	parts, total, err := products.All(page, count, dtx)
+	parts, total, err := products.All(page, count, dtx, qs.Get("modified-from"), qs.Get("modified-to"))
 	if err != nil {
 		apierror.GenerateError("Trouble getting all parts", err, w, r)
 		return ""
