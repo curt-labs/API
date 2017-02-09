@@ -3,6 +3,11 @@ package part_ctlr
 import (
 	"bytes"
 	"encoding/json"
+	"net/url"
+	"strconv"
+	"testing"
+	"time"
+
 	"github.com/curt-labs/API/helpers/apicontextmock"
 	"github.com/curt-labs/API/helpers/database"
 	"github.com/curt-labs/API/helpers/testThatHttp"
@@ -12,10 +17,6 @@ import (
 	"github.com/curt-labs/API/models/products"
 	"github.com/curt-labs/API/models/video"
 	. "github.com/smartystreets/goconvey/convey"
-	"net/url"
-	"strconv"
-	"testing"
-	"time"
 )
 
 func TestParts(t *testing.T) {
@@ -281,7 +282,10 @@ func TestParts(t *testing.T) {
 		So(testThatHttp.Response.Code, ShouldEqual, 200)
 		err = json.Unmarshal(testThatHttp.Response.Body.Bytes(), &parts)
 		So(err, ShouldBeNil)
-		So(parts, ShouldHaveSameTypeAs, []products.Part{})
+		So(parts, ShouldHyaveSameTypeAs, []products.Part{})
+
+		//TODO: test get all parts with format parameter
+		//TODO: test get all parts with modified param
 
 		//test get price
 		thyme = time.Now()
