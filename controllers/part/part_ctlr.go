@@ -84,7 +84,7 @@ func All(w http.ResponseWriter, r *http.Request, params martini.Params, enc enco
 		//time.RFC3339 is the built in const that conforms to the ISO8601 datetime format
 		from, err := time.Parse(time.RFC3339, qs.Get("modified-from"))
 		if err != nil {
-			apierror.GenerateError(fmt.Sprintf("'modified-to' could not be converted to ISO8601 datetime format"), err, w, r)
+			apierror.GenerateError(fmt.Sprintf("'modified-from' could not be converted to ISO8601 datetime format"), err, w, r)
 			return ""
 		}
 
