@@ -1,7 +1,7 @@
 Parts
 ===
 List of endpoints
- 
+
  - [Get All Parts](#all-parts)
  - [Get Single Part](#single-part)
  - [Get Multiple Parts](#multi-parts)
@@ -12,24 +12,38 @@ Information about the part.
 
 *Example:*
 
-	http://goapi.curtmfg.com/part?key=[public api key]&count=20&page=2
-	
-	
+	http://goapi.curtmfg.com/part?key=[public api key]&count=20&page=2&modified-from=2017-02-09T04:30:30-7:00
+
+
 ####Parameters
 
 
-| Paramter  |  Description | 
+| Paramter  |  Description |
 |---|---|
 | key **(required)** | Provide your API key  |
 | count *(optional)* | The number of parts you want returned |
 | page *(optional)* | An offset multiplier based off the count |
+| format *(optional)* | The format you wish the data to be in (only supports `json-obj`) |
+| modified-from *(optional)* | Including this will only show products modified on or *after* this date |
+| modified-to *(optional)* | Including this will only show products modified on or *before* this date |
 
-####Response 
+Dates given for **modified-from** and **modified-to** must be in ISO8601 format.
+Examples include "2017-01-02T09:09:09+09:00", "2016-08-09T15:04:00-6:00", or "2017-02-09T04:30:30-7:00"
+
+
+####Response
 Returns an unnamed array of part objets. A part object is described in the Get Single Part response.
 
 | Property Name  |  Value |  Description |
 |---|---|---|
 |  | []object  | Array of part Objects  |
+
+If the **format** is selected to be `json-obj`, the response will be formatted differently, like so:
+
+| Property Name | Value | Description |
+|---|---|---|
+| items | []object | Array of part Objects |
+| count | integer | The total number of results |
 
 
 ##<a name="single-part"></a>Get Single Part `GET  - http://goapi.curtmfg.com/part/:partId`
@@ -38,19 +52,19 @@ Information about the part.
 *Example:*
 
 	http://goapi.curtmfg.com/part/110003?key=[public api key]
-	
-	
+
+
 ####Parameters
 
 
-| Paramter  |  Description | 
+| Paramter  |  Description |
 |---|---|
 | key **(required)** | Provide your API key  |
 | brand **(required)** | Brand querying that part number for (1=CURT, 3=ARIES, 4=Luverne) |
 
 
 
-####Response 
+####Response
 
 | Property Name  |  Value |  Description |
 |---|---|---|
@@ -99,22 +113,22 @@ curl --request POST \
   --url 'https://goapi.curtmfg.com/part/multi?brandID=3&key=[public api key]' \
   --header 'content-type: application/json' \
   --data '["1042","35-3014"]'
-```	
-	
+```
+
 ####Parameters
 
 
-| Paramter  |  Description | 
+| Paramter  |  Description |
 |---|---|
 | key **(required)** | Provide your API key  |
 | brandID **(required)** | Brand querying part numbers for (1=CURT, 3=ARIES, 4=Luverne) |
 
-####Request Body 
-| Paramter  | value | Description | 
+####Request Body
+| Paramter  | value | Description |
 |---|---|---|
 | [] | []string |An array of strings with product numbers (SKUs)  |
 
-####Response 
+####Response
 Returns an unnamed array of part objets. A part object is described in the Get Single Part response.
 
 | Property Name  |  Value |  Description |
@@ -128,18 +142,18 @@ Get the last added parts
 *Example:*
 
 	http://goapi.curtmfg.com/part/latest?key=[public api key]&count=20&brand=1
-	
-	
+
+
 ####Parameters
 
 
-| Paramter  |  Description | 
+| Paramter  |  Description |
 |---|---|
 | key **(required)** | Provide your API key  |
 | brand *(optional)* | Brand querying part numbers for (1=CURT, 3=ARIES, 4=Luverne) |
 | count *(optional)* | The number of parts you want returned |
 
-####Response 
+####Response
 Returns an unnamed array of part objets. A part object is described in the Get Single Part response.
 
 | Property Name  |  Value |  Description |
@@ -152,7 +166,7 @@ A list of Product Object definitions
 
 #### <a name="aces-vehicle"></a> aces_vehicle ####
 
-| Property Name  | Value | Description | 
+| Property Name  | Value | Description |
 |---|---|---|
 | [base]()  | object  | Base model of a Vehicle |
 | submodel  | string  | Vehicle submodel |
@@ -160,7 +174,7 @@ A list of Product Object definitions
 
 #### <a name="content"></a> content ####
 
-| Property Name  | Value | Description | 
+| Property Name  | Value | Description |
 |---|---|---|
 | text  | string  | Content string |
 | [contentType](#contentType)  | object  | ContentType object that describes the content |
@@ -168,7 +182,7 @@ A list of Product Object definitions
 
 #### <a name="contentType"></a> contentType ####
 
-| Property Name  | Value | Description | 
+| Property Name  | Value | Description |
 |---|---|---|
 | id  | string  | Internal Id |
 | type  | string  | Describes what the conten is i.e. "Description", "Bullet, "Content Brief" |
@@ -176,7 +190,7 @@ A list of Product Object definitions
 
 #### <a name="image"></a> image ####
 
-| Property Name  | Value | Description | 
+| Property Name  | Value | Description |
 |---|---|---|
 | id *(optional)* 	| int  | Internal Id |
 | size *(optional)*	| string | Describes what the conten is i.e. "Description", "Bullet, "Content Brief" |
@@ -188,7 +202,7 @@ A list of Product Object definitions
 
 #### <a name="price"></a> price ####
 
-| Property Name  | Value | Description | 
+| Property Name  | Value | Description |
 |---|---|---|
 | id *(optional)* | int  | Internal Id |
 | partId *(optional)* | int  | Part Id reference |
@@ -199,7 +213,7 @@ A list of Product Object definitions
 
 #### <a name="reviews"></a> reviews ####
 
-| Property Name  | Value | Description | 
+| Property Name  | Value | Description |
 |---|---|---|
 | rating  | int  | Star Rating Value (1-5) |
 | subject  | string  | Subject of review |
@@ -213,7 +227,7 @@ A list of Product Object definitions
 #### <a name="video"></a> video ####
 A reresentation of a video. It contains information about the video itself, as well as any associated files.
 
-| Property Name  | Value | Description | 
+| Property Name  | Value | Description |
 |---|---|---|
 | id *(optional)* 		| int  | Internal Id |
 | title *(optional)* 	| string  | Video Title |
@@ -230,4 +244,3 @@ A reresentation of a video. It contains information about the video itself, as w
 | partIds *(optional)* 		| []int  | Related part numbers |
 | websiteId *(optional)* 	| int  | ??? |
 | brands *(optional)* 		| object  | Brand this video was created for |
-
