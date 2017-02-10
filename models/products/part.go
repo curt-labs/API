@@ -215,7 +215,7 @@ func Identifiers(brand int, dtx *apicontext.DataContext) ([]string, error) {
 	return parts, nil
 }
 
-func All(page, count int, dtx *apicontext.DataContext, from string, to string) ([]Part, int, error) {
+func All(page, count int, dtx *apicontext.DataContext, from time.Time, to time.Time) ([]Part, int, error) {
 	var total int
 	var query bson.M
 	brands := getBrandsFromDTX(dtx)
@@ -227,34 +227,26 @@ func All(page, count int, dtx *apicontext.DataContext, from string, to string) (
 	}
 	defer session.Close()
 
-	if from != "" || to != "" {
+	//In this block we are determining the query that we will be sending to the DB
+	//time.Time.isZero is effecively the nil check for time.Time objects
+	if !time.Time.IsZero(from) || !time.Time.IsZero(to) {
 		//In the case that "from" is specified
-		if from != "" {
-			fromTime, err := time.Parse(time.RFC3339, from)
-			if err != nil {
-				return parts, total, err
-			}
+		if !time.Time.IsZero(from) {
 			//In the case both "to" and "from" are specified
-			if to != "" {
-				toTime, err := time.Parse(time.RFC3339, to)
-				if err != nil {
-					return parts, total, err
-				}
-				query = bson.M{"brand.id": bson.M{"$in": brands}, "date_modified": bson.M{"$lte": toTime, "$gte": fromTime}}
+			if !time.Time.IsZero(to) {
+				query = bson.M{"brand.id": bson.M{"$in": brands}, "date_modified": bson.M{"$lte": to, "$gte": from}}
 			} else { //In the case only "from" is specified
-				query = bson.M{"brand.id": bson.M{"$in": brands}, "date_modified": bson.M{"$gte": fromTime}}
+				query = bson.M{"brand.id": bson.M{"$in": brands}, "date_modified": bson.M{"$gte": from}}
 			}
-		} else if to != "" { //In the case only "to" is specified
-			toTime, err := time.Parse(time.RFC3339, to)
-			if err != nil {
-				return parts, total, err
-			}
-			query = bson.M{"brand.id": bson.M{"$in": brands}, "date_modified": bson.M{"$lte": toTime}}
+		} else if !time.Time.IsZero(to) { //In the case only "to" is specified
+			query = bson.M{"brand.id": bson.M{"$in": brands}, "date_modified": bson.M{"$lte": to}}
 		}
 
 	} else { //In the case neither "to" or "from" are specified
 		query = bson.M{"brand.id": bson.M{"$in": brands}}
 	}
+
+	//We get the count here so that we can return it as part of the JSON response
 	total, err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(query).Count()
 	if err != nil {
 		return parts, total, err

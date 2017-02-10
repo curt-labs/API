@@ -58,6 +58,9 @@ func Identifiers(w http.ResponseWriter, r *http.Request, params martini.Params, 
 func All(w http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
 	page := 0
 	count := 10
+	var fromTime time.Time
+	var toTime time.Time
+
 	qs := r.URL.Query()
 	if qs.Get("page") != "" {
 		if pg, err := strconv.Atoi(qs.Get("page")); err == nil {
@@ -76,8 +79,31 @@ func All(w http.ResponseWriter, r *http.Request, params martini.Params, enc enco
 			count = ct
 		}
 	}
+	//If 'modified-from' is present, attempt to parse it into ISO8601 datetime format
+	if qs.Get("modified-from") != "" {
+		//time.RFC3339 is the built in const that conforms to the ISO8601 datetime format
+		from, err := time.Parse(time.RFC3339, qs.Get("modified-from"))
+		if err != nil {
+			apierror.GenerateError(fmt.Sprintf("'modified-to' could not be converted to ISO8601 datetime format"), err, w, r)
+			return ""
+		}
 
-	parts, total, err := products.All(page, count, dtx, qs.Get("modified-from"), qs.Get("modified-to"))
+		fromTime = from
+	}
+
+	//If 'modified-to' is present, attempt to parse it into ISO8601 datetime format
+	if qs.Get("modified-to") != "" {
+		//time.RFC3339 is the built in const that conforms to the ISO8601 datetime format
+		to, err := time.Parse(time.RFC3339, qs.Get("modified-to"))
+		if err != nil {
+			apierror.GenerateError(fmt.Sprintf("'modified-to' could not be converted to ISO8601 datetime format"), err, w, r)
+			return ""
+		}
+
+		toTime = to
+	}
+
+	parts, total, err := products.All(page, count, dtx, fromTime, toTime)
 	if err != nil {
 		apierror.GenerateError("Trouble getting all parts", err, w, r)
 		return ""
