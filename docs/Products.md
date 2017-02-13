@@ -12,7 +12,7 @@ Information about the part.
 
 *Example:*
 
-	http://goapi.curtmfg.com/part?key=[public api key]&count=20&page=2&modified-from=2017-02-09T04:30:30-7:00
+	http://goapi.curtmfg.com/part?key=[public api key]&count=20&page=2&modified-from=2017-02-03T13:50:04Z
 
 
 ####Parameters
@@ -28,7 +28,7 @@ Information about the part.
 | modified-to *(optional)* | Including this will only show products modified on or *before* this date |
 
 Dates given for **modified-from** and **modified-to** must be in ISO8601 format.
-Examples include "2017-01-02T09:09:09+09:00", "2016-08-09T15:04:00-6:00", or "2017-02-09T04:30:30-7:00"
+Example "2017-02-03T13:50:04Z"
 
 
 ####Response
