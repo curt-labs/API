@@ -12,7 +12,7 @@ Information about the part.
 
 *Example:*
 
-	http://goapi.curtmfg.com/part?key=[public api key]&count=20&page=2&modified-from=2017-02-03T13:50:04Z
+	http://goapi.curtmfg.com/part?key=[public api key]&count=20&page=2&modified-from=2017-02-03T13:50:04Z&format=json-obj
 
 
 ####Parameters
