@@ -36,4 +36,6 @@ type Category struct {
 	PartIDs         []int                    `bson:"part_ids" json:"part_ids" xml:"part_ids"`
 	Brand           brand.Brand              `bson:"brand" json:"brand" xml:"brand"`
 	ProductListing  *PaginatedProductListing `bson:"product_listing" json:"product_listing" xml:"product_listing"`
+	PDFpath         *url.URL                 `bson:"pdf_path" json:"pdf_path" xml:"pdf_path"`
+	XLSpath         *url.URL                 `bson:"xls_path" json:"xls_path" xml:"xls_path"`
 }

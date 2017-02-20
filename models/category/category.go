@@ -46,6 +46,8 @@ type Category struct {
 	Brand              brand.Brand                       `bson:"brand" json:"brand" xml:"brand"`
 	ProductIdentifiers []int                             `bson:"part_ids" json:"part_identifiers" xml:"part_identifiers"`
 	IsDeleted          bool                              `bson:"isdeleted" json:"-" xml:"-"`
+	PDFpath            *url.URL                          `bson:"pdf_path" json:"pdf_path" xml:"pdf_path"`
+	XLSpath            *url.URL                          `bson:"xls_path" json:"xls_path" xml:"xls_path"`
 }
 
 type PartResponse struct {
