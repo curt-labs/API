@@ -55,17 +55,17 @@ type Part struct {
 	UPC               string               `json:"upc,omitempty" xml:"upc,omitempty" bson:"upc"`
 	Layer             string               `json:"iconLayer" xml:"iconLayer" bson:"iconLayer"`
 	MappedToVehicle   bool                 `json:"mappedToVehicle" xml:"mappedToVehicle" bson:"mappedToVehicle,omitempty"`
-	ComplexPart       ComplexPart          `bson:"complex_part" json:"complex_part" xml:"complex_part"`
+	ComplexPart       *ComplexPart         `bson:"complex_part" json:"complex_part,omitempty" xml:"complex_part,omitempty"`
 }
 
 type SkuCount struct {
-	Sku   string `bson:"sku" json:"sku" xml:"sku"`
-	Count uint32 `bson:"count" json:"count" xml:"count"`
+	Sku   string `bson:"sku" json:"sku,omitempty" xml:"sku,omitempty"`
+	Count uint32 `bson:"count" json:"count,omitempty" xml:"count,omitempty"`
 }
 
 type ComplexPart struct {
-	Type     string     `bson:"type" json:"type" xml:"type"`
-	SkuCount []SkuCount `bson:"skuCount" json:"skuCount" xml:"skuCount"`
+	Type     string      `bson:"type" json:"type,omitempty" xml:"type,omitempty"`
+	SkuCount []*SkuCount `bson:"skuCount" json:"skuCount,omitempty" xml:"skuCount,omitempty"`
 }
 
 type CustomerPart struct {
