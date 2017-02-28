@@ -220,7 +220,7 @@ A list of Product Object definitions
 | review_text  | string  | Body of review |
 | name  | string  | Reviewer's Name |
 | email  | string  | Email address of reviewer |
-| created_date  | object  | Time/Date created |
+| created_date  | object  | Time/Date created in ISO8601 UTC Format|
 | active *(optional)*  | bool  | Review visible on product page |
 | approved *(optional)*  | bool  | Review approved by moderator |
 
