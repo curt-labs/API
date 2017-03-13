@@ -44,6 +44,7 @@ type Part struct {
 	Reviews           []Review             `json:"reviews" xml:"reviews" bson:"reviews"`
 	Images            []Image              `json:"images" xml:"images" bson:"images"`
 	Related           []int                `json:"related" xml:"related" bson:"related" bson:"related"`
+	ReplacedBy        int                  `bson:"replaced_by" json:"replaced_by,omitempty" xml:"replaced_by,omitempty"`
 	Categories        []Category           `json:"categories" xml:"categories" bson:"categories"`
 	Videos            []video.Video        `json:"videos" xml:"videos" bson:"videos"`
 	Packages          []Package            `json:"packages" xml:"packages" bson:"packages"`
