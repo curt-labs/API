@@ -1,6 +1,6 @@
 # API Reference
 
-The GoAPI is best resource for our customers to gain access to our data. A customer can get access to our APIs by getting a key from the Dealer Portal. The files listed above are documented endpoints that can be used by our customers. We find most customers use the documented "Commonly used APIs" listed below.
+The GoAPI is the best resource for our customers to gain access to our data. A customer can get access to our APIs by getting a key from the Dealer Portal. The files listed above are documented endpoints that can be used by our customers. We find most customers use the documented "Commonly used APIs" listed below.
 
 ## Get an API Key
 Before you can use the GoAPI you need to have an API Key. Follow the steps below to get an API key.
