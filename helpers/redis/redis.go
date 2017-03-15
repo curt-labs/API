@@ -24,7 +24,7 @@ func RedisPool(master bool) *redix.Pool {
 	if master && os.Getenv("REDIS_MASTER_ADDRESS") != "" {
 		addr = os.Getenv("REDIS_MASTER_ADDRESS")
 	} else if os.Getenv("REDIS_MASTER_ADDRESS") != "" {
-		addr = os.Getenv("REDIS_SLAVE_ADDRESS")
+		addr = os.Getenv("REDIS_CLIENT_ADDRESS")
 	}
 
 	if master && os.Getenv("REDIS_MASTER_SERVICE_HOST") != "" {
