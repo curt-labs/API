@@ -32,6 +32,10 @@ func RedisPool(master bool) *redix.Pool {
 	} else if os.Getenv("REDIS_SLAVE_SERVICE_HOST") != "" {
 		addr = fmt.Sprintf("%s", os.Getenv("REDIS_SLAVE_SERVICE_HOST"))
 	}
+	addrSplit := strings.Split(addr, ":")
+	if len(addrSplit) == 1 { // no port specified (you would expect more than one item in the string array)
+		addr = addr + ":6379" // if no port, choose default port
+	}
 	return &redix.Pool{
 		MaxIdle:     2,
 		IdleTimeout: 240 * time.Second,
