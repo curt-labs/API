@@ -1,8 +1,6 @@
 package video
 
 import (
-	"log"
-
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/database"
 	"github.com/curt-labs/API/helpers/redis"
@@ -261,9 +259,7 @@ func (v *Video) GetVideoDetails() error {
 // GetAllVideos This grabs all the videos given a certain Brand. Videos are  Base Videos and do not have advanced information.
 func GetAllVideos(dtx *apicontext.DataContext) (vs Videos, err error) {
 	data, err := redis.Get(AllVideosRedisKey + ":" + dtx.BrandString)
-	log.Println("get from redis:", data, err)
 	if err == nil && len(data) > 0 {
-		log.Println("getting videos from redis", data, err)
 		err = json.Unmarshal(data, &vs)
 		return
 	}
@@ -293,8 +289,8 @@ func GetAllVideos(dtx *apicontext.DataContext) (vs Videos, err error) {
 		return
 	}
 
-	err = redis.Setex(AllVideosRedisKey+":"+dtx.BrandString, vs, 86400)
-	log.Println("setting redis error:", err)
+	go redis.Setex(AllVideosRedisKey+":"+dtx.BrandString, vs, 86400)
+
 	return
 }
 
