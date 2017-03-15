@@ -7,7 +7,7 @@ List of endpoints
  - [Get Multiple Parts](#multi-parts)
  - [Get Last Added Parts](#last-added-parts)
 
-##<a name="all-parts"></a>Get All Parts `GET  - http://goapi.curtmfg.com/part`
+## <a name="all-parts"></a>Get All Parts `GET  - http://goapi.curtmfg.com/part`
 Information about the part.
 
 *Example:*
@@ -15,7 +15,7 @@ Information about the part.
 	http://goapi.curtmfg.com/part?key=[public api key]&count=20&page=2&modified-from=2017-02-03T13:50:04Z&format=json-obj
 
 
-####Parameters
+#### Parameters
 
 
 | Paramter  |  Description |
@@ -31,7 +31,7 @@ Dates given for **modified-from** and **modified-to** must be in ISO8601 format.
 Example "2017-02-03T13:50:04Z"
 
 
-####Response
+#### Response
 Returns an unnamed array of part objets. A part object is described in the Get Single Part response.
 
 | Property Name  |  Value |  Description |
@@ -54,7 +54,7 @@ Information about the part.
 	http://goapi.curtmfg.com/part/110003?key=[public api key]
 
 
-####Parameters
+#### Parameters
 
 
 | Paramter  |  Description |
@@ -64,7 +64,7 @@ Information about the part.
 
 
 
-####Response
+#### Response
 
 | Property Name  |  Value |  Description |
 |---|---|---|
@@ -115,7 +115,7 @@ curl --request POST \
   --data '["1042","35-3014"]'
 ```
 
-####Parameters
+#### Parameters
 
 
 | Paramter  |  Description |
@@ -123,12 +123,12 @@ curl --request POST \
 | key **(required)** | Provide your API key  |
 | brandID **(required)** | Brand querying part numbers for (1=CURT, 3=ARIES, 4=Luverne) |
 
-####Request Body
+#### Request Body
 | Paramter  | value | Description |
 |---|---|---|
 | [] | []string |An array of strings with product numbers (SKUs)  |
 
-####Response
+#### Response
 Returns an unnamed array of part objets. A part object is described in the Get Single Part response.
 
 | Property Name  |  Value |  Description |
@@ -136,7 +136,7 @@ Returns an unnamed array of part objets. A part object is described in the Get S
 | [] | []object  | Array of part Objects  |
 
 
-##<a name="last-added-parts"></a>Get Last Added Parts `GET  - http://goapi.curtmfg.com/part/latest`
+## <a name="last-added-parts"></a>Get Last Added Parts `GET  - http://goapi.curtmfg.com/part/latest`
 Get the last added parts
 
 *Example:*
@@ -144,7 +144,7 @@ Get the last added parts
 	http://goapi.curtmfg.com/part/latest?key=[public api key]&count=20&brand=1
 
 
-####Parameters
+#### Parameters
 
 
 | Paramter  |  Description |
@@ -153,7 +153,7 @@ Get the last added parts
 | brand *(optional)* | Brand querying part numbers for (1=CURT, 3=ARIES, 4=Luverne) |
 | count *(optional)* | The number of parts you want returned |
 
-####Response
+#### Response
 Returns an unnamed array of part objets. A part object is described in the Get Single Part response.
 
 | Property Name  |  Value |  Description |
@@ -161,7 +161,7 @@ Returns an unnamed array of part objets. A part object is described in the Get S
 | [] | []object  | Array of part Objects  |
 
 
-##Product Objects
+## Product Objects
 A list of Product Object definitions
 
 #### <a name="aces-vehicle"></a> aces_vehicle ####
