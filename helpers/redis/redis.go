@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"time"
@@ -32,7 +33,7 @@ func RedisPool(master bool) *redix.Pool {
 	} else if os.Getenv("REDIS_SLAVE_SERVICE_HOST") != "" {
 		addr = fmt.Sprintf("%s", os.Getenv("REDIS_SLAVE_SERVICE_HOST"))
 	}
-
+	log.Println(addr)
 	return &redix.Pool{
 		MaxIdle:     2,
 		IdleTimeout: 240 * time.Second,
