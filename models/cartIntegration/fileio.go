@@ -22,6 +22,18 @@ func UploadFile(file multipart.File, api_key string) error {
 	if err != nil {
 		return err
 	}
+	// only add if it hasnt already been added
+
+	// clean up excel file
+	added := make(map[string]bool)
+	var finalLines [][]string
+	for _, line := range lines {
+		partNumber := strings.TrimSpace(line[0])
+		if !added[partNumber] { // if it has not been added to final lines, then add it
+			added[partNumber] = true              // mark that it has been added
+			finalLines = append(finalLines, line) // actually add it to the list of finalLines
+		}
+	}
 
 	priceLookup, err := GetCustomerPrices()
 	if err != nil {
@@ -35,7 +47,8 @@ func UploadFile(file multipart.File, api_key string) error {
 	if err != nil {
 		return err
 	}
-	for _, line := range lines {
+
+	for _, line := range finalLines {
 		//Curt Part ID,	Customer Part ID, Sale Price, Sale Start Date, Sale End Date
 		var cp CustomerPrice
 		cp.CustID = Customer_ID
@@ -88,12 +101,14 @@ func UploadFile(file multipart.File, api_key string) error {
 		if err != nil {
 			return err
 		}
-
+		// value passed in could be 0, and there could be a 0 in the DB, so that would return an existing integration
+		// value passed in could be 0, and no value could exist in the DB, thats why there is a bool and a int passed back.
 		custPartNum, integExists := cp.integrationExists(integrationLookup)
-		if custPartNum != cp.CustomerPartID {
-			if integExists {
+
+		if custPartNum != cp.CustomerPartID { // if value from csv file does not match the found integration value from the DB
+			if integExists { // if there is a found integration, then update the existing one
 				err = cp.UpdateCartIntegration()
-			} else {
+			} else { // if there is no curent integration then insert one
 				err = cp.InsertCartIntegration()
 			}
 			if err != nil {
