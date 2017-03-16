@@ -35,12 +35,14 @@ var (
 		LEFT JOIN CartIntegration ci ON ci.partID = p.partID AND ci.custID = ?
 		left join Price pr on pr.partID = p.partID and pr.priceType = 'list'
 		WHERE p.status in (700, 800, 810, 815, 850, 870, 888, 900, 910, 950)  && p.brandID = ?
+		GROUP BY p.partID
 		ORDER BY p.oldPartNumber`
 	getPricingPaged = `SELECT distinct cp.cust_price_id, cp.cust_id, p.partID, oldPartNumber, ci.referenceID, ci.custPartID, cp.price, cp.isSale, cp.sale_start, cp.sale_end, pr.priceType, pr.price FROM Part p
 		LEFT JOIN CustomerPricing cp ON cp.partID = p.partID AND cp.cust_id = ?
 		LEFT JOIN CartIntegration ci ON ci.partID = p.partID AND ci.custID = ?
 		left join Price pr on pr.partID = p.partID and pr.priceType = 'list'
 		WHERE p.status in (700, 800, 810, 815, 850, 870, 888, 900, 910, 950)  && p.brandID = ?
+		GROUP BY p.partID
 		ORDER BY p.oldPartNumber
 		LIMIT ?, ?`
 	getPricingCount = `SELECT count(*) FROM Part p
@@ -71,6 +73,7 @@ var (
 		join Part as p on p.partID = c.partID
 		where a.api_key = ?
 		and p.brandID = ?
+		GROUP BY p.partID
 		order by p.oldPartNumber`
 	insertCartIntegration = `INSERT INTO CartIntegration(partID, custPartID, custID) VALUES (?, ?, ?)`
 	deleteCartIntegration = `delete from CartIntegration where partID = ? and custPartID = ? and custID = ?`

@@ -89,9 +89,9 @@ func UploadFile(file multipart.File, api_key string) error {
 			return err
 		}
 
-		custPartNum := cp.integrationExists(integrationLookup)
+		custPartNum, integExists := cp.integrationExists(integrationLookup)
 		if custPartNum != cp.CustomerPartID {
-			if custPartNum > 0 {
+			if integExists {
 				err = cp.UpdateCartIntegration()
 			} else {
 				err = cp.InsertCartIntegration()
@@ -115,13 +115,13 @@ func (c *CustomerPrice) priceExists(priceLookup []CustomerPrice) {
 }
 
 //Checks if integration exists in db
-func (c *CustomerPrice) integrationExists(integrationLookup []CustomerPrice) int {
+func (c *CustomerPrice) integrationExists(integrationLookup []CustomerPrice) (int, bool) {
 	for _, l := range integrationLookup {
 		if l.CustID == c.CustID && l.PartID == c.PartID {
-			return l.CustomerPartID
+			return l.CustomerPartID, true
 		}
 	}
-	return 0
+	return 0, false
 }
 
 //getPartMap returns a map of partnumbers to partIds
