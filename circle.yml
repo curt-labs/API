@@ -42,7 +42,7 @@ deployment:
       - sudo /opt/google-cloud-sdk/bin/gcloud --quiet config set container/cluster $PROD_CLUSTER_NAME
       - sudo /opt/google-cloud-sdk/bin/gcloud config set compute/zone $PROD_ZONE
       - sudo /opt/google-cloud-sdk/bin/gcloud --quiet container clusters get-credentials $PROD_CLUSTER_NAME
-      - sudo /opt/google-cloud-sdk/bin/gcloud docker push ${PROD_IMAGE}
+      - sudo /opt/google-cloud-sdk/bin/gcloud docker -- push ${PROD_IMAGE}
       - sudo chown -R ubuntu:ubuntu /home/ubuntu/.kube
       - kubectl set image deployment/${DEPLOYMENT} ${CONTAINER_NAME}=${PROD_IMAGE}:$CIRCLE_SHA1
   staging:
