@@ -24,13 +24,17 @@ func RedisPool(master bool) *redix.Pool {
 	if master && os.Getenv("REDIS_MASTER_ADDRESS") != "" {
 		addr = os.Getenv("REDIS_MASTER_ADDRESS")
 	} else if os.Getenv("REDIS_MASTER_ADDRESS") != "" {
-		addr = os.Getenv("REDIS_SLAVE_ADDRESS")
+		addr = os.Getenv("REDIS_CLIENT_ADDRESS")
 	}
 
 	if master && os.Getenv("REDIS_MASTER_SERVICE_HOST") != "" {
 		addr = fmt.Sprintf("%s", os.Getenv("REDIS_MASTER_SERVICE_HOST"))
 	} else if os.Getenv("REDIS_SLAVE_SERVICE_HOST") != "" {
 		addr = fmt.Sprintf("%s", os.Getenv("REDIS_SLAVE_SERVICE_HOST"))
+	}
+	addrSplit := strings.Split(addr, ":")
+	if len(addrSplit) == 1 { // no port specified (you would expect more than one item in the string array)
+		addr = addr + ":6379" // if no port, choose default port
 	}
 	return &redix.Pool{
 		MaxIdle:     2,
