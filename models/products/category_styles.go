@@ -3,6 +3,7 @@ package products
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"sort"
 	"strings"
 
@@ -91,7 +92,7 @@ func Query(ctx *LookupContext, args ...string) (*CategoryVehicle, error) {
 			return &vehicle, nil
 		}
 	}
-
+	log.Println("missed cache", redisKey)
 	switch len(args) {
 	case 1:
 		vehicle.Base.Year = args[0]

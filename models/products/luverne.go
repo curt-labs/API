@@ -3,6 +3,7 @@ package products
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"sort"
 	"strings"
 
@@ -92,7 +93,7 @@ func LuverneQuery(ctx *LuverneLookupContext, args ...string) (*LuverneCategoryVe
 			return &vehicle, nil
 		}
 	}
-
+	log.Println("missed cache:", redisKey)
 	switch len(args) {
 	case 1:
 		vehicle.Base.Year = args[0]
@@ -243,7 +244,7 @@ func getLuverneModels(ctx *LuverneLookupContext, year, vehicleMake string) ([]st
 	for _, app := range apps {
 		for _, a := range app.Apps {
 			// Some parts support multi-year and different makes, so we have to filter the year and make back out
-			if(strings.EqualFold(a.Year,year) && strings.EqualFold(a.Make,vehicleMake)) {
+			if strings.EqualFold(a.Year, year) && strings.EqualFold(a.Make, vehicleMake) {
 				a.Model = strings.Title(a.Model)
 				if _, ok := existing[a.Model]; !ok {
 					models = append(models, a.Model)
@@ -311,7 +312,7 @@ func generateLuverneCategoryStyles(parts []Part, year, vehicleMake, model string
 	y := year
 	ma := strings.ToLower(vehicleMake)
 	mod := strings.ToLower(model)
-	
+
 	var cleanParts []Part
 	for _, p := range parts {
 		if len(p.Categories) == 0 {
