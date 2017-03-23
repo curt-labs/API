@@ -55,17 +55,11 @@ func (c *CurtLookup) GetYears(heavyduty bool) error {
 			if (len(c.Years) > 0) && (len(c.PartIdentifiers) > 0) {
 				// Exit using the data we found in redis
 				return nil
-			} else {
-				log.Println("cl.GetYears - no data in redis")
 			}
-		} else {
-			// Didn't find Years Parts
-			log.Println("missed cache " + CL_YEARS_PARTS_KEY)
 		}
-	} else {
-		// Didn't find years
-		log.Println("missed cache " + CL_YEARS_KEY)
 	}
+
+	log.Println("cl.GetYears - missed cache ", CL_YEARS_KEY, " or ", CL_YEARS_PARTS_KEY)
 
 	err = database.Init()
 	if err != nil {
