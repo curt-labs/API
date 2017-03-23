@@ -56,6 +56,6 @@ deployment:
       - sudo /opt/google-cloud-sdk/bin/gcloud --quiet config set container/cluster $STAGE_CLUSTER_NAME
       - sudo /opt/google-cloud-sdk/bin/gcloud config set compute/zone $STAGE_ZONE
       - sudo /opt/google-cloud-sdk/bin/gcloud --quiet container clusters get-credentials $STAGE_CLUSTER_NAME
-      - sudo /opt/google-cloud-sdk/bin/gcloud docker push ${STAGE_IMAGE}
+      - sudo /opt/google-cloud-sdk/bin/gcloud docker -- push ${STAGE_IMAGE}
       - sudo chown -R ubuntu:ubuntu /home/ubuntu/.kube
-      - kubectl set image deployment/${CONTAINER_NAME} goapi=${STAGE_IMAGE}:$CIRCLE_SHA1
+      - kubectl set image deployment/${DEPLOYMENT} ${CONTAINER_NAME}=${STAGE_IMAGE}:$CIRCLE_SHA1

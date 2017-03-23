@@ -1,6 +1,8 @@
 package products
 
 import (
+	"encoding/json"
+	"log"
 	"sort"
 	"strings"
 
@@ -8,10 +10,17 @@ import (
 
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/database"
+	"github.com/curt-labs/API/helpers/redis"
 )
 
 var (
 	statuses = []int{700, 800, 810, 815, 850, 870, 888, 900, 910, 950}
+)
+
+const (
+	CURT_LOOKUP_KEY    = "curtlookup:"
+	CL_YEARS_KEY       = CURT_LOOKUP_KEY + "years"
+	CL_YEARS_PARTS_KEY = CL_YEARS_KEY + ":parts"
 )
 
 type CurtVehicle struct {
@@ -33,7 +42,26 @@ type CurtLookup struct {
 }
 
 func (c *CurtLookup) GetYears(heavyduty bool) error {
-	err := database.Init()
+	// See if we have the years in redis
+	yearsData, err := redis.Get(CL_YEARS_KEY)
+	if err == nil {
+		// We also need the "years parts"
+		yearPartsdata, err := redis.Get(CL_YEARS_PARTS_KEY)
+		if err == nil {
+			// Unmarshall the data
+			err = json.Unmarshal(yearsData, &c.Years)
+			err = json.Unmarshal(yearPartsdata, &c.PartIdentifiers)
+			//  If we have data
+			if (len(c.Years) > 0) && (len(c.PartIdentifiers) > 0) {
+				// Exit using the data we found in redis
+				return nil
+			}
+		}
+	}
+
+	log.Println("cl.GetYears - missed cache ", CL_YEARS_KEY, " or ", CL_YEARS_PARTS_KEY)
+
+	err = database.Init()
 	if err != nil {
 		return err
 	}
@@ -85,6 +113,10 @@ func (c *CurtLookup) GetYears(heavyduty bool) error {
 	c.Years = years
 
 	sort.Sort(sort.Reverse(sort.StringSlice(c.Years)))
+
+	// Set the keys to expire after a week
+	go redis.Setex(CL_YEARS_KEY, c.Years, 604800)
+	go redis.Setex(CL_YEARS_PARTS_KEY, c.PartIdentifiers, 604800)
 
 	return nil
 }
