@@ -2,6 +2,7 @@ package products
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"sort"
 	"strings"
@@ -18,9 +19,13 @@ var (
 )
 
 const (
-	CURT_LOOKUP_KEY    = "curtlookup:"
-	CL_YEARS_KEY       = CURT_LOOKUP_KEY + "years"
-	CL_YEARS_PARTS_KEY = CL_YEARS_KEY + ":parts"
+	CURT_LOOKUP_KEY     = "curtlookup:"
+	CL_YEARS_KEY        = CURT_LOOKUP_KEY + "years"
+	CL_YEARS_PARTS_KEY  = CL_YEARS_KEY + ":parts"
+	CL_MAKES_KEY        = ":makes"
+	CL_MAKES_PARTS_KEY  = CL_MAKES_KEY + ":parts"
+	CL_MODELS_KEY       = ":models"
+	CL_MODELS_PARTS_KEY = CL_MODELS_KEY + ":parts"
 )
 
 type CurtVehicle struct {
@@ -122,8 +127,30 @@ func (c *CurtLookup) GetYears(heavyduty bool) error {
 }
 
 func (c *CurtLookup) GetMakes(heavyduty bool) error {
+	// Build the redis keys
+	redisMakesKey := fmt.Sprintf("%s:%s%s", CL_YEARS_KEY, c.Year, CL_MAKES_KEY)
+	redisMakesPartsKey := fmt.Sprintf("%s:%s%s", CL_YEARS_KEY, c.Year, CL_MAKES_PARTS_KEY)
 
-	err := database.Init()
+	// Pull from redis
+	makesData, err := redis.Get(redisMakesKey)
+	if err == nil {
+		// We also need the "makes parts"
+		makesPartsData, err := redis.Get(redisMakesPartsKey)
+		if err == nil {
+			// Unmarshall the data
+			err = json.Unmarshal(makesData, &c.Makes)
+			err = json.Unmarshal(makesPartsData, &c.PartIdentifiers)
+			//  If we have data
+			if (len(c.Makes) > 0) && (len(c.PartIdentifiers) > 0) {
+				// Exit using the data we found in redis
+				return nil
+			}
+		}
+	}
+
+	log.Println("cl.GetMakes - missed cache ", redisMakesKey, " or ", redisMakesPartsKey)
+
+	err = database.Init()
 	if err != nil {
 		return err
 	}
@@ -185,12 +212,40 @@ func (c *CurtLookup) GetMakes(heavyduty bool) error {
 
 	sort.Strings(c.Makes)
 
+	// Set the keys to expire after a week
+	go redis.Setex(redisMakesKey, c.Makes, 604800)
+	go redis.Setex(redisMakesPartsKey, c.PartIdentifiers, 604800)
+
 	return nil
 }
 
 func (c *CurtLookup) GetModels(heavyduty bool) error {
+	// Build the redis keys
+	redisModelsKey := fmt.Sprintf("%s:%s%s:%s%s",
+		CL_YEARS_KEY, c.Year, CL_MAKES_KEY, c.Make, CL_MODELS_KEY)
+	redisModelsPartsKey := fmt.Sprintf("%s:%s%s:%s%s",
+		CL_YEARS_KEY, c.Year, CL_MAKES_KEY, c.Make, CL_MODELS_PARTS_KEY)
 
-	err := database.Init()
+	// Pull from redis
+	modelsData, err := redis.Get(redisModelsKey)
+	if err == nil {
+		// We also need the "models parts"
+		modelsPartsData, err := redis.Get(redisModelsPartsKey)
+		if err == nil {
+			// Unmarshall the data
+			err = json.Unmarshal(modelsData, &c.Models)
+			err = json.Unmarshal(modelsPartsData, &c.PartIdentifiers)
+			//  If we have data
+			if (len(c.Models) > 0) && (len(c.PartIdentifiers) > 0) {
+				// Exit using the data we found in redis
+				return nil
+			}
+		}
+	}
+
+	log.Println("cl.GetModels - missed cache ", redisModelsKey, " or ", redisModelsPartsKey)
+
+	err = database.Init()
 	if err != nil {
 		return err
 	}
@@ -255,6 +310,10 @@ func (c *CurtLookup) GetModels(heavyduty bool) error {
 	c.Models = models
 
 	sort.Strings(c.Models)
+
+	// Set the keys to expire after a week
+	go redis.Setex(redisModelsKey, c.Models, 604800)
+	go redis.Setex(redisModelsPartsKey, c.PartIdentifiers, 604800)
 
 	return nil
 }
