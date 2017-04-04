@@ -502,6 +502,7 @@ func main() {
 
 	// CURT Year/Make/Model/Style
 	m.Post("/vehicle/curt", vehicle.CurtLookup)
+	m.Get("/vehicle/curt", vehicle.CurtLookupGet)
 
 	m.Group("/videos", func(r martini.Router) {
 		r.Get("/distinct", videos_ctlr.DistinctVideos) //old "videos" table - curtmfg?
