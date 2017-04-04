@@ -249,10 +249,8 @@ func getLuverneModels(ctx *LuverneLookupContext, year, vehicleMake string) ([]st
 			if strings.EqualFold(a.Year, year) && strings.EqualFold(a.Make, vehicleMake) {
 				a.Model = strings.Title(a.Model)
 				if _, ok := existing[a.Model]; !ok {
-					if a.Year == year && a.Make == vehicleMake {
-						models = append(models, a.Model)
-						existing[a.Model] = a.Model
-					}
+					models = append(models, a.Model)
+					existing[a.Model] = a.Model
 				}
 			}
 		}
