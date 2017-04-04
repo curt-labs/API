@@ -182,11 +182,11 @@ func getLuverneMakes(ctx *LuverneLookupContext, year string) ([]string, error) {
 		},
 		"brand.id": 4,
 	}
-	err := c.Find(qry).Select(bson.M{"luverne_applications.make": 1, "_id": 0}).All(&apps)
+
+	err := c.Find(qry).Select(bson.M{"luverne_applications.make": 1, "luverne_applications.year": 1, "_id": 0}).All(&apps)
 	if err != nil {
 		return nil, err
 	}
-
 	var makes []string
 
 	existing := make(map[string]string, 0)
@@ -194,8 +194,10 @@ func getLuverneMakes(ctx *LuverneLookupContext, year string) ([]string, error) {
 		for _, a := range app.Apps {
 			a.Make = strings.Title(a.Make)
 			if _, ok := existing[a.Make]; !ok {
-				makes = append(makes, a.Make)
-				existing[a.Make] = a.Make
+				if a.Year == year {
+					makes = append(makes, a.Make)
+					existing[a.Make] = a.Make
+				}
 			}
 		}
 	}
@@ -247,8 +249,10 @@ func getLuverneModels(ctx *LuverneLookupContext, year, vehicleMake string) ([]st
 			if strings.EqualFold(a.Year, year) && strings.EqualFold(a.Make, vehicleMake) {
 				a.Model = strings.Title(a.Model)
 				if _, ok := existing[a.Model]; !ok {
-					models = append(models, a.Model)
-					existing[a.Model] = a.Model
+					if a.Year == year && a.Make == vehicleMake {
+						models = append(models, a.Model)
+						existing[a.Model] = a.Model
+					}
 				}
 			}
 		}
