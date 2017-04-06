@@ -185,7 +185,7 @@ func getMakes(ctx *LookupContext, year string) ([]string, error) {
 			"$in": ctx.Brands,
 		},
 	}
-	err := c.Find(qry).Select(bson.M{"vehicle_applications.make": 1, "_id": 0}).All(&apps)
+	err := c.Find(qry).Select(bson.M{"vehicle_applications.make": 1, "vehicle_applications.year": 1, "_id": 0}).All(&apps)
 	if err != nil {
 		return nil, err
 	}
@@ -197,8 +197,10 @@ func getMakes(ctx *LookupContext, year string) ([]string, error) {
 		for _, a := range app.Apps {
 			// a.Make = strings.Title(a.Make)
 			if _, ok := existing[strings.ToLower(a.Make)]; !ok {
-				makes = append(makes, strings.Title(a.Make))
-				existing[strings.ToLower(a.Make)] = strings.Title(a.Make)
+				if a.Year == year {
+					makes = append(makes, strings.Title(a.Make))
+					existing[strings.ToLower(a.Make)] = strings.Title(a.Make)
+				}
 			}
 		}
 	}
