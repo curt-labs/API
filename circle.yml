@@ -9,7 +9,7 @@ machine:
     PROD_ZONE: us-central1-a
     STAGE_PROJECT_NAME: unicorn-attack
     STAGE_CLUSTER_NAME: goapi-staging
-    STAGE_ZONE: us-central1-f
+    STAGE_ZONE: us-central1-a
   services:
     - docker
 
