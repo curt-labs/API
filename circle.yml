@@ -5,10 +5,10 @@ machine:
     PROD_IMAGE: gcr.io/curt-services/goapi
     STAGE_IMAGE: gcr.io/unicorn-attack/goapi
     PROD_PROJECT_NAME: curt-services
-    PROD_CLUSTER_NAME: api-services
+    PROD_CLUSTER_NAME: goapi
     PROD_ZONE: us-central1-a
     STAGE_PROJECT_NAME: unicorn-attack
-    STAGE_CLUSTER_NAME: staging-1
+    STAGE_CLUSTER_NAME: goapi-staging
     STAGE_ZONE: us-central1-f
   services:
     - docker
