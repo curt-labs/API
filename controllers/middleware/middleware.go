@@ -11,11 +11,9 @@ import (
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/database"
 	"github.com/curt-labs/API/helpers/error"
-	"github.com/curt-labs/API/helpers/nsq"
 	"github.com/curt-labs/API/models/cart"
 	"github.com/curt-labs/API/models/customer"
 	"github.com/go-martini/martini"
-	"github.com/segmentio/analytics-go"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -35,7 +33,6 @@ func Meddler() martini.Handler {
 			res.Write([]byte(""))
 			return
 		}
-		start := time.Now()
 
 		excused := false
 		for _, route := range ExcusedRoutes {
@@ -78,7 +75,7 @@ func Meddler() martini.Handler {
 
 		c.Next()
 
-		go logRequest(r, time.Since(start))
+		go logRequest(res, r, time.Now())
 	}
 }
 
@@ -235,40 +232,12 @@ func getCustomerID(apiKey string) (*customer.CustomerUser, error) {
 	return &resp.Users[0], err
 }
 
-func logRequest(r *http.Request, reqTime time.Duration) {
-
-	key := r.Header.Get("key")
-	if key == "" {
-		vals := r.URL.Query()
-		key = vals.Get("key")
-	}
-	if key == "" {
-		key = r.FormValue("key")
-	}
-
-	//don't continue if we still don't have a key!
-	if key == "" {
+//logRequest is simply the launcher for the analytics function ToPubSub
+//Here we filter a little bit, making sure not to log any healthchecks
+func logRequest(w http.ResponseWriter, r *http.Request, reqTime time.Time) {
+	if strings.Contains(r.URL.Path, "checkup") || strings.Contains(r.URL.Path, "status") {
 		return
 	}
 
-	vals := r.URL.Query()
-	trkr := analytics.Track{
-		Event:      r.URL.String(),
-		UserId:     key,
-		Properties: make(map[string]interface{}, 0),
-	}
-
-	for k, v := range vals {
-		trkr.Properties[k] = v
-	}
-
-	trkr.Properties["method"] = r.Method
-	trkr.Properties["header"] = r.Header
-	trkr.Properties["query"] = r.URL.Query().Encode()
-	trkr.Properties["referer"] = r.Referer()
-	trkr.Properties["userAgent"] = r.UserAgent()
-	trkr.Properties["form"] = r.Form
-	trkr.Properties["requestTime"] = int64((reqTime.Nanoseconds() * 1000) * 1000)
-
-	go nsq.Push("API_analytics", &trkr)
+	ToPubSub(w, r, reqTime)
 }
