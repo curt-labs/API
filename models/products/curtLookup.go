@@ -319,7 +319,6 @@ func (c *CurtLookup) GetModels(heavyduty bool) error {
 }
 
 func (c *CurtLookup) GetStyles(heavyduty bool) error {
-
 	err := database.Init()
 	if err != nil {
 		return err
@@ -413,6 +412,7 @@ func (c *CurtLookup) GetParts(dtx *apicontext.DataContext, heavyduty bool) error
 			},
 			"model": bson.RegEx{
 				Pattern: "^" + c.Model + "$",
+				Options: "i",
 			},
 		},
 	}
@@ -427,9 +427,11 @@ func (c *CurtLookup) GetParts(dtx *apicontext.DataContext, heavyduty bool) error
 				},
 				"model": bson.RegEx{
 					Pattern: "^" + c.Model + "$",
+					Options: "i",
 				},
 				"style": bson.RegEx{
 					Pattern: "^" + c.Style + "$",
+					Options: "i",
 				},
 			},
 		}
