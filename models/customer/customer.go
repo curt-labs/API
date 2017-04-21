@@ -178,7 +178,7 @@ type MapPolygon struct {
 
 const (
 	customerFields = ` c.cust_id, c.name, c.email, c.address,  c.city, c.stateID, c.phone, c.fax, c.contact_person, c.dealer_type,
-				c.latitude,c.longitude,  c.website, c.customerID, c.isDummy, c.parentID, c.searchURL, c.eLocalURL, c.logo,c.address2,
+				c.latitude, c.longitude,  c.website, c.customerID, c.isDummy, c.parentID, c.searchURL, c.eLocalURL, c.logo,c.address2,
 				c.postal_code, c.mCodeID, c.salesRepID, c.APIKey, c.tier, c.showWebsite `
 	stateFields            = ` IFNULL(s.state, ""), IFNULL(s.abbr, ""), IFNULL(s.countryID, "0") `
 	countryFields          = ` cty.name, cty.abbr `
@@ -959,6 +959,7 @@ func GetLocalDealers(latlng string, distance int, skip int, count int) (dealers 
 	if err != nil {
 		return dealers, err
 	}
+	defer res.Close()
 
 	for res.Next() {
 		cols, err := res.Columns()
@@ -971,8 +972,6 @@ func GetLocalDealers(latlng string, distance int, skip int, count int) (dealers 
 		}
 		dealers = append(dealers, *l)
 	}
-	defer res.Close()
-
 	sortutil.AscByField(dealers, "Distance")
 	return
 }
@@ -1834,134 +1833,40 @@ func ScanLocation(res Scanner) (*CustomerLocation, error) {
 func ScanDealerLocation(res *sql.Rows, count int) (*DealerLocation, error) {
 	var l DealerLocation
 	var err error
+	var mapIconString string
+	var mapIconShadowString string
+	var websiteString string
+	var elocalString string
 
-	vals := make([]sql.RawBytes, count)
-	scanArgs := make([]interface{}, count)
-	for i := range vals {
-		scanArgs[i] = &vals[i]
+	if l.State.Country == nil {
+		l.State.Country = &geography.Country{}
 	}
 
-	err = res.Scan(scanArgs...)
+	err = res.Scan(&l.CustomerLocation.Id, &l.Name, &l.Address, &l.City, &l.State.Id,
+		&l.Email, &l.Phone, &l.Fax, &l.Coordinates.Latitude, &l.Coordinates.Longitude,
+		&l.CustomerId, &l.ContactPerson, &l.IsPrimary, &l.PostalCode, &l.ShippingDefault,
+		&l.State.State, &l.State.Abbreviation, &l.State.Country.Id, &l.State.Country.Country,
+		&l.State.Country.Abbreviation, &l.DealerType.Type, &l.DealerType.Online,
+		&l.DealerType.Show, &l.DealerType.Label, &l.DealerTier.Tier, &l.DealerTier.Sort,
+		&mapIconString, &mapIconShadowString, &l.MapixCode.Code, &l.MapixCode.Description,
+		&l.SalesRepresentative.Name, &l.SalesRepresentative.Code, &l.ShowWebSite,
+		&websiteString, &elocalString, &l.Distance)
 	if err != nil {
 		return &l, err
 	}
 
-	if vals[0] != nil {
-		l.CustomerLocation.Id, _ = conversions.ByteToInt(vals[0])
+	mapIconURL, err := url.Parse(mapIconString)
+	mapIconShadowURL, err := url.Parse(mapIconShadowString)
+	websiteURL, err := url.Parse(websiteString)
+	eLocalURL, err := url.Parse(elocalString)
+	if err != nil {
+		return &l, err
 	}
 
-	if vals[1] != nil {
-		l.Name, _ = conversions.ByteToString(vals[1])
-	}
-	if vals[2] != nil {
-		l.Address, _ = conversions.ByteToString(vals[2])
-	}
-	if vals[3] != nil {
-		l.City, _ = conversions.ByteToString(vals[3])
-	}
-	if vals[4] != nil {
-		l.State.Id, _ = conversions.ByteToInt(vals[4])
-	}
-	if vals[5] != nil {
-		l.Email, _ = conversions.ByteToString(vals[5])
-	}
-	if vals[6] != nil {
-		l.Phone, _ = conversions.ByteToString(vals[6])
-	}
-	if vals[7] != nil {
-		l.Fax, _ = conversions.ByteToString(vals[7])
-	}
-	if vals[8] != nil {
-		l.Coordinates.Latitude, _ = conversions.ByteToFloat(vals[8])
-	}
-	if vals[9] != nil {
-		l.Coordinates.Latitude, _ = conversions.ByteToFloat(vals[9])
-	}
-	if vals[10] != nil {
-		l.CustomerId, _ = conversions.ByteToInt(vals[10])
-	}
-	if vals[11] != nil {
-		l.ContactPerson, _ = conversions.ByteToString(vals[11])
-	}
-	if vals[12] != nil {
-		l.IsPrimary, _ = conversions.ParseBool(vals[12])
-	}
-	if vals[13] != nil {
-		l.PostalCode, _ = conversions.ByteToString(vals[13])
-	}
-	if vals[14] != nil {
-		l.ShippingDefault, _ = conversions.ParseBool(vals[14])
-	}
-	if vals[15] != nil {
-		l.State.State, _ = conversions.ByteToString(vals[15])
-	}
-	if vals[16] != nil {
-		l.State.Abbreviation, _ = conversions.ByteToString(vals[16])
-	}
-	if vals[17] != nil {
-		if l.State.Country == nil {
-			l.State.Country = &geography.Country{}
-		}
-		l.State.Country.Id, _ = conversions.ByteToInt(vals[17])
-	}
-	if vals[18] != nil {
-		if l.State.Country == nil {
-			l.State.Country = &geography.Country{}
-		}
-		l.State.Country.Country, _ = conversions.ByteToString(vals[18])
-	}
-	if vals[19] != nil {
-		l.State.Country.Abbreviation, _ = conversions.ByteToString(vals[19])
-	}
-	if vals[20] != nil {
-		l.DealerType.Type, _ = conversions.ByteToString(vals[20])
-	}
-	if vals[21] != nil {
-		l.DealerType.Online, _ = conversions.ParseBool(vals[21])
-	}
-	if vals[22] != nil {
-		l.DealerType.Show, _ = conversions.ParseBool(vals[22])
-	}
-	if vals[23] != nil {
-		l.DealerType.Label, _ = conversions.ByteToString(vals[23])
-	}
-	if vals[24] != nil {
-		l.DealerTier.Tier, _ = conversions.ByteToString(vals[24])
-	}
-	if vals[25] != nil {
-		l.DealerTier.Sort, _ = conversions.ByteToInt(vals[25])
-	}
-	if vals[26] != nil {
-		l.DealerType.MapIcon.MapIcon, _ = conversions.ByteToUrl(vals[26])
-	}
-	if vals[27] != nil {
-		l.DealerType.MapIcon.MapIconShadow, _ = conversions.ByteToUrl(vals[27])
-	}
-	if vals[28] != nil {
-		l.MapixCode.Code, _ = conversions.ByteToString(vals[28])
-	}
-	if vals[29] != nil {
-		l.MapixCode.Description, _ = conversions.ByteToString(vals[29])
-	}
-	if vals[30] != nil {
-		l.SalesRepresentative.Name, _ = conversions.ByteToString(vals[30])
-	}
-	if vals[31] != nil {
-		l.SalesRepresentative.Code, _ = conversions.ByteToString(vals[31])
-	}
-	if vals[32] != nil {
-		l.ShowWebSite, _ = conversions.ParseBool(vals[32])
-	}
-	if vals[33] != nil {
-		l.Website, _ = conversions.ByteToUrl(vals[33])
-	}
-	if vals[34] != nil {
-		l.ELocalUrl, _ = conversions.ByteToUrl(vals[34])
-	}
-
-	if len(vals) == 36 && vals[35] != nil {
-		l.Distance, _ = conversions.ByteToFloat(vals[35])
-	}
+	l.DealerType.MapIcon.MapIcon = *mapIconURL
+	l.DealerType.MapIcon.MapIconShadow = *mapIconShadowURL
+	l.Website = *websiteURL
+	l.ELocalUrl = *eLocalURL
 
 	return &l, err
 }

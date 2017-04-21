@@ -6,7 +6,6 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -80,7 +79,8 @@ type Metrics struct {
 // and take that information and send to Google Analytics (or more accurately,
 // send it to curt-consumer which sends it to analytics for us)
 func ToPubSub(w http.ResponseWriter, r *http.Request, startTime time.Time) error {
-	body, _ := ioutil.ReadAll(r.Body)
+	//body, _ := ioutil.ReadAll(r.Body)
+	//Reading the body here causes it to be unaccessible in the actual request processing
 
 	var reqHeaders []Header
 	for k, v := range r.Header {
@@ -107,12 +107,12 @@ func ToPubSub(w http.ResponseWriter, r *http.Request, startTime time.Time) error
 	reqMetrics := RequestMetrics{
 		IP:          r.RemoteAddr,
 		ContentType: r.Header.Get("Content-Type"),
-		Body:        body,
-		URI:         r.URL.String(),
-		Title:       r.URL.Path,
-		Method:      r.Method,
-		Headers:     reqHeaders,
-		Timestamp:   startTime,
+		//Body:        body,
+		URI:       r.URL.String(),
+		Title:     r.URL.Path,
+		Method:    r.Method,
+		Headers:   reqHeaders,
+		Timestamp: startTime,
 	}
 
 	respMetrics := ResponseMetrics{
