@@ -28,6 +28,9 @@ func GetEtailers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, p
 // Old Path: http://curtmfg.com/WhereToBuy/getLocalDealersJSON?latlng=43.853282,-95.571675,45.800981,-90.468526&center=44.83536,-93.0201
 // TODO - this method found in Dealers ctlr
 
+// TODO: This all probably needs to be majorly rewritten to be cleaner and easier to use,
+// but only if we ever intend to use it for it's intended specific purpose of
+// "find dealers near me"
 func GetLocalDealers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params) string {
 	var err error
 	qs := r.URL.Query()
@@ -46,7 +49,7 @@ func GetLocalDealers(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 	}
 
 	var distance int
-	if qs.Get("distince") != "" {
+	if qs.Get("distance") != "" {
 		distance, _ = strconv.Atoi(qs.Get("distance"))
 	}
 	var count int
