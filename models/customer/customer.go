@@ -161,7 +161,13 @@ type DealerLocation struct {
 	SalesRepresentative SalesRepresentative `json:"salesRepresentative,omitempty" xml:"salesRepresentative,omitempty"`
 	MapixCode           MapixCode           `json:"mapixCode,omitempty" xml:"mapixCode,omitempty"`
 }
+
 type DealerLocations []DealerLocation
+
+type DealersResponse struct {
+	Dealers []DealerLocation `json:"dealers" xml:"dealers"`
+	Total   int              `json:"total" xml:"total"`
+}
 
 type StateRegion struct {
 	Id           int          `json:"id,omitempty" xml:"id,omitempty"`
@@ -297,6 +303,8 @@ var (
 					where dt.online = 0 && c.isDummy = 0 && dt.show = 1 && dtr.ID = mi.tier
 					having (distance < ?) || (? = 0)
 					limit ?,?`
+
+	countDealers = `select count(*) from CustomerLocations as cl`
 
 	polygon = `select s.stateID, s.state, s.abbr,
 					(
@@ -921,23 +929,25 @@ func GetEtailers(dtx *apicontext.DataContext) (dealers []Customer, err error) {
 	return dealers, err
 }
 
-func GetLocalDealers(latlng string, distance int, skip int, count int) (dealers []DealerLocation, err error) {
-	// if distance == 0 {
-	// 	distance = 100
-	// }
-	if count == 0 {
-		count = 100
-	}
+func GetLocalDealers(latlng string, distance int, skip int, count int) (DealersResponse, error) {
+	var err error
+	var dealers []DealerLocation
+	var dealerResp DealersResponse
 
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		return dealers, err
+		return dealerResp, err
 	}
 	defer db.Close()
 
+	var total int
+
+	row := db.QueryRow(countDealers)
+	row.Scan(&total)
+
 	stmt, err := db.Prepare(localDealers)
 	if err != nil {
-		return dealers, err
+		return dealerResp, err
 	}
 	defer stmt.Close()
 
@@ -949,7 +959,7 @@ func GetLocalDealers(latlng string, distance int, skip int, count int) (dealers 
 		latlngs := strings.Split(latlng, ",")
 		if len(latlngs) != 2 {
 			err = fmt.Errorf("%s", "failed to parse the latitude and longitude")
-			return
+			return dealerResp, err
 		}
 		latitude = latlngs[0]
 		longitude = latlngs[1]
@@ -957,23 +967,26 @@ func GetLocalDealers(latlng string, distance int, skip int, count int) (dealers 
 
 	res, err := stmt.Query(api_helpers.EARTH, latitude, longitude, latitude, distance, distance, skip, count)
 	if err != nil {
-		return dealers, err
+		return dealerResp, err
 	}
 	defer res.Close()
 
 	for res.Next() {
 		cols, err := res.Columns()
 		if err != nil {
-			return dealers, err
+			return dealerResp, err
 		}
 		l, err := ScanDealerLocation(res, len(cols))
 		if err != nil {
-			return dealers, err
+			return dealerResp, err
 		}
 		dealers = append(dealers, *l)
 	}
+
 	sortutil.AscByField(dealers, "Distance")
-	return
+
+	dealerResp = DealersResponse{Dealers: dealers, Total: total}
+	return dealerResp, err
 }
 
 func GetLocalRegions() (regions []StateRegion, err error) {

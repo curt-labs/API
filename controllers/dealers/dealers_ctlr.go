@@ -59,9 +59,14 @@ func GetLocalDealers(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 	if count == 0 {
 		count = 50
 	}
+	var page int
+	if qs.Get("page") != "" {
+		page, _ = strconv.Atoi(qs.Get("page"))
+	}
+
 	var skip int
-	if qs.Get("skip") != "" {
-		skip, _ = strconv.Atoi(qs.Get("skip"))
+	if page > 0 {
+		skip = (page - 1) * count
 	}
 
 	dealerLocations, err := customer.GetLocalDealers(latlng, distance, skip, count)
