@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/encoding"
@@ -84,7 +85,11 @@ func GetLocalDealers(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 		apierror.GenerateError("Error retrieving locations.", err, w, r)
 	}
 
-	return encoding.Must(enc.Encode(dealerLocations))
+	if strings.ToLower(qs.Get("format")) == "json-obj" {
+		return encoding.Must(enc.Encode(dealerLocations))
+	} else {
+		return encoding.Must(enc.Encode(dealerLocations.Dealers))
+	}
 
 }
 
