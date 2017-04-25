@@ -59,12 +59,22 @@ func GetLocalDealers(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 	if count == 0 {
 		count = 50
 	}
+
+	var skip int
 	var page int
+	if (qs.Get("page") != "") && (qs.Get("skip") != "") {
+		w.WriteHeader(http.StatusBadRequest)
+		return encoding.Must(enc.Encode("Cannot specify both 'skip' and 'page' at the same time."))
+	}
+
+	if qs.Get("skip") != "" {
+		skip, _ = strconv.Atoi(qs.Get("skip"))
+	}
+
 	if qs.Get("page") != "" {
 		page, _ = strconv.Atoi(qs.Get("page"))
 	}
 
-	var skip int
 	if page > 0 {
 		skip = (page - 1) * count
 	}
