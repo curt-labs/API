@@ -3,11 +3,12 @@ package apierror
 import (
 	"encoding/json"
 	"encoding/xml"
-	"github.com/curt-labs/API/helpers/database"
-	"gopkg.in/mgo.v2"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+
+	"github.com/curt-labs/API/helpers/database"
+	"gopkg.in/mgo.v2"
 )
 
 type ApiErr struct {
