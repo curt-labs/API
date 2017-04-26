@@ -165,8 +165,8 @@ type DealerLocation struct {
 type DealerLocations []DealerLocation
 
 type DealersResponse struct {
-	Dealers []DealerLocation `json:"dealers" xml:"dealers"`
-	Total   int              `json:"total" xml:"total"`
+	Items []DealerLocation `json:"items" xml:"items"`
+	Total int              `json:"total" xml:"total"`
 }
 
 type StateRegion struct {
@@ -985,7 +985,7 @@ func GetLocalDealers(latlng string, distance int, skip int, count int) (DealersR
 
 	sortutil.AscByField(dealers, "Distance")
 
-	dealerResp = DealersResponse{Dealers: dealers, Total: total}
+	dealerResp = DealersResponse{Items: dealers, Total: total}
 	return dealerResp, err
 }
 
