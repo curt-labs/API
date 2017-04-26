@@ -88,7 +88,7 @@ func GetLocalDealers(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 	if strings.ToLower(qs.Get("format")) == "json-obj" {
 		return encoding.Must(enc.Encode(dealerLocations))
 	} else {
-		return encoding.Must(enc.Encode(dealerLocations.Dealers))
+		return encoding.Must(enc.Encode(dealerLocations.Items))
 	}
 
 }
