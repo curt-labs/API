@@ -6,10 +6,10 @@ import (
 	"github.com/curt-labs/API/helpers/conversions"
 	"github.com/curt-labs/API/helpers/database"
 	"github.com/curt-labs/API/helpers/redis"
+	"github.com/curt-labs/API/helpers/sortutil"
 	"github.com/curt-labs/API/models/brand"
 	"github.com/curt-labs/API/models/geography"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/pmylund/sortutil"
 
 	"database/sql"
 	"encoding/json"
