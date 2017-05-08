@@ -300,11 +300,45 @@ var (
 					left join Country as cty on s.countryID = cty.countryID
 					left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
 					left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
-					where dt.online = 0 && c.isDummy = 0 && dt.show = 1 && dtr.ID = mi.tier
+					where dt.online = 0 && c.isDummy = 0 && dt.show = 1 && dtr.ID = mi.tier && mi.brandID = ?
 					having (distance < ?) || (? = 0)
+					order by cl.locationID
 					limit ?,?`
 
-	countDealers = `select count(*) from CustomerLocations as cl`
+	localDealersNoDistance = `select
+					` + customerLocationFields + `,
+					` + stateFields + `,
+					` + countryFields + `,
+					` + dealerTypeFields + `,
+					` + dealerTierFields + `,
+					` + mapIconFields + `,
+					` + mapixCodeFields + `,
+					` + salesRepFields + ` ,
+					` + showSiteFields + `
+					from CustomerLocations as cl
+					join Customer as c on cl.cust_id = c.cust_id
+					join DealerTypes as dt on c.dealer_type = dt.dealer_type
+					left join MapIcons as mi on dt.dealer_type = mi.dealer_type
+					join DealerTiers as dtr on c.tier = dtr.ID
+					left join States as s on cl.stateID = s.stateID
+					left join Country as cty on s.countryID = cty.countryID
+					left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
+					left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
+					where dt.online = 0 && c.isDummy = 0 && dt.show = 1 && dtr.ID = mi.tier && mi.brandID = ?
+					order by cl.locationID
+					limit ?,?`
+
+	countDealers = `select count(*)
+					from CustomerLocations as cl
+					join Customer as c on cl.cust_id = c.cust_id
+					join DealerTypes as dt on c.dealer_type = dt.dealer_type
+					left join MapIcons as mi on dt.dealer_type = mi.dealer_type
+					join DealerTiers as dtr on c.tier = dtr.ID
+					left join States as s on cl.stateID = s.stateID
+					left join Country as cty on s.countryID = cty.countryID
+					left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
+					left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
+					where dt.online = 0 && c.isDummy = 0 && dt.show = 1 && dtr.ID = mi.tier && mi.brandID = ?`
 
 	polygon = `select s.stateID, s.state, s.abbr,
 					(
@@ -929,7 +963,7 @@ func GetEtailers(dtx *apicontext.DataContext) (dealers []Customer, err error) {
 	return dealers, err
 }
 
-func GetLocalDealers(latlng string, distance int, skip int, count int) (DealersResponse, error) {
+func GetLocalDealers(latlng string, distance int, skip int, count int, brandID int) (DealersResponse, error) {
 	var err error
 	var dealers []DealerLocation
 	var dealerResp DealersResponse
@@ -942,17 +976,12 @@ func GetLocalDealers(latlng string, distance int, skip int, count int) (DealersR
 
 	var total int
 
-	row := db.QueryRow(countDealers)
+	row := db.QueryRow(countDealers, brandID)
 	row.Scan(&total)
-
-	stmt, err := db.Prepare(localDealers)
-	if err != nil {
-		return dealerResp, err
-	}
-	defer stmt.Close()
 
 	var latitude string
 	var longitude string
+	var res *sql.Rows
 
 	// Get the boundary points
 	if latlng != "" {
@@ -965,9 +994,16 @@ func GetLocalDealers(latlng string, distance int, skip int, count int) (DealersR
 		longitude = latlngs[1]
 	}
 
-	res, err := stmt.Query(api_helpers.EARTH, latitude, longitude, latitude, distance, distance, skip, count)
-	if err != nil {
-		return dealerResp, err
+	if latlng == "" {
+		res, err = db.Query(localDealersNoDistance, brandID, skip, count)
+		if err != nil {
+			return dealerResp, err
+		}
+	} else {
+		res, err = db.Query(localDealers, api_helpers.EARTH, latitude, longitude, latitude, distance, distance, brandID, skip, count)
+		if err != nil {
+			return dealerResp, err
+		}
 	}
 	defer res.Close()
 
@@ -976,14 +1012,23 @@ func GetLocalDealers(latlng string, distance int, skip int, count int) (DealersR
 		if err != nil {
 			return dealerResp, err
 		}
-		l, err := ScanDealerLocation(res, len(cols))
+		var l *DealerLocation
+		if latlng != "" {
+			l, err = ScanDealerLocation(res, len(cols), true)
+		} else {
+			l, err = ScanDealerLocation(res, len(cols), false)
+		}
+
 		if err != nil {
 			return dealerResp, err
 		}
+
 		dealers = append(dealers, *l)
 	}
 
-	sortutil.AscByField(dealers, "Distance")
+	if latlng != "" {
+		sortutil.AscByField(dealers, "Distance")
+	}
 
 	dealerResp = DealersResponse{Items: dealers, Total: total}
 	return dealerResp, err
@@ -1222,7 +1267,7 @@ func SearchLocations(term string) (locations []DealerLocation, err error) {
 	}
 
 	for res.Next() {
-		loc, err := ScanDealerLocation(res, len(cols))
+		loc, err := ScanDealerLocation(res, len(cols), true)
 		if err != nil {
 			return locations, err
 		}
@@ -1258,7 +1303,7 @@ func SearchLocationsByType(term string) (locations DealerLocations, err error) {
 	}
 
 	for res.Next() {
-		loc, err := ScanDealerLocation(res, len(cols))
+		loc, err := ScanDealerLocation(res, len(cols), true)
 		if err != nil {
 			return locations, err
 		}
@@ -1306,7 +1351,7 @@ func SearchLocationsByLatLng(loc GeoLocation) (locations []DealerLocation, err e
 	}
 
 	for res.Next() {
-		loc, err := ScanDealerLocation(res, len(cols))
+		loc, err := ScanDealerLocation(res, len(cols), true)
 		if err != nil {
 			return locations, err
 		}
@@ -1843,7 +1888,7 @@ func ScanLocation(res Scanner) (*CustomerLocation, error) {
 	return &l, err
 }
 
-func ScanDealerLocation(res *sql.Rows, count int) (*DealerLocation, error) {
+func ScanDealerLocation(res *sql.Rows, count int, isDistance bool) (*DealerLocation, error) {
 	var l DealerLocation
 	var err error
 	var mapIconString string
@@ -1855,17 +1900,36 @@ func ScanDealerLocation(res *sql.Rows, count int) (*DealerLocation, error) {
 		l.State.Country = &geography.Country{}
 	}
 
-	err = res.Scan(&l.CustomerLocation.Id, &l.Name, &l.Address, &l.City, &l.State.Id,
-		&l.Email, &l.Phone, &l.Fax, &l.Coordinates.Latitude, &l.Coordinates.Longitude,
-		&l.CustomerId, &l.ContactPerson, &l.IsPrimary, &l.PostalCode, &l.ShippingDefault,
-		&l.State.State, &l.State.Abbreviation, &l.State.Country.Id, &l.State.Country.Country,
-		&l.State.Country.Abbreviation, &l.DealerType.Type, &l.DealerType.Online,
-		&l.DealerType.Show, &l.DealerType.Label, &l.DealerTier.Tier, &l.DealerTier.Sort,
-		&mapIconString, &mapIconShadowString, &l.MapixCode.Code, &l.MapixCode.Description,
-		&l.SalesRepresentative.Name, &l.SalesRepresentative.Code, &l.ShowWebSite,
-		&websiteString, &elocalString, &l.Distance)
-	if err != nil {
-		return &l, err
+	if isDistance == true {
+		err = res.Scan(&l.CustomerLocation.Id, &l.Name, &l.Address, &l.City, &l.State.Id,
+			&l.Email, &l.Phone, &l.Fax, &l.Coordinates.Latitude, &l.Coordinates.Longitude,
+			&l.CustomerId, &l.ContactPerson, &l.IsPrimary, &l.PostalCode, &l.ShippingDefault,
+			&l.State.State, &l.State.Abbreviation, &l.State.Country.Id, &l.State.Country.Country,
+			&l.State.Country.Abbreviation, &l.DealerType.Type, &l.DealerType.Online,
+			&l.DealerType.Show, &l.DealerType.Label, &l.DealerTier.Tier, &l.DealerTier.Sort,
+			&mapIconString, &mapIconShadowString, &l.MapixCode.Code, &l.MapixCode.Description,
+			&l.SalesRepresentative.Name, &l.SalesRepresentative.Code, &l.ShowWebSite,
+			&websiteString, &elocalString, &l.Distance)
+
+		if err != nil {
+			return &l, err
+		}
+	}
+
+	if isDistance == false {
+		err = res.Scan(&l.CustomerLocation.Id, &l.Name, &l.Address, &l.City, &l.State.Id,
+			&l.Email, &l.Phone, &l.Fax, &l.Coordinates.Latitude, &l.Coordinates.Longitude,
+			&l.CustomerId, &l.ContactPerson, &l.IsPrimary, &l.PostalCode, &l.ShippingDefault,
+			&l.State.State, &l.State.Abbreviation, &l.State.Country.Id, &l.State.Country.Country,
+			&l.State.Country.Abbreviation, &l.DealerType.Type, &l.DealerType.Online,
+			&l.DealerType.Show, &l.DealerType.Label, &l.DealerTier.Tier, &l.DealerTier.Sort,
+			&mapIconString, &mapIconShadowString, &l.MapixCode.Code, &l.MapixCode.Description,
+			&l.SalesRepresentative.Name, &l.SalesRepresentative.Code, &l.ShowWebSite,
+			&websiteString, &elocalString)
+
+		if err != nil {
+			return &l, err
+		}
 	}
 
 	mapIconURL, err := url.Parse(mapIconString)

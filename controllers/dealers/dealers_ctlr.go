@@ -63,9 +63,21 @@ func GetLocalDealers(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 
 	var skip int
 	var page int
+	var brandID int
 	if (qs.Get("page") != "") && (qs.Get("skip") != "") {
 		w.WriteHeader(http.StatusBadRequest)
 		return encoding.Must(enc.Encode("Cannot specify both 'skip' and 'page' at the same time."))
+	}
+
+	if qs.Get("brandID") != "" {
+		brandID, err = strconv.Atoi(qs.Get("brandID"))
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return encoding.Must(enc.Encode("brandID must be an integer"))
+		}
+	} else {
+		w.WriteHeader(http.StatusBadRequest)
+		return encoding.Must(enc.Encode("brandID is a required field."))
 	}
 
 	if qs.Get("skip") != "" {
@@ -80,7 +92,7 @@ func GetLocalDealers(w http.ResponseWriter, r *http.Request, enc encoding.Encode
 		skip = (page - 1) * count
 	}
 
-	dealerLocations, err := customer.GetLocalDealers(latlng, distance, skip, count)
+	dealerLocations, err := customer.GetLocalDealers(latlng, distance, skip, count, brandID)
 	if err != nil {
 		apierror.GenerateError("Error retrieving locations.", err, w, r)
 	}
