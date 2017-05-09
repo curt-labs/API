@@ -14,11 +14,39 @@ import (
 )
 
 func GetEtailers(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
-	dealers, err := customer.GetEtailers(dtx)
+	var err error
+	qs := r.URL.Query()
+
+	key := qs.Get("key")
+	if key == "" {
+		apierror.GenerateError("Unauthorized.", err, w, r)
+	}
+
+	var count int
+	var page int
+	if qs.Get("count") != "" {
+		count, _ = strconv.Atoi(qs.Get("count"))
+	}
+	if count == 0 {
+		count = 50
+	}
+
+	if qs.Get("page") != "" {
+		page, _ = strconv.Atoi(qs.Get("page"))
+	}
+	if page == 0 {
+		page = 1
+	}
+
+	etailResp, err := customer.GetEtailers(dtx, count, page)
 	if err != nil {
 		apierror.GenerateError("Error retrieving etailers.", err, w, r)
 	}
-	return encoding.Must(enc.Encode(dealers))
+	if strings.ToLower(qs.Get("format")) == "json-obj" {
+		return encoding.Must(enc.Encode(etailResp))
+	} else {
+		return encoding.Must(enc.Encode(etailResp.Items))
+	}
 }
 
 // Sample Data
