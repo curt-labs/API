@@ -20,6 +20,10 @@ import (
 	"strings"
 )
 
+//TODO: Clean up these monstrosities of scan functions. Some of these are like this
+//due to the fact that too many fiels in our DB allow NULL. If we were to fix that
+//then this file could be much, much shorter, and much more straightforward.
+
 type Coordinates struct {
 	Latitude  float64 `json:"latitude" xml:"latitude"`
 	Longitude float64 `json:"longitude" xml:"longitude"`
@@ -169,6 +173,11 @@ type DealersResponse struct {
 	Total int              `json:"total" xml:"total"`
 }
 
+type EtailerResponse struct {
+	Items []Customer `json:"items" xml:"items"`
+	Total int        `json:"total" xml:"total"`
+}
+
 type StateRegion struct {
 	Id           int          `json:"id,omitempty" xml:"id,omitempty"`
 	Name         string       `json:"name,omitempty" xml:"name,omitempty"`
@@ -253,7 +262,16 @@ var (
 						join CartIntegration ci on c.cust_ID = ci.custID
 						where ak.api_key = ?
 						and ci.partID = ?`
-	etailers = `select distinct ` + customerFields + `, ` + stateFields + `, ` + countryFields + `, ` + dealerTypeFields + `, ` + dealerTierFields + `, ` + mapIconFields + `, ` + mapixCodeFields + `, ` + salesRepFields + `
+
+	etailers = `select distinct
+	      ` + customerFields + `,
+	      ` + stateFields + `,
+	      ` + countryFields + `,
+	      ` + dealerTypeFields + `,
+	      ` + dealerTierFields + `,
+	      ` + mapIconFields + `,
+	      ` + mapixCodeFields + `,
+	      ` + salesRepFields + `
 				from Customer as c
 				left join States as s on c.stateID = s.stateID
 				left join Country as cty on s.countryID = cty.countryID
@@ -267,7 +285,23 @@ var (
 				join ApiKey as a on a.id = atb.keyID
 				where dt.online = 1 && c.isDummy = 0
 				&& a.api_key = ? && (ctb.brandID = ? or 0 = ?)
-				order by c.name`
+				order by c.name
+				limit ?,?`
+
+	etailersCount = `select count(*)
+				from Customer as c
+				left join States as s on c.stateID = s.stateID
+				left join Country as cty on s.countryID = cty.countryID
+				left join DealerTypes as dt on c.dealer_type = dt.dealer_type
+				left join MapIcons as mi on dt.dealer_type = mi.dealer_type
+				left join DealerTiers as dtr on c.tier = dtr.ID
+				left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
+				left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
+				join CustomerToBrand as ctb on ctb.cust_id = c.cust_id
+				join ApiKeyToBrand as atb on atb.brandID = ctb.brandID
+				join ApiKey as a on a.id = atb.keyID
+				where dt.online = 1 && c.isDummy = 0
+				&& a.api_key = ? && (ctb.brandID = ? or 0 = ?)`
 
 	localDealers = `select
 					` + customerLocationFields + `,
@@ -925,31 +959,38 @@ func GetCustomerCartReference(api_key string, part_id int) (ref int, err error) 
 	return ref, err
 }
 
-func GetEtailers(dtx *apicontext.DataContext) (dealers []Customer, err error) {
+func GetEtailers(dtx *apicontext.DataContext, count int, page int) (EtailerResponse, error) {
 	redis_key := "dealers:etailer:" + dtx.BrandString
 	data, err := redis.Get(redis_key)
+	var dealers []Customer
+	var etailResp EtailerResponse
 	if err == nil && len(data) > 0 {
 		err = json.Unmarshal(data, &dealers)
 		if err != nil {
-			return dealers, err
+			return etailResp, err
 		}
-		return
+		return etailResp, err
 	}
+
+	skip := (page - 1) * count
 
 	db, err := sql.Open("mysql", database.ConnectionString())
 	if err != nil {
-		return dealers, err
+		return etailResp, err
 	}
 	defer db.Close()
 
-	stmt, err := db.Prepare(etailers)
+	var total int
+
+	row := db.QueryRow(etailersCount, dtx.APIKey, dtx.BrandID, dtx.BrandID)
+	err = row.Scan(&total)
 	if err != nil {
-		return dealers, err
+		return etailResp, err
 	}
-	defer stmt.Close()
-	rows, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
+
+	rows, err := db.Query(etailers, dtx.APIKey, dtx.BrandID, dtx.BrandID, skip, count)
 	if err != nil {
-		return dealers, err
+		return etailResp, err
 	}
 	defer rows.Close()
 
@@ -960,7 +1001,10 @@ func GetEtailers(dtx *apicontext.DataContext) (dealers []Customer, err error) {
 		}
 	}
 	redis.Setex(redis_key, dealers, 86400)
-	return dealers, err
+
+	etailResp = EtailerResponse{Items: dealers, Total: total}
+
+	return etailResp, err
 }
 
 func GetLocalDealers(latlng string, distance int, skip int, count int, brandID int) (DealersResponse, error) {
