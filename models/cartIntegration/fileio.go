@@ -35,10 +35,11 @@ func UploadFile(file multipart.File, api_key string) error {
 		}
 	}
 
-	priceLookup, err := GetCustomerPrices()
+	priceLookupJson, err := GetCustomerPrices(0, 0)
 	if err != nil {
 		return err
 	}
+	priceLookup := priceLookupJson.Items
 	integrationLookup, err := GetCustomerCartIntegrations(api_key)
 	if err != nil {
 		return err
