@@ -8,6 +8,11 @@ import (
 	"time"
 )
 
+type CustomerPriceResp struct {
+	Items []CustomerPrice `json:"items" xml:"items"`
+	Total int             `json:"total" xml:"total"`
+}
+
 type CustomerPrice struct {
 	ID             int        `json:"id,omitempty" xml:"id,omitempty"`
 	CustID         int        `json:"custId,omitempty" xml:"custId,omitempty"`
@@ -95,31 +100,44 @@ func initDB() (*sql.DB, error) {
 }
 
 //Get all of a single customer's prices
-func GetCustomerPrices() ([]CustomerPrice, error) {
+func GetCustomerPrices(page int, count int) (CustomerPriceResp, error) {
+	var customerJson CustomerPriceResp
 	var cps []CustomerPrice
 	db, err := initDB()
 	if err != nil {
-		return cps, err
+		return customerJson, err
 	}
 	defer db.Close()
-	stmt, err := db.Prepare(getPricing)
-	if err != nil {
-		return cps, err
-	}
-	defer stmt.Close()
-	res, err := stmt.Query(Customer_ID, Customer_ID, Brand_ID)
-	if err != nil {
-		return cps, err
+
+	var res *sql.Rows
+
+	if page == 0 && count == 0 {
+		res, err = db.Query(getPricing, Customer_ID, Customer_ID, Brand_ID)
+		if err != nil {
+			return customerJson, err
+		}
+	} else {
+		countRow := db.QueryRow(getPricingCount, Customer_ID, Customer_ID, Brand_ID)
+		var rowCount int
+
+		countRow.Scan(&rowCount)
+		customerJson.Total = rowCount
+
+		res, err = db.Query(getPricingPaged, Customer_ID, Customer_ID, Brand_ID, (page-1)*count, count)
+		if err != nil {
+			return customerJson, err
+		}
 	}
 
 	for res.Next() {
 		c, err := Scan(res)
 		if err != nil {
-			return cps, err
+			return customerJson, err
 		}
 		cps = append(cps, c)
 	}
-	return cps, err
+	customerJson.Items = cps
+	return customerJson, err
 }
 
 //Get a customers prices - paged/limited

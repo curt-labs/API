@@ -67,11 +67,12 @@ func Download(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) str
 	b := &bytes.Buffer{}
 	wr := csv.NewWriter(b)
 
-	customerPrices, err := cartIntegration.GetCustomerPrices()
+	customerPricesJson, err := cartIntegration.GetCustomerPrices(0, 0)
 	if err != nil {
 		apierror.GenerateError("Error getting customer prices ", err, rw, r)
 		return ""
 	}
+	customerPrices := customerPricesJson.Items
 
 	//Price map
 	prices, err := cartIntegration.GetPartPrices()
