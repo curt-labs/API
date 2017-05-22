@@ -48,12 +48,34 @@ func GetPricing(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) s
 		apierror.GenerateError("Trouble getting customer from api key", err, rw, r)
 		return ""
 	}
-	prices, err := cartIntegration.GetCustomerPrices()
+
+	var page int
+	var count int
+
+	if r.URL.Query().Get("format") == "json-obj" {
+		page, err = strconv.Atoi(r.URL.Query().Get("page"))
+		if err != nil {
+			apierror.GenerateError("Trouble getting page from query string", err, rw, r)
+			return ""
+		}
+		count, err = strconv.Atoi(r.URL.Query().Get("count"))
+		if err != nil {
+			apierror.GenerateError("Trouble getting count from query string", err, rw, r)
+			return ""
+		}
+	}
+
+	prices, err := cartIntegration.GetCustomerPrices(page, count)
 	if err != nil {
 		apierror.GenerateError("Trouble getting prices by customer ID", err, rw, r)
 		return ""
 	}
-	return encoding.Must(enc.Encode(prices))
+
+	if r.URL.Query().Get("format") == "json-obj" {
+		return encoding.Must(enc.Encode(prices))
+	} else {
+		return encoding.Must(enc.Encode(prices.Items))
+	}
 }
 
 // Requires APIKEY and brandID in header
@@ -251,11 +273,12 @@ func ResetAllToMap(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder
 		apierror.GenerateError("Trouble getting customer from api key", err, rw, r)
 		return ""
 	}
-	custPrices, err := cartIntegration.GetCustomerPrices()
+	custPricesJson, err := cartIntegration.GetCustomerPrices(0, 0)
 	if err != nil {
 		apierror.GenerateError("Trouble getting prices by customer ID", err, rw, r)
 		return ""
 	}
+	custPrices := custPricesJson.Items
 
 	//create map of MAP prices
 	prices, err := cartIntegration.GetMAPPartPrices()
@@ -321,11 +344,12 @@ func Global(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder, param
 	}
 
 	//get CustPrices
-	custPrices, err := cartIntegration.GetCustomerPrices()
+	custPricesJson, err := cartIntegration.GetCustomerPrices(0, 0)
 	if err != nil {
 		apierror.GenerateError("Trouble getting prices by customer ID", err, rw, r)
 		return ""
 	}
+	custPrices := custPricesJson.Items
 
 	//set to percentage
 	for i, _ := range custPrices {

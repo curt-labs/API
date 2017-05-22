@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	"github.com/go-martini/martini"
 	"net/http"
 	"regexp"
+
+	"github.com/go-martini/martini"
 )
 
 type Encoder interface {
