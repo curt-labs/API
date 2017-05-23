@@ -965,7 +965,7 @@ func GetEtailers(dtx *apicontext.DataContext, count int, page int) (EtailerRespo
 	var dealers []Customer
 	var etailResp EtailerResponse
 	if err == nil && len(data) > 0 {
-		err = json.Unmarshal(data, &dealers)
+		err = json.Unmarshal(data, &etailResp)
 		if err != nil {
 			return etailResp, err
 		}
@@ -1000,9 +1000,8 @@ func GetEtailers(dtx *apicontext.DataContext, count int, page int) (EtailerRespo
 			dealers = append(dealers, cust)
 		}
 	}
-	redis.Setex(redis_key, dealers, 86400)
-
 	etailResp = EtailerResponse{Items: dealers, Total: total}
+	redis.Setex(redis_key, etailResp, 86400)
 
 	return etailResp, err
 }
