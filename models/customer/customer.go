@@ -960,7 +960,7 @@ func GetCustomerCartReference(api_key string, part_id int) (ref int, err error) 
 }
 
 func GetEtailers(dtx *apicontext.DataContext, count int, page int) (EtailerResponse, error) {
-	redis_key := "dealers:etailer:" + dtx.BrandString
+	redis_key := "dealers:etailer:" + dtx.BrandString + ":" + strconv.Itoa(count) + ":" + strconv.Itoa(page)
 	data, err := redis.Get(redis_key)
 	var dealers []Customer
 	var etailResp EtailerResponse
