@@ -960,12 +960,12 @@ func GetCustomerCartReference(api_key string, part_id int) (ref int, err error) 
 }
 
 func GetEtailers(dtx *apicontext.DataContext, count int, page int) (EtailerResponse, error) {
-	redis_key := "dealers:etailer:" + dtx.BrandString
+	redis_key := "dealers:etailer:" + dtx.BrandString + ":" + strconv.Itoa(count) + ":" + strconv.Itoa(page)
 	data, err := redis.Get(redis_key)
 	var dealers []Customer
 	var etailResp EtailerResponse
 	if err == nil && len(data) > 0 {
-		err = json.Unmarshal(data, &dealers)
+		err = json.Unmarshal(data, &etailResp)
 		if err != nil {
 			return etailResp, err
 		}
@@ -1000,9 +1000,8 @@ func GetEtailers(dtx *apicontext.DataContext, count int, page int) (EtailerRespo
 			dealers = append(dealers, cust)
 		}
 	}
-	redis.Setex(redis_key, dealers, 86400)
-
 	etailResp = EtailerResponse{Items: dealers, Total: total}
+	redis.Setex(redis_key, etailResp, 86400)
 
 	return etailResp, err
 }
