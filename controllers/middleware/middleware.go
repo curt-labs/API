@@ -175,19 +175,19 @@ func getKey(r *http.Request) (apiKey string, err error) {
 	return apiKey, err
 }
 
-func getBrandId(r *http.Request) (int, error){
+func getId(param string, r *http.Request) (int, error){
 	qs := r.URL.Query()
-	brand := qs.Get(BRAND_ID_PARAM)
+	id := qs.Get(param)
 
-	if brand == "" {
-		brand = r.FormValue(BRAND_ID_PARAM)
+	if id == "" {
+		id = r.FormValue(param)
 	}
 
-	if brand == "" {
-		brand = r.Header.Get(BRAND_ID_PARAM)
+	if id == "" {
+		id = r.Header.Get(param)
 	}
 
-	return strconv.Atoi(brand)
+	return strconv.Atoi(id)
 }
 
 func processDataContext(r *http.Request, c martini.Context) (*apicontext.DataContext, error) {
@@ -206,10 +206,9 @@ func processDataContext(r *http.Request, c martini.Context) (*apicontext.DataCon
 	}
 	// go user.LogApiRequest(r)
 
-	//handles branding
 	// TODO some duplicate code here
 	var brandID int
-	if id, err := getBrandId(); err == nil {
+	if id, err := getId(BRAND_ID_PARAM, r); err == nil {
 		brandID = id
 	}
 
