@@ -153,6 +153,7 @@ func mapCartAccount(c martini.Context, res http.ResponseWriter, r *http.Request)
 }
 const API_KEY_PARAM = "key"
 const BRAND_ID_PARAM = "brandID"
+const WEBSITE_ID_PARAM = "websiteID"
 const ERR_MISSING_KEY = "No API Key Supplied."
 
 func getKey(r *http.Request) (apiKey string, err error) {
@@ -212,15 +213,8 @@ func processDataContext(r *http.Request, c martini.Context) (*apicontext.DataCon
 		brandID = id
 	}
 
-	//handles websiteID
 	var websiteID int
-	if website == "" {
-		website = r.FormValue("websiteID")
-	}
-	if website == "" {
-		website = r.Header.Get("websiteID")
-	}
-	if id, err := strconv.Atoi(website); err == nil {
+	if id, err := getId(WEBSITE_ID_PARAM, r); err == nil {
 		websiteID = id
 	}
 
