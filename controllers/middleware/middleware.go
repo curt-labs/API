@@ -226,6 +226,7 @@ func processDataContext(r *http.Request, c martini.Context) (*apicontext.DataCon
 }
 
 func getCustomerID(apiKey string) (*customer.CustomerUser, error) {
+	// TODO this function should ideally be in the customer module
 	err := database.Init()
 	if err != nil {
 		return nil, err
