@@ -17,6 +17,11 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+const API_KEY_PARAM = "key"
+const BRAND_ID_PARAM = "brandID"
+const WEBSITE_ID_PARAM = "websiteID"
+const ERR_MISSING_KEY = "No API Key Supplied."
+
 var (
 	ExcusedRoutes = []string{"/status", "/customer/auth", "/customer/user", "/new/customer/auth", "/customer/user/register", "/customer/user/resetPassword", "/cartIntegration/priceTypes", "/cartIntegration", "/cache"}
 )
@@ -151,10 +156,6 @@ func mapCartAccount(c martini.Context, res http.ResponseWriter, r *http.Request)
 	c.Map(token)
 	return nil
 }
-const API_KEY_PARAM = "key"
-const BRAND_ID_PARAM = "brandID"
-const WEBSITE_ID_PARAM = "websiteID"
-const ERR_MISSING_KEY = "No API Key Supplied."
 
 func getKey(r *http.Request) (apiKey string, err error) {
 	qs := r.URL.Query()
@@ -192,42 +193,31 @@ func getId(param string, r *http.Request) (int, error){
 }
 
 func processDataContext(r *http.Request, c martini.Context) (*apicontext.DataContext, error) {
-	qs := r.URL.Query()
-
+	////////// Set required context attributes \\\\\\\\\\
 	apiKey, err := getKey(r)
 	if err != nil {
 		return nil, err
 	}
 
-	//gets customer user from api key
 	user, err := getCustomerID(apiKey)
 	if err != nil || user.Id == "" {
 		return nil, errors.New("No User for this API Key.")
 	}
 	// go user.LogApiRequest(r)
 
-	// Set optional context values
-
-	// TODO some duplicate code here
-	var brandID int
-	if id, err := getId(BRAND_ID_PARAM, r); err == nil {
-		brandID = id
-	}
-
-	var websiteID int
-	if id, err := getId(WEBSITE_ID_PARAM, r); err == nil {
-		websiteID = id
-	}
+	////////// Set optional context values \\\\\\\\\\
+	brandId, err := getId(BRAND_ID_PARAM, r)
+	websiteId, err := getId(WEBSITE_ID_PARAM, r)
 
 	dtx := &apicontext.DataContext{
 		APIKey:     apiKey,
-		BrandID:    brandID,
-		WebsiteID:  websiteID,
+		BrandID:    brandId,
+		WebsiteID:  websiteId,
 		UserID:     user.Id, //current authenticated user
 		CustomerID: user.CustomerID,
 		Globals:    nil,
 	}
-	err = dtx.GetBrandsArrayAndString(apiKey, brandID)
+	err = dtx.GetBrandsArrayAndString(apiKey, brandId)
 	if err != nil {
 		return nil, err
 	}
