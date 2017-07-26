@@ -206,6 +206,8 @@ func processDataContext(r *http.Request, c martini.Context) (*apicontext.DataCon
 	}
 	// go user.LogApiRequest(r)
 
+	// Set optional context values
+
 	// TODO some duplicate code here
 	var brandID int
 	if id, err := getId(BRAND_ID_PARAM, r); err == nil {
@@ -217,9 +219,6 @@ func processDataContext(r *http.Request, c martini.Context) (*apicontext.DataCon
 		websiteID = id
 	}
 
-	//load brands in dtx
-	//returns our data context...shared amongst controllers
-	// var dtx apicontext.DataContext
 	dtx := &apicontext.DataContext{
 		APIKey:     apiKey,
 		BrandID:    brandID,
