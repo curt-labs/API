@@ -152,6 +152,7 @@ func mapCartAccount(c martini.Context, res http.ResponseWriter, r *http.Request)
 	return nil
 }
 const API_KEY_PARAM = "key"
+const BRAND_ID_PARAM = "brandID"
 const ERR_MISSING_KEY = "No API Key Supplied."
 
 func getKey(r *http.Request) (apiKey string, err error) {
@@ -174,10 +175,24 @@ func getKey(r *http.Request) (apiKey string, err error) {
 	return apiKey, err
 }
 
+func getBrandId(r *http.Request) (int, error){
+	qs := r.URL.Query()
+	brand := qs.Get(BRAND_ID_PARAM)
+
+	if brand == "" {
+		brand = r.FormValue(BRAND_ID_PARAM)
+	}
+
+	if brand == "" {
+		brand = r.Header.Get(BRAND_ID_PARAM)
+	}
+
+	return strconv.Atoi(brand)
+}
+
 func processDataContext(r *http.Request, c martini.Context) (*apicontext.DataContext, error) {
 	qs := r.URL.Query()
 	apiKey := qs.Get("key")
-	brand := qs.Get("brandID")
 	website := qs.Get("websiteID")
 
 	apiKey, err := getKey(r)
@@ -193,14 +208,9 @@ func processDataContext(r *http.Request, c martini.Context) (*apicontext.DataCon
 	// go user.LogApiRequest(r)
 
 	//handles branding
+	// TODO some duplicate code here
 	var brandID int
-	if brand == "" {
-		brand = r.FormValue("brandID")
-	}
-	if brand == "" {
-		brand = r.Header.Get("brandID")
-	}
-	if id, err := strconv.Atoi(brand); err == nil {
+	if id, err := getBrandId(); err == nil {
 		brandID = id
 	}
 
