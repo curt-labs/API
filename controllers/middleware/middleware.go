@@ -21,6 +21,10 @@ var (
 	ExcusedRoutes = []string{"/status", "/customer/auth", "/customer/user", "/new/customer/auth", "/customer/user/register", "/customer/user/resetPassword", "/cartIntegration/priceTypes", "/cartIntegration", "/cache"}
 )
 
+// SIDEEFFECTS
+// res.Header().Add("Access-Control-Allow-Origin", "*")
+// res.Header().Add("Cache-Control", "max-age=86400")
+// Log request
 func Meddler() martini.Handler {
 	return func(res http.ResponseWriter, r *http.Request, c martini.Context) {
 		res.Header().Add("Access-Control-Allow-Origin", "*")
@@ -29,11 +33,14 @@ func Meddler() martini.Handler {
 			return
 		}
 
+		// Skip authentication for favicon
 		if strings.Contains(r.URL.String(), "favicon") {
 			res.Write([]byte(""))
 			return
 		}
 
+		// Flag paths that do not r)equire auth
+		// FIXME favicon could probably go here too
 		excused := false
 		for _, route := range ExcusedRoutes {
 			if strings.Contains(r.URL.String(), route) {
@@ -144,6 +151,28 @@ func mapCartAccount(c martini.Context, res http.ResponseWriter, r *http.Request)
 	c.Map(token)
 	return nil
 }
+const API_KEY_PARAM = "key"
+const ERR_MISSING_KEY = "No API Key Supplied."
+
+func getKey(r *http.Request) (apiKey string, err error) {
+	qs := r.URL.Query()
+
+	apiKey = qs.Get(API_KEY_PARAM)
+
+	if apiKey == "" {
+		apiKey = r.FormValue(API_KEY_PARAM)
+	}
+
+	if apiKey == "" {
+		apiKey = r.Header.Get(API_KEY_PARAM)
+	}
+
+	if apiKey == "" {
+		err = errors.New(ERR_MISSING_KEY)
+	}
+
+	return apiKey, err
+}
 
 func processDataContext(r *http.Request, c martini.Context) (*apicontext.DataContext, error) {
 	qs := r.URL.Query()
@@ -151,15 +180,9 @@ func processDataContext(r *http.Request, c martini.Context) (*apicontext.DataCon
 	brand := qs.Get("brandID")
 	website := qs.Get("websiteID")
 
-	//handles api key
-	if apiKey == "" {
-		apiKey = r.FormValue("key")
-	}
-	if apiKey == "" {
-		apiKey = r.Header.Get("key")
-	}
-	if apiKey == "" {
-		return nil, errors.New("No API Key Supplied.")
+	apiKey, err := getKey(r)
+	if err != nil {
+		return nil, err
 	}
 
 	//gets customer user from api key
