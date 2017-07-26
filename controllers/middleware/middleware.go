@@ -193,7 +193,6 @@ func getId(param string, r *http.Request) (int, error){
 
 func processDataContext(r *http.Request, c martini.Context) (*apicontext.DataContext, error) {
 	qs := r.URL.Query()
-	website := qs.Get("websiteID")
 
 	apiKey, err := getKey(r)
 	if err != nil {
