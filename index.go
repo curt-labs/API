@@ -28,6 +28,7 @@ import (
 	"github.com/curt-labs/API/controllers/site"
 	"github.com/curt-labs/API/controllers/techSupport"
 	"github.com/curt-labs/API/controllers/testimonials"
+	"github.com/curt-labs/API/controllers/uws"
 	"github.com/curt-labs/API/controllers/vehicle"
 	"github.com/curt-labs/API/controllers/videos"
 	"github.com/curt-labs/API/controllers/vinLookup"
@@ -499,6 +500,13 @@ func main() {
 	m.Get("/luverne/vehicle/:year/:make", luverne.QueryCategoryStyle)
 	m.Get("/luverne/vehicle/:year/:make/:model", luverne.QueryCategoryStyle)
 	m.Get("/luverne/vehicle/:year/:make/:model/:category", luverne.QueryCategoryStyle)
+
+	// Used by the UWS website
+	m.Get("/uws/vehicle", uws.QueryCategoryStyle)
+	m.Get("/uws/vehicle/:year", uws.QueryCategoryStyle)
+	m.Get("/uws/vehicle/:year/:make", uws.QueryCategoryStyle)
+	m.Get("/uws/vehicle/:year/:make/:model", uws.QueryCategoryStyle)
+	m.Get("/uws/vehicle/:year/:make/:model/:category", uws.QueryCategoryStyle)
 
 	// CURT Year/Make/Model/Style
 	m.Post("/vehicle/curt", vehicle.CurtLookup)
