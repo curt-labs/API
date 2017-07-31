@@ -20,11 +20,12 @@ type DataContext struct {
 }
 
 var (
-	apiToBrandStmt = `select brandID from ApiKeyToBrand as aktb
-		join ApiKey as ak on ak.id = aktb.keyID
-		where ak.api_key = ?`
+	apiToBrandStmt = `select ID from Brand`
 )
 
+// @deprecated - API keys are no longer tied to specific brands.
+// This function now returns all brands reguardless of what brands
+// A user might have tied a key to.
 func (dtx *DataContext) GetBrandsFromKey() ([]int, error) {
 	var err error
 	var b int
