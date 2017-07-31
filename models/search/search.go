@@ -10,7 +10,7 @@ import (
 	elastic "gopkg.in/olivere/elastic.v2"
 
 	"github.com/curt-labs/API/helpers/apicontext"
-	"github.com/ninnemana/elastigo/lib"
+	"github.com/mattbaird/elastigo/lib"
 )
 
 func newConn() (*elastic.Client, error) {
@@ -59,38 +59,7 @@ func Dsl(query string, page int, count int, brand int, dtx *apicontext.DataConte
 		return nil, err
 	}
 
-	// from := strconv.Itoa(page * count)
-	// size := strconv.Itoa(count)
-
 	return c.Search(findIndex(brand, dtx)).From(page * count).Size(count).Query(elastic.NewQueryStringQuery(query)).Do()
-
-	// var con *elastigo.Conn
-	// if host := os.Getenv("ELASTICSEARCH_IP"); host != "" {
-	// 	con = &elastigo.Conn{
-	// 		Protocol: elastigo.DefaultProtocol,
-	// 		Domain:   host,
-	// 		Port:     os.Getenv("ELASTIC_PORT"),
-	// 		Username: os.Getenv("ELASTIC_USER"),
-	// 		Password: os.Getenv("ELASTIC_PASS"),
-	// 	}
-	// }
-	// if con == nil {
-	// 	return nil, errors.New("failed to connect to elasticsearch")
-	// }
-	//
-	// from := strconv.Itoa(page * count)
-	// size := strconv.Itoa(count)
-	//
-	// filter := elastigo.Filter()
-	// if rawPartNumber != "" {
-	// 	filter.Terms("raw_part", rawPartNumber)
-	// }
-	// index := findIndex(brand, dtx)
-	//
-	// res, err := elastigo.Search(index).Query(
-	// 	elastigo.Query().Search(query),
-	// ).Filter(filter).From(from).Size(size).Result(con)
-	// return res, err
 }
 
 func ExactAndCloseDsl(query string, page int, count int, brand int, dtx *apicontext.DataContext) (*elastigo.SearchResult, error) {
