@@ -442,6 +442,13 @@ func main() {
 	})
 
 	m.Group("/webProperties", func(r martini.Router) {
+		// TODO /requirement routes do not appear to be used. Remove them if not used by Nov 6, 2017
+		// verified by grepping all project code, stackdriver logs, and google analytics
+		//r.Post("/requirement/:id", webProperty_controller.CreateUpdateWebPropertyRequirement) // TODO remove route/controller if not used by Nov 2, 2017 //updates when an id is present; otherwise, creates
+		//r.Put("/requirement", webProperty_controller.CreateUpdateWebPropertyRequirement)      // TODO remove route/controller if not used by Nov 2, 2017 //updates when an id is present; otherwise, creates
+		//r.Delete("/requirement/:id", webProperty_controller.DeleteWebPropertyRequirement)     // TODO remove route/controller if not used by Nov 2, 2017 //{id}
+		//r.Get("/requirement/:id", webProperty_controller.GetWebPropertyRequirement)           // TODO remove route/controller if not used by Nov 2, 2017 //{id}
+		//r.Get("/requirement", webProperty_controller.GetAllRequirements)                      // TODO remove route/controller if not used by Nov 2, 2017
 		r.Post("/json/type", webProperty_controller.CreateUpdateWebPropertyType)
 		r.Post("/json/type/:id", webProperty_controller.CreateUpdateWebPropertyType)
 		r.Post("/json/requirement", webProperty_controller.CreateUpdateWebPropertyRequirement)
@@ -458,14 +465,9 @@ func main() {
 		r.Put("/type", webProperty_controller.CreateUpdateWebPropertyType)                    //updates when an id is present; otherwise, creates
 		r.Delete("/type/:id", webProperty_controller.DeleteWebPropertyType)                   //{id}
 		r.Get("/type/:id", webProperty_controller.GetWebPropertyType)                         //{id}
-		r.Post("/requirement/:id", webProperty_controller.CreateUpdateWebPropertyRequirement) //updates when an id is present; otherwise, creates
-		r.Put("/requirement", webProperty_controller.CreateUpdateWebPropertyRequirement)      //updates when an id is present; otherwise, creates
-		r.Delete("/requirement/:id", webProperty_controller.DeleteWebPropertyRequirement)     //{id}
-		r.Get("/requirement/:id", webProperty_controller.GetWebPropertyRequirement)           //{id}
 		r.Get("/search", webProperty_controller.Search)
 		r.Get("/type", webProperty_controller.GetAllTypes)
 		r.Get("/note", webProperty_controller.GetAllNotes)
-		r.Get("/requirement", webProperty_controller.GetAllRequirements)
 		r.Get("/customer", webProperty_controller.GetByPrivateKey)
 		r.Get("", webProperty_controller.GetAll)
 		r.Get("/:id", webProperty_controller.Get)                      //?id=id
