@@ -2,6 +2,7 @@ package vehicle
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/encoding"
@@ -43,9 +44,9 @@ func CurtLookup(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dt
 		heavyduty = true
 	}
 	// determine if you are going to get customer prices for each part
-	var getCustomerPrices bool
-	custPricingStr := r.URL.Query().Get("customerPrices")
-	if custPricingStr == "true" || custPricingStr == "True" {
+	getCustomerPrices := false
+	custPricingStr := r.URL.Query().Get("customerprices")
+	if strings.ToLower(custPricingStr) == "true" {
 		getCustomerPrices = true
 	}
 
@@ -92,9 +93,9 @@ func CurtLookupGet(w http.ResponseWriter, r *http.Request, enc encoding.Encoder,
 	}
 
 	// determine if you are going to get customer prices for each part
-	var getCustomerPrices bool
+	getCustomerPrices := false
 	custPricingStr := r.URL.Query().Get("customerprices")
-	if custPricingStr == "true" || custPricingStr == "True" {
+	if strings.ToLower(custPricingStr) == "true" {
 		getCustomerPrices = true
 	}
 
