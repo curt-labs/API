@@ -111,7 +111,7 @@ func CurtLookupWorker(cl products.CurtLookup, heavyduty bool, dtx *apicontext.Da
 			return cl, errors.New("Trouble finding styles.")
 		}
 		err = cl.GetParts(dtx, heavyduty)
-		// cl.Parts, err = products.BindCustomerToSeveralParts(cl.Parts, dtx)
+		cl.Parts, err = products.BindCustomerToSeveralParts(cl.Parts, dtx)
 	}
 
 	return cl, err
