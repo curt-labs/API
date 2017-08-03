@@ -42,8 +42,14 @@ func CurtLookup(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dt
 	if hdstr == "true" {
 		heavyduty = true
 	}
+	// determine if you are going to get customer prices for each part
+	var getCustomerPrices bool
+	custPricingStr := r.URL.Query().Get("customerPrices")
+	if custPricingStr == "true" || custPricingStr == "True" {
+		getCustomerPrices = true
+	}
 
-	cl, err = CurtLookupWorker(cl, heavyduty, dtx)
+	cl, err = CurtLookupWorker(cl, heavyduty, dtx, getCustomerPrices)
 
 	if err != nil {
 		apierror.GenerateError("Trouble finding vehicles.", err, w, r)
@@ -85,7 +91,14 @@ func CurtLookupGet(w http.ResponseWriter, r *http.Request, enc encoding.Encoder,
 		heavyduty = true
 	}
 
-	cl, err = CurtLookupWorker(cl, heavyduty, dtx)
+	// determine if you are going to get customer prices for each part
+	var getCustomerPrices bool
+	custPricingStr := r.URL.Query().Get("customerprices")
+	if custPricingStr == "true" || custPricingStr == "True" {
+		getCustomerPrices = true
+	}
+
+	cl, err = CurtLookupWorker(cl, heavyduty, dtx, getCustomerPrices)
 
 	if err != nil {
 		apierror.GenerateError("Trouble finding vehicles.", err, w, r)
@@ -97,7 +110,7 @@ func CurtLookupGet(w http.ResponseWriter, r *http.Request, enc encoding.Encoder,
 
 //CurtLookupWorker is a function that is used by both the POST and GET versions
 //of CurtLookup. Just here so that there is as little code duplication as possible
-func CurtLookupWorker(cl products.CurtLookup, heavyduty bool, dtx *apicontext.DataContext) (products.CurtLookup, error) {
+func CurtLookupWorker(cl products.CurtLookup, heavyduty bool, dtx *apicontext.DataContext, getCustomerPricing bool) (products.CurtLookup, error) {
 	var err error
 	if cl.CurtVehicle.Year == "" {
 		err = cl.GetYears(heavyduty)
@@ -111,7 +124,9 @@ func CurtLookupWorker(cl products.CurtLookup, heavyduty bool, dtx *apicontext.Da
 			return cl, errors.New("Trouble finding styles.")
 		}
 		err = cl.GetParts(dtx, heavyduty)
-		cl.Parts, err = products.BindCustomerToSeveralParts(cl.Parts, dtx)
+		if getCustomerPricing {
+			cl.Parts, err = products.BindCustomerToSeveralParts(cl.Parts, dtx)
+		}
 	}
 
 	return cl, err
