@@ -442,13 +442,11 @@ func main() {
 	})
 
 	m.Group("/webProperties", func(r martini.Router) {
-		// TODO /requirement routes do not appear to be used. Remove them if not used by Nov 6, 2017
-		// verified by grepping all project code, stackdriver logs, and google analytics
-		//r.Post("/requirement/:id", webProperty_controller.CreateUpdateWebPropertyRequirement) // TODO remove route/controller if not used by Nov 2, 2017 //updates when an id is present; otherwise, creates
-		//r.Put("/requirement", webProperty_controller.CreateUpdateWebPropertyRequirement)      // TODO remove route/controller if not used by Nov 2, 2017 //updates when an id is present; otherwise, creates
-		//r.Delete("/requirement/:id", webProperty_controller.DeleteWebPropertyRequirement)     // TODO remove route/controller if not used by Nov 2, 2017 //{id}
-		//r.Get("/requirement/:id", webProperty_controller.GetWebPropertyRequirement)           // TODO remove route/controller if not used by Nov 2, 2017 //{id}
-		//r.Get("/requirement", webProperty_controller.GetAllRequirements)                      // TODO remove route/controller if not used by Nov 2, 2017
+		r.Post("/requirement/:id", webProperty_controller.CreateUpdateWebPropertyRequirement)
+		r.Put("/requirement", webProperty_controller.CreateUpdateWebPropertyRequirement)
+		r.Delete("/requirement/:id", webProperty_controller.DeleteWebPropertyRequirement)
+		r.Get("/requirement/:id", webProperty_controller.GetWebPropertyRequirement)
+		r.Get("/requirement", webProperty_controller.GetAllRequirements)
 		r.Post("/json/type", webProperty_controller.CreateUpdateWebPropertyType)
 		r.Post("/json/type/:id", webProperty_controller.CreateUpdateWebPropertyType)
 		r.Post("/json/requirement", webProperty_controller.CreateUpdateWebPropertyRequirement)
