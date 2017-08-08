@@ -108,17 +108,16 @@ func GetAll(dtx *apicontext.DataContext) (Blogs, error) {
 		return bs, err
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
-
+	err = database.Init()
 	if err != nil {
 		return bs, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getAllBlogs)
+	stmt, err := database.DB.Prepare(getAllBlogs)
 	if err != nil {
 		return bs, err
 	}
+
 	defer stmt.Close()
 	bcs, err := getAllBlogCategories(dtx)
 	bcMap := bcs.ToMap()
@@ -140,6 +139,7 @@ func GetAll(dtx *apicontext.DataContext) (Blogs, error) {
 		<-bcChan
 		bs = append(bs, b)
 	}
+
 	defer res.Close()
 	go redis.Setex(redis_key, bs, 86400)
 	return bs, err
@@ -148,25 +148,28 @@ func GetAll(dtx *apicontext.DataContext) (Blogs, error) {
 func getAllBlogCategories(dtx *apicontext.DataContext) (BlogCategories, error) {
 	var bcs BlogCategories
 	var err error
-	db, err := sql.Open("mysql", database.ConnectionString())
 
+	err = database.Init()
 	if err != nil {
 		return bcs, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(stmtGetAllBlogCategories)
+	stmt, err := database.DB.Prepare(stmtGetAllBlogCategories)
 	if err != nil {
 		return bcs, err
 	}
+
 	defer stmt.Close()
+
 	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
+
 	for res.Next() {
 		var temp BlogCategory
 		res.Scan(&temp.ID, &temp.BlogPostID, &temp.BlogCategoryID, &temp.Category.ID, &temp.Category.Name, &temp.Category.Slug, &temp.Category.Active)
 		bcs = append(bcs, temp)
 	}
 	defer res.Close()
+
 	return bcs, err
 }
 
@@ -180,24 +183,28 @@ func GetAllCategories(dtx *apicontext.DataContext) (Categories, error) {
 		return cs, err
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return cs, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getAllCategories)
+	stmt, err := database.DB.Prepare(getAllCategories)
 	if err != nil {
 		return cs, err
 	}
+
 	defer stmt.Close()
+
 	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
+
 	for res.Next() {
 		var c Category
 		res.Scan(&c.ID, &c.Name, &c.Slug, &c.Active)
 		cs = append(cs, c)
 	}
+
 	defer res.Close()
+
 	go redis.Setex(redis_key, cs, 86400)
 
 	return cs, err
@@ -213,18 +220,17 @@ func (b *Blog) Get(dtx *apicontext.DataContext) error {
 		return err
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
-
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getBlog)
+	stmt, err := database.DB.Prepare(getBlog)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
+
 	bcs, err := getAllBlogCategories(dtx)
 	bcMap := bcs.ToMap()
 	var p, c, l *string
@@ -265,21 +271,25 @@ func (b *Blog) Get(dtx *apicontext.DataContext) error {
 		}()
 		<-bcChan
 	}
+
 	defer res.Close()
+
 	go redis.Setex(redis_key, b, 86400)
+
 	return err
 }
 
 func (b *Blog) Create(dtx *apicontext.DataContext) error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
+
 	stmt, err := tx.Prepare(create)
 	defer stmt.Close()
 	b.LastModified = time.Now()
@@ -307,12 +317,13 @@ func (b *Blog) Delete(dtx *apicontext.DataContext) error {
 	if err != nil {
 		return err
 	}
-	db, err := sql.Open("mysql", database.ConnectionString())
+
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -331,13 +342,13 @@ func (b *Blog) Delete(dtx *apicontext.DataContext) error {
 }
 
 func (b *Blog) createCatBridge() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+
 	for _, v := range b.BlogCategories {
-		tx, err := db.Begin()
+		tx, err := database.DB.Begin()
 		if err != nil {
 			return err
 		}
@@ -359,18 +370,20 @@ func (b *Blog) createCatBridge() error {
 }
 
 func (b *Blog) Update(dtx *apicontext.DataContext) error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
+
 	stmt, err := tx.Prepare(update)
 	defer stmt.Close()
 	b.LastModified = time.Now()
+
 	_, err = stmt.Exec(b.Title, b.Slug, b.Text, b.PublishedDate, b.LastModified, b.UserID, b.MetaTitle, b.MetaDescription, b.Keywords, b.Active, b.ID)
 	if err != nil {
 		tx.Rollback()
@@ -385,6 +398,7 @@ func (b *Blog) Update(dtx *apicontext.DataContext) error {
 		bcChan <- 1
 	}()
 	<-bcChan //need these synchrnous, I guess
+	//great comment^ to put in the middle of a block of go routines
 	go func() {
 		err = b.createCatBridge()
 		createCatChan <- 1
@@ -395,15 +409,16 @@ func (b *Blog) Update(dtx *apicontext.DataContext) error {
 }
 
 func (b *Blog) deleteCatBridge() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
+
 	stmt, err := tx.Prepare(deleteCatBridge)
 	defer stmt.Close()
 	_, err = stmt.Exec(b.ID)
@@ -425,13 +440,12 @@ func (c *Category) Get(dtx *apicontext.DataContext) error {
 		return err
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getCategory)
+	stmt, err := database.DB.Prepare(getCategory)
 	if err != nil {
 		return err
 	}
@@ -446,13 +460,12 @@ func (c *Category) Get(dtx *apicontext.DataContext) error {
 }
 
 func (c *Category) Create(dtx *apicontext.DataContext) error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	tx, err := db.Begin()
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -485,13 +498,12 @@ func (c *Category) Delete(dtx *apicontext.DataContext) error {
 		return err
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	tx, err := db.Begin()
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -512,15 +524,16 @@ func (c *Category) Delete(dtx *apicontext.DataContext) error {
 }
 
 func (c *Category) deleteCatBridgeByCategory() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
+
 	stmt, err := tx.Prepare(deleteCatBridgeByCatID)
 	defer stmt.Close()
 	_, err = stmt.Exec(c.ID)
@@ -538,13 +551,12 @@ func Search(title, slug, text, publishedDate, createdDate, lastModified, userID,
 	var l pagination.Objects
 	var fs []interface{}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return l, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(search)
+	stmt, err := database.DB.Prepare(search)
 	if err != nil {
 		return l, err
 	}

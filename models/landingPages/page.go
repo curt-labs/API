@@ -1,12 +1,12 @@
 package landingPage
 
 import (
-	"database/sql"
+	"net/url"
+	"time"
+
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/database"
 	_ "github.com/go-sql-driver/mysql"
-	"net/url"
-	"time"
 
 	"github.com/russross/blackfriday"
 )
@@ -40,20 +40,20 @@ var (
 							Join ApiKey as ak on akb.keyID = ak.id
 							where lp.id = ? && lp.startDate <= NOW() && lp.endDate >= NOW() && (ak.api_key = ? && (wub.brandID = ? OR 0=?))
 							limit 1`
-	GetLandingPageImagesStmt = `SELECT lpi.id, lpi.landingPageID, lpi.url, lpi.sort from LandingPageImages as lpi 
+	GetLandingPageImagesStmt = `SELECT lpi.id, lpi.landingPageID, lpi.url, lpi.sort from LandingPageImages as lpi
 									WHERE lpi.landingPageID = ?
 									ORDER BY lpi.sort asc`
-	GetLandingPageDatasStmt = `SELECT lpd.id, lpd.landingPageID, lpd.dataKey, lpd.dataValue from LandingPageData as lpd 
+	GetLandingPageDatasStmt = `SELECT lpd.id, lpd.landingPageID, lpd.dataKey, lpd.dataValue from LandingPageData as lpd
 									WHERE lpd.landingPageID = ?`
 )
 
 func (lp *LandingPage) Get(dtx *apicontext.DataContext) (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(GetLandingPageByID)
+
+	stmt, err := database.DB.Prepare(GetLandingPageByID)
 	if err != nil {
 		return
 	}
@@ -69,13 +69,12 @@ func (lp *LandingPage) Get(dtx *apicontext.DataContext) (err error) {
 }
 
 func GetLandingPageDatas(LandingPageID int) (datas []LandingPageData, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return datas, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(GetLandingPageDatasStmt)
+	stmt, err := database.DB.Prepare(GetLandingPageDatasStmt)
 	if err != nil {
 		return datas, err
 	}
@@ -98,13 +97,12 @@ func GetLandingPageDatas(LandingPageID int) (datas []LandingPageData, err error)
 }
 
 func GetLandingPageImages(LandingPageID int) (images []LandingPageImage, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return images, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(GetLandingPageImagesStmt)
+	stmt, err := database.DB.Prepare(GetLandingPageImagesStmt)
 	if err != nil {
 		return images, err
 	}

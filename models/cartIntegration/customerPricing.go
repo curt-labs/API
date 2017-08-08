@@ -90,40 +90,31 @@ var (
 	Customer_ID int
 )
 
-func initDB() (*sql.DB, error) {
-	connStr := database.ConnectionString()
-	db, err := sql.Open("mysql", connStr)
-	if err != nil {
-		return nil, err
-	}
-	return db, err
-}
-
 //Get all of a single customer's prices
 func GetCustomerPrices(page int, count int) (CustomerPriceResp, error) {
 	var customerJson CustomerPriceResp
 	var cps []CustomerPrice
-	db, err := initDB()
+
+	err := database.Init()
 	if err != nil {
 		return customerJson, err
 	}
-	defer db.Close()
 
 	var res *sql.Rows
 
 	if page == 0 && count == 0 {
-		res, err = db.Query(getPricing, Customer_ID, Customer_ID, Brand_ID)
+		res, err = database.DB.Query(getPricing, Customer_ID, Customer_ID, Brand_ID)
 		if err != nil {
 			return customerJson, err
 		}
 	} else {
-		countRow := db.QueryRow(getPricingCount, Customer_ID, Customer_ID, Brand_ID)
+		countRow := database.DB.QueryRow(getPricingCount, Customer_ID, Customer_ID, Brand_ID)
 		var rowCount int
 
 		countRow.Scan(&rowCount)
 		customerJson.Total = rowCount
 
-		res, err = db.Query(getPricingPaged, Customer_ID, Customer_ID, Brand_ID, (page-1)*count, count)
+		res, err = database.DB.Query(getPricingPaged, Customer_ID, Customer_ID, Brand_ID, (page-1)*count, count)
 		if err != nil {
 			return customerJson, err
 		}
@@ -143,13 +134,12 @@ func GetCustomerPrices(page int, count int) (CustomerPriceResp, error) {
 //Get a customers prices - paged/limited
 func GetPricingPaged(page int, count int) ([]CustomerPrice, error) {
 	var cps []CustomerPrice
-	db, err := initDB()
+	err := database.Init()
 	if err != nil {
 		return cps, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getPricingPaged)
+	stmt, err := database.DB.Prepare(getPricingPaged)
 	if err != nil {
 		return cps, err
 	}
@@ -172,15 +162,16 @@ func GetPricingPaged(page int, count int) ([]CustomerPrice, error) {
 //Returns the number of prices that a customer has
 func GetPricingCount() (int, error) {
 	var count int
-	db, err := initDB()
+	err := database.Init()
 	if err != nil {
 		return count, err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getPricingCount)
+
+	stmt, err := database.DB.Prepare(getPricingCount)
 	if err != nil {
 		return count, err
 	}
+
 	defer stmt.Close()
 	err = stmt.QueryRow(Customer_ID, Customer_ID, Brand_ID).Scan(&count)
 	if err != nil {
@@ -192,12 +183,12 @@ func GetPricingCount() (int, error) {
 //Returns Price for a part
 func GetPartPricesByPartID(partNumber string) ([]Price, error) {
 	var ps []Price
-	db, err := initDB()
+	err := database.Init()
 	if err != nil {
 		return ps, err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getPricingByPart)
+
+	stmt, err := database.DB.Prepare(getPricingByPart)
 	if err != nil {
 		return ps, err
 	}
@@ -219,12 +210,12 @@ func GetPartPricesByPartID(partNumber string) ([]Price, error) {
 //Returns all Prices
 func GetPartPrices() ([]Price, error) {
 	var ps []Price
-	db, err := initDB()
+	err := database.Init()
 	if err != nil {
 		return ps, err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getAllPricing)
+
+	stmt, err := database.DB.Prepare(getAllPricing)
 	if err != nil {
 		return ps, err
 	}
@@ -246,12 +237,12 @@ func GetPartPrices() ([]Price, error) {
 //Returns Map Price for every part
 func GetMAPPartPrices() ([]Price, error) {
 	var ps []Price
-	db, err := initDB()
+	err := database.Init()
 	if err != nil {
 		return ps, err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getAllMAPPricing)
+
+	stmt, err := database.DB.Prepare(getAllMAPPricing)
 	if err != nil {
 		return ps, err
 	}
@@ -272,12 +263,12 @@ func GetMAPPartPrices() ([]Price, error) {
 
 //CRUD
 func (c *CustomerPrice) Update() error {
-	db, err := initDB()
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(updateCustomerPrice)
+
+	stmt, err := database.DB.Prepare(updateCustomerPrice)
 	if err != nil {
 		return err
 	}
@@ -293,12 +284,12 @@ func (c *CustomerPrice) Update() error {
 }
 
 func (c *CustomerPrice) Create() error {
-	db, err := initDB()
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(insertCustomerPrice)
+
+	stmt, err := database.DB.Prepare(insertCustomerPrice)
 	if err != nil {
 		return err
 	}
@@ -322,12 +313,12 @@ func (c *CustomerPrice) Create() error {
 }
 
 func (c *CustomerPrice) Delete() error {
-	db, err := initDB()
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(deleteCustomerPrice)
+
+	stmt, err := database.DB.Prepare(deleteCustomerPrice)
 	if err != nil {
 		return err
 	}
@@ -339,12 +330,12 @@ func (c *CustomerPrice) Delete() error {
 //CartIntegration
 func GetCustomerCartIntegrations(key string) ([]CustomerPrice, error) {
 	var cps []CustomerPrice
-	db, err := initDB()
+	err := database.Init()
 	if err != nil {
 		return cps, err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getCustomerCartIntegrations)
+
+	stmt, err := database.DB.Prepare(getCustomerCartIntegrations)
 	if err != nil {
 		return cps, err
 	}
@@ -364,12 +355,12 @@ func GetCustomerCartIntegrations(key string) ([]CustomerPrice, error) {
 }
 
 func (cp *CustomerPrice) UpdateCartIntegration() error {
-	db, err := initDB()
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(updateCartIntegration)
+
+	stmt, err := database.DB.Prepare(updateCartIntegration)
 	if err != nil {
 		return err
 	}
@@ -385,12 +376,12 @@ func (cp *CustomerPrice) UpdateCartIntegration() error {
 }
 
 func (cp *CustomerPrice) InsertCartIntegration() error {
-	db, err := initDB()
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(insertCartIntegration)
+
+	stmt, err := database.DB.Prepare(insertCartIntegration)
 	if err != nil {
 		return err
 	}
@@ -406,12 +397,12 @@ func (cp *CustomerPrice) InsertCartIntegration() error {
 }
 
 func (cp *CustomerPrice) DeleteCartIntegration() error {
-	db, err := initDB()
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(deleteCartIntegration)
+
+	stmt, err := database.DB.Prepare(deleteCartIntegration)
 	if err != nil {
 		return err
 	}
@@ -428,12 +419,12 @@ func (cp *CustomerPrice) DeleteCartIntegration() error {
 
 func GetAllPriceTypes() ([]string, error) {
 	var types []string
-	db, err := initDB()
+	err := database.Init()
 	if err != nil {
 		return types, err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getAllPriceTypes)
+
+	stmt, err := database.DB.Prepare(getAllPriceTypes)
 	if err != nil {
 		return types, err
 	}
@@ -541,12 +532,12 @@ func ScanCartIntegration(rows database.Scanner) (CustomerPrice, error) {
 
 func GetPartIDfromOldPartNumber(oldPartNumber string) (int, error) {
 	var partID int
-	db, err := initDB()
+	err := database.Init()
 	if err != nil {
 		return partID, err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getPartIDfromPartNumber)
+
+	stmt, err := database.DB.Prepare(getPartIDfromPartNumber)
 	if err != nil {
 		return partID, err
 	}

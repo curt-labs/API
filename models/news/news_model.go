@@ -1,7 +1,6 @@
 package news_model
 
 import (
-	"database/sql"
 	"encoding/json"
 	"strconv"
 	"time"
@@ -80,13 +79,13 @@ func (n *News) Get(dtx *apicontext.DataContext) error {
 		err = json.Unmarshal(data, &n)
 		return err
 	}
-	db, err := sql.Open("mysql", database.ConnectionString())
+
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getNews)
+	stmt, err := database.DB.Prepare(getNews)
 	if err != nil {
 		return err
 	}
@@ -115,13 +114,12 @@ func GetAll(dtx *apicontext.DataContext) (Newses, error) {
 		return fs, err
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return fs, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getAll)
+	stmt, err := database.DB.Prepare(getAll)
 	if err != nil {
 		return fs, err
 	}
@@ -152,13 +150,12 @@ func GetTitles(pageStr, resultsStr string, dtx *apicontext.DataContext) (paginat
 		return l, err
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return l, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getTitles)
+	stmt, err := database.DB.Prepare(getTitles)
 	if err != nil {
 		return l, err
 	}
@@ -187,13 +184,13 @@ func GetLeads(pageStr, resultsStr string, dtx *apicontext.DataContext) (paginati
 		err = json.Unmarshal(data, &l)
 		return l, err
 	}
-	db, err := sql.Open("mysql", database.ConnectionString())
+
+	err = database.Init()
 	if err != nil {
 		return l, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getLeads)
+	stmt, err := database.DB.Prepare(getLeads)
 	if err != nil {
 		return l, err
 	}
@@ -217,13 +214,12 @@ func Search(title, lead, content, publishStart, publishEnd, active, slug, pageSt
 	var l pagination.Objects
 	var fs []interface{}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return l, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(search)
+	stmt, err := database.DB.Prepare(search)
 	if err != nil {
 		return l, err
 	}
@@ -242,25 +238,28 @@ func Search(title, lead, content, publishStart, publishEnd, active, slug, pageSt
 }
 
 func (n *News) Create(dtx *apicontext.DataContext) error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
+
 	stmt, err := tx.Prepare(create)
 	if err != nil {
 		return err
 	}
+
 	defer stmt.Close()
 	res, err := stmt.Exec(n.Title, n.Lead, n.Content, n.PublishStart, n.PublishEnd, n.Active, n.Slug)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
+
 	id, err := res.LastInsertId()
 	n.ID = int(id)
 	if err != nil {
@@ -291,19 +290,21 @@ func (n *News) Create(dtx *apicontext.DataContext) error {
 }
 
 func (n *News) CreateJoinBrand(brand int) error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
+
 	stmt, err := tx.Prepare(createToBrand)
 	if err != nil {
 		return err
 	}
+
 	defer stmt.Close()
 	_, err = stmt.Exec(n.ID, brand)
 	if err != nil {
@@ -315,19 +316,21 @@ func (n *News) CreateJoinBrand(brand int) error {
 }
 
 func (n *News) Update(dtx *apicontext.DataContext) error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
+
 	stmt, err := tx.Prepare(update)
 	if err != nil {
 		return err
 	}
+
 	defer stmt.Close()
 	_, err = stmt.Exec(n.Title, n.Lead, n.Content, n.PublishStart, n.PublishEnd, n.Active, n.Slug, n.ID)
 	if err != nil {
@@ -339,19 +342,21 @@ func (n *News) Update(dtx *apicontext.DataContext) error {
 }
 
 func (n *News) Delete(dtx *apicontext.DataContext) error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
+
 	stmt, err := tx.Prepare(deleteNews)
 	if err != nil {
 		return err
 	}
+
 	defer stmt.Close()
 	_, err = stmt.Exec(n.ID)
 	if err != nil {
@@ -369,12 +374,12 @@ func (n *News) Delete(dtx *apicontext.DataContext) error {
 }
 
 func (n *News) DeleteJoinBrand() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}

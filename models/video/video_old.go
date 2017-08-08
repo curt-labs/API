@@ -1,12 +1,12 @@
 package video
 
 import (
-	"database/sql"
+	"net/url"
+	"time"
+
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/database"
 	_ "github.com/go-sql-driver/mysql"
-	"net/url"
-	"time"
 )
 
 //Pulls from "Video" table, as opposed to "video_new", used for legacy support.
@@ -33,13 +33,12 @@ var (
 // Gets a list of all of the old videos - used for legacy support.
 func UniqueVideos(dtx *apicontext.DataContext) (videos []Video_Old, err error) {
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(uniqueVideoStmt)
+	stmt, err := database.DB.Prepare(uniqueVideoStmt)
 	if err != nil {
 		return
 	}

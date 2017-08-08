@@ -141,13 +141,12 @@ const (
 )
 
 func (ct *ContentType) Create() error {
-	var err error
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(createContentType)
+
+	stmt, err := database.DB.Prepare(createContentType)
 	if err != nil {
 		return err
 	}
@@ -165,13 +164,12 @@ func (ct *ContentType) Create() error {
 }
 
 func (ct *ContentType) Delete() error {
-	var err error
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(deleteContentType)
+
+	stmt, err := database.DB.Prepare(deleteContentType)
 	if err != nil {
 		return err
 	}
@@ -185,13 +183,12 @@ func (ct *ContentType) Delete() error {
 
 // Retrieves all content for this customer
 func AllCustomerContent(key string) (content []CustomerContent, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return content, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(allCustomerContent)
+	stmt, err := database.DB.Prepare(allCustomerContent)
 	if err != nil {
 		return content, err
 	}
@@ -261,13 +258,12 @@ func AllCustomerContent(key string) (content []CustomerContent, err error) {
 }
 
 func GetCustomerContent(id int, key string) (c CustomerContent, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return c, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(customerContent)
+	stmt, err := database.DB.Prepare(customerContent)
 	if err != nil {
 		return c, err
 	}
@@ -343,12 +339,12 @@ func GetCustomerContent(id int, key string) (c CustomerContent, err error) {
 
 // by customer ID
 func (cc *CustomerContent) GetRevisions() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getRevisionsByContentId)
+
+	stmt, err := database.DB.Prepare(getRevisionsByContentId)
 	if err != nil {
 		return err
 	}
@@ -393,13 +389,12 @@ func (cc *CustomerContent) GetRevisions() (err error) {
 }
 
 func GetCustomerContentRevisions(id int, key string) (revs []CustomerContentRevision, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return revs, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(customerContentRevisions)
+	stmt, err := database.DB.Prepare(customerContentRevisions)
 	if err != nil {
 		return revs, err
 	}
@@ -476,12 +471,12 @@ func (content *CustomerContent) Save(partID, catID int, key string) error { //TO
 		return content.insert(partID, catID, key)
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 
 	stmt, err := tx.Prepare(updateCustomerContent)
 	if err != nil {
@@ -508,12 +503,12 @@ func (content *CustomerContent) Save(partID, catID int, key string) error { //TO
 }
 
 func (content *CustomerContent) Delete(partID, catID int, key string) error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 
 	stmt, err := tx.Prepare(deleteCustomerContentBridge)
 	if err != nil {
@@ -543,12 +538,12 @@ func (content *CustomerContent) Delete(partID, catID int, key string) error {
 }
 
 func (content *CustomerContent) insert(partID, catID int, key string) error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 
 	stmt, err := tx.Prepare(insertCustomerContent)
 	if err != nil {
@@ -580,12 +575,12 @@ func (content *CustomerContent) insert(partID, catID int, key string) error {
 }
 
 func (content *CustomerContent) bridge(partID, catID int) error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(checkExistingCustomerContentBridge)
+
+	stmt, err := database.DB.Prepare(checkExistingCustomerContentBridge)
 	if err != nil {
 		return err
 	}
@@ -596,7 +591,7 @@ func (content *CustomerContent) bridge(partID, catID int) error {
 		return err
 	}
 
-	tx, err := db.Begin()
+	tx, err := database.DB.Begin()
 
 	stmt, err = tx.Prepare(createCustomerContentBridge)
 	defer stmt.Close()
@@ -612,13 +607,12 @@ func (content *CustomerContent) bridge(partID, catID int) error {
 
 //gets content by name
 func (content *CustomerContent) GetContentType() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getContentTypeId)
+	stmt, err := database.DB.Prepare(getContentTypeId)
 	if err != nil {
 		return
 	}
@@ -639,13 +633,12 @@ func (content *CustomerContent) GetContentType() (err error) {
 }
 
 func AllCustomerContentTypes() (types []ContentType, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return types, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getAllContentTypes)
+	stmt, err := database.DB.Prepare(getAllContentTypes)
 	if err != nil {
 		return types, err
 	}
@@ -665,12 +658,12 @@ func AllCustomerContentTypes() (types []ContentType, err error) {
 }
 
 func (c *CustomerContent) DeleteById() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(deleteCustomerContentById)
+
+	stmt, err := database.DB.Prepare(deleteCustomerContentById)
 	if err != nil {
 		return err
 	}

@@ -1,7 +1,6 @@
 package forum
 
 import (
-	"database/sql"
 	"errors"
 	"strings"
 	"time"
@@ -40,13 +39,12 @@ type Group struct {
 }
 
 func GetAllGroups(dtx *apicontext.DataContext) (groups Groups, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getAllForumGroups)
+	stmt, err := database.DB.Prepare(getAllForumGroups)
 	if err != nil {
 		return
 	}
@@ -82,13 +80,12 @@ func (g *Group) Get(dtx *apicontext.DataContext) error {
 		return errors.New("Invalid Group ID")
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getForumGroup)
+	stmt, err := database.DB.Prepare(getForumGroup)
 	if err != nil {
 		return err
 	}
@@ -123,13 +120,12 @@ func (g *Group) Add(dtx *apicontext.DataContext) error {
 		g.WebsiteID = dtx.WebsiteID
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(addForumGroup)
+	stmt, err := database.DB.Prepare(addForumGroup)
 	if err != nil {
 		return err
 	}
@@ -162,13 +158,12 @@ func (g *Group) Update(dtx *apicontext.DataContext) error {
 		g.WebsiteID = dtx.WebsiteID
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(updateForumGroup)
+	stmt, err := database.DB.Prepare(updateForumGroup)
 	if err != nil {
 		return err
 	}
@@ -190,13 +185,12 @@ func (g *Group) Delete(dtx *apicontext.DataContext) error {
 		return err
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(deleteForumGroup)
+	stmt, err := database.DB.Prepare(deleteForumGroup)
 	if err != nil {
 		return err
 	}

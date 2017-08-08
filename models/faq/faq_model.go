@@ -1,8 +1,6 @@
 package faq_model
 
 import (
-	"database/sql"
-
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/database"
 	"github.com/curt-labs/API/helpers/pagination"
@@ -50,13 +48,12 @@ func GetAll(dtx *apicontext.DataContext) (Faqs, error) {
 	var fs Faqs
 	var err error
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return fs, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getAllStmt)
+	stmt, err := database.DB.Prepare(getAllStmt)
 	if err != nil {
 		return fs, err
 	}
@@ -81,13 +78,12 @@ func Search(dtx *apicontext.DataContext, question, answer, pageStr, resultsStr s
 	var fs []interface{}
 	var p pagination.Objects
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return p, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(searchFaqStmt)
+	stmt, err := database.DB.Prepare(searchFaqStmt)
 	if err != nil {
 		return p, err
 	}
@@ -105,13 +101,12 @@ func Search(dtx *apicontext.DataContext, question, answer, pageStr, resultsStr s
 }
 
 func (f *Faq) Get(dtx *apicontext.DataContext) error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getFaqStmt)
+	stmt, err := database.DB.Prepare(getFaqStmt)
 	if err != nil {
 		return err
 	}
@@ -128,12 +123,12 @@ func (f *Faq) Get(dtx *apicontext.DataContext) error {
 }
 
 func (f *Faq) Create(dtx *apicontext.DataContext) error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -158,12 +153,12 @@ func (f *Faq) Create(dtx *apicontext.DataContext) error {
 }
 
 func (f *Faq) Update(dtx *apicontext.DataContext) error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -182,12 +177,12 @@ func (f *Faq) Update(dtx *apicontext.DataContext) error {
 }
 
 func (f *Faq) Delete() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}

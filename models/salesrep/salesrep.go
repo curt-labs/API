@@ -1,7 +1,6 @@
 package salesrep
 
 import (
-	"database/sql"
 	"errors"
 	"strings"
 
@@ -26,13 +25,12 @@ type SalesRep struct {
 }
 
 func GetAllSalesReps() (reps SalesReps, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getAllSalesReps)
+	stmt, err := database.DB.Prepare(getAllSalesReps)
 	if err != nil {
 		return
 	}
@@ -59,13 +57,12 @@ func (r *SalesRep) Get() error {
 		return errors.New("Invalid SalesRep ID")
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getSalesRep)
+	stmt, err := database.DB.Prepare(getSalesRep)
 	if err != nil {
 		return err
 	}
@@ -90,13 +87,12 @@ func (rep *SalesRep) Add() error {
 		return errors.New("SalesRep must have a name")
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(addSalesRep)
+	stmt, err := database.DB.Prepare(addSalesRep)
 	if err != nil {
 		return err
 	}
@@ -125,13 +121,12 @@ func (rep *SalesRep) Update() error {
 		return errors.New("SalesRep must have a name")
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(updateSalesRep)
+	stmt, err := database.DB.Prepare(updateSalesRep)
 	if err != nil {
 		return err
 	}
@@ -149,13 +144,12 @@ func (rep *SalesRep) Delete() error {
 		return errors.New("Invalid SalesRep ID")
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(deleteSalesRep)
+	stmt, err := database.DB.Prepare(deleteSalesRep)
 	if err != nil {
 		return err
 	}

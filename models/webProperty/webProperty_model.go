@@ -1,7 +1,6 @@
 package webProperty_model
 
 import (
-	"database/sql"
 	"encoding/json"
 	"strconv"
 	"time"
@@ -140,13 +139,12 @@ func (w *WebProperty) Get(dtx *apicontext.DataContext) error {
 		}
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getWebProperty)
+	stmt, err := database.DB.Prepare(getWebProperty)
 	if err != nil {
 		return err
 	}
@@ -237,13 +235,13 @@ func GetByCustomer(CustID int, dtx *apicontext.DataContext) (ws WebProperties, e
 			return
 		}
 	}
-	db, err := sql.Open("mysql", database.ConnectionString())
+
+	err = database.Init()
 	if err != nil {
 		return
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getWebPropertiesByCustomer)
+	stmt, err := database.DB.Prepare(getWebPropertiesByCustomer)
 	if err != nil {
 		return
 	}
@@ -340,14 +338,14 @@ func GetAll(dtx *apicontext.DataContext) (WebProperties, error) {
 			return ws, err
 		}
 	}
-	db, err := sql.Open("mysql", database.ConnectionString())
+
+	err = database.Init()
 
 	if err != nil {
 		return ws, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getAllWebProperties)
+	stmt, err := database.DB.Prepare(getAllWebProperties)
 	if err != nil {
 		return ws, err
 	}
@@ -436,12 +434,12 @@ func GetAll(dtx *apicontext.DataContext) (WebProperties, error) {
 // Creates a Web Property
 func (w *WebProperty) Create(dtx *apicontext.DataContext) (err error) {
 	go redis.Delete("webproperties:" + dtx.BrandString)
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -504,12 +502,12 @@ func (w *WebProperty) Create(dtx *apicontext.DataContext) (err error) {
 func (w *WebProperty) Update(dtx *apicontext.DataContext) (err error) {
 	go redis.Delete("webproperties:" + dtx.BrandString)
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -559,11 +557,10 @@ func (w *WebProperty) Update(dtx *apicontext.DataContext) (err error) {
 // Deletes a Web Property and any associations.
 func (w *WebProperty) Delete(dtx *apicontext.DataContext) error {
 	go redis.Delete("webproperties:" + dtx.BrandString)
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
 	notesChan := make(chan int)
 	requirementsChan := make(chan int)
@@ -579,7 +576,7 @@ func (w *WebProperty) Delete(dtx *apicontext.DataContext) error {
 	<-notesChan
 	<-requirementsChan
 
-	tx, err := db.Begin()
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -612,13 +609,12 @@ func GetAllWebPropertyTypes(dtx *apicontext.DataContext) (WebPropertyTypes, erro
 			return ws, err
 		}
 	}
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return ws, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getAllWebPropertyTypes)
+	stmt, err := database.DB.Prepare(getAllWebPropertyTypes)
 	if err != nil {
 		return ws, err
 	}
@@ -647,13 +643,12 @@ func GetAllWebPropertyNotes(dtx *apicontext.DataContext) (WebPropertyNotes, erro
 			return ws, err
 		}
 	}
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return ws, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getAllWebPropertyNotes)
+	stmt, err := database.DB.Prepare(getAllWebPropertyNotes)
 	if err != nil {
 		return ws, err
 	}
@@ -682,13 +677,12 @@ func GetAllWebPropertyRequirements(dtx *apicontext.DataContext) (WebPropertyRequ
 			return ws, err
 		}
 	}
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return ws, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getAllWebPropertyRequirements)
+	stmt, err := database.DB.Prepare(getAllWebPropertyRequirements)
 	if err != nil {
 		return ws, err
 	}
@@ -737,13 +731,12 @@ func (n *WebPropertyNote) Get() error {
 		err = json.Unmarshal(data, &n)
 		return err
 	}
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getNote)
+	stmt, err := database.DB.Prepare(getNote)
 	if err != nil {
 		return err
 	}
@@ -759,12 +752,12 @@ func (n *WebPropertyNote) Get() error {
 // Creates a new note for a web property.
 func (n *WebPropertyNote) Create(dtx *apicontext.DataContext) error {
 	go redis.Delete("webpropertynotes:" + dtx.BrandString)
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -794,12 +787,12 @@ func (n *WebPropertyNote) Create(dtx *apicontext.DataContext) error {
 // Updates a note on a web property
 func (n *WebPropertyNote) Update(dtx *apicontext.DataContext) error {
 	go redis.Delete("webpropertynotes:" + dtx.BrandString)
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -823,12 +816,12 @@ func (n *WebPropertyNote) Update(dtx *apicontext.DataContext) error {
 // Deletes a Web Property Note
 func (n *WebPropertyNote) Delete(dtx *apicontext.DataContext) error {
 	go redis.Delete("webpropertynotes:" + dtx.BrandString)
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -850,12 +843,12 @@ func (n *WebPropertyNote) Delete(dtx *apicontext.DataContext) error {
 // Deletes all of the notes of a specific Web Property
 func (n *WebProperty) DeleteNotesByPropId(dtx *apicontext.DataContext) error {
 	go redis.Delete("webpropertynotes:" + dtx.BrandString)
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -876,12 +869,12 @@ func (n *WebProperty) DeleteNotesByPropId(dtx *apicontext.DataContext) error {
 
 // Makes an association between a Web Property and a Requirement
 func (r *WebPropertyRequirement) CreateJoin() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -903,12 +896,12 @@ func (r *WebPropertyRequirement) CreateJoin() error {
 
 // removes an association between a Web Property and a Requirement
 func (r *WebPropertyRequirement) DeleteJoin() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -929,12 +922,12 @@ func (r *WebPropertyRequirement) DeleteJoin() error {
 
 // removes a web property requirement association by its own requirementID
 func (r *WebPropertyRequirement) DeleteJoinByRequirementId() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -955,12 +948,12 @@ func (r *WebPropertyRequirement) DeleteJoinByRequirementId() error {
 
 // removes all associations between a Web Property and it's Requirements
 func (r *WebProperty) DeleteJoinByPropId() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -987,13 +980,12 @@ func (r *WebPropertyRequirement) Get() error {
 		err = json.Unmarshal(data, &r)
 		return err
 	}
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getRequirement)
+	stmt, err := database.DB.Prepare(getRequirement)
 	if err != nil {
 		return err
 	}
@@ -1020,12 +1012,12 @@ func (r *WebPropertyRequirement) Get() error {
 // Creates a WebPropertyRequirement
 func (r *WebPropertyRequirement) Create(dtx *apicontext.DataContext) error {
 	go redis.Delete("webpropertyrequirements:" + dtx.BrandString)
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -1054,12 +1046,12 @@ func (r *WebPropertyRequirement) Create(dtx *apicontext.DataContext) error {
 // Updates a WebPropertyRequirement
 func (r *WebPropertyRequirement) Update(dtx *apicontext.DataContext) error {
 	go redis.Delete("webpropertyrequirements:" + dtx.BrandString)
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -1090,12 +1082,12 @@ func (r *WebPropertyRequirement) Delete(dtx *apicontext.DataContext) error {
 	if err != nil {
 		return err
 	}
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -1110,7 +1102,6 @@ func (r *WebPropertyRequirement) Delete(dtx *apicontext.DataContext) error {
 		return err
 	}
 	tx.Commit()
-	// r.DeleteJoin()
 
 	return nil
 }
@@ -1123,13 +1114,12 @@ func (t *WebPropertyType) Get() error {
 		err = json.Unmarshal(data, &t)
 		return err
 	}
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getType)
+	stmt, err := database.DB.Prepare(getType)
 	if err != nil {
 		return err
 	}
@@ -1145,12 +1135,12 @@ func (t *WebPropertyType) Get() error {
 // Updates a WebPropertyType
 func (t *WebPropertyType) Update(dtx *apicontext.DataContext) error {
 	go redis.Delete("webpropertytypes:" + dtx.BrandString)
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -1172,12 +1162,12 @@ func (t *WebPropertyType) Update(dtx *apicontext.DataContext) error {
 // creates a WebPropertyType
 func (t *WebPropertyType) Create(dtx *apicontext.DataContext) error {
 	go redis.Delete("webpropertytypes:" + dtx.BrandString)
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -1203,12 +1193,12 @@ func (t *WebPropertyType) Create(dtx *apicontext.DataContext) error {
 // Deletes a WebPropertyType
 func (t *WebPropertyType) Delete(dtx *apicontext.DataContext) error {
 	go redis.Delete("webpropertytypes:" + dtx.BrandString)
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -1233,13 +1223,12 @@ func Search(name, custID, badgeID, url, isEnabled, sellerID, webPropertyTypeID, 
 	var l pagination.Objects
 	var fs []interface{}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return l, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(search)
+	stmt, err := database.DB.Prepare(search)
 	if err != nil {
 		return l, err
 	}

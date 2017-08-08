@@ -1,16 +1,16 @@
 package apifilter
 
 import (
-	"database/sql"
 	"fmt"
-	"github.com/curt-labs/API/helpers/database"
-	"github.com/curt-labs/API/helpers/sortutil"
-	"github.com/curt-labs/API/models/products"
-	_ "github.com/go-sql-driver/mysql"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/curt-labs/API/helpers/database"
+	"github.com/curt-labs/API/helpers/sortutil"
+	"github.com/curt-labs/API/models/products"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 var (
@@ -269,13 +269,12 @@ func (filtered FilteredOptions) partClass(parts []products.Part) Options {
 
 func getExcludedAttributeTypes() []string {
 	var ats []string
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return ats
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(GetExcludedAttributeTypes)
+	stmt, err := database.DB.Prepare(GetExcludedAttributeTypes)
 	if err != nil {
 		return ats
 	}

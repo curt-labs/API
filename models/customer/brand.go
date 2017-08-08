@@ -3,8 +3,6 @@ package customer
 import (
 	"github.com/curt-labs/API/helpers/database"
 	_ "github.com/go-sql-driver/mysql"
-
-	"database/sql"
 )
 
 var (
@@ -14,14 +12,12 @@ var (
 )
 
 func (c *Customer) CreateCustomerBrand(brandID int) error {
-	var err error
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(createCustomerBrand)
+	stmt, err := database.DB.Prepare(createCustomerBrand)
 	if err != nil {
 		return err
 	}
@@ -34,14 +30,12 @@ func (c *Customer) CreateCustomerBrand(brandID int) error {
 }
 
 func (c *Customer) DeleteCustomerBrand(brandID int) error {
-	var err error
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(deleteCustomerBrand)
+	stmt, err := database.DB.Prepare(deleteCustomerBrand)
 	if err != nil {
 		return err
 	}
@@ -54,14 +48,12 @@ func (c *Customer) DeleteCustomerBrand(brandID int) error {
 }
 
 func (c *Customer) DeleteAllCustomerBrands() error {
-	var err error
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(deleteAllCustomerBrands)
+	stmt, err := database.DB.Prepare(deleteAllCustomerBrands)
 	if err != nil {
 		return err
 	}

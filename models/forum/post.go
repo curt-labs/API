@@ -1,7 +1,6 @@
 package forum
 
 import (
-	"database/sql"
 	"errors"
 	"strings"
 	"time"
@@ -65,13 +64,12 @@ type Post struct {
 }
 
 func GetAllPosts(dtx *apicontext.DataContext) (posts Posts, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getAllForumPosts)
+	stmt, err := database.DB.Prepare(getAllForumPosts)
 	if err != nil {
 		return
 	}
@@ -98,13 +96,12 @@ func (p *Post) Get(dtx *apicontext.DataContext) error {
 		return errors.New("Invalid Post ID")
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getForumPost)
+	stmt, err := database.DB.Prepare(getForumPost)
 	if err != nil {
 		return err
 	}
@@ -140,13 +137,12 @@ func (t *Thread) GetPosts(dtx *apicontext.DataContext) error {
 		return errors.New("Invalid Thread ID")
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getForumThreadPosts)
+	stmt, err := database.DB.Prepare(getForumThreadPosts)
 	if err != nil {
 		return err
 	}
@@ -185,13 +181,12 @@ func (p *Post) Add() error {
 		return errors.New("Must have an email address in order to be notified")
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(addForumPost)
+	stmt, err := database.DB.Prepare(addForumPost)
 	if err != nil {
 		return err
 	}
@@ -232,13 +227,12 @@ func (p *Post) Update() error {
 		return errors.New("Must have an email address in order to be notified")
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(updateForumPost)
+	stmt, err := database.DB.Prepare(updateForumPost)
 	if err != nil {
 		return err
 	}
@@ -256,13 +250,12 @@ func (p *Post) Delete() error {
 		return errors.New("Invalid Post ID")
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(deleteForumPost)
+	stmt, err := database.DB.Prepare(deleteForumPost)
 	if err != nil {
 		return err
 	}
@@ -276,13 +269,12 @@ func (p *Post) Delete() error {
 }
 
 func (t *Thread) DeletePosts() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(deleteForumThreadPosts)
+	stmt, err := database.DB.Prepare(deleteForumThreadPosts)
 	if err != nil {
 		return err
 	}

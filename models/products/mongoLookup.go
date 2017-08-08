@@ -1,8 +1,6 @@
 package products
 
 import (
-	"database/sql"
-
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/database"
 
@@ -361,13 +359,12 @@ func FindApplications(collection string, skip, limit int) (Result, error) {
 }
 
 func buildPartMap() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	qry, err := db.Prepare(partMapStmt)
+	qry, err := database.DB.Prepare(partMapStmt)
 	if err != nil {
 		return err
 	}

@@ -1,7 +1,6 @@
 package customer
 
 import (
-	"database/sql"
 	"encoding/json"
 	"strconv"
 
@@ -29,13 +28,12 @@ var (
 
 func (l *CustomerLocation) Get() error {
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getLocation)
+	stmt, err := database.DB.Prepare(getLocation)
 	if err != nil {
 		return err
 	}
@@ -87,13 +85,12 @@ func GetAllLocations(dtx *apicontext.DataContext) (CustomerLocations, error) {
 		return ls, err
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return ls, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getLocations)
+	stmt, err := database.DB.Prepare(getLocations)
 	if err != nil {
 		return ls, err
 	}
@@ -141,12 +138,12 @@ func GetAllLocations(dtx *apicontext.DataContext) (CustomerLocations, error) {
 }
 
 func (l *CustomerLocation) Create(dtx *apicontext.DataContext) error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -186,13 +183,14 @@ func (l *CustomerLocation) Create(dtx *apicontext.DataContext) error {
 	go redis.Delete("customerLocations:" + strconv.Itoa(l.CustomerId))
 	return err
 }
+
 func (l *CustomerLocation) Update(dtx *apicontext.DataContext) error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -229,25 +227,28 @@ func (l *CustomerLocation) Update(dtx *apicontext.DataContext) error {
 }
 
 func (l *CustomerLocation) Delete(dtx *apicontext.DataContext) error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
+
 	stmt, err := tx.Prepare(deleteLocation)
 	if err != nil {
 		return err
 	}
+
 	defer stmt.Close()
 	_, err = stmt.Exec(l.Id)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
+
 	err = tx.Commit()
 	go redis.Delete("customers:locations:" + dtx.BrandString)
 	go redis.Delete("customerLocations:" + strconv.Itoa(l.CustomerId))

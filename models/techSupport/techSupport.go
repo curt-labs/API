@@ -3,11 +3,12 @@ package techSupport
 import (
 	"database/sql"
 	"errors"
+	"time"
+
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/database"
 	"github.com/curt-labs/API/models/contact"
 	_ "github.com/go-sql-driver/mysql"
-	"time"
 )
 
 type TechSupport struct {
@@ -33,11 +34,11 @@ var (
 	createTechSupport = `insert into TechSupport (vehicleMake, vehicleModel, vehicleYear, purchaseDate, purchasedFrom, dealerName, productCode, dateCode, issue, contactID, brandID ) values (?,?,?,?,?,?,?,?,?,?,?)`
 	deleteTechSupport = `delete from TechSupport where id = ?`
 	getTechSupport    = `select ts.id, ` + fields + ` from TechSupport as ts where ts.id = ? `
-	getAllTechSupport = `select ts.id, ` + fields + ` from TechSupport as ts 
+	getAllTechSupport = `select ts.id, ` + fields + ` from TechSupport as ts
 		join ApiKeyToBrand as akb on akb.brandID = ts.brandID
 		join ApiKey as ak on ak.id = akb.keyID
         && ak.api_key = ? && (ts.brandID = ? or 0 = ?)`
-	getAllTechSupportByContact = `select ts.id, ` + fields + ` from TechSupport as ts 
+	getAllTechSupportByContact = `select ts.id, ` + fields + ` from TechSupport as ts
 		join ApiKeyToBrand as akb on akb.brandID = ts.brandID
 		join ApiKey as ak on ak.id = akb.keyID
         && ak.api_key = ? && (ts.brandID = ? or 0 = ?)
@@ -45,12 +46,12 @@ var (
 )
 
 func (t *TechSupport) Get() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getTechSupport)
+
+	stmt, err := database.DB.Prepare(getTechSupport)
 	if err != nil {
 		return
 	}
@@ -64,12 +65,12 @@ func (t *TechSupport) Get() (err error) {
 }
 
 func (t *TechSupport) GetByContact(dtx *apicontext.DataContext) (ts []TechSupport, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getAllTechSupportByContact)
+
+	stmt, err := database.DB.Prepare(getAllTechSupportByContact)
 	if err != nil {
 		return
 	}
@@ -83,12 +84,12 @@ func (t *TechSupport) GetByContact(dtx *apicontext.DataContext) (ts []TechSuppor
 }
 
 func GetAllTechSupport(dtx *apicontext.DataContext) (ts []TechSupport, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getAllTechSupport)
+
+	stmt, err := database.DB.Prepare(getAllTechSupport)
 	if err != nil {
 		return
 	}
@@ -123,12 +124,12 @@ func (t *TechSupport) Create() (err error) {
 
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(createTechSupport)
+
+	stmt, err := database.DB.Prepare(createTechSupport)
 	if err != nil {
 		return
 	}
@@ -161,12 +162,12 @@ func (t *TechSupport) Create() (err error) {
 }
 
 func (t *TechSupport) Delete() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(deleteTechSupport)
+
+	stmt, err := database.DB.Prepare(deleteTechSupport)
 	if err != nil {
 		return
 	}

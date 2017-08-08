@@ -87,12 +87,12 @@ var (
 
 //Fetch content by id
 func (c *Content) Get(dtx *apicontext.DataContext) (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getContent)
+
+	stmt, err := database.DB.Prepare(getContent)
 	if err != nil {
 		return err
 	}
@@ -145,12 +145,12 @@ func (c *Content) Get(dtx *apicontext.DataContext) (err error) {
 
 //Fetch content by slug
 func (c *Content) GetBySlug(dtx *apicontext.DataContext) (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getContentBySlug)
+
+	stmt, err := database.DB.Prepare(getContentBySlug)
 	if err != nil {
 		return err
 	}
@@ -205,12 +205,12 @@ func (c *Content) GetBySlug(dtx *apicontext.DataContext) (err error) {
 
 //Fetch a great many contents
 func GetAllContents(dtx *apicontext.DataContext, siteID int) (cs Contents, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return cs, err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getAllContent)
+
+	stmt, err := database.DB.Prepare(getAllContent)
 	if err != nil {
 		return cs, err
 	}
@@ -275,12 +275,12 @@ func GetAllContents(dtx *apicontext.DataContext, siteID int) (cs Contents, err e
 
 //Fetch a content's most recent revision
 func (c *Content) GetLatestRevision() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getLatestRevision)
+
+	stmt, err := database.DB.Prepare(getLatestRevision)
 	if err != nil {
 		return err
 	}
@@ -301,12 +301,12 @@ func (c *Content) GetLatestRevision() (err error) {
 
 //Fetch all of thine content's revisions
 func (c *Content) GetContentRevisions() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getContentRevisions)
+
+	stmt, err := database.DB.Prepare(getContentRevisions)
 	if err != nil {
 		return err
 	}
@@ -332,12 +332,12 @@ func (c *Content) GetContentRevisions() (err error) {
 
 //Fetch a single revision by Id
 func (rev *ContentRevision) Get() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getContentRevision)
+
+	stmt, err := database.DB.Prepare(getContentRevision)
 	if err != nil {
 		return err
 	}
@@ -357,12 +357,12 @@ func (rev *ContentRevision) Get() (err error) {
 
 //Fetch a great many revisions
 func GetAllContentRevisions() (cr ContentRevisions, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return cr, err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getAllContentRevisions)
+
+	stmt, err := database.DB.Prepare(getAllContentRevisions)
 	if err != nil {
 		return cr, err
 	}
@@ -386,14 +386,14 @@ func GetAllContentRevisions() (cr ContentRevisions, err error) {
 	return cr, err
 }
 
-//creatin' content
+//creating content
 func (c *Content) Create() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	stmt, err := tx.Prepare(createContent)
 	if err != nil {
 		return err
@@ -439,14 +439,14 @@ func (c *Content) Create() (err error) {
 	return err
 }
 
-//updatin' content
+//updating content
 func (c *Content) Update() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	stmt, err := tx.Prepare(updateContent)
 	if err != nil {
 		return err
@@ -491,16 +491,15 @@ func (c *Content) Update() (err error) {
 	return err
 }
 
-//deletin' content, brings joined revisions and menu join with
+//deleting content, brings joined revisions and menu join with
 func (c *Content) Delete() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
 
-	//adios revisions
+	tx, err := database.DB.Begin()
+
 	stmt, err := tx.Prepare(deleteRevisionbyContentID)
 	if err != nil {
 		return err
@@ -512,7 +511,6 @@ func (c *Content) Delete() (err error) {
 		return err
 	}
 
-	//adios menu join
 	stmt, err = tx.Prepare(deleteMenuSiteContentByContentId)
 	if err != nil {
 		return err
@@ -524,7 +522,6 @@ func (c *Content) Delete() (err error) {
 		return err
 	}
 
-	//adios content
 	stmt, err = tx.Prepare(deleteContent)
 	if err != nil {
 		return err
@@ -541,14 +538,14 @@ func (c *Content) Delete() (err error) {
 	return err
 }
 
-//creatin' a revision, requires content to exist
+//creating a revision requires content to exist
 func (rev *ContentRevision) Create() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	stmt, err := tx.Prepare(createRevision)
 	if err != nil {
 		return err
@@ -569,14 +566,14 @@ func (rev *ContentRevision) Create() (err error) {
 	return err
 }
 
-//updatin' a revision, requires content to exisi
+//updating a revision requires content to exisist
 func (rev *ContentRevision) Update() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	stmt, err := tx.Prepare(updateRevision)
 	if err != nil {
 		return err
@@ -595,14 +592,14 @@ func (rev *ContentRevision) Update() (err error) {
 	return err
 }
 
-//deletin' a revision
+//deleting a revision
 func (rev *ContentRevision) Delete() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	stmt, err := tx.Prepare(deleteRevision)
 	if err != nil {
 		return err
