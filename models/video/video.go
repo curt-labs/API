@@ -115,11 +115,10 @@ const (
 
 var (
 	getVideo     = `SELECT ` + videoFields + `, ` + videoTypeFields + ` FROM VideoNew AS v LEFT JOIN videoType AS vt ON vt.vTypeID = v.subjectTypeID WHERE v.ID = ?`
-	getAllVideos = `SELECT ` + videoFields + `, ` + videoTypeFields + ` FROM VideoNew AS v LEFT JOIN videoType AS vt ON vt.vTypeID = v.subjectTypeID
-			join VideoNewToBrand as vtb on vtb.videoID = v.ID
-			join ApiKeyToBrand as akb on akb.brandID = vtb.brandID
-			join ApiKey as ak on ak.id = akb.keyID
-            && ak.api_key = ? && (vtb.brandID = ? or 0 = ?)`
+	getAllVideos = `SELECT ` + videoFields + `, ` + videoTypeFields + ` FROM VideoNew AS v
+			LEFT JOIN videoType AS vt ON vt.vTypeID = v.subjectTypeID
+			JOIN VideoNewToBrand AS vtb ON vtb.videoID = v.ID
+		WHERE vtb.brandID = ?`
 	getBrands        = `select brandID from VideoNewToBrand where videoID = ?`
 	getAllCdnFiles   = `SELECT ` + cdnFileFields + `,` + cdnFileTypeFields + ` FROM CdnFile AS cf LEFT JOIN CdnFileType AS cft ON cft.ID = cf.typeID `
 	getAllChannels   = `SELECT ` + channelFields + `, ` + channelTypeFields + ` FROM Channel AS c LEFT JOIN ChannelType AS ct ON ct.ID = c.typeID `
