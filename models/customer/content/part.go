@@ -54,7 +54,7 @@ type PartContent struct {
 // Retrieves all part content for this customer
 func GetAllPartContent(key string) (content []PartContent, err error) {
 
-	err := database.Init()
+	err = database.Init()
 	if err != nil {
 		return content, err
 	}
@@ -119,7 +119,7 @@ func GetAllPartContent(key string) (content []PartContent, err error) {
 func GetPartContent(partID int, key string) (content []CustomerContent, err error) {
 	content = make([]CustomerContent, 0) // initializer
 
-	err := database.Init()
+	err = database.Init()
 	if err != nil {
 		return content, err
 	}
@@ -177,7 +177,7 @@ func GetGroupedPartContent(ids []string, key string) (content map[int][]Customer
 	}
 	escaped_key := api_helpers.Escape(key)
 
-	err := database.Init()
+	err = database.Init()
 	if err != nil {
 		return content, err
 	}
