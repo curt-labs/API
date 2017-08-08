@@ -1,12 +1,12 @@
 package geography
 
 import (
-	"database/sql"
+	"strconv"
+
 	"github.com/curt-labs/API/helpers/database"
 	"github.com/curt-labs/API/helpers/redis"
 	"github.com/curt-labs/API/helpers/sortutil"
 	_ "github.com/go-sql-driver/mysql"
-	"strconv"
 )
 
 var (
@@ -34,13 +34,12 @@ type Country struct {
 }
 
 func GetAllCountriesAndStates() (countries Countries, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getAllCountriesAndStatesStmt)
+	stmt, err := database.DB.Prepare(getAllCountriesAndStatesStmt)
 	if err != nil {
 		return
 	}
@@ -89,13 +88,12 @@ func GetAllCountriesAndStates() (countries Countries, err error) {
 }
 
 func GetAllCountries() (countries Countries, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getAllCountriesStmt)
+	stmt, err := database.DB.Prepare(getAllCountriesStmt)
 	if err != nil {
 		return
 	}
@@ -126,13 +124,12 @@ func GetAllCountries() (countries Countries, err error) {
 }
 
 func GetAllStates() (states States, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getAllStatesStmt)
+	stmt, err := database.DB.Prepare(getAllStatesStmt)
 	if err != nil {
 		return
 	}

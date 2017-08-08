@@ -1,15 +1,15 @@
 package lifestyle
 
 import (
-	"database/sql"
 	"encoding/json"
 	"errors"
+	"strconv"
+	"time"
+
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/database"
 	"github.com/curt-labs/API/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
-	"strconv"
-	"time"
 )
 
 type Lifestyle struct {
@@ -122,13 +122,12 @@ func GetAll(dtx *apicontext.DataContext) (ls Lifestyles, err error) {
 		return ls, err
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return ls, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getAllLifestyles)
+	stmt, err := database.DB.Prepare(getAllLifestyles)
 	if err != nil {
 		return ls, err
 	}
@@ -185,13 +184,12 @@ func (l *Lifestyle) Get(dtx *apicontext.DataContext) (err error) {
 		return err
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getLifestyle)
+	stmt, err := database.DB.Prepare(getLifestyle)
 	if err != nil {
 		return err
 	}
@@ -214,13 +212,12 @@ func (l *Lifestyle) Get(dtx *apicontext.DataContext) (err error) {
 }
 
 func getAllContent(dtx *apicontext.DataContext) (cs Contents, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return cs, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getAllLifestyleContent)
+	stmt, err := database.DB.Prepare(getAllLifestyleContent)
 	if err != nil {
 		return cs, err
 	}
@@ -240,13 +237,12 @@ func getAllContent(dtx *apicontext.DataContext) (cs Contents, err error) {
 }
 
 func getAllTowables(dtx *apicontext.DataContext) (ts Towables, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return ts, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getAllLifestyleTowables)
+	stmt, err := database.DB.Prepare(getAllLifestyleTowables)
 	if err != nil {
 		return ts, err
 	}
@@ -265,13 +261,12 @@ func getAllTowables(dtx *apicontext.DataContext) (ts Towables, err error) {
 }
 
 func (l *Lifestyle) GetContents() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getLifestyleContent)
+	stmt, err := database.DB.Prepare(getLifestyleContent)
 	if err != nil {
 		return err
 	}
@@ -291,13 +286,12 @@ func (l *Lifestyle) GetContents() (err error) {
 }
 
 func (l *Lifestyle) GetTowables() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getLifestyleTowables)
+	stmt, err := database.DB.Prepare(getLifestyleTowables)
 	if err != nil {
 		return err
 	}
@@ -316,12 +310,12 @@ func (l *Lifestyle) GetTowables() (err error) {
 }
 
 func (l *Lifestyle) Create(dtx *apicontext.DataContext) (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 
 	stmt, err := tx.Prepare(createLifestyle)
 	if err != nil {
@@ -384,12 +378,12 @@ func (l *Lifestyle) Create(dtx *apicontext.DataContext) (err error) {
 }
 
 func (l *Lifestyle) Update(dtx *apicontext.DataContext) (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 
 	stmt, err := tx.Prepare(updateLifestyle)
 	if err != nil {
@@ -445,12 +439,12 @@ func (l *Lifestyle) Update(dtx *apicontext.DataContext) (err error) {
 }
 
 func (l *Lifestyle) Delete() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 
 	stmt, err := tx.Prepare(deleteLifestyle)
 	if err != nil {
@@ -476,12 +470,13 @@ func (l *Lifestyle) deleteContents() (err error) {
 	if l.ID == 0 {
 		return errors.New("Lifestyle content ID is zero.")
 	}
-	db, err := sql.Open("mysql", database.ConnectionString())
+
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 
 	stmt, err := tx.Prepare(deleteContents)
 	if err != nil {
@@ -498,12 +493,12 @@ func (l *Lifestyle) deleteContents() (err error) {
 }
 
 func (l *Lifestyle) deleteTowables() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 
 	stmt, err := tx.Prepare(deleteTowables)
 	if err != nil {
@@ -520,12 +515,12 @@ func (l *Lifestyle) deleteTowables() (err error) {
 }
 
 func (c *Content) insertContent(l Lifestyle) (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 
 	stmt, err := tx.Prepare(insertContent)
 	if err != nil {
@@ -542,12 +537,12 @@ func (c *Content) insertContent(l Lifestyle) (err error) {
 }
 
 func (t *Towable) insertTowable() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 
 	stmt, err := tx.Prepare(insertTowable)
 	if err != nil {
@@ -564,13 +559,12 @@ func (t *Towable) insertTowable() (err error) {
 }
 
 func (c *Content) Get() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getContent)
+	stmt, err := database.DB.Prepare(getContent)
 	if err != nil {
 		return err
 	}
@@ -581,13 +575,12 @@ func (c *Content) Get() (err error) {
 }
 
 func (t *Towable) Get() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getTowable)
+	stmt, err := database.DB.Prepare(getTowable)
 	if err != nil {
 		return err
 	}
@@ -598,12 +591,12 @@ func (t *Towable) Get() (err error) {
 }
 
 func (c *Content) Create() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 
 	stmt, err := tx.Prepare(createContent)
 	if err != nil {
@@ -618,16 +611,15 @@ func (c *Content) Create() (err error) {
 	id, err := res.LastInsertId()
 	c.ID = int(id)
 	return err
-	//TODO - content types
 }
 
 func (t *Towable) Create() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 
 	stmt, err := tx.Prepare(createTowable)
 	if err != nil {

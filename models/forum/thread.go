@@ -1,7 +1,6 @@
 package forum
 
 import (
-	"database/sql"
 	"errors"
 	"time"
 
@@ -51,13 +50,12 @@ type Thread struct {
 }
 
 func GetAllThreads(dtx *apicontext.DataContext) (threads Threads, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getAllForumThreads)
+	stmt, err := database.DB.Prepare(getAllForumThreads)
 	if err != nil {
 		return
 	}
@@ -93,13 +91,12 @@ func (t *Thread) Get(dtx *apicontext.DataContext) error {
 		return errors.New("Invalid Thread ID")
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getForumThread)
+	stmt, err := database.DB.Prepare(getForumThread)
 	if err != nil {
 		return err
 	}
@@ -129,13 +126,12 @@ func (t *Topic) GetThreads(dtx *apicontext.DataContext) error {
 		return errors.New("Invalid Topic ID")
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getForumTopicThreads)
+	stmt, err := database.DB.Prepare(getForumTopicThreads)
 	if err != nil {
 		return err
 	}
@@ -167,13 +163,12 @@ func (t *Topic) GetThreads(dtx *apicontext.DataContext) error {
 }
 
 func (t *Thread) Add() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(addForumThread)
+	stmt, err := database.DB.Prepare(addForumThread)
 	if err != nil {
 		return err
 	}
@@ -202,13 +197,12 @@ func (t *Thread) Update() error {
 		return errors.New("Invalid Topic ID")
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(updateForumThread)
+	stmt, err := database.DB.Prepare(updateForumThread)
 	if err != nil {
 		return err
 	}
@@ -230,13 +224,12 @@ func (t *Thread) Delete() error {
 		return err
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(deleteForumThread)
+	stmt, err := database.DB.Prepare(deleteForumThread)
 	if err != nil {
 		return err
 	}

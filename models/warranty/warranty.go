@@ -30,7 +30,7 @@ var (
 	deleteWarranty       = `delete from Warranty where id = ?`
 	getWarranty          = `select w.id, ` + fields + ` from Warranty as w where w.id = ?`
 	getWarrantyByContact = `select w.id, ` + fields + ` from Warranty as w where w.contactID = ?`
-	getAllWarranties     = `select w.id, ` + fields + ` from Warranty as w 
+	getAllWarranties     = `select w.id, ` + fields + ` from Warranty as w
 							join Part as p on p.partID = w.partNumber
 							join ApiKeyToBrand as aktb on aktb.brandID = p.brandID
 							join ApiKey as a on a.id = aktb.keyID
@@ -38,12 +38,12 @@ var (
 )
 
 func (w *Warranty) Create() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(createWarranty)
+
+	stmt, err := database.DB.Prepare(createWarranty)
 	if err != nil {
 		return err
 	}
@@ -85,12 +85,12 @@ func (w *Warranty) Create() (err error) {
 }
 
 func (w *Warranty) Delete() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(deleteWarranty)
+
+	stmt, err := database.DB.Prepare(deleteWarranty)
 	if err != nil {
 		return err
 	}
@@ -103,12 +103,12 @@ func (w *Warranty) Delete() (err error) {
 }
 
 func (w *Warranty) Get() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getWarranty)
+
+	stmt, err := database.DB.Prepare(getWarranty)
 	if err != nil {
 		return err
 	}
@@ -121,12 +121,12 @@ func (w *Warranty) Get() (err error) {
 }
 
 func (w *Warranty) GetByContact() (ws []Warranty, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getWarrantyByContact)
+
+	stmt, err := database.DB.Prepare(getWarrantyByContact)
 	if err != nil {
 		return
 	}
@@ -143,12 +143,12 @@ func (w *Warranty) GetByContact() (ws []Warranty, err error) {
 }
 
 func GetAllWarranties(dtx *apicontext.DataContext) (ws []Warranty, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return ws, err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getAllWarranties)
+
+	stmt, err := database.DB.Prepare(getAllWarranties)
 	if err != nil {
 		return ws, err
 	}

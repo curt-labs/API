@@ -1,7 +1,6 @@
 package products
 
 import (
-	"database/sql"
 	"fmt"
 	"sort"
 	"strconv"
@@ -376,11 +375,11 @@ func BindCustomerToSeveralParts(parts []Part, dtx *apicontext.DataContext) ([]Pa
 		}
 		partIDs += strconv.Itoa(p.ID)
 	}
-	db, err := sql.Open("mysql", database.ConnectionString())
+
+	err = database.Init()
 	if err != nil {
 		return parts, err
 	}
-	defer db.Close()
 
 	statement := fmt.Sprintf(`select distinct ci.custPartID, cp.price, cp.partID from ApiKey as ak
 						join CustomerUser cu on ak.user_id = cu.id
@@ -390,7 +389,7 @@ func BindCustomerToSeveralParts(parts []Part, dtx *apicontext.DataContext) ([]Pa
 						where ak.api_key = '%s'
 						and cp.partID in (%s)`, dtx.APIKey, partIDs)
 
-	stmt, err := db.Prepare(statement)
+	stmt, err := database.DB.Prepare(statement)
 	if err != nil {
 		return parts, err
 	}

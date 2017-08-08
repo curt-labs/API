@@ -1,8 +1,6 @@
 package site
 
 import (
-	"database/sql"
-
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/database"
 	// "github.com/curt-labs/API/helpers/redis"
@@ -31,12 +29,12 @@ var (
 )
 
 func (w *Website) Get() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getSite)
+
+	stmt, err := database.DB.Prepare(getSite)
 	if err != nil {
 		return err
 	}
@@ -56,8 +54,9 @@ func (w *Website) Get() (err error) {
 	if desc != nil {
 		w.Description = *desc
 	}
+
 	//get brands
-	stmt, err = db.Prepare(getBrands)
+	stmt, err = database.DB.Prepare(getBrands)
 	if err != nil {
 		return err
 	}
@@ -98,20 +97,22 @@ func (w *Website) GetDetails(dtx *apicontext.DataContext) (err error) {
 }
 
 func GetAllWebsites() (ws Websites, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return ws, err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getAllSites)
+
+	stmt, err := database.DB.Prepare(getAllSites)
 	if err != nil {
 		return ws, err
 	}
+
 	defer stmt.Close()
 	res, err := stmt.Query()
 	if err != nil {
 		return ws, err
 	}
+
 	var w Website
 	var url, desc *string
 	for res.Next() {
@@ -136,12 +137,12 @@ func GetAllWebsites() (ws Websites, err error) {
 }
 
 func (w *Website) Create() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	stmt, err := tx.Prepare(createSite)
 	if err != nil {
 		return err
@@ -177,12 +178,12 @@ func (w *Website) Update() error {
 	if err != nil {
 		return err
 	}
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	stmt, err := tx.Prepare(updateSite)
 	if err != nil {
 		return err
@@ -205,12 +206,12 @@ func (w *Website) Delete() (err error) {
 		}
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	stmt, err := tx.Prepare(deleteSite)
 	if err != nil {
 		return err
@@ -231,13 +232,12 @@ func (w *Website) Delete() (err error) {
 
 func (w *Website) JoinToBrand() error {
 	var err error
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(joinToBrand)
+	stmt, err := database.DB.Prepare(joinToBrand)
 	if err != nil {
 		return err
 	}
@@ -253,13 +253,12 @@ func (w *Website) JoinToBrand() error {
 
 func (w *Website) DeleteBrandJoin(brandId int) error {
 	var err error
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(deleteBrandJoin)
+	stmt, err := database.DB.Prepare(deleteBrandJoin)
 	if err != nil {
 		return err
 	}

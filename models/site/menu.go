@@ -59,12 +59,12 @@ var (
 
 //Fetch menu by Id
 func (m *Menu) Get(dtx *apicontext.DataContext) (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getMenu)
+
+	stmt, err := database.DB.Prepare(getMenu)
 	if err != nil {
 		return err
 	}
@@ -94,12 +94,12 @@ func (m *Menu) Get(dtx *apicontext.DataContext) (err error) {
 
 //Fetch up a menu by name
 func (m *Menu) GetByName(dtx *apicontext.DataContext) (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getMenuByName)
+
+	stmt, err := database.DB.Prepare(getMenuByName)
 	if err != nil {
 		return err
 	}
@@ -129,12 +129,12 @@ func (m *Menu) GetByName(dtx *apicontext.DataContext) (err error) {
 
 //Fetch all menus
 func GetAllMenus(dtx *apicontext.DataContext) (ms Menus, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return ms, err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getAllMenus)
+
+	stmt, err := database.DB.Prepare(getAllMenus)
 	if err != nil {
 		return ms, err
 	}
@@ -174,13 +174,12 @@ func GetAllMenus(dtx *apicontext.DataContext) (ms Menus, err error) {
 
 //Fetch a menu's contents, including latest revision
 func (m *Menu) GetContents() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
 
-	defer db.Close()
-	stmt, err := db.Prepare(getMenuContents)
+	stmt, err := database.DB.Prepare(getMenuContents)
 	if err != nil {
 		return err
 	}
@@ -257,15 +256,14 @@ func (m *Menu) GetContents() (err error) {
 	return err
 }
 
-//creatin' a menu
+//creating a menu
 func (m *Menu) Create() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
 
-	defer db.Close()
-	tx, err := db.Begin()
+	tx, err := database.DB.Begin()
 	stmt, err := tx.Prepare(createMenu)
 	if err != nil {
 		return err
@@ -295,14 +293,14 @@ func (m *Menu) Create() (err error) {
 	return err
 }
 
-//updatin' a menu
+//updating a menu
 func (m *Menu) Update() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	stmt, err := tx.Prepare(updateMenu)
 	if err != nil {
 		return err
@@ -330,14 +328,14 @@ func (m *Menu) Update() (err error) {
 	return err
 }
 
-//deletin' a menu, takes a content_sitecontent join with
+//deleting a menu, takes a content_sitecontent join with
 func (m *Menu) Delete() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 
 	//delete menu content join
 	stmt, err := tx.Prepare(deleteMenuSiteContentByMenuId)
@@ -371,14 +369,14 @@ func (m *Menu) Delete() (err error) {
 	return err
 }
 
-//thar needs to exists a menu object with id > 0, for thar be a FK relation
+//there needs to exist a menu object with id > 0 for there be a FK relation
 func (m *Menu) JoinToContent(c Content) (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 
 	stmt, err := tx.Prepare(createMenuContentJoin)
 	if err != nil {
@@ -394,14 +392,14 @@ func (m *Menu) JoinToContent(c Content) (err error) {
 	return err
 }
 
-//For deletin' a join
+//For deleting a join
 func (m *Menu) DeleteMenuContentJoin(c Content) (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 
 	stmt, err := tx.Prepare(deleteMenuSiteContentJoin)
 	if err != nil {

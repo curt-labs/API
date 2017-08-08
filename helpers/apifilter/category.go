@@ -1,7 +1,6 @@
 package apifilter
 
 import (
-	"database/sql"
 	"fmt"
 	"net/http"
 	"sort"
@@ -30,7 +29,7 @@ var (
 		join Part as p on pr.partID = p.partID
 		join CatPart as cp on p.partID = cp.partID
 		where cp.catID = ? && lower(pr.priceType) = 'list' &&
-		p.status in (700, 800, 810, 815, 850, 870, 888, 900, 910, 950) 
+		p.status in (700, 800, 810, 815, 850, 870, 888, 900, 910, 950)
 		group by pr.price`
 	GetCategoryGroup = `select distinct cp.catID as cats
 											from CatPart as cp
@@ -70,13 +69,12 @@ func CategoryFilter(cat products.Category, specs *map[string][]string) ([]Option
 
 func (filtered FilteredOptions) categoryGroupAttributes(cat products.Category, specs *map[string][]string) (FilteredOptions, error) {
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return FilteredOptions{}, err
 	}
-	defer db.Close()
 
-	idQry, err := db.Prepare(GetCategoryGroup)
+	idQry, err := database.DB.Prepare(GetCategoryGroup)
 	if err != nil {
 		return FilteredOptions{}, err
 	}
@@ -203,13 +201,12 @@ func categoryAttributes(catID int, excludedAttributeTypes []string) (map[string]
 		}
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return map[string]Options{}, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(GetCategoryAttributes)
+	stmt, err := database.DB.Prepare(GetCategoryAttributes)
 	if err != nil {
 		return map[string]Options{}, err
 	}
@@ -272,13 +269,12 @@ func categoryPrices(catID int) (map[string]Options, error) {
 		Options: make([]Option, 0),
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return mapped, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(GetCategoryPrices)
+	stmt, err := database.DB.Prepare(GetCategoryPrices)
 	if err != nil {
 		return mapped, err
 	}
