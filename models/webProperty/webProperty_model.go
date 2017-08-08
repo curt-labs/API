@@ -91,7 +91,7 @@ var (
 		join ApiKeyToBrand as atb on atb.brandID = ctb.brandID
 		join ApiKey as a on a.id = atb.keyID
 		where a.api_key =? && (ctb.brandID = ? or 0 = ?)
-		group by wn.id`
+		order by wn.id`
 	getAllWebPropertyRequirements = `SELECT DISTINCT wprc.ID, wpr.ID, wpr.ReqType, wpr.Requirement, wprc.Compliance, wprc.WebPropertiesID
 		FROM WebPropRequirementCheck AS wprc
 		LEFT JOIN WebPropRequirements AS wpr ON wpr.ID = wprc.WebPropRequirementsID
