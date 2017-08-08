@@ -4,7 +4,6 @@ import (
 	"github.com/curt-labs/API/helpers/database"
 	_ "github.com/go-sql-driver/mysql"
 
-	"database/sql"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -122,35 +121,34 @@ func (c *Customer) GetAndCompareCustomerShippingInfo() (err error) {
 }
 
 func (a *Account) adjustFreight(limit float64) error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	_, err = db.Exec(updateFreightLimit, limit, a.ID)
+
+	_, err = database.DB.Exec(updateFreightLimit, limit, a.ID)
 	return err
 }
 
 func (a *Account) adjustWarehouse(id int) error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	_, err = db.Exec(updateDefaultWarehouse, id, a.ID)
+
+	_, err = database.DB.Exec(updateDefaultWarehouse, id, a.ID)
 	return err
 }
 
 //makes warehouse map
 func getWarehouseCodes() (map[string]int, error) {
 	warehouses := make(map[string]int)
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return warehouses, err
 	}
-	defer db.Close()
 
-	rows, err := db.Query(warehouseMap)
+	rows, err := database.DB.Query(warehouseMap)
 	if err != nil {
 		return warehouses, err
 	}

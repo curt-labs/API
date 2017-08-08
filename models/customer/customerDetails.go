@@ -1,7 +1,6 @@
 package customer
 
 import (
-	"database/sql"
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/database"
 	"github.com/curt-labs/API/helpers/redis"
@@ -13,11 +12,11 @@ import (
 var (
 	getDealerTypes = `select dt.dealer_type, ` + dealerTypeFields + ` from DealerTypes as dt
 			join ApiKeyToBrand as atb on atb.brandID = dt.brandID
-			join ApiKey as a on a.id = atb.keyID 
+			join ApiKey as a on a.id = atb.keyID
 			&&(a.api_key = ? && (dt.brandID = ? or 0 = ?))`
 	getDealerTiers = `select dtr.ID, ` + dealerTierFields + ` from DealerTiers as dtr
 			join ApiKeyToBrand as atb on atb.brandID = dtr.brandID
-			join ApiKey as a on a.id = atb.keyID 
+			join ApiKey as a on a.id = atb.keyID
 			&&(a.api_key = ? && (dtr.brandID = ? or 0 = ?))`
 	getMapIcons   = `select mi.ID, mi.tier, mi.dealer_type, ` + mapIconFields + ` from MapIcons as mi`
 	getMapixCodes = ` select mpx.mCodeID, ` + mapixCodeFields + ` from MapixCode as mpx`
@@ -43,12 +42,12 @@ func DealerTypeMap(dtx *apicontext.DataContext) (map[int]DealerType, error) {
 func GetDealerTypes(dtx *apicontext.DataContext) ([]DealerType, error) {
 	var dType DealerType
 	var dTypes []DealerType
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return dTypes, err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getDealerTypes)
+
+	stmt, err := database.DB.Prepare(getDealerTypes)
 	if err != nil {
 		return dTypes, err
 	}
@@ -93,12 +92,12 @@ func DealerTierMap(dtx *apicontext.DataContext) (map[int]DealerTier, error) {
 func GetDealerTiers(dtx *apicontext.DataContext) ([]DealerTier, error) {
 	var dTier DealerTier
 	var dTiers []DealerTier
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return dTiers, err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getDealerTiers)
+
+	stmt, err := database.DB.Prepare(getDealerTiers)
 	if err != nil {
 		return dTiers, err
 	}
@@ -127,12 +126,12 @@ func GetMapIcons() ([]MapIcon, error) {
 	var mi MapIcon
 	var mis []MapIcon
 	var err error
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return mis, err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getMapIcons)
+
+	stmt, err := database.DB.Prepare(getMapIcons)
 	if err != nil {
 		return mis, err
 	}
@@ -174,12 +173,12 @@ func GetMapixCodes() ([]MapixCode, error) {
 	var mc MapixCode
 	var mcs []MapixCode
 	var err error
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return mcs, err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getMapixCodes)
+
+	stmt, err := database.DB.Prepare(getMapixCodes)
 	if err != nil {
 		return mcs, err
 	}
@@ -222,12 +221,12 @@ func GetSalesReps() ([]SalesRepresentative, error) {
 	var sr SalesRepresentative
 	var srs []SalesRepresentative
 	var err error
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return srs, err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getSalesReps)
+
+	stmt, err := database.DB.Prepare(getSalesReps)
 	if err != nil {
 		return srs, err
 	}

@@ -1,6 +1,7 @@
 package cartIntegration
 
 import (
+	"github.com/curt-labs/API/helpers/database"
 	_ "github.com/go-sql-driver/mysql"
 
 	"encoding/csv"
@@ -143,13 +144,12 @@ func (c *CustomerPrice) integrationExists(integrationLookup []CustomerPrice) (in
 //getPartMap returns a map of partnumbers to partIds
 func getPartMap() (map[string]int, error) {
 	partmap := make(map[string]int)
-	db, err := initDB()
+	err := database.Init()
 	if err != nil {
 		return partmap, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(`select partId, oldPartNumber from Part`)
+	stmt, err := database.DB.Prepare(`select partId, oldPartNumber from Part`)
 	if err != nil {
 		return partmap, err
 	}

@@ -1,7 +1,6 @@
 package custcontent
 
 import (
-	"database/sql"
 	"time"
 
 	"github.com/curt-labs/API/helpers/database"
@@ -38,13 +37,12 @@ var (
 
 // Retrieves all category content for this customer
 func GetAllCategoryContent(key string) (content []CategoryContent, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return content, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(allCustomerCategoryContent)
+	stmt, err := database.DB.Prepare(allCustomerCategoryContent)
 	if err != nil {
 		return content, err
 	}
@@ -98,13 +96,12 @@ func GetAllCategoryContent(key string) (content []CategoryContent, err error) {
 // Retrieves specific category content for this customer
 func GetCategoryContent(catID int, key string) (content []CustomerContent, err error) {
 	content = make([]CustomerContent, 0) // initializer
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return content, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(customerCategoryContent)
+	stmt, err := database.DB.Prepare(customerCategoryContent)
 	if err != nil {
 		return content, err
 	}

@@ -1,7 +1,6 @@
 package contact
 
 import (
-	"database/sql"
 	"errors"
 	"strings"
 
@@ -35,13 +34,12 @@ type ContactType struct {
 }
 
 func GetAllContactTypes(dtx *apicontext.DataContext) (types ContactTypes, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getAllContactTypesStmt)
+	stmt, err := database.DB.Prepare(getAllContactTypesStmt)
 	if err != nil {
 		return
 	}
@@ -70,13 +68,12 @@ func GetAllContactTypes(dtx *apicontext.DataContext) (types ContactTypes, err er
 
 func (ct *ContactType) Get() error {
 	if ct.ID > 0 {
-		db, err := sql.Open("mysql", database.ConnectionString())
+		err := database.Init()
 		if err != nil {
 			return err
 		}
-		defer db.Close()
 
-		stmt, err := db.Prepare(getContactTypeStmt)
+		stmt, err := database.DB.Prepare(getContactTypeStmt)
 		if err != nil {
 			return err
 		}
@@ -95,13 +92,12 @@ func (ct *ContactType) Get() error {
 func GetContactTypeNameFromId(id int) (string, error) {
 	var err error
 	var name string
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return name, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getTypeNameFromId)
+	stmt, err := database.DB.Prepare(getTypeNameFromId)
 	if err != nil {
 		return name, err
 	}
@@ -115,13 +111,12 @@ func (ct *ContactType) Add() error {
 		return errors.New("Invalid contact name.")
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(addContactTypeStmt)
+	stmt, err := database.DB.Prepare(addContactTypeStmt)
 	if err != nil {
 		return err
 	}
@@ -142,12 +137,12 @@ func (ct *ContactType) Add() error {
 }
 
 func (ct *ContactType) GetReceivers() (crs ContactReceivers, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return crs, err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getReceiverByType)
+
+	stmt, err := database.DB.Prepare(getReceiverByType)
 	if err != nil {
 		return crs, err
 	}
@@ -181,13 +176,12 @@ func (ct *ContactType) Update() error {
 		return errors.New("Invalid contact name.")
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(updateContactTypeStmt)
+	stmt, err := database.DB.Prepare(updateContactTypeStmt)
 	if err != nil {
 		return err
 	}
@@ -200,13 +194,12 @@ func (ct *ContactType) Update() error {
 
 func (ct *ContactType) Delete() error {
 	if ct.ID > 0 {
-		db, err := sql.Open("mysql", database.ConnectionString())
+		err := database.Init()
 		if err != nil {
 			return err
 		}
-		defer db.Close()
 
-		stmt, err := db.Prepare(deleteContactTypeStmt)
+		stmt, err := database.DB.Prepare(deleteContactTypeStmt)
 		if err != nil {
 			return err
 		}

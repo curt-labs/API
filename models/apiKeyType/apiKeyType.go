@@ -1,10 +1,10 @@
 package apiKeyType
 
 import (
-	"database/sql"
+	"time"
+
 	"github.com/curt-labs/API/helpers/database"
 	_ "github.com/go-sql-driver/mysql"
-	"time"
 )
 
 var (
@@ -29,38 +29,40 @@ const (
 	timeFormat = "2006-01-02 03:04:05"
 )
 
-func (a *ApiKeyType) Get() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+func (a *ApiKeyType) Get() error {
+	err := database.Init()
 	if err != nil {
-		return
+		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getApiKeyType)
+
+	stmt, err := database.DB.Prepare(getApiKeyType)
 	if err != nil {
-		return
+		return err
 	}
 	defer stmt.Close()
 	res := stmt.QueryRow(a.ID)
 	a, err = ScanKey(res)
 
-	return
+	return nil
 }
 
-func GetAllApiKeyTypes() (as []ApiKeyType, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+func GetAllApiKeyTypes() ([]ApiKeyType, error) {
+	err := database.Init()
 	if err != nil {
-		return
+		return nil, err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getAllApiKeyTypes)
+
+	stmt, err := database.DB.Prepare(getAllApiKeyTypes)
 	if err != nil {
-		return
+		return nil, err
 	}
 	defer stmt.Close()
 	res, err := stmt.Query() //returns *sql.Rows
 	if err != nil {
-		return
+		return nil, err
 	}
+
+	var as []ApiKeyType
 
 	for res.Next() {
 		a, err := ScanKey(res)
@@ -79,24 +81,24 @@ func ScanKey(s Scanner) (*ApiKeyType, error) {
 	return a, err
 }
 
-func (a *ApiKeyType) Create() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+func (a *ApiKeyType) Create() error {
+	err := database.Init()
 	if err != nil {
-		return
+		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(createApiKeyType)
+
+	stmt, err := database.DB.Prepare(createApiKeyType)
 	if err != nil {
-		return
+		return err
 	}
 	defer stmt.Close()
 	added := time.Now().Format(timeFormat)
 	_, err = stmt.Exec(a.Type, added)
 	if err != nil {
-		return
+		return err
 	}
 
-	stmt, err = db.Prepare(getKeyByDateType)
+	stmt, err = database.DB.Prepare(getKeyByDateType)
 	if err != nil {
 		return err
 	}
@@ -107,16 +109,16 @@ func (a *ApiKeyType) Create() (err error) {
 	if err != nil {
 		return err
 	}
-	return
+	return nil
 }
 
-func (a *ApiKeyType) Delete() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+func (a *ApiKeyType) Delete() error {
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(deleteApiKeyType)
+
+	stmt, err := database.DB.Prepare(deleteApiKeyType)
 	if err != nil {
 		return err
 	}
@@ -125,5 +127,5 @@ func (a *ApiKeyType) Delete() (err error) {
 	if err != nil {
 		return err
 	}
-	return
+	return nil
 }

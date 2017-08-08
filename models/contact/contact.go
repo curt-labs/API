@@ -3,20 +3,21 @@ package contact
 import (
 	"database/sql"
 	"errors"
+	"strings"
+	"time"
+
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/database"
 	"github.com/curt-labs/API/helpers/email"
 	"github.com/curt-labs/API/models/brand"
 	"github.com/curt-labs/API/models/customer"
 	_ "github.com/go-sql-driver/mysql"
-	"strings"
-	"time"
 )
 
 var (
 	getAllContactsStmt = `select contactID, first_name, last_name, email, phone, subject, message,
                           createdDate, type, address1, address2, city, state, postalcode, country, Contact.brandID
-                          from Contact 
+                          from Contact
                           join ApiKeyToBrand as akb on akb.brandID = Contact.brandID
 						  join ApiKey as ak on ak.id = akb.keyID
                           where  ak.api_key = ? && (Contact.BrandID = ? or 0 = ?)
@@ -55,23 +56,24 @@ type DealerContact struct {
 	BusinessType customer.DealerType
 }
 
-func GetAllContacts(page, count int, dtx *apicontext.DataContext) (contacts Contacts, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+func GetAllContacts(page, count int, dtx *apicontext.DataContext) (Contacts, error) {
+	err := database.Init()
 	if err != nil {
-		return
+		return Contacts{}, nil
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getAllContactsStmt)
+	stmt, err := database.DB.Prepare(getAllContactsStmt)
 	if err != nil {
-		return
+		return Contacts{}, nil
 	}
 	defer stmt.Close()
 
 	rows, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID, page, count)
 	if err != nil {
-		return
+		return Contacts{}, nil
 	}
+
+	var contacts Contacts
 
 	var addr1, addr2, city, state, postalCode, country *string
 	for rows.Next() {
@@ -119,18 +121,17 @@ func GetAllContacts(page, count int, dtx *apicontext.DataContext) (contacts Cont
 	}
 	defer rows.Close()
 
-	return
+	return contacts, nil
 }
 
 func (c *Contact) Get() error {
 	if c.ID > 0 {
-		db, err := sql.Open("mysql", database.ConnectionString())
+		err := database.Init()
 		if err != nil {
 			return err
 		}
-		defer db.Close()
 
-		stmt, err := db.Prepare(getContactStmt)
+		stmt, err := database.DB.Prepare(getContactStmt)
 		if err != nil {
 			return err
 		}
@@ -204,13 +205,12 @@ func (c *Contact) Add(dtx *apicontext.DataContext) error {
 		return errors.New("Message can't be empty")
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(addContactStmt)
+	stmt, err := database.DB.Prepare(addContactStmt)
 	if err != nil {
 		return err
 	}
@@ -233,13 +233,12 @@ func (c *Contact) Add(dtx *apicontext.DataContext) error {
 }
 
 func (c *Contact) AddButLessRestrictiveYouFieldValidatinFool() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(addContactStmt)
+	stmt, err := database.DB.Prepare(addContactStmt)
 	if err != nil {
 		return err
 	}
@@ -283,13 +282,12 @@ func (c *Contact) Update() error {
 		return errors.New("Message can't be empty")
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(updateContactStmt)
+	stmt, err := database.DB.Prepare(updateContactStmt)
 	if err != nil {
 		return err
 	}
@@ -303,13 +301,12 @@ func (c *Contact) Update() error {
 
 func (c *Contact) Delete() error {
 	if c.ID > 0 {
-		db, err := sql.Open("mysql", database.ConnectionString())
+		err := database.Init()
 		if err != nil {
 			return err
 		}
-		defer db.Close()
 
-		stmt, err := db.Prepare(deleteContactStmt)
+		stmt, err := database.DB.Prepare(deleteContactStmt)
 		if err != nil {
 			return err
 		}

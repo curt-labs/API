@@ -5,7 +5,6 @@ import (
 	"github.com/curt-labs/API/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
 
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -53,13 +52,12 @@ func (p *Price) Get() error {
 		return err
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getPrice)
+	stmt, err := database.DB.Prepare(getPrice)
 	if err != nil {
 		return err
 	}
@@ -82,13 +80,12 @@ func GetAllPrices() (Prices, error) {
 		return ps, err
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return ps, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getPrices)
+	stmt, err := database.DB.Prepare(getPrices)
 	if err != nil {
 		return ps, err
 	}
@@ -105,12 +102,12 @@ func GetAllPrices() (Prices, error) {
 }
 
 func (p *Price) Create() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -139,30 +136,35 @@ func (p *Price) Create() error {
 	go redis.Setex("price:"+strconv.Itoa(p.ID), p, 86400)
 	return nil
 }
+
 func (p *Price) Update() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
+
 	stmt, err := tx.Prepare(updatePrice)
 	if err != nil {
 		return err
 	}
+
 	defer stmt.Close()
 	_, err = stmt.Exec(p.CustID, p.PartID, p.Price, p.IsSale, p.SaleStart, p.SaleEnd, p.ID)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
+
 	err = tx.Commit()
 	if err != nil {
 		return err
 	}
+
 	go redis.Setex("price:"+strconv.Itoa(p.ID), p, 86400)
 	go redis.Delete(fmt.Sprintf("prices:part:%d", strconv.Itoa(p.PartID)))
 	go redis.Delete(fmt.Sprintf("customers:prices:%d", strconv.Itoa(p.CustID)))
@@ -170,29 +172,33 @@ func (p *Price) Update() error {
 }
 
 func (p *Price) Delete() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
+
 	stmt, err := tx.Prepare(deletePrice)
 	if err != nil {
 		return err
 	}
+
 	defer stmt.Close()
 	_, err = stmt.Exec(p.ID)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
+
 	err = tx.Commit()
 	if err != nil {
 		return err
 	}
+
 	go redis.Delete("price:" + strconv.Itoa(p.ID))
 	go redis.Delete(fmt.Sprintf("prices:part:%d", strconv.Itoa(p.PartID)))
 	go redis.Delete(fmt.Sprintf("customers:prices:%d", strconv.Itoa(p.CustID)))
@@ -208,16 +214,16 @@ func (c *Customer) GetPricesByCustomer() (CustomerPrices, error) {
 		return cps, err
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return cps, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getPricesByCustomer)
+	stmt, err := database.DB.Prepare(getPricesByCustomer)
 	if err != nil {
 		return cps, err
 	}
+
 	defer stmt.Close()
 	res, err := stmt.Query(c.Id)
 	for res.Next() {
@@ -226,6 +232,7 @@ func (c *Customer) GetPricesByCustomer() (CustomerPrices, error) {
 
 		cps.Prices = append(cps.Prices, p)
 	}
+
 	go redis.Setex(redis_key, cps, 86400)
 	return cps, err
 }
@@ -239,23 +246,25 @@ func GetPricesByPart(partID int) (Prices, error) {
 		return ps, err
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return ps, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getPricesByPart)
+	stmt, err := database.DB.Prepare(getPricesByPart)
 	if err != nil {
 		return ps, err
 	}
+
 	defer stmt.Close()
+
 	res, err := stmt.Query(partID)
 	for res.Next() {
 		var p Price
 		res.Scan(&p.ID, &p.CustID, &p.PartID, &p.Price, &p.IsSale, &p.SaleStart, &p.SaleEnd)
 		ps = append(ps, p)
 	}
+
 	go redis.Setex(redis_key, ps, 86400)
 	return ps, nil
 }
@@ -263,18 +272,19 @@ func GetPricesByPart(partID int) (Prices, error) {
 func (c *Customer) GetPricesBySaleRange(startDate, endDate time.Time) (Prices, error) {
 	var err error
 	var ps Prices
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return ps, err
 	}
 
-	defer db.Close()
-	stmt, err := db.Prepare(getPricesBySaleRange)
+	stmt, err := database.DB.Prepare(getPricesBySaleRange)
 	if err != nil {
 		return ps, err
 	}
+
 	defer stmt.Close()
 	res, err := stmt.Query(startDate, endDate, c.Id)
+
 	for res.Next() {
 		var p Price
 		res.Scan(&p.ID, &p.CustID, &p.PartID, &p.Price, &p.IsSale, &p.SaleStart, &p.SaleEnd)
