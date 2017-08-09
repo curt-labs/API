@@ -76,28 +76,27 @@ func GetAllShowcases(page int, count int, randomize bool, dtx *apicontext.DataCo
 	var stmt *sql.Stmt
 	var rows *sql.Rows
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return
 	}
-	defer db.Close()
 
 	if page == 0 && count == 0 {
-		stmt, err = db.Prepare(getAllShowcasesStmt)
+		stmt, err = database.DB.Prepare(getAllShowcasesStmt)
 		if err != nil {
 			return
 		}
 		defer stmt.Close()
 		rows, err = stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	} else if randomize {
-		stmt, err = db.Prepare(getRandomShowcasesStmt)
+		stmt, err = database.DB.Prepare(getRandomShowcasesStmt)
 		if err != nil {
 			return
 		}
 		defer stmt.Close()
 		rows, err = stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID, count)
 	} else {
-		stmt, err = db.Prepare(getShowcaseByPageStmt)
+		stmt, err = database.DB.Prepare(getShowcaseByPageStmt)
 		if err != nil {
 			return
 		}
@@ -166,13 +165,12 @@ func (s *Showcase) Get(dtx *apicontext.DataContext) error {
 		return errors.New("Invalid showcase ID")
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getShowcaseStmt)
+	stmt, err := database.DB.Prepare(getShowcaseStmt)
 	if err != nil {
 		return err
 	}
@@ -186,13 +184,12 @@ func (s *Showcase) Get(dtx *apicontext.DataContext) error {
 }
 
 func (s *Showcase) GetImages() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getShowcaseImages)
+	stmt, err := database.DB.Prepare(getShowcaseImages)
 	if err != nil {
 		return err
 	}
@@ -220,12 +217,12 @@ func (s *Showcase) GetImages() error {
 }
 
 func (s *Showcase) Create() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -284,15 +281,15 @@ func (s *Showcase) Create() (err error) {
 }
 
 func (s *Showcase) Update() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+
 	if err != nil {
 		return err
 	}
-	stmt, err := db.Prepare(updateShowcase)
+	stmt, err := database.DB.Prepare(updateShowcase)
 	if err != nil {
 		return err
 	}
@@ -314,11 +311,11 @@ func (s *Showcase) Update() (err error) {
 }
 
 func (s *Showcase) Delete() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+
 	for _, i := range s.Images {
 		err = i.Delete()
 		if err != nil {
@@ -326,7 +323,7 @@ func (s *Showcase) Delete() (err error) {
 		}
 	}
 
-	stmt, err := db.Prepare(deleteShowcase)
+	stmt, err := database.DB.Prepare(deleteShowcase)
 	if err != nil {
 		return err
 	}
@@ -336,12 +333,12 @@ func (s *Showcase) Delete() (err error) {
 }
 
 func (i *Image) Create(showcaseID int) error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -377,13 +374,12 @@ func (i *Image) Create(showcaseID int) error {
 }
 
 func (i *Image) Delete() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	tx, err := db.Begin()
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -414,13 +410,12 @@ func (i *Image) Delete() (err error) {
 }
 
 func (i *Image) Update() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(updateImage)
+	stmt, err := database.DB.Prepare(updateImage)
 	if err != nil {
 		return err
 	}

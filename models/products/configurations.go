@@ -320,13 +320,12 @@ func (l *Lookup) GetConfigurations() error {
 	brandStmt = strings.TrimRight(brandStmt, ",") + ")"
 	wholeStmt := stmtBeginning + brandStmt + stmtEnd
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(wholeStmt)
+	stmt, err := database.DB.Prepare(wholeStmt)
 	if err != nil {
 		return err
 	}
@@ -369,13 +368,12 @@ func (l *Lookup) GetConfigurations() error {
 func (v Vehicle) getDefinedConfigurations(apiKey string) (*map[int][]DefinedConfiguration, error) {
 	configs := make(map[int][]DefinedConfiguration, 0)
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return nil, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getDefinedConfigurationsForVehicleStmt)
+	stmt, err := database.DB.Prepare(getDefinedConfigurationsForVehicleStmt)
 	if err != nil {
 		return nil, err
 	}
@@ -470,78 +468,77 @@ func (c *Configuration) getVcdbOptions(v Vehicle) ([]string, error) {
 		return opts, err
 	}
 
-	db, err := sql.Open("mysql", database.VcdbConnectionString())
+	err = database.Init()
 	if err != nil {
 		return opts, err
 	}
-	defer db.Close()
 
 	var stmt *sql.Stmt
 	switch strings.ToLower(strings.Replace(c.Key, " ", "", -1)) {
 	case "aspiration":
-		stmt, err = db.Prepare(vcdb_GetAspirationForVehicle)
+		stmt, err = database.VcdbDB.Prepare(vcdb_GetAspirationForVehicle)
 	case "bedlength":
-		stmt, err = db.Prepare(vcdb_GetBedLengthForVehicle)
+		stmt, err = database.VcdbDB.Prepare(vcdb_GetBedLengthForVehicle)
 	case "bedtype":
-		stmt, err = db.Prepare(vcdb_GetBedTypeForVehicle)
+		stmt, err = database.VcdbDB.Prepare(vcdb_GetBedTypeForVehicle)
 	case "bodytype":
-		stmt, err = db.Prepare(vcdb_GetBodyTypeForVehicle)
+		stmt, err = database.VcdbDB.Prepare(vcdb_GetBodyTypeForVehicle)
 	case "brakeabs":
-		stmt, err = db.Prepare(vcdb_GetBrakeABSForVehicle)
+		stmt, err = database.VcdbDB.Prepare(vcdb_GetBrakeABSForVehicle)
 	case "brakesystem":
-		stmt, err = db.Prepare(vcdb_GetBrakeSystemForVehicle)
+		stmt, err = database.VcdbDB.Prepare(vcdb_GetBrakeSystemForVehicle)
 	case "frontbraketype":
-		stmt, err = db.Prepare(vcdb_GetFrontBrakeTypeForVehicle)
+		stmt, err = database.VcdbDB.Prepare(vcdb_GetFrontBrakeTypeForVehicle)
 	case "rearbraketype":
-		stmt, err = db.Prepare(vcdb_GetRearBrakeTypeForVehicle)
+		stmt, err = database.VcdbDB.Prepare(vcdb_GetRearBrakeTypeForVehicle)
 	case "cylinderheadtype":
-		stmt, err = db.Prepare(vcdb_GetCylinderHeadTypeForVehicle)
+		stmt, err = database.VcdbDB.Prepare(vcdb_GetCylinderHeadTypeForVehicle)
 	case "drivetype":
-		stmt, err = db.Prepare(vcdb_GetDriveTypeForVehicle)
+		stmt, err = database.VcdbDB.Prepare(vcdb_GetDriveTypeForVehicle)
 	case "enginedesignation":
-		stmt, err = db.Prepare(vcdb_GetEngineDesignationForVehicle)
+		stmt, err = database.VcdbDB.Prepare(vcdb_GetEngineDesignationForVehicle)
 	case "engineversion":
-		stmt, err = db.Prepare(vcdb_GetEngineVersionForVehicle)
+		stmt, err = database.VcdbDB.Prepare(vcdb_GetEngineVersionForVehicle)
 	case "enginevin":
-		stmt, err = db.Prepare(vcdb_GetEngineVINForVehicle)
+		stmt, err = database.VcdbDB.Prepare(vcdb_GetEngineVINForVehicle)
 	case "fueldeliverysubtype":
-		stmt, err = db.Prepare(vcdb_GetFuelDeliverySubTypeForVehicle)
+		stmt, err = database.VcdbDB.Prepare(vcdb_GetFuelDeliverySubTypeForVehicle)
 	case "fueldeliverytype":
-		stmt, err = db.Prepare(vcdb_GetFuelDeliveryTypeForVehicle)
+		stmt, err = database.VcdbDB.Prepare(vcdb_GetFuelDeliveryTypeForVehicle)
 	case "fuelsystemcontroltype":
-		stmt, err = db.Prepare(vcdb_GetFuelSystemControlTypeForVehicle)
+		stmt, err = database.VcdbDB.Prepare(vcdb_GetFuelSystemControlTypeForVehicle)
 	case "fuelsystemdesign":
-		stmt, err = db.Prepare(vcdb_GetFuelSystemDesignForVehicle)
+		stmt, err = database.VcdbDB.Prepare(vcdb_GetFuelSystemDesignForVehicle)
 	case "fueltype":
-		stmt, err = db.Prepare(vcdb_GetFuelTypeForVehicle)
+		stmt, err = database.VcdbDB.Prepare(vcdb_GetFuelTypeForVehicle)
 	case "ignitionsystem":
-		stmt, err = db.Prepare(vcdb_GetIgnitionSystemForVehicle)
+		stmt, err = database.VcdbDB.Prepare(vcdb_GetIgnitionSystemForVehicle)
 	case "mfrbodycode":
-		stmt, err = db.Prepare(vcdb_GetMfrBodyCodeForVehicle)
+		stmt, err = database.VcdbDB.Prepare(vcdb_GetMfrBodyCodeForVehicle)
 	case "numberofdoors":
-		stmt, err = db.Prepare(vcdb_GetBodyNumDoorsForVehicle)
+		stmt, err = database.VcdbDB.Prepare(vcdb_GetBodyNumDoorsForVehicle)
 	case "frontspringtype":
-		stmt, err = db.Prepare(vcdb_GetFrontSpringTypeForVehicle)
+		stmt, err = database.VcdbDB.Prepare(vcdb_GetFrontSpringTypeForVehicle)
 	case "rearspringtype":
-		stmt, err = db.Prepare(vcdb_GetRearSpringTypeForVehicle)
+		stmt, err = database.VcdbDB.Prepare(vcdb_GetRearSpringTypeForVehicle)
 	case "steeringsystem":
-		stmt, err = db.Prepare(vcdb_GetSteeringSystemForVehicle)
+		stmt, err = database.VcdbDB.Prepare(vcdb_GetSteeringSystemForVehicle)
 	case "steeringtype":
-		stmt, err = db.Prepare(vcdb_GetSteeringTypeForVehicle)
+		stmt, err = database.VcdbDB.Prepare(vcdb_GetSteeringTypeForVehicle)
 	case "transmissioncontroltype":
-		stmt, err = db.Prepare(vcdb_GetTransmissionControlTypeForVehicle)
+		stmt, err = database.VcdbDB.Prepare(vcdb_GetTransmissionControlTypeForVehicle)
 	case "transmissionelectroniccontrolled":
-		stmt, err = db.Prepare(vcdb_GetElecControlledForVehicle)
+		stmt, err = database.VcdbDB.Prepare(vcdb_GetElecControlledForVehicle)
 	case "transmissionmanufacturercode":
-		stmt, err = db.Prepare(vcdb_GetTransmissionMfrCodeForVehicle)
+		stmt, err = database.VcdbDB.Prepare(vcdb_GetTransmissionMfrCodeForVehicle)
 	case "transmissionnumspeeds":
-		stmt, err = db.Prepare(vcdb_GetTransmissionNumSpeedsForVehicle)
+		stmt, err = database.VcdbDB.Prepare(vcdb_GetTransmissionNumSpeedsForVehicle)
 	case "transmissiontype":
-		stmt, err = db.Prepare(vcdb_GetTransmissionTypeForVehicle)
+		stmt, err = database.VcdbDB.Prepare(vcdb_GetTransmissionTypeForVehicle)
 	case "valves":
-		stmt, err = db.Prepare(vcdb_GetValvesForVehicle)
+		stmt, err = database.VcdbDB.Prepare(vcdb_GetValvesForVehicle)
 	case "wheelbase":
-		stmt, err = db.Prepare(vcdb_GetWheelBaseForVehicle)
+		stmt, err = database.VcdbDB.Prepare(vcdb_GetWheelBaseForVehicle)
 	default:
 	}
 	if err != nil || stmt == nil {
@@ -572,13 +569,12 @@ func (c *Configuration) getCurtOptions(v Vehicle) ([]string, error) {
 	var opts []string
 	var err error
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return opts, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getAllOptionsForType)
+	stmt, err := database.DB.Prepare(getAllOptionsForType)
 	if err != nil {
 		return opts, err
 	}

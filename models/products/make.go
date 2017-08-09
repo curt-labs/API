@@ -1,7 +1,6 @@
 package products
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -38,13 +37,12 @@ func (l *Lookup) GetMakes(dtx *apicontext.DataContext) error {
 	brandStmt = strings.TrimRight(brandStmt, ",") + ")"
 	wholeStmt := stmtBeginning + brandStmt + stmtEnd
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(wholeStmt)
+	stmt, err := database.DB.Prepare(wholeStmt)
 	if err != nil {
 		return err
 	}

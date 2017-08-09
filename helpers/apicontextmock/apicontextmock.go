@@ -5,8 +5,6 @@ import (
 	"github.com/curt-labs/API/helpers/database"
 	_ "github.com/go-sql-driver/mysql"
 
-	"database/sql"
-
 	"time"
 )
 
@@ -163,13 +161,12 @@ func DeMock(dtx *apicontext.DataContext) error {
 func InsertCustomer() (int, error) {
 	var err error
 	var i int
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return i, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(insertCustomer)
+	stmt, err := database.DB.Prepare(insertCustomer)
 	if err != nil {
 		return i, err
 	}
@@ -187,20 +184,19 @@ func InsertCustomer() (int, error) {
 }
 func DeleteCustomer(custId int) error {
 	var err error
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(deleteCustomerToBrand)
+	stmt, err := database.DB.Prepare(deleteCustomerToBrand)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 	_, err = stmt.Exec(custId)
 
-	stmt, err = db.Prepare(deleteCustomer)
+	stmt, err = database.DB.Prepare(deleteCustomer)
 	if err != nil {
 		return err
 	}
@@ -211,13 +207,12 @@ func DeleteCustomer(custId int) error {
 
 func InsertCustomerToBrand(custId int, brandIds []int) error {
 	var err error
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(insertCustomerToBrand)
+	stmt, err := database.DB.Prepare(insertCustomerToBrand)
 	if err != nil {
 		return err
 	}
@@ -233,13 +228,12 @@ func InsertCustomerToBrand(custId int, brandIds []int) error {
 
 func DeleteType(apiKey string) error {
 	var err error
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(deleteType)
+	stmt, err := database.DB.Prepare(deleteType)
 	if err != nil {
 		return err
 	}
@@ -255,13 +249,12 @@ func GetUserApiKeys(userID string) ([]string, error) {
 	var err error
 	var keys []string
 	var k string
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return keys, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getUserApiKeys)
+	stmt, err := database.DB.Prepare(getUserApiKeys)
 	if err != nil {
 		return keys, err
 	}
@@ -285,12 +278,12 @@ func CreateCustomerUser(custID int) (CustomerUserID string, err error) {
 	email := "TestBogus@curtmfg.com"
 	customerID := 1
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return CustomerUserID, err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 
 	stmt, err := tx.Prepare(insertCustomerUser)
 	if err != nil {
@@ -305,7 +298,7 @@ func CreateCustomerUser(custID int) (CustomerUserID string, err error) {
 		return CustomerUserID, err
 	}
 
-	stmt, err = db.Prepare(getRegisteredUsersId) // needs to be set on the customer user object in order to generate the keys
+	stmt, err = database.DB.Prepare(getRegisteredUsersId) // needs to be set on the customer user object in order to generate the keys
 	if err != nil {
 		return CustomerUserID, err
 	}
@@ -321,13 +314,12 @@ func CreateCustomerUser(custID int) (CustomerUserID string, err error) {
 }
 func DeleteCustomerUser(id string) error {
 	var err error
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(deleteCustomerUser)
+	stmt, err := database.DB.Prepare(deleteCustomerUser)
 	if err != nil {
 		return err
 	}
@@ -340,12 +332,12 @@ func DeleteCustomerUser(id string) error {
 }
 
 func CreateApiKeyType(keyType string) (keyTypeID string, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return keyTypeID, err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(createApiKeyType)
+
+	stmt, err := database.DB.Prepare(createApiKeyType)
 	if err != nil {
 		return keyTypeID, err
 	}
@@ -356,7 +348,7 @@ func CreateApiKeyType(keyType string) (keyTypeID string, err error) {
 		return keyTypeID, err
 	}
 
-	stmt, err = db.Prepare(getKeyByDateType)
+	stmt, err = database.DB.Prepare(getKeyByDateType)
 	if err != nil {
 		return keyTypeID, err
 	}
@@ -374,12 +366,12 @@ func CreateApiKeyType(keyType string) (keyTypeID string, err error) {
 }
 
 func CreateApiKey(UserID string, keyTypeID string, keyType string, brandID int) (keyID int, key string, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return keyID, key, err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return keyID, key, err
 	}
@@ -410,7 +402,7 @@ func CreateApiKey(UserID string, keyTypeID string, keyType string, brandID int) 
 	tx.Commit()
 
 	var apiKey *string
-	stmt, err = db.Prepare(getCustomerUserKeysWithoutAuth)
+	stmt, err = database.DB.Prepare(getCustomerUserKeysWithoutAuth)
 	if err != nil {
 		return keyID, key, err
 	}
@@ -435,13 +427,12 @@ func CreateApiKey(UserID string, keyTypeID string, keyType string, brandID int) 
 
 func DeleteApiKey(key string) error {
 	var err error
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(deleteApiKeyToBrand)
+	stmt, err := database.DB.Prepare(deleteApiKeyToBrand)
 	if err != nil {
 		return err
 	}
@@ -451,7 +442,7 @@ func DeleteApiKey(key string) error {
 		return err
 	}
 
-	stmt, err = db.Prepare(deleteApiKey)
+	stmt, err = database.DB.Prepare(deleteApiKey)
 	if err != nil {
 		return err
 	}
@@ -465,12 +456,12 @@ func DeleteApiKey(key string) error {
 }
 
 func CreateWebsite(url, desc string) (webID int, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return webID, err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	stmt, err := tx.Prepare(createSite)
 	if err != nil {
 		return webID, err
@@ -491,13 +482,12 @@ func CreateWebsite(url, desc string) (webID int, err error) {
 }
 
 func CreateWebsiteToBrands(brandIDs []int, websiteID int) (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(joinToBrand)
+	stmt, err := database.DB.Prepare(joinToBrand)
 	if err != nil {
 		return err
 	}
@@ -513,13 +503,12 @@ func CreateWebsiteToBrands(brandIDs []int, websiteID int) (err error) {
 
 func DeleteWebsite(siteId int) error {
 	var err error
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(deleteSiteToBrand)
+	stmt, err := database.DB.Prepare(deleteSiteToBrand)
 	if err != nil {
 		return err
 	}
@@ -528,7 +517,7 @@ func DeleteWebsite(siteId int) error {
 	if err != nil {
 		return err
 	}
-	stmt, err = db.Prepare(deleteSite)
+	stmt, err = database.DB.Prepare(deleteSite)
 	if err != nil {
 		return err
 	}

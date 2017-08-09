@@ -220,12 +220,12 @@ func (v *CurtVehicle) GetPartsFromVehicleConfig(dtx *apicontext.DataContext) (ps
 	//get parts
 	var p products.Part
 	//get part id
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return ps, err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getPartID)
+
+	stmt, err := database.DB.Prepare(getPartID)
 	if err != nil {
 		return ps, err
 	}
@@ -411,17 +411,17 @@ func (av *AcesVehicle) checkConfigs(responseFields []Field) (configMap map[int]i
 	return configMap, err
 }
 
-//sierra 3500 vin 1GTJK34131E957990
-
-func (av *AcesVehicle) getCurtVehicles(configMap map[int]interface{}) (products.Lookup, error) { //get CURT vehicles
+//example: sierra 3500 vin 1GTJK34131E957990
+//get CURT vehicles
+func (av *AcesVehicle) getCurtVehicles(configMap map[int]interface{}) (products.Lookup, error) {
 	var l products.Lookup
 	var err error
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return l, err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getCurtVehiclesPreConfig)
+
+	stmt, err := database.DB.Prepare(getCurtVehiclesPreConfig)
 	if err != nil {
 		return l, err
 	}
@@ -479,40 +479,6 @@ func (av *AcesVehicle) getCurtVehicles(configMap map[int]interface{}) (products.
 			cv.Configuration.AcesValueID = *acesConfigValID
 		}
 
-		// log.Print(configMap)
-
-		// //configs - assign to map, flag
-		// configValFlag := true
-		// if vs, ok := pcoMap[cv.Configuration.Type]; ok {
-		// 	for _, v := range vs {
-		// 		if v == cv.Configuration.Value {
-		// 			configValFlag = false
-		// 		}
-		// 	}
-		// }
-		// if configValFlag == true {
-		// 	if name, ok := configMap[cv.Configuration.TypeID]; ok {
-		// 		//configMap contains this config type
-
-		// 		if cv.Configuration.AcesValueID == name {
-		// 			pcoMap[cv.Configuration.Type] = append(pcoMap[cv.Configuration.Type], cv.Configuration.Value)
-
-		// 			//vehicleConfigs (not l.ConfugurationOption)
-		// 			vehicleConfig.Key = cv.Configuration.Type
-		// 			vehicleConfig.Value = cv.Configuration.Value
-		// 			l.Vehicle.Configurations = append(l.Vehicle.Configurations, vehicleConfig)
-		// 		}
-		// 	} else {
-		// 		pcoMap[cv.Configuration.Type] = append(pcoMap[cv.Configuration.Type], cv.Configuration.Value)
-
-		// 		//vehicleConfigs (not l.ConfugurationOption)
-		// 		vehicleConfig.Key = cv.Configuration.Type
-		// 		vehicleConfig.Value = cv.Configuration.Value
-		// 		l.Vehicle.Configurations = append(l.Vehicle.Configurations, vehicleConfig)
-		// 	}
-
-		// }
-
 		l.Vehicle.Base.Make = cv.BaseVehicle.MakeName
 		l.Vehicle.Base.Model = cv.BaseVehicle.ModelName
 		l.Vehicle.Base.Year = cv.BaseVehicle.YearID
@@ -521,14 +487,6 @@ func (av *AcesVehicle) getCurtVehicles(configMap map[int]interface{}) (products.
 	} //end scan loop
 	defer res.Close()
 
-	//assign configs
-	// for key, val := range pcoMap {
-	// 	pco.Type = key
-	// 	pco.Options = val
-	// 	l.Configurations = append(l.Configurations, pco)
-	// }
-
-	//NEW
 	curtConfigMap, err := getCurtConfigMapFromAcesConfigMap(configMap)
 	if err != nil {
 		return l, err
@@ -551,13 +509,12 @@ func getCurtConfigMapFromAcesConfigMap(acesConfigMap map[int]interface{}) (map[s
 	var err error
 	tempMap := make(map[string]string) //maps [acestypeid:acesconfigid]curttype:curtconfig
 	curtMap := make(map[string]string) //maps [curttype]curtconfig
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return curtMap, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(curtConfigTypeMapStmt)
+	stmt, err := database.DB.Prepare(curtConfigTypeMapStmt)
 	if err != nil {
 		return curtMap, err
 	}

@@ -88,6 +88,14 @@ type ApiCredentials struct {
 	DateAdded time.Time `json:"date_added" xml:"date_added,attr"`
 }
 
+type ApiRequest struct {
+	User        CustomerUser `json:"user" xml:"user"`
+	RequestTime time.Time    `json:"request_time" xml:"request_time,attr"`
+	Url         *url.URL     `json:"url" xml:"url"`
+	Query       url.Values   `json:"query" xml:"query"`
+	Form        url.Values   `json:"form" xml:"form"`
+}
+
 const (
 	AUTH_KEY_TYPE      = "AUTHENTICATION"
 	PUBLIC_KEY_TYPE    = "PUBLIC"
@@ -262,13 +270,12 @@ func ScanUser(res Scanner) (*CustomerUser, error) {
 }
 
 func AuthenticateUserByKey(key string, dtx *apicontext.DataContext) (u CustomerUser, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return u, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(customerUserKeyAuth)
+	stmt, err := database.DB.Prepare(customerUserKeyAuth)
 	if err != nil {
 		return u, err
 	}
@@ -340,13 +347,12 @@ func AuthenticateAndGetCustomer(key string, dtx *apicontext.DataContext) (cust C
 }
 
 func (u *CustomerUser) AuthenticateUser() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return AuthError
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(customerUserAuth)
+	stmt, err := database.DB.Prepare(customerUserAuth)
 	if err != nil {
 		return AuthError
 	}
@@ -427,7 +433,7 @@ func (u *CustomerUser) AuthenticateUser() error {
 		}
 
 		var stmtPass *sql.Stmt
-		stmtPass, err = db.Prepare(updateCustomerUserPass)
+		stmtPass, err = database.DB.Prepare(updateCustomerUserPass)
 		if err != nil {
 			return err
 		}
@@ -454,13 +460,12 @@ func (u *CustomerUser) AuthenticateUser() error {
 
 //like AuthenticateUserByKey, but does not update the timestamp - seems REDUNDANT
 func GetCustomerUserFromKey(key string) (u CustomerUser, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return u, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(customerUserFromKey)
+	stmt, err := database.DB.Prepare(customerUserFromKey)
 	if err != nil {
 		return u, err
 	}
@@ -487,16 +492,16 @@ func GetCustomerUserFromKey(key string) (u CustomerUser, err error) {
 
 //Takes UUID CustomerID; deletes all CustomerUser with that CustID and their API Keys
 func DeleteCustomerUsersByCustomerID(customerID int) error {
+	err := database.Init()
+	if err != nil {
+		return err
+	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	stmt, err := database.DB.Prepare(getUsersByCustomerID)
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getUsersByCustomerID)
-	if err != nil {
-		return err
-	}
+
 	defer stmt.Close()
 	res, err := stmt.Query(customerID)
 	if err != nil {
@@ -529,13 +534,12 @@ func DeleteCustomerUsersByCustomerID(customerID int) error {
 }
 
 func (u CustomerUser) GetCustomer(key string) (c Customer, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return c, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(userCustomer)
+	stmt, err := database.DB.Prepare(userCustomer)
 	if err != nil {
 		return c, err
 	}
@@ -599,13 +603,12 @@ func (u CustomerUser) GetCustomer(key string) (c Customer, err error) {
 
 func (u *CustomerUser) GetKeys() error {
 	var keys []ApiCredentials
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(customerUserKeys)
+	stmt, err := database.DB.Prepare(customerUserKeys)
 	if err != nil {
 		return err
 	}
@@ -631,13 +634,12 @@ func (u *CustomerUser) GetKeys() error {
 }
 
 func (u *CustomerUser) GetLocation() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(userLocation)
+	stmt, err := database.DB.Prepare(userLocation)
 	if err != nil {
 		return err
 	}
@@ -704,13 +706,12 @@ func (u *CustomerUser) GetLocation() error {
 // GetComnetAccounts ...
 func (u *CustomerUser) GetComnetAccounts() error {
 	u.ComnetAccounts = make([]ComnetAccount, 0)
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getUserAccounts)
+	stmt, err := database.DB.Prepare(getUserAccounts)
 	if err != nil {
 		return err
 	}
@@ -854,14 +855,12 @@ func (u *CustomerUser) GetComnetAccounts() error {
 
 //updates auth key dateAdded to Now()
 func (u *CustomerUser) ResetAuthentication(brandIds []int) error {
-	var err error
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(userAuthenticationKey)
+	stmt, err := database.DB.Prepare(userAuthenticationKey)
 	if err != nil {
 		return err
 	}
@@ -894,7 +893,7 @@ func (u *CustomerUser) ResetAuthentication(brandIds []int) error {
 			u.Id,
 		}
 
-		stmtNew, err := db.Prepare(resetUserAuthentication)
+		stmtNew, err := database.DB.Prepare(resetUserAuthentication)
 		if err != nil {
 			return err
 		}
@@ -910,12 +909,12 @@ func (u *CustomerUser) ResetAuthentication(brandIds []int) error {
 
 func (cu *CustomerUser) GenerateAPIKey(keyType string, brandIds []int) (*ApiCredentials, error) {
 	// var brandID = 1 // this will have to be changed massivly because customers can have more than 1 brand, so each api key needs to be assigned to the brands that it needs. for now everything will be set to 1 (curt brand)
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return nil, err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 
 	typeID, err := getAPIKeyTypeReference(keyType)
 	if err != nil {
@@ -952,7 +951,7 @@ func (cu *CustomerUser) GenerateAPIKey(keyType string, brandIds []int) (*ApiCred
 	tx.Commit()
 
 	var apiKey string
-	stmt, err = db.Prepare(getCustomerUserKeysWithoutAuth)
+	stmt, err = database.DB.Prepare(getCustomerUserKeysWithoutAuth)
 	if err != nil {
 		return nil, err
 	}
@@ -986,12 +985,12 @@ func (cu *CustomerUser) GenerateAPIKey(keyType string, brandIds []int) (*ApiCred
 }
 
 func getAPIKeyTypeReference(keyType string) (string, error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return "", err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getAPIKeyTypeID)
+
+	stmt, err := database.DB.Prepare(getAPIKeyTypeID)
 	if err != nil {
 		return "", err
 	}
@@ -1005,12 +1004,12 @@ func getAPIKeyTypeReference(keyType string) (string, error) {
 }
 
 func (cu *CustomerUser) ResetPass() (string, error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return "", err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return "", err
 	}
@@ -1050,12 +1049,12 @@ func (cu *CustomerUser) ResetPass() (string, error) {
 
 func (cu *CustomerUser) ChangePass(oldPass, newPass string) error {
 	cu.Password = oldPass
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	stmt, err := tx.Prepare(setCustomerUserPassword)
 	if err != nil {
 		return err
@@ -1078,13 +1077,12 @@ func (cu *CustomerUser) ChangePass(oldPass, newPass string) error {
 }
 
 func (cu *CustomerUser) Get(key string) error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(customerUserFromId)
+	stmt, err := database.DB.Prepare(customerUserFromId)
 	if err != nil {
 		return err
 	}
@@ -1136,12 +1134,12 @@ func (cu *CustomerUser) Get(key string) error {
 }
 
 func (c *CustomerUser) FindByEmail() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 
 	stmt, err := tx.Prepare(getUserByEmail)
 	if err != nil {
@@ -1160,12 +1158,12 @@ func (c *CustomerUser) FindByEmail() error {
 
 //Update customerUser
 func (cu *CustomerUser) UpdateCustomerUser() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 
 	stmt, err := tx.Prepare(updateCustomerUser)
 	if err != nil {
@@ -1198,12 +1196,12 @@ func (cu *CustomerUser) Create(brandIds []int) error {
 		return errors.New("Failed to generate encrypted password.")
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 
 	stmt, err := tx.Prepare(insertCustomerUser)
 	if err != nil {
@@ -1219,7 +1217,7 @@ func (cu *CustomerUser) Create(brandIds []int) error {
 		return err
 	}
 
-	stmt, err = db.Prepare(getRegisteredUsersId) // needs to be set on the customer user object in order to generate the keys
+	stmt, err = database.DB.Prepare(getRegisteredUsersId) // needs to be set on the customer user object in order to generate the keys
 	if err != nil {
 		return err
 	}
@@ -1277,14 +1275,14 @@ func (cu *CustomerUser) Create(brandIds []int) error {
 	return nil
 }
 
+//delete CustomerUser
 func (cu *CustomerUser) Delete() error {
-	//delete CustomerUser
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	tx, err := db.Begin()
+
+	tx, err := database.DB.Begin()
 	stmt, err := tx.Prepare(deleteUserAPIkeys)
 	if err != nil {
 		return err
@@ -1338,18 +1336,17 @@ func (cu *CustomerUser) SendRegistrationRequestEmail() error {
 }
 
 func (cu *CustomerUser) deleteApiKeyByType(keyType string) error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
 	typeID, err := getAPIKeyTypeReference(keyType)
 	if err != nil {
 		return err
 	}
 
-	tx, err := db.Begin()
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -1382,13 +1379,12 @@ func (cu *CustomerUser) deleteApiKeyByType(keyType string) error {
 }
 
 func (key *ApiCredentials) DeleteApiKey() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	tx, err := db.Begin()
+	tx, err := database.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -1416,14 +1412,6 @@ func (key *ApiCredentials) DeleteApiKey() error {
 	}
 
 	return tx.Commit()
-}
-
-type ApiRequest struct {
-	User        CustomerUser `json:"user" xml:"user"`
-	RequestTime time.Time    `json:"request_time" xml:"request_time,attr"`
-	Url         *url.URL     `json:"url" xml:"url"`
-	Query       url.Values   `json:"query" xml:"query"`
-	Form        url.Values   `json:"form" xml:"form"`
 }
 
 func (u *CustomerUser) LogApiRequest(r *http.Request) {

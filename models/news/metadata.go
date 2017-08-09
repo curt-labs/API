@@ -1,9 +1,6 @@
 package news_model
 
-import (
-	"database/sql"
-	"github.com/curt-labs/API/helpers/database"
-)
+import "github.com/curt-labs/API/helpers/database"
 
 var (
 	GetMetadataStmt = `select mt.id, mt.type, mt.value from MetaTag as mt
@@ -20,15 +17,13 @@ type Metadata struct {
 
 func GetMetadata(newsID int) ([]Metadata, error) {
 	var data []Metadata
-	var err error
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return data, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(GetMetadataStmt)
+	stmt, err := database.DB.Prepare(GetMetadataStmt)
 	if err != nil {
 		return data, err
 	}

@@ -4,15 +4,16 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"math"
+	"sort"
+	"strconv"
+	"strings"
+
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/database"
 	"github.com/curt-labs/API/helpers/sortutil"
 	"github.com/curt-labs/API/models/contact"
 	_ "github.com/go-sql-driver/mysql"
-	"math"
-	"sort"
-	"strconv"
-	"strings"
 )
 
 var (
@@ -82,14 +83,13 @@ func (l *Lookup) LoadParts(ch chan []Part, page int, count int, dtx *apicontext.
 		count = 50
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		ch <- nil
 		return
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(partMatcherStmt)
+	stmt, err := database.DB.Prepare(partMatcherStmt)
 	if err != nil {
 		ch <- nil
 		return
@@ -229,15 +229,14 @@ func (l *Lookup) LoadParts(ch chan []Part, page int, count int, dtx *apicontext.
 }
 
 func (v *Vehicle) GetVcdbID() (int, error) {
-	db, err := sql.Open("mysql", database.VcdbConnectionString())
+	err := database.Init()
 	if err != nil {
 		return 0, err
 	}
-	defer db.Close()
 
 	var row *sql.Row
 	if v.Submodel != "" {
-		stmt, err := db.Prepare(getVcdbVehicleIDWithSubmodel)
+		stmt, err := database.VcdbDB.Prepare(getVcdbVehicleIDWithSubmodel)
 		if err != nil {
 			return 0, err
 		}
@@ -248,7 +247,7 @@ func (v *Vehicle) GetVcdbID() (int, error) {
 			return 0, err
 		}
 	} else {
-		stmt, err := db.Prepare(getVcdbVehicleID)
+		stmt, err := database.VcdbDB.Prepare(getVcdbVehicleID)
 		if err != nil {
 			return 0, err
 		}
@@ -311,13 +310,12 @@ func (i *VehicleInquiry) Push() error {
 		return fmt.Errorf("%s", "the vehicle of inquiry is required")
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(insertStmt)
+	stmt, err := database.DB.Prepare(insertStmt)
 	if err != nil {
 		return err
 	}

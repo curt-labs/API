@@ -2,6 +2,7 @@ package applicationGuide
 
 import (
 	"database/sql"
+
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/database"
 	"github.com/curt-labs/API/models/products"
@@ -25,68 +26,73 @@ const (
 var (
 	createApplicationGuide = `insert into ApplicationGuides (url, websiteID, fileType, catID, icon, brandID) values (?,?,?,?,?,?)`
 	deleteApplicationGuide = `delete from ApplicationGuides where ID = ?`
-	getApplicationGuide    = `select ag.ID, ` + fields + `, c.catTitle from ApplicationGuides as ag 
+	getApplicationGuide    = `select ag.ID, ` + fields + `, c.catTitle from ApplicationGuides as ag
 										left join Categories as c on c.catID = ag.catID
 										Join ApiKeyToBrand as akb on akb.brandID = ag.brandID
 										Join ApiKey as ak on akb.keyID = ak.id
 										where (ak.api_key = ? && (ag.brandID = ? OR 0=?)) && ag.ID = ? `
-	getApplicationGuides = `select ag.ID, ` + fields + `, c.catTitle from ApplicationGuides as ag 
+	getApplicationGuides = `select ag.ID, ` + fields + `, c.catTitle from ApplicationGuides as ag
 										left join Categories as c on c.catID = ag.catID
 										Join ApiKeyToBrand as akb on akb.brandID = ag.brandID
 										Join ApiKey as ak on akb.keyID = ak.id
 										where ak.api_key = ? && (ag.brandID = ? OR 0=?)
 										`
-	getApplicationGuidesBySite = `select ag.ID, ` + fields + `, c.catTitle from ApplicationGuides as ag 
-										left join Categories as c on c.catID = ag.catID 
+	getApplicationGuidesBySite = `select ag.ID, ` + fields + `, c.catTitle from ApplicationGuides as ag
+										left join Categories as c on c.catID = ag.catID
 										Join ApiKeyToBrand as akb on akb.brandID = ag.brandID
 										Join ApiKey as ak on akb.keyID = ak.id
 										where (ak.api_key = ? && (ag.brandID = ? OR 0=?)) && websiteID = ?`
 )
 
-func (ag *ApplicationGuide) Get(dtx *apicontext.DataContext) (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+func (ag *ApplicationGuide) Get(dtx *apicontext.DataContext) error {
+	err := database.Init()
 	if err != nil {
-		return
+		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getApplicationGuide)
+
+	stmt, err := database.DB.Prepare(getApplicationGuide)
 	if err != nil {
-		return
+		return err
 	}
+
 	defer stmt.Close()
 	row := stmt.QueryRow(dtx.APIKey, dtx.BrandID, dtx.BrandID, ag.ID)
 
 	ch := make(chan ApplicationGuide)
 	go populateApplicationGuide(row, ch)
 	*ag = <-ch
-	return
+	return nil
 }
-func (ag *ApplicationGuide) GetBySite(dtx *apicontext.DataContext) (ags []ApplicationGuide, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+
+func (ag *ApplicationGuide) GetBySite(dtx *apicontext.DataContext) ([]ApplicationGuide, error) {
+	err := database.Init()
 	if err != nil {
-		return
+		return nil, err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getApplicationGuidesBySite)
+
+	stmt, err := database.DB.Prepare(getApplicationGuidesBySite)
 	if err != nil {
-		return
+		return nil, err
 	}
+
 	defer stmt.Close()
 	rows, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID, ag.Website.ID)
+
+	var ags []ApplicationGuide
 
 	ch := make(chan []ApplicationGuide)
 	go populateApplicationGuides(rows, ch)
 	ags = <-ch
-	return
+	return ags, nil
 }
 
-func (ag *ApplicationGuide) Create(dtx *apicontext.DataContext) (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+func (ag *ApplicationGuide) Create(dtx *apicontext.DataContext) error {
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(createApplicationGuide)
+
+	stmt, err := database.DB.Prepare(createApplicationGuide)
 	if err != nil {
 		return err
 	}
@@ -101,24 +107,26 @@ func (ag *ApplicationGuide) Create(dtx *apicontext.DataContext) (err error) {
 	}
 
 	ag.ID = int(id)
-	return
+	return nil
 }
-func (ag *ApplicationGuide) Delete() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+
+func (ag *ApplicationGuide) Delete() error {
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(deleteApplicationGuide)
+
+	stmt, err := database.DB.Prepare(deleteApplicationGuide)
 	if err != nil {
 		return err
 	}
+
 	defer stmt.Close()
 	_, err = stmt.Exec(ag.ID)
 	if err != nil {
 		return err
 	}
-	return
+	return nil
 }
 
 func populateApplicationGuide(row *sql.Row, ch chan ApplicationGuide) {

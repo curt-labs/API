@@ -525,13 +525,12 @@ func (c *Customer) GetCustomer(key string) (err error) {
 
 //gets cust_id, not customerId
 func (c *Customer) GetCustomerIdFromKey(key string) error {
-	var err error
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getCustIdFromKeyStmt)
+
+	stmt, err := database.DB.Prepare(getCustIdFromKeyStmt)
 	if err != nil {
 		return err
 	}
@@ -544,13 +543,12 @@ func (c *Customer) GetCustomerIdFromKey(key string) error {
 }
 
 func (c *Customer) GetCustomerIdsFromAccountNumber(accountNum string) error {
-	var err error
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getCustIdsFromAccountNumStmt)
+
+	stmt, err := database.DB.Prepare(getCustIdsFromAccountNumStmt)
 	if err != nil {
 		return err
 	}
@@ -571,13 +569,12 @@ func (c *Customer) GetCustomerIdsFromAccountNumber(accountNum string) error {
 
 //redundant with Get - uses SQL joins; faster?
 func (c *Customer) Basics(key string) (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(basics)
+	stmt, err := database.DB.Prepare(basics)
 	if err != nil {
 		return err
 	}
@@ -592,13 +589,12 @@ func (c *Customer) GetLocations() (err error) {
 		err = json.Unmarshal(data, &c.Locations)
 		return err
 	}
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(customerLocation)
+	stmt, err := database.DB.Prepare(customerLocation)
 	if err != nil {
 		return err
 	}
@@ -628,13 +624,13 @@ func (c *Customer) GetAccounts() (err error) {
 		err = json.Unmarshal(data, &c.Accounts)
 		return err
 	}
-	db, err := sql.Open("mysql", database.ConnectionString())
+
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(customerAccounts)
+	stmt, err := database.DB.Prepare(customerAccounts)
 	if err != nil {
 		return err
 	}
@@ -661,12 +657,12 @@ func (c *Customer) GetAccounts() (err error) {
 }
 
 func (c *Customer) FindCustomerIdFromCustId() (err error) { //Jesus, really?
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(findCustomerIdFromCustId)
+
+	stmt, err := database.DB.Prepare(findCustomerIdFromCustId)
 	if err != nil {
 		return err
 	}
@@ -679,12 +675,12 @@ func (c *Customer) FindCustomerIdFromCustId() (err error) { //Jesus, really?
 }
 
 func (c *Customer) FindCustIdFromCustomerId() (err error) { //Jesus, really?
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(findCustIdFromCustomerId)
+
+	stmt, err := database.DB.Prepare(findCustIdFromCustomerId)
 	if err != nil {
 		return err
 	}
@@ -697,12 +693,12 @@ func (c *Customer) FindCustIdFromCustomerId() (err error) { //Jesus, really?
 }
 
 func (c *Customer) Create() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(createCustomer)
+
+	stmt, err := database.DB.Prepare(createCustomer)
 	if err != nil {
 		return err
 	}
@@ -757,12 +753,12 @@ func (c *Customer) Create() (err error) {
 }
 
 func (c *Customer) Update() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(updateCustomer)
+
+	stmt, err := database.DB.Prepare(updateCustomer)
 	if err != nil {
 		return err
 	}
@@ -815,12 +811,12 @@ func (c *Customer) Update() (err error) {
 }
 
 func (c *Customer) Delete() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(deleteCustomer)
+
+	stmt, err := database.DB.Prepare(deleteCustomer)
 	if err != nil {
 		return err
 	}
@@ -839,13 +835,12 @@ func (c *Customer) Delete() (err error) {
 }
 
 func (c *Customer) GetUsers(key string) (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(customerUser)
+	stmt, err := database.DB.Prepare(customerUser)
 	if err != nil {
 		return err
 	}
@@ -908,12 +903,12 @@ func (c *Customer) GetUsers(key string) (err error) {
 }
 
 func (c *Customer) JoinUser(u CustomerUser) error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(joinUser)
+
+	stmt, err := database.DB.Prepare(joinUser)
 	if err != nil {
 		return err
 	}
@@ -926,13 +921,12 @@ func (c *Customer) JoinUser(u CustomerUser) error {
 }
 
 func GetCustomerPrice(dtx *apicontext.DataContext, part_id int) (price float64, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return price, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(customerPrice)
+	stmt, err := database.DB.Prepare(customerPrice)
 	if err != nil {
 		return price, err
 	}
@@ -943,13 +937,12 @@ func GetCustomerPrice(dtx *apicontext.DataContext, part_id int) (price float64, 
 }
 
 func GetCustomerCartReference(api_key string, part_id int) (ref int, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return ref, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(customerPart)
+	stmt, err := database.DB.Prepare(customerPart)
 	if err != nil {
 		return ref, err
 	}
@@ -974,21 +967,20 @@ func GetEtailers(dtx *apicontext.DataContext, count int, page int) (EtailerRespo
 
 	skip := (page - 1) * count
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return etailResp, err
 	}
-	defer db.Close()
 
 	var total int
 
-	row := db.QueryRow(etailersCount, dtx.APIKey, dtx.BrandID, dtx.BrandID)
+	row := database.DB.QueryRow(etailersCount, dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	err = row.Scan(&total)
 	if err != nil {
 		return etailResp, err
 	}
 
-	rows, err := db.Query(etailers, dtx.APIKey, dtx.BrandID, dtx.BrandID, skip, count)
+	rows, err := database.DB.Query(etailers, dtx.APIKey, dtx.BrandID, dtx.BrandID, skip, count)
 	if err != nil {
 		return etailResp, err
 	}
@@ -1011,15 +1003,14 @@ func GetLocalDealers(latlng string, distance int, skip int, count int, brandID i
 	var dealers []DealerLocation
 	var dealerResp DealersResponse
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return dealerResp, err
 	}
-	defer db.Close()
 
 	var total int
 
-	row := db.QueryRow(countDealers, brandID)
+	row := database.DB.QueryRow(countDealers, brandID)
 	row.Scan(&total)
 
 	var latitude string
@@ -1038,12 +1029,12 @@ func GetLocalDealers(latlng string, distance int, skip int, count int, brandID i
 	}
 
 	if latlng == "" {
-		res, err = db.Query(localDealersNoDistance, brandID, skip, count)
+		res, err = database.DB.Query(localDealersNoDistance, brandID, skip, count)
 		if err != nil {
 			return dealerResp, err
 		}
 	} else {
-		res, err = db.Query(localDealers, api_helpers.EARTH, latitude, longitude, latitude, distance, distance, brandID, skip, count)
+		res, err = database.DB.Query(localDealers, api_helpers.EARTH, latitude, longitude, latitude, distance, distance, brandID, skip, count)
 		if err != nil {
 			return dealerResp, err
 		}
@@ -1086,25 +1077,25 @@ func GetLocalRegions() (regions []StateRegion, err error) {
 			return
 		}
 	}
-	db, err := sql.Open("mysql", database.ConnectionString())
+
+	err = database.Init()
 	if err != nil {
 		return regions, err
 	}
-	defer db.Close()
 
-	stmtPolygon, err := db.Prepare(polygon)
+	stmtPolygon, err := database.DB.Prepare(polygon)
 	if err != nil {
 		return regions, err
 	}
 	defer stmtPolygon.Close()
-	stmtCoordinates, err := db.Prepare(MapPolygonCoordinatesForState)
+	stmtCoordinates, err := database.DB.Prepare(MapPolygonCoordinatesForState)
 	if err != nil {
 		return regions, err
 	}
 	defer stmtCoordinates.Close()
-	_, err = db.Exec("SET SESSION group_concat_max_len = 100024")
+	_, err = database.DB.Exec("SET SESSION group_concat_max_len = 100024")
 	res, err := stmtPolygon.Query()
-	_, err = db.Exec("SET SESSION group_concat_max_len = 1024")
+	_, err = database.DB.Exec("SET SESSION group_concat_max_len = 1024")
 
 	for res.Next() {
 		var reg StateRegion
@@ -1171,13 +1162,12 @@ func GetLocalDealerTiers(dtx *apicontext.DataContext) (tiers []DealerTier, err e
 		}
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return tiers, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(localDealerTiers)
+	stmt, err := database.DB.Prepare(localDealerTiers)
 	if err != nil {
 		return tiers, err
 	}
@@ -1206,13 +1196,13 @@ func GetLocalDealerTypes(dtx *apicontext.DataContext) (graphics []MapGraphics, e
 			return
 		}
 	}
-	db, err := sql.Open("mysql", database.ConnectionString())
+
+	err = database.Init()
 	if err != nil {
 		return graphics, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(localDealerTypes)
+	stmt, err := database.DB.Prepare(localDealerTypes)
 	if err != nil {
 		return graphics, err
 	}
@@ -1256,13 +1246,12 @@ func GetWhereToBuyDealers(dtx *apicontext.DataContext) (customers []Customer, er
 		}
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return customers, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(whereToBuyDealers)
+	stmt, err := database.DB.Prepare(whereToBuyDealers)
 	if err != nil {
 		return customers, err
 	}
@@ -1286,13 +1275,12 @@ func GetWhereToBuyDealers(dtx *apicontext.DataContext) (customers []Customer, er
 }
 
 func SearchLocations(term string) (locations []DealerLocation, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return locations, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(searchDealerLocations)
+	stmt, err := database.DB.Prepare(searchDealerLocations)
 	if err != nil {
 		return locations, err
 	}
@@ -1322,13 +1310,12 @@ func SearchLocations(term string) (locations []DealerLocation, err error) {
 }
 
 func SearchLocationsByType(term string) (locations DealerLocations, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return locations, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(dealerLocationsByType)
+	stmt, err := database.DB.Prepare(dealerLocationsByType)
 	if err != nil {
 		return locations, err
 	}
@@ -1359,13 +1346,12 @@ func SearchLocationsByType(term string) (locations DealerLocations, err error) {
 }
 
 func SearchLocationsByLatLng(loc GeoLocation) (locations []DealerLocation, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return locations, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(searchDealerLocationsByLatLng)
+	stmt, err := database.DB.Prepare(searchDealerLocationsByLatLng)
 	if err != nil {
 		return locations, err
 	}
@@ -1408,12 +1394,12 @@ func SearchLocationsByLatLng(loc GeoLocation) (locations []DealerLocation, err e
 //Dealer Types
 func (d *DealerType) Create() error {
 	var err error
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(createDealerType)
+
+	stmt, err := database.DB.Prepare(createDealerType)
 	if err != nil {
 		return err
 	}
@@ -1432,12 +1418,12 @@ func (d *DealerType) Create() error {
 
 func (d *DealerType) Delete(dtx *apicontext.DataContext) error {
 	var err error
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(deleteDealerType)
+
+	stmt, err := database.DB.Prepare(deleteDealerType)
 	if err != nil {
 		return err
 	}

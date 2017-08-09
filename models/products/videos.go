@@ -1,14 +1,14 @@
 package products
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
+	"net/url"
+
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/database"
 	"github.com/curt-labs/API/helpers/redis"
 	_ "github.com/go-sql-driver/mysql"
-	"net/url"
 )
 
 type PartVideo struct {
@@ -45,13 +45,12 @@ func (p *Part) GetVideos(dtx *apicontext.DataContext) error {
 		}
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	qry, err := db.Prepare(partVideoStmt)
+	qry, err := database.DB.Prepare(partVideoStmt)
 	if err != nil {
 		return err
 	}
@@ -87,12 +86,12 @@ func (p *Part) GetVideos(dtx *apicontext.DataContext) error {
 
 func (p *PartVideo) CreatePartVideo(dtx *apicontext.DataContext) (err error) {
 	go redis.Delete(fmt.Sprintf("part:%d:videos:%s", p.PartID, dtx.BrandString))
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(createPartVideo)
+
+	stmt, err := database.DB.Prepare(createPartVideo)
 	if err != nil {
 		return err
 	}
@@ -112,12 +111,12 @@ func (p *PartVideo) CreatePartVideo(dtx *apicontext.DataContext) (err error) {
 
 func (p *PartVideo) DeleteByPart(dtx *apicontext.DataContext) (err error) {
 	go redis.Delete(fmt.Sprintf("part:%d:videos:%s", p.PartID, dtx.BrandString))
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(deletePartVideos)
+
+	stmt, err := database.DB.Prepare(deletePartVideos)
 	if err != nil {
 		return err
 	}

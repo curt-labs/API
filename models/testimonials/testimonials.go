@@ -15,22 +15,20 @@ const (
 )
 
 var (
-	getAllTestimonialsStmt = `select ` + testimonialFields + ` from Testimonial as t 
+	getAllTestimonialsStmt = `select ` + testimonialFields + ` from Testimonial as t
 																	Join ApiKeyToBrand as akb on akb.brandID = t.brandID
 																	Join ApiKey as ak on akb.keyID = ak.id
 																	where (ak.api_key = ? && (t.brandID = ? OR 0=?)) && t.active = 1 && t.approved = 1 order by t.dateAdded desc`
-	getTestimonialsByPageStmt = `select ` + testimonialFields + ` from Testimonial as t 
+	getTestimonialsByPageStmt = `select ` + testimonialFields + ` from Testimonial as t
 																	Join ApiKeyToBrand as akb on akb.brandID = t.brandID
 																	Join ApiKey as ak on akb.keyID = ak.id
 																	where (ak.api_key = ? && (t.brandID = ? OR 0=?)) && t.active = 1 && t.approved = 1 order by t.dateAdded desc limit ?,?`
-	getRandomTestimonalsStmt = `select ` + testimonialFields + ` from Testimonial as t
-																	Join ApiKeyToBrand as akb on akb.brandID = t.brandID
-																	Join ApiKey as ak on akb.keyID = ak.id
-																	where (ak.api_key = ? && (t.brandID = ? OR 0=?)) && t.active = 1 && t.approved = 1 order by Rand() limit ?`
-	getTestimonialStmt = `select ` + testimonialFields + ` from Testimonial as t 
-																	Join ApiKeyToBrand as akb on akb.brandID = t.brandID
-																	Join ApiKey as ak on akb.keyID = ak.id
-																	where (ak.api_key = ? && (t.brandID = ? OR 0=?)) && t.testimonialID = ?`
+
+  getRandomTestimonalsStmt = `SELECT ` + testimonialFields + ` FROM Testimonial AS t
+																WHERE t.brandID = ? && t.active = 1 && t.approved = 1
+																ORDER BY Rand()
+																LIMIT ?`
+	getTestimonialStmt = `select ` + testimonialFields + ` from Testimonial as t WHERE t.testimonialID = ?`
 	createTestimonial = `insert into Testimonial (rating, title, testimonial, dateAdded, approved, active, first_name, last_name, location, brandID) values (?,?,?,?,?,?,?,?,?,?)`
 	updateTestimonial = `update Testimonial set rating = ?, title = ?, testimonial = ?, approved = ?, active = ?, first_name = ?, last_name = ?, location = ?, brandID = ? where testimonialID = ?`
 	deleteTestimonial = `delete from Testimonial where testimonialID = ?`
@@ -55,31 +53,34 @@ func GetAllTestimonials(page int, count int, randomize bool, dtx *apicontext.Dat
 	var stmt *sql.Stmt
 	var rows *sql.Rows
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return
 	}
-	defer db.Close()
 
 	if page == 0 && count == 0 {
-		stmt, err = db.Prepare(getAllTestimonialsStmt)
+		stmt, err = database.DB.Prepare(getAllTestimonialsStmt)
 		if err != nil {
 			return
 		}
+
 		defer stmt.Close()
 		rows, err = stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
 	} else if randomize {
-		stmt, err = db.Prepare(getRandomTestimonalsStmt)
+		stmt, err = database.DB.Prepare(getRandomTestimonalsStmt)
 		if err != nil {
 			return
 		}
+
 		defer stmt.Close()
+
 		rows, err = stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID, count)
 	} else {
-		stmt, err = db.Prepare(getTestimonialsByPageStmt)
+		stmt, err = database.DB.Prepare(getTestimonialsByPageStmt)
 		if err != nil {
 			return
 		}
+
 		defer stmt.Close()
 		rows, err = stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID, page, count)
 	}
@@ -118,13 +119,12 @@ func (t *Testimonial) Get(dtx *apicontext.DataContext) error {
 		return errors.New("Invalid testimonial ID")
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getTestimonialStmt)
+	stmt, err := database.DB.Prepare(getTestimonialStmt)
 	if err != nil {
 		return err
 	}
@@ -147,12 +147,12 @@ func (t *Testimonial) Get(dtx *apicontext.DataContext) error {
 }
 
 func (t *Testimonial) Create() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(createTestimonial)
+
+	stmt, err := database.DB.Prepare(createTestimonial)
 	if err != nil {
 		return err
 	}
@@ -169,12 +169,12 @@ func (t *Testimonial) Create() (err error) {
 }
 
 func (t *Testimonial) Update() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(updateTestimonial)
+
+	stmt, err := database.DB.Prepare(updateTestimonial)
 	if err != nil {
 		return err
 	}
@@ -188,12 +188,12 @@ func (t *Testimonial) Update() (err error) {
 }
 
 func (t *Testimonial) Delete() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(deleteTestimonial)
+
+	stmt, err := database.DB.Prepare(deleteTestimonial)
 	if err != nil {
 		return err
 	}

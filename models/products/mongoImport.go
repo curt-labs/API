@@ -1,7 +1,6 @@
 package products
 
 import (
-	"database/sql"
 	"encoding/csv"
 	"fmt"
 	"mime/multipart"
@@ -100,13 +99,12 @@ func ConvertToApplication(e Input) error {
 
 	if partID = PartConversion[e.Part]; partID == 0 {
 
-		db, err := sql.Open("mysql", database.ConnectionString())
+		err := database.Init()
 		if err != nil {
 			return err
 		}
-		defer db.Close()
 
-		stmt, err := db.Prepare("select partID from Part where oldPartNumber = ?")
+		stmt, err := database.DB.Prepare("select partID from Part where oldPartNumber = ?")
 		if err != nil {
 			return err
 		}

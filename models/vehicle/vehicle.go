@@ -253,13 +253,12 @@ func (v *Vehicle) GetNotes(partId int) (notes []string, err error) {
 	}
 	qrystmt = qrystmt + vehicleNotesStmtEnd
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(qrystmt)
+	stmt, err := database.DB.Prepare(qrystmt)
 	if err != nil {
 		return
 	}
@@ -291,13 +290,12 @@ func ReverseLookup(partId int) (vehicles []Vehicle, err error) {
 		}
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(reverseLookupStmt)
+	stmt, err := database.DB.Prepare(reverseLookupStmt)
 	if err != nil {
 		return
 	}
@@ -402,13 +400,12 @@ func GetVehicle(baseId, subId int, configs []string) (Vehicle, error) {
 func GetVehicleByBase(baseId int) (Vehicle, error) {
 	var err error
 	var v Vehicle
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return v, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getVehicleByBaseStmt)
+	stmt, err := database.DB.Prepare(getVehicleByBaseStmt)
 	if err != nil {
 		return v, err
 	}
@@ -431,13 +428,12 @@ func GetVehicleByBase(baseId int) (Vehicle, error) {
 func GetVehicleBySubmodel(baseId, subId int) (Vehicle, error) {
 	var err error
 	var v Vehicle
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return v, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getVehicleBySubmodelStmt)
+	stmt, err := database.DB.Prepare(getVehicleBySubmodelStmt)
 	if err != nil {
 		return v, err
 	}
@@ -471,13 +467,12 @@ func GetVehicleByConfig(baseId, subId int, configs []int) (Vehicle, error) {
 	var v Vehicle
 	var outputVehicle Vehicle
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return v, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getVehicleNewStmt)
+	stmt, err := database.DB.Prepare(getVehicleNewStmt)
 	if err != nil {
 		return v, err
 	}
@@ -561,13 +556,13 @@ func getConfigAttributeIDs(configs []string) ([]int, error) {
 	var err error
 	var conIds []int
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return conIds, err
 	}
-	defer db.Close()
+
 	for _, configStr := range configs {
-		stmt, err := db.Prepare(getConfigAttributes)
+		stmt, err := database.DB.Prepare(getConfigAttributes)
 		if err != nil {
 			return conIds, err
 		}
@@ -590,13 +585,13 @@ func getConfigAttributeIDs(configs []string) ([]int, error) {
 func getConfigurations(configIds []int) ([]Config, error) {
 	var err error
 	var configArray []Config
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return configArray, err
 	}
-	defer db.Close()
+
 	for _, id := range configIds {
-		stmt, err := db.Prepare(getConfigsStmt)
+		stmt, err := database.DB.Prepare(getConfigsStmt)
 		if err != nil {
 			return configArray, err
 		}

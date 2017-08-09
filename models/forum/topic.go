@@ -1,7 +1,6 @@
 package forum
 
 import (
-	"database/sql"
 	"errors"
 	"strings"
 	"time"
@@ -49,13 +48,12 @@ type Topic struct {
 }
 
 func GetAllTopics(dtx *apicontext.DataContext) (topics Topics, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getAllForumTopics)
+	stmt, err := database.DB.Prepare(getAllForumTopics)
 	if err != nil {
 		return
 	}
@@ -90,13 +88,12 @@ func (t *Topic) Get(dtx *apicontext.DataContext) error {
 	if t.ID == 0 {
 		return errors.New("Invalid Topic ID")
 	}
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getForumTopic)
+	stmt, err := database.DB.Prepare(getForumTopic)
 	if err != nil {
 		return err
 	}
@@ -129,13 +126,12 @@ func (g *Group) GetTopics(dtx *apicontext.DataContext) error {
 		return errors.New("Invalid Group ID")
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getForumGroupTopics)
+	stmt, err := database.DB.Prepare(getForumGroupTopics)
 	if err != nil {
 		return err
 	}
@@ -174,13 +170,12 @@ func (t *Topic) Add() error {
 		return errors.New("Topic must have a name")
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(addForumTopic)
+	stmt, err := database.DB.Prepare(addForumTopic)
 	if err != nil {
 		return err
 	}
@@ -212,13 +207,12 @@ func (t *Topic) Update() error {
 		return errors.New("Topic must have a name")
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(updateForumTopic)
+	stmt, err := database.DB.Prepare(updateForumTopic)
 	if err != nil {
 		return err
 	}
@@ -240,13 +234,12 @@ func (t *Topic) Delete(dtx *apicontext.DataContext) error {
 		return err
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(deleteForumTopic)
+	stmt, err := database.DB.Prepare(deleteForumTopic)
 	if err != nil {
 		return err
 	}

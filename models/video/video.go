@@ -115,11 +115,10 @@ const (
 
 var (
 	getVideo     = `SELECT ` + videoFields + `, ` + videoTypeFields + ` FROM VideoNew AS v LEFT JOIN videoType AS vt ON vt.vTypeID = v.subjectTypeID WHERE v.ID = ?`
-	getAllVideos = `SELECT ` + videoFields + `, ` + videoTypeFields + ` FROM VideoNew AS v LEFT JOIN videoType AS vt ON vt.vTypeID = v.subjectTypeID
-			join VideoNewToBrand as vtb on vtb.videoID = v.ID
-			join ApiKeyToBrand as akb on akb.brandID = vtb.brandID
-			join ApiKey as ak on ak.id = akb.keyID
-            && ak.api_key = ? && (vtb.brandID = ? or 0 = ?)`
+	getAllVideos = `SELECT ` + videoFields + `, ` + videoTypeFields + ` FROM VideoNew AS v
+			LEFT JOIN videoType AS vt ON vt.vTypeID = v.subjectTypeID
+			JOIN VideoNewToBrand AS vtb ON vtb.videoID = v.ID
+		WHERE vtb.brandID = ?`
 	getBrands        = `select brandID from VideoNewToBrand where videoID = ?`
 	getAllCdnFiles   = `SELECT ` + cdnFileFields + `,` + cdnFileTypeFields + ` FROM CdnFile AS cf LEFT JOIN CdnFileType AS cft ON cft.ID = cf.typeID `
 	getAllChannels   = `SELECT ` + channelFields + `, ` + channelTypeFields + ` FROM Channel AS c LEFT JOIN ChannelType AS ct ON ct.ID = c.typeID `
@@ -151,12 +150,12 @@ func (v *Video) Get() error {
 		err = json.Unmarshal(data, &v)
 		return err
 	}
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getVideo)
+
+	stmt, err := database.DB.Prepare(getVideo)
 	if err != nil {
 		return err
 	}
@@ -263,12 +262,12 @@ func GetAllVideos(dtx *apicontext.DataContext) (vs Videos, err error) {
 		err = json.Unmarshal(data, &vs)
 		return
 	}
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getAllVideos)
+
+	stmt, err := database.DB.Prepare(getAllVideos)
 	if err != nil {
 		return
 	}
@@ -296,13 +295,12 @@ func GetAllVideos(dtx *apicontext.DataContext) (vs Videos, err error) {
 
 // GetBrands Gets all the brands associated to a specific base video.
 func (v *Video) GetBrands() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getBrands)
+	stmt, err := database.DB.Prepare(getBrands)
 	if err != nil {
 		return err
 	}
@@ -330,12 +328,12 @@ func (v *Video) GetChannels() (chs Channels, err error) {
 		err = json.Unmarshal(data, &chs)
 		return
 	}
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getVideoChannels)
+
+	stmt, err := database.DB.Prepare(getVideoChannels)
 	if err != nil {
 		return
 	}
@@ -364,12 +362,12 @@ func (v *Video) GetParts() (err error) {
 		err = json.Unmarshal(data, &v.PartIds)
 		return
 	}
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getVideoParts)
+
+	stmt, err := database.DB.Prepare(getVideoParts)
 	if err != nil {
 		return
 	}
@@ -404,12 +402,12 @@ func (v *Video) GetCdnFiles() (cdns CdnFiles, err error) {
 		err = json.Unmarshal(data, &cdns)
 		return
 	}
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getVideoCdns)
+
+	stmt, err := database.DB.Prepare(getVideoCdns)
 	if err != nil {
 		return
 	}
@@ -432,13 +430,12 @@ func (v *Video) GetCdnFiles() (cdns CdnFiles, err error) {
 
 // Get Get a gven Channel
 func (c *Channel) Get() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getChannel)
+	stmt, err := database.DB.Prepare(getChannel)
 	if err != nil {
 		return err
 	}
@@ -478,12 +475,12 @@ func GetAllChannels() (cs Channels, err error) {
 		err = json.Unmarshal(data, &cs)
 		return
 	}
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getAllChannels)
+
+	stmt, err := database.DB.Prepare(getAllChannels)
 	if err != nil {
 		return
 	}
@@ -507,13 +504,12 @@ func GetAllChannels() (cs Channels, err error) {
 
 // Get Retrieves a given CdnFile
 func (c *CdnFile) Get() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getCdn)
+	stmt, err := database.DB.Prepare(getCdn)
 	if err != nil {
 		return err
 	}
@@ -568,12 +564,12 @@ func GetAllCdnFiles() (cs CdnFiles, err error) {
 		err = json.Unmarshal(data, &cs)
 		return
 	}
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getAllCdnFiles)
+
+	stmt, err := database.DB.Prepare(getAllCdnFiles)
 	if err != nil {
 		return
 	}
@@ -596,13 +592,12 @@ func GetAllCdnFiles() (cs CdnFiles, err error) {
 
 // Get Retrieves a given CdnFileType
 func (c *CdnFileType) Get() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getCdnType)
+	stmt, err := database.DB.Prepare(getCdnType)
 	if err != nil {
 		return err
 	}
@@ -631,13 +626,12 @@ func GetAllCdnFileTypes() (cts []CdnFileType, err error) {
 		err = json.Unmarshal(data, &cts)
 		return
 	}
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getAllCdnTypes)
+	stmt, err := database.DB.Prepare(getAllCdnTypes)
 	if err != nil {
 		return
 	}
@@ -672,13 +666,12 @@ func GetAllCdnFileTypes() (cts []CdnFileType, err error) {
 
 // Get Retrieves a given VideoType
 func (c *VideoType) Get() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getVideoType)
+	stmt, err := database.DB.Prepare(getVideoType)
 	if err != nil {
 		return err
 	}
@@ -702,12 +695,12 @@ func GetAllVideoTypes() (vts []VideoType, err error) {
 		err = json.Unmarshal(data, &vts)
 		return
 	}
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getAllVideoTypes)
+
+	stmt, err := database.DB.Prepare(getAllVideoTypes)
 	if err != nil {
 		return
 	}
@@ -738,13 +731,12 @@ func GetAllVideoTypes() (vts []VideoType, err error) {
 
 // Get Retrieves a given ChannelType
 func (c *ChannelType) Get() error {
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getChannelType)
+	stmt, err := database.DB.Prepare(getChannelType)
 	if err != nil {
 		return err
 	}
@@ -768,13 +760,12 @@ func GetAllChannelTypes() (cts []ChannelType, err error) {
 		err = json.Unmarshal(data, &cts)
 		return
 	}
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getAllChannelTypes)
+	stmt, err := database.DB.Prepare(getAllChannelTypes)
 	if err != nil {
 		return
 	}

@@ -1,11 +1,11 @@
 package apicontext
 
 import (
-	"database/sql"
 	"errors"
-	"github.com/curt-labs/API/helpers/database"
 	"strconv"
 	"strings"
+
+	"github.com/curt-labs/API/helpers/database"
 )
 
 type DataContext struct {
@@ -29,13 +29,12 @@ func (dtx *DataContext) GetBrandsFromKey() ([]int, error) {
 	var err error
 	var b int
 	var brands []int
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return brands, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(apiToBrandStmt)
+	stmt, err := database.DB.Prepare(apiToBrandStmt)
 	if err != nil {
 		return brands, err
 	}
@@ -61,13 +60,12 @@ func (dtx *DataContext) GetBrandsArrayAndString(apiKey string, brandId int) erro
 	var brandIdApproved bool = false
 
 	//get brandIds from apiKey
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(apiToBrandStmt)
+	stmt, err := database.DB.Prepare(apiToBrandStmt)
 	if err != nil {
 		return err
 	}

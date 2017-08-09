@@ -1,7 +1,6 @@
 package contact
 
 import (
-	"database/sql"
 	"errors"
 
 	"github.com/curt-labs/API/helpers/database"
@@ -18,7 +17,7 @@ var (
 	createReceiverContactTypeJoin           = `insert into ContactReceiver_ContactType (ContactReceiverID, ContactTypeID) values (?,?)`
 	deleteReceiverContactTypeJoin           = `delete from ContactReceiver_ContactType where ContactReceiverID = ? and  ContactTypeID = ?`
 	deleteReceiverContactTypeJoinByReceiver = `delete from ContactReceiver_ContactType where ContactReceiverID = ?`
-	getContactTypesByReceiver               = `select crct.contactTypeID, ct.name, ct.showOnWebsite, ct.brandID from ContactReceiver_ContactType as crct 
+	getContactTypesByReceiver               = `select crct.contactTypeID, ct.name, ct.showOnWebsite, ct.brandID from ContactReceiver_ContactType as crct
 												left join ContactType as ct on crct.ContactTypeID = ct.contactTypeID where crct.contactReceiverID = ?`
 )
 
@@ -31,23 +30,24 @@ type ContactReceiver struct {
 	ContactTypes ContactTypes
 }
 
-func GetAllContactReceivers() (receivers ContactReceivers, err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+func GetAllContactReceivers() (ContactReceivers, error) {
+	err := database.Init()
 	if err != nil {
-		return
+		return ContactReceivers{}, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(getAllContactReceiversStmt)
+	stmt, err := database.DB.Prepare(getAllContactReceiversStmt)
 	if err != nil {
-		return
+		return ContactReceivers{}, err
 	}
 	defer stmt.Close()
 
 	rows, err := stmt.Query()
 	if err != nil {
-		return
+		return ContactReceivers{}, err
 	}
+
+	var receivers ContactReceivers
 
 	for rows.Next() {
 		var cr ContactReceiver
@@ -58,28 +58,27 @@ func GetAllContactReceivers() (receivers ContactReceivers, err error) {
 			&cr.Email,
 		)
 		if err != nil {
-			return
+			return receivers, err
 		}
 		err = cr.GetContactTypes()
 		if err != nil {
-			return
+			return receivers, err
 		}
 		receivers = append(receivers, cr)
 	}
 	defer rows.Close()
 
-	return
+	return receivers, nil
 }
 
 func (cr *ContactReceiver) Get() error {
 	if cr.ID > 0 {
-		db, err := sql.Open("mysql", database.ConnectionString())
+		err := database.Init()
 		if err != nil {
 			return err
 		}
-		defer db.Close()
 
-		stmt, err := db.Prepare(getContactReceiverStmt)
+		stmt, err := database.DB.Prepare(getContactReceiverStmt)
 		if err != nil {
 			return err
 		}
@@ -103,13 +102,12 @@ func (cr *ContactReceiver) Add() error {
 		return errors.New("Empty or invalid email address.")
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(addContactReceiverStmt)
+	stmt, err := database.DB.Prepare(addContactReceiverStmt)
 	if err != nil {
 		return err
 	}
@@ -145,13 +143,12 @@ func (cr *ContactReceiver) Update() error {
 		return errors.New("Empty or invalid email address.")
 	}
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(updateContactReceiverStmt)
+	stmt, err := database.DB.Prepare(updateContactReceiverStmt)
 	if err != nil {
 		return err
 	}
@@ -178,13 +175,12 @@ func (cr *ContactReceiver) Update() error {
 
 func (cr *ContactReceiver) Delete() error {
 	if cr.ID > 0 {
-		db, err := sql.Open("mysql", database.ConnectionString())
+		err := database.Init()
 		if err != nil {
 			return err
 		}
-		defer db.Close()
 
-		stmt, err := db.Prepare(deleteContactReceiverStmt)
+		stmt, err := database.DB.Prepare(deleteContactReceiverStmt)
 		if err != nil {
 			return err
 		}
@@ -201,13 +197,13 @@ func (cr *ContactReceiver) Delete() error {
 }
 
 //get a contact receiver's contact types
-func (cr *ContactReceiver) GetContactTypes() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+func (cr *ContactReceiver) GetContactTypes() error {
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(getContactTypesByReceiver)
+
+	stmt, err := database.DB.Prepare(getContactTypesByReceiver)
 	if err != nil {
 		return err
 	}
@@ -225,13 +221,13 @@ func (cr *ContactReceiver) GetContactTypes() (err error) {
 	return err
 }
 
-func (cr *ContactReceiver) CreateTypeJoin(ct ContactType) (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+func (cr *ContactReceiver) CreateTypeJoin(ct ContactType) error {
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(createReceiverContactTypeJoin)
+
+	stmt, err := database.DB.Prepare(createReceiverContactTypeJoin)
 	if err != nil {
 		return err
 	}
@@ -240,17 +236,17 @@ func (cr *ContactReceiver) CreateTypeJoin(ct ContactType) (err error) {
 	if err != nil {
 		return err
 	}
-	return
+	return nil
 }
 
 //delete joins for a receiver-type pair
-func (cr *ContactReceiver) DeleteTypeJoin(ct ContactType) (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+func (cr *ContactReceiver) DeleteTypeJoin(ct ContactType) error {
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(deleteReceiverContactTypeJoin)
+
+	stmt, err := database.DB.Prepare(deleteReceiverContactTypeJoin)
 	if err != nil {
 		return err
 	}
@@ -259,17 +255,17 @@ func (cr *ContactReceiver) DeleteTypeJoin(ct ContactType) (err error) {
 	if err != nil {
 		return err
 	}
-	return
+	return nil
 }
 
 //delete all type-receiver joins for a receiver
-func (cr *ContactReceiver) DeleteTypeJoinByReceiver() (err error) {
-	db, err := sql.Open("mysql", database.ConnectionString())
+func (cr *ContactReceiver) DeleteTypeJoinByReceiver() error {
+	err := database.Init()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	stmt, err := db.Prepare(deleteReceiverContactTypeJoinByReceiver)
+
+	stmt, err := database.DB.Prepare(deleteReceiverContactTypeJoinByReceiver)
 	if err != nil {
 		return err
 	}
@@ -278,5 +274,5 @@ func (cr *ContactReceiver) DeleteTypeJoinByReceiver() (err error) {
 	if err != nil {
 		return err
 	}
-	return
+	return nil
 }

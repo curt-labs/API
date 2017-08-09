@@ -1,7 +1,6 @@
 package custcontent
 
 import (
-	"database/sql"
 	"strconv"
 	"strings"
 	"time"
@@ -55,13 +54,12 @@ type PartContent struct {
 // Retrieves all part content for this customer
 func GetAllPartContent(key string) (content []PartContent, err error) {
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return content, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(allCustomerPartContent)
+	stmt, err := database.DB.Prepare(allCustomerPartContent)
 	if err != nil {
 		return content, err
 	}
@@ -121,13 +119,12 @@ func GetAllPartContent(key string) (content []PartContent, err error) {
 func GetPartContent(partID int, key string) (content []CustomerContent, err error) {
 	content = make([]CustomerContent, 0) // initializer
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return content, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(customerPartContent)
+	stmt, err := database.DB.Prepare(customerPartContent)
 	if err != nil {
 		return content, err
 	}
@@ -180,13 +177,12 @@ func GetGroupedPartContent(ids []string, key string) (content map[int][]Customer
 	}
 	escaped_key := api_helpers.Escape(key)
 
-	db, err := sql.Open("mysql", database.ConnectionString())
+	err = database.Init()
 	if err != nil {
 		return content, err
 	}
-	defer db.Close()
 
-	stmt, err := db.Prepare(customerPartContent_Grouped)
+	stmt, err := database.DB.Prepare(customerPartContent_Grouped)
 	if err != nil {
 		return content, err
 	}
