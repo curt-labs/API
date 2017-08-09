@@ -365,7 +365,7 @@ func GetAll(dtx *apicontext.DataContext) (WebProperties, error) {
 	var url, sid *string
 	var tid *int
 
-	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
+	res, err := stmt.Query(dtx.BrandID)
 	for res.Next() {
 		var w WebProperty
 		res.Scan(

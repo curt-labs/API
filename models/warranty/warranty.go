@@ -151,7 +151,7 @@ func GetAllWarranties(dtx *apicontext.DataContext) (ws []Warranty, err error) {
 		return ws, err
 	}
 	defer stmt.Close()
-	rows, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
+	rows, err := stmt.Query(dtx.BrandID)
 	if rows.Next() == false {
 		err = sql.ErrNoRows
 		return ws, err

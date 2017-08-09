@@ -272,7 +272,7 @@ func GetAllVideos(dtx *apicontext.DataContext) (vs Videos, err error) {
 		return
 	}
 	defer stmt.Close()
-	rows, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
+	rows, err := stmt.Query(dtx.BrandID)
 	if err != nil {
 		return
 	}
