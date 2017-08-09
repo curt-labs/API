@@ -32,7 +32,9 @@ var (
 	getWarrantyByContact = `select w.id, ` + fields + ` from Warranty as w where w.contactID = ?`
 	getAllWarranties     = `select w.id, ` + fields + ` from Warranty as w
 							join Part as p on p.partID = w.partNumber
-							where p.brandID = ?`
+							join ApiKeyToBrand as aktb on aktb.brandID = p.brandID
+							join ApiKey as a on a.id = aktb.keyID
+							where (a.api_key = ? && (aktb.brandID = ? || 0 = ?))`
 )
 
 func (w *Warranty) Create() (err error) {

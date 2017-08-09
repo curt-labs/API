@@ -24,11 +24,14 @@ var (
 																	Join ApiKey as ak on akb.keyID = ak.id
 																	where (ak.api_key = ? && (t.brandID = ? OR 0=?)) && t.active = 1 && t.approved = 1 order by t.dateAdded desc limit ?,?`
 
-  getRandomTestimonalsStmt = `SELECT ` + testimonialFields + ` FROM Testimonial AS t
-																WHERE t.brandID = ? && t.active = 1 && t.approved = 1
-																ORDER BY Rand()
-																LIMIT ?`
-	getTestimonialStmt = `select ` + testimonialFields + ` from Testimonial as t WHERE t.testimonialID = ?`
+	getRandomTestimonalsStmt = `select ` + testimonialFields + ` from Testimonial as t
+																	Join ApiKeyToBrand as akb on akb.brandID = t.brandID
+																	Join ApiKey as ak on akb.keyID = ak.id
+																	where (ak.api_key = ? && (t.brandID = ? OR 0=?)) && t.active = 1 && t.approved = 1 order by Rand() limit ?`
+	getTestimonialStmt = `select ` + testimonialFields + ` from Testimonial as t
+																	Join ApiKeyToBrand as akb on akb.brandID = t.brandID
+																	Join ApiKey as ak on akb.keyID = ak.id
+																	where (ak.api_key = ? && (t.brandID = ? OR 0=?)) && t.testimonialID = ?`
 	createTestimonial = `insert into Testimonial (rating, title, testimonial, dateAdded, approved, active, first_name, last_name, location, brandID) values (?,?,?,?,?,?,?,?,?,?)`
 	updateTestimonial = `update Testimonial set rating = ?, title = ?, testimonial = ?, approved = ?, active = ?, first_name = ?, last_name = ?, location = ?, brandID = ? where testimonialID = ?`
 	deleteTestimonial = `delete from Testimonial where testimonialID = ?`
