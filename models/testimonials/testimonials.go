@@ -129,7 +129,7 @@ func (t *Testimonial) Get(dtx *apicontext.DataContext) error {
 		return err
 	}
 	defer stmt.Close()
-	err = stmt.QueryRow(dtx.APIKey, dtx.BrandID, dtx.BrandID, t.ID).Scan(
+	err = stmt.QueryRow(t.ID).Scan(
 		&t.ID,
 		&t.Rating,
 		&t.Title,
