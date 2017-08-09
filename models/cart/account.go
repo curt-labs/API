@@ -2,6 +2,7 @@ package cart
 
 import (
 	"fmt"
+
 	"github.com/curt-labs/API/helpers/database"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
