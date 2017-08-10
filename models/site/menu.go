@@ -32,11 +32,7 @@ const (
 )
 
 var (
-	getMenu = ` SELECT ` + menuFields + ` FROM Menu AS m
-								Join WebsiteToBrand as wub on wub.WebsiteID = m.websiteID
-								Join ApiKeyToBrand as akb on akb.brandID = wub.brandID
-								Join ApiKey as ak on akb.keyID = ak.id
-	 							WHERE menuID = ? && (ak.api_key = ? && (wub.brandID = ? OR 0=?))`
+	getMenu = ` SELECT ` + menuFields + ` FROM Menu AS m WHERE menuID = ?`
 	getAllMenus = ` SELECT ` + menuFields + ` FROM Menu AS m
 		JOIN WebsiteToBrand AS wub ON wub.WebsiteID = m.websiteID
 		WHERE wub.brandID = ?`
