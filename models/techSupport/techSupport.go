@@ -38,11 +38,7 @@ var (
 		join ApiKeyToBrand as akb on akb.brandID = ts.brandID
 		join ApiKey as ak on ak.id = akb.keyID
         && ak.api_key = ? && (ts.brandID = ? or 0 = ?)`
-	getAllTechSupportByContact = `select ts.id, ` + fields + ` from TechSupport as ts
-		join ApiKeyToBrand as akb on akb.brandID = ts.brandID
-		join ApiKey as ak on ak.id = akb.keyID
-        && ak.api_key = ? && (ts.brandID = ? or 0 = ?)
-        where ts.contactID = ?`
+	getAllTechSupportByContact = `select ts.id, ` + fields + ` from TechSupport as ts where ts.contactID = ? and ts.brandID = ?`
 )
 
 func (t *TechSupport) Get() (err error) {
