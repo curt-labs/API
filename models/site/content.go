@@ -50,11 +50,7 @@ const (
 
 var (
 	getLatestRevision = `SELECT revisionID, content_text, createdOn, active FROM SiteContentRevision AS scr WHERE scr.contentID = ? ORDER BY createdOn DESC LIMIT 1`
-	getContent        = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s
-								Join WebsiteToBrand as wub on wub.WebsiteID = s.websiteID
-								Join ApiKeyToBrand as akb on akb.brandID = wub.brandID
-								Join ApiKey as ak on akb.keyID = ak.id
-								where s.contentID = ? && (ak.api_key = ? && (wub.brandID = ? OR 0=?))`
+	getContent        = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s WHERE s.contentID = ?`
 	getAllContent = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s
 								Join WebsiteToBrand as wub on wub.WebsiteID = s.websiteID
 								Join ApiKeyToBrand as akb on akb.brandID = wub.brandID
