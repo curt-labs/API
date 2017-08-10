@@ -11,10 +11,7 @@ import (
 
 var (
 	getDealerTypes = `SELECT dt.dealer_type, ` + dealerTypeFields + ` FROM DealerTypes as dt WHERE dt.brandID = ?`
-	getDealerTiers = `select dtr.ID, ` + dealerTierFields + ` from DealerTiers as dtr
-			join ApiKeyToBrand as atb on atb.brandID = dtr.brandID
-			join ApiKey as a on a.id = atb.keyID
-			&&(a.api_key = ? && (dtr.brandID = ? or 0 = ?))`
+	getDealerTiers = `SELECT dtr.ID, ` + dealerTierFields + ` FROM DealerTiers AS dtr WHERE dtr.brandID = ?`
 	getMapIcons   = `select mi.ID, mi.tier, mi.dealer_type, ` + mapIconFields + ` from MapIcons as mi`
 	getMapixCodes = ` select mpx.mCodeID, ` + mapixCodeFields + ` from MapixCode as mpx`
 	getSalesReps  = ` select sr.salesRepID, ` + salesRepFields + ` from salesRepresentative as sr`
