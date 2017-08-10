@@ -10,10 +10,7 @@ import (
 )
 
 var (
-	getDealerTypes = `select dt.dealer_type, ` + dealerTypeFields + ` from DealerTypes as dt
-			join ApiKeyToBrand as atb on atb.brandID = dt.brandID
-			join ApiKey as a on a.id = atb.keyID
-			&&(a.api_key = ? && (dt.brandID = ? or 0 = ?))`
+	getDealerTypes = `SELECT dt.dealer_type, ` + dealerTypeFields + ` FROM DealerTypes as dt WHERE dt.brandID = ?`
 	getDealerTiers = `select dtr.ID, ` + dealerTierFields + ` from DealerTiers as dtr
 			join ApiKeyToBrand as atb on atb.brandID = dtr.brandID
 			join ApiKey as a on a.id = atb.keyID
