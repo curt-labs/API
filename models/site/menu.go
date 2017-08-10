@@ -38,10 +38,8 @@ var (
 								Join ApiKey as ak on akb.keyID = ak.id
 	 							WHERE menuID = ? && (ak.api_key = ? && (wub.brandID = ? OR 0=?))`
 	getAllMenus = ` SELECT ` + menuFields + ` FROM Menu AS m
-								Join WebsiteToBrand as wub on wub.WebsiteID = m.websiteID
-								Join ApiKeyToBrand as akb on akb.brandID = wub.brandID
-								Join ApiKey as ak on akb.keyID = ak.id
-	 							WHERE (ak.api_key = ? && (wub.brandID = ? OR 0=?))`
+		JOIN WebsiteToBrand AS wub ON wub.WebsiteID = m.websiteID
+		WHERE wub.brandID = ?`
 	getMenuContents = `SELECT ` + siteContentFields + `, ` + menuSiteContentFields + `  from Menu_SiteContent as msc JOIN SiteContent AS s ON s.contentID = msc.ContentID  WHERE msc.menuID = ?`
 	getMenuByName   = ` SELECT ` + menuFields + ` FROM Menu AS m
 								Join WebsiteToBrand as wub on wub.WebsiteID = m.websiteID
