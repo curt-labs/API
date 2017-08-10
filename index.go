@@ -197,7 +197,7 @@ func main() {
 		r.Post("/user/changePassword", customer_ctlr.ChangePassword)
 	})
 
-  //Literally exact same as above? Copy paste error?
+	//Literally exact same as above? Copy paste error?
 	m.Group("/cache", func(r martini.Router) { // different endpoint because partial matching matches this to another excused route
 		r.Get("/key", cache.GetByKey)
 		r.Get("/keys", cache.GetKeys)
@@ -253,21 +253,21 @@ func main() {
 		r.Get("/cms/category", customer_ctlr.AllCategoryContent)
 		r.Get("/cms/category/:id", customer_ctlr.UniqueCategoryContent)
 		r.Post("/cms/category/:id", customer_ctlr.UpdateCategoryContent) //categoryId
-		r.Delete("/cms/category/:id" customer_ctlr.DeleteCategoryContent)
+		r.Delete("/cms/category/:id", customer_ctlr.DeleteCategoryContent)
 
 		// Customer Content By Content Id
 		r.Get("/cms/:id", customer_ctlr.GetContentById)
 		r.Get("/cms/:id/revisions", customer_ctlr.GetContentRevisionsById)
 
 		//Customer prices
-		r.Get("/prices/part/:id", customer_ctlr.GetPricesByPart)                                    //{id}; id refers to partId
-		r.Post("/prices/sale", customer_ctlr.GetSales)        //{start}{end}{id} -all required params; id refers to customerId
-		r.Get("/prices/:id", customer_ctlr.GetPrice)                                                //{id}; id refers to {id} refers to customerPriceId
-		r.Get("/prices", customer_ctlr.GetAllPrices)                                                //returns all {sort=field&direction=dir}
-		r.Put("/prices/:id", customer_ctlr.CreateUpdatePrice) //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
-		r.Post("/prices", customer_ctlr.CreateUpdatePrice)    //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
-		r.Delete("/prices/:id", customer_ctlr.DeletePrice)    //{id} refers to customerPriceId
-		r.Get("/pricesByCustomer/:id", customer_ctlr.GetPriceByCustomer)                            //{id} refers to customerId; returns CustomerPrices
+		r.Get("/prices/part/:id", customer_ctlr.GetPricesByPart)         //{id}; id refers to partId
+		r.Post("/prices/sale", customer_ctlr.GetSales)                   //{start}{end}{id} -all required params; id refers to customerId
+		r.Get("/prices/:id", customer_ctlr.GetPrice)                     //{id}; id refers to {id} refers to customerPriceId
+		r.Get("/prices", customer_ctlr.GetAllPrices)                     //returns all {sort=field&direction=dir}
+		r.Put("/prices/:id", customer_ctlr.CreateUpdatePrice)            //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
+		r.Post("/prices", customer_ctlr.CreateUpdatePrice)               //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
+		r.Delete("/prices/:id", customer_ctlr.DeletePrice)               //{id} refers to customerPriceId
+		r.Get("/pricesByCustomer/:id", customer_ctlr.GetPriceByCustomer) //{id} refers to customerId; returns CustomerPrices
 
 		r.Post("/:id", customer_ctlr.SaveCustomer)
 		r.Delete("/:id", middleware.InternalKeyAuthentication, customer_ctlr.DeleteCustomer)
