@@ -34,10 +34,7 @@ var (
 	createTechSupport = `insert into TechSupport (vehicleMake, vehicleModel, vehicleYear, purchaseDate, purchasedFrom, dealerName, productCode, dateCode, issue, contactID, brandID ) values (?,?,?,?,?,?,?,?,?,?,?)`
 	deleteTechSupport = `delete from TechSupport where id = ?`
 	getTechSupport    = `select ts.id, ` + fields + ` from TechSupport as ts where ts.id = ? `
-	getAllTechSupport = `select ts.id, ` + fields + ` from TechSupport as ts
-		join ApiKeyToBrand as akb on akb.brandID = ts.brandID
-		join ApiKey as ak on ak.id = akb.keyID
-        && ak.api_key = ? && (ts.brandID = ? or 0 = ?)`
+	getAllTechSupport = `SELECT ts.id, ` + fields + ` FROM TechSupport AS ts WHERE ts.brandID = ?`
 	getAllTechSupportByContact = `select ts.id, ` + fields + ` from TechSupport as ts where ts.contactID = ? and ts.brandID = ?`
 )
 
