@@ -34,12 +34,10 @@ type LandingPageImage struct {
 }
 
 var (
-	GetLandingPageByID = `select lp.id, lp.name, lp.startDate, lp.endDate, lp.url, lp.pageContent, lp.linkClasses, lp.conversionID, lp.conversionLabel, lp.newWindow, lp.menuPosition, lp.websiteID from LandingPage as lp
-							Join WebsiteToBrand as wub on wub.WebsiteID = lp.websiteID
-							Join ApiKeyToBrand as akb on akb.brandID = wub.brandID
-							Join ApiKey as ak on akb.keyID = ak.id
-							where lp.id = ? && lp.startDate <= NOW() && lp.endDate >= NOW() && (ak.api_key = ? && (wub.brandID = ? OR 0=?))
-							limit 1`
+	GetLandingPageByID = `SELECT lp.id, lp.name, lp.startDate, lp.endDate, lp.url, lp.pageContent, lp.linkClasses, lp.conversionID, lp.conversionLabel, lp.newWindow, lp.menuPosition, lp.websiteID from LandingPage as lp
+		WHERE lp.id   = ?     &&
+		lp.startDate <= NOW() &&
+		lp.endDate   >= NOW()`
 	GetLandingPageImagesStmt = `SELECT lpi.id, lpi.landingPageID, lpi.url, lpi.sort from LandingPageImages as lpi
 									WHERE lpi.landingPageID = ?
 									ORDER BY lpi.sort asc`
