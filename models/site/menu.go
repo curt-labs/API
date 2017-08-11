@@ -137,7 +137,7 @@ func GetAllMenus(dtx *apicontext.DataContext) (ms Menus, err error) {
 	var display *string
 	var m Menu
 
-	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
+	res, err := stmt.Query(dtx.BrandID)
 	if err != nil {
 		return ms, err
 	}
