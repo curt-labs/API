@@ -19,6 +19,12 @@ func initDtx() {
 	MockedDTX, _ = apicontextmock.Mock()
 }
 
+func TestGetAllWebPropertyTypes(t *testing.T) {
+	once.Do(initDtx)
+	defer apicontextmock.DeMock(MockedDTX)
+
+}
+
 func TestWebPropertiesBetter(t *testing.T) {
 	var w WebProperty
 	var wr WebPropertyRequirement
