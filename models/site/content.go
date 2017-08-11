@@ -151,7 +151,7 @@ func (c *Content) GetBySlug(dtx *apicontext.DataContext) (err error) {
 	}
 	defer stmt.Close()
 	var cType, title, mTitle, mDesc, slug, canon *string
-	err = stmt.QueryRow(c.Slug, dtx.APIKey, dtx.BrandID, dtx.BrandID).Scan(
+	err = stmt.QueryRow(c.Slug, dtx.BrandID).Scan(
 		&c.Id,
 		&cType,
 		&title,
