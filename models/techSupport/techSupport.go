@@ -87,7 +87,7 @@ func GetAllTechSupport(dtx *apicontext.DataContext) (ts []TechSupport, err error
 		return
 	}
 	defer stmt.Close()
-	rows, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
+	rows, err := stmt.Query(dtx.BrandID)
 	if err != nil {
 		return ts, err
 	}
