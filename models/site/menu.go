@@ -66,7 +66,7 @@ func (m *Menu) Get(dtx *apicontext.DataContext) (err error) {
 
 	var display *string
 
-	err = stmt.QueryRow(m.Id, dtx.APIKey, dtx.BrandID, dtx.BrandID).Scan(
+	err = stmt.QueryRow(m.Id).Scan(
 		&m.Id,
 		&m.Name,
 		&m.IsPrimary,
