@@ -72,14 +72,14 @@ func GetAllTestimonials(page int, count int, randomize bool, dtx *apicontext.Dat
 			return
 		}
 		defer stmt.Close()
-		rows, err = stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID, count)
+		rows, err = stmt.Query(dtx.BrandID, count)
 	} else {
 		stmt, err = db.Prepare(getTestimonialsByPageStmt)
 		if err != nil {
 			return
 		}
 		defer stmt.Close()
-		rows, err = stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID, page, count)
+		rows, err = stmt.Query(dtx.BrandID, page, count)
 	}
 
 	if err != nil {
