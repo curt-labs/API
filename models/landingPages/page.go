@@ -56,7 +56,7 @@ func (lp *LandingPage) Get(dtx *apicontext.DataContext) (err error) {
 		return
 	}
 	defer stmt.Close()
-	row := stmt.QueryRow(lp.Id, dtx.APIKey, dtx.BrandID, dtx.BrandID)
+	row := stmt.QueryRow(lp.Id)
 
 	err = lp.PopulateLandingPageScan(row)
 	if err != nil {
