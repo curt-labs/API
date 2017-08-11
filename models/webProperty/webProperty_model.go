@@ -649,7 +649,7 @@ func GetAllWebPropertyNotes(dtx *apicontext.DataContext) (WebPropertyNotes, erro
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
+	res, err := stmt.Query(dtx.BrandID)
 	for res.Next() {
 		var w WebPropertyNote
 		res.Scan(&w.ID, &w.WebPropID, &w.Text, &w.DateAdded)
