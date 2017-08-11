@@ -1,8 +1,10 @@
 package database
 
 import (
+	"context"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -12,7 +14,10 @@ import (
 
 	"net"
 
+	"github.com/GoogleCloudPlatform/cloudsql-proxy/proxy/dialers/mysql"
+	"github.com/GoogleCloudPlatform/cloudsql-proxy/proxy/proxy"
 	_ "github.com/go-sql-driver/mysql"
+	goauth "golang.org/x/oauth2/google"
 	"gopkg.in/mgo.v2"
 )
 
@@ -47,13 +52,41 @@ var (
 func Init() error {
 	var err error
 	if DB == nil {
-		DB, err = sql.Open(Driver, ConnectionString())
+		if os.Getenv("DATABASE_INSTANCE") == "" {
+			DB, err = sql.Open(Driver, ConnectionString())
+		} else {
+			client, err := clientFromCredentials()
+			if err != nil {
+				return err
+			}
+
+			proxy.Init(client, nil, nil)
+
+			cfg := mysql.Cfg(os.Getenv("DATABASE_INSTANCE"), os.Getenv("DATABASE_USERNAME"), os.Getenv("DATABASE_PASSWORD"))
+			cfg.DBName = os.Getenv("CURT_DEV_NAME")
+			DB, err = mysql.DialCfg(cfg)
+		}
 		if err != nil {
 			return err
 		}
 	}
+
 	if VcdbDB == nil {
-		VcdbDB, err = sql.Open(Driver, VcdbConnectionString())
+		if os.Getenv("DATABASE_INSTANCE") == "" {
+			VcdbDB, err = sql.Open(Driver, VcdbConnectionString())
+		} else {
+			client, err := clientFromCredentials()
+			if err != nil {
+				return err
+			}
+
+			proxy.Init(client, nil, nil)
+
+			cfg := mysql.Cfg(os.Getenv("DATABASE_INSTANCE"), os.Getenv("DATABASE_USERNAME"), os.Getenv("DATABASE_PASSWORD"))
+			cfg.DBName = os.Getenv("VCDB_NAME")
+			VcdbDB, err = mysql.DialCfg(cfg)
+		}
+
 		if err != nil {
 			return err
 		}
@@ -207,4 +240,23 @@ func InitMongo() error {
 		}
 	}
 	return err
+}
+
+func clientFromCredentials() (*http.Client, error) {
+
+	const SQLScope = "https://www.googleapis.com/auth/sqlservice.admin"
+
+	ctx := context.Background()
+
+	var client *http.Client
+
+	cfg, err := goauth.JWTConfigFromJSON([]byte(os.Getenv("DATABASE_TOKEN")), SQLScope)
+	if err != nil {
+		return nil, fmt.Errorf("invalid json file: %v", err)
+	}
+
+	client = cfg.Client(ctx)
+
+	return client, nil
+
 }
