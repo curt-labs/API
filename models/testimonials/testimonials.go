@@ -65,7 +65,7 @@ func GetAllTestimonials(page int, count int, randomize bool, dtx *apicontext.Dat
 			return
 		}
 		defer stmt.Close()
-		rows, err = stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
+		rows, err = stmt.Query(dtx.BrandID)
 	} else if randomize {
 		stmt, err = db.Prepare(getRandomTestimonalsStmt)
 		if err != nil {
