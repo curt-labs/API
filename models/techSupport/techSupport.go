@@ -35,7 +35,7 @@ var (
 	deleteTechSupport = `delete from TechSupport where id = ?`
 	getTechSupport    = `select ts.id, ` + fields + ` from TechSupport as ts where ts.id = ? `
 	getAllTechSupport = `SELECT ts.id, ` + fields + ` FROM TechSupport AS ts WHERE ts.brandID = ?`
-	getAllTechSupportByContact = `select ts.id, ` + fields + ` from TechSupport as ts where ts.contactID = ? and ts.brandID = ?`
+	getAllTechSupportByContact = `select ts.id, ` + fields + ` from TechSupport as ts where ts.contactID = ?`
 )
 
 func (t *TechSupport) Get() (err error) {
@@ -68,7 +68,7 @@ func (t *TechSupport) GetByContact(dtx *apicontext.DataContext) (ts []TechSuppor
 		return
 	}
 	defer stmt.Close()
-	rows, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID, t.Contact.ID)
+	rows, err := stmt.Query(t.Contact.ID)
 
 	ch := make(chan []TechSupport)
 	go populateTechSupports(rows, ch)
