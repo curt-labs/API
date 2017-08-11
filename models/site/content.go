@@ -213,7 +213,7 @@ func GetAllContents(dtx *apicontext.DataContext, siteID int) (cs Contents, err e
 
 	var cType, title, mTitle, mDesc, slug, canon, keywords *string
 	var c Content
-	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID, siteID, siteID)
+	res, err := stmt.Query(dtx.BrandID, siteID)
 	for res.Next() {
 		err = res.Scan(
 			&c.Id,
