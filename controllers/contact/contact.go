@@ -91,6 +91,7 @@ func AddDealerContact(rw http.ResponseWriter, req *http.Request, enc encoding.En
 			brandName = brand.Name
 		}
 	}
+	d.Brand = brand
 
 	ct.ID, err = strconv.Atoi(params["contactTypeID"]) //determines to whom emails go
 	if err != nil {
