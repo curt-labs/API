@@ -46,7 +46,7 @@ func GetDealerTypes(dtx *apicontext.DataContext) ([]DealerType, error) {
 		return dTypes, err
 	}
 	defer stmt.Close()
-	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
+	res, err := stmt.Query(dtx.BrandID)
 	if err != nil {
 		return dTypes, err
 	}
