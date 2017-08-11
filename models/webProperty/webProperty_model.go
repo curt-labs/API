@@ -77,14 +77,7 @@ var (
 				where a.api_key = ? && (ctb.brandID = ? or 0 = ?)`
 	getWebProperty             = "SELECT id, name, cust_ID, badgeID, url, isEnabled,sellerID, typeID , isFinalApproved, isEnabledDate, isDenied, requestedDate, addedDate FROM WebProperties WHERE id = ?"
 	getWebPropertiesByCustomer = "SELECT id, name, cust_ID, badgeID, url, isEnabled,sellerID, typeID , isFinalApproved, isEnabledDate, isDenied, requestedDate, addedDate FROM WebProperties WHERE cust_ID = ?"
-	getAllWebPropertyTypes     = `SELECT DISTINCT
-		wt.id,
-		wt.typeID,
-		wt.type
-		FROM WebPropertyTypes  AS wt
-		JOIN WebProperties   AS w   ON w.typeID    = wt.id
-		JOIN CustomerToBrand AS ctb ON ctb.cust_id = w.cust_id
-		WHERE ctb.brandID = ?`
+	getAllWebPropertyTypes     = `SELECT DISTINCT wt.id, wt.typeID, wt.type FROM WebPropertyTypes  AS wt`
 	getAllWebPropertyNotes = `SELECT wn.id, wn.webPropID, wn.text, wn.dateAdded
 		FROM WebPropNotes AS wn
 		JOIN WebProperties AS w ON w.id = wn.webPropID
@@ -622,7 +615,7 @@ func GetAllWebPropertyTypes(dtx *apicontext.DataContext) (WebPropertyTypes, erro
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
+	res, err := stmt.Query()
 	for res.Next() {
 		var w WebPropertyType
 		res.Scan(&w.ID, &w.TypeID, &w.Type)
