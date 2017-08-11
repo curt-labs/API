@@ -158,7 +158,7 @@ func GetTitles(pageStr, resultsStr string, dtx *apicontext.DataContext) (paginat
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
+	res, err := stmt.Query(dtx.BrandID)
 	for res.Next() {
 		var f News
 		res.Scan(&f.Title)
