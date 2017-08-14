@@ -10,11 +10,9 @@ import (
 )
 
 var (
+
 	getAllContactTypesStmt = `select ct.contactTypeID, ct.name, ct.showOnWebsite, ct.brandID from ContactType as ct
-		join ApiKeyToBrand as akb on akb.brandID = ct.brandID
-		join ApiKey as ak on ak.id = akb.keyID
-		where ak.api_key = ? && (ct.brandID = ? or 0 = ?)
-		&& ct.showOnWebsite = 1`
+		where ct.brandID = ? && ct.showOnWebsite = 1`
 	getContactTypeStmt    = `select contactTypeID, name, showOnWebsite from ContactType where contactTypeID = ?`
 	addContactTypeStmt    = `insert into ContactType(name,showOnWebsite, brandID) values (?,?,?)`
 	updateContactTypeStmt = `update ContactType set name = ?, showOnWebsite = ?, brandID = ? where contactTypeID = ?`
@@ -45,7 +43,7 @@ func GetAllContactTypes(dtx *apicontext.DataContext) (types ContactTypes, err er
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
+	rows, err := stmt.Query(dtx.BrandID)
 	if err != nil {
 		return
 	}
