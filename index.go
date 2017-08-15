@@ -77,33 +77,37 @@ func main() {
 		r.Get("", apiKeyType.GetApiKeyTypes)
 	})
 
+	//Creating, updating, and deleting Appguides are all handled in GoAdmin directly
 	m.Group("/applicationGuide", func(r martini.Router) {
 		r.Get("/website/:id", applicationGuide.GetApplicationGuidesByWebsite)
 		r.Get("/:id", applicationGuide.GetApplicationGuide)
-		r.Delete("/:id", applicationGuide.DeleteApplicationGuide)
-		r.Post("", applicationGuide.CreateApplicationGuide)
+		r.Delete("/:id", middleware.InternalKeyAuthentication, applicationGuide.DeleteApplicationGuide)
+		r.Post("", middleware.InternalKeyAuthentication, applicationGuide.CreateApplicationGuide)
 	})
 
+	//Creating, updating, and deleting all Blog related objects are handled in GoAdmin directly
 	m.Group("/blogs", func(r martini.Router) {
 		r.Get("", blog_controller.GetAll)                      //sort on any field e.g. ?sort=Name&direction=descending
 		r.Get("/categories", blog_controller.GetAllCategories) //all categories; sort on any field e.g. ?sort=Name&direction=descending
 		r.Get("/category/:id", blog_controller.GetBlogCategory)
 		r.Get("/search", blog_controller.Search) //search field = value e.g. /blogs/search?key=8AEE0620-412E-47FC-900A-947820EA1C1D&slug=cyclo
-		r.Post("/categories", blog_controller.CreateBlogCategory)
-		r.Delete("/categories/:id", blog_controller.DeleteBlogCategory)
-		r.Get("/:id", blog_controller.GetBlog)       //get blog by {id}
-		r.Put("/:id", blog_controller.UpdateBlog)    //create {post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active} returns new id
-		r.Post("", blog_controller.CreateBlog)       //update {post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active} required{id}
-		r.Delete("/:id", blog_controller.DeleteBlog) //{?id=id}
-		r.Delete("", blog_controller.DeleteBlog)     //{id}
+		r.Post("/categories", middleware.InternalKeyAuthentication, blog_controller.CreateBlogCategory)
+		r.Delete("/categories/:id", middleware.InternalKeyAuthentication, blog_controller.DeleteBlogCategory)
+		r.Get("/:id", blog_controller.GetBlog)                                             //get blog by {id}
+		r.Put("/:id", middleware.InternalKeyAuthentication, blog_controller.UpdateBlog)    //create {post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active} returns new id
+		r.Post("", middleware.InternalKeyAuthentication, blog_controller.CreateBlog)       //update {post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active} required{id}
+		r.Delete("/:id", middleware.InternalKeyAuthentication, blog_controller.DeleteBlog) //{?id=id}
+		r.Delete("", middleware.InternalKeyAuthentication, blog_controller.DeleteBlog)     //{id}
 	})
 
+	//Creating, updating, and deleting Brands is not handled anywhere, but it does need to be
+	//locked down for security.
 	m.Group("/brands", func(r martini.Router) {
 		r.Get("", brand_ctlr.GetAllBrands)
-		r.Post("", brand_ctlr.CreateBrand)
+		r.Post("", middleware.InternalKeyAuthentication, brand_ctlr.CreateBrand)
 		r.Get("/:id", brand_ctlr.GetBrand)
-		r.Put("/:id", brand_ctlr.UpdateBrand)
-		r.Delete("/:id", brand_ctlr.DeleteBrand)
+		r.Put("/:id", middleware.InternalKeyAuthentication, brand_ctlr.UpdateBrand)
+		r.Delete("/:id", middleware.InternalKeyAuthentication, brand_ctlr.DeleteBrand)
 	})
 
 	m.Group("/category", func(r martini.Router) {
@@ -112,71 +116,68 @@ func main() {
 		r.Get("", category_ctlr.GetCategoryTree)
 	})
 
+	//Creating, updating, and deleting all Contact related entities is handled
+	//in GoAdmin directly
 	m.Group("/contact", func(r martini.Router) {
 		m.Group("/types", func(r martini.Router) {
 			r.Get("/receivers/:id", contact.GetReceiversByContactType)
 			r.Get("", contact.GetAllContactTypes)
 			r.Get("/:id", contact.GetContactType)
-			r.Post("", contact.AddContactType)
-			r.Put("/:id", contact.UpdateContactType)
-			r.Delete("/:id", contact.DeleteContactType)
+			r.Post("", middleware.InternalKeyAuthentication, contact.AddContactType)
+			r.Put("/:id", middleware.InternalKeyAuthentication, contact.UpdateContactType)
+			r.Delete("/:id", middleware.InternalKeyAuthentication, contact.DeleteContactType)
 		})
 		m.Group("/receivers", func(r martini.Router) {
 			r.Get("", contact.GetAllContactReceivers)
 			r.Get("/:id", contact.GetContactReceiver)
-			r.Post("", contact.AddContactReceiver)
-			r.Put("/:id", contact.UpdateContactReceiver)
-			r.Delete("/:id", contact.DeleteContactReceiver)
+			r.Post("", middleware.InternalKeyAuthentication, contact.AddContactReceiver)
+			r.Put("/:id", middleware.InternalKeyAuthentication, contact.UpdateContactReceiver)
+			r.Delete("/:id", middleware.InternalKeyAuthentication, contact.DeleteContactReceiver)
 		})
-		// r.Post("/sendmail/:id", contact.SendEmail)
+
 		r.Get("", contact.GetAllContacts)
 		r.Get("/:id", contact.GetContact)
-		r.Post("/:contactTypeID", contact.AddDealerContact)
-		r.Put("/:id", contact.UpdateContact)
-		r.Delete("/:id", contact.DeleteContact)
+		r.Post("/:contactTypeID", middleware.InternalKeyAuthentication, contact.AddDealerContact)
+		r.Put("/:id", middleware.InternalKeyAuthentication, contact.UpdateContact)
+		r.Delete("/:id", middleware.InternalKeyAuthentication, contact.DeleteContact)
 	})
 
+	//These shopify endpoints appear to not be used at all. Due to their customer related nature,
+	//They are being locked down for security.
 	m.Group("/shopify/customers", func(r martini.Router) {
 		// Customers - shop endpoints
 		r.Get("", cart_ctlr.GetCustomers)
-		r.Post("", cart_ctlr.AddCustomer)
+		r.Post("", middleware.InternalKeyAuthentication, cart_ctlr.AddCustomer)
 		r.Get("/search", cart_ctlr.SearchCustomer)
 		r.Get("/:id", cart_ctlr.GetCustomer)
-		r.Put("/:id", cart_ctlr.EditCustomer)
-		r.Delete("/:id", cart_ctlr.DeleteCustomer)
+		r.Put("/:id", middleware.InternalKeyAuthentication, cart_ctlr.EditCustomer)
+		r.Delete("/:id", middleware.InternalKeyAuthentication, cart_ctlr.DeleteCustomer)
 		r.Get("/:id/orders", cart_ctlr.GetCustomerOrders)
 
 		// Addresses
 		r.Get("/:id/addresses", cart_ctlr.GetAddresses)
 		r.Get("/:id/addresses/:address", cart_ctlr.GetAddress)
-		r.Post("/:id/addresses", cart_ctlr.AddAddress)
-		r.Put("/:id/addresses/:address/default", cart_ctlr.SetDefaultAddress)
-		r.Put("/:id/addresses/:address", cart_ctlr.EditAddress)
-		r.Delete("/:id/addresses/:address", cart_ctlr.DeleteAddress)
+		r.Post("/:id/addresses", middleware.InternalKeyAuthentication, cart_ctlr.AddAddress)
+		r.Put("/:id/addresses/:address/default", middleware.InternalKeyAuthentication, cart_ctlr.SetDefaultAddress)
+		r.Put("/:id/addresses/:address", middleware.InternalKeyAuthentication, cart_ctlr.EditAddress)
+		r.Delete("/:id/addresses/:address", middleware.InternalKeyAuthentication, cart_ctlr.DeleteAddress)
 
 	})
 
 	m.Group("/shopify/order", func(r martini.Router) {
 		// Orders
-		r.Post("/order", cart_ctlr.CreateOrder)
+		r.Post("/order", middleware.InternalKeyAuthentication, cart_ctlr.CreateOrder)
 	})
 
 	m.Group("/shopify/account", func(r martini.Router) {
 		// Account - user endpoints
 		r.Get("", cart_ctlr.GetAccount)
-		r.Post("", cart_ctlr.AddAccount)
-		r.Put("", cart_ctlr.EditAccount)
+		r.Post("", middleware.InternalKeyAuthentication, cart_ctlr.AddAccount)
+		r.Put("", middleware.InternalKeyAuthentication, cart_ctlr.EditAccount)
 		r.Post("/login", cart_ctlr.AccountLogin)
-
-		// m.Group("/shopify/account/address", func(r martini.Router) {
-		// 	r.Get("", cart_ctlr.GetAccountAddresses)
-		// 	r.Post("", cart_ctlr.AddAccountAddress)
-		// 	r.Put("", cart_ctlr.EditAccountAddress)
-		// 	r.Delete("", cart_ctlr.DeleteAccountAddress)
-		// })
-
 	})
 
+	//Used on the dealer site, no lockdown for now
 	m.Group("/cartIntegration", func(r martini.Router) {
 		r.Get("/part/:part", cartIntegration.GetPartPricesByPartID)
 		r.Get("/part", cartIntegration.GetAllPartPrices)
@@ -195,22 +196,26 @@ func main() {
 
 	})
 
+	//Cache should definitely be locked down
 	m.Group("/cache", func(r martini.Router) { // different endpoint because partial matching matches this to another excused route
 		r.Get("/key", cache.GetByKey)
 		r.Get("/keys", cache.GetKeys)
-		r.Delete("/keys", cache.DeleteKey)
+		r.Delete("/keys", middleware.InternalKeyAuthentication, cache.DeleteKey)
 	})
 
+	//No lockdown of customer related endpoints for now
 	m.Group("/cust", func(r martini.Router) { // different endpoint because partial matching matches this to another excused route
 		r.Post("/user/changePassword", customer_ctlr.ChangePassword)
 	})
 
+	//Literally exact same as above? Copy paste error?
 	m.Group("/cache", func(r martini.Router) { // different endpoint because partial matching matches this to another excused route
 		r.Get("/key", cache.GetByKey)
 		r.Get("/keys", cache.GetKeys)
-		r.Delete("/keys", cache.DeleteKey)
+		r.Delete("/keys", middleware.InternalKeyAuthentication, cache.DeleteKey)
 	})
 
+	//No lockdown of customer related endpoints for now
 	m.Group("/customer", func(r martini.Router) {
 		r.Get("", customer_ctlr.GetCustomer)
 		r.Post("", customer_ctlr.GetCustomer)
@@ -226,9 +231,9 @@ func main() {
 		r.Get("/user/:id", customer_ctlr.GetUserById)
 		r.Post("/user/:id", customer_ctlr.UpdateCustomerUser)
 		r.Delete("/user/:id", customer_ctlr.DeleteCustomerUser)
-		r.Any("/users", customer_ctlr.GetUsers)
+		r.Get("/users", customer_ctlr.GetUsers)
 
-		r.Delete("/allUsersByCustomerID/:id", customer_ctlr.DeleteCustomerUsersByCustomerID) //Takes CustomerID (UUID)---danger!
+		r.Delete("/allUsersByCustomerID/:id", middleware.InternalKeyAuthentication, customer_ctlr.DeleteCustomerUsersByCustomerID) //Takes CustomerID (UUID)---danger!
 
 		r.Put("/location/json", customer_ctlr.SaveLocationJson)
 		r.Put("/location/json/:id", customer_ctlr.SaveLocationJson)
@@ -277,7 +282,7 @@ func main() {
 		r.Get("/pricesByCustomer/:id", customer_ctlr.GetPriceByCustomer) //{id} refers to customerId; returns CustomerPrices
 
 		r.Post("/:id", customer_ctlr.SaveCustomer)
-		r.Delete("/:id", customer_ctlr.DeleteCustomer)
+		r.Delete("/:id", middleware.InternalKeyAuthentication, customer_ctlr.DeleteCustomer)
 		r.Put("", customer_ctlr.SaveCustomer)
 	})
 
@@ -295,39 +300,42 @@ func main() {
 		r.Get("/search/geo/:latitude/:longitude", dealers_ctlr.SearchLocationsByLatLng)
 	})
 
+	//Creating, updating, and deleting FAQs are done in GoAdmin directly
 	m.Group("/faqs", func(r martini.Router) {
-		r.Get("", faq_controller.GetAll)          //get all faqs; takes optional sort param {sort=true} to sort by question
-		r.Get("/search", faq_controller.Search)   //takes {question, answer, page, results} - all parameters are optional
-		r.Get("/(:id)", faq_controller.Get)       //get by id {id}
-		r.Post("", faq_controller.Create)         //takes {question, answer}; returns object with new ID
-		r.Put("/(:id)", faq_controller.Update)    //{id, question and/or answer}
-		r.Delete("/(:id)", faq_controller.Delete) //{id}
-		r.Delete("", faq_controller.Delete)       //{?id=id}
+		r.Get("", faq_controller.GetAll)                                                //get all faqs; takes optional sort param {sort=true} to sort by question
+		r.Get("/search", faq_controller.Search)                                         //takes {question, answer, page, results} - all parameters are optional
+		r.Get("/(:id)", faq_controller.Get)                                             //get by id {id}
+		r.Post("", middleware.InternalKeyAuthentication, faq_controller.Create)         //takes {question, answer}; returns object with new ID
+		r.Put("/(:id)", middleware.InternalKeyAuthentication, faq_controller.Update)    //{id, question and/or answer}
+		r.Delete("/(:id)", middleware.InternalKeyAuthentication, faq_controller.Delete) //{id}
+		r.Delete("", middleware.InternalKeyAuthentication, faq_controller.Delete)       //{?id=id}
 	})
 
+	//All creating, updating, and deleting of things related to Forums
+	//is done in GoAdmin directly
 	m.Group("/forum", func(r martini.Router) {
 		//groups
 		r.Get("/groups", forum_ctlr.GetAllGroups)
 		r.Get("/groups/:id", forum_ctlr.GetGroup)
-		r.Post("/groups", forum_ctlr.AddGroup)
-		r.Put("/groups/:id", forum_ctlr.UpdateGroup)
-		r.Delete("/groups/:id", forum_ctlr.DeleteGroup)
+		r.Post("/groups", middleware.InternalKeyAuthentication, forum_ctlr.AddGroup)
+		r.Put("/groups/:id", middleware.InternalKeyAuthentication, forum_ctlr.UpdateGroup)
+		r.Delete("/groups/:id", middleware.InternalKeyAuthentication, forum_ctlr.DeleteGroup)
 		//topics
 		r.Get("/topics", forum_ctlr.GetAllTopics)
 		r.Get("/topics/:id", forum_ctlr.GetTopic)
-		r.Post("/topics", forum_ctlr.AddTopic)
-		r.Put("/topics/:id", forum_ctlr.UpdateTopic)
-		r.Delete("/topics/:id", forum_ctlr.DeleteTopic)
+		r.Post("/topics", middleware.InternalKeyAuthentication, forum_ctlr.AddTopic)
+		r.Put("/topics/:id", middleware.InternalKeyAuthentication, forum_ctlr.UpdateTopic)
+		r.Delete("/topics/:id", middleware.InternalKeyAuthentication, forum_ctlr.DeleteTopic)
 		//threads
 		r.Get("/threads", forum_ctlr.GetAllThreads)
 		r.Get("/threads/:id", forum_ctlr.GetThread)
-		r.Delete("/threads/:id", forum_ctlr.DeleteThread)
+		r.Delete("/threads/:id", middleware.InternalKeyAuthentication, forum_ctlr.DeleteThread)
 		//posts
 		r.Get("/posts", forum_ctlr.GetAllPosts)
 		r.Get("/posts/:id", forum_ctlr.GetPost)
-		r.Post("/posts", forum_ctlr.AddPost)
-		r.Put("/posts/:id", forum_ctlr.UpdatePost)
-		r.Delete("/posts/:id", forum_ctlr.DeletePost)
+		r.Post("/posts", middleware.InternalKeyAuthentication, forum_ctlr.AddPost)
+		r.Put("/posts/:id", middleware.InternalKeyAuthentication, forum_ctlr.UpdatePost)
+		r.Delete("/posts/:id", middleware.InternalKeyAuthentication, forum_ctlr.DeletePost)
 	})
 
 	m.Group("/geography", func(r martini.Router) {
@@ -336,22 +344,23 @@ func main() {
 		r.Get("/countrystates", geography.GetAllCountriesAndStates)
 	})
 
+	//Creating, updating, and deleting of News entites is done in GoAdmin directly
 	m.Group("/news", func(r martini.Router) {
-		r.Get("", news_controller.GetAll)           //get all news; takes optional sort param {sort=title||lead||content||startDate||endDate||active||slug} to sort by question
-		r.Get("/titles", news_controller.GetTitles) //get titles!{page, results} - all parameters are optional
-		r.Get("/leads", news_controller.GetLeads)   //get leads!{page, results} - all parameters are optional
-		r.Get("/search", news_controller.Search)    //takes {title, lead, content, publishStart, publishEnd, active, slug, page, results, page, results} - all parameters are optional
-		r.Get("/:id", news_controller.Get)          //get by id {id}
-		r.Post("", news_controller.Create)          //takes {question, answer}; returns object with new ID
-		r.Post("/:id", news_controller.Update)      //{id, question and/or answer}
-		r.Delete("/:id", news_controller.Delete)    //{id}
-		r.Delete("", news_controller.Delete)        //{id}
+		r.Get("", news_controller.GetAll)                                              //get all news; takes optional sort param {sort=title||lead||content||startDate||endDate||active||slug} to sort by question
+		r.Get("/titles", news_controller.GetTitles)                                    //get titles!{page, results} - all parameters are optional
+		r.Get("/leads", news_controller.GetLeads)                                      //get leads!{page, results} - all parameters are optional
+		r.Get("/search", news_controller.Search)                                       //takes {title, lead, content, publishStart, publishEnd, active, slug, page, results, page, results} - all parameters are optional
+		r.Get("/:id", news_controller.Get)                                             //get by id {id}
+		r.Post("", middleware.InternalKeyAuthentication, news_controller.Create)       //takes {question, answer}; returns object with new ID
+		r.Post("/:id", middleware.InternalKeyAuthentication, news_controller.Update)   //{id, question and/or answer}
+		r.Delete("/:id", middleware.InternalKeyAuthentication, news_controller.Delete) //{id}
+		r.Delete("", middleware.InternalKeyAuthentication, news_controller.Delete)     //{id}
 	})
 
 	m.Group("/part", func(r martini.Router) {
 		r.Get("/featured", part_ctlr.Featured)
 		r.Get("/latest", part_ctlr.Latest)
-		r.Post("/multi", part_ctlr.GetMulti)
+		r.Post("/multi", part_ctlr.GetMulti) //Actually a GET request, because of some "max length" myth
 		r.Get("/:part/vehicles", part_ctlr.Vehicles)
 		r.Get("/:part/attributes", part_ctlr.Attributes)
 		r.Get("/:part/reviews", part_ctlr.ActiveApprovedReviews)
@@ -372,106 +381,113 @@ func main() {
 		r.Get("", part_ctlr.All)
 	})
 
+	//Creating, updating, and Deleting of salesRep entities is all done in GoAdmin directly
 	m.Group("/salesrep", func(r martini.Router) {
 		r.Get("", salesrep.GetAllSalesReps)
-		r.Post("", salesrep.AddSalesRep)
+		r.Post("", middleware.InternalKeyAuthentication, salesrep.AddSalesRep)
 		r.Get("/:id", salesrep.GetSalesRep)
-		r.Put("/:id", salesrep.UpdateSalesRep)
-		r.Delete("/:id", salesrep.DeleteSalesRep)
+		r.Put("/:id", middleware.InternalKeyAuthentication, salesrep.UpdateSalesRep)
+		r.Delete("/:id", middleware.InternalKeyAuthentication, salesrep.DeleteSalesRep)
 	})
 
 	m.Get("/search/:term", search_ctlr.Search)
 	m.Get("/searchExactAndClose/:term", search_ctlr.SearchExactAndClose)
 
+	//POST, PUT, and DELETE for these don't seem to be used, but even if they are,
+	//they shouldn't, so they're getting locked down
 	m.Group("/site", func(r martini.Router) {
 		m.Group("/menu", func(r martini.Router) {
 			r.Get("/all", site.GetAllMenus)
 			r.Get("/:id", site.GetMenu)                      //may pass id (int) or name(string)
 			r.Get("/contents/:id", site.GetMenuWithContents) //may pass id (int) or name(string)
-			r.Post("", site.SaveMenu)
-			r.Put("/:id", site.SaveMenu)
-			r.Delete("/:id", site.DeleteMenu)
+			r.Post("", middleware.InternalKeyAuthentication, site.SaveMenu)
+			r.Put("/:id", middleware.InternalKeyAuthentication, site.SaveMenu)
+			r.Delete("/:id", middleware.InternalKeyAuthentication, site.DeleteMenu)
 		})
 		m.Group("/content", func(r martini.Router) {
 			r.Get("/all", site.GetAllContents)
 			r.Get("/:id", site.GetContent) //may pass id (int) or slug(string)
 			r.Get("/:id/revisions", site.GetContentRevisions)
-			r.Post("", site.SaveContent)
-			r.Put("/:id", site.SaveContent)
-			r.Delete("/:id", site.DeleteContent)
+			r.Post("", middleware.InternalKeyAuthentication, site.SaveContent)
+			r.Put("/:id", middleware.InternalKeyAuthentication, site.SaveContent)
+			r.Delete("/:id", middleware.InternalKeyAuthentication, site.DeleteContent)
 		})
 		r.Get("/details/:id", site.GetSiteDetails)
-		r.Post("", site.SaveSite)
-		r.Put("/:id", site.SaveSite)
-		r.Delete("/:id", site.DeleteSite)
+		r.Post("", middleware.InternalKeyAuthentication, site.SaveSite)
+		r.Put("/:id", middleware.InternalKeyAuthentication, site.SaveSite)
+		r.Delete("/:id", middleware.InternalKeyAuthentication, site.DeleteSite)
 	})
 
 	m.Group("/lp", func(r martini.Router) {
 		r.Get("/:id", landingPage.Get)
 	})
+
+	//Creating of showcases is handled by GoAdmin directly
 	m.Group("/showcase", func(r martini.Router) {
 		r.Get("", showcase.GetAllShowcases)
 		r.Get("/:id", showcase.GetShowcase)
-		r.Post("", showcase.Save)
-		// r.Put("/:id", showcase.Save)
-		// r.Delete("/:id", showcase.Delete)
+		r.Post("", middleware.InternalKeyAuthentication, showcase.Save)
 	})
 
+	//Completely unused
 	m.Group("/techSupport", func(r martini.Router) {
 		r.Get("/all", techSupport.GetAllTechSupport)
 		r.Get("/contact/:id", techSupport.GetTechSupportByContact)
 		r.Get("/:id", techSupport.GetTechSupport)
-		r.Post("/:contactReceiverTypeID/:sendEmail", techSupport.CreateTechSupport) //contactType determines who receives the email/sendEmail is a bool indicating if email should be sent
-		r.Delete("/:id", techSupport.DeleteTechSupport)
+		r.Post("/:contactReceiverTypeID/:sendEmail", middleware.InternalKeyAuthentication, techSupport.CreateTechSupport) //contactType determines who receives the email/sendEmail is a bool indicating if email should be sent
+		r.Delete("/:id", middleware.InternalKeyAuthentication, techSupport.DeleteTechSupport)
 	})
 
+	//Creating, updating, and deleting of testimonials is done in GoAdmin directly
 	m.Group("/testimonials", func(r martini.Router) {
 		r.Get("", testimonials.GetAllTestimonials)
 		r.Get("/:id", testimonials.GetTestimonial)
-		r.Post("", testimonials.Save)
-		r.Put("/:id", testimonials.Save)
-		r.Delete("/:id", testimonials.Delete)
+		r.Post("", middleware.InternalKeyAuthentication, testimonials.Save)
+		r.Put("/:id", middleware.InternalKeyAuthentication, testimonials.Save)
+		r.Delete("/:id", middleware.InternalKeyAuthentication, testimonials.Delete)
 	})
 
+	//warranty related actions are handled in Survey
 	m.Group("/warranty", func(r martini.Router) {
 		r.Get("/all", warranty.GetAllWarranties)
 		r.Get("/contact/:id", warranty.GetWarrantyByContact)
 		r.Get("/:id", warranty.GetWarranty)
-		r.Post("/:contactReceiverTypeID/:sendEmail", warranty.CreateWarranty) //contactType determines who receives the email/sendEmail is a bool indicating if email should be sent
-		r.Delete("/:id", warranty.DeleteWarranty)
+		r.Post("/:contactReceiverTypeID/:sendEmail", middleware.InternalKeyAuthentication, warranty.CreateWarranty) //contactType determines who receives the email/sendEmail is a bool indicating if email should be sent
+		r.Delete("/:id", middleware.InternalKeyAuthentication, warranty.DeleteWarranty)
 	})
 
+	//This is unholy and should not exist
 	m.Group("/webProperties", func(r martini.Router) {
-		r.Post("/requirement/:id", webProperty_controller.CreateUpdateWebPropertyRequirement)
-		r.Put("/requirement", webProperty_controller.CreateUpdateWebPropertyRequirement)
-		r.Delete("/requirement/:id", webProperty_controller.DeleteWebPropertyRequirement)
+		r.Post("/requirement/:id", middleware.InternalKeyAuthentication, webProperty_controller.CreateUpdateWebPropertyRequirement)
+		r.Put("/requirement", middleware.InternalKeyAuthentication, webProperty_controller.CreateUpdateWebPropertyRequirement)
+		r.Delete("/requirement/:id", middleware.InternalKeyAuthentication, webProperty_controller.DeleteWebPropertyRequirement)
 		r.Get("/requirement/:id", webProperty_controller.GetWebPropertyRequirement)
 		r.Get("/requirement", webProperty_controller.GetAllRequirements)
-		r.Post("/json/type", webProperty_controller.CreateUpdateWebPropertyType)
-		r.Post("/json/type/:id", webProperty_controller.CreateUpdateWebPropertyType)
-		r.Post("/json/requirement", webProperty_controller.CreateUpdateWebPropertyRequirement)
-		r.Post("/json/requirement/:id", webProperty_controller.CreateUpdateWebPropertyRequirement)
-		r.Post("/json/note", webProperty_controller.CreateUpdateWebPropertyNote)
-		r.Post("/json/note/:id", webProperty_controller.CreateUpdateWebPropertyNote)
-		r.Post("/json/:id", webProperty_controller.CreateUpdateWebProperty)
-		r.Put("/json", webProperty_controller.CreateUpdateWebProperty)
-		r.Post("/note/:id", webProperty_controller.CreateUpdateWebPropertyNote)               //updates when an id is present; otherwise, creates
-		r.Put("/note", webProperty_controller.CreateUpdateWebPropertyNote)                    //updates when an id is present; otherwise, creates
-		r.Delete("/note/:id", webProperty_controller.DeleteWebPropertyNote)                   //{id}
-		r.Get("/note/:id", webProperty_controller.GetWebPropertyNote)                         //{id}
-		r.Post("/type/:id", webProperty_controller.CreateUpdateWebPropertyType)               //updates when an id is present; otherwise, creates
-		r.Put("/type", webProperty_controller.CreateUpdateWebPropertyType)                    //updates when an id is present; otherwise, creates
-		r.Delete("/type/:id", webProperty_controller.DeleteWebPropertyType)                   //{id}
-		r.Get("/type/:id", webProperty_controller.GetWebPropertyType)                         //{id}
+		r.Post("/json/type", middleware.InternalKeyAuthentication, webProperty_controller.CreateUpdateWebPropertyType)
+		r.Post("/json/type/:id", middleware.InternalKeyAuthentication, webProperty_controller.CreateUpdateWebPropertyType)
+		r.Post("/json/requirement", middleware.InternalKeyAuthentication, webProperty_controller.CreateUpdateWebPropertyRequirement)
+		r.Post("/json/requirement/:id", middleware.InternalKeyAuthentication, webProperty_controller.CreateUpdateWebPropertyRequirement)
+		r.Post("/json/note", middleware.InternalKeyAuthentication, webProperty_controller.CreateUpdateWebPropertyNote)
+		r.Post("/json/note/:id", middleware.InternalKeyAuthentication, webProperty_controller.CreateUpdateWebPropertyNote)
+		r.Post("/json/:id", middleware.InternalKeyAuthentication, webProperty_controller.CreateUpdateWebProperty)
+		r.Put("/json", middleware.InternalKeyAuthentication, webProperty_controller.CreateUpdateWebProperty)
+		r.Post("/note/:id", middleware.InternalKeyAuthentication, webProperty_controller.CreateUpdateWebPropertyNote) //updates when an id is present; otherwise, creates
+		r.Put("/note", middleware.InternalKeyAuthentication, webProperty_controller.CreateUpdateWebPropertyNote)      //updates when an id is present; otherwise, creates
+		r.Delete("/note/:id", middleware.InternalKeyAuthentication, webProperty_controller.DeleteWebPropertyNote)     //{id}
+		r.Get("/note/:id", webProperty_controller.GetWebPropertyNote)                                                 //{id}
+		r.Post("/type/:id", middleware.InternalKeyAuthentication, webProperty_controller.CreateUpdateWebPropertyType) //updates when an id is present; otherwise, creates
+		r.Put("/type", middleware.InternalKeyAuthentication, webProperty_controller.CreateUpdateWebPropertyType)      //updates when an id is present; otherwise, creates
+		r.Delete("/type/:id", middleware.InternalKeyAuthentication, webProperty_controller.DeleteWebPropertyType)     //{id}
+		r.Get("/type/:id", webProperty_controller.GetWebPropertyType)                                                 //{id}
 		r.Get("/search", webProperty_controller.Search)
 		r.Get("/type", webProperty_controller.GetAllTypes)
 		r.Get("/note", webProperty_controller.GetAllNotes)
 		r.Get("/customer", webProperty_controller.GetByPrivateKey)
 		r.Get("", webProperty_controller.GetAll)
-		r.Get("/:id", webProperty_controller.Get)                      //?id=id
-		r.Delete("/:id", webProperty_controller.DeleteWebProperty)     //{id}
-		r.Post("/:id", webProperty_controller.CreateUpdateWebProperty) //
-		r.Put("", webProperty_controller.CreateUpdateWebProperty)      //can create notes(text) and requirements (requirement, by requirement=requirementID) while creating a property
+		r.Get("/:id", webProperty_controller.Get)                                                            //?id=id
+		r.Delete("/:id", middleware.InternalKeyAuthentication, webProperty_controller.DeleteWebProperty)     //{id}
+		r.Post("/:id", middleware.InternalKeyAuthentication, webProperty_controller.CreateUpdateWebProperty) //
+		r.Put("", middleware.InternalKeyAuthentication, webProperty_controller.CreateUpdateWebProperty)      //can create notes(text) and requirements (requirement, by requirement=requirementID) while creating a property
 	})
 
 	// ARIES Year/Make/Model/Style
@@ -504,6 +520,7 @@ func main() {
 	m.Post("/vehicle/curt", vehicle.CurtLookup)
 	m.Get("/vehicle/curt", vehicle.CurtLookupGet)
 
+	//videos are handled in GoAdmin
 	m.Group("/videos", func(r martini.Router) {
 		r.Get("/distinct", videos_ctlr.DistinctVideos) //old "videos" table - curtmfg?
 		r.Get("/channel/type", videos_ctlr.GetAllChannelTypes)
