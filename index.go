@@ -77,6 +77,7 @@ func main() {
 		r.Get("", apiKeyType.GetApiKeyTypes)
 	})
 
+	//Creating, updating, and deleting Appguides are all handled in GoAdmin directly
 	m.Group("/applicationGuide", func(r martini.Router) {
 		r.Get("/website/:id", applicationGuide.GetApplicationGuidesByWebsite)
 		r.Get("/:id", applicationGuide.GetApplicationGuide)
@@ -84,6 +85,7 @@ func main() {
 		r.Post("", middleware.InternalKeyAuthentication, applicationGuide.CreateApplicationGuide)
 	})
 
+	//Creating, updating, and deleting all Blog related objects are handled in GoAdmin directly
 	m.Group("/blogs", func(r martini.Router) {
 		r.Get("", blog_controller.GetAll)                      //sort on any field e.g. ?sort=Name&direction=descending
 		r.Get("/categories", blog_controller.GetAllCategories) //all categories; sort on any field e.g. ?sort=Name&direction=descending
@@ -98,6 +100,8 @@ func main() {
 		r.Delete("", middleware.InternalKeyAuthentication, blog_controller.DeleteBlog)     //{id}
 	})
 
+	//Creating, updating, and deleting Brands is not handled anywhere, but it does need to be
+	//locked down for security.
 	m.Group("/brands", func(r martini.Router) {
 		r.Get("", brand_ctlr.GetAllBrands)
 		r.Post("", middleware.InternalKeyAuthentication, brand_ctlr.CreateBrand)
@@ -112,6 +116,8 @@ func main() {
 		r.Get("", category_ctlr.GetCategoryTree)
 	})
 
+	//Creating, updating, and deleting all Contact related entities is handled
+	//in GoAdmin directly
 	m.Group("/contact", func(r martini.Router) {
 		m.Group("/types", func(r martini.Router) {
 			r.Get("/receivers/:id", contact.GetReceiversByContactType)
@@ -136,6 +142,8 @@ func main() {
 		r.Delete("/:id", middleware.InternalKeyAuthentication, contact.DeleteContact)
 	})
 
+	//These shopify endpoints appear to not be used at all. Due to their customer related nature,
+	//They are being locked down for security.
 	m.Group("/shopify/customers", func(r martini.Router) {
 		// Customers - shop endpoints
 		r.Get("", cart_ctlr.GetCustomers)
@@ -169,6 +177,7 @@ func main() {
 		r.Post("/login", cart_ctlr.AccountLogin)
 	})
 
+	//Used on the dealer site, no lockdown for now
 	m.Group("/cartIntegration", func(r martini.Router) {
 		r.Get("/part/:part", cartIntegration.GetPartPricesByPartID)
 		r.Get("/part", cartIntegration.GetAllPartPrices)
@@ -187,12 +196,14 @@ func main() {
 
 	})
 
+	//Cache should definitely be locked down
 	m.Group("/cache", func(r martini.Router) { // different endpoint because partial matching matches this to another excused route
 		r.Get("/key", cache.GetByKey)
 		r.Get("/keys", cache.GetKeys)
 		r.Delete("/keys", middleware.InternalKeyAuthentication, cache.DeleteKey)
 	})
 
+	//No lockdown of customer related endpoints for now
 	m.Group("/cust", func(r martini.Router) { // different endpoint because partial matching matches this to another excused route
 		r.Post("/user/changePassword", customer_ctlr.ChangePassword)
 	})
@@ -204,6 +215,7 @@ func main() {
 		r.Delete("/keys", middleware.InternalKeyAuthentication, cache.DeleteKey)
 	})
 
+	//No lockdown of customer related endpoints for now
 	m.Group("/customer", func(r martini.Router) {
 		r.Get("", customer_ctlr.GetCustomer)
 		r.Post("", customer_ctlr.GetCustomer)
@@ -288,6 +300,7 @@ func main() {
 		r.Get("/search/geo/:latitude/:longitude", dealers_ctlr.SearchLocationsByLatLng)
 	})
 
+	//Creating, updating, and deleting FAQs are done in GoAdmin directly
 	m.Group("/faqs", func(r martini.Router) {
 		r.Get("", faq_controller.GetAll)                                                //get all faqs; takes optional sort param {sort=true} to sort by question
 		r.Get("/search", faq_controller.Search)                                         //takes {question, answer, page, results} - all parameters are optional
@@ -298,6 +311,8 @@ func main() {
 		r.Delete("", middleware.InternalKeyAuthentication, faq_controller.Delete)       //{?id=id}
 	})
 
+	//All creating, updating, and deleting of things related to Forums
+	//is done in GoAdmin directly
 	m.Group("/forum", func(r martini.Router) {
 		//groups
 		r.Get("/groups", forum_ctlr.GetAllGroups)
@@ -329,6 +344,7 @@ func main() {
 		r.Get("/countrystates", geography.GetAllCountriesAndStates)
 	})
 
+	//Creating, updating, and deleting of News entites is done in GoAdmin directly
 	m.Group("/news", func(r martini.Router) {
 		r.Get("", news_controller.GetAll)                                              //get all news; takes optional sort param {sort=title||lead||content||startDate||endDate||active||slug} to sort by question
 		r.Get("/titles", news_controller.GetTitles)                                    //get titles!{page, results} - all parameters are optional
@@ -344,7 +360,7 @@ func main() {
 	m.Group("/part", func(r martini.Router) {
 		r.Get("/featured", part_ctlr.Featured)
 		r.Get("/latest", part_ctlr.Latest)
-		r.Post("/multi", part_ctlr.GetMulti)
+		r.Post("/multi", part_ctlr.GetMulti) //Actually a GET request, because of some "max length" myth
 		r.Get("/:part/vehicles", part_ctlr.Vehicles)
 		r.Get("/:part/attributes", part_ctlr.Attributes)
 		r.Get("/:part/reviews", part_ctlr.ActiveApprovedReviews)
@@ -365,6 +381,7 @@ func main() {
 		r.Get("", part_ctlr.All)
 	})
 
+	//Creating, updating, and Deleting of salesRep entities is all done in GoAdmin directly
 	m.Group("/salesrep", func(r martini.Router) {
 		r.Get("", salesrep.GetAllSalesReps)
 		r.Post("", middleware.InternalKeyAuthentication, salesrep.AddSalesRep)
@@ -376,6 +393,8 @@ func main() {
 	m.Get("/search/:term", search_ctlr.Search)
 	m.Get("/searchExactAndClose/:term", search_ctlr.SearchExactAndClose)
 
+	//POST, PUT, and DELETE for these don't seem to be used, but even if they are,
+	//they shouldn't, so they're getting locked down
 	m.Group("/site", func(r martini.Router) {
 		m.Group("/menu", func(r martini.Router) {
 			r.Get("/all", site.GetAllMenus)
@@ -402,12 +421,15 @@ func main() {
 	m.Group("/lp", func(r martini.Router) {
 		r.Get("/:id", landingPage.Get)
 	})
+
+	//Creating of showcases is handled by GoAdmin directly
 	m.Group("/showcase", func(r martini.Router) {
 		r.Get("", showcase.GetAllShowcases)
 		r.Get("/:id", showcase.GetShowcase)
 		r.Post("", middleware.InternalKeyAuthentication, showcase.Save)
 	})
 
+	//Completely unused
 	m.Group("/techSupport", func(r martini.Router) {
 		r.Get("/all", techSupport.GetAllTechSupport)
 		r.Get("/contact/:id", techSupport.GetTechSupportByContact)
@@ -416,6 +438,7 @@ func main() {
 		r.Delete("/:id", middleware.InternalKeyAuthentication, techSupport.DeleteTechSupport)
 	})
 
+	//Creating, updating, and deleting of testimonials is done in GoAdmin directly
 	m.Group("/testimonials", func(r martini.Router) {
 		r.Get("", testimonials.GetAllTestimonials)
 		r.Get("/:id", testimonials.GetTestimonial)
@@ -424,6 +447,7 @@ func main() {
 		r.Delete("/:id", middleware.InternalKeyAuthentication, testimonials.Delete)
 	})
 
+	//warranty related actions are handled in Survey
 	m.Group("/warranty", func(r martini.Router) {
 		r.Get("/all", warranty.GetAllWarranties)
 		r.Get("/contact/:id", warranty.GetWarrantyByContact)
@@ -432,6 +456,7 @@ func main() {
 		r.Delete("/:id", middleware.InternalKeyAuthentication, warranty.DeleteWarranty)
 	})
 
+	//This is unholy and should not exist
 	m.Group("/webProperties", func(r martini.Router) {
 		r.Post("/requirement/:id", middleware.InternalKeyAuthentication, webProperty_controller.CreateUpdateWebPropertyRequirement)
 		r.Put("/requirement", middleware.InternalKeyAuthentication, webProperty_controller.CreateUpdateWebPropertyRequirement)
@@ -495,6 +520,7 @@ func main() {
 	m.Post("/vehicle/curt", vehicle.CurtLookup)
 	m.Get("/vehicle/curt", vehicle.CurtLookupGet)
 
+	//videos are handled in GoAdmin
 	m.Group("/videos", func(r martini.Router) {
 		r.Get("/distinct", videos_ctlr.DistinctVideos) //old "videos" table - curtmfg?
 		r.Get("/channel/type", videos_ctlr.GetAllChannelTypes)
