@@ -19,6 +19,8 @@ import (
 
 var (
 	ExcusedRoutes = []string{"/status", "/customer/auth", "/customer/user", "/new/customer/auth", "/customer/user/register", "/customer/user/resetPassword", "/cartIntegration/priceTypes", "/cartIntegration", "/cache"}
+
+	GetKeyType = `SELECT akt.type FROM ApiKey as ak, ApiKeyType as akt WHERE akt.id = ak.type_id AND ak.api_key=?`
 )
 
 func Meddler() martini.Handler {
@@ -230,6 +232,38 @@ func getCustomerID(apiKey string) (*customer.CustomerUser, error) {
 		return nil, fmt.Errorf("failed to find user for that API key")
 	}
 	return &resp.Users[0], err
+}
+
+func InternalKeyAuthentication(w http.ResponseWriter, req *http.Request) {
+	err := database.Init()
+	if err != nil {
+		http.Error(w, "Key could not be authenticated", http.StatusInternalServerError)
+		return
+	}
+
+	key := req.URL.Query().Get("key")
+
+	if key == "" {
+		http.Error(w, "Access denied", http.StatusUnauthorized)
+		return
+	}
+
+	row := database.DB.QueryRow(GetKeyType, key)
+
+	var keyType string
+
+	err = row.Scan(&keyType)
+	if err != nil {
+		http.Error(w, "Key could not be authenticated", http.StatusInternalServerError)
+		return
+	}
+
+	if keyType != "Internal" {
+		http.Error(w, "Access denied", http.StatusUnauthorized)
+		return
+	}
+
+	return
 }
 
 //logRequest is simply the launcher for the analytics function ToPubSub
