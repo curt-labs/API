@@ -1,17 +1,68 @@
 package webProperty_controller
 
 import (
-	"github.com/curt-labs/API/helpers/apicontextmock"
-	"github.com/curt-labs/API/helpers/httprunner"
-	"github.com/curt-labs/API/models/webProperty"
-	. "github.com/smartystreets/goconvey/convey"
-
-	"encoding/json"
-	"net/url"
-	"strconv"
+	"github.com/curt-labs/API/helpers/encoding"
+	"github.com/go-martini/martini"
 	"testing"
+	"net/http/httptest"
+	"net/http"
+	"fmt"
+	"github.com/curt-labs/API/helpers/mocks"
+	"github.com/curt-labs/API/helpers/apicontext"
 )
 
+func TestGetAllTypes(t *testing.T) {
+	// TODO check sort=
+	// TODO check direction=
+
+	WhenGivenAnApiKeyWithMultipleBrandsAndNoBrandId := func (t *testing.T) {
+		m := martini.Classic()
+		m.Use(mocks.Meddler(apicontext.DataContext{
+			APIKey: "10000000-1000-4000-1000-100000000000"}))
+		m.Use(encoding.MapEncoder)
+
+		m.Group("/webProperties", func(r martini.Router) {
+			m.Get("/type", GetAllTypes)
+		})
+
+		res := httptest.NewRecorder()
+		req, _ := http.NewRequest("GET", "/webProperties/type", nil)
+
+		m.ServeHTTP(res, req)
+
+		fmt.Println(res.Body.String())
+
+		//expect(t, res.Code, http.StatusOK)
+		//expect(t, res.Body.String(), `bar`)
+	}
+
+	WhenGivenAnApiKeyWithOneBrandAndNoBrandId := func (t *testing.T) {
+	}
+
+	WhenGivenAnApiKeyWithNoBrandAndNoBrandId := func (t *testing.T) {
+	}
+
+	WhenGivenAnApiKeyWithMultipleBrandsAndBrandId := func (t *testing.T) {
+	}
+
+	WhenGivenAnApiKeyWithOneBrandAndBrandId := func (t *testing.T) {
+	}
+
+	WhenGivenAnApiKeyWithNoBrandAndBrandId := func (t *testing.T) {
+	}
+
+	// TODO start container
+	// TODO defer stop container
+	// TODO could probably be replaced with a table test
+	t.Run("", WhenGivenAnApiKeyWithMultipleBrandsAndBrandId)
+	t.Run("", WhenGivenAnApiKeyWithMultipleBrandsAndNoBrandId)
+	t.Run("", WhenGivenAnApiKeyWithOneBrandAndBrandId)
+	t.Run("", WhenGivenAnApiKeyWithOneBrandAndNoBrandId)
+	t.Run("", WhenGivenAnApiKeyWithNoBrandAndBrandId)
+	t.Run("", WhenGivenAnApiKeyWithNoBrandAndNoBrandId)
+}
+
+/*
 func TestWebProperty(t *testing.T) {
 
 	dtx, err := apicontextmock.Mock()
@@ -145,3 +196,4 @@ func TestWebProperty(t *testing.T) {
 
 	_ = apicontextmock.DeMock(dtx)
 }
+*/
