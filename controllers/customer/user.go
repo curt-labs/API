@@ -159,7 +159,7 @@ func ChangePassword(rw http.ResponseWriter, r *http.Request, enc encoding.Encode
 	newPass := r.FormValue("newPass")
 
 	if err := user.ChangePass(oldPass, newPass); err != nil {
-		apierror.GenerateError("Could not change password: "+err.Error(), err, rw, r)
+		apierror.GenerateError("Could not change password: "+err.Error(), err, rw, r, http.StatusBadRequest)
 		return ""
 	}
 
