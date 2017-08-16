@@ -229,8 +229,10 @@ func main() {
 		r.Delete("/deleteKey", customer_ctlr.DeleteUserApiKey)
 		r.Post("/generateKey/user/:id/key/:type", customer_ctlr.GenerateApiKey)
 		r.Get("/user/:id", customer_ctlr.GetUserById)
-		r.Post("/user/:id", customer_ctlr.UpdateCustomerUser)
-		r.Delete("/user/:id", customer_ctlr.DeleteCustomerUser)
+		//r.Post("/user/:id", customer_ctlr.UpdateCustomerUser)
+		//r.Delete("/user/:id", customer_ctlr.DeleteCustomerUser)
+		// August 16th, 2017
+		// If 6 months have passed with these being commented out, delete them and their functions
 		r.Get("/users", customer_ctlr.GetUsers)
 
 		r.Delete("/allUsersByCustomerID/:id", middleware.InternalKeyAuthentication, customer_ctlr.DeleteCustomerUsersByCustomerID) //Takes CustomerID (UUID)---danger!
