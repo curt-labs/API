@@ -77,7 +77,8 @@ var (
 				where a.api_key = ? && (ctb.brandID = ? or 0 = ?)`
 	getWebProperty             = "SELECT id, name, cust_ID, badgeID, url, isEnabled,sellerID, typeID , isFinalApproved, isEnabledDate, isDenied, requestedDate, addedDate FROM WebProperties WHERE id = ?"
 	getWebPropertiesByCustomer = "SELECT id, name, cust_ID, badgeID, url, isEnabled,sellerID, typeID , isFinalApproved, isEnabledDate, isDenied, requestedDate, addedDate FROM WebProperties WHERE cust_ID = ?"
-	getAllWebPropertyTypes     = "SELECT DISTINCT wt.id, wt.typeID, wt.type FROM WebPropertyTypes AS wt"
+	getAllWebPropertyTypes     = `SELECT DISTINCT wt.id, wt.typeID, wt.type FROM WebPropertyTypes AS wt
+		JOIN WebProperties AS w ON w.typeID = wt.id`
 	getAllWebPropertyNotes = `SELECT wn.id, wn.webPropID, wn.text, wn.dateAdded
 		FROM WebPropNotes as wn
 		join WebProperties as w on w.id = wn.webPropID
