@@ -13,11 +13,11 @@ CREATE TABLE Brand (
   autocareID   VARCHAR(4)   NULL
 );
 
-INSERT INTO CurtData.Brand (name, code, logo, logoAlt, formalName, longName, primaryColor, autocareID) VALUES ('CURT',    'CURT',    'http://www.curtmfg.com/Content/img/logo.png', 'https://storage.googleapis.com/curt-logos/logo.png',               'CURT Manufacturing, LLC', 'CURT Manufacturing', '#e64d2c', 'BKDK');
-INSERT INTO CurtData.Brand (name, code, logo, logoAlt, formalName, longName, primaryColor, autocareID) VALUES ('ARIES',   'ARIES',   'https://storage.googleapis.com/aries-logo/SVG_Logo%20(2c_white%20with%20black%20outline%20on%20transparent).svg', 'https://storage.googleapis.com/aries-logo/ARIES%20Logo%20(1c_red%20on%20transparent).png', 'Aries Automotive', 'Aries Automotive', '#57111A', 'BBRD');
-INSERT INTO CurtData.Brand (name, code, logo, logoAlt, formalName, longName, primaryColor, autocareID) VALUES ('Luverne', 'Luverne', null,                                                                                                              null, 'Luverne Truck', 'Luverne Truck Equipment', null, 'FTNF');
-INSERT INTO CurtData.Brand (name, code, logo, logoAlt, formalName, longName, primaryColor, autocareID) VALUES ('Retrac',  'Retrac',  'https://storage.googleapis.com/curt-groups/Brand-Logos%20-%20RETRAC.png',                                         null, 'Retrac Mirrors', 'Retrac Mirrors', null, 'HCSF');
-INSERT INTO CurtData.Brand (name, code, logo, logoAlt, formalName, longName, primaryColor, autocareID) VALUES ('UWS',     'UWS',     'https://storage.googleapis.com/curt-groups/Brand-Logos%20-%20UWS.png',                                            null, 'UWS', 'UWS', null, 'BHSG');
+INSERT INTO CurtData.Brand (ID, name, code, logo, logoAlt, formalName, longName, primaryColor, autocareID) VALUES (1,'CURT',    'CURT',    'http://www.curtmfg.com/Content/img/logo.png', 'https://storage.googleapis.com/curt-logos/logo.png',               'CURT Manufacturing, LLC', 'CURT Manufacturing', '#e64d2c', 'BKDK');
+INSERT INTO CurtData.Brand (ID, name, code, logo, logoAlt, formalName, longName, primaryColor, autocareID) VALUES (3, 'ARIES',   'ARIES',   'https://storage.googleapis.com/aries-logo/SVG_Logo%20(2c_white%20with%20black%20outline%20on%20transparent).svg', 'https://storage.googleapis.com/aries-logo/ARIES%20Logo%20(1c_red%20on%20transparent).png', 'Aries Automotive', 'Aries Automotive', '#57111A', 'BBRD');
+INSERT INTO CurtData.Brand (ID, name, code, logo, logoAlt, formalName, longName, primaryColor, autocareID) VALUES (4, 'Luverne', 'Luverne', null,                                                                                                              null, 'Luverne Truck', 'Luverne Truck Equipment', null, 'FTNF');
+INSERT INTO CurtData.Brand (ID, name, code, logo, logoAlt, formalName, longName, primaryColor, autocareID) VALUES (5, 'Retrac',  'Retrac',  'https://storage.googleapis.com/curt-groups/Brand-Logos%20-%20RETRAC.png',                                         null, 'Retrac Mirrors', 'Retrac Mirrors', null, 'HCSF');
+INSERT INTO CurtData.Brand (ID, name, code, logo, logoAlt, formalName, longName, primaryColor, autocareID) VALUES (6, 'UWS',     'UWS',     'https://storage.googleapis.com/curt-groups/Brand-Logos%20-%20UWS.png',                                            null, 'UWS', 'UWS', null, 'BHSG');
 
 
 
@@ -106,26 +106,25 @@ CREATE TABLE ApiKey
 );
 
 -- Mock API Keys --
+-- No Brands --
 INSERT INTO ApiKey (id, api_key, type_id, user_id) VALUES (
   1, '20000000-0000-4000-1000-000000000001', '209A05AD-7D42-4C88-B5FA-FEEACDD19AC2', '100000000000-0000-4000-1000-00000001'
 );
+
+-- One Brand --
 INSERT INTO ApiKey (id, api_key, type_id, user_id) VALUES (
   2, '20000000-0000-4000-1000-000000000002', '209A05AD-7D42-4C88-B5FA-FEEACDD19AC2', '100000000000-0000-4000-1000-00000001'
 );
+
+-- Multiple Brands --
 INSERT INTO ApiKey (id, api_key, type_id, user_id) VALUES (
   3, '20000000-0000-4000-1000-000000000003', '209A05AD-7D42-4C88-B5FA-FEEACDD19AC2', '100000000000-0000-4000-1000-00000001'
 );
+
+-- All Brands --
 INSERT INTO ApiKey (id, api_key, type_id, user_id) VALUES (
   4, '20000000-0000-4000-1000-000000000004', '209A05AD-7D42-4C88-B5FA-FEEACDD19AC2', '100000000000-0000-4000-1000-00000001'
 );
-INSERT INTO ApiKey (id, api_key, type_id, user_id) VALUES (
-  5, '20000000-0000-4000-1000-000000000005', '209A05AD-7D42-4C88-B5FA-FEEACDD19AC2', '100000000000-0000-4000-1000-00000001'
-);
-INSERT INTO ApiKey (id, api_key, type_id, user_id) VALUES (
-  6, '20000000-0000-4000-1000-000000000006', '209A05AD-7D42-4C88-B5FA-FEEACDD19AC2', '100000000000-0000-4000-1000-00000001'
-);
-
-
 
 
 -- API Key Relation to Brands --
@@ -136,3 +135,14 @@ CREATE TABLE ApiKeyToBrand (
   CONSTRAINT FK_ApiKeyToBrand_ApiKey FOREIGN KEY (keyID) REFERENCES ApiKey (id),
   CONSTRAINT FK_ApiKeyToBrand_Brand FOREIGN KEY (brandID) REFERENCES Brand (ID)
 );
+
+-- Api Key ID = 1 skipped intentionally --
+INSERT INTO ApiKeyToBrand (ID, keyID, BrandID) VALUES (1, 2, 1);
+INSERT INTO ApiKeyToBrand (ID, keyID, BrandID) VALUES (2, 3, 1);
+INSERT INTO ApiKeyToBrand (ID, keyID, BrandID) VALUES (3, 3, 3);
+INSERT INTO ApiKeyToBrand (ID, keyID, BrandID) VALUES (4, 3, 5);
+INSERT INTO ApiKeyToBrand (ID, keyID, BrandID) VALUES (5, 4, 1);
+INSERT INTO ApiKeyToBrand (ID, keyID, BrandID) VALUES (6, 4, 3);
+INSERT INTO ApiKeyToBrand (ID, keyID, BrandID) VALUES (7, 4, 4);
+INSERT INTO ApiKeyToBrand (ID, keyID, BrandID) VALUES (8, 4, 5);
+INSERT INTO ApiKeyToBrand (ID, keyID, BrandID) VALUES (9, 4, 6);
