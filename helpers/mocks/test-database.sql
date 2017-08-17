@@ -58,6 +58,7 @@ CREATE TABLE CustomerUser (
 );
 
 -- Mock Customer Users --
+-- No Brands --
 INSERT INTO CustomerUser (
   id,
   name,
@@ -86,6 +87,49 @@ VALUES (
   0,
   1
 );
+
+-- One Brand --
+INSERT INTO CustomerUser (
+  id,
+  name,
+  email,
+  password,
+  customerID,
+  date_added,
+  active,
+  locationID,
+  isSudo,
+  cust_ID,
+  NotCustomer,
+  passwordConverted
+)
+VALUES (
+  '100000000000-0000-4000-1000-00000002',
+  'Example Customer User 1',
+  'example@example.com',
+  'peanuts, like passwords, should be salted',
+  10000002,
+  '2013-01-02 09:53:21',
+  1,
+  1,
+  1,
+  11000002,
+  0,
+  1
+);
+
+
+CREATE TABLE CustomerToBrand (
+  ID         INT AUTO_INCREMENT PRIMARY KEY,
+  cust_id    INT                    NOT NULL,
+  brandID    INT                    NOT NULL,
+  dealerTier INT DEFAULT '0'        NOT NULL,
+  dealerType INT DEFAULT '0'        NOT NULL,
+  salesRepID INT DEFAULT '0'        NOT NULL,
+  websiteID  INT DEFAULT '0'        NOT NULL,
+  enableWTB  TINYINT(1) DEFAULT '0' NOT NULL
+);
+
 
 
 
@@ -137,10 +181,15 @@ CREATE TABLE ApiKeyToBrand (
 );
 
 -- Api Key ID = 1 skipped intentionally --
+-- One Brand --
 INSERT INTO ApiKeyToBrand (ID, keyID, BrandID) VALUES (1, 2, 1);
+
+-- Multiple Brands --
 INSERT INTO ApiKeyToBrand (ID, keyID, BrandID) VALUES (2, 3, 1);
 INSERT INTO ApiKeyToBrand (ID, keyID, BrandID) VALUES (3, 3, 3);
 INSERT INTO ApiKeyToBrand (ID, keyID, BrandID) VALUES (4, 3, 5);
+
+-- All Brands --
 INSERT INTO ApiKeyToBrand (ID, keyID, BrandID) VALUES (5, 4, 1);
 INSERT INTO ApiKeyToBrand (ID, keyID, BrandID) VALUES (6, 4, 3);
 INSERT INTO ApiKeyToBrand (ID, keyID, BrandID) VALUES (7, 4, 4);
