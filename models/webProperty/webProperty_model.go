@@ -81,14 +81,11 @@ var (
 		JOIN WebProperties AS w ON w.typeID = wt.id
 		JOIN CustomerToBrand as ctb on (ctb.cust_id = w.cust_id)
 		WHERE (ctb.brandID = ?) or (0 = ?)`
-	getAllWebPropertyNotes = `SELECT wn.id, wn.webPropID, wn.text, wn.dateAdded
-		FROM WebPropNotes as wn
-		join WebProperties as w on w.id = wn.webPropID
-		join CustomerToBrand as ctb on ctb.cust_id = w.cust_id
-		join ApiKeyToBrand as atb on atb.brandID = ctb.brandID
-		join ApiKey as a on a.id = atb.keyID
-		where a.api_key =? && (ctb.brandID = ? or 0 = ?)
-		group by wn.id`
+  getAllWebPropertyNotes = `SELECT wn.id, wn.webPropID, wn.text, wn.dateAdded FROM WebPropNotes as wn
+		JOIN WebProperties AS w ON w.id = wn.webPropID
+		JOIN CustomerToBrand AS ctb ON ctb.cust_id = w.cust_id
+		WHERE (ctb.brandID = ? OR 0 = ?)
+		GROUP BY wn.id`
 	getAllWebPropertyRequirements = `SELECT DISTINCT wprc.ID, wpr.ID, wpr.ReqType, wpr.Requirement, wprc.Compliance, wprc.WebPropertiesID
 		FROM WebPropRequirementCheck AS wprc
 		LEFT JOIN WebPropRequirements AS wpr ON wpr.ID = wprc.WebPropRequirementsID
@@ -654,7 +651,7 @@ func GetAllWebPropertyNotes(dtx *apicontext.DataContext) (WebPropertyNotes, erro
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
+	res, err := stmt.Query(dtx.BrandID, dtx.BrandID)
 	for res.Next() {
 		var w WebPropertyNote
 		res.Scan(&w.ID, &w.WebPropID, &w.Text, &w.DateAdded)
