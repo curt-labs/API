@@ -620,7 +620,7 @@ func GetAllWebPropertyTypes(dtx *apicontext.DataContext) (WebPropertyTypes, erro
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Query()
+	res, err := stmt.Query(dtx.BrandID, dtx.BrandID)
 	for res.Next() {
 		var w WebPropertyType
 		res.Scan(&w.ID, &w.TypeID, &w.Type)
