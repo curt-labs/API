@@ -78,7 +78,9 @@ var (
 	getWebProperty             = "SELECT id, name, cust_ID, badgeID, url, isEnabled,sellerID, typeID , isFinalApproved, isEnabledDate, isDenied, requestedDate, addedDate FROM WebProperties WHERE id = ?"
 	getWebPropertiesByCustomer = "SELECT id, name, cust_ID, badgeID, url, isEnabled,sellerID, typeID , isFinalApproved, isEnabledDate, isDenied, requestedDate, addedDate FROM WebProperties WHERE cust_ID = ?"
 	getAllWebPropertyTypes     = `SELECT DISTINCT wt.id, wt.typeID, wt.type FROM WebPropertyTypes AS wt
-		JOIN WebProperties AS w ON w.typeID = wt.id`
+		JOIN WebProperties AS w ON w.typeID = wt.id
+		JOIN CustomerToBrand as ctb on (ctb.cust_id = w.cust_id)
+		WHERE (ctb.brandID = ?) or (0 = ?)`
 	getAllWebPropertyNotes = `SELECT wn.id, wn.webPropID, wn.text, wn.dateAdded
 		FROM WebPropNotes as wn
 		join WebProperties as w on w.id = wn.webPropID
