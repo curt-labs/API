@@ -1,8 +1,9 @@
 package acesFile
 
 import (
-	"encoding/xml"
+	"bytes"
 	"strconv"
+	"time"
 
 	"github.com/curt-labs/API/helpers/encoding"
 	"github.com/curt-labs/API/helpers/error"
@@ -36,13 +37,9 @@ func GetAcesFile(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder
 		return ""
 	}
 
-	var aces acesFile.Aces
+	rw.Header().Set("Content-Type", "application/xml")
 
-	err = xml.Unmarshal([]byte(file), &aces)
-	if err != nil {
-		apierror.GenerateError("Could not fetch Aces File", err, rw, req, http.StatusBadRequest)
-		return ""
-	}
+	http.ServeContent(rw, req, "aces.xml", time.Now(), bytes.NewReader([]byte(file)))
 
-	return encoding.Must(enc.Encode(aces))
+	return ""
 }
