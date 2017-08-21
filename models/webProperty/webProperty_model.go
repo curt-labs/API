@@ -69,12 +69,10 @@ type WebPropertyRequirement struct {
 type WebPropertyRequirements []WebPropertyRequirement
 
 var (
-	getAllWebProperties = `SELECT w.id, w.name, w.cust_ID, w.badgeID, w.url, w.isEnabled,w.sellerID, w.typeID , w.isFinalApproved, w.isEnabledDate, w.isDenied, w.requestedDate, w.addedDate
-				FROM WebProperties as w
-				join CustomerToBrand as ctb on ctb.cust_id = w.cust_id
-				join ApiKeyToBrand as atb on atb.brandID = ctb.brandID
-				join ApiKey as a on a.id = atb.keyID
-				where a.api_key = ? && (ctb.brandID = ? or 0 = ?)`
+	getAllWebProperties = `SELECT w.id, w.name, w.cust_ID, w.badgeID, w.url, w.isEnabled, w.sellerID, w.typeID, w.isFinalApproved, w.isEnabledDate, w.isDenied, w.requestedDate, w.addedDate
+		FROM WebProperties AS w
+		JOIN CustomerToBrand AS ctb ON ctb.cust_id = w.cust_id
+		WHERE ctb.brandID = ? OR 0 = ?`
 	getWebProperty             = "SELECT id, name, cust_ID, badgeID, url, isEnabled,sellerID, typeID , isFinalApproved, isEnabledDate, isDenied, requestedDate, addedDate FROM WebProperties WHERE id = ?"
 	getWebPropertiesByCustomer = "SELECT id, name, cust_ID, badgeID, url, isEnabled,sellerID, typeID , isFinalApproved, isEnabledDate, isDenied, requestedDate, addedDate FROM WebProperties WHERE cust_ID = ?"
 	getAllWebPropertyTypes     = `SELECT DISTINCT wt.id, wt.typeID, wt.type FROM WebPropertyTypes AS wt
@@ -365,7 +363,7 @@ func GetAll(dtx *apicontext.DataContext) (WebProperties, error) {
 	var url, sid *string
 	var tid *int
 
-	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
+	res, err := stmt.Query(dtx.BrandID, dtx.BrandID)
 	for res.Next() {
 		var w WebProperty
 		res.Scan(
