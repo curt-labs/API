@@ -19,11 +19,6 @@ func GetAcesFile(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder
 	version := params["version"]
 
 	var brandObj brand.Brand
-	if err != nil {
-		apierror.GenerateError("Invalid brand ID", err, rw, req, http.StatusBadRequest)
-		return ""
-	}
-
 	brandObj.ID = dtx.BrandID
 	err = brandObj.Get()
 	if err != nil {
