@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 
+	"github.com/curt-labs/API/controllers/acesFile"
 	"github.com/curt-labs/API/controllers/apiKeyType"
 	"github.com/curt-labs/API/controllers/applicationGuide"
 	"github.com/curt-labs/API/controllers/blog"
@@ -72,6 +73,10 @@ func main() {
 	store := sessions.NewCookieStore([]byte("api_secret_session"))
 	m.Use(sessions.Sessions("api_sessions", store))
 	m.Use(encoding.MapEncoder)
+
+	m.Group("/aces", func(r martini.Router) {
+		r.Get("/:version", acesFile.GetAcesFile)
+	})
 
 	m.Group("/apiKeyTypes", func(r martini.Router) {
 		r.Get("", apiKeyType.GetApiKeyTypes)
