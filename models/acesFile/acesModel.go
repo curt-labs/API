@@ -6,22 +6,22 @@ type Aces struct {
 }
 
 type app struct {
-	Action       string         `xml:"action,attr"`
-	ID           string         `xml:"id,attr"`
-	BaseVehicle  baseVehicleXml `xml:"BaseVehicle"`
-	SubModel     submodelXml    `xml:"SubModel"`
-	Notes        []string       `xml:"Note"`
-	Qty          int            `xml:"Qty"`
-	PartType     partType       `xml:"PartType"`
-	MfrLabel     string         `xml:"MfrLabel"`
-	Position     position       `xml:"Position"`
-	Part         string         `xml:"Part"`
-	Years        yearsXml       `xml:"Years"`
-	Make         makeXml        `xml:"Make"`
-	Model        modelXml       `xml:"Model"`
-	BodyType     bodyType       `xml:"BodyType"`
-	BodyNumDoors bodyNumDoors   `xml:"BodyNumDoors"`
-	BedLength    []bedLength    `xml:"BedLength"`
+	Action       string          `xml:"action,attr"`
+	ID           string          `xml:"id,attr"`
+	BaseVehicle  *baseVehicleXml `xml:"BaseVehicle,omitempty"`
+	SubModel     *submodelXml    `xml:"SubModel,omitempty"`
+	Notes        []string        `xml:"Note,omitempty"`
+	Qty          int             `xml:"Qty,omitempty"`
+	PartType     *partType       `xml:"PartType,omitempty"`
+	MfrLabel     string          `xml:"MfrLabel,omitempty"`
+	Position     *position       `xml:"Position,omitempty"`
+	Part         string          `xml:"Part,omitempty"`
+	Years        *yearsXml       `xml:"Years,omitempty"`
+	Make         *makeXml        `xml:"Make,omitempty"`
+	Model        *modelXml       `xml:"Model,omitempty"`
+	BodyType     *bodyType       `xml:"BodyType,omitempty"`
+	BodyNumDoors *bodyNumDoors   `xml:"BodyNumDoors,omitempty"`
+	BedLength    []bedLength     `xml:"BedLength,omitempty"`
 }
 
 type yearsXml struct {
@@ -30,37 +30,37 @@ type yearsXml struct {
 }
 
 type bedLength struct {
-	ID string `xml:"id,attr"`
+	ID string `xml:"id,attr,omitempty"`
 }
 
 type bodyNumDoors struct {
-	ID string `xml:"id,attr"`
+	ID string `xml:"id,attr,omitempty"`
 }
 
 type bodyType struct {
-	ID string `xml:"id,attr"`
+	ID string `xml:"id,attr,omitempty"`
 }
 
 type modelXml struct {
-	ID string `xml:"id,attr"`
+	ID string `xml:"id,attr,omitempty"`
 }
 
 type makeXml struct {
-	ID string `xml:"id,attr"`
+	ID string `xml:"id,attr,omitempty"`
 }
 
 type baseVehicleXml struct {
-	ID string `xml:"id,attr"`
+	ID string `xml:"id,attr,omitempty"`
 }
 
 type submodelXml struct {
-	ID string `xml:"id,attr"`
+	ID string `xml:"id,attr,omitempty"`
 }
 
 type partType struct {
-	ID string `xml:"id,attr"`
+	ID string `xml:"id,attr,omitempty"`
 }
 
 type position struct {
-	ID string `xml:"id,attr"`
+	ID string `xml:"id,attr,omitempty"`
 }
