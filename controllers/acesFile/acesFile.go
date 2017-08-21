@@ -2,9 +2,9 @@ package acesFile
 
 import (
 	"bytes"
-	"strconv"
 	"time"
 
+	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/encoding"
 	"github.com/curt-labs/API/helpers/error"
 	"github.com/curt-labs/API/models/acesFile"
@@ -14,17 +14,17 @@ import (
 	"net/http"
 )
 
-func GetAcesFile(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params) string {
+func GetAcesFile(rw http.ResponseWriter, req *http.Request, enc encoding.Encoder, params martini.Params, dtx *apicontext.DataContext) string {
+	var err error
 	version := params["version"]
 
 	var brandObj brand.Brand
-	brandID, err := strconv.Atoi(req.URL.Query().Get("brandID"))
 	if err != nil {
 		apierror.GenerateError("Invalid brand ID", err, rw, req, http.StatusBadRequest)
 		return ""
 	}
 
-	brandObj.ID = brandID
+	brandObj.ID = dtx.BrandID
 	err = brandObj.Get()
 	if err != nil {
 		apierror.GenerateError("Invalid brand ID", err, rw, req, http.StatusBadRequest)
