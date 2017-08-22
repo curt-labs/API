@@ -23,7 +23,7 @@ ACES v3.2 XML File
 | Paramter  |  Description |
 |---|---|
 | key **(required)** | Provide your API key  |
-| brandID **(required)** | Brand querying that part number for (1=CURT, 3=ARIES, 4=Luverne) |
+| brandID **(required)** | Brand querying that ACES file for (1=CURT, 3=ARIES, 4=Luverne) |
 
 
 
