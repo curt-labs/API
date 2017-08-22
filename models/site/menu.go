@@ -44,10 +44,8 @@ var (
 	 							WHERE (ak.api_key = ? && (wub.brandID = ? OR 0=?))`
 	getMenuContents = `SELECT ` + siteContentFields + `, ` + menuSiteContentFields + `  from Menu_SiteContent as msc JOIN SiteContent AS s ON s.contentID = msc.ContentID  WHERE msc.menuID = ?`
 	getMenuByName   = ` SELECT ` + menuFields + ` FROM Menu AS m
-								Join WebsiteToBrand as wub on wub.WebsiteID = m.websiteID
-								Join ApiKeyToBrand as akb on akb.brandID = wub.brandID
-								Join ApiKey as ak on akb.keyID = ak.id
-	 							WHERE menu_name = ? && (ak.api_key = ? && (wub.brandID = ? OR 0=?))`
+		JOIN WebsiteToBrand AS wub ON wub.WebsiteID = m.websiteID
+		WHERE menu_name = ? && (wub.brandID = ? OR 0 = ?)`
 	//operations
 	createMenu                    = `INSERT INTO Menu (menu_name, isPrimary, active, display_name, requireAuthentication, showOnSiteMap, sort, websiteID) VALUES(?,?,?,?,?,?,?,?)`
 	updateMenu                    = `UPDATE Menu SET menu_name = ?, isPrimary = ?, active = ?, display_name = ?, requireAuthentication = ?, showOnSiteMap = ?, sort = ?, websiteID = ? WHERE menuID = ?`
@@ -107,7 +105,7 @@ func (m *Menu) GetByName(dtx *apicontext.DataContext) (err error) {
 
 	var display *string
 
-	err = stmt.QueryRow(m.Name, dtx.APIKey, dtx.BrandID, dtx.BrandID).Scan(
+	err = stmt.QueryRow(m.Name, dtx.BrandID, dtx.BrandID).Scan(
 		&m.Id,
 		&m.Name,
 		&m.IsPrimary,
