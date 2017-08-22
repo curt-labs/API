@@ -1,5 +1,6 @@
-#### Categories
-===
+# Categories
+
+
 List of endpoints
 
  - [Get All Categories](#all-categories)
@@ -7,16 +8,15 @@ List of endpoints
  - [Get Sub-Categories](#sub-categories)
  - [Get Category Parts](#category-parts)
  
----
 
-##<a name="all-categories"></a>Get All Categories `GET  - http://goapi.curtmfg.com/category`
+## <a name="all-categories"></a>Get All Categories `GET  - http://goapi.curtmfg.com/category`
 All Categories.
 
 *Example:*
 
 	http://goapi.curtmfg.com/category?key=[public api key]&brandID=[Brand ID]
 
-####Parameters
+#### Parameters
 
 
 | Paramter  |  Description |
@@ -25,7 +25,7 @@ All Categories.
 | brandID *(optional)* | The Brand ID of the categories your looking for |
 
 
-####Response
+#### Response
 Returns an unnamed array of Caregory objets. A Category object is described in the Get Single Category response.
 
 | Property Name  |  Value |  Description |
@@ -33,7 +33,7 @@ Returns an unnamed array of Caregory objets. A Category object is described in t
 |  | []object  | Array of Category Objects  |
 
 
-##<a name="single-category"></a>Get Single Category `GET  - http://goapi.curtmfg.com/category/:partId`
+## <a name="single-category"></a>Get Single Category `GET  - http://goapi.curtmfg.com/category/:partId`
 Information about the part.
 
 *Example:*
@@ -41,7 +41,7 @@ Information about the part.
 	http://goapi.curtmfg.com/category/254?key=[API Key]&brandID=[Brand ID]
 
 
-####Parameters
+#### Parameters
 
 
 | Paramter  |  Description |
@@ -49,7 +49,7 @@ Information about the part.
 | key **(required)** | Provide your API key  |
 | brand **(required)** | Brand querying that part number for (1=CURT, 3=ARIES, 4=Luverne) |
 
-####Response
+#### Response
 
 | Property Name  |  Value |  Description |
 |---|---|---|
@@ -91,4 +91,4 @@ Information about the part.
 
 	GET (paged) - http://goapi.curtmfg.com/category/<category id>/parts?page=[page]&count=[count]&key=[public api key]
 
-	POST - http://API.curtmfg.com/category/<parent category id>/parts?key=[public api key]
+	POST - http://goapi.curtmfg.com/category/<parent category id>/parts?key=[public api key]
