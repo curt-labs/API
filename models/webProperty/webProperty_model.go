@@ -69,7 +69,7 @@ type WebPropertyRequirement struct {
 type WebPropertyRequirements []WebPropertyRequirement
 
 var (
-	getAllWebProperties = `SELECT w.id, w.name, w.cust_ID, w.badgeID, w.url, w.isEnabled, w.sellerID, w.typeID, w.isFinalApproved, w.isEnabledDate, w.isDenied, w.requestedDate, w.addedDate
+	getAllWebProperties = `SELECT DISTINCT w.id, w.name, w.cust_ID, w.badgeID, w.url, w.isEnabled, w.sellerID, w.typeID, w.isFinalApproved, w.isEnabledDate, w.isDenied, w.requestedDate, w.addedDate
 		FROM WebProperties AS w
 		JOIN CustomerToBrand AS ctb ON ctb.cust_id = w.cust_id
 		WHERE ctb.brandID = ? OR 0 = ?`
