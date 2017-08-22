@@ -13,5 +13,6 @@ Before you can use the GoAPI you need to have an API Key. Follow the steps below
 4. The "Public" key is the key you will when making an API call. (Don't worry about the private key, it's not used)
  
 ## Product Specific APIs
+- [ACES](https://github.com/curt-labs/API/blob/goapi/docs/ACES.md)
 - [Products](https://github.com/curt-labs/API/blob/goapi/docs/Products.md)
 - [Vehicle](https://github.com/curt-labs/API/blob/goapi/docs/Vehicle.md)
