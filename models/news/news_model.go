@@ -268,22 +268,11 @@ func (n *News) Create(dtx *apicontext.DataContext) error {
 	}
 
 	//createToBrand
-	brands, err := dtx.GetBrandsFromKey()
+	err = n.CreateJoinBrand(dtx.BrandID)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
-	bChan := make(chan int)
-	go func() (err error) {
-		if len(brands) > 0 {
-			for _, brand := range brands {
-				err = n.CreateJoinBrand(brand)
-			}
-		}
-		bChan <- 1
-		return err
-	}()
-	<-bChan
 
 	tx.Commit()
 	return nil
