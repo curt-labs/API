@@ -79,17 +79,12 @@ func AddDealerContact(rw http.ResponseWriter, req *http.Request, enc encoding.En
 		}
 	}
 
-	brandIDs, err := dtx.GetBrandsFromKey()
+	brand := brand.Brand{ID: dtx.BrandID}
+	brand.Get()
 	if err != nil {
 		brandName = "Unknown Brand"
-	}
-	var brand brand.Brand
-	for _, bID := range brandIDs {
-		if bID == brandID {
-			brand.ID = bID
-			brand.Get()
-			brandName = brand.Name
-		}
+	} else {
+		brandName = brand.Name
 	}
 	d.Brand = brand
 
