@@ -66,21 +66,8 @@ func AddDealerContact(rw http.ResponseWriter, req *http.Request, enc encoding.En
 	var err error
 	var brandName string
 
-	qs := req.URL.Query()
-
-	var brandStr = qs.Get("brandID")
-	var brandID = 0
-
-	if brandStr != "" {
-		brandID, err = strconv.Atoi(brandStr)
-		if err != nil {
-			apierror.GenerateError("Trouble getting brandID", err, rw, req)
-			return ""
-		}
-	}
-
 	brand := brand.Brand{ID: dtx.BrandID}
-	brand.Get()
+	err = brand.Get()
 	if err != nil {
 		brandName = "Unknown Brand"
 	} else {
