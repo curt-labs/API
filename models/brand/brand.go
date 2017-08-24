@@ -122,6 +122,18 @@ func GetAllBrands() (Brands, error) {
 	return brands, nil
 }
 
+func GetAllBrandIds() (ids []int, err error) {
+	brands, err := GetAllBrands()
+	if err != nil {
+		return ids, err
+	}
+
+	for _, brand := range brands {
+		ids = append(ids, brand.ID)
+	}
+	return ids, err
+}
+
 func (b *Brand) Get() error {
 	if b.ID == 0 {
 		return errors.New("Invalid Brand ID")
