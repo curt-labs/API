@@ -64,7 +64,7 @@ func KeyedUserAuthentication(rw http.ResponseWriter, r *http.Request, enc encodi
 	key := qs.Get("key")
 
 	dtx := &apicontext.DataContext{APIKey: key}
-	if dtx.BrandArray, err = dtx.GetBrandsFromKey(); err != nil {
+	if dtx.BrandArray, err = brand.GetAllBrandIds(); err != nil {
 		apierror.GenerateError("Trouble getting brands from API key", err, rw, r)
 		return ""
 	}
