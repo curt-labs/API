@@ -122,6 +122,8 @@ func findIndex(brand int, dtx *apicontext.DataContext) string {
 	searchCurt := false
 	searchAries := false
 	searchLuverne := false
+	searchRetrac := false
+	searchUWS := false
 
 	if brand == 0 {
 		for _, br := range dtx.BrandArray {
@@ -131,6 +133,10 @@ func findIndex(brand int, dtx *apicontext.DataContext) string {
 				searchAries = true
 			} else if br == 4 { // search luverne
 				searchLuverne = true
+			} else if br == 5 { // search retrac
+				searchRetrac = true
+			} else if br == 6 { // search UWS
+				searchUWS = true
 			}
 		}
 	} else {
@@ -140,18 +146,30 @@ func findIndex(brand int, dtx *apicontext.DataContext) string {
 			searchAries = true
 		} else if brand == 4 {
 			searchLuverne = true
+		} else if brand == 5 {
+			searchRetrac = true
+		} else if brand == 6 {
+			searchUWS = true
 		}
 	}
 
 	index := "all"
-	if searchCurt && !searchAries && !searchLuverne {
+
+	if searchCurt && !searchAries && !searchLuverne && !searchRetrac && !searchUWS {
 		index = "curt"
 	}
-	if searchAries && !searchCurt && !searchLuverne {
+	if searchAries && !searchCurt && !searchLuverne && !searchRetrac && !searchUWS {
 		index = "aries"
 	}
-	if searchLuverne && !searchCurt && !searchAries {
+	if searchLuverne && !searchAries && !searchCurt && !searchRetrac && !searchUWS {
 		index = "luverne"
 	}
+	if searchRetrac && !searchAries && !searchCurt && !searchLuverne && !searchUWS {
+		index = "retrac"
+	}
+	if searchUWS && !searchAries && !searchCurt && !searchLuverne && !searchRetrac {
+		index = "uws"
+	}
+
 	return index
 }
