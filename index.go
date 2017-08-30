@@ -222,8 +222,8 @@ func main() {
 
 	//No lockdown of customer related endpoints for now
 	m.Group("/customer", func(r martini.Router) {
-		r.Get("", middleware.InternalKeyAuthentication, customer_ctlr.GetCustomer)
-		r.Post("", middleware.InternalKeyAuthentication, customer_ctlr.GetCustomer)
+		r.Get("", customer_ctlr.GetCustomer)
+		r.Post("", customer_ctlr.GetCustomer)
 
 		r.Post("/auth", customer_ctlr.AuthenticateUser)
 		r.Get("/auth", customer_ctlr.KeyedUserAuthentication)
