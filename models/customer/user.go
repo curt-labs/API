@@ -78,7 +78,7 @@ type Warehouse struct {
 
 type ComnetCredential struct {
 	Username string `json:"username" xml:"username"`
-	Password string `json:"password" xml:"password"`
+	Password string `json:"-" xml:"-"`
 }
 
 type ApiCredentials struct {
