@@ -30,11 +30,8 @@ type Scanner interface {
 }
 
 var (
-	getNews = `SELECT ni.newsItemID, ni.title, ni.lead, ni.content, ni.publishStart, ni.publishEnd, ni.active, ni.slug FROM NewsItem as ni
-									Join NewsItemToBrand as nib on nib.newsItemID = ni.newsItemID
-									Join ApiKeyToBrand as akb on akb.brandID = nib.brandID
-									Join ApiKey as ak on akb.keyID = ak.id
-									where ni.newsItemID = ? && (ak.api_key = ? && (nib.brandID = ? OR 0=?))`
+	getNews = `SELECT ni.newsItemID, ni.title, ni.lead, ni.content, ni.publishStart, ni.publishEnd, ni.active, ni.slug
+		FROM NewsItem AS ni WHERE ni.newsItemID = ?`
 	getAll = `SELECT ni.newsItemID, ni.title, ni.lead, ni.content, ni.publishStart, ni.publishEnd, ni.active, ni.slug FROM NewsItem as ni
 									Join NewsItemToBrand as nib on nib.newsItemID = ni.newsItemID
 									Join ApiKeyToBrand as akb on akb.brandID = nib.brandID
@@ -91,7 +88,7 @@ func (n *News) Get(dtx *apicontext.DataContext) error {
 	}
 	defer stmt.Close()
 
-	row := stmt.QueryRow(n.ID, dtx.APIKey, dtx.BrandID, dtx.BrandID)
+	row := stmt.QueryRow(n.ID)
 	item, err := scanItem(row)
 	if err != nil {
 		return err
