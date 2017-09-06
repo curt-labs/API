@@ -42,11 +42,9 @@ var (
 	deleteNews    = `DELETE FROM NewsItem WHERE newsItemID = ?`
 	deleteToBrand = `DELETE FROM NewsItemToBrand WHERE newsItemID = ?`
 	getTitles     = `SELECT ni.title FROM NewsItem AS ni JOIN NewsItemToBrand AS nib ON nib.newsItemID = ni.newsItemID WHERE nib.brandID = ?`
-	getLeads = `SELECT ni.lead FROM NewsItem as ni
-					Join NewsItemToBrand as nib on nib.newsItemID = ni.newsItemID
-					Join ApiKeyToBrand as akb on akb.brandID = nib.brandID
-					Join ApiKey as ak on akb.keyID = ak.id
-					where (ak.api_key = ? && (nib.brandID = ? OR 0=?))`
+	getLeads = `SELECT ni.lead FROM NewsItem AS ni
+		JOIN NewsItemToBrand AS nib ON nib.newsItemID = ni.newsItemID
+		WHERE nib.brandID = ?`
 	search = `SELECT ni.newsItemID, ni.title, ni.lead, ni.content, ni.publishStart, ni.publishEnd, ni.active, ni.slug FROM NewsItem as ni
 					Join NewsItemToBrand as nib on nib.newsItemID = ni.newsItemID
 					Join ApiKeyToBrand as akb on akb.brandID = nib.brandID
@@ -186,7 +184,7 @@ func GetLeads(pageStr, resultsStr string, dtx *apicontext.DataContext) (paginati
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
+	res, err := stmt.Query(dtx.BrandID)
 	for res.Next() {
 		var f News
 		res.Scan(&f.Lead)
