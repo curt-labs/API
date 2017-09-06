@@ -45,13 +45,10 @@ var (
 	getLeads = `SELECT ni.lead FROM NewsItem AS ni
 		JOIN NewsItemToBrand AS nib ON nib.newsItemID = ni.newsItemID
 		WHERE nib.brandID = ?`
-	search = `SELECT ni.newsItemID, ni.title, ni.lead, ni.content, ni.publishStart, ni.publishEnd, ni.active, ni.slug FROM NewsItem as ni
-					Join NewsItemToBrand as nib on nib.newsItemID = ni.newsItemID
-					Join ApiKeyToBrand as akb on akb.brandID = nib.brandID
-					Join ApiKey as ak on akb.keyID = ak.id
-					WHERE ni.title LIKE ? AND ni.lead LIKE ? AND ni.content LIKE ? AND ni.publishStart LIKE ? AND ni.publishEnd LIKE ? AND ni.active LIKE ? AND ni.slug LIKE ? &&
-					(ak.api_key = ? && (nib.brandID = ? OR 0=?))
-					`
+	search = `SELECT ni.newsItemID, ni.title, ni.lead, ni.content, ni.publishStart, ni.publishEnd, ni.active, ni.slug FROM NewsItem AS ni
+		JOIN NewsItemToBrand AS nib ON nib.newsItemID = ni.newsItemID
+		WHERE ni.title LIKE ? AND ni.lead LIKE ? AND ni.content LIKE ? AND ni.publishStart LIKE ? AND ni.publishEnd LIKE ? AND
+		ni.active LIKE ? AND ni.slug LIKE ? && nib.brandID = ?`
 )
 
 const (
@@ -213,7 +210,7 @@ func Search(title, lead, content, publishStart, publishEnd, active, slug, pageSt
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Query("%"+title+"%", "%"+lead+"%", "%"+content+"%", "%"+publishStart+"%", "%"+publishEnd+"%", "%"+active+"%", "%"+slug+"%", dtx.APIKey, dtx.BrandID, dtx.BrandID)
+	res, err := stmt.Query("%"+title+"%", "%"+lead+"%", "%"+content+"%", "%"+publishStart+"%", "%"+publishEnd+"%", "%"+active+"%", "%"+slug+"%", dtx.BrandID)
 	for res.Next() {
 		n, err := scanItem(res)
 		if err == nil {
