@@ -18,10 +18,7 @@ var (
 	getAllContactsStmt = `select contactID, first_name, last_name, email, phone, subject, message,
                           createdDate, type, address1, address2, city, state, postalcode, country, Contact.brandID
                           from Contact
-                          join ApiKeyToBrand as akb on akb.brandID = Contact.brandID
-						  join ApiKey as ak on ak.id = akb.keyID
-                          where  ak.api_key = ? && (Contact.BrandID = ? or 0 = ?)
-                           limit ?, ?`
+                          limit ?, ?`
 	getContactStmt = `select contactID, first_name, last_name, email, phone, subject, message,
                       createdDate, type, address1, address2, city, state, postalcode, country from Contact where contactID = ?`
 	addContactStmt = `insert into Contact(createdDate, first_name, last_name, email, phone, subject,
@@ -68,7 +65,7 @@ func GetAllContacts(page, count int, dtx *apicontext.DataContext) (Contacts, err
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID, page, count)
+	rows, err := stmt.Query(page, count)
 	if err != nil {
 		return Contacts{}, nil
 	}
