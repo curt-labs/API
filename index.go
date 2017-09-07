@@ -142,7 +142,7 @@ func main() {
 
 		r.Get("", contact.GetAllContacts)
 		r.Get("/:id", contact.GetContact)
-		r.Post("/:contactTypeID", middleware.InternalKeyAuthentication, contact.AddDealerContact)
+		r.Post("/:contactTypeID", contact.AddDealerContact)
 		r.Put("/:id", middleware.InternalKeyAuthentication, contact.UpdateContact)
 		r.Delete("/:id", middleware.InternalKeyAuthentication, contact.DeleteContact)
 	})
