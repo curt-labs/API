@@ -16,8 +16,9 @@ import (
 
 var (
 	getAllContactsStmt = `select contactID, first_name, last_name, email, phone, subject, message,
-                          createdDate, type, address1, address2, city, state, postalcode, country, Contact.brandID
+                          createdDate, type, address1, address2, city, state, postalcode, country, brandID
                           from Contact
+													where (brandID = ? or 0 = ?)
                           limit ?, ?`
 	getContactStmt = `select contactID, first_name, last_name, email, phone, subject, message,
                       createdDate, type, address1, address2, city, state, postalcode, country from Contact where contactID = ?`
@@ -65,7 +66,7 @@ func GetAllContacts(page, count int, dtx *apicontext.DataContext) (Contacts, err
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query(page, count)
+	rows, err := stmt.Query(dtx.BrandID, dtx.BrandID, page, count)
 	if err != nil {
 		return Contacts{}, nil
 	}
