@@ -35,20 +35,20 @@ var (
 	getAll = `SELECT ni.newsItemID, ni.title, ni.lead, ni.content, ni.publishStart, ni.publishEnd, ni.active, ni.slug
 		FROM NewsItem AS ni
 		JOIN NewsItemToBrand AS nib ON nib.newsItemID = ni.newsItemID
-		WHERE nib.brandID = ?`
+		WHERE (nib.brandID = ? OR 0=?)`
 	create        = `INSERT INTO NewsItem (title, lead, content, publishStart, publishEnd, active, slug) VALUES (?,?,?,?,?,?,?)`
 	createToBrand = `INSERT INTO NewsItemToBrand (newsItemID, brandID) VALUES (?, ?)`
 	update        = `UPDATE NewsItem SET title = ?, lead = ?, content = ?, publishStart = ?, publishEnd = ?, active = ?, slug = ? WHERE newsItemID = ?`
 	deleteNews    = `DELETE FROM NewsItem WHERE newsItemID = ?`
 	deleteToBrand = `DELETE FROM NewsItemToBrand WHERE newsItemID = ?`
-	getTitles     = `SELECT ni.title FROM NewsItem AS ni JOIN NewsItemToBrand AS nib ON nib.newsItemID = ni.newsItemID WHERE nib.brandID = ?`
-	getLeads = `SELECT ni.lead FROM NewsItem AS ni
+	getTitles     = `SELECT ni.title FROM NewsItem AS ni JOIN NewsItemToBrand AS nib ON nib.newsItemID = ni.newsItemID WHERE (nib.brandID = ? OR 0=?)`
+	getLeads      = `SELECT ni.lead FROM NewsItem AS ni
 		JOIN NewsItemToBrand AS nib ON nib.newsItemID = ni.newsItemID
-		WHERE nib.brandID = ?`
+		WHERE (nib.brandID = ? OR 0=?)`
 	search = `SELECT ni.newsItemID, ni.title, ni.lead, ni.content, ni.publishStart, ni.publishEnd, ni.active, ni.slug FROM NewsItem AS ni
 		JOIN NewsItemToBrand AS nib ON nib.newsItemID = ni.newsItemID
 		WHERE ni.title LIKE ? AND ni.lead LIKE ? AND ni.content LIKE ? AND ni.publishStart LIKE ? AND ni.publishEnd LIKE ? AND
-		ni.active LIKE ? AND ni.slug LIKE ? && nib.brandID = ?`
+		ni.active LIKE ? AND ni.slug LIKE ? && (nib.brandID = ? OR 0=?)`
 )
 
 const (
@@ -110,7 +110,7 @@ func GetAll(dtx *apicontext.DataContext) (Newses, error) {
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Query(dtx.BrandID)
+	res, err := stmt.Query(dtx.BrandID, dtx.BrandID)
 	for res.Next() {
 		n, err := scanItem(res)
 		if err == nil {
@@ -146,7 +146,7 @@ func GetTitles(pageStr, resultsStr string, dtx *apicontext.DataContext) (paginat
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Query(dtx.BrandID)
+	res, err := stmt.Query(dtx.BrandID, dtx.BrandID)
 	for res.Next() {
 		var f News
 		res.Scan(&f.Title)
@@ -181,7 +181,7 @@ func GetLeads(pageStr, resultsStr string, dtx *apicontext.DataContext) (paginati
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Query(dtx.BrandID)
+	res, err := stmt.Query(dtx.BrandID, dtx.BrandID)
 	for res.Next() {
 		var f News
 		res.Scan(&f.Lead)
@@ -210,7 +210,7 @@ func Search(title, lead, content, publishStart, publishEnd, active, slug, pageSt
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Query("%"+title+"%", "%"+lead+"%", "%"+content+"%", "%"+publishStart+"%", "%"+publishEnd+"%", "%"+active+"%", "%"+slug+"%", dtx.BrandID)
+	res, err := stmt.Query("%"+title+"%", "%"+lead+"%", "%"+content+"%", "%"+publishStart+"%", "%"+publishEnd+"%", "%"+active+"%", "%"+slug+"%", dtx.BrandID, dtx.BrandID)
 	for res.Next() {
 		n, err := scanItem(res)
 		if err == nil {
