@@ -281,10 +281,8 @@ var (
 				left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
 				left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
 				join CustomerToBrand as ctb on ctb.cust_id = c.cust_id
-				join ApiKeyToBrand as atb on atb.brandID = ctb.brandID
-				join ApiKey as a on a.id = atb.keyID
 				where dt.online = 1 && c.isDummy = 0
-				&& a.api_key = ? && (ctb.brandID = ? or 0 = ?)
+				&& (ctb.brandID = ? or 0 = ?)
 				order by c.name
 				limit ?,?`
 
@@ -298,10 +296,8 @@ var (
 				left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
 				left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
 				join CustomerToBrand as ctb on ctb.cust_id = c.cust_id
-				join ApiKeyToBrand as atb on atb.brandID = ctb.brandID
-				join ApiKey as a on a.id = atb.keyID
 				where dt.online = 1 && c.isDummy = 0
-				&& a.api_key = ? && (ctb.brandID = ? or 0 = ?)`
+				&& (ctb.brandID = ? or 0 = ?)`
 
 	localDealers = `select
 					` + customerLocationFields + `,
@@ -398,10 +394,8 @@ var (
 							join Customer as c on dtr.ID = c.tier
 							join DealerTypes as dt on c.dealer_type = dt.dealer_type
 							join CustomerToBrand as ctb on ctb.cust_id = c.cust_id
-							join ApiKeyToBrand as atb on atb.brandID = ctb.brandID
-							join ApiKey as a on a.id = atb.keyID
 							where dt.online = false and dt.show = true
-							&& a.api_key = ? && (ctb.brandID = ? or 0 = ?)
+							&& (ctb.brandID = ? or 0 = ?)
 							order by dtr.sort`
 	localDealerTypes = `select distinct m.ID as iconId, m.mapicon, m.mapiconshadow,
 							dtr.ID as tierID, dtr.tier as tier, dtr.sort as tierSort,
@@ -411,10 +405,8 @@ var (
 							join DealerTiers as dtr on m.tier = dtr.ID
 							join Customer as c on dtr.ID = c.tier
 							join CustomerToBrand as ctb on ctb.cust_id = c.cust_id
-							join ApiKeyToBrand as atb on atb.brandID = ctb.brandID
-							join ApiKey as a on a.id = atb.keyID
 							where dt.show = true
-							&& a.api_key = ? && (atb.brandID = ? or 0 = ?)
+							&& (ctb.brandID = ? or 0 = ?)
 							order by dtr.sort desc`
 
 	whereToBuyDealers = `select distinct ` + customerFields + `, ` + stateFields + `, ` + countryFields + `, ` + dealerTypeFields + `, ` + dealerTierFields + `, ` + mapIconFields + `, ` + mapixCodeFields + `, ` + salesRepFields + `
@@ -427,10 +419,8 @@ var (
 				left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
 				left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
 				join CustomerToBrand as ctb on ctb.cust_id = c.cust_id
-				join ApiKeyToBrand as atb on atb.brandID = ctb.brandID
-				join ApiKey as a on a.id = atb.keyID
 				where c.dealer_type = 1 and c.tier = 4 and c.isDummy = false and length(c.searchURL) > 1
-				&&(a.api_key = ? && (atb.brandID = ? or 0 = ?))`
+				&&(ctb.brandID = ? or 0 = ?)`
 
 	customerByLocation = `select ` + customerLocationFields + `, ` + stateFields + `, ` + countryFields + `, ` + dealerTypeFields + `, ` + dealerTierFields + `, ` + mapIconFields + `, ` + mapixCodeFields + `, ` + salesRepFields + `  ,` + showSiteFields + `
 								from CustomerLocations as cl
@@ -974,13 +964,13 @@ func GetEtailers(dtx *apicontext.DataContext, count int, page int) (EtailerRespo
 
 	var total int
 
-	row := database.DB.QueryRow(etailersCount, dtx.APIKey, dtx.BrandID, dtx.BrandID)
+	row := database.DB.QueryRow(etailersCount, dtx.BrandID, dtx.BrandID)
 	err = row.Scan(&total)
 	if err != nil {
 		return etailResp, err
 	}
 
-	rows, err := database.DB.Query(etailers, dtx.APIKey, dtx.BrandID, dtx.BrandID, skip, count)
+	rows, err := database.DB.Query(etailers, dtx.BrandID, dtx.BrandID, skip, count)
 	if err != nil {
 		return etailResp, err
 	}
@@ -1172,7 +1162,7 @@ func GetLocalDealerTiers(dtx *apicontext.DataContext) (tiers []DealerTier, err e
 		return tiers, err
 	}
 	defer stmt.Close()
-	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
+	res, err := stmt.Query(dtx.BrandID, dtx.BrandID)
 	var brandID *int
 	for res.Next() {
 		var t DealerTier
@@ -1207,7 +1197,7 @@ func GetLocalDealerTypes(dtx *apicontext.DataContext) (graphics []MapGraphics, e
 		return graphics, err
 	}
 	defer stmt.Close()
-	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
+	res, err := stmt.Query(dtx.BrandID, dtx.BrandID)
 	var icon, shadow []byte
 	for res.Next() {
 		var g MapGraphics
@@ -1256,7 +1246,7 @@ func GetWhereToBuyDealers(dtx *apicontext.DataContext) (customers []Customer, er
 		return customers, err
 	}
 	defer stmt.Close()
-	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID)
+	res, err := stmt.Query(dtx.BrandID, dtx.BrandID)
 	if err != nil {
 		return customers, err
 	}

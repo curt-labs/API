@@ -51,20 +51,13 @@ const (
 var (
 	getLatestRevision = `SELECT revisionID, content_text, createdOn, active FROM SiteContentRevision AS scr WHERE scr.contentID = ? ORDER BY createdOn DESC LIMIT 1`
 	getContent        = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s WHERE s.contentID = ?`
-	getAllContent = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s
+	getAllContent     = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s
 								Join WebsiteToBrand as wub on wub.WebsiteID = s.websiteID
-								Join ApiKeyToBrand as akb on akb.brandID = wub.brandID
-								Join ApiKey as ak on akb.keyID = ak.id
-								where s.active = true && s.published = true && (ak.api_key = ? && (wub.brandID = ? OR 0=?)  && (wub.WebsiteID = ? OR 0=?))`
+								where s.active = true && s.published = true && (wub.brandID = ? OR 0=?) && (wub.WebsiteID = ? OR 0=?)`
 	getContentRevisions    = `SELECT revisionID, content_text, createdOn, active FROM SiteContentRevision AS scr WHERE scr.contentID = ? `
 	getAllContentRevisions = `SELECT revisionID, content_text, createdOn, active FROM SiteContentRevision AS scr `
 	getContentRevision     = `SELECT revisionID, content_text, createdOn, active FROM SiteContentRevision AS scr WHERE revisionID = ?`
-	getContentBySlug       = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s
-								Join WebsiteToBrand as wub on wub.WebsiteID = s.websiteID
-								Join ApiKeyToBrand as akb on akb.brandID = wub.brandID
-								Join ApiKey as ak on akb.keyID = ak.id
-								WHERE s.slug = ? && (ak.api_key = ? && (wub.brandID = ? OR 0=?))`
-
+	getContentBySlug       = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s WHERE s.slug = ?`
 	//operations
 	createRevision = `INSERT INTO SiteContentRevision (contentID, content_text, createdOn, active) VALUES (?,?,?,?)`
 	createContent  = `INSERT INTO SiteContent
@@ -152,7 +145,7 @@ func (c *Content) GetBySlug(dtx *apicontext.DataContext) (err error) {
 	}
 	defer stmt.Close()
 	var cType, title, mTitle, mDesc, slug, canon *string
-	err = stmt.QueryRow(c.Slug, dtx.APIKey, dtx.BrandID, dtx.BrandID).Scan(
+	err = stmt.QueryRow(c.Slug).Scan(
 		&c.Id,
 		&cType,
 		&title,
@@ -214,7 +207,11 @@ func GetAllContents(dtx *apicontext.DataContext, siteID int) (cs Contents, err e
 
 	var cType, title, mTitle, mDesc, slug, canon, keywords *string
 	var c Content
-	res, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID, siteID, siteID)
+	res, err := stmt.Query(dtx.BrandID, dtx.BrandID, siteID, siteID)
+	if err != nil {
+		return cs, err
+	}
+
 	for res.Next() {
 		err = res.Scan(
 			&c.Id,
@@ -260,7 +257,7 @@ func GetAllContents(dtx *apicontext.DataContext, siteID int) (cs Contents, err e
 		}
 		err = c.GetLatestRevision()
 		if err != nil {
-			return cs, err
+			//do nothing
 		}
 
 		cs = append(cs, c)
