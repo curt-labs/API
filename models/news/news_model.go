@@ -258,7 +258,7 @@ func (n *News) Create(dtx *apicontext.DataContext) error {
 	// 	tx.Rollback()
 	// 	return err
 	// }
-	brands := []int{1, 3, 4, 5, 6}
+	brands := apicontext.AllBrandsArray
 	bChan := make(chan int)
 	go func() (err error) {
 		if len(brands) > 0 {

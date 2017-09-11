@@ -200,13 +200,6 @@ func main() {
 		r.Post("/user/changePassword", customer_ctlr.ChangePassword)
 	})
 
-	//Literally exact same as above? Copy paste error?
-	m.Group("/cache", func(r martini.Router) { // different endpoint because partial matching matches this to another excused route
-		r.Get("/key", cache.GetByKey)
-		r.Get("/keys", cache.GetKeys)
-		r.Delete("/keys", middleware.InternalKeyAuthentication, cache.DeleteKey)
-	})
-
 	//No lockdown of customer related endpoints for now
 	m.Group("/customer", func(r martini.Router) {
 		r.Get("", customer_ctlr.GetCustomer)

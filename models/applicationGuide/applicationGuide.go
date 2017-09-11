@@ -31,9 +31,7 @@ var (
 										where ag.ID = ? `
 	getApplicationGuidesBySite = `select ag.ID, ` + fields + `, c.catTitle from ApplicationGuides as ag
 										left join Categories as c on c.catID = ag.catID
-										Join ApiKeyToBrand as akb on akb.brandID = ag.brandID
-										Join ApiKey as ak on akb.keyID = ak.id
-										where (ak.api_key = ? && (ag.brandID = ? OR 0=?)) && websiteID = ?`
+										where (ag.brandID = ? OR 0=?) && websiteID = ?`
 )
 
 func (ag *ApplicationGuide) Get(dtx *apicontext.DataContext) error {
@@ -68,7 +66,7 @@ func (ag *ApplicationGuide) GetBySite(dtx *apicontext.DataContext) ([]Applicatio
 	}
 
 	defer stmt.Close()
-	rows, err := stmt.Query(dtx.APIKey, dtx.BrandID, dtx.BrandID, ag.Website.ID)
+	rows, err := stmt.Query(dtx.BrandID, dtx.BrandID, ag.Website.ID)
 
 	var ags []ApplicationGuide
 
