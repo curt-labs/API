@@ -64,7 +64,7 @@ func GetCategoryTree(dtx *apicontext.DataContext) ([]Category, error) {
 		return cats, err
 	}
 	defer session.Close()
-	query := bson.M{"parent_id": 0, "isdeleted": false, "is_lifestyle": false, "brand.id": bson.M{"$in": dtx.BrandArray}}
+	query := bson.M{"parent_id": 0, "isdeleted": false, "is_lifestyle": false, "brand.id": bson.M{"$in": apicontext.AllBrandsArray}}
 	err = session.DB(database.ProductDatabase).C(database.CategoryCollectionName).Find(query).Sort("sort").All(&cats)
 	for i, _ := range cats {
 		cats[i].removeDeletedChildren()

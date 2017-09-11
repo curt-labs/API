@@ -97,7 +97,7 @@ func (l *Lookup) LoadParts(ch chan []Part, page int, count int, dtx *apicontext.
 	defer stmt.Close()
 
 	brands := make([]string, 0)
-	for _, b := range dtx.BrandArray {
+	for _, b := range apicontext.AllBrandsArray {
 		brands = append(brands, strconv.Itoa(b))
 	}
 

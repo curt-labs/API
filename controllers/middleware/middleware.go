@@ -206,10 +206,10 @@ func processDataContext(r *http.Request, c martini.Context) (*apicontext.DataCon
 		CustomerID: user.CustomerID,
 		Globals:    nil,
 	}
-	err = dtx.GetBrandsArrayAndString(apiKey, brandID)
-	if err != nil {
-		return nil, err
-	}
+	// err = dtx.GetBrandsArrayAndString(apiKey, brandID)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	return dtx, nil
 }

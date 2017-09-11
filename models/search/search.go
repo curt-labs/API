@@ -126,7 +126,7 @@ func findIndex(brand int, dtx *apicontext.DataContext) string {
 	searchUWS := false
 
 	if brand == 0 {
-		for _, br := range dtx.BrandArray {
+		for _, br := range apicontext.AllBrandsArray {
 			if br == 1 { // search curt
 				searchCurt = true
 			} else if br == 3 { // search aries

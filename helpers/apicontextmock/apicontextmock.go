@@ -114,10 +114,10 @@ func Mock() (*apicontext.DataContext, error) {
 	}
 
 	//brandString and array
-	err = dtx.GetBrandsArrayAndString(dtx.APIKey, dtx.BrandID)
-	if err != nil {
-		return &dtx, err
-	}
+	// err = dtx.GetBrandsArrayAndString(dtx.APIKey, dtx.BrandID)
+	// if err != nil {
+	// 	return &dtx, err
+	// }
 	return &dtx, nil
 }
 

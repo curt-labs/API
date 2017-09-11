@@ -184,7 +184,7 @@ func VinPartLookup(vin string, dtx *apicontext.DataContext) (l products.Lookup, 
 	}
 
 	//set lookup object's brands
-	for _, brand := range dtx.BrandArray {
+	for _, brand := range apicontext.AllBrandsArray {
 		l.Brands = append(l.Brands, brand)
 	}
 

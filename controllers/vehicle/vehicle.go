@@ -40,7 +40,7 @@ func Query(w http.ResponseWriter, r *http.Request, enc encoding.Encoder, dtx *ap
 
 	l.Vehicle = LoadVehicle(r)
 
-	l.Brands = dtx.BrandArray
+	l.Brands = apicontext.AllBrandsArray
 
 	if qs.Get("key") != "" {
 		l.CustomerKey = qs.Get("key")

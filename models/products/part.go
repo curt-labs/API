@@ -469,14 +469,16 @@ func (p *Part) GetPartByPartNumber(dtx *apicontext.DataContext) (err error) {
 	return err
 }
 
+//For the moment we're just going to have this function return all brands
 func getBrandsFromDTX(dtx *apicontext.DataContext) []int {
-	var brands []int
-	if dtx.BrandID == 0 {
-		for _, b := range dtx.BrandArray {
-			brands = append(brands, b)
-		}
-	} else {
-		brands = append(brands, dtx.BrandID)
-	}
-	return brands
+	// var brands []int
+	// if dtx.BrandID == 0 {
+	// 	for _, b := range dtx.BrandArray {
+	// 		brands = append(brands, b)
+	// 	}
+	// } else {
+	// 	brands = append(brands, dtx.BrandID)
+	// }
+	// return brands
+	return apicontext.AllBrandsArray
 }

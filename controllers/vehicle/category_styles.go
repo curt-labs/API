@@ -45,22 +45,21 @@ func QueryCategoryStyle(w http.ResponseWriter, r *http.Request, params martini.P
 		}
 		statuses = ids
 	}
+	var brandIDs []int
 	if r.URL.Query().Get("brands") != "" {
 		segs := strings.Split(r.URL.Query().Get("brands"), ",")
-		var ids []int
 
 		for _, seg := range segs {
-			for _, dtxBrand := range dtx.BrandArray {
-				if seg == strconv.Itoa(dtxBrand) {
-					ids = append(ids, dtxBrand)
-				}
+			id, err := strconv.Atoi(seg)
+			if err == nil {
+				brandIDs = append(brandIDs, id)
 			}
 		}
-		dtx.BrandArray = ids
+
 	}
 
 	ctx := &products.LookupContext{
-		Brands:   dtx.BrandArray,
+		Brands:   brandIDs,
 		Statuses: statuses,
 		Session:  session,
 	}

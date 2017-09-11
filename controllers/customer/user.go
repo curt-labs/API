@@ -162,71 +162,71 @@ func ChangePassword(rw http.ResponseWriter, r *http.Request, enc encoding.Encode
 	return encoding.Must(enc.Encode("Success"))
 }
 
-func GenerateApiKey(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
-	var err error
-	qs := r.URL.Query()
-	key := qs.Get("key")
-	if key == "" {
-		key = r.FormValue("key")
-	}
-
-	user, err := customer.GetCustomerUserFromKey(key)
-	if err != nil || user.Id == "" {
-		apierror.GenerateError("Trouble getting customer user using this api key", err, rw, r)
-		return ""
-	}
-
-	authed := false
-	if user.Sudo == false {
-		for _, k := range user.Keys {
-			if k.Type == customer.PRIVATE_KEY_TYPE && k.Key == key {
-				authed = true
-				break
-			}
-		}
-	} else {
-		authed = true
-	}
-
-	if !authed {
-		err = errors.New("You do not have sufficient permissions to perform this operation.")
-		apierror.GenerateError("Unauthorized", err, rw, r, http.StatusUnauthorized)
-		return ""
-	}
-
-	id := params["id"]
-	if r.FormValue("id") != "" {
-		id = r.FormValue("id")
-	}
-
-	generateType := params["type"]
-	if r.FormValue("type") != "" {
-		generateType = r.FormValue("type")
-	}
-
-	if id == "" {
-		err = errors.New("You must provide a reference to the user whose key should be generated.")
-		apierror.GenerateError("Invalid user reference", err, rw, r)
-		return ""
-	}
-	if generateType == "" {
-		err = errors.New("You must provide the type of key to be generated")
-		apierror.GenerateError("Invalid API key type", err, rw, r)
-		return ""
-	}
-	user.Id = id
-	if err = user.Get(key); err != nil {
-		apierror.GenerateError("Invalid user reference", err, rw, r)
-		return ""
-	}
-
-	generated, err := user.GenerateAPIKey(generateType, dtx.BrandArray)
-	if err != nil {
-		apierror.GenerateError("Failed to generate an API Key", err, rw, r)
-		return ""
-	}
-	return encoding.Must(enc.Encode(generated))
-}
+// func GenerateApiKey(rw http.ResponseWriter, r *http.Request, params martini.Params, enc encoding.Encoder, dtx *apicontext.DataContext) string {
+// 	var err error
+// 	qs := r.URL.Query()
+// 	key := qs.Get("key")
+// 	if key == "" {
+// 		key = r.FormValue("key")
+// 	}
+//
+// 	user, err := customer.GetCustomerUserFromKey(key)
+// 	if err != nil || user.Id == "" {
+// 		apierror.GenerateError("Trouble getting customer user using this api key", err, rw, r)
+// 		return ""
+// 	}
+//
+// 	authed := false
+// 	if user.Sudo == false {
+// 		for _, k := range user.Keys {
+// 			if k.Type == customer.PRIVATE_KEY_TYPE && k.Key == key {
+// 				authed = true
+// 				break
+// 			}
+// 		}
+// 	} else {
+// 		authed = true
+// 	}
+//
+// 	if !authed {
+// 		err = errors.New("You do not have sufficient permissions to perform this operation.")
+// 		apierror.GenerateError("Unauthorized", err, rw, r, http.StatusUnauthorized)
+// 		return ""
+// 	}
+//
+// 	id := params["id"]
+// 	if r.FormValue("id") != "" {
+// 		id = r.FormValue("id")
+// 	}
+//
+// 	generateType := params["type"]
+// 	if r.FormValue("type") != "" {
+// 		generateType = r.FormValue("type")
+// 	}
+//
+// 	if id == "" {
+// 		err = errors.New("You must provide a reference to the user whose key should be generated.")
+// 		apierror.GenerateError("Invalid user reference", err, rw, r)
+// 		return ""
+// 	}
+// 	if generateType == "" {
+// 		err = errors.New("You must provide the type of key to be generated")
+// 		apierror.GenerateError("Invalid API key type", err, rw, r)
+// 		return ""
+// 	}
+// 	user.Id = id
+// 	if err = user.Get(key); err != nil {
+// 		apierror.GenerateError("Invalid user reference", err, rw, r)
+// 		return ""
+// 	}
+//
+// 	generated, err := user.GenerateAPIKey(generateType, dtx.BrandArray)
+// 	if err != nil {
+// 		apierror.GenerateError("Failed to generate an API Key", err, rw, r)
+// 		return ""
+// 	}
+// 	return encoding.Must(enc.Encode(generated))
+// }
 
 //registers an inactive user; emails user and webdev that a new inactive user exists - used by dealers site
 func RegisterUser(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder) string {
