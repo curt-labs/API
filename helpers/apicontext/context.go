@@ -25,33 +25,33 @@ var (
 		where ak.api_key = ?`
 )
 
-func (dtx *DataContext) GetBrandsFromKey() ([]int, error) {
-	var err error
-	var b int
-	var brands []int
-	err = database.Init()
-	if err != nil {
-		return brands, err
-	}
-
-	stmt, err := database.DB.Prepare(apiToBrandStmt)
-	if err != nil {
-		return brands, err
-	}
-	defer stmt.Close()
-	res, err := stmt.Query(dtx.APIKey)
-	if err != nil {
-		return brands, err
-	}
-	for res.Next() {
-		err = res.Scan(&b)
-		if err != nil {
-			return brands, err
-		}
-		brands = append(brands, b)
-	}
-	return brands, err
-}
+// func (dtx *DataContext) GetBrandsFromKey() ([]int, error) {
+// 	var err error
+// 	var b int
+// 	var brands []int
+// 	err = database.Init()
+// 	if err != nil {
+// 		return brands, err
+// 	}
+//
+// 	stmt, err := database.DB.Prepare(apiToBrandStmt)
+// 	if err != nil {
+// 		return brands, err
+// 	}
+// 	defer stmt.Close()
+// 	res, err := stmt.Query(dtx.APIKey)
+// 	if err != nil {
+// 		return brands, err
+// 	}
+// 	for res.Next() {
+// 		err = res.Scan(&b)
+// 		if err != nil {
+// 			return brands, err
+// 		}
+// 		brands = append(brands, b)
+// 	}
+// 	return brands, err
+// }
 
 func (dtx *DataContext) GetBrandsArrayAndString(apiKey string, brandId int) error {
 	var err error
