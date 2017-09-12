@@ -44,9 +44,10 @@ var (
 	CategoryMongoSession *mgo.Session
 	AriesMongoSession    *mgo.Session
 
-	DB     *sql.DB
-	VcdbDB *sql.DB
-	Driver = "mysql"
+	DB        *sql.DB
+	VcdbDB    *sql.DB
+	MagentoDB *sql.DB
+	Driver    = "mysql"
 )
 
 func Init() error {
@@ -94,6 +95,13 @@ func Init() error {
 		}
 	}
 
+	if MagentoDB == nil {
+		MagentoDB, err = sql.Open(Driver, MagentoConnectionString())
+		if err != nil {
+			return err
+		}
+	}
+
 	return InitMongo()
 }
 
@@ -123,6 +131,19 @@ func VcdbConnectionString() string {
 	}
 
 	return "root:@tcp(127.0.0.1:3306)/vcdb?parseTime=true&loc=America%2FChicago"
+}
+
+func MagentoConnectionString() string {
+	if addr := os.Getenv("MAGENTO_DATABASE_HOST"); addr != "" {
+		proto := os.Getenv("DATABASE_PROTOCOL")
+		user := os.Getenv("MAGENTO_DATABASE_USERNAME")
+		pass := os.Getenv("MAGENTO_DATABASE_PASSWORD")
+		db := os.Getenv("MAGENTO_DB")
+
+		return fmt.Sprintf("%s:%s@%s(%s)/%s?parseTime=true&loc=%s", user, pass, proto, addr, db, "America%2FChicago")
+	}
+
+	return "root:@tcp(127.0.0.1:3306)/yoda?parseTime=true&loc=America%2FChicago"
 }
 
 func VintelligencePass() string {

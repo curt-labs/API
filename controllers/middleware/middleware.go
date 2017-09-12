@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"net/http"
@@ -166,7 +167,7 @@ func processDataContext(r *http.Request, c martini.Context) (*apicontext.DataCon
 
 	//gets customer user from api key
 	user, err := getCustomerID(apiKey)
-	if err != nil || user.Id == "" {
+	if err != nil {
 		return nil, errors.New("No User for this API Key.")
 	}
 	// go user.LogApiRequest(r)
@@ -219,19 +220,23 @@ func getCustomerID(apiKey string) (*customer.CustomerUser, error) {
 	if err != nil {
 		return nil, err
 	}
-	session := database.ProductMongoSession.Copy()
-	defer session.Close()
 
-	query := bson.M{"users.keys.key": apiKey}
+	var FindMagentoUserByKey = `SELECT customer_id FROM curtgroup_api_keys WHERE api_key = ?`
+	var customer_id int
 
-	var resp = struct {
-		Users []customer.CustomerUser `bson:"users"`
-	}{}
-	err = session.DB(database.ProductDatabase).C(database.CustomerCollectionName).Find(query).Select(bson.M{"users.$": 1, "_id": 0}).One(&resp)
-	if len(resp.Users) == 0 {
+	row := database.MagentoDB.QueryRow(FindMagentoUserByKey, apiKey)
+
+	err = row.Scan(&customer_id)
+	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("failed to find user for that API key")
 	}
-	return &resp.Users[0], err
+
+	//Obviously not right but we need to figure out which is which
+	var customer_user customer.CustomerUser
+	customer_user.CustomerID = customer_id
+	customer_user.CustID = customer_id
+
+	return &customer_user, nil
 }
 
 func InternalKeyAuthentication(w http.ResponseWriter, req *http.Request) {
