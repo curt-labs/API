@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 	"net/http"
@@ -20,6 +19,10 @@ import (
 
 var (
 	ExcusedRoutes = []string{"/status", "/customer/auth", "/customer/user", "/new/customer/auth", "/customer/user/register", "/customer/user/resetPassword", "/cartIntegration/priceTypes", "/cartIntegration", "/cache"}
+
+	FindMagentoUserByKey = `SELECT customer_id FROM curtgroup_api_keys WHERE api_key = ?`
+
+	FindInternalMagentoUserByKey = `SELECT customer_id FROM curtgroup_api_keys WHERE api_key = ? AND name = "Internal"`
 
 	GetKeyType = `SELECT akt.type FROM ApiKey as ak, ApiKeyType as akt WHERE akt.id = ak.type_id AND ak.api_key=?`
 )
@@ -207,10 +210,6 @@ func processDataContext(r *http.Request, c martini.Context) (*apicontext.DataCon
 		CustomerID: user.CustomerID,
 		Globals:    nil,
 	}
-	// err = dtx.GetBrandsArrayAndString(apiKey, brandID)
-	// if err != nil {
-	// 	return nil, err
-	// }
 
 	return dtx, nil
 }
@@ -221,13 +220,12 @@ func getCustomerID(apiKey string) (*customer.CustomerUser, error) {
 		return nil, err
 	}
 
-	var FindMagentoUserByKey = `SELECT customer_id FROM curtgroup_api_keys WHERE api_key = ?`
 	var customer_id int
 
 	row := database.MagentoDB.QueryRow(FindMagentoUserByKey, apiKey)
 
 	err = row.Scan(&customer_id)
-	if err == sql.ErrNoRows {
+	if err != nil {
 		return nil, fmt.Errorf("failed to find user for that API key")
 	}
 
@@ -253,18 +251,13 @@ func InternalKeyAuthentication(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	row := database.DB.QueryRow(GetKeyType, key)
+	row := database.MagentoDB.QueryRow(FindInternalMagentoUserByKey, key)
 
-	var keyType string
+	var cust_id int
 
-	err = row.Scan(&keyType)
+	err = row.Scan(&cust_id)
 	if err != nil {
 		http.Error(w, "Key could not be authenticated", http.StatusInternalServerError)
-		return
-	}
-
-	if keyType != "Internal" {
-		http.Error(w, "Access denied", http.StatusUnauthorized)
 		return
 	}
 

@@ -95,7 +95,7 @@ func main() {
 	//Creating, updating, and deleting Brands is not handled anywhere, but it does need to be
 	//locked down for security.
 	m.Group("/brands", func(r martini.Router) {
-		r.Get("", brand_ctlr.GetAllBrands)
+		r.Get("", middleware.InternalKeyAuthentication, brand_ctlr.GetAllBrands)
 		r.Post("", middleware.InternalKeyAuthentication, brand_ctlr.CreateBrand)
 		r.Get("/:id", brand_ctlr.GetBrand)
 		r.Put("/:id", middleware.InternalKeyAuthentication, brand_ctlr.UpdateBrand)
