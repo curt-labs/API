@@ -22,7 +22,7 @@ var (
 
 	FindMagentoUserByKey = `SELECT customer_id FROM curtgroup_api_keys WHERE api_key = ?`
 
-	FindInternalMagentoUserByKey = `SELECT customer_id FROM curtgroup_api_keys WHERE api_key = ? AND name = "Internal"`
+	FindInternalMagentoUserByKey = `SELECT customer_id FROM curtgroup_api_keys WHERE api_key = ? AND is_admin = 1`
 
 	GetKeyType = `SELECT akt.type FROM ApiKey as ak, ApiKeyType as akt WHERE akt.id = ak.type_id AND ak.api_key=?`
 )
