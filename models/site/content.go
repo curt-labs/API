@@ -57,7 +57,9 @@ var (
 	getContentRevisions    = `SELECT revisionID, content_text, createdOn, active FROM SiteContentRevision AS scr WHERE scr.contentID = ? `
 	getAllContentRevisions = `SELECT revisionID, content_text, createdOn, active FROM SiteContentRevision AS scr `
 	getContentRevision     = `SELECT revisionID, content_text, createdOn, active FROM SiteContentRevision AS scr WHERE revisionID = ?`
-	getContentBySlug       = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s WHERE s.slug = ?`
+	getContentBySlug       = `SELECT ` + siteContentColumns + ` FROM SiteContent AS s
+														Join WebsiteToBrand as wub on wub.WebsiteID = s.websiteID
+														WHERE s.slug = ? && (wub.brandID = ? OR 0=?)`
 	//operations
 	createRevision = `INSERT INTO SiteContentRevision (contentID, content_text, createdOn, active) VALUES (?,?,?,?)`
 	createContent  = `INSERT INTO SiteContent
@@ -145,7 +147,7 @@ func (c *Content) GetBySlug(dtx *apicontext.DataContext) (err error) {
 	}
 	defer stmt.Close()
 	var cType, title, mTitle, mDesc, slug, canon *string
-	err = stmt.QueryRow(c.Slug).Scan(
+	err = stmt.QueryRow(c.Slug, dtx.BrandID, dtx.BrandID).Scan(
 		&c.Id,
 		&cType,
 		&title,

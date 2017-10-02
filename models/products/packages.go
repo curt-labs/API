@@ -15,4 +15,5 @@ type Package struct {
 	PackageUnitLabel   string  `bson:"packageUnitLabel" json:"packageUnitLabel" xml:"packageUnitLabel"`
 	Quantity           int     `bson:"quantity" json:"quantity" xml:"quantity"`
 	PackageType        string  `bson:"name" json:"name" xml:"name"`
+	ParcelAllowed      bool    `bson:"parcelAllowed" json:"parcelAllowed" xml:"parcelAllowed"`
 }
