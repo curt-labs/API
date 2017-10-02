@@ -16,7 +16,6 @@ import (
 	"github.com/curt-labs/API/controllers/customer"
 	"github.com/curt-labs/API/controllers/dealers"
 	"github.com/curt-labs/API/controllers/faq"
-	"github.com/curt-labs/API/controllers/forum"
 	"github.com/curt-labs/API/controllers/geography"
 	"github.com/curt-labs/API/controllers/landingPages"
 	"github.com/curt-labs/API/controllers/luverne"
@@ -322,27 +321,27 @@ func main() {
 	//is done in GoAdmin directly
 	m.Group("/forum", func(r martini.Router) {
 		//groups
-		r.Get("/groups", forum_ctlr.GetAllGroups)
-		r.Get("/groups/:id", forum_ctlr.GetGroup)
-		r.Post("/groups", middleware.InternalKeyAuthentication, forum_ctlr.AddGroup)
-		r.Put("/groups/:id", middleware.InternalKeyAuthentication, forum_ctlr.UpdateGroup)
-		r.Delete("/groups/:id", middleware.InternalKeyAuthentication, forum_ctlr.DeleteGroup)
+		r.Get("/groups", Deprecated)
+		r.Get("/groups/:id", Deprecated)
+		r.Post("/groups", Deprecated)
+		r.Put("/groups/:id", Deprecated)
+		r.Delete("/groups/:id", Deprecated)
 		//topics
-		r.Get("/topics", forum_ctlr.GetAllTopics)
-		r.Get("/topics/:id", forum_ctlr.GetTopic)
-		r.Post("/topics", middleware.InternalKeyAuthentication, forum_ctlr.AddTopic)
-		r.Put("/topics/:id", middleware.InternalKeyAuthentication, forum_ctlr.UpdateTopic)
-		r.Delete("/topics/:id", middleware.InternalKeyAuthentication, forum_ctlr.DeleteTopic)
-		//threads
-		r.Get("/threads", forum_ctlr.GetAllThreads)
-		r.Get("/threads/:id", forum_ctlr.GetThread)
-		r.Delete("/threads/:id", middleware.InternalKeyAuthentication, forum_ctlr.DeleteThread)
+		r.Get("/topics", Deprecated)
+		r.Get("/topics/:id", Deprecated)
+		r.Post("/topics", Deprecated)
+		r.Put("/topics/:id", Deprecated)
+		r.Delete("/topics/:id", Deprecated)
+		//threadsDeprecated
+		r.Get("/threads", Deprecated)
+		r.Get("/threads/:id", Deprecated)
+		r.Delete("/threads/:id", Deprecated)
 		//posts
-		r.Get("/posts", forum_ctlr.GetAllPosts)
-		r.Get("/posts/:id", forum_ctlr.GetPost)
-		r.Post("/posts", middleware.InternalKeyAuthentication, forum_ctlr.AddPost)
-		r.Put("/posts/:id", middleware.InternalKeyAuthentication, forum_ctlr.UpdatePost)
-		r.Delete("/posts/:id", middleware.InternalKeyAuthentication, forum_ctlr.DeletePost)
+		r.Get("/posts", Deprecated)
+		r.Get("/posts/:id", Deprecated)
+		r.Post("/posts", Deprecated)
+		r.Put("/posts/:id", Deprecated)
+		r.Delete("/posts/:id", Deprecated)
 	})
 
 	m.Group("/geography", func(r martini.Router) {
@@ -573,4 +572,10 @@ func main() {
 
 	log.Printf("Starting server on 127.0.0.1%s\n", *listenAddr)
 	log.Fatal(srv.ListenAndServe())
+}
+
+func Deprecated(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusGone)
+	w.Header().Set("Content-Type", "text/plain")
+	w.Write([]byte("This API Endpoint has been deprecated. Please contact websupport@curtgroup.com if you have any questions or comments."))
 }
