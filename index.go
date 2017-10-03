@@ -15,7 +15,6 @@ import (
 	"github.com/curt-labs/API/controllers/contact"
 	"github.com/curt-labs/API/controllers/customer"
 	"github.com/curt-labs/API/controllers/dealers"
-	"github.com/curt-labs/API/controllers/faq"
 	"github.com/curt-labs/API/controllers/geography"
 	"github.com/curt-labs/API/controllers/landingPages"
 	"github.com/curt-labs/API/controllers/luverne"
@@ -308,13 +307,13 @@ func main() {
 
 	//Creating, updating, and deleting FAQs are done in GoAdmin directly
 	m.Group("/faqs", func(r martini.Router) {
-		r.Get("", faq_controller.GetAll)                                                //get all faqs; takes optional sort param {sort=true} to sort by question
-		r.Get("/search", faq_controller.Search)                                         //takes {question, answer, page, results} - all parameters are optional
-		r.Get("/(:id)", faq_controller.Get)                                             //get by id {id}
-		r.Post("", middleware.InternalKeyAuthentication, faq_controller.Create)         //takes {question, answer}; returns object with new ID
-		r.Put("/(:id)", middleware.InternalKeyAuthentication, faq_controller.Update)    //{id, question and/or answer}
-		r.Delete("/(:id)", middleware.InternalKeyAuthentication, faq_controller.Delete) //{id}
-		r.Delete("", middleware.InternalKeyAuthentication, faq_controller.Delete)       //{?id=id}
+		r.Get("", Deprecated)          //get all faqs; takes optional sort param {sort=true} to sort by question
+		r.Get("/search", Deprecated)   //takes {question, answer, page, results} - all parameters are optional
+		r.Get("/(:id)", Deprecated)    //get by id {id}
+		r.Post("", Deprecated)         //takes {question, answer}; returns object with new ID
+		r.Put("/(:id)", Deprecated)    //{id, question and/or answer}
+		r.Delete("/(:id)", Deprecated) //{id}
+		r.Delete("", Deprecated)       //{?id=id}
 	})
 
 	//All creating, updating, and deleting of things related to Forums
