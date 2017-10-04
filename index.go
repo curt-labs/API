@@ -6,7 +6,6 @@ import (
 	"github.com/curt-labs/API/controllers/acesFile"
 	"github.com/curt-labs/API/controllers/apiKeyType"
 	"github.com/curt-labs/API/controllers/applicationGuide"
-	"github.com/curt-labs/API/controllers/blog"
 	"github.com/curt-labs/API/controllers/brand"
 	"github.com/curt-labs/API/controllers/cache"
 	"github.com/curt-labs/API/controllers/cart"
@@ -90,17 +89,17 @@ func main() {
 
 	//Creating, updating, and deleting all Blog related objects are handled in GoAdmin directly
 	m.Group("/blogs", func(r martini.Router) {
-		r.Get("", blog_controller.GetAll)                      //sort on any field e.g. ?sort=Name&direction=descending
-		r.Get("/categories", blog_controller.GetAllCategories) //all categories; sort on any field e.g. ?sort=Name&direction=descending
-		r.Get("/category/:id", blog_controller.GetBlogCategory)
-		r.Get("/search", blog_controller.Search) //search field = value e.g. /blogs/search?key=8AEE0620-412E-47FC-900A-947820EA1C1D&slug=cyclo
-		r.Post("/categories", middleware.InternalKeyAuthentication, blog_controller.CreateBlogCategory)
-		r.Delete("/categories/:id", middleware.InternalKeyAuthentication, blog_controller.DeleteBlogCategory)
-		r.Get("/:id", blog_controller.GetBlog)                                             //get blog by {id}
-		r.Put("/:id", middleware.InternalKeyAuthentication, blog_controller.UpdateBlog)    //create {post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active} returns new id
-		r.Post("", middleware.InternalKeyAuthentication, blog_controller.CreateBlog)       //update {post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active} required{id}
-		r.Delete("/:id", middleware.InternalKeyAuthentication, blog_controller.DeleteBlog) //{?id=id}
-		r.Delete("", middleware.InternalKeyAuthentication, blog_controller.DeleteBlog)     //{id}
+		r.Get("", Deprecated)            //sort on any field e.g. ?sort=Name&direction=descending
+		r.Get("/categories", Deprecated) //all categories; sort on any field e.g. ?sort=Name&direction=descending
+		r.Get("/category/:id", Deprecated)
+		r.Get("/search", Deprecated) //search field = value e.g. /blogs/search?key=8AEE0620-412E-47FC-900A-947820EA1C1D&slug=cyclo
+		r.Post("/categories", Deprecated)
+		r.Delete("/categories/:id", Deprecated)
+		r.Get("/:id", Deprecated)    //get blog by {id}
+		r.Put("/:id", Deprecated)    //create {post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active} returns new id
+		r.Post("", Deprecated)       //update {post_title ,slug ,post_text, createdDate, publishedDate, lastModified, userID, meta_title, meta_description, keywords, active} required{id}
+		r.Delete("/:id", Deprecated) //{?id=id}
+		r.Delete("", Deprecated)     //{id}
 	})
 
 	//Creating, updating, and deleting Brands is not handled anywhere, but it does need to be
