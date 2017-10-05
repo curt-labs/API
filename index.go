@@ -8,7 +8,6 @@ import (
 	"github.com/curt-labs/API/controllers/applicationGuide"
 	"github.com/curt-labs/API/controllers/brand"
 	"github.com/curt-labs/API/controllers/cache"
-	"github.com/curt-labs/API/controllers/cart"
 	"github.com/curt-labs/API/controllers/cartIntegration"
 	"github.com/curt-labs/API/controllers/category"
 	"github.com/curt-labs/API/controllers/contact"
@@ -148,35 +147,35 @@ func main() {
 	//They are being locked down for security.
 	m.Group("/shopify/customers", func(r martini.Router) {
 		// Customers - shop endpoints
-		r.Get("", cart_ctlr.GetCustomers)
-		r.Post("", middleware.InternalKeyAuthentication, cart_ctlr.AddCustomer)
-		r.Get("/search", cart_ctlr.SearchCustomer)
-		r.Get("/:id", cart_ctlr.GetCustomer)
-		r.Put("/:id", middleware.InternalKeyAuthentication, cart_ctlr.EditCustomer)
-		r.Delete("/:id", middleware.InternalKeyAuthentication, cart_ctlr.DeleteCustomer)
-		r.Get("/:id/orders", cart_ctlr.GetCustomerOrders)
+		r.Get("", Deprecated)
+		r.Post("", Deprecated)
+		r.Get("/search", Deprecated)
+		r.Get("/:id", Deprecated)
+		r.Put("/:id", Deprecated)
+		r.Delete("/:id", Deprecated)
+		r.Get("/:id/orders", Deprecated)
 
 		// Addresses
-		r.Get("/:id/addresses", cart_ctlr.GetAddresses)
-		r.Get("/:id/addresses/:address", cart_ctlr.GetAddress)
-		r.Post("/:id/addresses", middleware.InternalKeyAuthentication, cart_ctlr.AddAddress)
-		r.Put("/:id/addresses/:address/default", middleware.InternalKeyAuthentication, cart_ctlr.SetDefaultAddress)
-		r.Put("/:id/addresses/:address", middleware.InternalKeyAuthentication, cart_ctlr.EditAddress)
-		r.Delete("/:id/addresses/:address", middleware.InternalKeyAuthentication, cart_ctlr.DeleteAddress)
+		r.Get("/:id/addresses", Deprecated)
+		r.Get("/:id/addresses/:address", Deprecated)
+		r.Post("/:id/addresses", Deprecated)
+		r.Put("/:id/addresses/:address/default", Deprecated)
+		r.Put("/:id/addresses/:address", Deprecated)
+		r.Delete("/:id/addresses/:address", Deprecated)
 
 	})
 
 	m.Group("/shopify/order", func(r martini.Router) {
 		// Orders
-		r.Post("/order", middleware.InternalKeyAuthentication, cart_ctlr.CreateOrder)
+		r.Post("/order", Deprecated)
 	})
 
 	m.Group("/shopify/account", func(r martini.Router) {
 		// Account - user endpoints
-		r.Get("", cart_ctlr.GetAccount)
-		r.Post("", middleware.InternalKeyAuthentication, cart_ctlr.AddAccount)
-		r.Put("", middleware.InternalKeyAuthentication, cart_ctlr.EditAccount)
-		r.Post("/login", cart_ctlr.AccountLogin)
+		r.Get("", Deprecated)
+		r.Post("", Deprecated)
+		r.Put("", Deprecated)
+		r.Post("/login", Deprecated)
 	})
 
 	//Used on the dealer site, no lockdown for now
