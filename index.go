@@ -227,7 +227,6 @@ func main() {
 		r.Post("/user/register", customer_ctlr.RegisterUser)
 		r.Post("/user/resetPassword", customer_ctlr.ResetPassword)
 		r.Delete("/deleteKey", customer_ctlr.DeleteUserApiKey)
-		r.Post("/generateKey/user/:id/key/:type", customer_ctlr.GenerateApiKey)
 		r.Get("/user/:id", customer_ctlr.GetUserById)
 		//r.Post("/user/:id", customer_ctlr.UpdateCustomerUser)
 		//r.Delete("/user/:id", customer_ctlr.DeleteCustomerUser)
