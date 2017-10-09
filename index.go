@@ -23,7 +23,6 @@ import (
 	"github.com/curt-labs/API/controllers/search"
 	"github.com/curt-labs/API/controllers/showcase"
 	"github.com/curt-labs/API/controllers/site"
-	"github.com/curt-labs/API/controllers/techSupport"
 	"github.com/curt-labs/API/controllers/testimonials"
 	"github.com/curt-labs/API/controllers/vehicle"
 	"github.com/curt-labs/API/controllers/videos"
@@ -434,11 +433,11 @@ func main() {
 
 	//Completely unused
 	m.Group("/techSupport", func(r martini.Router) {
-		r.Get("/all", techSupport.GetAllTechSupport)
-		r.Get("/contact/:id", techSupport.GetTechSupportByContact)
-		r.Get("/:id", techSupport.GetTechSupport)
-		r.Post("/:contactReceiverTypeID/:sendEmail", middleware.InternalKeyAuthentication, techSupport.CreateTechSupport) //contactType determines who receives the email/sendEmail is a bool indicating if email should be sent
-		r.Delete("/:id", middleware.InternalKeyAuthentication, techSupport.DeleteTechSupport)
+		r.Get("/all", Deprecated)
+		r.Get("/contact/:id", Deprecated)
+		r.Get("/:id", Deprecated)
+		r.Post("/:contactReceiverTypeID/:sendEmail", Deprecated) //contactType determines who receives the email/sendEmail is a bool indicating if email should be sent
+		r.Delete("/:id", Deprecated)
 	})
 
 	//Creating, updating, and deleting of testimonials is done in GoAdmin directly
