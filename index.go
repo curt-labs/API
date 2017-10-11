@@ -28,7 +28,6 @@ import (
 	"github.com/curt-labs/API/controllers/videos"
 	"github.com/curt-labs/API/controllers/vinLookup"
 	"github.com/curt-labs/API/controllers/warranty"
-	"github.com/curt-labs/API/controllers/webProperty"
 	"github.com/curt-labs/API/helpers/encoding"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/cors"
@@ -460,36 +459,36 @@ func main() {
 
 	//This is unholy and should not exist
 	m.Group("/webProperties", func(r martini.Router) {
-		r.Post("/requirement/:id", middleware.InternalKeyAuthentication, webProperty_controller.CreateUpdateWebPropertyRequirement)
-		r.Put("/requirement", middleware.InternalKeyAuthentication, webProperty_controller.CreateUpdateWebPropertyRequirement)
-		r.Delete("/requirement/:id", middleware.InternalKeyAuthentication, webProperty_controller.DeleteWebPropertyRequirement)
-		r.Get("/requirement/:id", webProperty_controller.GetWebPropertyRequirement)
-		r.Get("/requirement", webProperty_controller.GetAllRequirements)
-		r.Post("/json/type", middleware.InternalKeyAuthentication, webProperty_controller.CreateUpdateWebPropertyType)
-		r.Post("/json/type/:id", middleware.InternalKeyAuthentication, webProperty_controller.CreateUpdateWebPropertyType)
-		r.Post("/json/requirement", middleware.InternalKeyAuthentication, webProperty_controller.CreateUpdateWebPropertyRequirement)
-		r.Post("/json/requirement/:id", middleware.InternalKeyAuthentication, webProperty_controller.CreateUpdateWebPropertyRequirement)
-		r.Post("/json/note", middleware.InternalKeyAuthentication, webProperty_controller.CreateUpdateWebPropertyNote)
-		r.Post("/json/note/:id", middleware.InternalKeyAuthentication, webProperty_controller.CreateUpdateWebPropertyNote)
-		r.Post("/json/:id", middleware.InternalKeyAuthentication, webProperty_controller.CreateUpdateWebProperty)
-		r.Put("/json", middleware.InternalKeyAuthentication, webProperty_controller.CreateUpdateWebProperty)
-		r.Post("/note/:id", middleware.InternalKeyAuthentication, webProperty_controller.CreateUpdateWebPropertyNote) //updates when an id is present; otherwise, creates
-		r.Put("/note", middleware.InternalKeyAuthentication, webProperty_controller.CreateUpdateWebPropertyNote)      //updates when an id is present; otherwise, creates
-		r.Delete("/note/:id", middleware.InternalKeyAuthentication, webProperty_controller.DeleteWebPropertyNote)     //{id}
-		r.Get("/note/:id", webProperty_controller.GetWebPropertyNote)                                                 //{id}
-		r.Post("/type/:id", middleware.InternalKeyAuthentication, webProperty_controller.CreateUpdateWebPropertyType) //updates when an id is present; otherwise, creates
-		r.Put("/type", middleware.InternalKeyAuthentication, webProperty_controller.CreateUpdateWebPropertyType)      //updates when an id is present; otherwise, creates
-		r.Delete("/type/:id", middleware.InternalKeyAuthentication, webProperty_controller.DeleteWebPropertyType)     //{id}
-		r.Get("/type/:id", webProperty_controller.GetWebPropertyType)                                                 //{id}
-		r.Get("/search", webProperty_controller.Search)
-		r.Get("/type", webProperty_controller.GetAllTypes)
-		r.Get("/note", webProperty_controller.GetAllNotes)
-		r.Get("/customer", webProperty_controller.GetByPrivateKey)
-		r.Get("", webProperty_controller.GetAll)
-		r.Get("/:id", webProperty_controller.Get)                                                            //?id=id
-		r.Delete("/:id", middleware.InternalKeyAuthentication, webProperty_controller.DeleteWebProperty)     //{id}
-		r.Post("/:id", middleware.InternalKeyAuthentication, webProperty_controller.CreateUpdateWebProperty) //
-		r.Put("", middleware.InternalKeyAuthentication, webProperty_controller.CreateUpdateWebProperty)      //can create notes(text) and requirements (requirement, by requirement=requirementID) while creating a property
+		r.Post("/requirement/:id", Deprecated)
+		r.Put("/requirement", Deprecated)
+		r.Delete("/requirement/:id", Deprecated)
+		r.Get("/requirement/:id", Deprecated)
+		r.Get("/requirement", Deprecated)
+		r.Post("/json/type", Deprecated)
+		r.Post("/json/type/:id", Deprecated)
+		r.Post("/json/requirement", Deprecated)
+		r.Post("/json/requirement/:id", Deprecated)
+		r.Post("/json/note", Deprecated)
+		r.Post("/json/note/:id", Deprecated)
+		r.Post("/json/:id", Deprecated)
+		r.Put("/json", Deprecated)
+		r.Post("/note/:id", Deprecated)   //updates when an id is present; otherwise, creates
+		r.Put("/note", Deprecated)        //updates when an id is present; otherwise, creates
+		r.Delete("/note/:id", Deprecated) //{id}
+		r.Get("/note/:id", Deprecated)    //{id}
+		r.Post("/type/:id", Deprecated)   //updates when an id is present; otherwise, creates
+		r.Put("/type", Deprecated)        //updates when an id is present; otherwise, creates
+		r.Delete("/type/:id", Deprecated) //{id}
+		r.Get("/type/:id", Deprecated)    //{id}
+		r.Get("/search", Deprecated)
+		r.Get("/type", Deprecated)
+		r.Get("/note", Deprecated)
+		r.Get("/customer", Deprecated)
+		r.Get("", Deprecated)
+		r.Get("/:id", Deprecated)    //?id=id
+		r.Delete("/:id", Deprecated) //{id}
+		r.Post("/:id", Deprecated)   //
+		r.Put("", Deprecated)        //can create notes(text) and requirements (requirement, by requirement=requirementID) while creating a property
 	})
 
 	// ARIES Year/Make/Model/Style
