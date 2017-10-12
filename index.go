@@ -27,7 +27,6 @@ import (
 	"github.com/curt-labs/API/controllers/vehicle"
 	"github.com/curt-labs/API/controllers/videos"
 	"github.com/curt-labs/API/controllers/vinLookup"
-	"github.com/curt-labs/API/controllers/warranty"
 	"github.com/curt-labs/API/helpers/encoding"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/cors"
@@ -450,11 +449,11 @@ func main() {
 
 	//warranty related actions are handled in Survey
 	m.Group("/warranty", func(r martini.Router) {
-		r.Get("/all", warranty.GetAllWarranties)
-		r.Get("/contact/:id", warranty.GetWarrantyByContact)
-		r.Get("/:id", warranty.GetWarranty)
-		r.Post("/:contactReceiverTypeID/:sendEmail", middleware.InternalKeyAuthentication, warranty.CreateWarranty) //contactType determines who receives the email/sendEmail is a bool indicating if email should be sent
-		r.Delete("/:id", middleware.InternalKeyAuthentication, warranty.DeleteWarranty)
+		r.Get("/all", Deprecated)
+		r.Get("/contact/:id", Deprecated)
+		r.Get("/:id", Deprecated)
+		r.Post("/:contactReceiverTypeID/:sendEmail", Deprecated) //contactType determines who receives the email/sendEmail is a bool indicating if email should be sent
+		r.Delete("/:id", Deprecated)
 	})
 
 	//This is unholy and should not exist
