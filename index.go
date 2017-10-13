@@ -79,8 +79,8 @@ func main() {
 	m.Group("/applicationGuide", func(r martini.Router) {
 		r.Get("/website/:id", applicationGuide.GetApplicationGuidesByWebsite)
 		r.Get("/:id", applicationGuide.GetApplicationGuide)
-		r.Delete("/:id", middleware.InternalKeyAuthentication, applicationGuide.DeleteApplicationGuide)
-		r.Post("", middleware.InternalKeyAuthentication, applicationGuide.CreateApplicationGuide)
+		r.Delete("/:id", Deprecated)
+		r.Post("", Deprecated)
 	})
 
 	//Creating, updating, and deleting all Blog related objects are handled in GoAdmin directly
