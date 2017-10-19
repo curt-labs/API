@@ -226,64 +226,64 @@ func main() {
 		r.Post("/user/resetPassword", customer_ctlr.ResetPassword)
 		r.Delete("/deleteKey", customer_ctlr.DeleteUserApiKey)
 		r.Post("/generateKey/user/:id/key/:type", customer_ctlr.GenerateApiKey)
-		r.Get("/user/:id", customer_ctlr.GetUserById)
+		r.Get("/user/:id", Deprecated)
 		//r.Post("/user/:id", customer_ctlr.UpdateCustomerUser)
 		//r.Delete("/user/:id", customer_ctlr.DeleteCustomerUser)
 		// August 16th, 2017
 		// If 6 months have passed with these being commented out, delete them and their functions
-		r.Get("/users", customer_ctlr.GetUsers)
+		r.Get("/users", Deprecated)
 
-		r.Delete("/allUsersByCustomerID/:id", middleware.InternalKeyAuthentication, customer_ctlr.DeleteCustomerUsersByCustomerID) //Takes CustomerID (UUID)---danger!
+		r.Delete("/allUsersByCustomerID/:id", Deprecated) //Takes CustomerID (UUID)---danger!
 
-		r.Put("/location/json", customer_ctlr.SaveLocationJson)
-		r.Put("/location/json/:id", customer_ctlr.SaveLocationJson)
-		r.Post("/location", customer_ctlr.SaveLocation)
-		r.Get("/location/:id", customer_ctlr.GetLocation)
-		r.Put("/location/:id", customer_ctlr.SaveLocation)
-		r.Delete("/location/:id", customer_ctlr.DeleteLocation)
+		r.Put("/location/json", Deprecated)
+		r.Put("/location/json/:id", Deprecated)
+		r.Post("/location", Deprecated)
+		r.Get("/location/:id", Deprecated)
+		r.Put("/location/:id", Deprecated)
+		r.Delete("/location/:id", Deprecated)
 
-		r.Get("/locations", customer_ctlr.GetLocations)
-		r.Post("/locations", customer_ctlr.GetLocations)
+		r.Get("/locations", Deprecated)
+		r.Post("/locations", Deprecated)
 
-		r.Get("/price/:id", customer_ctlr.GetCustomerPrice)           //{part id}
-		r.Get("/cartRef/:id", customer_ctlr.GetCustomerCartReference) //{part id}
+		r.Get("/price/:id", Deprecated)   //{part id}
+		r.Get("/cartRef/:id", Deprecated) //{part id}
 
 		// Customer CMS endpoints
 		// All Customer Contents
-		r.Get("/cms", customer_ctlr.GetAllContent)
+		r.Get("/cms", Deprecated)
 		// Content Types
-		r.Get("/cms/content_types", customer_ctlr.GetAllContentTypes)
+		r.Get("/cms/content_types", Deprecated)
 
 		// Customer Part Content
-		r.Get("/cms/part", customer_ctlr.AllPartContent)
-		r.Get("/cms/part/:id", customer_ctlr.UniquePartContent)
-		r.Put("/cms/part/:id", customer_ctlr.UpdatePartContent) //partId
-		r.Post("/cms/part/:id", customer_ctlr.CreatePartContent)
-		r.Delete("/cms/part/:id", customer_ctlr.DeletePartContent)
+		r.Get("/cms/part", Deprecated)
+		r.Get("/cms/part/:id", Deprecated)
+		r.Put("/cms/part/:id", Deprecated) //partId
+		r.Post("/cms/part/:id", Deprecated)
+		r.Delete("/cms/part/:id", Deprecated)
 
 		// Customer Category Content
-		r.Get("/cms/category", customer_ctlr.AllCategoryContent)
-		r.Get("/cms/category/:id", customer_ctlr.UniqueCategoryContent)
-		r.Post("/cms/category/:id", customer_ctlr.UpdateCategoryContent) //categoryId
-		r.Delete("/cms/category/:id", customer_ctlr.DeleteCategoryContent)
+		r.Get("/cms/category", Deprecated)
+		r.Get("/cms/category/:id", Deprecated)
+		r.Post("/cms/category/:id", Deprecated) //categoryId
+		r.Delete("/cms/category/:id", Deprecated)
 
 		// Customer Content By Content Id
-		r.Get("/cms/:id", customer_ctlr.GetContentById)
-		r.Get("/cms/:id/revisions", customer_ctlr.GetContentRevisionsById)
+		r.Get("/cms/:id", Deprecated)
+		r.Get("/cms/:id/revisions", Deprecated)
 
 		//Customer prices
-		r.Get("/prices/part/:id", customer_ctlr.GetPricesByPart)         //{id}; id refers to partId
-		r.Post("/prices/sale", customer_ctlr.GetSales)                   //{start}{end}{id} -all required params; id refers to customerId
-		r.Get("/prices/:id", customer_ctlr.GetPrice)                     //{id}; id refers to {id} refers to customerPriceId
-		r.Get("/prices", customer_ctlr.GetAllPrices)                     //returns all {sort=field&direction=dir}
-		r.Put("/prices/:id", customer_ctlr.CreateUpdatePrice)            //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
-		r.Post("/prices", customer_ctlr.CreateUpdatePrice)               //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
-		r.Delete("/prices/:id", customer_ctlr.DeletePrice)               //{id} refers to customerPriceId
-		r.Get("/pricesByCustomer/:id", customer_ctlr.GetPriceByCustomer) //{id} refers to customerId; returns CustomerPrices
+		r.Get("/prices/part/:id", Deprecated)      //{id}; id refers to partId
+		r.Post("/prices/sale", Deprecated)         //{start}{end}{id} -all required params; id refers to customerId
+		r.Get("/prices/:id", Deprecated)           //{id}; id refers to {id} refers to customerPriceId
+		r.Get("/prices", Deprecated)               //returns all {sort=field&direction=dir}
+		r.Put("/prices/:id", Deprecated)           //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
+		r.Post("/prices", Deprecated)              //updates when an id is present; otherwise, creates; {id} refers to customerPriceId
+		r.Delete("/prices/:id", Deprecated)        //{id} refers to customerPriceId
+		r.Get("/pricesByCustomer/:id", Deprecated) //{id} refers to customerId; returns CustomerPrices
 
-		r.Post("/:id", customer_ctlr.SaveCustomer)
-		r.Delete("/:id", middleware.InternalKeyAuthentication, customer_ctlr.DeleteCustomer)
-		r.Put("", customer_ctlr.SaveCustomer)
+		r.Post("/:id", Deprecated)
+		r.Delete("/:id", Deprecated)
+		r.Put("", Deprecated)
 	})
 
 	m.Group("/dealers", func(r martini.Router) {
