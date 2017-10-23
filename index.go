@@ -21,12 +21,10 @@ import (
 	"github.com/curt-labs/API/controllers/part"
 	"github.com/curt-labs/API/controllers/salesrep"
 	"github.com/curt-labs/API/controllers/search"
-	"github.com/curt-labs/API/controllers/showcase"
 	"github.com/curt-labs/API/controllers/site"
 	"github.com/curt-labs/API/controllers/testimonials"
 	"github.com/curt-labs/API/controllers/vehicle"
 	"github.com/curt-labs/API/controllers/videos"
-	"github.com/curt-labs/API/controllers/vinLookup"
 	"github.com/curt-labs/API/helpers/encoding"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/cors"
@@ -424,9 +422,9 @@ func main() {
 
 	//Creating of showcases is handled by GoAdmin directly
 	m.Group("/showcase", func(r martini.Router) {
-		r.Get("", showcase.GetAllShowcases)
-		r.Get("/:id", showcase.GetShowcase)
-		r.Post("", middleware.InternalKeyAuthentication, showcase.Save)
+		r.Get("", Deprecated)
+		r.Get("/:id", Deprecated)
+		r.Post("", Deprecated)
 	})
 
 	//Completely unused
@@ -541,11 +539,11 @@ func main() {
 
 	m.Group("/vin", func(r martini.Router) {
 		//option 1 - two calls - ultimately returns parts
-		r.Get("/configs/:vin", vinLookup.GetConfigs)                    //returns vehicles - user must call vin/vehicle with vehicleID to get parts
-		r.Get("/vehicleID/:vehicleID", vinLookup.GetPartsFromVehicleID) //returns an array of parts
+		r.Get("/configs/:vin", Deprecated)         //returns vehicles - user must call vin/vehicle with vehicleID to get parts
+		r.Get("/vehicleID/:vehicleID", Deprecated) //returns an array of parts
 
 		//option 2 - one call - returns vehicles with parts
-		r.Get("/:vin", vinLookup.GetParts) //returns vehicles + configs with associates parts -or- an array of parts if only one vehicle config matches
+		r.Get("/:vin", Deprecated) //returns vehicles + configs with associates parts -or- an array of parts if only one vehicle config matches
 	})
 
 	m.Get("/status", func(w http.ResponseWriter, r *http.Request) {
