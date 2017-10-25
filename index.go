@@ -19,7 +19,6 @@ import (
 	"github.com/curt-labs/API/controllers/middleware"
 	"github.com/curt-labs/API/controllers/news"
 	"github.com/curt-labs/API/controllers/part"
-	"github.com/curt-labs/API/controllers/salesrep"
 	"github.com/curt-labs/API/controllers/search"
 	"github.com/curt-labs/API/controllers/site"
 	"github.com/curt-labs/API/controllers/testimonials"
@@ -370,9 +369,9 @@ func main() {
 		r.Get("/:part/pricing", part_ctlr.Prices)
 		r.Get("/:part/related", part_ctlr.GetRelated)
 		r.Get("/:part/videos", part_ctlr.Videos)
-		r.Get("/:part/:year/:make/:model", part_ctlr.GetWithVehicle)
-		r.Get("/:part/:year/:make/:model/:submodel", part_ctlr.GetWithVehicle)
-		r.Get("/:part/:year/:make/:model/:submodel/:config(.+)", part_ctlr.GetWithVehicle)
+		r.Get("/:part/:year/:make/:model", Deprecated)
+		r.Get("/:part/:year/:make/:model/:submodel", Deprecated)
+		r.Get("/:part/:year/:make/:model/:submodel/:config(.+)", Deprecated)
 		r.Get("/id/:part", part_ctlr.Get)
 		r.Get("/identifiers", part_ctlr.Identifiers)
 		r.Get("/:part", part_ctlr.PartNumber)
@@ -381,11 +380,11 @@ func main() {
 
 	//Creating, updating, and Deleting of salesRep entities is all done in GoAdmin directly
 	m.Group("/salesrep", func(r martini.Router) {
-		r.Get("", salesrep.GetAllSalesReps)
-		r.Post("", middleware.InternalKeyAuthentication, salesrep.AddSalesRep)
-		r.Get("/:id", salesrep.GetSalesRep)
-		r.Put("/:id", middleware.InternalKeyAuthentication, salesrep.UpdateSalesRep)
-		r.Delete("/:id", middleware.InternalKeyAuthentication, salesrep.DeleteSalesRep)
+		r.Get("", Deprecated)
+		r.Post("", Deprecated)
+		r.Get("/:id", Deprecated)
+		r.Put("/:id", Deprecated)
+		r.Delete("/:id", Deprecated)
 	})
 
 	m.Get("/search/:term", search_ctlr.Search)
