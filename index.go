@@ -348,7 +348,7 @@ func main() {
 		r.Get("/leads", news_controller.GetLeads)                                      //get leads!{page, results} - all parameters are optional
 		r.Get("/search", news_controller.Search)                                       //takes {title, lead, content, publishStart, publishEnd, active, slug, page, results, page, results} - all parameters are optional
 		r.Get("/:id", news_controller.Get)                                             //get by id {id}
-		r.Post("", middleware.InternalKeyAuthentication, news_controller.Create)       //takes {question, answer}; returns object with new ID
+		r.Post("", Deprecated)                                                         //takes {question, answer}; returns object with new ID
 		r.Post("/:id", middleware.InternalKeyAuthentication, news_controller.Update)   //{id, question and/or answer}
 		r.Delete("/:id", middleware.InternalKeyAuthentication, news_controller.Delete) //{id}
 		r.Delete("", middleware.InternalKeyAuthentication, news_controller.Delete)     //{id}
@@ -489,7 +489,7 @@ func main() {
 
 	// ARIES Year/Make/Model/Style
 	m.Post("/vehicle", vehicle.Query)
-	m.Post("/findVehicle", vehicle.GetVehicle)
+	m.Post("/findVehicle", Deprecated)
 	m.Post("/vehicle/inquire", vehicle.Inquire)
 
 	// Used by ARIES ProductWidget
