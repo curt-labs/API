@@ -394,7 +394,7 @@ func main() {
 	//they shouldn't, so they're getting locked down
 	m.Group("/site", func(r martini.Router) {
 		m.Group("/menu", func(r martini.Router) {
-			r.Get("/all", site.GetAllMenu)
+			r.Get("/all", site.GetAllMenus)
 			r.Get("/:id", site.GetMenu)        //may pass id (int) or name(string)
 			r.Get("/contents/:id", Deprecated) //may pass id (int) or name(string)
 			r.Post("", Deprecated)
