@@ -20,6 +20,7 @@ import (
 	"github.com/curt-labs/API/controllers/news"
 	"github.com/curt-labs/API/controllers/part"
 	"github.com/curt-labs/API/controllers/search"
+	"github.com/curt-labs/API/controllers/site"
 	"github.com/curt-labs/API/controllers/testimonials"
 	"github.com/curt-labs/API/controllers/vehicle"
 	"github.com/curt-labs/API/controllers/videos"
@@ -394,7 +395,7 @@ func main() {
 	m.Group("/site", func(r martini.Router) {
 		m.Group("/menu", func(r martini.Router) {
 			r.Get("/all", Deprecated)
-			r.Get("/:id", Deprecated)          //may pass id (int) or name(string)
+			r.Get("/:id", site.GetMenu)        //may pass id (int) or name(string)
 			r.Get("/contents/:id", Deprecated) //may pass id (int) or name(string)
 			r.Post("", Deprecated)
 			r.Put("/:id", Deprecated)
@@ -402,7 +403,7 @@ func main() {
 		})
 		m.Group("/content", func(r martini.Router) {
 			r.Get("/all", Deprecated)
-			r.Get("/:id", Deprecated) //may pass id (int) or slug(string)
+			r.Get("/:id", site.GetContent) //may pass id (int) or slug(string)
 			r.Get("/:id/revisions", Deprecated)
 			r.Post("", Deprecated)
 			r.Put("/:id", Deprecated)
