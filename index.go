@@ -20,7 +20,6 @@ import (
 	"github.com/curt-labs/API/controllers/news"
 	"github.com/curt-labs/API/controllers/part"
 	"github.com/curt-labs/API/controllers/search"
-	"github.com/curt-labs/API/controllers/site"
 	"github.com/curt-labs/API/controllers/testimonials"
 	"github.com/curt-labs/API/controllers/vehicle"
 	"github.com/curt-labs/API/controllers/videos"
@@ -394,25 +393,25 @@ func main() {
 	//they shouldn't, so they're getting locked down
 	m.Group("/site", func(r martini.Router) {
 		m.Group("/menu", func(r martini.Router) {
-			r.Get("/all", site.GetAllMenus)
-			r.Get("/:id", site.GetMenu)                      //may pass id (int) or name(string)
-			r.Get("/contents/:id", site.GetMenuWithContents) //may pass id (int) or name(string)
-			r.Post("", middleware.InternalKeyAuthentication, site.SaveMenu)
-			r.Put("/:id", middleware.InternalKeyAuthentication, site.SaveMenu)
-			r.Delete("/:id", middleware.InternalKeyAuthentication, site.DeleteMenu)
+			r.Get("/all", Deprecated)
+			r.Get("/:id", Deprecated)          //may pass id (int) or name(string)
+			r.Get("/contents/:id", Deprecated) //may pass id (int) or name(string)
+			r.Post("", Deprecated)
+			r.Put("/:id", Deprecated)
+			r.Delete("/:id", Deprecated)
 		})
 		m.Group("/content", func(r martini.Router) {
-			r.Get("/all", site.GetAllContents)
-			r.Get("/:id", site.GetContent) //may pass id (int) or slug(string)
-			r.Get("/:id/revisions", site.GetContentRevisions)
-			r.Post("", middleware.InternalKeyAuthentication, site.SaveContent)
-			r.Put("/:id", middleware.InternalKeyAuthentication, site.SaveContent)
-			r.Delete("/:id", middleware.InternalKeyAuthentication, site.DeleteContent)
+			r.Get("/all", Deprecated)
+			r.Get("/:id", Deprecated) //may pass id (int) or slug(string)
+			r.Get("/:id/revisions", Deprecated)
+			r.Post("", Deprecated)
+			r.Put("/:id", Deprecated)
+			r.Delete("/:id", Deprecated)
 		})
-		r.Get("/details/:id", site.GetSiteDetails)
-		r.Post("", middleware.InternalKeyAuthentication, site.SaveSite)
-		r.Put("/:id", middleware.InternalKeyAuthentication, site.SaveSite)
-		r.Delete("/:id", middleware.InternalKeyAuthentication, site.DeleteSite)
+		r.Get("/details/:id", Deprecated)
+		r.Post("", Deprecated)
+		r.Put("/:id", Deprecated)
+		r.Delete("/:id", Deprecated)
 	})
 
 	m.Group("/lp", func(r martini.Router) {
