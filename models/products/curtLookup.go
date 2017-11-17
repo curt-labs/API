@@ -121,7 +121,7 @@ func (c *CurtLookup) GetYears(heavyduty bool) error {
 
 	// Set the keys to expire after a week
 	go redis.Setex(CL_YEARS_KEY, c.Years, 604800)
-	go redis.Setex(CL_YEARS_PARTS_KEY, c.PartIdentifiers, 86400)
+	go redis.Setex(CL_YEARS_PARTS_KEY, c.PartIdentifiers, 604800)
 
 	return nil
 }
