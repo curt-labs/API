@@ -73,7 +73,7 @@ func (l *Lookup) GetYears(dtx *apicontext.DataContext) error {
 		TotalPages:    1,
 	}
 	if dtx.BrandString != "" {
-		go redis.Setex(redis_key, l.Years, 86400)
+		go redis.Setex(redis_key, l.Years, 604800)
 	}
 	return nil
 }

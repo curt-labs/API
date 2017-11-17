@@ -121,7 +121,7 @@ func (c *CurtLookup) GetYears(heavyduty bool) error {
 
 	// Set the keys to expire after a week
 	go redis.Setex(CL_YEARS_KEY, c.Years, 604800)
-	go redis.Setex(CL_YEARS_PARTS_KEY, c.PartIdentifiers, 604800)
+	go redis.Setex(CL_YEARS_PARTS_KEY, c.PartIdentifiers, 86400)
 
 	return nil
 }
@@ -213,8 +213,8 @@ func (c *CurtLookup) GetMakes(heavyduty bool) error {
 	sort.Strings(c.Makes)
 
 	// Set the keys to expire after a week
-	go redis.Setex(redisMakesKey, c.Makes, 604800)
-	go redis.Setex(redisMakesPartsKey, c.PartIdentifiers, 604800)
+	go redis.Setex(redisMakesKey, c.Makes, 86400)
+	go redis.Setex(redisMakesPartsKey, c.PartIdentifiers, 86400)
 
 	return nil
 }
@@ -312,8 +312,8 @@ func (c *CurtLookup) GetModels(heavyduty bool) error {
 	sort.Strings(c.Models)
 
 	// Set the keys to expire after a week
-	go redis.Setex(redisModelsKey, c.Models, 604800)
-	go redis.Setex(redisModelsPartsKey, c.PartIdentifiers, 604800)
+	go redis.Setex(redisModelsKey, c.Models, 86400)
+	go redis.Setex(redisModelsPartsKey, c.PartIdentifiers, 86400)
 
 	return nil
 }
