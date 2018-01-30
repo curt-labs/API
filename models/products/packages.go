@@ -16,4 +16,5 @@ type Package struct {
 	Quantity           int     `bson:"quantity" json:"quantity" xml:"quantity"`
 	PackageType        string  `bson:"name" json:"name" xml:"name"`
 	ParcelAllowed      bool    `bson:"parcelAllowed" json:"parcelAllowed" xml:"parcelAllowed"`
+	BoxFee             bool    `bson:"boxFee" json:"boxFee" xml:"boxFee"`
 }
