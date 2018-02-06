@@ -1046,7 +1046,13 @@ func GetLocalDealers(latlng string, distance int, skip int, count int, brandID i
 		}
 
 		if err != nil {
-			return dealerResp, err
+			//skip it. We have some bad data that causes syntax errors
+			//due to the whole isDummy thing, we have fake/unfinished customers
+			//that are causing this issue. Basically by doing this we're just
+			//going to not include them in the where to buy list if they have
+			//data so bad that it can't be rendered
+			//return dealerResp, err
+			continue
 		}
 
 		dealers = append(dealers, *l)
