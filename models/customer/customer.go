@@ -362,6 +362,7 @@ var (
 	countDealers = `select count(*)
 					from CustomerLocations as cl
 					join Customer as c on cl.cust_id = c.cust_id
+					join CustomerToBrand as cub on cub.cust_id = c.cust_id
 					join DealerTypes as dt on c.dealer_type = dt.dealer_type
 					left join MapIcons as mi on dt.dealer_type = mi.dealer_type
 					join DealerTiers as dtr on c.tier = dtr.ID
@@ -369,7 +370,7 @@ var (
 					left join Country as cty on s.countryID = cty.countryID
 					left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
 					left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
-					where dt.online = 0 && c.isDummy = 0 && dt.show = 1 && dtr.ID = mi.tier && mi.brandID = ?`
+					where cub.brandID = ? && dt.online = 0 && dt.show = 1 && dtr.ID = mi.tier`
 
 	polygon = `select s.stateID, s.state, s.abbr,
 					(
