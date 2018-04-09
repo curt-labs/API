@@ -448,6 +448,73 @@ func BindCustomerToSeveralParts(parts []Part, dtx *apicontext.DataContext) ([]Pa
 	return parts, err
 }
 
+//Mongo doesn't store things like "drilling" or "install time" so we have to get
+//it through MySQL
+func SQLVehicleApplications(p Part) (Part, error) {
+
+	err := database.Init()
+	if err != nil {
+		return p, err
+	}
+
+	p.Vehicles = p.Vehicles[:0]
+
+	query := `select y.year, ma.make, mo.model, vpa.field, vpa.value from VehiclePartAttribute
+	as vpa join VehiclePart as vp on vpa.vPartID = vp.vPartID join Part as p on
+	p.partID = vp.partID JOIN Vehicle as v ON vp.vehicleID = v.vehicleID JOIN Year
+	as y ON v.yearID=y.yearID JOIN Make as ma ON v.makeID=ma.makeID JOIN Model as
+	mo ON v.modelID=mo.modelID WHERE vp.partID = ?;`
+
+	rows, err := database.DB.Query(query, p.PartNumber)
+	if err != nil {
+		return p, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var year, make, model, field, value string
+		found := false
+
+		err = rows.Scan(&year, &make, &model, &field, &value)
+		if err != nil {
+			return p, err
+		}
+
+		for i, app := range p.Vehicles {
+			if app.Year == year && app.Make == make && app.Model == model {
+				found = true
+				if field == "Drilling Required" {
+					p.Vehicles[i].Drilling = value
+				} else if field == "Visibility" {
+					p.Vehicles[i].Exposed = value
+				} else if field == "Install Time" {
+					p.Vehicles[i].InstallTime = value
+				}
+				break
+			}
+		}
+
+		if !found {
+			var vApp VehicleApplication
+			vApp.Year = year
+			vApp.Make = make
+			vApp.Model = model
+
+			if field == "Drilling Required" {
+				vApp.Drilling = value
+			} else if field == "Visibility" {
+				vApp.Exposed = value
+			} else if field == "Install Time" {
+				vApp.InstallTime = value
+			}
+
+			p.Vehicles = append(p.Vehicles, vApp)
+		}
+	}
+
+	return p, nil
+}
+
 func (p *Part) GetPartByPartNumber(dtx *apicontext.DataContext) (err error) {
 	session, err := mgo.DialWithInfo(database.MongoPartConnectionString())
 	if err != nil {
@@ -467,6 +534,8 @@ func (p *Part) GetPartByPartNumber(dtx *apicontext.DataContext) (err error) {
 	if len(parts) > 0 {
 		*p = parts[0]
 	}
+
+	*p, err = SQLVehicleApplications(*p)
 	return err
 }
 
