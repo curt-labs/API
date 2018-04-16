@@ -356,6 +356,7 @@ var (
 					left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
 					left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
 					where dt.online = 0 && dt.show = 1 && dtr.ID = mi.tier && cub.brandID = ?
+					group by cl.locationID
 					order by cl.locationID
 					limit ?,?`
 
