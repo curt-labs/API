@@ -347,6 +347,7 @@ var (
 					` + showSiteFields + `
 					from CustomerLocations as cl
 					join Customer as c on cl.cust_id = c.cust_id
+					join CustomerToBrand as cub on cub.cust_id = c.cust_id
 					join DealerTypes as dt on c.dealer_type = dt.dealer_type
 					left join MapIcons as mi on dt.dealer_type = mi.dealer_type
 					join DealerTiers as dtr on c.tier = dtr.ID
@@ -354,13 +355,15 @@ var (
 					left join Country as cty on s.countryID = cty.countryID
 					left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
 					left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
-					where dt.online = 0 && c.isDummy = 0 && dt.show = 1 && dtr.ID = mi.tier && mi.brandID = ?
+					where dt.online = 0 && dt.show = 1 && dtr.ID = mi.tier && cub.brandID = ?
+					group by cl.locationID
 					order by cl.locationID
 					limit ?,?`
 
 	countDealers = `select count(*)
 					from CustomerLocations as cl
 					join Customer as c on cl.cust_id = c.cust_id
+					join CustomerToBrand as cub on cub.cust_id = c.cust_id
 					join DealerTypes as dt on c.dealer_type = dt.dealer_type
 					left join MapIcons as mi on dt.dealer_type = mi.dealer_type
 					join DealerTiers as dtr on c.tier = dtr.ID
@@ -368,7 +371,7 @@ var (
 					left join Country as cty on s.countryID = cty.countryID
 					left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
 					left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
-					where dt.online = 0 && c.isDummy = 0 && dt.show = 1 && dtr.ID = mi.tier && mi.brandID = ?`
+					where cub.brandID = ? && dt.online = 0 && dt.show = 1 && dtr.ID = mi.tier`
 
 	polygon = `select s.stateID, s.state, s.abbr,
 					(
@@ -1044,7 +1047,13 @@ func GetLocalDealers(latlng string, distance int, skip int, count int, brandID i
 		}
 
 		if err != nil {
-			return dealerResp, err
+			//skip it. We have some bad data that causes syntax errors
+			//due to the whole isDummy thing, we have fake/unfinished customers
+			//that are causing this issue. Basically by doing this we're just
+			//going to not include them in the where to buy list if they have
+			//data so bad that it can't be rendered
+			//return dealerResp, err
+			continue
 		}
 
 		dealers = append(dealers, *l)
