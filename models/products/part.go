@@ -39,6 +39,7 @@ type Part struct {
 	VehicleAttributes []string             `json:"vehicle_atttributes" xml:"vehicle_attributes" bson:"vehicle_attributes"`
 	Vehicles          []VehicleApplication `json:"vehicle_applications,omitempty" xml:"vehicle_applications,omitempty" bson:"vehicle_applications"`
 	LuverneVehicles   []LuverneApplication `json:"luverne_applications,omitempty" xml:"luverne_applications,omitempty" bson:"luverne_applications"`
+	UWSVehicles       []UWSApplication     `json:"uws_applications,omitempty" xml:"uws_applications,omitempty" bson:"uws_applications"`
 	Content           []Content            `json:"content" xml:"content" bson:"content"`
 	Pricing           []Price              `json:"pricing" xml:"pricing" bson:"pricing"`
 	Reviews           []Review             `json:"reviews" xml:"reviews" bson:"reviews"`
@@ -111,6 +112,14 @@ type LuverneApplication struct {
 	CabLength string `bson:"cabLength" json:"cabLength" xml:"cabLength"`
 	FuelType  string `bson:"fuelType" json:"fuelType" xml:"fuelType"`
 	WheelType string `bson:"wheelType" json:"wheelType" xml:"wheelType"`
+}
+
+// LuverneApplication defines a unique vehicle fitment description in the Luverne
+// data set.
+type UWSApplication struct {
+	Year  int    `bson:"year" json:"year" xml:"year"`
+	Make  string `bson:"make" json:"make" xml:"make"`
+	Model string `bson:"model" json:"model" xml:"model"`
 }
 
 func GetMany(ids, brands []int, sess *mgo.Session) ([]Part, error) {

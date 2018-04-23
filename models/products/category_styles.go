@@ -32,6 +32,12 @@ type CategoryVehicleBase struct {
 	Model string `json:"model" xml:"model,attr"`
 }
 
+type CategoryVehicleBaseUWS struct {
+	Year  int    `json:"year" xml:"year,attr"`
+	Make  string `json:"make" xml:"make,attr"`
+	Model string `json:"model" xml:"model,attr"`
+}
+
 // CategoryVehicle Represents the requested `Base` vehicle and all matching
 // LookupCategory types that are fitments of the `Base`.
 type CategoryVehicle struct {
