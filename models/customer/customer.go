@@ -360,7 +360,7 @@ var (
 					order by cl.locationID
 					limit ?,?`
 
-	countDealers = `select count(*)
+	countDealers = `select count(DISTINCT cl.locationID)
 					from CustomerLocations as cl
 					join Customer as c on cl.cust_id = c.cust_id
 					join CustomerToBrand as cub on cub.cust_id = c.cust_id
