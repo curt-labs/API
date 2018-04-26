@@ -355,7 +355,7 @@ var (
 					left join Country as cty on s.countryID = cty.countryID
 					left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
 					left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
-					where dt.show = 1 && cub.brandID = ?
+					where dt.show = 1 && cub.brandID = ? && dt.online = 0
 					group by cl.locationID
 					order by cl.locationID
 					limit ?,?`
@@ -371,7 +371,7 @@ var (
 					left join Country as cty on s.countryID = cty.countryID
 					left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
 					left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
-					where cub.brandID = ? && dt.show = 1`
+					where cub.brandID = ? && dt.show = 1 && dt.online = 0`
 
 	polygon = `select s.stateID, s.state, s.abbr,
 					(
