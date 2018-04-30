@@ -350,7 +350,7 @@ var (
 					join CustomerToBrand as cub on cub.cust_id = c.cust_id
 					join DealerTypes as dt on cub.dealerType = dt.dealer_type
 					left join MapIcons as mi on dt.dealer_type = mi.dealer_type
-					join DealerTiers as dtr on c.tier = dtr.ID
+					join DealerTiers as dtr on cub.dealerTier = dtr.ID
 					left join States as s on cl.stateID = s.stateID
 					left join Country as cty on s.countryID = cty.countryID
 					left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
@@ -366,12 +366,12 @@ var (
 					join CustomerToBrand as cub on cub.cust_id = c.cust_id
 					join DealerTypes as dt on cub.dealerType = dt.dealer_type
 					left join MapIcons as mi on dt.dealer_type = mi.dealer_type
-					join DealerTiers as dtr on c.tier = dtr.ID
+					join DealerTiers as dtr on cub.dealerTier = dtr.ID
 					left join States as s on cl.stateID = s.stateID
 					left join Country as cty on s.countryID = cty.countryID
 					left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
-					left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
-					where cub.brandID = ? && dt.show = 1 && dt.online = 0`
+					left join SalesRepresentative as sr on cub.salesRepID = sr.salesRepID
+					where dt.show = 1 && cub.brandID = ? && dt.online = 0`
 
 	polygon = `select s.stateID, s.state, s.abbr,
 					(
