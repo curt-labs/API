@@ -354,7 +354,7 @@ var (
 					left join States as s on cl.stateID = s.stateID
 					left join Country as cty on s.countryID = cty.countryID
 					left join MapixCode as mpx on c.mCodeID = mpx.mCodeID
-					left join SalesRepresentative as sr on c.salesRepID = sr.salesRepID
+					left join SalesRepresentative as sr on cub.salesRepID = sr.salesRepID
 					where dt.show = 1 && cub.brandID = ? && dt.online = 0
 					group by cl.locationID
 					order by cl.locationID
