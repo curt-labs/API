@@ -557,8 +557,8 @@ func main() {
 	srv := &http.Server{
 		Addr:         *listenAddr,
 		Handler:      m,
-		ReadTimeout:  30 * time.Second,
-		WriteTimeout: 30 * time.Second,
+		ReadTimeout:  90 * time.Second,
+		WriteTimeout: 90 * time.Second,
 	}
 
 	log.Printf("Starting server on 127.0.0.1%s\n", *listenAddr)
