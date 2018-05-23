@@ -192,7 +192,7 @@ type MapPolygon struct {
 }
 
 const (
-	customerFields = ` c.cust_id, c.name, c.email, c.address,  c.city, c.stateID, c.phone, c.fax, c.contact_person, c.dealer_type,
+	customerFields = ` c.cust_id, c.name, IFNULL(c.email, ""), c.address,  c.city, c.stateID, c.phone, IFNULL(c.fax, ""), c.contact_person, c.dealer_type,
 				c.latitude, c.longitude,  c.website, c.customerID, c.isDummy, c.parentID, c.searchURL, c.eLocalURL, c.logo,c.address2,
 				c.postal_code, c.mCodeID, c.salesRepID, c.APIKey, c.tier, c.showWebsite `
 	stateFields            = ` IFNULL(s.state, ""), IFNULL(s.abbr, ""), IFNULL(s.countryID, "0") `
@@ -203,8 +203,8 @@ const (
 	mapixCodeFields        = ` IFNULL(mpx.code, ""), IFNULL(mpx.description, "") `
 	salesRepFields         = ` IFNULL(sr.name, ""), IFNULL(sr.code, "") `
 	customerLocationFields = ` cl.locationID, cl.name, cl.address, cl.city, cl.stateID,  cl.email, cl.phone, cl.fax,
-							cl.latitude, cl.longitude, cl.cust_id, cl.contact_person, cl.isprimary, cl.postalCode, cl.ShippingDefault `
-	showSiteFields = ` c.showWebsite, c.website, c.elocalurl `
+							cl.latitude, cl.longitude, cl.cust_id, IFNULL(cl.contact_person,""), cl.isprimary, cl.postalCode, cl.ShippingDefault `
+	showSiteFields = ` c.showWebsite, IFNULL(c.website,""), IFNULL(c.elocalurl,"") `
 
 	//redis
 	custPrefix = "customer:"
@@ -1047,6 +1047,7 @@ func GetLocalDealers(latlng string, distance int, skip int, count int, brandID i
 		}
 
 		if err != nil {
+			fmt.Println(err)
 			//skip it. We have some bad data that causes syntax errors
 			//due to the whole isDummy thing, we have fake/unfinished customers
 			//that are causing this issue. Basically by doing this we're just
