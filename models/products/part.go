@@ -56,6 +56,9 @@ type Part struct {
 	UPC               string               `json:"upc,omitempty" xml:"upc,omitempty" bson:"upc"`
 	Layer             string               `json:"iconLayer" xml:"iconLayer" bson:"iconLayer"`
 	MappedToVehicle   bool                 `json:"mappedToVehicle" xml:"mappedToVehicle" bson:"mappedToVehicle,omitempty"`
+	WebVisibility     string               `json:"-" xml:"-" bson:"web_visibility"`
+	ShowOnWebsite     bool                 `json:"showOnWebsite" xml:"showOnWebsite" bson:"showOnWebsite"`
+	ShowForLoggedIn   bool                 `json:"showForLoggedIn" xml:"showForLoggedIn" bson:"showForLoggedIn"`
 	ComplexPart       *ComplexPart         `bson:"complex_part" json:"complex_part,omitempty" xml:"complex_part,omitempty"`
 }
 
@@ -230,6 +233,7 @@ func Identifiers(brand int, dtx *apicontext.DataContext) ([]string, error) {
 func All(page, count int, dtx *apicontext.DataContext, from time.Time, to time.Time) ([]Part, int, error) {
 	var total int
 	var query bson.M
+	visibility := []string{"Public", "Disabled"}
 	brands := getBrandsFromDTX(dtx)
 	parts := make([]Part, 0)
 
@@ -246,16 +250,22 @@ func All(page, count int, dtx *apicontext.DataContext, from time.Time, to time.T
 		if !time.Time.IsZero(from) {
 			//In the case both "to" and "from" are specified
 			if !time.Time.IsZero(to) {
-				query = bson.M{"brand.id": bson.M{"$in": brands}, "date_modified": bson.M{"$lte": to, "$gte": from}}
+				query = bson.M{"brand.id": bson.M{"$in": brands},
+					"web_visibility": bson.M{"$in": visibility},
+					"date_modified":  bson.M{"$lte": to, "$gte": from}}
 			} else { //In the case only "from" is specified
-				query = bson.M{"brand.id": bson.M{"$in": brands}, "date_modified": bson.M{"$gte": from}}
+				query = bson.M{"brand.id": bson.M{"$in": brands},
+					"web_visibility": bson.M{"$in": visibility},
+					"date_modified":  bson.M{"$gte": from}}
 			}
 		} else if !time.Time.IsZero(to) { //In the case only "to" is specified
-			query = bson.M{"brand.id": bson.M{"$in": brands}, "date_modified": bson.M{"$lte": to}}
+			query = bson.M{"brand.id": bson.M{"$in": brands},
+				"web_visibility": bson.M{"$in": visibility},
+				"date_modified":  bson.M{"$lte": to}}
 		}
 
 	} else { //In the case neither "to" or "from" are specified
-		query = bson.M{"brand.id": bson.M{"$in": brands}}
+		query = bson.M{"brand.id": bson.M{"$in": brands}, "web_visibility": bson.M{"$in": visibility}}
 	}
 
 	//We get the count here so that we can return it as part of the JSON response
@@ -267,6 +277,18 @@ func All(page, count int, dtx *apicontext.DataContext, from time.Time, to time.T
 	//A Mongo index is needed to ensure that the sort doesn't consume too much memory
 	//See INDEX.md in root directory
 	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(query).Sort("id").Skip(page * count).Limit(count).All(&parts)
+	for ind := range parts {
+		if parts[ind].WebVisibility == "Public" {
+			if parts[ind].Status > 700 {
+				parts[ind].ShowOnWebsite = true
+			} else {
+				parts[ind].ShowOnWebsite = false
+			}
+
+		} else if parts[ind].WebVisibility == "Disabled" {
+			parts[ind].ShowOnWebsite = false
+		}
+	}
 	return parts, total, err
 }
 
@@ -467,6 +489,18 @@ func (p *Part) GetPartByPartNumber(dtx *apicontext.DataContext) (err error) {
 	if len(parts) > 0 {
 		*p = parts[0]
 	}
+
+	if p.WebVisibility == "Public" {
+		if p.Status > 700 {
+			p.ShowOnWebsite = true
+		} else {
+			p.ShowOnWebsite = false
+		}
+
+	} else if p.WebVisibility == "Disabled" {
+		p.ShowOnWebsite = false
+	}
+
 	return err
 }
 
