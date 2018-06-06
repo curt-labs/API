@@ -116,6 +116,12 @@ type LuverneApplication struct {
 	WheelType string `bson:"wheelType" json:"wheelType" xml:"wheelType"`
 }
 
+const (
+	PUBLIC   = "Public"
+	DISABLED = "Disabled"
+	LOGGEDIN = "Logged In Only"
+)
+
 func GetMany(ids, brands []int, sess *mgo.Session) ([]Part, error) {
 
 	c := sess.DB(database.ProductMongoDatabase).C(database.ProductCollectionName)
@@ -233,7 +239,8 @@ func Identifiers(brand int, dtx *apicontext.DataContext) ([]string, error) {
 func All(page, count int, dtx *apicontext.DataContext, from time.Time, to time.Time) ([]Part, int, error) {
 	var total int
 	var query bson.M
-	visibility := []string{"Public", "Disabled"}
+	//Currently a list of all visibilities, might add or subtract later
+	visibility := []string{PUBLIC, DISABLED, LOGGEDIN}
 	brands := getBrandsFromDTX(dtx)
 	parts := make([]Part, 0)
 
@@ -277,16 +284,28 @@ func All(page, count int, dtx *apicontext.DataContext, from time.Time, to time.T
 	//A Mongo index is needed to ensure that the sort doesn't consume too much memory
 	//See INDEX.md in root directory
 	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(query).Sort("id").Skip(page * count).Limit(count).All(&parts)
+
+	//Determining Web Visibility, based on flags that we are given by data team
 	for ind := range parts {
-		if parts[ind].WebVisibility == "Public" {
+		if parts[ind].WebVisibility == PUBLIC {
+			parts[ind].ShowForLoggedIn = false
 			if parts[ind].Status > 700 {
 				parts[ind].ShowOnWebsite = true
 			} else {
 				parts[ind].ShowOnWebsite = false
 			}
 
-		} else if parts[ind].WebVisibility == "Disabled" {
+		} else if parts[ind].WebVisibility == DISABLED {
 			parts[ind].ShowOnWebsite = false
+			parts[ind].ShowForLoggedIn = false
+		} else if parts[ind].WebVisibility == LOGGEDIN {
+			parts[ind].ShowForLoggedIn = true
+			if parts[ind].Status > 700 {
+				parts[ind].ShowOnWebsite = true
+			} else {
+				parts[ind].ShowOnWebsite = false
+			}
+
 		}
 	}
 	return parts, total, err
@@ -490,15 +509,27 @@ func (p *Part) GetPartByPartNumber(dtx *apicontext.DataContext) (err error) {
 		*p = parts[0]
 	}
 
-	if p.WebVisibility == "Public" {
+	//Determining Web Visibility, based on flags that we are given by data team
+
+	if p.WebVisibility == PUBLIC {
+		p.ShowForLoggedIn = false
 		if p.Status > 700 {
 			p.ShowOnWebsite = true
 		} else {
 			p.ShowOnWebsite = false
 		}
 
-	} else if p.WebVisibility == "Disabled" {
+	} else if p.WebVisibility == DISABLED {
 		p.ShowOnWebsite = false
+		p.ShowForLoggedIn = false
+	} else if p.WebVisibility == LOGGEDIN {
+		p.ShowForLoggedIn = true
+		if p.Status > 700 {
+			p.ShowOnWebsite = true
+		} else {
+			p.ShowOnWebsite = false
+		}
+
 	}
 
 	return err
