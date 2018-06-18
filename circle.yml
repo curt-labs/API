@@ -1,5 +1,6 @@
 machine:
   environment:
+    GODIST: "go1.8.linux-amd64.tar.gz"
     CONTAINER_NAME: goapi
     DEPLOYMENT: api-goapi
     PROD_IMAGE: gcr.io/curt-services/goapi
@@ -10,6 +11,11 @@ machine:
     STAGE_PROJECT_NAME: unicorn-attack
     STAGE_CLUSTER_NAME: goapi-staging
     STAGE_ZONE: us-central1-a
+  post:
+    - mkdir -p download
+    - test -e download/$GODIST || curl -o download/$GODIST https://storage.googleapis.com/golang/$GODIST
+    - sudo rm -rf /usr/local/go
+    - sudo tar -C /usr/local -xzf download/$GODIST
   services:
     - docker
 
