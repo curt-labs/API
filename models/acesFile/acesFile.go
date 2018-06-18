@@ -51,6 +51,9 @@ func GetAcesFile(brand brand.Brand, version string) (string, error) {
 	} else if brand.ID == 4 {
 		path += "/LUVERNE"
 		fileName = "LUVERNE_ACES" + version + ".xml"
+	} else if brand.ID == 6 {
+		path += "/UWS"
+		fileName = "UWS_ACES" + version + ".xml"
 	}
 
 	file, err := ftpConfig.GetFile(path, fileName)
