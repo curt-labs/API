@@ -26,7 +26,7 @@ type Part struct {
 	PartNumber        string               `bson:"part_number" json:"part_number" xml:"part_number,attr"`
 	Brand             brand.Brand          `json:"brand" xml:"brand,attr" bson:"brand"`
 	Status            int                  `json:"status" xml:"status,attr" bson:"status"`
-	PriceCode         int                  `json:"price_code" xml:"price_code,attr" bson:"price_code"`
+	PriceCode         string               `json:"price_code" xml:"price_code,attr" bson:"price_code"`
 	RelatedCount      int                  `json:"related_count" xml:"related_count,attr" bson:"related_count"`
 	AverageReview     float64              `json:"average_review" xml:"average_review,attr" bson:"average_review"`
 	DateModified      time.Time            `json:"date_modified" xml:"date_modified,attr" bson:"date_modified"`
