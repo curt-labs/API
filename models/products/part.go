@@ -300,7 +300,7 @@ func All(page, count int, dtx *apicontext.DataContext, from time.Time, to time.T
 			parts[ind].ShowForLoggedIn = false
 		} else if parts[ind].WebVisibility == LOGGEDIN {
 			parts[ind].ShowForLoggedIn = true
-			if parts[ind].Status > 700 {
+			if parts[ind].Status >= 700 {
 				parts[ind].ShowOnWebsite = true
 			} else {
 				parts[ind].ShowOnWebsite = false
