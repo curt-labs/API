@@ -513,7 +513,7 @@ func (p *Part) GetPartByPartNumber(dtx *apicontext.DataContext) (err error) {
 
 	if p.WebVisibility == PUBLIC {
 		p.ShowForLoggedIn = false
-		if p.Status > 700 {
+		if p.Status >= 700 {
 			p.ShowOnWebsite = true
 		} else {
 			p.ShowOnWebsite = false
@@ -524,7 +524,7 @@ func (p *Part) GetPartByPartNumber(dtx *apicontext.DataContext) (err error) {
 		p.ShowForLoggedIn = false
 	} else if p.WebVisibility == LOGGEDIN {
 		p.ShowForLoggedIn = true
-		if p.Status > 700 {
+		if p.Status >= 700 {
 			p.ShowOnWebsite = true
 		} else {
 			p.ShowOnWebsite = false
