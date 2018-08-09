@@ -289,7 +289,7 @@ func All(page, count int, dtx *apicontext.DataContext, from time.Time, to time.T
 	for ind := range parts {
 		if parts[ind].WebVisibility == PUBLIC {
 			parts[ind].ShowForLoggedIn = false
-			if parts[ind].Status > 700 {
+			if parts[ind].Status >= 700 {
 				parts[ind].ShowOnWebsite = true
 			} else {
 				parts[ind].ShowOnWebsite = false
