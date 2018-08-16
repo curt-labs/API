@@ -1,0 +1,9 @@
+version: 2
+jobs:
+  build:
+    docker:
+      image: google/cloud-sdk:latest
+      environment:
+        STAGE_IMAGE: gcr.io/unicorn-attack/goapi
+    steps:
+      - run: docker build -t ${STAGE_IMAGE}:$CIRCLE_SHA1 .
