@@ -6,4 +6,7 @@ jobs:
         environment:
           STAGE_IMAGE: gcr.io/unicorn-attack/goapi
     steps:
+      - checkout
+      - setup_remote_docker:
+          version: 17.11.0-ce
       - run: docker build -t ${STAGE_IMAGE}:$CIRCLE_SHA1 .
