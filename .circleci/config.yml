@@ -4,9 +4,24 @@ jobs:
     docker:
       - image: google/cloud-sdk:latest
         environment:
+          STAGE_CLUSTER_NAME: goapi-staging
           STAGE_IMAGE: gcr.io/unicorn-attack/goapi
+          STAGE_PROJECT_NAME: unicorn-attack
+          STAGE_ZONE: us-central1-a
+          STAGE_KEY_FILE: ${HOME}/stage-client-secret.json
     steps:
       - checkout
       - setup_remote_docker:
           version: 17.11.0-ce
-      - run: docker build -t ${STAGE_IMAGE}:$CIRCLE_SHA1 .
+      - run: |
+          docker build                      \
+          --tag ${STAGE_IMAGE}:$CIRCLE_SHA1 \
+          --tag ${STAGE_IMAGE}:latest       \
+          ./
+      - run: echo ${STAGE_CLIENT_SECRET} | base64 --decode -i > ${STAGE_KEY_FILE}
+      - run: gcloud auth   activate-service-account --key-file ${STAGE_KEY_FILE}
+      - run: gcloud config set container/use_client_certificate True
+      - run: gcloud config set project ${STAGE_PROJECT_NAME}
+      - run: gcloud config set container/cluster ${STAGE_CLUSTER_NAME}
+      - run: gcloud config set compute/zone ${STAGE_ZONE}
+      - run: gcloud container clusters get-credentials ${STAGE_CLUSTER_NAME}
