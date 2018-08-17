@@ -8,7 +8,7 @@ jobs:
           STAGE_IMAGE: gcr.io/unicorn-attack/goapi
           STAGE_PROJECT_NAME: unicorn-attack
           STAGE_ZONE: us-central1-a
-          STAGE_KEY_FILE: ${HOME}/stage-client-secret.json
+          STAGE_KEY_FILE: $HOME/stage-client-secret.json
     steps:
       - checkout
       - setup_remote_docker:
