@@ -16,18 +16,18 @@ jobs:
     # If any of these refer to each other, rewrite them so that they don't or see https://circleci.com/docs/2.0/env-vars/#interpolating-environment-variables-to-set-other-environment-variables .
     environment:
       CIRCLE_TEST_REPORTS: /tmp/circleci-test-results
-      PROD_CLUSTER_NAME: goapi
+      CIRCLE_ARTIFACTS: /tmp/circleci-artifacts
+      CONTAINER_NAME: goapi
+      DEPLOYMENT: api-goapi
+      GODIST: go1.8.linux-amd64.tar.gz
       STAGE_PROJECT_NAME: unicorn-attack
+      STAGE_CLUSTER_NAME: goapi-staging
       STAGE_IMAGE: gcr.io/unicorn-attack/goapi
       STAGE_ZONE: us-central1-a
-      CIRCLE_ARTIFACTS: /tmp/circleci-artifacts
-      PROD_ZONE: us-central1-a
-      PROD_IMAGE: gcr.io/curt-services/goapi
-      GODIST: go1.8.linux-amd64.tar.gz
-      STAGE_CLUSTER_NAME: goapi-staging
-      DEPLOYMENT: api-goapi
       PROD_PROJECT_NAME: curt-services
-      CONTAINER_NAME: goapi
+      PROD_CLUSTER_NAME: goapi
+      PROD_IMAGE: gcr.io/curt-services/goapi
+      PROD_ZONE: us-central1-a
     # In CircleCI 1.0 we used a pre-configured image with a large number of languages and other packages.
     # In CircleCI 2.0 you can now specify your own image, or use one of our pre-configured images.
     # The following configuration line tells CircleCI to use the specified docker image as the runtime environment for you job.
@@ -38,8 +38,7 @@ jobs:
     # To see the list of pre-built images that CircleCI provides for most common languages see
     # https://circleci.com/docs/2.0/circleci-images/
     docker:
-    - image: circleci/build-image:ubuntu-14.04-XXL-upstart-1189-5614f37
-      command: /sbin/init
+            - image: google/cloud-sdk:latest
     steps:
     # Machine Setup
     #   If you break your build into multiple jobs with workflows, you will probably want to do the parts of this that are relevant in each
