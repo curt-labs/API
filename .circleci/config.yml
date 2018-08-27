@@ -49,9 +49,9 @@ jobs:
     # 'See docs on artifact collection here https://circleci.com/docs/2.0/artifacts/'
     - run: mkdir -p $CIRCLE_ARTIFACTS $CIRCLE_TEST_REPORTS
     # This is based on your 1.0 configuration file or project settings
-    - run:
-        working_directory: ~/curt-labs/API
-        command: 'sudo docker info >/dev/null 2>&1 || sudo service docker start; '
+    # - run:
+      # working_directory: ~/curt-labs/API
+      # command: 'sudo docker info >/dev/null 2>&1 || sudo service docker start; '
     # This is based on your 1.0 configuration file or project settings
     - run:
         working_directory: ~/curt-labs/API
