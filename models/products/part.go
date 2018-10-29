@@ -59,7 +59,7 @@ type Part struct {
 	WebVisibility     string               `json:"-" xml:"-" bson:"web_visibility"`
 	ShowOnWebsite     bool                 `json:"showOnWebsite" xml:"showOnWebsite" bson:"showOnWebsite"`
 	ShowForLoggedIn   bool                 `json:"showForLoggedIn" xml:"showForLoggedIn" bson:"showForLoggedIn"`
-	Tariff            string               `json:"tariff" xml:"tariff" bson:"tariff"`
+	Tariff            string               `json:"tariff" xml:"tariff" bson:"tariff"`,
 	ComplexPart       *ComplexPart         `bson:"complex_part" json:"complex_part,omitempty" xml:"complex_part,omitempty"`
 }
 
