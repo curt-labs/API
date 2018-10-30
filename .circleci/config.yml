@@ -30,8 +30,8 @@ jobs:
     steps:
     - checkout
     - run:
-      name: Create Artifact and Test Result Placeholders
-      command: mkdir -p ${CIRCLE_ARTIFACTS} ${CIRCLE_TEST_REPORTS}
+        name: Create Artifact and Test Result Placeholders
+        command: mkdir -p ${CIRCLE_ARTIFACTS} ${CIRCLE_TEST_REPORTS}
     # This is based on your 1.0 configuration file or project settings
     - run:
         working_directory: ~/curt-labs/API
