@@ -32,11 +32,11 @@ jobs:
     - restore_cache:
         keys:
         # This branch if available
-        - v1-dep-{{ .Branch }}-
+        - v2-dep-{{ .Branch }}-
         # Default branch if not
-        - v1-dep-goapi-
+        - v2-dep-goapi-
         # Any branch if there are none on the default branch - this should be unnecessary if you have your default branch configured correctly
-        - v1-dep-
+        - v2-dep-
     - run:
         name: Get Dependencies
         command: go get -t -d -v ./...
@@ -53,7 +53,7 @@ jobs:
           go vet -v &> $CIRCLE_TEST_REPORTS/$DOCKER_IMAGE-test-results.txt
     # Save dependency cache
     - save_cache:
-        key: v1-dep-{{ .Branch }}-{{ epoch }}
+        key: v2-dep-{{ .Branch }}-{{ epoch }}
         paths:
         # This is a broad list of cache paths to include many possible development environments
         # You can probably delete some of these entries
