@@ -7,12 +7,6 @@ jobs:
     environment:
       CIRCLE_TEST_REPORTS: /tmp/circleci-test-results
       CIRCLE_ARTIFACTS: /tmp/circleci-artifacts
-      CONTAINER_NAME: goapi
-      DEPLOYMENT: api-goapi
-      STAGE_PROJECT_NAME: unicorn-attack
-      STAGE_CLUSTER_NAME: goapi-staging
-      STAGE_IMAGE: gcr.io/unicorn-attack/goapi
-      STAGE_ZONE: us-central1-a
       PROD_PROJECT_NAME: curt-services
       PROD_CLUSTER_NAME: goapi
       PROD_IMAGE: gcr.io/curt-services/goapi
@@ -32,21 +26,6 @@ jobs:
     - run:
         name: Create Artifact and Test Result Placeholders
         command: mkdir -p ${CIRCLE_ARTIFACTS} ${CIRCLE_TEST_REPORTS}
-    # This is based on your 1.0 configuration file or project settings
-    - run:
-        working_directory: ~/curt-labs/API
-        command: mkdir -p download
-    - run:
-        working_directory: ~/curt-labs/API
-        command: test -e download/$GODIST || curl -o download/$GODIST https://storage.googleapis.com/golang/$GODIST
-    - run:
-        working_directory: ~/curt-labs/API
-        command: sudo rm -rf /usr/local/go
-    - run:
-        working_directory: ~/curt-labs/API
-        command: sudo tar -C /usr/local -xzf download/$GODIST
-    # This is based on your 1.0 configuration file or project settings
-    - run: git config --global url.ssh://git@github.com/.insteadOf https://github.com/
     # Dependencies
     #   This would typically go in either a build or a build-and-test job when using workflows
     # Restore the dependency cache
@@ -58,19 +37,20 @@ jobs:
         - v1-dep-goapi-
         # Any branch if there are none on the default branch - this should be unnecessary if you have your default branch configured correctly
         - v1-dep-
-    # This is based on your 1.0 configuration file or project settings
-    - run: sudo /opt/google-cloud-sdk/bin/gcloud --quiet components update
-    - run: sudo /opt/google-cloud-sdk/bin/gcloud --quiet components update kubectl
-    - run: echo $CURT_SERVICES_SA | base64 --decode -i > ${HOME}/prod-client-secret.json
-    - run: echo $STAGE_CLIENT_SECRET | base64 --decode -i > ${HOME}/stage-client-secret.json
-    # The following line was run implicitly in your 1.0 builds based on what CircleCI inferred about the structure of your project. In 2.0 you need to be explicit about which commands should be run. In some cases you can discard inferred commands if they are not relevant to your project.
-    - run: mkdir -p $HOME/.go_project/src/github.com/curt-labs/curt-labs && ln -fs ~/curt-labs/API $HOME/.go_project/src/github.com/curt-labs/curt-labs/API && echo -e "export GOPATH=$GOPATH:$HOME/.go_project" >> $BASH_ENV
     - run:
         name: Get Dependencies
         command: go get -t -d -v ./...
     - run:
         name: Build
         command: go build -v
+    # Test
+    - run:
+        name: Vet the Build
+        command: |
+          echo 'export CIRCLE_TEST_REPORTS="$CIRCLE_TEST_REPORTS"' >> $BASH_ENV
+          echo 'export DOCKER_IMAGE="$DOCKER_IMAGE"' >> $BASH_ENV
+          echo 'export CIRCLE_ARTIFACTS="$CIRCLE_ARTIFACTS"' >> $BASH_ENV
+          go vet -v &> $CIRCLE_TEST_REPORTS/$DOCKER_IMAGE-test-results.txt
     # Save dependency cache
     - save_cache:
         key: v1-dep-{{ .Branch }}-{{ epoch }}
@@ -86,14 +66,6 @@ jobs:
         - ~/.go_workspace
         - ~/.gradle
         - ~/.cache/bower
-    # Test
-    - run:
-        name: Vet the Build
-        command: |
-          echo 'export CIRCLE_TEST_REPORTS="$CIRCLE_TEST_REPORTS"' >> $BASH_ENV
-          echo 'export DOCKER_IMAGE="$DOCKER_IMAGE"' >> $BASH_ENV
-          echo 'export CIRCLE_ARTIFACTS="$CIRCLE_ARTIFACTS"' >> $BASH_ENV
-          go vet -v &> $CIRCLE_TEST_REPORTS/$DOCKER_IMAGE-test-results.txt
     # Save test results
     - store_test_results:
         path: /tmp/circleci-test-results
@@ -145,6 +117,8 @@ jobs:
     - run: echo 'export DEPLOYMENT_REVISION=$CIRCLE_BUILD_NUM' >> $BASH_ENV
     - run: gcloud version
 
+    - run: echo $CURT_SERVICES_SA | base64 --decode -i > ${HOME}/prod-client-secret.json
+    - run: echo $STAGE_CLIENT_SECRET | base64 --decode -i > ${HOME}/stage-client-secret.json
     - run: sudo docker build -t ${STAGE_IMAGE}:$CIRCLE_SHA1 .
     - run: sudo docker tag ${STAGE_IMAGE}:$CIRCLE_SHA1 ${STAGE_IMAGE}:latest
     - run: sudo /opt/google-cloud-sdk/bin/gcloud config set container/use_client_certificate True
@@ -170,6 +144,14 @@ jobs:
         - ~/.go_workspace
         - ~/.gradle
         - ~/.cache/bower
+    # Save test results
+    - store_test_results:
+        path: /tmp/circleci-test-results
+    # Save artifacts
+    - store_artifacts:
+        path: /tmp/circleci-artifacts
+    - store_artifacts:
+        path: /tmp/circleci-test-results
 
 # Workflows
 workflows:
