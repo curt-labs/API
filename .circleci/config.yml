@@ -1,13 +1,6 @@
-# This configuration was automatically generated from a CircleCI 1.0 config.
-# It should include any build commands you had along with commands that CircleCI
-# inferred from your project structure. We strongly recommend you read all the
-# comments in this file to understand the structure of CircleCI 2.0, as the idiom
-# for configuration has changed substantially in 2.0 to allow arbitrary jobs rather
-# than the prescribed lifecycle of 1.0. In general, we recommend using this generated
-# configuration as a reference rather than using it in production, though in most
-# cases it should duplicate the execution of your original 1.0 config.
 version: 2
 jobs:
+  # Build-Only Job
   build:
     working_directory: ~/curt-labs/API
     parallelism: 1
@@ -123,3 +116,114 @@ jobs:
         path: /tmp/circleci-artifacts
     - store_artifacts:
         path: /tmp/circleci-test-results
+
+  # Deploy to Staging Job
+  deploy-staging:
+    working_directory: ~/curt-labs/API
+    parallelism: 1
+    shell: /bin/bash --login
+    environment:
+      CIRCLE_TEST_REPORTS: /tmp/circleci-test-results
+      CIRCLE_ARTIFACTS: /tmp/circleci-artifacts
+      CONTAINER_NAME: goapi
+      DEPLOYMENT: api-goapi
+      GODIST: go1.8.linux-amd64.tar.gz
+      STAGE_PROJECT_NAME: unicorn-attack
+      STAGE_CLUSTER_NAME: goapi-staging
+      STAGE_IMAGE: gcr.io/unicorn-attack/goapi
+      STAGE_ZONE: us-central1-a
+    docker:
+    - image: circleci/golang
+    - image: google/cloud-sdk
+    steps:
+    - checkout
+    - run: go get -t -d -v ./...
+    - run: go build -v
+    - setup_remote_docker:
+        docker_layer_caching: true
+    # Restore the dependency cache
+    - restore_cache:
+        keys:
+        # This branch if available
+        - v2-dep-{{ .Branch }}-
+        # Default branch if not
+        - v2-dep-master-
+        # Any branch if there are none on the default branch - this should be unnecessary if you have your default branch configured correctly
+        - v2-dep-
+    # Update tools
+    # Add the Cloud SDK distribution URI as a package source
+    - run: echo "deb http://packages.cloud.google.com/apt cloud-sdk-jessie main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+    # Import the Google Cloud Platform public key
+    - run: curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+    # Update the package list and install the Cloud SDK
+    - run: sudo apt-get update && sudo apt-get install google-cloud-sdk kubectl
+    # Setup ENV Variables and Service Account
+    - run: echo 'export DEPLOYMENT_REVISION=$CIRCLE_BUILD_NUM' >> $BASH_ENV
+    - run: gcloud version
+
+    - run: sudo docker build -t ${STAGE_IMAGE}:$CIRCLE_SHA1 .
+    - run: sudo docker tag ${STAGE_IMAGE}:$CIRCLE_SHA1 ${STAGE_IMAGE}:latest
+    - run: sudo /opt/google-cloud-sdk/bin/gcloud config set container/use_client_certificate True
+    - run: sudo /opt/google-cloud-sdk/bin/gcloud auth activate-service-account --key-file ${HOME}/stage-client-secret.json
+    - run: sudo /opt/google-cloud-sdk/bin/gcloud config set project $STAGE_PROJECT_NAME
+    - run: sudo /opt/google-cloud-sdk/bin/gcloud --quiet config set container/cluster $STAGE_CLUSTER_NAME
+    - run: sudo /opt/google-cloud-sdk/bin/gcloud config set compute/zone $STAGE_ZONE
+    - run: sudo /opt/google-cloud-sdk/bin/gcloud --quiet container clusters get-credentials $STAGE_CLUSTER_NAME
+    - run: sudo /opt/google-cloud-sdk/bin/gcloud docker -- push ${STAGE_IMAGE}
+    - run: sudo chown -R ubuntu:ubuntu /home/ubuntu/.kube
+    - run: kubectl set image deployment/${DEPLOYMENT} ${CONTAINER_NAME}=${STAGE_IMAGE}:$CIRCLE_SHA1
+    # Save dependency cache
+    - save_cache:
+        key: v2-dep-{{ .Branch }}-{{ epoch }}
+        paths:
+        - vendor/bundle
+        - "/go/pkg"
+        - ~/virtualenvs
+        - ~/.m2
+        - ~/.ivy2
+        - ~/.bundle
+        - ~/.go_workspace
+        - ~/.gradle
+        - ~/.cache/bower
+
+# Workflows
+workflows:
+  version: 2
+  build-only-workflow:
+    jobs:
+    - build:
+        filters:
+          branches:
+            ignore:
+            - goapi
+            - staging
+
+  deploy-production-workflow:
+    jobs:
+    - build:
+        filters:
+          branches:
+            only:
+            - goapi
+    - deploy-production:
+        requires:
+        - build
+        filters:
+          branches:
+            only:
+            - goapi
+
+  deploy-staging-workflow:
+    jobs:
+    - build:
+        filters:
+          branches:
+            only:
+            - staging
+    - deploy-staging:
+        requires:
+        - build
+        filters:
+          branches:
+            only:
+            - staging
