@@ -121,7 +121,6 @@ jobs:
     - run: echo 'export DEPLOYMENT_REVISION=$CIRCLE_BUILD_NUM' >> $BASH_ENV
     - run: gcloud version
 
-    - run: echo $CURT_SERVICES_SA | base64 --decode -i > ${HOME}/prod-client-secret.json
     - run: echo $STAGE_CLIENT_SECRET | base64 --decode -i > ${HOME}/stage-client-secret.json
     - run: docker build -t gcr.io/${STAGE_PROJECT_NAME}/${CONTAINER_NAME}:$CIRCLE_SHA1 .
     - run: docker tag gcr.io/${STAGE_PROJECT_NAME}/${CONTAINER_NAME}:$CIRCLE_SHA1 gcr.io/${STAGE_PROJECT_NAME}/${CONTAINER_NAME}:latest
@@ -206,7 +205,6 @@ jobs:
     - run: gcloud version
 
     - run: echo $CURT_SERVICES_SA | base64 --decode -i > ${HOME}/prod-client-secret.json
-    - run: echo $PROD_CLIENT_SECRET | base64 --decode -i > ${HOME}/prod-client-secret.json
     - run: docker build -t gcr.io/${PROD_PROJECT_NAME}/${CONTAINER_NAME}:$CIRCLE_SHA1 .
     - run: docker tag gcr.io/${PROD_PROJECT_NAME}/${CONTAINER_NAME}:$CIRCLE_SHA1 gcr.io/${PROD_PROJECT_NAME}/${CONTAINER_NAME}:latest
     - run: gcloud config set container/use_client_certificate True
