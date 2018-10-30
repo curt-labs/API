@@ -94,6 +94,8 @@ jobs:
     - image: circleci/golang
     - image: google/cloud-sdk
     steps:
+    - setup_remote_docker:
+        docker_layer_caching: true
     - checkout
     # Restore the dependency cache
     #   (Fix dependency folder permissions)
@@ -112,8 +114,6 @@ jobs:
     - run:
         name: Build
         command: go build -v
-    - setup_remote_docker:
-        docker_layer_caching: true
     # Update tools
     # Add the Cloud SDK distribution URI as a package source
     - run: echo "deb http://packages.cloud.google.com/apt cloud-sdk-jessie main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
@@ -127,8 +127,8 @@ jobs:
 
     - run: echo $CURT_SERVICES_SA | base64 --decode -i > ${HOME}/prod-client-secret.json
     - run: echo $STAGE_CLIENT_SECRET | base64 --decode -i > ${HOME}/stage-client-secret.json
-    - run: sudo docker build -t ${STAGE_IMAGE}:$CIRCLE_SHA1 ~/curt-labs/API
-    - run: sudo docker tag ${STAGE_IMAGE}:$CIRCLE_SHA1 ${STAGE_IMAGE}:latest
+    - run: docker build -t gcr.io/${STAGE_PROJECT_NAME}/${CONTAINER_NAME}:$CIRCLE_SHA1 .
+    - run: docker tag gcr.io/${STAGE_PROJECT_NAME}/${CONTAINER_NAME}:$CIRCLE_SHA1 gcr.io/${STAGE_PROJECT_NAME}/${CONTAINER_NAME}:latest
     - run: sudo /opt/google-cloud-sdk/bin/gcloud config set container/use_client_certificate True
     - run: sudo /opt/google-cloud-sdk/bin/gcloud auth activate-service-account --key-file ${HOME}/stage-client-secret.json
     - run: sudo /opt/google-cloud-sdk/bin/gcloud config set project $STAGE_PROJECT_NAME
