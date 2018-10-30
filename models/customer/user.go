@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pborman/uuid"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/curt-labs/API/helpers/api"
@@ -998,7 +997,7 @@ func getAPIKeyTypeReference(keyType string) (string, error) {
 	var apiKeyTypeId string
 	err = stmt.QueryRow(keyType).Scan(&apiKeyTypeId)
 	if err != nil {
-		return uuid.NIL.String(), errors.New("failed to retrieve auth type")
+		return "00000000-0000-0000-0000-000000000000", errors.New("failed to retrieve auth type")
 	}
 	return apiKeyTypeId, nil
 }
