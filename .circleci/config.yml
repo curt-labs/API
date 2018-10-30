@@ -137,8 +137,6 @@ jobs:
     - run: gcloud --quiet container clusters get-credentials $STAGE_CLUSTER_NAME
     - run: gcloud docker --authorize-only
     - run: docker push ${STAGE_IMAGE}
-#    - run: sudo /opt/google-cloud-sdk/bin/gcloud docker -- push ${STAGE_IMAGE}
-    - run: sudo chown -R ubuntu:ubuntu /home/ubuntu/.kube
     - run: kubectl set image deployment/${DEPLOYMENT} ${CONTAINER_NAME}=${STAGE_IMAGE}:$CIRCLE_SHA1
     # Save dependency cache
     - save_cache:
