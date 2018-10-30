@@ -129,12 +129,12 @@ jobs:
     - run: echo $STAGE_CLIENT_SECRET | base64 --decode -i > ${HOME}/stage-client-secret.json
     - run: docker build -t gcr.io/${STAGE_PROJECT_NAME}/${CONTAINER_NAME}:$CIRCLE_SHA1 .
     - run: docker tag gcr.io/${STAGE_PROJECT_NAME}/${CONTAINER_NAME}:$CIRCLE_SHA1 gcr.io/${STAGE_PROJECT_NAME}/${CONTAINER_NAME}:latest
-    - run: sudo /opt/google-cloud-sdk/bin/gcloud config set container/use_client_certificate True
-    - run: sudo /opt/google-cloud-sdk/bin/gcloud auth activate-service-account --key-file ${HOME}/stage-client-secret.json
-    - run: sudo /opt/google-cloud-sdk/bin/gcloud config set project $STAGE_PROJECT_NAME
-    - run: sudo /opt/google-cloud-sdk/bin/gcloud --quiet config set container/cluster $STAGE_CLUSTER_NAME
-    - run: sudo /opt/google-cloud-sdk/bin/gcloud config set compute/zone $STAGE_ZONE
-    - run: sudo /opt/google-cloud-sdk/bin/gcloud --quiet container clusters get-credentials $STAGE_CLUSTER_NAME
+    - run: gcloud config set container/use_client_certificate True
+    - run: gcloud auth activate-service-account --key-file ${HOME}/stage-client-secret.json
+    - run: gcloud config set project $STAGE_PROJECT_NAME
+    - run: gcloud --quiet config set container/cluster $STAGE_CLUSTER_NAME
+    - run: gcloud config set compute/zone $STAGE_ZONE
+    - run: gcloud --quiet container clusters get-credentials $STAGE_CLUSTER_NAME
     - run: gcloud docker --authorize-only
     - run: docker push ${STAGE_IMAGE}
 #    - run: sudo /opt/google-cloud-sdk/bin/gcloud docker -- push ${STAGE_IMAGE}
