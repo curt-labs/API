@@ -29,6 +29,8 @@ jobs:
     # Dependencies
     #   This would typically go in either a build or a build-and-test job when using workflows
     # Restore the dependency cache
+    #   (Fix dependency folder permissions)
+    - run: sudo chown -R circleci /go/src
     - restore_cache:
         keys:
         # This branch if available
@@ -94,6 +96,8 @@ jobs:
     steps:
     - checkout
     # Restore the dependency cache
+    #   (Fix dependency folder permissions)
+    - run: sudo chown -R circleci /go/src
     - restore_cache:
         keys:
         # This branch if available
@@ -102,8 +106,12 @@ jobs:
         - v2-dep-master-
         # Any branch if there are none on the default branch - this should be unnecessary if you have your default branch configured correctly
         - v2-dep-
-    - run: go get -t -d -v ./...
-    - run: go build -v
+    - run:
+        name: Get Dependencies
+        command: go get -t -d -v ./...
+    - run:
+        name: Build
+        command: go build -v
     - setup_remote_docker:
         docker_layer_caching: true
     # Update tools
