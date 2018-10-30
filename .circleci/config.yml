@@ -127,7 +127,7 @@ jobs:
 
     - run: echo $CURT_SERVICES_SA | base64 --decode -i > ${HOME}/prod-client-secret.json
     - run: echo $STAGE_CLIENT_SECRET | base64 --decode -i > ${HOME}/stage-client-secret.json
-    - run: sudo docker build -t ${STAGE_IMAGE}:$CIRCLE_SHA1 .
+    - run: sudo docker build -t ${STAGE_IMAGE}:$CIRCLE_SHA1 ~/curt-labs/API
     - run: sudo docker tag ${STAGE_IMAGE}:$CIRCLE_SHA1 ${STAGE_IMAGE}:latest
     - run: sudo /opt/google-cloud-sdk/bin/gcloud config set container/use_client_certificate True
     - run: sudo /opt/google-cloud-sdk/bin/gcloud auth activate-service-account --key-file ${HOME}/stage-client-secret.json
@@ -135,7 +135,9 @@ jobs:
     - run: sudo /opt/google-cloud-sdk/bin/gcloud --quiet config set container/cluster $STAGE_CLUSTER_NAME
     - run: sudo /opt/google-cloud-sdk/bin/gcloud config set compute/zone $STAGE_ZONE
     - run: sudo /opt/google-cloud-sdk/bin/gcloud --quiet container clusters get-credentials $STAGE_CLUSTER_NAME
-    - run: sudo /opt/google-cloud-sdk/bin/gcloud docker -- push ${STAGE_IMAGE}
+    - run: gcloud docker --authorize-only
+    - run: docker push ${STAGE_IMAGE}
+#    - run: sudo /opt/google-cloud-sdk/bin/gcloud docker -- push ${STAGE_IMAGE}
     - run: sudo chown -R ubuntu:ubuntu /home/ubuntu/.kube
     - run: kubectl set image deployment/${DEPLOYMENT} ${CONTAINER_NAME}=${STAGE_IMAGE}:$CIRCLE_SHA1
     # Save dependency cache
