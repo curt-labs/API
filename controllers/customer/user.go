@@ -246,6 +246,11 @@ func RegisterUser(rw http.ResponseWriter, r *http.Request, enc encoding.Encoder)
 	user.NotCustomer, _ = strconv.ParseBool(r.FormValue("notCustomer"))
 	user.Current = user.NotCustomer
 	user.Active = true // forcing active status
+	// If CustomerID is blank and CustID is blank, then the user gets lumped into this customer: (Not a Customer)
+	if user.CustomerID == 0 && user.CustID == 0{
+		user.CustomerID = 333333
+		user.CustID = 10443699
+	}
 
 	genPass := r.FormValue("generatePass")
 	pass := r.FormValue("pass")
