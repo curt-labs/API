@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	cloud.google.com/go/pubsub v1.10.1
-	github.com/GoogleCloudPlatform/cloudsql-proxy v1.20.2
+	github.com/GoogleCloudPlatform/cloudsql-proxy v1.21.0
 	github.com/araddon/gou v0.0.0-20190110011759-c797efecbb61 // indirect
 	github.com/bitly/go-hostpool v0.1.0 // indirect
 	github.com/boj/redistore v0.0.0-20180917114910-cd5dcc76aeff // indirect
