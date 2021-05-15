@@ -4,17 +4,19 @@ go 1.16
 
 require (
 	cloud.google.com/go/pubsub v1.10.1
+	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/GoogleCloudPlatform/cloudsql-proxy v1.21.0
 	github.com/araddon/gou v0.0.0-20190110011759-c797efecbb61 // indirect
 	github.com/bitly/go-hostpool v0.1.0 // indirect
+	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/boj/redistore v0.0.0-20180917114910-cd5dcc76aeff // indirect
 	github.com/codegangsta/inject v0.0.0-20150114235600-33e0aa1cb7c0 // indirect
 	github.com/curt-labs/API v0.0.0-20181030194633-bff226692706
-	github.com/davidvaini/web v0.0.0-20210302160212-7988c9115fd7 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/fortytw2/leaktest v1.3.0 // indirect
 	github.com/garyburd/redigo v1.6.2
 	github.com/go-martini/martini v0.0.0-20170121215854-22fa46961aab
-	github.com/go-sql-driver/mysql v1.5.0
+	github.com/go-sql-driver/mysql v1.6.0
 	github.com/gorilla/sessions v1.2.1 // indirect
 	github.com/jehiah/go-strftime v0.0.0-20171201141054-1d33003b3869
 	github.com/jlaffaye/ftp v0.0.0-20210307004419-5d4190119067
@@ -22,6 +24,7 @@ require (
 	github.com/martini-contrib/render v0.0.0-20150707142108-ec18f8345a11
 	github.com/martini-contrib/sessions v0.0.0-20140630231722-fa13114fbcf0
 	github.com/mattbaird/elastigo v0.0.0-20170123220020-2fe47fd29e4b
+	github.com/myesui/uuid v1.0.0 // indirect
 	github.com/nsqio/go-nsq v1.0.8
 	github.com/olekukonko/ts v0.0.0-20171002115256-78ecb04241c0 // indirect
 	github.com/oxtoacart/bpool v0.0.0-20190530202638-03653db5a59c // indirect
@@ -35,8 +38,9 @@ require (
 	github.com/twinj/uuid v1.0.0
 	github.com/visionmedia/go-debug v0.0.0-20180109164601-bfacf9d8a444
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
-	golang.org/x/oauth2 v0.0.0-20210220000619-9bb904979d93
-	google.golang.org/api v0.41.0
+	golang.org/x/oauth2 v0.0.0-20210402161424-2e8d93401602
+	google.golang.org/api v0.43.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22
 	gopkg.in/olivere/elastic.v2 v2.0.61
+	gopkg.in/stretchr/testify.v1 v1.2.2 // indirect
 )

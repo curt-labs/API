@@ -1,13 +1,14 @@
 package apiKeyType
 
 import (
+	"database/sql"
 	"time"
 
 	"github.com/curt-labs/API/helpers/database"
 	_ "github.com/go-sql-driver/mysql"
 )
 
-var (
+const (
 	getApiKeyType     = "SELECT id, type, date_added FROM ApiKeyType WHERE id = ? "
 	getAllApiKeyTypes = "SELECT id, type, date_added FROM ApiKeyType "
 	getKeyByDateType  = "SELECT id FROM ApiKeyType WHERE type = ?  AND date_added = ?"
@@ -21,29 +22,24 @@ type ApiKeyType struct {
 	DateAdded time.Time `json:"dateAdded" xml:"dateAdded"`
 }
 
-type Scanner interface {
-	Scan(...interface{}) error
-}
-
 const (
 	timeFormat = "2006-01-02 03:04:05"
 )
 
-func (a *ApiKeyType) Get() error {
-	err := database.Init()
-	if err != nil {
-		return err
-	}
+// Get populates the ApiKeyType fields with values from the database if a matching ID was found
+func (a *ApiKeyType) Get(db *sql.DB) error {
+	id := a.ID
 
-	stmt, err := database.DB.Prepare(getApiKeyType)
-	if err != nil {
+	err := db.QueryRow(getApiKeyType, id).
+		Scan(&a.ID, &a.Type, &a.DateAdded)
+	switch {
+	case err == sql.ErrNoRows:
 		return err
+	case err != nil:
+		return err
+	default:
+		return nil
 	}
-	defer stmt.Close()
-	res := stmt.QueryRow(a.ID)
-	a, err = ScanKey(res)
-
-	return nil
 }
 
 func GetAllApiKeyTypes() ([]ApiKeyType, error) {
@@ -65,20 +61,15 @@ func GetAllApiKeyTypes() ([]ApiKeyType, error) {
 	var as []ApiKeyType
 
 	for res.Next() {
-		a, err := ScanKey(res)
+		var a ApiKeyType
+		err := res.Scan(&a.ID, &a.Type, &a.DateAdded)
 		if err != nil {
 			return as, err
 		}
-		as = append(as, *a)
+		as = append(as, a)
 	}
 	defer res.Close()
 	return as, err
-}
-
-func ScanKey(s Scanner) (*ApiKeyType, error) {
-	a := &ApiKeyType{}
-	err := s.Scan(&a.ID, &a.Type, &a.DateAdded)
-	return a, err
 }
 
 func (a *ApiKeyType) Create() error {
