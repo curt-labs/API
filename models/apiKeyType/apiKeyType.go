@@ -27,11 +27,11 @@ const (
 )
 
 // Get populates the ApiKeyType fields with values from the database if a matching ID was found
-func (a *ApiKeyType) Get(db *sql.DB) error {
-	id := a.ID
+func (akt *ApiKeyType) Get(db *sql.DB) error {
+	id := akt.ID
 
 	err := db.QueryRow(getApiKeyType, id).
-		Scan(&a.ID, &a.Type, &a.DateAdded)
+		Scan(&akt.ID, &akt.Type, &akt.DateAdded)
 	switch {
 	case err == sql.ErrNoRows:
 		return err
@@ -42,34 +42,34 @@ func (a *ApiKeyType) Get(db *sql.DB) error {
 	}
 }
 
-func GetAllApiKeyTypes() ([]ApiKeyType, error) {
-	err := database.Init()
+// GetAllApiKeyTypes fetches all API key types
+func GetAllApiKeyTypes(db *sql.DB) ([]ApiKeyType, error) {
+	rows, err := db.Query(getAllApiKeyTypes)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
-	stmt, err := database.DB.Prepare(getAllApiKeyTypes)
-	if err != nil {
-		return nil, err
-	}
-	defer stmt.Close()
-	res, err := stmt.Query() //returns *sql.Rows
-	if err != nil {
-		return nil, err
-	}
-
-	var as []ApiKeyType
-
-	for res.Next() {
-		var a ApiKeyType
-		err := res.Scan(&a.ID, &a.Type, &a.DateAdded)
-		if err != nil {
-			return as, err
+	akts := make([]ApiKeyType, 0)
+	for rows.Next() {
+		var akt ApiKeyType
+		if err := rows.Scan(&akt.ID, &akt.Type, &akt.DateAdded); err != nil {
+			// stop fetching keys on first error
+			return akts, err
 		}
-		as = append(as, a)
+		akts = append(akts, akt)
 	}
-	defer res.Close()
-	return as, err
+
+	rerr := rows.Close()
+	if rerr != nil {
+		return akts, rerr
+	}
+
+	if err := rows.Err(); err != nil {
+		return akts, err
+	}
+
+	return akts, nil
 }
 
 func (a *ApiKeyType) Create() error {

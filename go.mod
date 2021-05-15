@@ -1,4 +1,4 @@
-module github.com/curt-labs/api
+module github.com/curt-labs/API
 
 go 1.16
 
@@ -11,7 +11,6 @@ require (
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/boj/redistore v0.0.0-20180917114910-cd5dcc76aeff // indirect
 	github.com/codegangsta/inject v0.0.0-20150114235600-33e0aa1cb7c0 // indirect
-	github.com/curt-labs/API v0.0.0-20181030194633-bff226692706
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/fortytw2/leaktest v1.3.0 // indirect
 	github.com/garyburd/redigo v1.6.2
