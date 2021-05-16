@@ -10,7 +10,6 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/bmizerany/assert"
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 func NewMock() (*sql.DB, sqlmock.Sqlmock) {
@@ -156,9 +155,6 @@ func TestApiKeyType_GetAllApiKeyTypes(t *testing.T) {
 }
 
 func TestApiKeyType_Create(t *testing.T) {
-	//a := ApiKeyType{Type: "TEST"}
-	//a.Create(database.DB)
-
 	var getTests = []struct {
 		name    string
 		in      *ApiKeyType
@@ -186,14 +182,6 @@ func TestApiKeyType_Create(t *testing.T) {
 			rows:    sqlmock.NewRows([]string{"id"}).AddRow("99990000-0000-0000-0000-000000000000"),
 			outAkt:  &ApiKeyType{ID: "99990000-0000-0000-0000-000000000000", Type: "Success"},
 		},
-		//{
-		//	name: "API key type found",
-		//	in:   &ApiKeyType{ID: "00000000-0000-0000-0000-000000000000"},
-		//	rows: sqlmock.NewRows([]string{"id", "type", "date_added"}).
-		//		AddRow("99900000-0000-0000-0000-000000000000", "TestKey", time.Date(2020, 4, 25, 12, 14, 00, 00, time.UTC)),
-		//	outErr: nil,
-		//	outAkt: &ApiKeyType{ID: "99900000-0000-0000-0000-000000000000", Type: "TestKey", DateAdded: time.Date(2020, 4, 25, 12, 14, 00, 00, time.UTC)},
-		//},
 	}
 
 	for _, tt := range getTests {
@@ -231,25 +219,44 @@ func TestApiKeyType_Create(t *testing.T) {
 	}
 }
 
-func TestApiKeyType(t *testing.T) {
-	Convey("Test Create AppGuide", t, func() {
-		var err error
-		var akt ApiKeyType
+func TestApiKeyType_Delete(t *testing.T) {
+	var getTests = []struct {
+		name    string
+		in      *ApiKeyType
+		result  sql.Result
+		execErr error
+		outErr  error
+	}{
+		{
+			name:    "delete API key type failed",
+			in:      &ApiKeyType{Type: "DeleteFailure"},
+			execErr: errors.New("exec error"),
+			outErr:  errors.New("exec error"),
+		},
+		{
+			name:    "successful delete API key type",
+			in:      &ApiKeyType{ID: "99990000-0000-0000-0000-000000000000", Type: "Success"},
+			execErr: nil,
+			outErr:  nil,
+			result:  sqlmock.NewResult(0, 1),
+		},
+	}
 
-		//create
-		//akt.Type = "testType"
+	for _, tt := range getTests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, mock := NewMock()
+			defer db.Close()
 
-		//err = akt.Create()
-		//So(err, ShouldBeNil)
+			query := deleteApiKeyType
+			mock.ExpectExec(query).
+				WithArgs(tt.in.ID).
+				WillReturnError(tt.execErr).
+				WillReturnResult(tt.result)
 
-		//as, err := GetAllApiKeyTypes()
-		//So(err, ShouldBeNil)
-		//So(len(as), ShouldBeGreaterThan, 0)
-
-		//delete
-		err = akt.Delete()
-		So(err, ShouldBeNil)
-	})
+			err := tt.in.Delete(db)
+			assert.Equal(t, tt.outErr, err)
+		})
+	}
 }
 
 func BenchmarkGetAllApiKeyTypes(b *testing.B) {
@@ -259,33 +266,33 @@ func BenchmarkGetAllApiKeyTypes(b *testing.B) {
 }
 
 func BenchmarkGetApiKeyType(b *testing.B) {
-	akt := ApiKeyType{Type: "TESTER"}
-	for i := 0; i < b.N; i++ {
-		//b.StopTimer()
-		//akt.Create()
-		//b.StartTimer()
-		//akt.Get()
-		b.StopTimer()
-		akt.Delete()
-	}
+	//akt := ApiKeyType{Type: "TESTER"}
+	//for i := 0; i < b.N; i++ {
+	//b.StopTimer()
+	//akt.Create()
+	//b.StartTimer()
+	//akt.Get()
+	//b.StopTimer()
+	//akt.Delete()
+	//}
 }
 
 func BenchmarkCreateApiKeyType(b *testing.B) {
-	akt := ApiKeyType{Type: "TESTER"}
-	for i := 0; i < b.N; i++ {
-		//b.StartTimer()
-		//akt.Create()
-		//b.StopTimer()
-		akt.Delete()
-	}
+	//akt := ApiKeyType{Type: "TESTER"}
+	//for i := 0; i < b.N; i++ {
+	//b.StartTimer()
+	//akt.Create()
+	//b.StopTimer()
+	//akt.Delete()
+	//}
 }
 
 func BenchmarkDeleteApiKeyType(b *testing.B) {
-	akt := ApiKeyType{Type: "TESTER"}
-	for i := 0; i < b.N; i++ {
-		//b.StopTimer()
-		//akt.Create()
-		//b.StartTimer()
-		akt.Delete()
-	}
+	//akt := ApiKeyType{Type: "TESTER"}
+	//for i := 0; i < b.N; i++ {
+	//b.StopTimer()
+	//akt.Create()
+	//b.StartTimer()
+	//akt.Delete()
+	//}
 }
