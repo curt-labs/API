@@ -1,13 +1,13 @@
 package apiKeyType
 
 import (
+	"database/sql"
 	"time"
 
-	"github.com/curt-labs/API/helpers/database"
 	_ "github.com/go-sql-driver/mysql"
 )
 
-var (
+const (
 	getApiKeyType     = "SELECT id, type, date_added FROM ApiKeyType WHERE id = ? "
 	getAllApiKeyTypes = "SELECT id, type, date_added FROM ApiKeyType "
 	getKeyByDateType  = "SELECT id FROM ApiKeyType WHERE type = ?  AND date_added = ?"
@@ -21,111 +21,104 @@ type ApiKeyType struct {
 	DateAdded time.Time `json:"dateAdded" xml:"dateAdded"`
 }
 
-type Scanner interface {
-	Scan(...interface{}) error
-}
-
 const (
 	timeFormat = "2006-01-02 03:04:05"
 )
 
-func (a *ApiKeyType) Get() error {
-	err := database.Init()
-	if err != nil {
-		return err
-	}
+// Get populates the ApiKeyType fields with values from the database if a matching ID was found
+func (akt *ApiKeyType) Get(db *sql.DB) error {
+	id := akt.ID
 
-	stmt, err := database.DB.Prepare(getApiKeyType)
-	if err != nil {
+	err := db.QueryRow(getApiKeyType, id).
+		Scan(&akt.ID, &akt.Type, &akt.DateAdded)
+	switch {
+	case err == sql.ErrNoRows:
 		return err
+	case err != nil:
+		return err
+	default:
+		return nil
 	}
-	defer stmt.Close()
-	res := stmt.QueryRow(a.ID)
-	a, err = ScanKey(res)
-
-	return nil
 }
 
-func GetAllApiKeyTypes() ([]ApiKeyType, error) {
-	err := database.Init()
+// GetAllApiKeyTypes fetches all API key types
+func GetAllApiKeyTypes(db *sql.DB) ([]ApiKeyType, error) {
+	rows, err := db.Query(getAllApiKeyTypes)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
-	stmt, err := database.DB.Prepare(getAllApiKeyTypes)
-	if err != nil {
-		return nil, err
-	}
-	defer stmt.Close()
-	res, err := stmt.Query() //returns *sql.Rows
-	if err != nil {
-		return nil, err
-	}
-
-	var as []ApiKeyType
-
-	for res.Next() {
-		a, err := ScanKey(res)
-		if err != nil {
-			return as, err
+	akts := make([]ApiKeyType, 0)
+	for rows.Next() {
+		var akt ApiKeyType
+		if err := rows.Scan(&akt.ID, &akt.Type, &akt.DateAdded); err != nil {
+			// stop fetching keys on first error
+			return akts, err
 		}
-		as = append(as, *a)
+		akts = append(akts, akt)
 	}
-	defer res.Close()
-	return as, err
+
+	rerr := rows.Close()
+	if rerr != nil {
+		return akts, rerr
+	}
+
+	if err := rows.Err(); err != nil {
+		return akts, err
+	}
+
+	return akts, nil
 }
 
-func ScanKey(s Scanner) (*ApiKeyType, error) {
-	a := &ApiKeyType{}
-	err := s.Scan(&a.ID, &a.Type, &a.DateAdded)
-	return a, err
-}
+func (akt *ApiKeyType) Create(db *sql.DB) error {
+	keyType := akt.Type
 
-func (a *ApiKeyType) Create() error {
-	err := database.Init()
-	if err != nil {
-		return err
-	}
-
-	stmt, err := database.DB.Prepare(createApiKeyType)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
+	// We need to manually set this instead of using Database created field because we need it for lookup later.
+	// Keeping the code as close as possible for now, we could make this a pure function if we set ApiKeyType.DateAdded
+	// and used that in the SQL insert instead of time.Now(), which is hard to mock and adds an implicit dependency for
+	// this function.
 	added := time.Now().Format(timeFormat)
-	_, err = stmt.Exec(a.Type, added)
+
+	result, err := db.Exec(createApiKeyType, keyType, added)
 	if err != nil {
 		return err
 	}
 
-	stmt, err = database.DB.Prepare(getKeyByDateType)
+	_, err = result.RowsAffected()
 	if err != nil {
 		return err
 	}
 
-	defer stmt.Close()
-
-	err = stmt.QueryRow(a.Type, added).Scan(&a.ID)
-	if err != nil {
+	// get the ID (UUID) for new ApiKeyType
+	//
+	// In the future we can avoid this query if we either add a real primary key column to the ApiKeyType table
+	// and the get the LastInsertID(), or if we generate the UUID ourselves instead of relying on the MySQL version.
+	// When we remove this query we can set the timestamp on the MySQL server side instead of needing to pass it in.
+	err = db.QueryRow(getKeyByDateType, keyType, added).
+		Scan(&akt.ID)
+	switch {
+	case err == sql.ErrNoRows:
 		return err
+	case err != nil:
+		return err
+	default:
+		return nil
 	}
-	return nil
 }
 
-func (a *ApiKeyType) Delete() error {
-	err := database.Init()
+func (akt *ApiKeyType) Delete(db *sql.DB) error {
+	id := akt.ID
+
+	result, err := db.Exec(deleteApiKeyType, id)
 	if err != nil {
 		return err
 	}
 
-	stmt, err := database.DB.Prepare(deleteApiKeyType)
+	_, err = result.RowsAffected()
 	if err != nil {
 		return err
 	}
-	defer stmt.Close()
-	_, err = stmt.Exec(a.ID)
-	if err != nil {
-		return err
-	}
+
 	return nil
 }
