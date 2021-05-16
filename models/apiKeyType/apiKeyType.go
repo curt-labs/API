@@ -72,35 +72,40 @@ func GetAllApiKeyTypes(db *sql.DB) ([]ApiKeyType, error) {
 	return akts, nil
 }
 
-func (a *ApiKeyType) Create() error {
-	err := database.Init()
-	if err != nil {
-		return err
-	}
+func (a *ApiKeyType) Create(db *sql.DB) error {
+	keyType := a.Type
 
-	stmt, err := database.DB.Prepare(createApiKeyType)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
+	// We need to manually set this instead of using Database created field because we need it for lookup later.
+	// Keeping the code as close as possible for now, we could make this a pure function if we set ApiKeyType.DateAdded
+	// and used that in the SQL insert instead of time.Now(), which is hard to mock and adds an implicit dependency for
+	// this function.
 	added := time.Now().Format(timeFormat)
-	_, err = stmt.Exec(a.Type, added)
+
+	result, err := db.Exec(createApiKeyType, keyType, added)
 	if err != nil {
 		return err
 	}
 
-	stmt, err = database.DB.Prepare(getKeyByDateType)
+	_, err = result.RowsAffected()
 	if err != nil {
 		return err
 	}
 
-	defer stmt.Close()
-
-	err = stmt.QueryRow(a.Type, added).Scan(&a.ID)
-	if err != nil {
+	// get the ID (UUID) for new ApiKeyType
+	//
+	// In the future we can avoid this query if we either add a real primary key column to the ApiKeyType table
+	// and the get the LastInsertID(), or if we generate the UUID ourselves instead of relying on the MySQL version.
+	// When we remove this query we can set the timestamp on the MySQL server side instead of needing to pass it in.
+	err = db.QueryRow(getKeyByDateType, keyType, added).
+		Scan(&a.ID)
+	switch {
+	case err == sql.ErrNoRows:
 		return err
+	case err != nil:
+		return err
+	default:
+		return nil
 	}
-	return nil
 }
 
 func (a *ApiKeyType) Delete() error {

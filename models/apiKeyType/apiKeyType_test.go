@@ -14,7 +14,7 @@ import (
 )
 
 func NewMock() (*sql.DB, sqlmock.Sqlmock) {
-	db, mock, err := sqlmock.New()
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	if err != nil {
 		log.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
@@ -155,16 +155,92 @@ func TestApiKeyType_GetAllApiKeyTypes(t *testing.T) {
 	}
 }
 
+func TestApiKeyType_Create(t *testing.T) {
+	//a := ApiKeyType{Type: "TEST"}
+	//a.Create(database.DB)
+
+	var getTests = []struct {
+		name    string
+		in      *ApiKeyType
+		result  sql.Result
+		execErr error
+		rows    *sqlmock.Rows
+		outErr  error
+		uuid    string
+		outAkt  *ApiKeyType
+	}{
+		{
+			name:    "insert API key type failed",
+			in:      &ApiKeyType{Type: "InsertFailure"},
+			execErr: errors.New("exec error"),
+			outErr:  errors.New("exec error"),
+			outAkt:  &ApiKeyType{Type: "InsertFailure"},
+		},
+		{
+			name:    "successful insert API key type",
+			in:      &ApiKeyType{Type: "Success"},
+			execErr: nil,
+			outErr:  nil,
+			result:  sqlmock.NewResult(0, 1),
+			uuid:    "99990000-0000-0000-0000-000000000000",
+			rows:    sqlmock.NewRows([]string{"id"}).AddRow("99990000-0000-0000-0000-000000000000"),
+			outAkt:  &ApiKeyType{ID: "99990000-0000-0000-0000-000000000000", Type: "Success"},
+		},
+		//{
+		//	name: "API key type found",
+		//	in:   &ApiKeyType{ID: "00000000-0000-0000-0000-000000000000"},
+		//	rows: sqlmock.NewRows([]string{"id", "type", "date_added"}).
+		//		AddRow("99900000-0000-0000-0000-000000000000", "TestKey", time.Date(2020, 4, 25, 12, 14, 00, 00, time.UTC)),
+		//	outErr: nil,
+		//	outAkt: &ApiKeyType{ID: "99900000-0000-0000-0000-000000000000", Type: "TestKey", DateAdded: time.Date(2020, 4, 25, 12, 14, 00, 00, time.UTC)},
+		//},
+	}
+
+	for _, tt := range getTests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, mock := NewMock()
+			defer db.Close()
+
+			added := sqlmock.AnyArg() // workaround for time.Now()
+
+			// Setup insert
+			query := createApiKeyType
+			mock.ExpectExec(query).
+				WithArgs(tt.in.Type, added).
+				WillReturnError(tt.execErr).
+				WillReturnResult(tt.result)
+
+			// Setup UUID query
+			idQuery := getKeyByDateType
+
+			var rows *sqlmock.Rows
+			if tt.rows != nil {
+				rows = tt.rows
+			} else {
+				rows = sqlmock.NewRows([]string{"id"})
+			}
+
+			mock.ExpectQuery(idQuery).
+				WithArgs(tt.in.Type, added).
+				WillReturnRows(rows)
+
+			err := tt.in.Create(db)
+			assert.Equal(t, tt.outErr, err)
+			assert.Equal(t, tt.outAkt, tt.in)
+		})
+	}
+}
+
 func TestApiKeyType(t *testing.T) {
 	Convey("Test Create AppGuide", t, func() {
 		var err error
 		var akt ApiKeyType
 
 		//create
-		akt.Type = "testType"
+		//akt.Type = "testType"
 
-		err = akt.Create()
-		So(err, ShouldBeNil)
+		//err = akt.Create()
+		//So(err, ShouldBeNil)
 
 		//as, err := GetAllApiKeyTypes()
 		//So(err, ShouldBeNil)
@@ -185,9 +261,9 @@ func BenchmarkGetAllApiKeyTypes(b *testing.B) {
 func BenchmarkGetApiKeyType(b *testing.B) {
 	akt := ApiKeyType{Type: "TESTER"}
 	for i := 0; i < b.N; i++ {
-		b.StopTimer()
-		akt.Create()
-		b.StartTimer()
+		//b.StopTimer()
+		//akt.Create()
+		//b.StartTimer()
 		//akt.Get()
 		b.StopTimer()
 		akt.Delete()
@@ -197,9 +273,9 @@ func BenchmarkGetApiKeyType(b *testing.B) {
 func BenchmarkCreateApiKeyType(b *testing.B) {
 	akt := ApiKeyType{Type: "TESTER"}
 	for i := 0; i < b.N; i++ {
-		b.StartTimer()
-		akt.Create()
-		b.StopTimer()
+		//b.StartTimer()
+		//akt.Create()
+		//b.StopTimer()
 		akt.Delete()
 	}
 }
@@ -207,9 +283,9 @@ func BenchmarkCreateApiKeyType(b *testing.B) {
 func BenchmarkDeleteApiKeyType(b *testing.B) {
 	akt := ApiKeyType{Type: "TESTER"}
 	for i := 0; i < b.N; i++ {
-		b.StopTimer()
-		akt.Create()
-		b.StartTimer()
+		//b.StopTimer()
+		//akt.Create()
+		//b.StartTimer()
 		akt.Delete()
 	}
 }
