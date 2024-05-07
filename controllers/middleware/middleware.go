@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+
 	"github.com/curt-labs/API/helpers/apicontext"
 	"github.com/curt-labs/API/helpers/database"
 	"github.com/curt-labs/API/helpers/error"
@@ -223,11 +224,13 @@ func getCustomerID(apiKey string) (*customer.CustomerUser, error) {
 	defer session.Close()
 
 	query := bson.M{"users.keys.key": apiKey}
+	projection := bson.M{"users": bson.M{"$elemMatch": bson.M{"keys": bson.M{"$elemMatch": bson.M{"key": apiKey}}}}}
 
 	var resp = struct {
 		Users []customer.CustomerUser `bson:"users"`
 	}{}
-	err = session.DB(database.ProductDatabase).C(database.CustomerCollectionName).Find(query).Select(bson.M{"users": 1, "_id": 0}).One(&resp)
+	err = session.DB(database.ProductDatabase).C(database.CustomerCollectionName).Find(query).Select(projection).One(&resp)
+
 	if len(resp.Users) == 0 {
 		return nil, fmt.Errorf("failed to find user for that API key")
 	}
