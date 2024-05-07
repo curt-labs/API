@@ -227,7 +227,7 @@ func getCustomerID(apiKey string) (*customer.CustomerUser, error) {
 	var resp = struct {
 		Users []customer.CustomerUser `bson:"users"`
 	}{}
-	err = session.DB(database.ProductDatabase).C(database.CustomerCollectionName).Find(query).Select(bson.M{"users.$": 1, "_id": 0}).One(&resp)
+	err = session.DB(database.ProductDatabase).C(database.CustomerCollectionName).Find(query).Select(bson.M{"users": 1, "_id": 0}).One(&resp)
 	if len(resp.Users) == 0 {
 		return nil, fmt.Errorf("failed to find user for that API key")
 	}
