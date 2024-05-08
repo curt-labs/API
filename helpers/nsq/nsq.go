@@ -3,7 +3,7 @@ package nsq
 import (
 	"encoding/json"
 	"fmt"
-	nsqq "github.com/bitly/go-nsq"
+	nsqq "github.com/nsqio/go-nsq"
 	"os"
 )
 

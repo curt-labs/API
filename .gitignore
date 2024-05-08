@@ -8,3 +8,4 @@ ConnectionString.go
 watcher.go
 gin-bin
 models/polk/PartNumbersNeeded
+.idea
