@@ -324,7 +324,7 @@ func Featured(count int, dtx *apicontext.DataContext, brand int) ([]Part, error)
 		return parts, err
 	}
 	defer session.Close()
-	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{"featured": true, "brand.id": bson.M{"$in": brands}}).Sort("id:1").Limit(count).All(&parts)
+	err = session.DB(database.ProductDatabase).C(database.ProductCollectionName).Find(bson.M{"featured": true, "brand.id": bson.M{"$in": brands}}).Sort("id").Limit(count).All(&parts)
 	return parts, err
 }
 
