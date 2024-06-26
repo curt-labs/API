@@ -123,8 +123,6 @@ Contributors
 * Alex Ninneman
     * [Github](http://github.com/ninnemana)
     * [Twitter](https://twitter.com/ninnemana)
-* David Vaini
-    * [Github](https://github.com/DavidVaini)
 * John Shenk
     * [Github](https://github.com/stinkyfingers)
 * Matt Mickelson
